@@ -96,10 +96,14 @@ public final class CarriageTemplate {
                 : palette.glassCeiling();
         }
 
-        boolean onPerimeter = (dx == 0 || dx == LENGTH - 1 || dz == 0 || dz == WIDTH - 1);
+        // Only dx==0 has an end wall. Adjacent carriages share a single wall
+        // (the next carriage's left-end wall) rather than stacking two walls
+        // back-to-back, so an infinite train reads as one connected corridor
+        // instead of a row of independent boxes.
+        boolean onPerimeter = (dx == 0 || dz == 0 || dz == WIDTH - 1);
         if (!onPerimeter) return null;
 
-        boolean isEndWall = (dx == 0 || dx == LENGTH - 1);
+        boolean isEndWall = (dx == 0);
         boolean isDoorGap = isEndWall && dz == doorZ && (dy == 1 || dy == 2);
         if (isDoorGap) return null;
 
