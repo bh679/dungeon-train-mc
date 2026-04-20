@@ -25,8 +25,16 @@ public final class TrainAssembler {
     private TrainAssembler() {}
 
     public static ServerShip spawnCarriage(ServerLevel level, BlockPos origin, Vector3dc velocity) {
-        Set<BlockPos> blocks = CarriageTemplate.placeAt(level, origin);
-        LOGGER.info("[DungeonTrain] Placed {} blocks, assembling...", blocks.size());
+        return spawnTrain(level, origin, velocity, 1);
+    }
+
+    /**
+     * Spawn an N-carriage train as a single VS ship moving at {@code velocity}.
+     * All carriages share one rigid body, one inducer, and one velocity target.
+     */
+    public static ServerShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count) {
+        Set<BlockPos> blocks = CarriageTemplate.placeTrainAt(level, origin, count);
+        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages), assembling...", blocks.size(), count);
 
         ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
         LOGGER.info("[DungeonTrain] Assembly returned ship id={} runtime={}",
