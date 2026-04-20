@@ -15,7 +15,7 @@ human oversight at each stage.
 - **Mod Loader:** Forge 1.20.1
 - **Key Dependency:** Valkyrien Skies 2 (`2.4.11`) — provides moving ship/train physics
 - **Repos:** dungeon-train-mc
-- **GitHub Project:** https://github.com/bh679?tab=projects (Project #{{PROJECT_NUMBER}})
+- **GitHub Project:** https://github.com/users/bh679/projects/16 (Project #16)
 - **Wiki:** github.com/bh679/dungeon-train-mc/wiki
 
 ---
