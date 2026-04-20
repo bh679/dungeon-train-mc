@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
@@ -56,9 +57,16 @@ public final class TrainAssembler {
         LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages), assembling...", blocks.size(), count);
 
         ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
-        ship.setTransformProvider(new TrainTransformProvider(velocity));
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider",
-            ship.getId());
+
+        // assembleToShip moves the world blocks to a shipyard region; translate the
+        // original world origin through worldToShip to find where they ended up.
+        Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
+        ship.getTransform().getWorldToShip().transformPosition(shipyardOriginVec);
+        BlockPos shipyardOrigin = BlockPos.containing(shipyardOriginVec.x, shipyardOriginVec.y, shipyardOriginVec.z);
+
+        ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension()));
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider (shipyardOrigin={}, count={})",
+            ship.getId(), shipyardOrigin, count);
         return ship;
     }
 

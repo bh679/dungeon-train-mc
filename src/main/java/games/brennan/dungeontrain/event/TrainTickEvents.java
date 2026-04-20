@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.train.TrainWindowManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -52,6 +53,11 @@ public final class TrainTickEvents {
     public static void onLevelTick(TickEvent.LevelTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.level instanceof ServerLevel level)) return;
+
+        // Rolling-window manager runs every tick regardless of whether we're also
+        // carving terrain — it only adds/removes carriages when a player crosses
+        // a carriage boundary, so the cost is negligible on idle ticks.
+        TrainWindowManager.onLevelTick(level);
 
         List<LoadedServerShip> trains = findTrains(level);
         if (trains.isEmpty()) {

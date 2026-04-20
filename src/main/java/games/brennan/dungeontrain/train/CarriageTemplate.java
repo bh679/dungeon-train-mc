@@ -69,12 +69,37 @@ public final class CarriageTemplate {
     public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, int count) {
         if (count < 1) throw new IllegalArgumentException("count must be >= 1, got " + count);
         Set<BlockPos> placed = new HashSet<>();
-        CarriageType[] types = CarriageType.values();
         for (int i = 0; i < count; i++) {
-            CarriageType type = types[i % types.length];
-            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), type));
+            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), typeForIndex(i)));
         }
         return placed;
+    }
+
+    /**
+     * Deterministic type selector for carriage index {@code i}. Shared by the
+     * initial spawn path and the rolling-window manager so carriage index N
+     * always renders the same variant regardless of when it appears.
+     */
+    public static CarriageType typeForIndex(int i) {
+        CarriageType[] types = CarriageType.values();
+        int mod = Math.floorMod(i, types.length);
+        return types[mod];
+    }
+
+    /**
+     * Erase a carriage footprint — set every block in the 9×4×5 region at {@code origin}
+     * to air. Used by the rolling-window manager to remove stale carriages from the
+     * trailing end of the train.
+     */
+    public static void eraseAt(ServerLevel level, BlockPos origin) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                }
+            }
+        }
     }
 
     private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
