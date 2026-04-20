@@ -114,6 +114,11 @@ dependencies {
     implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
     implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
     implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
+
+    // Compile-only: joml-primitives supplies AABBdc used by Ship.getWorldAABB().
+    // VS ships this jar-in-jar at runtime (META-INF/jars/joml-primitives-1.10.0.jar),
+    // so we only need it for compilation.
+    compileOnly 'org.joml:joml-primitives:1.10.0'
 }
 
 tasks.named('processResources', ProcessResources).configure {
