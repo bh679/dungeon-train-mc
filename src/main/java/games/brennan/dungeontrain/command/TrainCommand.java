@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.TrainAssembler;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -11,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
+import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 
 /**
@@ -20,6 +23,7 @@ import org.valkyrienskies.core.api.ships.ServerShip;
  */
 public final class TrainCommand {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     private static final double SPAWN_DISTANCE = 10.0;
     private static final Vector3d TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
 
@@ -47,11 +51,21 @@ public final class TrainCommand {
         Vec3 spawn = player.position().add(look.x * SPAWN_DISTANCE, 0.0, look.z * SPAWN_DISTANCE);
         BlockPos origin = BlockPos.containing(spawn.x, spawn.y, spawn.z);
 
-        ServerShip ship = TrainAssembler.spawnCarriage(level, origin, TRAIN_VELOCITY);
+        LOGGER.info("[DungeonTrain] /dungeontrain spawn by {} at origin {}", player.getName().getString(), origin);
 
-        source.sendSuccess(() -> Component.literal(
-            "Spawned carriage (ship id " + ship.getId() + ") at " + origin + ", velocity +X 2 m/s"
-        ), true);
-        return 1;
+        try {
+            ServerShip ship = TrainAssembler.spawnCarriage(level, origin, TRAIN_VELOCITY);
+            LOGGER.info("[DungeonTrain] Spawned carriage ship id={} class={}", ship.getId(), ship.getClass().getName());
+            source.sendSuccess(() -> Component.literal(
+                "Spawned carriage (ship id " + ship.getId() + ") at " + origin + ", velocity +X 2 m/s"
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] spawnCarriage failed", t);
+            source.sendFailure(Component.literal(
+                "spawnCarriage failed: " + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 }
