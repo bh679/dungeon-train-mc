@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.event.TrainShipLoadHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -31,6 +32,7 @@ public class DungeonTrain {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Dungeon Train common setup");
+        event.enqueueWork(TrainShipLoadHandler::register);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
