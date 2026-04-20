@@ -80,7 +80,9 @@ public final class ContentsPopulator {
     }
 
     private static void placeChest(ServerLevel level, Ship ship, BlockPos originShipLocal, int carriageIndex) {
-        Vector3d shipLocal = carriageCentreShipLocal(originShipLocal, carriageIndex, 1);
+        // yOffset=2: floor block sits at shipyard Y=origin.Y, chest block sits above
+        // it so the carriage floor remains intact and the chest is visible from above.
+        Vector3d shipLocal = carriageCentreShipLocal(originShipLocal, carriageIndex, 2);
         BlockPos worldPos = toWorldBlockPos(ship, shipLocal);
         level.setBlock(worldPos, Blocks.CHEST.defaultBlockState(), 3);
         BlockEntity be = level.getBlockEntity(worldPos);
@@ -94,7 +96,7 @@ public final class ContentsPopulator {
     }
 
     private static void placeLectern(ServerLevel level, Ship ship, BlockPos originShipLocal, int carriageIndex) {
-        Vector3d shipLocal = carriageCentreShipLocal(originShipLocal, carriageIndex, 1);
+        Vector3d shipLocal = carriageCentreShipLocal(originShipLocal, carriageIndex, 2);
         BlockPos worldPos = toWorldBlockPos(ship, shipLocal);
         level.setBlock(
             worldPos,
@@ -117,9 +119,13 @@ public final class ContentsPopulator {
         for (int i = 0; i < count; i++) {
             double offsetX = 1.5 + rng.nextDouble() * (CarriageTemplate.LENGTH - 3);
             double offsetZ = 1.5 + rng.nextDouble() * (CarriageTemplate.WIDTH - 3);
+            // Y = origin.Y + 2.1 so zombies spawn solidly above the floor block
+            // (which sits at origin.Y). +1.1 was observed to land them under the
+            // train on a moving VS ship due to a 1-block Y offset in the
+            // shipyard→world transform.
             Vector3d shipLocal = new Vector3d(
                 originShipLocal.getX() + carriageIndex * CarriageTemplate.LENGTH + offsetX,
-                originShipLocal.getY() + 1.1,
+                originShipLocal.getY() + 2.1,
                 originShipLocal.getZ() + offsetZ
             );
             Vector3d world = transform(ship, shipLocal);

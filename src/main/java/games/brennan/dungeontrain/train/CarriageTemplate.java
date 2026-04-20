@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashSet;
@@ -21,6 +22,8 @@ public final class CarriageTemplate {
     public static final int LENGTH = 9;
     public static final int WIDTH = 5;
     public static final int HEIGHT = 4;
+
+    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private CarriageTemplate() {}
 
@@ -60,6 +63,21 @@ public final class CarriageTemplate {
             placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), specs.get(i)));
         }
         return placed;
+    }
+
+    /**
+     * Erase a carriage footprint — set every block in the 9×4×5 region at
+     * {@code origin} to air. Used by the rolling-window manager to remove
+     * stale carriages from the trailing end of the train.
+     */
+    public static void eraseAt(ServerLevel level, BlockPos origin) {
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    level.setBlock(origin.offset(dx, dy, dz), AIR, 3);
+                }
+            }
+        }
     }
 
     private static BlockState stateAt(

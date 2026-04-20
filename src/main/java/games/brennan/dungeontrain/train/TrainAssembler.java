@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import org.joml.Matrix4dc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
@@ -26,9 +25,9 @@ import java.util.Set;
  * <p>All VS API usage is confined to this file + {@link TrainTransformProvider}
  * so a future VS version bump touches a minimal surface area.
  *
- * <p>Per-carriage {@link CarriageSpec}s are registered in {@link ActiveTrains}
- * after assembly so {@link ContentsPopulator} can populate interiors lazily
- * as players approach.
+ * <p>Each train has a {@code seed} that feeds {@link CarriageSpecGenerator} —
+ * carriage index N always resolves to the same spec for the life of the train,
+ * so the rolling-window manager can add/erase carriages without visual drift.
  */
 public final class TrainAssembler {
 
@@ -39,47 +38,80 @@ public final class TrainAssembler {
 
     /**
      * Spawn an N-carriage train as a single VS ship moving at {@code velocity}.
-     * All carriages share one rigid body and one kinematic transform provider.
-     *
-     * <p>Before assembly: deletes any pre-existing Dungeon Train ships in the
-     * level and clears world blocks inside the new train's bounding volume so
-     * trapped terrain does not wedge the ship against the world.
+     * {@code seed} drives the per-carriage spec generator; pass a random long
+     * to get a unique train, or a fixed value for reproducible spawns.
      */
     public static ServerShip spawnTrain(
         ServerLevel level,
         BlockPos origin,
         Vector3dc velocity,
-        List<CarriageSpec> specs
+        int count,
+        long seed
     ) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Deleted {} existing train(s) before spawn", deleted);
         }
 
-        int cleared = clearBoundingBox(level, origin, specs.size());
+        int cleared = clearBoundingBox(level, origin, count);
         LOGGER.info("[DungeonTrain] Cleared {} world blocks in train footprint", cleared);
 
-        Set<BlockPos> blocks = CarriageTemplate.placeTrainAt(level, origin, specs);
-        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages), assembling...", blocks.size(), specs.size());
+        List<CarriageSpec> initialSpecs = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            initialSpecs.add(CarriageSpecGenerator.specForIndex(i, seed));
+        }
+
+        Set<BlockPos> blocks = CarriageTemplate.placeTrainAt(level, origin, initialSpecs);
+        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages), assembling...", blocks.size(), count);
 
         ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
-        ship.setTransformProvider(new TrainTransformProvider(velocity));
 
-        BlockPos originShipLocal = computeShipyardOrigin(ship, origin);
-        ActiveTrains.register(ship.getId(), specs, originShipLocal);
-        LOGGER.info(
-            "[DungeonTrain] Assembly returned ship id={} — transform provider attached, "
-                + "registered {} carriages in ActiveTrains (originShipLocal={})",
-            ship.getId(), specs.size(), originShipLocal
+        // assembleToShip moves the world blocks to a shipyard region; translate the
+        // original world origin through worldToShip to find where they ended up.
+        Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
+        ship.getTransform().getWorldToShip().transformPosition(shipyardOriginVec);
+        BlockPos shipyardOrigin = BlockPos.containing(
+            shipyardOriginVec.x, shipyardOriginVec.y, shipyardOriginVec.z
         );
+
+        ship.setTransformProvider(new TrainTransformProvider(
+            velocity, shipyardOrigin, count, level.dimension(), seed
+        ));
+
+        LOGGER.info(
+            "[DungeonTrain] Assembly returned ship id={} — transform provider attached "
+                + "(shipyardOrigin={}, count={}, seed={})",
+            ship.getId(), shipyardOrigin, count, seed
+        );
+
+        populateInitialCarriages(level, ship, shipyardOrigin, count, seed);
+
         return ship;
+    }
+
+    /**
+     * Place contents for the {@code count} carriages we just assembled.
+     * Entities and block-entity contents go onto the ship via
+     * {@code level.setBlock} at the ship's current world-space projection of
+     * each carriage centre. Later carriages (added by the rolling-window
+     * manager) are populated by that manager on demand.
+     */
+    private static void populateInitialCarriages(
+        ServerLevel level, ServerShip ship, BlockPos shipyardOrigin, int count, long seed
+    ) {
+        TrainTransformProvider provider = (TrainTransformProvider) ship.getTransformProvider();
+        if (provider == null) return;
+        for (int i = 0; i < count; i++) {
+            CarriageSpec spec = CarriageSpecGenerator.specForIndex(i, seed);
+            ContentsPopulator.populate(level, ship, i, shipyardOrigin, spec);
+            provider.getPopulatedIndices().add(i);
+        }
     }
 
     /**
      * Delete every loaded ship in {@code level} whose transform provider is a
      * {@link TrainTransformProvider} — i.e. every Dungeon Train we've previously
-     * spawned. Also removes their entries from {@link ActiveTrains}. Returns
-     * the number of ships deleted.
+     * spawned. Returns the number of ships deleted.
      */
     private static int deleteExistingTrains(ServerLevel level) {
         List<LoadedServerShip> trains = new ArrayList<>();
@@ -89,7 +121,6 @@ public final class TrainAssembler {
             }
         }
         for (LoadedServerShip ship : trains) {
-            ActiveTrains.remove(ship.getId());
             ShipAssembler.INSTANCE.deleteShip(level, ship, true, false);
         }
         return trains.size();
@@ -115,19 +146,5 @@ public final class TrainAssembler {
             }
         }
         return cleared;
-    }
-
-    /**
-     * Convert the world-space spawn origin into shipyard (ship-local) coords
-     * via the ship's {@code worldToShip} matrix, evaluated immediately after
-     * assembly when the matrix is still at its initial configuration. The
-     * returned BlockPos is the shipyard address of what was the origin block.
-     */
-    private static BlockPos computeShipyardOrigin(ServerShip ship, BlockPos origin) {
-        Matrix4dc worldToShip = ship.getWorldToShip();
-        Vector3d worldCentre = new Vector3d(origin.getX() + 0.5, origin.getY() + 0.5, origin.getZ() + 0.5);
-        Vector3d shipLocal = new Vector3d();
-        worldToShip.transformPosition(worldCentre, shipLocal);
-        return BlockPos.containing(shipLocal.x - 0.5, shipLocal.y - 0.5, shipLocal.z - 0.5);
     }
 }
