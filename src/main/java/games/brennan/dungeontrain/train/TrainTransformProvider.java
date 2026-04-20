@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.train;
 
 import org.jetbrains.annotations.NotNull;
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
@@ -28,6 +30,12 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
     private final Vector3d targetVelocity;
 
+    // Lazily captured on the first physics tick so the ship's spawn-time
+    // orientation and position become the authoritative baseline. Re-applying
+    // them every tick makes the train immune to gravity and collision impulses.
+    private Quaterniondc lockedRotation;
+    private Vector3d canonicalPos;
+
     public TrainTransformProvider(Vector3dc targetVelocity) {
         this.targetVelocity = new Vector3d(targetVelocity);
     }
@@ -42,13 +50,21 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         @NotNull ShipTransform prev,
         @NotNull ShipTransform current
     ) {
-        Vector3dc currentPos = current.getPosition();
-        Vector3d nextPos = new Vector3d(currentPos).add(
+        if (lockedRotation == null) {
+            lockedRotation = new Quaterniond(current.getRotation());
+            canonicalPos = new Vector3d(current.getPosition());
+        }
+
+        canonicalPos.add(
             targetVelocity.x() * PHYSICS_DT,
             targetVelocity.y() * PHYSICS_DT,
             targetVelocity.z() * PHYSICS_DT
         );
-        BodyTransform nextTransform = current.toBuilder().position(nextPos).build();
+
+        BodyTransform nextTransform = current.toBuilder()
+            .position(canonicalPos)
+            .rotation(lockedRotation)
+            .build();
         return new NextTransformAndVelocityData(nextTransform, targetVelocity, ZERO_OMEGA);
     }
 }
