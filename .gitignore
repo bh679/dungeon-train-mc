@@ -37,3 +37,4 @@ src/generated/
 # Local Claude state
 .claude/settings.local.json
 .claude/hook-versions.json
+.claude/scheduled_tasks.lock
