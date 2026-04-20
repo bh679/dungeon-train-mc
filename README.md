@@ -5,10 +5,15 @@ A Minecraft port of [Dungeon Train](https://brennanhatton.itch.io/dungeontrain) 
 | | |
 |---|---|
 | **Loader** | Forge 1.20.1 |
-| **Forge** | 47.3.0 |
+| **Forge** | 47.4.2 |
+| **Mappings** | Official (mojmap) |
 | **Java** | 17 |
-| **Key dependency** | Valkyrien Skies 2 (`2.4.11`) |
+| **Planned dependency** | Valkyrien Skies 2 (`2.4.11`) — currently disabled, see Known Issues |
 | **Status** | Pre-alpha |
+
+## Known issues
+
+- **Valkyrien Skies dev env**: VS 2.4.11 (and 2.4.10) mixin `@WrapOperation` targets on `net.minecraft.client.Minecraft.startUseItem` fail to apply under ForgeGradle userdev — `m_91277_` SRG doesn't get translated back to mojmap at mixin validation time. VS is temporarily commented out in `build.gradle` and `mods.toml`. To be resolved when the moving-train feature is implemented; possible paths include adding the SpongePowered Mixin gradle plugin, or testing via a real Minecraft launcher install instead of `./gradlew runClient`.
 
 ## Build
 
