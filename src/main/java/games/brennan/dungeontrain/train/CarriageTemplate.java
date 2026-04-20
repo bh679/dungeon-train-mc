@@ -1,13 +1,9 @@
 package games.brennan.dungeontrain.train;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BedPart;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -35,18 +31,6 @@ public final class CarriageTemplate {
     private static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
     private static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
     private static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
-
-    private static final int BED_FOOT_X = LENGTH / 2;
-    private static final int BED_HEAD_X = BED_FOOT_X + 1;
-    private static final int BED_Y = 1;
-    private static final int BED_Z = WIDTH / 2;
-
-    private static final BlockState BED_FOOT = Blocks.RED_BED.defaultBlockState()
-        .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST)
-        .setValue(BedBlock.PART, BedPart.FOOT);
-    private static final BlockState BED_HEAD = Blocks.RED_BED.defaultBlockState()
-        .setValue(HorizontalDirectionalBlock.FACING, Direction.EAST)
-        .setValue(BedBlock.PART, BedPart.HEAD);
 
     private CarriageTemplate() {}
 
@@ -96,10 +80,6 @@ public final class CarriageTemplate {
     private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
         if (type == CarriageType.FLATBED) {
             if (dy == 0) return FLOOR;
-            if (dy == BED_Y && dz == BED_Z) {
-                if (dx == BED_FOOT_X) return BED_FOOT;
-                if (dx == BED_HEAD_X) return BED_HEAD;
-            }
             return null;
         }
 
