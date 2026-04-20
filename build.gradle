@@ -6,7 +6,6 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
 
 version = mod_version
@@ -61,6 +60,14 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     maven {
+        name = 'Minecraft Forge'
+        url = 'https://maven.minecraftforge.net/'
+    }
+    maven {
+        name = 'ParchmentMC'
+        url = 'https://maven.parchmentmc.org/'
+    }
+    maven {
         name = 'Valkyrien Skies'
         url = 'https://maven.valkyrienskies.org/'
     }
@@ -74,8 +81,19 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    // Valkyrien Skies 2 — moving ship/train physics
-    implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs_version}")
+    // --- Valkyrien Skies 2 and friends are DISABLED pending a fix for the userdev
+    //     SRG->mojmap mixin translation issue. See Known Issues in README.md.
+    //     Re-enable when we start implementing the moving-train feature.
+    //
+    // implementation "thedarkcolour:kotlinforforge:${kff_version}"
+    // implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs_version}") {
+    //     exclude group: 'com.simibubi'
+    //     exclude group: 'dev.engine-room'
+    //     exclude group: 'com.jozufozu'
+    // }
+    // implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
+    // implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
+    // implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
 }
 
 tasks.named('processResources', ProcessResources).configure {
