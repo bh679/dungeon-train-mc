@@ -65,11 +65,19 @@ public final class TrainAssembler {
         BlockPos shipyardOrigin = BlockPos.containing(shipyardOriginVec.x, shipyardOriginVec.y, shipyardOriginVec.z);
 
         ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension()));
-        // Attachments persist into the ship DTO's persistentAttachedData JsonNode.
-        // VS 2.5+ deprecates ServerShip.saveAttachment in favour of LoadedServerShip.setAttachment;
-        // a freshly assembled ship is loaded, so the cast is safe.
-        ((LoadedServerShip) ship).setAttachment(TrainPersistentData.class,
-            new TrainPersistentData(velocity, shipyardOrigin, count, level.dimension()));
+
+        // Attachments persist into the ship DTO's persistentAttachedData JsonNode, but
+        // the setAttachment API lives on LoadedServerShip — ShipAssembler.assembleToShip
+        // returns a bare ServerShip (actual impl ShipData, which does NOT implement
+        // LoadedServerShip), so look up the loaded handle by id.
+        LoadedServerShip loaded = VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips().getById(ship.getId());
+        if (loaded != null) {
+            loaded.setAttachment(TrainPersistentData.class,
+                new TrainPersistentData(velocity, shipyardOrigin, count, level.dimension()));
+        } else {
+            LOGGER.warn("[DungeonTrain] Could not find LoadedServerShip for id={} — train will not persist across save/reload", ship.getId());
+        }
+
         LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider (shipyardOrigin={}, count={})",
             ship.getId(), shipyardOrigin, count);
         return ship;
