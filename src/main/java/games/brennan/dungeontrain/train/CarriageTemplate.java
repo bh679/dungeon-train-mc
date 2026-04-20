@@ -48,6 +48,22 @@ public final class CarriageTemplate {
         return placed;
     }
 
+    /**
+     * Place {@code count} carriages end-to-end along +X, starting at origin.
+     * End walls touch (zero gap) — carriage i occupies x ∈ [i*LENGTH, i*LENGTH+LENGTH-1],
+     * and the door gaps align so a player walks through the whole train uninterrupted.
+     * Returns the union of all placed block positions — pass directly to
+     * ShipAssembler.assembleToShip() so the whole train becomes one VS ship.
+     */
+    public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, int count) {
+        if (count < 1) throw new IllegalArgumentException("count must be >= 1, got " + count);
+        Set<BlockPos> placed = new HashSet<>();
+        for (int i = 0; i < count; i++) {
+            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0)));
+        }
+        return placed;
+    }
+
     private static BlockState stateAt(int dx, int dy, int dz, int doorZ) {
         if (dy == 0) return FLOOR;
         if (dy == HEIGHT - 1) return CEILING;
