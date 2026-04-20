@@ -2,55 +2,43 @@ package games.brennan.dungeontrain.train;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. Four visual variants
- * are selected per-carriage via {@link CarriageType}; {@link #placeTrainAt}
- * cycles through them so a train of length ≥ 4 shows one of each.
+ * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. The shell geometry is
+ * driven by the carriage's {@link CarriageArchitecture}; block materials
+ * come from the carriage's {@link CarriageStyle} (via its
+ * {@link BlockPalette}). Contents (chest / lectern / mobs) are placed
+ * lazily by {@link ContentsPopulator} once a player is near — the template
+ * only lays down the frame.
  */
 public final class CarriageTemplate {
-
-    public enum CarriageType {
-        STANDARD,
-        WINDOWED,
-        SOLID_ROOF,
-        FLATBED
-    }
 
     public static final int LENGTH = 9;
     public static final int WIDTH = 5;
     public static final int HEIGHT = 4;
 
-    private static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
-    private static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
-
     private CarriageTemplate() {}
 
-    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin) {
-        return placeAt(level, origin, CarriageType.STANDARD);
-    }
-
     /**
-     * Place a single carriage of the given type at origin (= minimum corner).
-     * Returns the set of block positions filled — pass directly to
-     * {@code ShipAssembler.assembleToShip()}.
+     * Place a single carriage at {@code origin} (minimum corner) using
+     * the given spec. Returns the set of block positions filled — pass
+     * directly to {@code ShipAssembler.assembleToShip()}.
      */
-    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type) {
+    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageSpec spec) {
         Set<BlockPos> placed = new HashSet<>();
         int doorZ = WIDTH / 2;
+        BlockPalette palette = spec.style().palette();
+        CarriageArchitecture arch = spec.architecture();
 
         for (int dx = 0; dx < LENGTH; dx++) {
             for (int dz = 0; dz < WIDTH; dz++) {
                 for (int dy = 0; dy < HEIGHT; dy++) {
-                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
+                    BlockState state = stateAt(dx, dy, dz, doorZ, arch, palette);
                     if (state == null) continue;
                     BlockPos pos = origin.offset(dx, dy, dz);
                     level.setBlock(pos, state, 3);
@@ -62,30 +50,32 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Place {@code count} carriages end-to-end along +X. Type is selected
-     * per-carriage as {@code CarriageType.values()[i % 4]} — deterministic,
-     * and every train of length ≥ 4 shows all four variants.
+     * Place every carriage in {@code specs} end-to-end along +X. Spec
+     * {@code i} is applied at offset {@code i * LENGTH}.
      */
-    public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, int count) {
-        if (count < 1) throw new IllegalArgumentException("count must be >= 1, got " + count);
+    public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, List<CarriageSpec> specs) {
+        if (specs.isEmpty()) throw new IllegalArgumentException("specs must be non-empty");
         Set<BlockPos> placed = new HashSet<>();
-        CarriageType[] types = CarriageType.values();
-        for (int i = 0; i < count; i++) {
-            CarriageType type = types[i % types.length];
-            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), type));
+        for (int i = 0; i < specs.size(); i++) {
+            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), specs.get(i)));
         }
         return placed;
     }
 
-    private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
-        if (type == CarriageType.FLATBED) {
-            if (dy == 0) return FLOOR;
+    private static BlockState stateAt(
+        int dx, int dy, int dz, int doorZ,
+        CarriageArchitecture arch, BlockPalette palette
+    ) {
+        if (arch == CarriageArchitecture.FLATBED) {
+            if (dy == 0) return palette.floor();
             return null;
         }
 
-        if (dy == 0) return FLOOR;
+        if (dy == 0) return palette.floor();
         if (dy == HEIGHT - 1) {
-            return (type == CarriageType.SOLID_ROOF) ? SOLID_CEILING : GLASS_CEILING;
+            return (arch == CarriageArchitecture.SOLID_ROOF)
+                ? palette.solidCeiling()
+                : palette.glassCeiling();
         }
 
         boolean onPerimeter = (dx == 0 || dx == LENGTH - 1 || dz == 0 || dz == WIDTH - 1);
@@ -95,10 +85,10 @@ public final class CarriageTemplate {
         boolean isDoorGap = isEndWall && dz == doorZ && (dy == 1 || dy == 2);
         if (isDoorGap) return null;
 
-        if (type == CarriageType.WINDOWED && dy == 2 && !isEndWall) {
-            return WINDOW;
+        if (arch == CarriageArchitecture.WINDOWED && dy == 2 && !isEndWall) {
+            return palette.window();
         }
 
-        return WALL;
+        return palette.wallAt(dx, dy, dz);
     }
 }

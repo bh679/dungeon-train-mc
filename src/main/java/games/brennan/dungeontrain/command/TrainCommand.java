@@ -4,6 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CarriageSpec;
+import games.brennan.dungeontrain.train.CarriageSpecGenerator;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import net.minecraft.ChatFormatting;
@@ -18,10 +20,16 @@ import org.joml.Vector3d;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 
+import java.util.List;
+
 /**
  * Registers {@code /dungeontrain spawn [count]} — OP-only (permission level 2).
  * Spawns an N-carriage train 10 blocks ahead of the player, moving along +X at
  * a fixed MVP speed. {@code count} defaults to 5 and is clamped to [1, 20].
+ *
+ * <p>Per-carriage architecture, style, and contents are randomised by
+ * {@link CarriageSpecGenerator} — style is sticky in runs of 10 so neighbours
+ * visually group.
  */
 public final class TrainCommand {
 
@@ -59,16 +67,24 @@ public final class TrainCommand {
         Vec3 spawn = player.position().add(look.x * SPAWN_DISTANCE, 0.0, look.z * SPAWN_DISTANCE);
         BlockPos origin = BlockPos.containing(spawn.x, spawn.y, spawn.z);
 
-        LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at origin {}", count, player.getName().getString(), origin);
+        List<CarriageSpec> specs = CarriageSpecGenerator.generate(count, level.getRandom());
+
+        LOGGER.info(
+            "[DungeonTrain] /dungeontrain spawn {} by {} at origin {} — specs: {}",
+            count, player.getName().getString(), origin, specs
+        );
 
         try {
-            ServerShip ship = TrainAssembler.spawnTrain(level, origin, TRAIN_VELOCITY, count);
+            ServerShip ship = TrainAssembler.spawnTrain(level, origin, TRAIN_VELOCITY, specs);
             int lengthBlocks = count * CarriageTemplate.LENGTH;
-            LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
-                ship.getId(), count, lengthBlocks);
+            LOGGER.info(
+                "[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
+                ship.getId(), count, lengthBlocks
+            );
             source.sendSuccess(() -> Component.literal(
                 "Spawned " + count + "-carriage train (ship id " + ship.getId() + ", length "
-                    + lengthBlocks + " blocks) at " + origin + ", velocity +X 2 m/s"
+                    + lengthBlocks + " blocks) at " + origin + ", velocity +X 2 m/s. "
+                    + "Contents lazy-load within " + ((int) (CarriageTemplate.LENGTH * 3)) + " blocks."
             ), true);
             return 1;
         } catch (Throwable t) {
