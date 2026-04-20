@@ -121,6 +121,29 @@ dependencies {
     compileOnly 'org.joml:joml-primitives:1.10.0'
 }
 
+// Resolve the current git branch at configuration time so it can be baked into
+// the jar via processResources. Falls back to the short SHA on detached HEAD,
+// and to 'unknown' if git is unavailable (e.g. tarball CI builds).
+def gitBranch = { ->
+    try {
+        def proc = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+                .execute(null, project.projectDir)
+        proc.waitForOrKill(5000)
+        def name = proc.in.text.trim()
+        if (name == 'HEAD' || name.isEmpty()) {
+            def p2 = ['git', 'rev-parse', '--short', 'HEAD']
+                    .execute(null, project.projectDir)
+            p2.waitForOrKill(5000)
+            def sha = p2.in.text.trim()
+            return sha ?: 'unknown'
+        }
+        return name
+    } catch (Exception e) {
+        logger.warn("Could not resolve git branch for version resource: {}", e.message)
+        return 'unknown'
+    }
+}()
+
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
         minecraft_version       : minecraft_version,
@@ -134,10 +157,11 @@ tasks.named('processResources', ProcessResources).configure {
         mod_version             : mod_version,
         mod_authors             : mod_authors,
         mod_description         : mod_description,
+        git_branch              : gitBranch,
     ]
     inputs.properties replaceProperties
 
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta', 'dungeontrain_version.properties']) {
         expand replaceProperties + [project: project]
     }
 }
