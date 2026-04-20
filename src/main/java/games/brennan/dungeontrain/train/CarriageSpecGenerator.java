@@ -29,7 +29,6 @@ public final class CarriageSpecGenerator {
     public static CarriageSpec specForIndex(int index, long seed) {
         CarriageArchitecture[] archs = CarriageArchitecture.values();
         CarriageStyle[] styles = CarriageStyle.values();
-        CarriageContents[] contents = CarriageContents.values();
 
         CarriageArchitecture arch = archs[Math.floorMod(
             mix(seed, index, ARCH_SALT), archs.length
@@ -40,14 +39,11 @@ public final class CarriageSpecGenerator {
             mix(seed, styleRun, STYLE_SALT), styles.length
         )];
 
-        CarriageContents c = contents[Math.floorMod(
-            mix(seed, index, CONTENTS_SALT), contents.length
-        )];
-        if (arch == CarriageArchitecture.FLATBED && c == CarriageContents.ENEMIES) {
-            c = contents[Math.floorMod(
-                mix(seed, index, CONTENTS_REROLL_SALT), contents.length
-            )];
-        }
+        // Contents disabled pending a future feature update. The plumbing
+        // (CarriageContents enum, ContentsPopulator, populated-index tracking)
+        // is intentionally kept so re-enabling is just a matter of restoring
+        // the random roll here — see CONTENTS_SALT / CONTENTS_REROLL_SALT.
+        CarriageContents c = CarriageContents.EMPTY;
 
         return new CarriageSpec(arch, style, c);
     }
