@@ -2,6 +2,8 @@ pluginManagement {
     repositories {
         gradlePluginPortal()
         maven { url = 'https://maven.minecraftforge.net/' }
+        // SpongePowered — hosts org.spongepowered.mixin gradle plugin
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
     }
 }
 

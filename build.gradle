@@ -6,6 +6,11 @@ plugins {
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    // Mixin gradle plugin — wires Mixin's annotation processor and, critically for our
+    // case, passes the SRG↔mojmap refMap remap file to runClient's JVM args so VS's
+    // refmap entries (SRG method names like m_91277_) resolve to mojmap class members
+    // (startUseItem) at @WrapOperation validation time.
+    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
 version = mod_version
@@ -58,6 +63,15 @@ minecraft {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+// Mixin plugin configuration
+// We register an (initially empty) mixin config for our own mod so the mixin
+// plugin activates the runtime refmap remap file for runClient/runServer.
+// This benefits VS too — VS's refmap becomes resolvable against mojmap class members.
+mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
+}
+
 repositories {
     maven {
         name = 'Minecraft Forge'
@@ -81,19 +95,25 @@ repositories {
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    // --- Valkyrien Skies 2 and friends are DISABLED pending a fix for the userdev
-    //     SRG->mojmap mixin translation issue. See Known Issues in README.md.
-    //     Re-enable when we start implementing the moving-train feature.
-    //
-    // implementation "thedarkcolour:kotlinforforge:${kff_version}"
-    // implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs_version}") {
-    //     exclude group: 'com.simibubi'
-    //     exclude group: 'dev.engine-room'
-    //     exclude group: 'com.jozufozu'
-    // }
-    // implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
-    // implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
-    // implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
+    // Mixin annotation processor — pairs with the 'org.spongepowered.mixin' plugin.
+    // Required for the mixin plugin to generate a refmap for our own mod AND to wire
+    // up the runtime refMapRemappingFile JVM arg that lets VS's refmap resolve.
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
+    // Kotlin for Forge — required by Valkyrien Skies
+    implementation "thedarkcolour:kotlinforforge:${kff_version}"
+
+    // Valkyrien Skies 2 — moving ship/train physics
+    implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs_version}") {
+        exclude group: 'com.simibubi'
+        exclude group: 'dev.engine-room'
+        exclude group: 'com.jozufozu'
+    }
+
+    // VSCore — required runtime deps of Valkyrien Skies
+    implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
+    implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
+    implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
 }
 
 tasks.named('processResources', ProcessResources).configure {

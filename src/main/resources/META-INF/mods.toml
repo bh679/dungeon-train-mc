@@ -24,11 +24,12 @@ logoFile="logo.png"
     ordering="NONE"
     side="BOTH"
 
-# Valkyrien Skies dependency — DISABLED until VS userdev compat is resolved.
-# Re-enable when we start implementing the moving train feature.
-# [[dependencies.${mod_id}]]
-#     modId="valkyrienskies"
-#     mandatory=true
-#     versionRange="[2.4.0,)"
-#     ordering="AFTER"
-#     side="BOTH"
+[[dependencies.${mod_id}]]
+    modId="valkyrienskies"
+    mandatory=true
+    versionRange="[2.4.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[mixins]]
+    config="${mod_id}.mixins.json"
