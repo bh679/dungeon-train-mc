@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +12,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -36,7 +38,7 @@ public final class PlayerJoinEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int DEFAULT_CARRIAGE_COUNT = 10;
-    private static final int TRAIN_Y = 100;
+    private static final int TRAIN_Y = 150;
     private static final BlockPos TRAIN_ORIGIN = new BlockPos(0, TRAIN_Y, 0);
     private static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
 
@@ -86,8 +88,7 @@ public final class PlayerJoinEvents {
         RandomSource rand = level.getRandom();
 
         double xOffset = (rand.nextDouble() * 2.0 - 1.0) * X_OFFSET_MAX;
-        boolean positiveSide = rand.nextBoolean();
-        double sideSign = positiveSide ? 1.0 : -1.0;
+        double sideSign = rand.nextBoolean() ? 1.0 : -1.0;
         double perpDist = PERP_MIN + rand.nextDouble() * (PERP_MAX - PERP_MIN);
         double zOffset = sideSign * perpDist;
 
@@ -95,14 +96,13 @@ public final class PlayerJoinEvents {
         double pz = trainPos.z() + zOffset;
         int py = level.getHeight(Heightmap.Types.WORLD_SURFACE, Mth.floor(px), Mth.floor(pz));
 
-        float yaw = positiveSide ? 180f : 0f;
-        float pitch = 0f;
+        player.teleportTo(level, px, py, pz, 0f, 0f);
+        Vec3 lookTarget = new Vec3(trainPos.x(), trainPos.y() + 1.5, trainPos.z());
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, lookTarget);
 
-        player.teleportTo(level, px, py, pz, yaw, pitch);
-        LOGGER.info("[DungeonTrain] Placed {} at ({},{},{}) yaw={} — train centre ({},{},{})",
+        LOGGER.info("[DungeonTrain] Placed {} at ({},{},{}) looking at train centre ({},{},{})",
             player.getName().getString(),
             String.format("%.1f", px), py, String.format("%.1f", pz),
-            yaw,
             String.format("%.1f", trainPos.x()), String.format("%.1f", trainPos.y()), String.format("%.1f", trainPos.z()));
     }
 }
