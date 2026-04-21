@@ -1,16 +1,20 @@
 package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.TrainAssembler;
+import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -18,19 +22,19 @@ import org.joml.Vector3d;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 
+import java.util.List;
+
 /**
- * Registers {@code /dungeontrain spawn [count]} — OP-only (permission level 2).
- * Spawns an N-carriage train 10 blocks ahead of the player, moving along +X at
- * a fixed MVP speed. {@code count} defaults to 5 and is clamped to [1, 20].
+ * Registers OP-only (permission level 2) commands:
+ *   - {@code /dungeontrain spawn [count]} — spawns a train at the configured
+ *     speed with {@code count} carriages (default from config).
+ *   - {@code /dungeontrain speed <value>} — sets train speed in blocks/second,
+ *     persists to config, and updates any active train live.
  */
 public final class TrainCommand {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final double SPAWN_DISTANCE = 10.0;
-    private static final Vector3d TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
-    private static final int DEFAULT_COUNT = 5;
-    private static final int MIN_COUNT = 1;
-    private static final int MAX_COUNT = 20;
 
     private TrainCommand() {}
 
@@ -38,9 +42,14 @@ public final class TrainCommand {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dungeontrain")
             .requires(s -> s.hasPermission(2))
             .then(Commands.literal("spawn")
-                .executes(ctx -> runSpawn(ctx.getSource(), DEFAULT_COUNT))
-                .then(Commands.argument("count", IntegerArgumentType.integer(MIN_COUNT, MAX_COUNT))
-                    .executes(ctx -> runSpawn(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))));
+                .executes(ctx -> runSpawn(ctx.getSource(), DungeonTrainConfig.getNumCarriages()))
+                .then(Commands.argument("count",
+                        IntegerArgumentType.integer(DungeonTrainConfig.MIN_CARRIAGES, DungeonTrainConfig.MAX_CARRIAGES))
+                    .executes(ctx -> runSpawn(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
+            .then(Commands.literal("speed")
+                .then(Commands.argument("value",
+                        DoubleArgumentType.doubleArg(DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED))
+                    .executes(ctx -> runSpeed(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "value")))));
 
         dispatcher.register(root);
     }
@@ -61,16 +70,20 @@ public final class TrainCommand {
         Vec3 pp = player.position();
         Vector3d spawnerWorldPos = new Vector3d(pp.x, pp.y, pp.z);
 
-        LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at origin {}", count, player.getName().getString(), origin);
+        double speed = DungeonTrainConfig.getSpeed();
+        Vector3d velocity = new Vector3d(speed, 0.0, 0.0);
+
+        LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at origin {} speed {}",
+            count, player.getName().getString(), origin, speed);
 
         try {
-            ServerShip ship = TrainAssembler.spawnTrain(level, origin, TRAIN_VELOCITY, count, spawnerWorldPos);
+            ServerShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos);
             int lengthBlocks = count * CarriageTemplate.LENGTH;
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
                 ship.getId(), count, lengthBlocks);
             source.sendSuccess(() -> Component.literal(
                 "Spawned " + count + "-carriage train (ship id " + ship.getId() + ", length "
-                    + lengthBlocks + " blocks) at " + origin + ", velocity +X 2 m/s"
+                    + lengthBlocks + " blocks) at " + origin + ", velocity +X " + speed + " m/s"
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -80,5 +93,27 @@ public final class TrainCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    private static int runSpeed(CommandSourceStack source, double value) {
+        DungeonTrainConfig.setSpeed(value);
+
+        MinecraftServer server = source.getServer();
+        int updated = 0;
+        for (ServerLevel level : server.getAllLevels()) {
+            List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
+            for (TrainTransformProvider p : providers) {
+                p.setTargetVelocity(new Vector3d(value, 0.0, 0.0));
+                updated++;
+            }
+        }
+
+        final int count = updated;
+        LOGGER.info("[DungeonTrain] /dungeontrain speed {} — updated {} active trains", value, count);
+        source.sendSuccess(() -> Component.literal(
+            "Train speed set to " + value + " m/s (" + count + " active train"
+                + (count == 1 ? "" : "s") + " updated)"
+        ), true);
+        return 1;
     }
 }

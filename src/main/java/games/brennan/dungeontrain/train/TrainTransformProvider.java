@@ -43,9 +43,9 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     // smaller is floating-point noise that isn't worth a log line.
     private static final double COM_DRIFT_LOG_THRESHOLD_SQ = 0.01;
 
-    private final Vector3d targetVelocity;
+    private volatile Vector3d targetVelocity;
     private final BlockPos shipyardOrigin;
-    private final int count;
+    private volatile int count;
     private final ResourceKey<Level> dimensionKey;
     private final Set<Integer> activeIndices;
 
@@ -92,12 +92,30 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         return targetVelocity;
     }
 
+    /**
+     * Replace the target velocity with a fresh vector. Safe to call from any
+     * thread — the physics tick reads {@code targetVelocity} via the volatile
+     * reference and never mutates it in place, so reassigning a new object
+     * gives safe publication without torn reads.
+     */
+    public void setTargetVelocity(Vector3dc v) {
+        this.targetVelocity = new Vector3d(v);
+    }
+
     public BlockPos getShipyardOrigin() {
         return shipyardOrigin;
     }
 
     public int getCount() {
         return count;
+    }
+
+    /**
+     * Update the rolling-window carriage count. {@link TrainWindowManager}
+     * reads this on its next tick and adds or erases carriage blocks to match.
+     */
+    public void setCount(int newCount) {
+        this.count = newCount;
     }
 
     public ResourceKey<Level> getDimensionKey() {
