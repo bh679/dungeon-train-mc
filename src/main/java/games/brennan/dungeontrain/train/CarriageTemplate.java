@@ -26,11 +26,21 @@ public final class CarriageTemplate {
     public static final int WIDTH = 5;
     public static final int HEIGHT = 4;
 
-    private static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
-    private static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
+    /**
+     * Lazy-init holder for the {@link BlockState} templates. Keeping
+     * {@code Blocks.*} access off {@link CarriageTemplate}'s own static init
+     * means plain JUnit tests can call {@link #typeForIndex(int)} without
+     * requiring a Forge/Minecraft {@code Bootstrap}. The holder is only
+     * loaded on first reference from {@link #stateAt} (i.e. from a live
+     * server-thread {@code placeAt} call), so there is no behavioural change.
+     */
+    private static final class BlockStates {
+        static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
+        static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
+    }
 
     private CarriageTemplate() {}
 
@@ -90,13 +100,13 @@ public final class CarriageTemplate {
 
     private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
         if (type == CarriageType.FLATBED) {
-            if (dy == 0) return FLOOR;
+            if (dy == 0) return BlockStates.FLOOR;
             return null;
         }
 
-        if (dy == 0) return FLOOR;
+        if (dy == 0) return BlockStates.FLOOR;
         if (dy == HEIGHT - 1) {
-            return (type == CarriageType.SOLID_ROOF) ? SOLID_CEILING : GLASS_CEILING;
+            return (type == CarriageType.SOLID_ROOF) ? BlockStates.SOLID_CEILING : BlockStates.GLASS_CEILING;
         }
 
         boolean onPerimeter = (dx == 0 || dx == LENGTH - 1 || dz == 0 || dz == WIDTH - 1);
@@ -107,9 +117,9 @@ public final class CarriageTemplate {
         if (isDoorGap) return null;
 
         if (type == CarriageType.WINDOWED && dy == 2 && !isEndWall) {
-            return WINDOW;
+            return BlockStates.WINDOW;
         }
 
-        return WALL;
+        return BlockStates.WALL;
     }
 }
