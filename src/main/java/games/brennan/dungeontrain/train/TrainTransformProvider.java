@@ -194,13 +194,10 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
             lockedPositionInModel = new Vector3d(current.getPositionInModel());
         }
 
-        // Snapshot volatile reference so a concurrent setTargetVelocity can't
-        // tear reads mid-tick.
-        Vector3d v = targetVelocity;
         canonicalPos.add(
-            v.x() * PHYSICS_DT,
-            v.y() * PHYSICS_DT,
-            v.z() * PHYSICS_DT
+            targetVelocity.x() * PHYSICS_DT,
+            targetVelocity.y() * PHYSICS_DT,
+            targetVelocity.z() * PHYSICS_DT
         );
 
         // The rolling-window manager mutates voxel blocks every server tick;
@@ -212,6 +209,6 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         // world mapping anchored to the original pivot no matter which pivot
         // VS actually uses for rendering.
         BodyTransform nextTransform = computeCompensatedTransform(current);
-        return new NextTransformAndVelocityData(nextTransform, v, ZERO_OMEGA);
+        return new NextTransformAndVelocityData(nextTransform, targetVelocity, ZERO_OMEGA);
     }
 }
