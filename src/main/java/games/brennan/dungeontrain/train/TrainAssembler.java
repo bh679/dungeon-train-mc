@@ -78,9 +78,20 @@ public final class TrainAssembler {
         // carriage at `origin` when firstIdx != 0, worldToShip is still a pure
         // translation at this moment, so the shipyard position of index 0 is
         // the shipyard translation of `origin`.
+        //
+        // Round-to-nearest (NOT floor via BlockPos.containing) so we match
+        // VS's own block placement. When worldToShip lands `origin` at e.g.
+        // z = 12290044.9999669 (micro-fraction below the next integer), VS
+        // stores the initial block at shipyard z = 12290045 while a floored
+        // origin would give 12290044 — and the rolling-window erase loop
+        // `[originZ, originZ + WIDTH)` would miss the +Z face of every
+        // initial carriage, leaving a 1-block sliver.
         Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
         ship.getTransform().getWorldToShip().transformPosition(shipyardOriginVec);
-        BlockPos shipyardOrigin = BlockPos.containing(shipyardOriginVec.x, shipyardOriginVec.y, shipyardOriginVec.z);
+        BlockPos shipyardOrigin = new BlockPos(
+            (int) Math.round(shipyardOriginVec.x),
+            (int) Math.round(shipyardOriginVec.y),
+            (int) Math.round(shipyardOriginVec.z));
 
         ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx));
         // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
