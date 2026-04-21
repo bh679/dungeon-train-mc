@@ -172,34 +172,49 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     }
 
     /**
-     * Compute the compensated BodyTransform for a given observed ship state.
+     * Compute the canonical BodyTransform: position = canonicalPos (linearly
+     * advanced by velocity each physics tick), positionInModel = lockedPIM
+     * (whatever VS reported on first tick, never allowed to drift), and
+     * rotation = lockedRotation (fixed at spawn).
      *
-     * Shared between the physics-thread provider callback (normal path) and the
-     * rolling-window manager (called on the server thread right after block
-     * mutations) so the voxel change and transform update land in the same
-     * server tick — otherwise the client may render the new voxels against the
-     * stale transform for one frame, producing a visible teleport.
+     * <p>v0.10.4 change: previously this applied a "PIM-drift compensation" —
+     * position was adjusted by {@code rot · (current.PIM − lockedPIM)} so that
+     * rendering would stay stable even as VS recomputed PIM in response to
+     * mass-distribution changes. That kept rendering correct but made the
+     * ship's world position oscillate ±36 blocks per tick, which VS then fed
+     * into entity carry-along: the player got yanked sideways every tick, so
+     * {@code player.worldX} oscillated, rolling-window pIdx flipped every
+     * tick even with locked-frame math, carriages were erased+added on every
+     * server tick, VS recomputed PIM again, and the feedback loop eventually
+     * crashed VS's entity-collision mixin with a CME.
      *
-     * Returns {@code null} if the baseline hasn't been captured yet (no
-     * physics tick has run); callers should leave the transform alone in that
-     * case.
+     * <p>Instead, force PIM on the builder. The client-side transform provider
+     * logs prove VS <em>does</em> respect a builder-set PIM when returned from
+     * a provider callback — {@code ClientTrainTransformProvider} returns
+     * {@code positionInModel = lockedPIM} and the next call's {@code
+     * current.PIM} came back as that exact locked value. The earlier "VS
+     * ignores positionInModel on the builder" comment was based on an
+     * assumption, not evidence; now that we've seen VS honour it in the
+     * client-side flow, try the same on the server-side provider.
+     *
+     * <p>Returns {@code null} if the baseline hasn't been captured yet (no
+     * physics tick has run); callers should leave the transform alone then.
      */
     public BodyTransform computeCompensatedTransform(ShipTransform current) {
         if (lockedRotation == null) return null;
 
-        Vector3d comDelta = new Vector3d(current.getPositionInModel()).sub(lockedPositionInModel);
-        if (comDelta.lengthSquared() > COM_DRIFT_LOG_THRESHOLD_SQ
-            && Math.abs(comDelta.x - lastLoggedDriftX) > 0.5) {
-            LOGGER.debug("[DungeonTrain] Pivot drift: comDelta=({}, {}, {}) — compensating",
-                comDelta.x, comDelta.y, comDelta.z);
-            lastLoggedDriftX = comDelta.x;
+        Vector3d drift = new Vector3d(current.getPositionInModel()).sub(lockedPositionInModel);
+        if (drift.lengthSquared() > COM_DRIFT_LOG_THRESHOLD_SQ
+            && Math.abs(drift.x - lastLoggedDriftX) > 0.5) {
+            LOGGER.debug("[DungeonTrain] Pivot drift from locked PIM: ({}, {}, {}) — forcing back to locked",
+                drift.x, drift.y, drift.z);
+            lastLoggedDriftX = drift.x;
         }
-        lockedRotation.transform(comDelta);
-        Vector3d effectivePos = new Vector3d(canonicalPos).add(comDelta);
 
         return current.toBuilder()
-            .position(effectivePos)
+            .position(canonicalPos)
             .rotation(lockedRotation)
+            .positionInModel(lockedPositionInModel)
             .build();
     }
 
