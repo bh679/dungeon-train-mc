@@ -35,11 +35,13 @@ public final class TrainWindowManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final double NEAR_RADIUS = 128.0;
     private static final double NEAR_RADIUS_SQ = NEAR_RADIUS * NEAR_RADIUS;
-    // Ticks to wait before accepting a reversed pIdx shift. ~1/3 second at
-    // 20 Hz server tick: long enough to absorb single-tick flaps caused by
-    // block-change/transform sync races, short enough that real direction
-    // changes feel responsive.
-    private static final int REVERSAL_COOLDOWN_TICKS = 6;
+    // Ticks to wait before accepting a reversed pIdx shift. 20 ticks = 1s
+    // at 20 Hz server tick. v0.10.5 observed a 6-tick oscillation period
+    // exactly matching the previous cooldown (6), so the cooldown check
+    // `ticksSince < 6` was always false at the reversal moment and never
+    // blocked. Bumping to 20 gives plenty of headroom while still feeling
+    // responsive to deliberate back-and-forth walking.
+    private static final int REVERSAL_COOLDOWN_TICKS = 20;
 
     private TrainWindowManager() {}
 
@@ -205,7 +207,8 @@ public final class TrainWindowManager {
 
         if (willLog) {
             logWindowShift(level, ship, provider, toAdd, toErase, flatbedTransition,
-                beforeTransform, beforeInertia, rawAfterMutation, inertiaAfterMutation, compensated);
+                beforeTransform, beforeInertia, rawAfterMutation, inertiaAfterMutation, compensated,
+                players);
         }
     }
 
@@ -240,7 +243,8 @@ public final class TrainWindowManager {
         ShipInertiaData beforeInertia,
         ShipTransform rawAfter,
         ShipInertiaData inertiaAfter,
-        BodyTransform compensatedAfter
+        BodyTransform compensatedAfter,
+        List<ServerPlayer> players
     ) {
         Vector3dc beforePIM = beforeTransform != null ? beforeTransform.getPositionInModel() : null;
         Vector3dc beforePos = beforeTransform != null ? beforeTransform.getPosition() : null;
@@ -268,8 +272,19 @@ public final class TrainWindowManager {
 
         String tag = flatbedTransition ? "jump" : "shift";
 
+        // Log the first nearby player's world + ship-local position so we
+        // can correlate pIdx oscillation with actual player motion.
+        String playerInfo = "none";
+        if (!players.isEmpty()) {
+            ServerPlayer p = players.get(0);
+            Vector3d local = provider.worldToLockedShip(p.getX(), p.getY(), p.getZ());
+            playerInfo = String.format("world=(%.4f, %.4f, %.4f) shipLocal=%s",
+                p.getX(), p.getY(), p.getZ(), vecStr(local));
+        }
+
         LOGGER.info(
             "[DungeonTrain:{}] tick={} committedPIdx={} add={} erase={} mass={} " +
+            "player=[{}] " +
             "lockedPIM={} canonicalPos={} " +
             "beforePIM={} afterPIM={} deltaPIM={} " +
             "beforePos={} afterPos={} deltaPos={} " +
@@ -282,6 +297,7 @@ public final class TrainWindowManager {
             toAdd,
             toErase,
             inertiaAfter != null ? inertiaAfter.getShipMass() : Double.NaN,
+            playerInfo,
             vecStr(provider.getLockedPositionInModel()),
             vecStr(provider.getCanonicalPos()),
             vecStr(beforePIM), vecStr(afterPIM), vecStr(deltaPIM),
