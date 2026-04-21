@@ -43,9 +43,9 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     // smaller is floating-point noise that isn't worth a log line.
     private static final double COM_DRIFT_LOG_THRESHOLD_SQ = 0.01;
 
-    private final Vector3d targetVelocity;
+    private volatile Vector3d targetVelocity;
     private final BlockPos shipyardOrigin;
-    private final int count;
+    private volatile int count;
     private final ResourceKey<Level> dimensionKey;
     private final Set<Integer> activeIndices;
 
@@ -92,12 +92,30 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         return targetVelocity;
     }
 
+    /**
+     * Replace the target velocity with a fresh vector. Safe to call from any
+     * thread — the physics tick reads {@code targetVelocity} via the volatile
+     * reference and never mutates it in place, so reassigning a new object
+     * gives safe publication without torn reads.
+     */
+    public void setTargetVelocity(Vector3dc v) {
+        this.targetVelocity = new Vector3d(v);
+    }
+
     public BlockPos getShipyardOrigin() {
         return shipyardOrigin;
     }
 
     public int getCount() {
         return count;
+    }
+
+    /**
+     * Update the rolling-window carriage count. {@link TrainWindowManager}
+     * reads this on its next tick and adds or erases carriage blocks to match.
+     */
+    public void setCount(int newCount) {
+        this.count = newCount;
     }
 
     public ResourceKey<Level> getDimensionKey() {
@@ -176,10 +194,13 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
             lockedPositionInModel = new Vector3d(current.getPositionInModel());
         }
 
+        // Snapshot volatile reference so a concurrent setTargetVelocity can't
+        // tear reads mid-tick.
+        Vector3d v = targetVelocity;
         canonicalPos.add(
-            targetVelocity.x() * PHYSICS_DT,
-            targetVelocity.y() * PHYSICS_DT,
-            targetVelocity.z() * PHYSICS_DT
+            v.x() * PHYSICS_DT,
+            v.y() * PHYSICS_DT,
+            v.z() * PHYSICS_DT
         );
 
         // The rolling-window manager mutates voxel blocks every server tick;
@@ -191,6 +212,6 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         // world mapping anchored to the original pivot no matter which pivot
         // VS actually uses for rendering.
         BodyTransform nextTransform = computeCompensatedTransform(current);
-        return new NextTransformAndVelocityData(nextTransform, targetVelocity, ZERO_OMEGA);
+        return new NextTransformAndVelocityData(nextTransform, v, ZERO_OMEGA);
     }
 }

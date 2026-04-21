@@ -92,6 +92,21 @@ public final class TrainAssembler {
     }
 
     /**
+     * Return the {@link TrainTransformProvider} for every loaded Dungeon Train
+     * ship in {@code level}. Used by commands and the settings screen to apply
+     * speed/count changes to live trains.
+     */
+    public static List<TrainTransformProvider> getActiveTrainProviders(ServerLevel level) {
+        List<TrainTransformProvider> providers = new ArrayList<>();
+        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
+            if (loaded.getTransformProvider() instanceof TrainTransformProvider p) {
+                providers.add(p);
+            }
+        }
+        return providers;
+    }
+
+    /**
      * Delete every loaded ship in {@code level} whose transform provider is a
      * {@link TrainTransformProvider} — i.e. every Dungeon Train we've previously
      * spawned. Returns the number of ships deleted.
