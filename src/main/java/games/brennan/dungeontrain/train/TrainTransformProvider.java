@@ -10,6 +10,7 @@ import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.ServerShipTransformProvider;
 import org.valkyrienskies.core.api.ships.properties.ShipTransform;
@@ -34,6 +35,11 @@ import java.util.Set;
 public final class TrainTransformProvider implements ServerShipTransformProvider {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    // Diagnostic logger for the flatbed-hop investigation (Stage 1 of the
+    // adoring-mestorf-a360ce branch). Elevated to DEBUG in DungeonTrain's
+    // constructor so these lines survive Forge's default INFO root level.
+    // Remove or demote to TRACE once the root cause is confirmed.
+    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
 
     // VS physics thread runs at 60 Hz; each call to provideNextTransformAndVelocity
     // represents one physics step.
@@ -42,6 +48,12 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     // Squared block-units threshold for logging a pivot drift event — anything
     // smaller is floating-point noise that isn't worth a log line.
     private static final double COM_DRIFT_LOG_THRESHOLD_SQ = 0.01;
+
+    // Jitter instrumentation constants.
+    private static final int JITTER_DEBUG_PERIOD = 20;
+    private static final double JITTER_COMDELTA_LOG_STEP = 0.1;
+    private static final double JITTER_TRIPWIRE_MULTIPLIER = 2.0;
+    private static final int JITTER_TRIPWIRE_COOLDOWN_TICKS = 10;
 
     private volatile Vector3d targetVelocity;
     private final BlockPos shipyardOrigin;
@@ -65,6 +77,17 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     private int committedPIdx;
     private int lastShiftDirection;
     private long lastShiftTick;
+
+    // Jitter-probe state (Stage 1, see `.claude/plans/swirling-fluttering-squid.md`).
+    // Physics thread ownership — no volatile needed; never read from another thread.
+    private long physicsTickCounter;
+    private Vector3d prevEffectivePos;
+    private double lastLoggedComDeltaX = Double.NaN;
+    private int tripwireCooldown;
+    // Written by the server thread (TrainWindowManager) and read by the server
+    // thread (TrainTickEvents' H4 carry probe) on the same tick — same thread
+    // invocation chain, so no synchronization required.
+    private long lastMutationTick = -1L;
 
     public TrainTransformProvider(
         Vector3dc targetVelocity,
@@ -150,6 +173,14 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         this.lastShiftTick = lastShiftTick;
     }
 
+    public long getLastMutationTick() {
+        return lastMutationTick;
+    }
+
+    public void setLastMutationTick(long tick) {
+        this.lastMutationTick = tick;
+    }
+
     /**
      * Compute the compensated BodyTransform for a given observed ship state.
      *
@@ -209,6 +240,54 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         // world mapping anchored to the original pivot no matter which pivot
         // VS actually uses for rendering.
         BodyTransform nextTransform = computeCompensatedTransform(current);
+        logPhysicsProbe(current, nextTransform);
         return new NextTransformAndVelocityData(nextTransform, targetVelocity, ZERO_OMEGA);
+    }
+
+    /**
+     * Stage 1 jitter probe — emits one DEBUG line every
+     * {@link #JITTER_DEBUG_PERIOD} ticks (or sooner if {@code comDelta} changes
+     * by more than {@link #JITTER_COMDELTA_LOG_STEP}), plus a WARN tripwire
+     * whenever the physics-tick position delta exceeds twice the expected
+     * straight-line velocity step. Delete once the root cause of the flatbed
+     * hop is confirmed.
+     */
+    private void logPhysicsProbe(ShipTransform current, BodyTransform nextTransform) {
+        physicsTickCounter++;
+        Vector3dc effPos = nextTransform.getPosition();
+        Vector3dc pivot = current.getPositionInModel();
+        double rawComDeltaX = pivot.x() - lockedPositionInModel.x();
+
+        if (prevEffectivePos != null && tripwireCooldown == 0) {
+            double dx = effPos.x() - prevEffectivePos.x;
+            double dy = effPos.y() - prevEffectivePos.y;
+            double dz = effPos.z() - prevEffectivePos.z;
+            double deltaLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            double expectedMax = Math.sqrt(
+                targetVelocity.x * targetVelocity.x
+                    + targetVelocity.y * targetVelocity.y
+                    + targetVelocity.z * targetVelocity.z
+            ) * PHYSICS_DT * JITTER_TRIPWIRE_MULTIPLIER;
+            if (deltaLen > expectedMax) {
+                JITTER_LOGGER.warn(
+                    "[tripwire] physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={}",
+                    physicsTickCounter, deltaLen, expectedMax, canonicalPos, pivot,
+                    lockedPositionInModel, effPos, prevEffectivePos);
+                tripwireCooldown = JITTER_TRIPWIRE_COOLDOWN_TICKS;
+            }
+        }
+        if (tripwireCooldown > 0) tripwireCooldown--;
+
+        boolean comDeltaChanged = Double.isNaN(lastLoggedComDeltaX)
+            || Math.abs(rawComDeltaX - lastLoggedComDeltaX) > JITTER_COMDELTA_LOG_STEP;
+        if (physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged) {
+            JITTER_LOGGER.debug(
+                "[physics] physicsTick={} canonicalPos={} pivotNow={} rawComDeltaX={} effPos={} lastMutationTick={}",
+                physicsTickCounter, canonicalPos, pivot, rawComDeltaX, effPos, lastMutationTick);
+            lastLoggedComDeltaX = rawComDeltaX;
+        }
+
+        if (prevEffectivePos == null) prevEffectivePos = new Vector3d(effPos);
+        else prevEffectivePos.set(effPos);
     }
 }

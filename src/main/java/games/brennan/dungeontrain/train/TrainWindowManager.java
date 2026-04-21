@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
@@ -31,6 +32,8 @@ import java.util.Set;
 public final class TrainWindowManager {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    // See {@link TrainTransformProvider#JITTER_LOGGER} — Stage 1 diagnostic.
+    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
     private static final double NEAR_RADIUS = 128.0;
     private static final double NEAR_RADIUS_SQ = NEAR_RADIUS * NEAR_RADIUS;
     // Ticks to wait before accepting a reversed pIdx shift. ~1/3 second at
@@ -69,6 +72,12 @@ public final class TrainWindowManager {
         double shipWx = shipWorldPos.x();
         double shipWy = shipWorldPos.y();
         double shipWz = shipWorldPos.z();
+
+        // Jitter probe snapshot BEFORE any block mutation — used after the
+        // mutation to confirm whether VS re-centred the pivot synchronously
+        // with our setBlock calls (H1). See `.claude/plans/swirling-fluttering-squid.md`.
+        Vector3dc pivotPreMutate = new Vector3d(ship.getTransform().getPositionInModel());
+        Vector3dc shipWorldPosPreMutate = new Vector3d(shipWorldPos);
 
         Set<Integer> current = provider.getActiveIndices();
         Set<Integer> desired = new HashSet<>();
@@ -147,10 +156,64 @@ public final class TrainWindowManager {
         // a flatbed carriage enters/leaves the window because the flatbed's
         // small mass swings the COM by more blocks per shift).
         if (mutated) {
+            logMutationProbe(level, ship, provider, pivotPreMutate, shipWorldPosPreMutate,
+                players, shipWx, shipWy, shipWz, originX);
+            provider.setLastMutationTick(level.getGameTime());
             BodyTransform compensated = provider.computeCompensatedTransform(ship.getTransform());
             if (compensated != null) {
                 ship.unsafeSetTransform(compensated);
             }
+        }
+    }
+
+    /**
+     * Stage 1 probe — called immediately after voxel mutations so the caller
+     * can compare the pivot / world-position snapshots taken before the
+     * mutation against the values VS reports now. If VS has not re-centred
+     * the COM yet, pivotPost == pivotPre and the "atomic" unsafeSetTransform
+     * that follows is a no-op (hypothesis H1). Per-player lines log each
+     * player's world and ship-local X so the pIdx trace (H3) can be
+     * correlated with mutation events in the log stream.
+     */
+    private static void logMutationProbe(
+        ServerLevel level,
+        LoadedServerShip ship,
+        TrainTransformProvider provider,
+        Vector3dc pivotPreMutate,
+        Vector3dc shipWorldPosPreMutate,
+        List<ServerPlayer> players,
+        double shipWx, double shipWy, double shipWz,
+        int originX
+    ) {
+        if (!JITTER_LOGGER.isDebugEnabled()) return;
+
+        Vector3dc pivotPostMutate = new Vector3d(ship.getTransform().getPositionInModel());
+        Vector3dc shipWorldPosPostMutate = new Vector3d(ship.getTransform().getPosition());
+        Vector3d pivotDelta = new Vector3d(pivotPostMutate).sub(pivotPreMutate);
+        Vector3d shipPosDelta = new Vector3d(shipWorldPosPostMutate).sub(shipWorldPosPreMutate);
+
+        JITTER_LOGGER.debug(
+            "[windowManager] tick={} shipId={} pivotPre={} pivotPost={} pivotDelta={} shipPosPre={} shipPosPost={} shipPosDelta={}",
+            level.getGameTime(), ship.getId(),
+            pivotPreMutate, pivotPostMutate, pivotDelta,
+            shipWorldPosPreMutate, shipWorldPosPostMutate, shipPosDelta);
+
+        for (ServerPlayer player : players) {
+            double dx = player.getX() - shipWx;
+            double dy = player.getY() - shipWy;
+            double dz = player.getZ() - shipWz;
+            if (dx * dx + dy * dy + dz * dz > NEAR_RADIUS_SQ) continue;
+
+            Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
+            ship.getTransform().getWorldToShip().transformPosition(local);
+            int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
+            JITTER_LOGGER.debug(
+                "[pIdx] tick={} player={} worldX={} worldY={} worldZ={} shipLocalX={} pIdx={} committedPIdx={} lastShiftDir={} ticksSinceShift={}",
+                level.getGameTime(), player.getName().getString(),
+                player.getX(), player.getY(), player.getZ(),
+                local.x, pIdx,
+                provider.getCommittedPIdx(), provider.getLastShiftDirection(),
+                level.getGameTime() - provider.getLastShiftTick());
         }
     }
 }

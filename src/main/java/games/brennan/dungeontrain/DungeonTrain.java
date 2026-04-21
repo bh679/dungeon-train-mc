@@ -14,6 +14,8 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 
 /**
@@ -37,6 +39,12 @@ public class DungeonTrain {
                 "dungeontrain-server.toml");
 
         MinecraftForge.EVENT_BUS.register(this);
+
+        // Stage 1 diagnostic — raise the `games.brennan.dungeontrain.jitter`
+        // namespace to DEBUG so the train-hop probes survive Forge's default
+        // INFO root logger level. Remove once the root cause of the flatbed
+        // hop is confirmed and the probes are demoted to TRACE.
+        Configurator.setLevel("games.brennan.dungeontrain.jitter", Level.DEBUG);
 
         LOGGER.info("Dungeon Train constructor — mod loading");
     }
