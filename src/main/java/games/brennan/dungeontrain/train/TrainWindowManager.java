@@ -67,7 +67,12 @@ public final class TrainWindowManager {
         int originY = shipyardOrigin.getY();
         int originZ = shipyardOrigin.getZ();
 
-        Vector3dc shipWorldPos = ship.getTransform().getPosition();
+        // Ship "near" check uses the provider's canonical position when
+        // available — it's the stable world-space anchor unaffected by VS's
+        // PIM drift. Fall back to the live transform only before the first
+        // physics tick has captured the baseline.
+        Vector3dc canonical = provider.getCanonicalPos();
+        Vector3dc shipWorldPos = canonical != null ? canonical : ship.getTransform().getPosition();
         double shipWx = shipWorldPos.x();
         double shipWy = shipWorldPos.y();
         double shipWz = shipWorldPos.z();
@@ -82,8 +87,19 @@ public final class TrainWindowManager {
             double dz = player.getZ() - shipWz;
             if (dx * dx + dy * dy + dz * dz > NEAR_RADIUS_SQ) continue;
 
-            Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
-            ship.getTransform().getWorldToShip().transformPosition(local);
+            // Use the provider's locked-frame worldToShip rather than
+            // ship.getTransform().getWorldToShip(). The live transform's PIM
+            // drifts as VS recomputes mass centroid each physics tick; that
+            // drift fed into a ship-local pIdx oscillation that triggered the
+            // rolling window to add+erase the same boundary carriage every
+            // few ticks — a feedback loop that stopped the train from moving
+            // and eventually crashed VS's entity-collision mixin with a CME.
+            Vector3d local = provider.worldToLockedShip(player.getX(), player.getY(), player.getZ());
+            if (local == null) {
+                // Provider not initialized — fall back to live transform for this one tick.
+                local = new Vector3d(player.getX(), player.getY(), player.getZ());
+                ship.getTransform().getWorldToShip().transformPosition(local);
+            }
             int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
 
             occupied.add(pIdx);

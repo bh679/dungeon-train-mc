@@ -140,6 +140,37 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         return canonicalPos;
     }
 
+    public Quaterniondc getLockedRotation() {
+        return lockedRotation;
+    }
+
+    /**
+     * Convert a world-space position to ship-local coordinates using the
+     * provider's locked baseline (canonicalPos, lockedRotation, lockedPIM)
+     * rather than the ship's live transform. This decouples rolling-window
+     * logic (which computes pIdx from a world-space player position) from
+     * the live PIM drift — {@code ship.getTransform().getWorldToShip()}
+     * would otherwise bake the drifted PIM into the result, causing pIdx
+     * to oscillate when VS moves PIM in response to mass-distribution
+     * changes, which in turn drives the rolling-window feedback loop.
+     *
+     * Returns {@code null} if the provider hasn't captured its baseline
+     * yet (no physics tick has run).
+     */
+    public Vector3d worldToLockedShip(double worldX, double worldY, double worldZ) {
+        if (lockedRotation == null) return null;
+        Vector3d rel = new Vector3d(
+            worldX - canonicalPos.x,
+            worldY - canonicalPos.y,
+            worldZ - canonicalPos.z
+        );
+        // worldPos = canonicalPos + rot · (shipPos - lockedPIM)
+        //   → shipPos = lockedPIM + invRot · (worldPos - canonicalPos)
+        Quaterniond invRot = new Quaterniond(lockedRotation).invert();
+        invRot.transform(rel);
+        return rel.add(lockedPositionInModel);
+    }
+
     /**
      * Compute the compensated BodyTransform for a given observed ship state.
      *
