@@ -10,8 +10,8 @@ import java.util.Set;
 
 /**
  * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. Four visual variants
- * are selected per-carriage via {@link CarriageType}; {@link #placeTrainAt}
- * cycles through them so a train of length ≥ 4 shows one of each.
+ * are selected per-carriage via {@link CarriageType} and
+ * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
  */
 public final class CarriageTemplate {
 
@@ -57,20 +57,6 @@ public final class CarriageTemplate {
                     placed.add(pos.immutable());
                 }
             }
-        }
-        return placed;
-    }
-
-    /**
-     * Place {@code count} carriages end-to-end along +X. Type is selected
-     * per-carriage as {@code CarriageType.values()[i % 4]} — deterministic,
-     * and every train of length ≥ 4 shows all four variants.
-     */
-    public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, int count) {
-        if (count < 1) throw new IllegalArgumentException("count must be >= 1, got " + count);
-        Set<BlockPos> placed = new HashSet<>();
-        for (int i = 0; i < count; i++) {
-            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), typeForIndex(i)));
         }
         return placed;
     }

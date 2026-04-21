@@ -14,6 +14,7 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import org.valkyrienskies.mod.common.assembly.ShipAssembler;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -32,44 +33,61 @@ public final class TrainAssembler {
 
     private TrainAssembler() {}
 
-    public static ServerShip spawnCarriage(ServerLevel level, BlockPos origin, Vector3dc velocity) {
-        return spawnTrain(level, origin, velocity, 1);
-    }
-
     /**
      * Spawn an N-carriage train as a single VS ship moving at {@code velocity}.
      * All carriages share one rigid body and one kinematic transform provider.
+     *
+     * {@code origin} anchors carriage index 0 in world space. The physical
+     * placement is shifted so the initial carriages cover indices
+     * {@code [initialPIdx − halfBack, initialPIdx + halfFront]} — centered on
+     * {@code spawnerWorldPos} — which lets the rolling-window manager start
+     * with zero churn on its first tick.
      *
      * Before assembly: deletes any pre-existing Dungeon Train ships in the level
      * and clears world blocks inside the new train's bounding volume so trapped
      * terrain does not wedge the ship against the world.
      */
-    public static ServerShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count) {
+    public static ServerShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Deleted {} existing train(s) before spawn", deleted);
         }
 
-        int cleared = clearBoundingBox(level, origin, count);
-        LOGGER.info("[DungeonTrain] Cleared {} world blocks in train footprint", cleared);
+        // At spawn time the ship's worldToShip is a pure translation, so the
+        // player's shipyard-space X offset from shipyardOrigin equals their
+        // world X offset from origin — we can compute pIdx without the ship.
+        int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) CarriageTemplate.LENGTH);
+        int halfBack = (count - 1) / 2;
+        int halfFront = count - halfBack - 1;
+        int firstIdx = initialPIdx - halfBack;
+        int lastIdx = initialPIdx + halfFront;
 
-        Set<BlockPos> blocks = CarriageTemplate.placeTrainAt(level, origin, count);
-        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages), assembling...", blocks.size(), count);
+        int cleared = clearBoundingBox(level, origin, firstIdx, lastIdx);
+        LOGGER.info("[DungeonTrain] Cleared {} world blocks in train footprint (indices {} to {})", cleared, firstIdx, lastIdx);
+
+        Set<BlockPos> blocks = new HashSet<>();
+        for (int i = firstIdx; i <= lastIdx; i++) {
+            BlockPos carriageOrigin = origin.offset(i * CarriageTemplate.LENGTH, 0, 0);
+            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i)));
+        }
+        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, initialPIdx={}), assembling...", blocks.size(), count, initialPIdx);
 
         ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
 
-        // assembleToShip moves the world blocks to a shipyard region; translate the
-        // original world origin through worldToShip to find where they ended up.
+        // shipyardOrigin anchors carriage index 0. Even though we didn't place a
+        // carriage at `origin` when firstIdx != 0, worldToShip is still a pure
+        // translation at this moment, so the shipyard position of index 0 is
+        // the shipyard translation of `origin`.
         Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
         ship.getTransform().getWorldToShip().transformPosition(shipyardOriginVec);
         BlockPos shipyardOrigin = BlockPos.containing(shipyardOriginVec.x, shipyardOriginVec.y, shipyardOriginVec.z);
 
-        ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension()));
+        ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx));
         // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
         // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
         ship.setStatic(true);
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={})",
-            ship.getId(), shipyardOrigin, count);
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={})",
+            ship.getId(), shipyardOrigin, count, initialPIdx);
         return ship;
     }
 
@@ -95,11 +113,16 @@ public final class TrainAssembler {
      * Replace every world block inside the new train's axis-aligned bounding
      * box with air. Runs before block placement so the hollow interior does
      * not trap existing terrain inside the assembled ship.
+     *
+     * Clears the X range {@code [firstIdx * LENGTH, (lastIdx + 1) * LENGTH)}
+     * relative to {@code origin} — matching the shifted carriage placement
+     * anchored on index 0.
      */
-    private static int clearBoundingBox(ServerLevel level, BlockPos origin, int count) {
-        int lengthTotal = count * CarriageTemplate.LENGTH;
+    private static int clearBoundingBox(ServerLevel level, BlockPos origin, int firstIdx, int lastIdx) {
+        int startDx = firstIdx * CarriageTemplate.LENGTH;
+        int endDx = (lastIdx + 1) * CarriageTemplate.LENGTH;
         int cleared = 0;
-        for (int dx = 0; dx < lengthTotal; dx++) {
+        for (int dx = startDx; dx < endDx; dx++) {
             for (int dy = 0; dy < CarriageTemplate.HEIGHT; dy++) {
                 for (int dz = 0; dz < CarriageTemplate.WIDTH; dz++) {
                     BlockPos pos = origin.offset(dx, dy, dz);

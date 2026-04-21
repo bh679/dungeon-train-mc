@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -8,6 +9,7 @@ import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
+import org.slf4j.Logger;
 import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.ServerShipTransformProvider;
 import org.valkyrienskies.core.api.ships.properties.ShipTransform;
@@ -31,10 +33,15 @@ import java.util.Set;
  */
 public final class TrainTransformProvider implements ServerShipTransformProvider {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     // VS physics thread runs at 60 Hz; each call to provideNextTransformAndVelocity
     // represents one physics step.
     private static final double PHYSICS_DT = 1.0 / 60.0;
     private static final Vector3dc ZERO_OMEGA = new Vector3d();
+    // Squared block-units threshold for logging a pivot drift event — anything
+    // smaller is floating-point noise that isn't worth a log line.
+    private static final double COM_DRIFT_LOG_THRESHOLD_SQ = 0.01;
 
     private final Vector3d targetVelocity;
     private final BlockPos shipyardOrigin;
@@ -43,25 +50,42 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     private final Set<Integer> activeIndices;
 
     // Lazily captured on the first physics tick so the ship's spawn-time
-    // orientation and position become the authoritative baseline. Re-applying
-    // them every tick makes the train immune to gravity and collision impulses.
+    // orientation, world position, and model-space pivot become the
+    // authoritative baseline. Re-applying them every tick makes the train
+    // immune to gravity, collision impulses, and COM-shift side effects
+    // from rolling-window block mutations.
     private Quaterniondc lockedRotation;
     private Vector3d canonicalPos;
+    private Vector3dc lockedPositionInModel;
+    private double lastLoggedDriftX = Double.NaN;
+
+    // Reversal-debounce state used by {@link TrainWindowManager} to suppress
+    // single-tick flaps in the player's pIdx (which otherwise cause a visible
+    // whole-train teleport each time the window shifts back-and-forth).
+    private int committedPIdx;
+    private int lastShiftDirection;
+    private long lastShiftTick;
 
     public TrainTransformProvider(
         Vector3dc targetVelocity,
         BlockPos shipyardOrigin,
         int count,
-        ResourceKey<Level> dimensionKey
+        ResourceKey<Level> dimensionKey,
+        int initialPIdx
     ) {
         this.targetVelocity = new Vector3d(targetVelocity);
         this.shipyardOrigin = shipyardOrigin.immutable();
         this.count = count;
         this.dimensionKey = dimensionKey;
         this.activeIndices = new HashSet<>();
-        for (int i = 0; i < count; i++) {
+        int halfBack = (count - 1) / 2;
+        int halfFront = count - halfBack - 1;
+        for (int i = initialPIdx - halfBack; i <= initialPIdx + halfFront; i++) {
             this.activeIndices.add(i);
         }
+        this.committedPIdx = initialPIdx;
+        this.lastShiftDirection = 0;
+        this.lastShiftTick = 0L;
     }
 
     public Vector3dc getTargetVelocity() {
@@ -84,6 +108,62 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         return activeIndices;
     }
 
+    public int getCommittedPIdx() {
+        return committedPIdx;
+    }
+
+    public void setCommittedPIdx(int committedPIdx) {
+        this.committedPIdx = committedPIdx;
+    }
+
+    public int getLastShiftDirection() {
+        return lastShiftDirection;
+    }
+
+    public void setLastShiftDirection(int lastShiftDirection) {
+        this.lastShiftDirection = lastShiftDirection;
+    }
+
+    public long getLastShiftTick() {
+        return lastShiftTick;
+    }
+
+    public void setLastShiftTick(long lastShiftTick) {
+        this.lastShiftTick = lastShiftTick;
+    }
+
+    /**
+     * Compute the compensated BodyTransform for a given observed ship state.
+     *
+     * Shared between the physics-thread provider callback (normal path) and the
+     * rolling-window manager (called on the server thread right after block
+     * mutations) so the voxel change and transform update land in the same
+     * server tick — otherwise the client may render the new voxels against the
+     * stale transform for one frame, producing a visible teleport.
+     *
+     * Returns {@code null} if the baseline hasn't been captured yet (no
+     * physics tick has run); callers should leave the transform alone in that
+     * case.
+     */
+    public BodyTransform computeCompensatedTransform(ShipTransform current) {
+        if (lockedRotation == null) return null;
+
+        Vector3d comDelta = new Vector3d(current.getPositionInModel()).sub(lockedPositionInModel);
+        if (comDelta.lengthSquared() > COM_DRIFT_LOG_THRESHOLD_SQ
+            && Math.abs(comDelta.x - lastLoggedDriftX) > 0.5) {
+            LOGGER.debug("[DungeonTrain] Pivot drift: comDelta=({}, {}, {}) — compensating",
+                comDelta.x, comDelta.y, comDelta.z);
+            lastLoggedDriftX = comDelta.x;
+        }
+        lockedRotation.transform(comDelta);
+        Vector3d effectivePos = new Vector3d(canonicalPos).add(comDelta);
+
+        return current.toBuilder()
+            .position(effectivePos)
+            .rotation(lockedRotation)
+            .build();
+    }
+
     @NotNull
     @Override
     public NextTransformAndVelocityData provideNextTransformAndVelocity(
@@ -93,6 +173,7 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         if (lockedRotation == null) {
             lockedRotation = new Quaterniond(current.getRotation());
             canonicalPos = new Vector3d(current.getPosition());
+            lockedPositionInModel = new Vector3d(current.getPositionInModel());
         }
 
         canonicalPos.add(
@@ -101,10 +182,15 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
             targetVelocity.z() * PHYSICS_DT
         );
 
-        BodyTransform nextTransform = current.toBuilder()
-            .position(canonicalPos)
-            .rotation(lockedRotation)
-            .build();
+        // The rolling-window manager mutates voxel blocks every server tick;
+        // VS may re-center the ship's model-space pivot (positionInModel) on
+        // the new COM regardless of setStatic(true). Setting the builder's
+        // positionInModel to our locked baseline is not enough — VS appears
+        // to ignore or re-derive it. So we COMPENSATE the world-space
+        // position by the observed pivot drift, which keeps the voxel-to-
+        // world mapping anchored to the original pivot no matter which pivot
+        // VS actually uses for rendering.
+        BodyTransform nextTransform = computeCompensatedTransform(current);
         return new NextTransformAndVelocityData(nextTransform, targetVelocity, ZERO_OMEGA);
     }
 }

@@ -58,11 +58,13 @@ public final class TrainCommand {
         Vec3 look = player.getLookAngle();
         Vec3 spawn = player.position().add(look.x * SPAWN_DISTANCE, 0.0, look.z * SPAWN_DISTANCE);
         BlockPos origin = BlockPos.containing(spawn.x, spawn.y, spawn.z);
+        Vec3 pp = player.position();
+        Vector3d spawnerWorldPos = new Vector3d(pp.x, pp.y, pp.z);
 
         LOGGER.info("[DungeonTrain] /dungeontrain spawn {} by {} at origin {}", count, player.getName().getString(), origin);
 
         try {
-            ServerShip ship = TrainAssembler.spawnTrain(level, origin, TRAIN_VELOCITY, count);
+            ServerShip ship = TrainAssembler.spawnTrain(level, origin, TRAIN_VELOCITY, count, spawnerWorldPos);
             int lengthBlocks = count * CarriageTemplate.LENGTH;
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
                 ship.getId(), count, lengthBlocks);
