@@ -75,12 +75,27 @@ public final class ClientTrainInstaller {
             if (!TrainAssembler.isTrainSlug(slug)) continue;
             trainCount++;
 
+            // v0.10.5: client-side provider DISABLED. The 0.10.4 logs showed
+            // VS reuses provideNextTransform's output as the next call's
+            // `current` input. Since our provider always returned
+            // forcedPos = incomingPos (when PIM delta is 0), and PIM delta
+            // is always 0 on subsequent calls (because we already clamped
+            // it), forcedPos got frozen at the first-tick value. The client
+            // rendered the train stuck at its spawn position while server
+            // canonicalPos advanced — user-visible "train isn't moving".
+            //
+            // The server-side PIM force (v0.10.4 TrainTransformProvider change)
+            // is sufficient on its own: the server pushes a transform with
+            // stable PIM=lockedPIM and linearly-advancing position=canonicalPos,
+            // which the client receives and renders as-is. No render-path
+            // intercept needed.
+            //
+            // Keeping the scan/log/slug logic for now as diagnostic and as
+            // a hook if we later find a non-self-loop client-side fix is needed.
             if (!installed.contains(ship.getId())) {
-                ClientTrainTransformProvider provider = new ClientTrainTransformProvider(ship.getId());
-                ship.setTransformProvider(provider);
                 installed.add(ship.getId());
                 LOGGER.info(
-                    "[DungeonTrain:clientInstaller] Installed ClientTrainTransformProvider on shipId={} slug={}",
+                    "[DungeonTrain:clientInstaller] Detected train shipId={} slug={} (client-side provider disabled in v0.10.5)",
                     ship.getId(), slug
                 );
             }
