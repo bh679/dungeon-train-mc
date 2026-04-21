@@ -9,6 +9,8 @@ import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
+import org.valkyrienskies.core.api.ships.properties.ShipInertiaData;
+import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.HashSet;
@@ -115,28 +117,52 @@ public final class TrainWindowManager {
 
         if (desired.isEmpty()) return;
 
-        boolean mutated = false;
+        Set<Integer> toAdd = new HashSet<>();
         for (Integer i : desired) {
-            if (current.contains(i)) continue;
-            BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
-            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i));
-            current.add(i);
-            mutated = true;
-            LOGGER.debug("[DungeonTrain] Added carriage idx={} at shipyard {}", i, carriageOrigin);
+            if (!current.contains(i)) toAdd.add(i);
         }
-
         Set<Integer> toErase = new HashSet<>();
         for (Integer i : current) {
             if (desired.contains(i)) continue;
             if (occupied.contains(i)) continue;
             toErase.add(i);
         }
+
+        boolean flatbedTransition = false;
+        for (Integer i : toAdd) {
+            if (CarriageTemplate.typeForIndex(i) == CarriageTemplate.CarriageType.FLATBED) {
+                flatbedTransition = true;
+                break;
+            }
+        }
+        if (!flatbedTransition) {
+            for (Integer i : toErase) {
+                if (CarriageTemplate.typeForIndex(i) == CarriageTemplate.CarriageType.FLATBED) {
+                    flatbedTransition = true;
+                    break;
+                }
+            }
+        }
+
+        ShipTransform beforeTransform = flatbedTransition ? ship.getTransform() : null;
+        ShipInertiaData beforeInertia = flatbedTransition ? ship.getInertiaData() : null;
+
+        boolean mutated = false;
+        for (Integer i : toAdd) {
+            BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
+            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i));
+            current.add(i);
+            mutated = true;
+            LOGGER.debug("[DungeonTrain] Added carriage idx={} type={} at shipyard {}",
+                i, CarriageTemplate.typeForIndex(i), carriageOrigin);
+        }
         for (Integer i : toErase) {
             BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
             CarriageTemplate.eraseAt(level, carriageOrigin);
             current.remove(i);
             mutated = true;
-            LOGGER.debug("[DungeonTrain] Erased carriage idx={} at shipyard {}", i, carriageOrigin);
+            LOGGER.debug("[DungeonTrain] Erased carriage idx={} type={} at shipyard {}",
+                i, CarriageTemplate.typeForIndex(i), carriageOrigin);
         }
 
         // After voxel mutations, re-push the compensated transform in the
@@ -146,11 +172,88 @@ public final class TrainWindowManager {
         // one frame, producing a brief backwards teleport (most visible when
         // a flatbed carriage enters/leaves the window because the flatbed's
         // small mass swings the COM by more blocks per shift).
+        BodyTransform compensated = null;
         if (mutated) {
-            BodyTransform compensated = provider.computeCompensatedTransform(ship.getTransform());
+            compensated = provider.computeCompensatedTransform(ship.getTransform());
             if (compensated != null) {
                 ship.unsafeSetTransform(compensated);
             }
         }
+
+        if (flatbedTransition) {
+            logFlatbedTransition(level, ship, provider, toAdd, toErase,
+                beforeTransform, beforeInertia, compensated);
+        }
+    }
+
+    /**
+     * Focused diagnostic for residual flatbed-entry train jump (tracked for v0.10.x).
+     *
+     * Emits a single INFO-level log line per server tick on which a FLATBED carriage
+     * entered or left the rolling window. Captures three snapshots so the BEFORE/AFTER
+     * pair brackets the voxel mutation:
+     *   - BEFORE: transform + inertia as observed before any block change this tick.
+     *   - AFTER raw: ship.getTransform() after block mutations — this is what VS re-derived.
+     *   - AFTER compensated: what we just pushed to the ship via unsafeSetTransform.
+     *
+     * Contrasts {@code transform.getPositionInModel()} with
+     * {@code inertia.getCenterOfMassInShip()} — if the renderer uses inertia COM rather
+     * than the transform's PIM (hypothesis C), the two will diverge during the flatbed
+     * tick by an amount that matches the visible jump.
+     *
+     * Keep this path off the hot loop — the caller already guards on flatbed membership.
+     */
+    private static void logFlatbedTransition(
+        ServerLevel level,
+        LoadedServerShip ship,
+        TrainTransformProvider provider,
+        Set<Integer> toAdd,
+        Set<Integer> toErase,
+        ShipTransform beforeTransform,
+        ShipInertiaData beforeInertia,
+        BodyTransform compensatedAfter
+    ) {
+        ShipTransform rawAfter = ship.getTransform();
+        ShipInertiaData inertiaAfter = ship.getInertiaData();
+
+        Vector3dc beforePIM = beforeTransform != null ? beforeTransform.getPositionInModel() : null;
+        Vector3dc afterPIM = rawAfter.getPositionInModel();
+        Vector3dc beforeCOM = beforeInertia != null ? beforeInertia.getCenterOfMassInShip() : null;
+        Vector3dc afterCOM = inertiaAfter.getCenterOfMassInShip();
+        Vector3dc afterCOMSpace = inertiaAfter.getCenterOfMassInShipSpace();
+
+        Vector3d deltaPIM = beforePIM != null
+            ? new Vector3d(afterPIM).sub(beforePIM)
+            : new Vector3d();
+        Vector3d deltaCOM = beforeCOM != null
+            ? new Vector3d(afterCOM).sub(beforeCOM)
+            : new Vector3d();
+        Vector3d pimVsCom = new Vector3d(afterPIM).sub(afterCOM);
+
+        Vector3dc compPos = compensatedAfter != null ? compensatedAfter.getPosition() : null;
+        Vector3dc rawAfterPos = rawAfter.getPosition();
+
+        LOGGER.info(
+            "[DungeonTrain:flatbedJump] tick={} committedPIdx={} add={} erase={} " +
+            "shipMass={} " +
+            "beforePIM={} afterPIM={} deltaPIM={} " +
+            "beforeCOM={} afterCOM={} afterCOMSpace={} deltaCOM={} " +
+            "pimVsComAfter={} " +
+            "rawAfterPos={} compensatedPos={}",
+            level.getGameTime(),
+            provider.getCommittedPIdx(),
+            toAdd,
+            toErase,
+            inertiaAfter.getShipMass(),
+            vecStr(beforePIM), vecStr(afterPIM), vecStr(deltaPIM),
+            vecStr(beforeCOM), vecStr(afterCOM), vecStr(afterCOMSpace), vecStr(deltaCOM),
+            vecStr(pimVsCom),
+            vecStr(rawAfterPos), vecStr(compPos)
+        );
+    }
+
+    private static String vecStr(Vector3dc v) {
+        if (v == null) return "null";
+        return String.format("(%.4f, %.4f, %.4f)", v.x(), v.y(), v.z());
     }
 }
