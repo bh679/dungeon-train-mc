@@ -65,7 +65,10 @@ public final class TrainAssembler {
         BlockPos shipyardOrigin = BlockPos.containing(shipyardOriginVec.x, shipyardOriginVec.y, shipyardOriginVec.z);
 
         ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension()));
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider (shipyardOrigin={}, count={})",
+        // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
+        // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
+        ship.setStatic(true);
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={})",
             ship.getId(), shipyardOrigin, count);
         return ship;
     }
