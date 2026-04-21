@@ -49,7 +49,8 @@ public final class TrainCommand {
             .then(Commands.literal("speed")
                 .then(Commands.argument("value",
                         DoubleArgumentType.doubleArg(DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED))
-                    .executes(ctx -> runSpeed(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "value")))));
+                    .executes(ctx -> runSpeed(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "value")))))
+            .then(EditorCommand.build());
 
         dispatcher.register(root);
     }

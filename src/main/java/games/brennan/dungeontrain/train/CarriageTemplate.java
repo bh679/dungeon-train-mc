@@ -1,17 +1,26 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. Four visual variants
  * are selected per-carriage via {@link CarriageType} and
  * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
+ *
+ * {@link #placeAt(ServerLevel, BlockPos, CarriageType)} first tries an
+ * NBT-backed template from {@link CarriageTemplateStore}; if none is saved
+ * (or the file is malformed), it falls back to the hardcoded generator in
+ * {@link #legacyPlaceAt(ServerLevel, BlockPos, CarriageType)}.
  */
 public final class CarriageTemplate {
 
@@ -54,21 +63,12 @@ public final class CarriageTemplate {
      * {@code ShipAssembler.assembleToShip()}.
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type) {
-        Set<BlockPos> placed = new HashSet<>();
-        int doorZ = WIDTH / 2;
-
-        for (int dx = 0; dx < LENGTH; dx++) {
-            for (int dz = 0; dz < WIDTH; dz++) {
-                for (int dy = 0; dy < HEIGHT; dy++) {
-                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
-                    if (state == null) continue;
-                    BlockPos pos = origin.offset(dx, dy, dz);
-                    level.setBlock(pos, state, 3);
-                    placed.add(pos.immutable());
-                }
-            }
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, type);
+        if (stored.isPresent()) {
+            stampTemplate(level, origin, stored.get());
+            return collectFootprint(level, origin);
         }
-        return placed;
+        return legacyPlaceAt(level, origin, type);
     }
 
     /**
@@ -96,6 +96,44 @@ public final class CarriageTemplate {
                 }
             }
         }
+    }
+
+    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+    }
+
+    private static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin) {
+        Set<BlockPos> placed = new HashSet<>();
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (!level.getBlockState(pos).isAir()) {
+                        placed.add(pos.immutable());
+                    }
+                }
+            }
+        }
+        return placed;
+    }
+
+    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type) {
+        Set<BlockPos> placed = new HashSet<>();
+        int doorZ = WIDTH / 2;
+
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
+                    if (state == null) continue;
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    level.setBlock(pos, state, 3);
+                    placed.add(pos.immutable());
+                }
+            }
+        }
+        return placed;
     }
 
     private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
