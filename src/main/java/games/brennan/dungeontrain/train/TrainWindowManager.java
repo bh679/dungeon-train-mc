@@ -144,8 +144,9 @@ public final class TrainWindowManager {
             }
         }
 
-        ShipTransform beforeTransform = flatbedTransition ? ship.getTransform() : null;
-        ShipInertiaData beforeInertia = flatbedTransition ? ship.getInertiaData() : null;
+        boolean willLog = !toAdd.isEmpty() || !toErase.isEmpty();
+        ShipTransform beforeTransform = willLog ? ship.getTransform() : null;
+        ShipInertiaData beforeInertia = willLog ? ship.getInertiaData() : null;
 
         boolean mutated = false;
         for (Integer i : toAdd) {
@@ -165,6 +166,12 @@ public final class TrainWindowManager {
                 i, CarriageTemplate.typeForIndex(i), carriageOrigin);
         }
 
+        // Capture the transform that VS re-derived after the block mutations,
+        // BEFORE we push our compensation. This is the "rawAfter" the client
+        // would see if we didn't compensate.
+        ShipTransform rawAfterMutation = willLog ? ship.getTransform() : null;
+        ShipInertiaData inertiaAfterMutation = willLog ? ship.getInertiaData() : null;
+
         // After voxel mutations, re-push the compensated transform in the
         // same server tick. This tightens the client-visible window between
         // "new voxels applied" and "new transform applied" — otherwise the
@@ -180,75 +187,92 @@ public final class TrainWindowManager {
             }
         }
 
-        if (flatbedTransition) {
-            logFlatbedTransition(level, ship, provider, toAdd, toErase,
-                beforeTransform, beforeInertia, compensated);
+        if (willLog) {
+            logWindowShift(level, ship, provider, toAdd, toErase, flatbedTransition,
+                beforeTransform, beforeInertia, rawAfterMutation, inertiaAfterMutation, compensated);
         }
     }
 
     /**
-     * Focused diagnostic for residual flatbed-entry train jump (tracked for v0.10.x).
+     * Diagnostic for residual flatbed-entry train jump (tracked for v0.10.x).
      *
-     * Emits a single INFO-level log line per server tick on which a FLATBED carriage
-     * entered or left the rolling window. Captures three snapshots so the BEFORE/AFTER
-     * pair brackets the voxel mutation:
-     *   - BEFORE: transform + inertia as observed before any block change this tick.
-     *   - AFTER raw: ship.getTransform() after block mutations — this is what VS re-derived.
-     *   - AFTER compensated: what we just pushed to the ship via unsafeSetTransform.
+     * Emits one log line per tick where the rolling window shifted, covering
+     * three snapshots that bracket the mutation:
+     *   - BEFORE:    ship state observed before any block change this tick.
+     *   - RAW AFTER: ship state observed after block mutation but BEFORE we
+     *                pushed the compensated transform. This reveals whether VS
+     *                auto-rewrites the transform on block change.
+     *   - COMPENSATED: the transform we pushed via {@code unsafeSetTransform}.
      *
-     * Contrasts {@code transform.getPositionInModel()} with
-     * {@code inertia.getCenterOfMassInShip()} — if the renderer uses inertia COM rather
-     * than the transform's PIM (hypothesis C), the two will diverge during the flatbed
-     * tick by an amount that matches the visible jump.
+     * Compares {@code transform.positionInModel} with
+     * {@code inertia.centerOfMassInShip} — if the renderer uses inertia COM
+     * rather than the transform's PIM (hypothesis C), the two diverge and the
+     * visible jump tracks the PIM/COM gap.
      *
-     * Keep this path off the hot loop — the caller already guards on flatbed membership.
+     * Tagged [jump] for flatbed transitions (matches the user-reported symptom)
+     * vs [shift] for non-flatbed transitions, so a log filter by [jump] still
+     * gives the flatbed-only view.
      */
-    private static void logFlatbedTransition(
+    private static void logWindowShift(
         ServerLevel level,
         LoadedServerShip ship,
         TrainTransformProvider provider,
         Set<Integer> toAdd,
         Set<Integer> toErase,
+        boolean flatbedTransition,
         ShipTransform beforeTransform,
         ShipInertiaData beforeInertia,
+        ShipTransform rawAfter,
+        ShipInertiaData inertiaAfter,
         BodyTransform compensatedAfter
     ) {
-        ShipTransform rawAfter = ship.getTransform();
-        ShipInertiaData inertiaAfter = ship.getInertiaData();
-
         Vector3dc beforePIM = beforeTransform != null ? beforeTransform.getPositionInModel() : null;
-        Vector3dc afterPIM = rawAfter.getPositionInModel();
+        Vector3dc beforePos = beforeTransform != null ? beforeTransform.getPosition() : null;
+        Vector3dc afterPIM = rawAfter != null ? rawAfter.getPositionInModel() : null;
+        Vector3dc afterPos = rawAfter != null ? rawAfter.getPosition() : null;
         Vector3dc beforeCOM = beforeInertia != null ? beforeInertia.getCenterOfMassInShip() : null;
-        Vector3dc afterCOM = inertiaAfter.getCenterOfMassInShip();
-        Vector3dc afterCOMSpace = inertiaAfter.getCenterOfMassInShipSpace();
+        Vector3dc afterCOM = inertiaAfter != null ? inertiaAfter.getCenterOfMassInShip() : null;
+        Vector3dc afterCOMSpace = inertiaAfter != null ? inertiaAfter.getCenterOfMassInShipSpace() : null;
 
-        Vector3d deltaPIM = beforePIM != null
+        Vector3d deltaPIM = (beforePIM != null && afterPIM != null)
             ? new Vector3d(afterPIM).sub(beforePIM)
             : new Vector3d();
-        Vector3d deltaCOM = beforeCOM != null
+        Vector3d deltaPos = (beforePos != null && afterPos != null)
+            ? new Vector3d(afterPos).sub(beforePos)
+            : new Vector3d();
+        Vector3d deltaCOM = (beforeCOM != null && afterCOM != null)
             ? new Vector3d(afterCOM).sub(beforeCOM)
             : new Vector3d();
-        Vector3d pimVsCom = new Vector3d(afterPIM).sub(afterCOM);
+        Vector3d pimVsCom = (afterPIM != null && afterCOM != null)
+            ? new Vector3d(afterPIM).sub(afterCOM)
+            : new Vector3d();
 
         Vector3dc compPos = compensatedAfter != null ? compensatedAfter.getPosition() : null;
-        Vector3dc rawAfterPos = rawAfter.getPosition();
+        Vector3dc compPIM = compensatedAfter != null ? compensatedAfter.getPositionInModel() : null;
+
+        String tag = flatbedTransition ? "jump" : "shift";
 
         LOGGER.info(
-            "[DungeonTrain:flatbedJump] tick={} committedPIdx={} add={} erase={} " +
-            "shipMass={} " +
+            "[DungeonTrain:{}] tick={} committedPIdx={} add={} erase={} mass={} " +
+            "lockedPIM={} canonicalPos={} " +
             "beforePIM={} afterPIM={} deltaPIM={} " +
-            "beforeCOM={} afterCOM={} afterCOMSpace={} deltaCOM={} " +
+            "beforePos={} afterPos={} deltaPos={} " +
+            "beforeCOM={} afterCOM={} deltaCOM={} afterCOMSpace={} " +
             "pimVsComAfter={} " +
-            "rawAfterPos={} compensatedPos={}",
+            "compPos={} compPIM={}",
+            tag,
             level.getGameTime(),
             provider.getCommittedPIdx(),
             toAdd,
             toErase,
-            inertiaAfter.getShipMass(),
+            inertiaAfter != null ? inertiaAfter.getShipMass() : Double.NaN,
+            vecStr(provider.getLockedPositionInModel()),
+            vecStr(provider.getCanonicalPos()),
             vecStr(beforePIM), vecStr(afterPIM), vecStr(deltaPIM),
-            vecStr(beforeCOM), vecStr(afterCOM), vecStr(afterCOMSpace), vecStr(deltaCOM),
+            vecStr(beforePos), vecStr(afterPos), vecStr(deltaPos),
+            vecStr(beforeCOM), vecStr(afterCOM), vecStr(deltaCOM), vecStr(afterCOMSpace),
             vecStr(pimVsCom),
-            vecStr(rawAfterPos), vecStr(compPos)
+            vecStr(compPos), vecStr(compPIM)
         );
     }
 

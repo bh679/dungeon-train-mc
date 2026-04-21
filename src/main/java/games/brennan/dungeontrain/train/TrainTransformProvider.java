@@ -132,6 +132,14 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         this.lastShiftTick = lastShiftTick;
     }
 
+    public Vector3dc getLockedPositionInModel() {
+        return lockedPositionInModel;
+    }
+
+    public Vector3dc getCanonicalPos() {
+        return canonicalPos;
+    }
+
     /**
      * Compute the compensated BodyTransform for a given observed ship state.
      *

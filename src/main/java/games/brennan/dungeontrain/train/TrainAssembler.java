@@ -86,9 +86,19 @@ public final class TrainAssembler {
         // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
         // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
         ship.setStatic(true);
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={})",
-            ship.getId(), shipyardOrigin, count, initialPIdx);
+        // The client needs to identify Dungeon Train ships to install the client-side
+        // transform provider that pins positionInModel across network/interpolation
+        // windows. Slug is the cheapest cross-side marker; VS should sync it.
+        ship.setSlug(TRAIN_SLUG_PREFIX + ship.getId());
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static, slug={} (shipyardOrigin={}, count={}, initialPIdx={})",
+            ship.getId(), ship.getSlug(), shipyardOrigin, count, initialPIdx);
         return ship;
+    }
+
+    public static final String TRAIN_SLUG_PREFIX = "dungeontrain:train:";
+
+    public static boolean isTrainSlug(String slug) {
+        return slug != null && slug.startsWith(TRAIN_SLUG_PREFIX);
     }
 
     /**
