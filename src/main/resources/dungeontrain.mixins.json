@@ -8,7 +8,8 @@
   "client": [
     "CreateWorldScreenAccessor",
     "CreateWorldScreenMixin",
-    "CreateWorldScreenWorldTabMixin"
+    "CreateWorldScreenWorldTabMixin",
+    "client.CreateWorldScreenMixin"
   ],
   "server": [],
   "injectors": {
