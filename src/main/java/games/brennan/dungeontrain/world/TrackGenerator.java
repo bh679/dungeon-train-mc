@@ -2,9 +2,12 @@ package games.brennan.dungeontrain.world;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RailBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -16,6 +19,12 @@ import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Generates a 5-wide stone-brick bridge deck with two parallel rails beneath
  * every Dungeon Train ship, dropping stone-brick pillars every {@link #PILLAR_PERIOD}
@@ -25,10 +34,17 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
  * rolls past. Placement is intentionally below the ship's world AABB so the
  * per-tick forward-clear pass in {@code TrainTickEvents} cannot eat them.
  *
- * This class is pure: all geometry is derived from the train's live world AABB,
- * so it works unchanged if the spawn origin or Y changes. Ship-owned blocks are
- * never overwritten (every {@code setBlock} is gated on
- * {@link VSGameUtilsKt#getShipObjectManagingPos}).
+ * Block placement uses flag {@link Block#UPDATE_CLIENTS} | {@link Block#UPDATE_KNOWN_SHAPE}
+ * (18) — {@link Block#UPDATE_NEIGHBORS} is deliberately omitted. Rails otherwise
+ * cascade through {@code RailBlock.neighborChanged} → {@code RailState.create},
+ * rewriting every adjacent rail's shape and triggering its own neighbor pass,
+ * which on a chunk-wide placement becomes O(N²) and stalls the server thread
+ * for seconds (observed: 129-tick backlog on a 29-chunk bootstrap).
+ *
+ * The spawn-time bootstrap enqueues chunk positions instead of processing them
+ * synchronously; the queue is drained by {@link #processPendingBootstrap} from
+ * the level tick so login is not blocked. Ship-owned blocks are skipped via
+ * {@link VSGameUtilsKt#getShipObjectManagingPos}.
  */
 public final class TrackGenerator {
 
@@ -41,12 +57,16 @@ public final class TrackGenerator {
     private static final int PILLAR_PERIOD = 8;
     private static final int PILLAR_Y_OFFSET = -3;
 
-    private static final int SET_BLOCK_FLAGS = 3;
+    private static final int SET_BLOCK_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
+
+    private static final int BOOTSTRAP_CHUNKS_PER_TICK = 2;
 
     private static final BlockState BED = Blocks.STONE_BRICKS.defaultBlockState();
     private static final BlockState PILLAR = Blocks.STONE_BRICKS.defaultBlockState();
     private static final BlockState RAIL_EAST_WEST = Blocks.RAIL.defaultBlockState()
             .setValue(RailBlock.SHAPE, RailShape.EAST_WEST);
+
+    private static final Map<ResourceKey<Level>, Deque<Long>> PENDING_BOOTSTRAP = new HashMap<>();
 
     private TrackGenerator() {}
 
@@ -102,33 +122,61 @@ public final class TrackGenerator {
     }
 
     /**
-     * Fill currently-loaded chunks in {@code train}'s Z strip. Needed on spawn
-     * because ChunkEvent.Load has already fired for these chunks before the
-     * train existed. We walk a generous X radius around the ship; {@code
-     * getChunkNow} returns null for positions that aren't loaded, so we skip
-     * them without forcing generation.
+     * Enqueue every chunk position in {@code train}'s Z strip within server view
+     * distance for deferred processing. Non-blocking — the actual block writes
+     * happen across subsequent ticks via {@link #processPendingBootstrap}.
+     *
+     * Processing synchronously here would stall the server thread for seconds
+     * at login and leave the client in perpetual movement-lock (VS physics
+     * queue floods + login teleport never gets sent).
      */
     public static void bootstrapForTrain(ServerLevel level, ServerShip train) {
         AABBdc aabb = train.getWorldAABB();
         int centerZ = (int) Math.floor((aabb.minZ() + aabb.maxZ()) * 0.5);
-        int shipChunkX = (int) Math.floor(((aabb.minX() + aabb.maxX()) * 0.5)) >> 4;
+        int shipChunkX = (int) Math.floor((aabb.minX() + aabb.maxX()) * 0.5) >> 4;
 
         int bedMinChunkZ = (centerZ - BED_HALF_WIDTH) >> 4;
         int bedMaxChunkZ = (centerZ + BED_HALF_WIDTH) >> 4;
 
         int radius = Math.max(8, level.getServer().getPlayerList().getViewDistance() + 2);
 
-        ServerChunkCache cache = level.getChunkSource();
-        int filled = 0;
+        Deque<Long> queue = PENDING_BOOTSTRAP.computeIfAbsent(level.dimension(), k -> new ArrayDeque<>());
+        int enqueued = 0;
         for (int cx = shipChunkX - radius; cx <= shipChunkX + radius; cx++) {
             for (int cz = bedMinChunkZ; cz <= bedMaxChunkZ; cz++) {
-                LevelChunk chunk = cache.getChunkNow(cx, cz);
-                if (chunk == null) continue;
-                generateForChunk(level, chunk, train);
-                filled++;
+                queue.offer(ChunkPos.asLong(cx, cz));
+                enqueued++;
             }
         }
-        LOGGER.info("[DungeonTrain] Track bootstrap placed in {} loaded chunk(s) around ship id={}", filled, train.getId());
+        LOGGER.info("[DungeonTrain] Track bootstrap enqueued {} chunk(s) around ship id={} (processing {}/tick)",
+                enqueued, train.getId(), BOOTSTRAP_CHUNKS_PER_TICK);
+    }
+
+    /**
+     * Drain up to {@link #BOOTSTRAP_CHUNKS_PER_TICK} queued chunk positions and
+     * generate tracks in each. Cheap when the queue is empty.
+     */
+    public static void processPendingBootstrap(ServerLevel level, List<ServerShip> trains) {
+        Deque<Long> queue = PENDING_BOOTSTRAP.get(level.dimension());
+        if (queue == null || queue.isEmpty()) return;
+        if (trains.isEmpty()) {
+            queue.clear();
+            return;
+        }
+
+        ServerChunkCache cache = level.getChunkSource();
+        int processed = 0;
+        while (processed < BOOTSTRAP_CHUNKS_PER_TICK && !queue.isEmpty()) {
+            long packed = queue.poll();
+            int cx = ChunkPos.getX(packed);
+            int cz = ChunkPos.getZ(packed);
+            LevelChunk chunk = cache.getChunkNow(cx, cz);
+            if (chunk == null) continue;
+            for (ServerShip train : trains) {
+                generateForChunk(level, chunk, train);
+            }
+            processed++;
+        }
     }
 
     private static void placePillar(ServerLevel level, int x, int topY, int z, int minWorldY) {
@@ -137,8 +185,6 @@ public final class TrackGenerator {
             cursor.set(x, y, z);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, cursor) != null) return;
             BlockState existing = level.getBlockState(cursor);
-            // Existing stone brick = previously placed pillar, we're done (idempotent).
-            // Any other occluding block = natural ground giving the pillar support.
             if (existing.getBlock() == Blocks.STONE_BRICKS) return;
             if (existing.canOcclude()) return;
             level.setBlock(cursor, PILLAR, SET_BLOCK_FLAGS);
