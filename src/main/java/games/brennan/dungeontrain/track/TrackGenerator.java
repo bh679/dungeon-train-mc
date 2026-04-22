@@ -56,11 +56,12 @@ public final class TrackGenerator {
      * would otherwise try to fill 60+ chunks in one tick, blocking the
      * server thread long enough to stall VS's physics queue.
      *
-     * <p>At 4 chunks/tick × 20 TPS = 80 chunks/sec fill rate, a full
-     * render-distance corridor (~60 chunks) completes in under a second
-     * of in-game time. Subsequent scans hit the cache and exit instantly.</p>
+     * <p>One chunk's worth of placement is ~80 columns × ~2 setBlock calls =
+     * ~160 block changes per scan, ~16ms on server thread. A full render-
+     * distance corridor (~60 chunks) completes in ~3 seconds of in-game
+     * time — subsequent scans hit the cache and exit instantly.</p>
      */
-    private static final int CHUNKS_PER_SCAN_BUDGET = 4;
+    private static final int CHUNKS_PER_SCAN_BUDGET = 1;
 
     private TrackGenerator() {}
 
