@@ -102,14 +102,14 @@ final class CarriageTemplateTest {
     // ---- Dimension constants ----
 
     @Test
-    @DisplayName("LENGTH/WIDTH/HEIGHT match documented carriage footprint (9x5x4)")
+    @DisplayName("LENGTH/WIDTH/HEIGHT match documented carriage footprint (9x9x7)")
     void constants_haveExpectedDimensions() {
         // These constants drive TrainAssembler.spawnTrain's offset math,
         // TrainWindowManager's carriage-index projection, and the wiki
-        // "9 x 5 x 4 (length x width x height)" documentation. Any change
+        // "9 x 9 x 7 (length x width x height)" documentation. Any change
         // needs a paired wiki + doc update.
         assertEquals(9, CarriageTemplate.LENGTH, "LENGTH");
-        assertEquals(5, CarriageTemplate.WIDTH, "WIDTH");
-        assertEquals(4, CarriageTemplate.HEIGHT, "HEIGHT");
+        assertEquals(9, CarriageTemplate.WIDTH, "WIDTH");
+        assertEquals(7, CarriageTemplate.HEIGHT, "HEIGHT");
     }
 }
