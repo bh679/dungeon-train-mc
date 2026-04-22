@@ -22,6 +22,7 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
+import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
@@ -77,19 +78,21 @@ public final class PlayerJoinEvents {
 
             LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {}",
                 DEFAULT_CARRIAGE_COUNT, trainOrigin);
+            ServerShip newShip;
             try {
                 Vector3d spawnerPos = new Vector3d(target.px, target.py, target.pz);
-                TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
+                newShip = TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] Starter train auto-spawn failed", t);
                 return;
             }
-            trainShip = findTrain(level);
-            if (trainShip == null) {
-                LOGGER.error("[DungeonTrain] Train assembly succeeded but ship not found in loaded set");
-                return;
-            }
-            teleportAndLookAt(level, player, trainShip, target);
+            // Use the ServerShip returned by spawnTrain directly — avoids the
+            // race where VS hasn't added the new ship to getLoadedShips() yet.
+            // Without this, the player stays at world spawn (pIdx=0) while the
+            // train was built expecting them at the picked target pIdx, and
+            // the window manager has to relocate every carriage on the next
+            // tick — a 3000+ setBlock spike that stalls the server for 5+s.
+            teleportAndLookAtShip(level, player, newShip, target);
             return;
         }
 
@@ -126,6 +129,20 @@ public final class PlayerJoinEvents {
         ServerLevel level,
         ServerPlayer player,
         LoadedServerShip ship,
+        PlayerTarget target
+    ) {
+        teleportAndLookAtShip(level, player, ship, target);
+    }
+
+    /**
+     * Overload accepting {@link ServerShip} so the login path can use the ship
+     * returned directly from {@link TrainAssembler#spawnTrain} without waiting
+     * for VS to register it in the loaded-ships set.
+     */
+    private static void teleportAndLookAtShip(
+        ServerLevel level,
+        ServerPlayer player,
+        ServerShip ship,
         PlayerTarget target
     ) {
         Vector3dc trainPos = ship.getTransform().getPosition();
