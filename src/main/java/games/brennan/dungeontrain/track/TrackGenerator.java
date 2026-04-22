@@ -173,16 +173,34 @@ public final class TrackGenerator {
     private static void placePillar(ServerLevel level, int worldX, int worldZ, int pillarTopInclusive) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int minY = level.getMinBuildHeight() + 1;
+        int placed = 0;
         for (int py = pillarTopInclusive; py >= minY; py--) {
             pos.set(worldX, py, worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[DungeonTrain] Pillar at ({},{}) STOP at y={} (ship-managed) placed={}",
+                        worldX, worldZ, py, placed);
+                }
+                return;
+            }
             BlockState existing = level.getBlockState(pos);
             boolean passable = existing.isAir()
                 || !existing.getFluidState().isEmpty()
                 || existing.is(BlockTags.LEAVES)
                 || existing.is(Blocks.VINE);
-            if (!passable) return; // hit real terrain (or existing pillar) → supported
+            if (!passable) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("[DungeonTrain] Pillar at ({},{}) STOP at y={} hit={} placed={}",
+                        worldX, worldZ, py, existing.getBlock().builtInRegistryHolder().key().location(), placed);
+                }
+                return;
+            }
             level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
+            placed++;
+        }
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[DungeonTrain] Pillar at ({},{}) reached minY={} without support, placed={}",
+                worldX, worldZ, minY, placed);
         }
     }
 
