@@ -14,6 +14,8 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
 
 /**
@@ -37,6 +39,18 @@ public class DungeonTrain {
                 "dungeontrain-server.toml");
 
         MinecraftForge.EVENT_BUS.register(this);
+
+        // Keeps the `games.brennan.dungeontrain.jitter` namespace at DEBUG
+        // so the [baseline] capture line (spawn) and [tripwire] WARN (large
+        // physics-tick deltas — should never fire in normal play) stay
+        // visible without Forge-wide DEBUG.
+        //
+        // The chatty per-tick probes ([physics], [pivotMoved], [pIdx],
+        // [windowManager], [client]) log at TRACE — set
+        // `-Dforge.logging.console.level=trace` or bump this line to
+        // {@link Level#TRACE} to re-enable them when diagnosing a
+        // regression of the train-hop fix.
+        Configurator.setLevel("games.brennan.dungeontrain.jitter", Level.DEBUG);
 
         LOGGER.info("Dungeon Train constructor — mod loading");
     }
