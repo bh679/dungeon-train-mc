@@ -135,6 +135,18 @@ public final class TrackGenerator {
         BlockState existingBed = level.getBlockState(bedPos);
         if (existingBed.is(TrackPalette.BED.getBlock())) return;
 
+        // Snapshot the "real" ground height BEFORE we mutate anything. Every
+        // MC heightmap (including MOTION_BLOCKING_NO_LEAVES) treats stone
+        // brick as a motion-blocking block, so the `level.setBlock` below
+        // would push the heightmap up to bedY+1 and the pillar check would
+        // then conclude the bed is sitting on solid ground. That's the
+        // reason pillars disappeared over floating terrain — read once, up
+        // front, and we stay honest.
+        boolean pillarCandidate = Math.floorMod(worldX, PILLAR_SPACING) == 0;
+        int groundY = pillarCandidate
+            ? level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, worldX, worldZ)
+            : 0;
+
         // 1. Bed.
         level.setBlock(bedPos, TrackPalette.BED, Block.UPDATE_CLIENTS);
 
@@ -150,11 +162,8 @@ public final class TrackGenerator {
 
         // 3. Pillar — only at every Nth X, and only when ground is below the
         // bed (bridge case: over air/water/ravine).
-        if (Math.floorMod(worldX, PILLAR_SPACING) == 0) {
-            int groundY = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, worldX, worldZ);
-            if (groundY < g.bedY() - 1) {
-                placePillar(level, worldX, worldZ, groundY, g.bedY() - 1);
-            }
+        if (pillarCandidate && groundY < g.bedY() - 1) {
+            placePillar(level, worldX, worldZ, groundY, g.bedY() - 1);
         }
     }
 
