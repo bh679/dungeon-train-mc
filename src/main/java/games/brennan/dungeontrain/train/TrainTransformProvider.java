@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -15,8 +16,11 @@ import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.ServerShipTransformProvider;
 import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Drives a VS ship at a fixed world-space velocity by prescribing its next
@@ -220,6 +224,60 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
     public void setLockedInertia(ShipInertiaLocker.LockedInertia locked) {
         this.lockedInertia = locked;
+    }
+
+    /**
+     * World-space track layout under this train. Null until
+     * {@link TrainAssembler#spawnTrain} attaches one at assembly time.
+     * Written once on the server thread; read on both the server thread
+     * (TrackChunkEvents, periodic tick) and — never on the physics thread.
+     */
+    private volatile TrackGeometry trackGeometry;
+
+    public TrackGeometry getTrackGeometry() {
+        return trackGeometry;
+    }
+
+    public void setTrackGeometry(TrackGeometry geometry) {
+        this.trackGeometry = geometry;
+    }
+
+    /**
+     * ChunkPos longs (see {@link net.minecraft.world.level.ChunkPos#asLong})
+     * of chunks we've already filled with tracks. The periodic scan and the
+     * chunk-load listener both consult this set before iterating block
+     * columns, so re-visiting a chunk is an O(1) hit lookup.
+     *
+     * <p>ConcurrentHashMap-backed set — both the server thread (periodic
+     * tick, chunk events) and future threads can touch it safely.</p>
+     */
+    private final Set<Long> filledChunks = ConcurrentHashMap.newKeySet();
+
+    public Set<Long> getFilledChunks() {
+        return filledChunks;
+    }
+
+    /**
+     * ChunkPos longs queued for deferred filling. The {@code ChunkEvent.Load}
+     * listener only <em>enqueues</em> here (no synchronous setBlock) because
+     * painting on the load tick was observed to wedge the server thread for
+     * 17+ seconds while VS was still settling a freshly-spawned ship.
+     *
+     * <p>Drained at the rate-limited {@code TrackGenerator.fillRenderDistance}
+     * budget (see {@code CHUNKS_PER_SCAN_BUDGET}), so a burst of chunk loads
+     * at login spreads its block writes across many ticks instead of one.</p>
+     *
+     * <p>ConcurrentLinkedDeque (not a HashSet) so drain order matches
+     * chunk-load order — chunks near the player paint before chunks far
+     * away, giving a visually contiguous bed instead of the hash-scattered
+     * patchwork we got with HashSet iteration. Dedup is handled at drain
+     * time via {@link #filledChunks}; occasional duplicates in the queue
+     * are harmless.</p>
+     */
+    private final Deque<Long> pendingChunks = new ConcurrentLinkedDeque<>();
+
+    public Deque<Long> getPendingChunks() {
+        return pendingChunks;
     }
 
     /**

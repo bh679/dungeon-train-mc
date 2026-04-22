@@ -50,6 +50,9 @@ public final class TrainCommand {
                 .then(Commands.argument("value",
                         DoubleArgumentType.doubleArg(DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED))
                     .executes(ctx -> runSpeed(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "value")))))
+            .then(Commands.literal("tracks")
+                .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
             .then(EditorCommand.build())
             .then(DebugCommand.build());
 
@@ -115,6 +118,16 @@ public final class TrainCommand {
         source.sendSuccess(() -> Component.literal(
             "Train speed set to " + value + " m/s (" + count + " active train"
                 + (count == 1 ? "" : "s") + " updated)"
+        ), true);
+        return 1;
+    }
+
+    private static int runTracks(CommandSourceStack source, boolean enabled) {
+        DungeonTrainConfig.setGenerateTracks(enabled);
+        LOGGER.info("[DungeonTrain] /dungeontrain tracks {} — generation flag flipped", enabled ? "on" : "off");
+        source.sendSuccess(() -> Component.literal(
+            "Track generation is now " + (enabled ? "ON" : "OFF")
+                + ". Existing tracks are preserved; this only affects future chunk loads and per-tick scans."
         ), true);
         return 1;
     }
