@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.TrainAssembler;
@@ -10,6 +11,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 
 import java.util.List;
@@ -30,6 +32,8 @@ import java.util.List;
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class TrackGenEvents {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private TrackGenEvents() {}
 
     @SubscribeEvent
@@ -41,6 +45,8 @@ public final class TrackGenEvents {
         if (trains.isEmpty()) return;
 
         ChunkAccess chunk = event.getChunk();
+        LOGGER.debug("[DungeonTrain] ChunkEvent.Load painting tracks: chunk={} newChunk={} trains={}",
+                chunk.getPos(), event.isNewChunk(), trains.size());
         for (ServerShip train : trains) {
             TrackGenerator.generateForChunk(level, chunk, train);
         }
