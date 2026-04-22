@@ -22,6 +22,7 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
+import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
@@ -77,19 +78,22 @@ public final class PlayerJoinEvents {
 
             LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {}",
                 DEFAULT_CARRIAGE_COUNT, trainOrigin);
+            ServerShip newShip;
             try {
                 Vector3d spawnerPos = new Vector3d(target.px, target.py, target.pz);
-                TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
+                newShip = TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] Starter train auto-spawn failed", t);
                 return;
             }
-            trainShip = findTrain(level);
-            if (trainShip == null) {
-                LOGGER.error("[DungeonTrain] Train assembly succeeded but ship not found in loaded set");
+            if (newShip == null) {
+                LOGGER.error("[DungeonTrain] Train assembly returned null ship");
                 return;
             }
-            teleportAndLookAt(level, player, trainShip, target);
+            // Use the just-assembled ship directly — re-querying getLoadedShips()
+            // races with VS's loaded-set registration and returns null for several
+            // ticks after assembly, preventing the login teleport.
+            teleportAndLookAt(level, player, newShip, target);
             return;
         }
 
@@ -125,7 +129,7 @@ public final class PlayerJoinEvents {
     private static void teleportAndLookAt(
         ServerLevel level,
         ServerPlayer player,
-        LoadedServerShip ship,
+        ServerShip ship,
         PlayerTarget target
     ) {
         Vector3dc trainPos = ship.getTransform().getPosition();

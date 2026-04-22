@@ -159,10 +159,10 @@ public final class TrackGenerator {
     public static void processPendingBootstrap(ServerLevel level, List<ServerShip> trains) {
         Deque<Long> queue = PENDING_BOOTSTRAP.get(level.dimension());
         if (queue == null || queue.isEmpty()) return;
-        if (trains.isEmpty()) {
-            queue.clear();
-            return;
-        }
+        // Don't drop queued work when trains is empty — VS may not have registered
+        // the just-spawned ship yet (observed race: getLoadedShips() returns empty
+        // for a few ticks after assembly). Just wait for the ship to appear.
+        if (trains.isEmpty()) return;
 
         ServerChunkCache cache = level.getChunkSource();
         int processed = 0;
