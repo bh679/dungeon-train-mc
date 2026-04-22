@@ -78,16 +78,33 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     private int lastShiftDirection;
     private long lastShiftTick;
 
-    // Jitter-probe state (Stage 1, see `.claude/plans/swirling-fluttering-squid.md`).
+    // Jitter-probe state (Stage 1 + 2b, see `.claude/plans/swirling-fluttering-squid.md`).
     // Physics thread ownership — no volatile needed; never read from another thread.
     private long physicsTickCounter;
     private Vector3d prevEffectivePos;
     private double lastLoggedComDeltaX = Double.NaN;
     private int tripwireCooldown;
+    // Stage 2b: track previous pivot to catch ANY movement (even sub-block
+    // floating-point noise-level drifts) between physics ticks. Answers
+    // "is the COM moving between mutations?" directly.
+    private double lastPivotX = Double.NaN;
+    private double lastPivotY = Double.NaN;
+    private double lastPivotZ = Double.NaN;
+    // Sub-mm threshold for "the pivot moved" events so we don't log every
+    // floating-point round-off. Any real COM recalc will produce deltas far
+    // larger than this.
+    private static final double PIVOT_MOVE_EPSILON = 1e-6;
     // Written by the server thread (TrainWindowManager) and read by the server
     // thread (TrainTickEvents' H4 carry probe) on the same tick — same thread
     // invocation chain, so no synchronization required.
     private long lastMutationTick = -1L;
+
+    // Stage 2b Option B — timestamp of the most recent block mutation (nanos).
+    // Written on the server thread when a mutation happens; read on the physics
+    // thread to compute msSinceMutation. Volatile because cross-thread long
+    // reads aren't atomic on all JVMs. Any read is a point-in-time snapshot —
+    // exact ordering doesn't matter, only ballpark magnitude.
+    private volatile long lastMutationNanos = 0L;
 
     public TrainTransformProvider(
         Vector3dc targetVelocity,
@@ -181,6 +198,30 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         this.lastMutationTick = tick;
     }
 
+    public long getLastMutationNanos() {
+        return lastMutationNanos;
+    }
+
+    public void setLastMutationNanos(long nanos) {
+        this.lastMutationNanos = nanos;
+    }
+
+    /**
+     * Snapshot of the ship's inertia at spawn time. When non-null, {@link
+     * TrainWindowManager} writes these values back onto the ship after every
+     * voxel mutation so VS doesn't move {@code positionInModel}. See
+     * {@link ShipInertiaLocker} for the mechanism.
+     */
+    private volatile ShipInertiaLocker.LockedInertia lockedInertia;
+
+    public ShipInertiaLocker.LockedInertia getLockedInertia() {
+        return lockedInertia;
+    }
+
+    public void setLockedInertia(ShipInertiaLocker.LockedInertia locked) {
+        this.lockedInertia = locked;
+    }
+
     /**
      * Compute the compensated BodyTransform for a given observed ship state.
      *
@@ -197,20 +238,40 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     public BodyTransform computeCompensatedTransform(ShipTransform current) {
         if (lockedRotation == null) return null;
 
-        Vector3d comDelta = new Vector3d(current.getPositionInModel()).sub(lockedPositionInModel);
-        if (comDelta.lengthSquared() > COM_DRIFT_LOG_THRESHOLD_SQ
-            && Math.abs(comDelta.x - lastLoggedDriftX) > 0.5) {
-            LOGGER.debug("[DungeonTrain] Pivot drift: comDelta=({}, {}, {}) — compensating",
-                comDelta.x, comDelta.y, comDelta.z);
-            lastLoggedDriftX = comDelta.x;
+        Vector3d effectivePos = computeEffectivePosition(
+            canonicalPos, current.getPositionInModel(), lockedPositionInModel, lockedRotation);
+
+        double rawComDeltaX = current.getPositionInModel().x() - lockedPositionInModel.x();
+        if (rawComDeltaX * rawComDeltaX > COM_DRIFT_LOG_THRESHOLD_SQ
+            && Math.abs(rawComDeltaX - lastLoggedDriftX) > 0.5) {
+            LOGGER.debug("[DungeonTrain] Pivot drift: rawComDeltaX={} — compensating", rawComDeltaX);
+            lastLoggedDriftX = rawComDeltaX;
         }
-        lockedRotation.transform(comDelta);
-        Vector3d effectivePos = new Vector3d(canonicalPos).add(comDelta);
 
         return current.toBuilder()
             .position(effectivePos)
             .rotation(lockedRotation)
             .build();
+    }
+
+    /**
+     * Pure-logic helper for the pivot-drift compensation math. Extracted so
+     * unit tests can exercise the arithmetic without mocking VS's
+     * {@link ShipTransform} / {@link BodyTransform} interfaces.
+     *
+     * Formula: {@code effectivePos = canonicalPos + lockedRotation · (currentPivot − lockedPivot)}.
+     *
+     * @return a newly-allocated {@link Vector3d} — callers own the result.
+     */
+    static Vector3d computeEffectivePosition(
+        Vector3dc canonicalPos,
+        Vector3dc currentPivot,
+        Vector3dc lockedPivot,
+        Quaterniondc lockedRotation
+    ) {
+        Vector3d comDelta = new Vector3d(currentPivot).sub(lockedPivot);
+        lockedRotation.transform(comDelta);
+        return new Vector3d(canonicalPos).add(comDelta);
     }
 
     @NotNull
@@ -223,6 +284,13 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
             lockedRotation = new Quaterniond(current.getRotation());
             canonicalPos = new Vector3d(current.getPosition());
             lockedPositionInModel = new Vector3d(current.getPositionInModel());
+            // Stage 2b P4 — sanity-log the captured baseline. Non-identity
+            // rotation would change the sign convention of the compensation
+            // math and matter a lot for diagnosis; print it once.
+            JITTER_LOGGER.info(
+                "[baseline] captured lockedRotation=({}, {}, {}, {}) canonicalPos={} lockedPositionInModel={}",
+                lockedRotation.x(), lockedRotation.y(), lockedRotation.z(), lockedRotation.w(),
+                fmt(canonicalPos), fmt(lockedPositionInModel));
         }
 
         canonicalPos.add(
@@ -245,19 +313,47 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     }
 
     /**
-     * Stage 1 jitter probe — emits one DEBUG line every
-     * {@link #JITTER_DEBUG_PERIOD} ticks (or sooner if {@code comDelta} changes
-     * by more than {@link #JITTER_COMDELTA_LOG_STEP}), plus a WARN tripwire
-     * whenever the physics-tick position delta exceeds twice the expected
-     * straight-line velocity step. Delete once the root cause of the flatbed
-     * hop is confirmed.
+     * Full-precision Vector3d formatter for jitter logs. The default
+     * {@code Vector3d.toString()} uses scientific notation with ~4
+     * significant figures, which hides sub-block drift in pivots that
+     * sit at huge coordinate magnitudes (e.g. {@code -2.867e7} can differ
+     * by tens of blocks yet print identically). Six decimal places are
+     * enough for sub-mm precision across the MC world bounds.
+     */
+    static String fmt(Vector3dc v) {
+        if (v == null) return "null";
+        return String.format("(%.6f, %.6f, %.6f)", v.x(), v.y(), v.z());
+    }
+
+    /**
+     * Stage 1 + 2b jitter probe — emits structured DEBUG lines covering
+     * every COM/pivot change, the ship's next transform, and a WARN
+     * tripwire on any physics-tick position jump that exceeds the
+     * expected straight-line velocity step. Answers the direct question
+     * "is the COM moving, and if so, when and by how much?".
      */
     private void logPhysicsProbe(ShipTransform current, BodyTransform nextTransform) {
         physicsTickCounter++;
         Vector3dc effPos = nextTransform.getPosition();
         Vector3dc pivot = current.getPositionInModel();
+        Vector3dc pivotInReturned = nextTransform.getPositionInModel();
         double rawComDeltaX = pivot.x() - lockedPositionInModel.x();
 
+        // Stage 2b P2 — voxel world-position sample. Voxel A = shipyard origin
+        // (model-space (0,0,0)). voxelWorld = effPos + rotation · (0 - pivotInReturned).
+        // If voxelA_world oscillates across physics ticks, voxels are hopping;
+        // if only effPos oscillates, voxels are stable and the hop is in ship-
+        // frame only (which should be invisible given correct client rendering).
+        Vector3d voxelA = new Vector3d(pivotInReturned).negate();
+        lockedRotation.transform(voxelA);
+        voxelA.add(effPos);
+
+        // Stage 2b P6 — label pivot source. "ours" means VS honoured our
+        // lockedPivot override (comDelta=0); "VS" means VS re-derived its
+        // own pivot.
+        String src = Math.abs(rawComDeltaX) < PIVOT_MOVE_EPSILON ? "ours" : "VS";
+
+        // Tripwire on effPos delta (Stage 1, kept as-is).
         if (prevEffectivePos != null && tripwireCooldown == 0) {
             double dx = effPos.x() - prevEffectivePos.x;
             double dy = effPos.y() - prevEffectivePos.y;
@@ -270,20 +366,61 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
             ) * PHYSICS_DT * JITTER_TRIPWIRE_MULTIPLIER;
             if (deltaLen > expectedMax) {
                 JITTER_LOGGER.warn(
-                    "[tripwire] physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={}",
-                    physicsTickCounter, deltaLen, expectedMax, canonicalPos, pivot,
-                    lockedPositionInModel, effPos, prevEffectivePos);
+                    "[tripwire] physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={}",
+                    physicsTickCounter, deltaLen, expectedMax, fmt(canonicalPos), fmt(pivot),
+                    fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src);
                 tripwireCooldown = JITTER_TRIPWIRE_COOLDOWN_TICKS;
             }
         }
         if (tripwireCooldown > 0) tripwireCooldown--;
 
+        // Stage 2b Option B — unconditional "pivot moved" probe. Fires on
+        // ANY change in current.getPositionInModel() between consecutive
+        // physics ticks, even sub-0.1-block drift. Tags each event with
+        // msSinceMutation so we can distinguish mutation-driven moves
+        // (small delta, expected) from spontaneous VS-internal moves
+        // (large delta, indicates VS recalculates independently of block
+        // changes — would require a different fix).
+        //
+        // Reads lastMutationNanos across the server/physics thread
+        // boundary. The field is volatile; a slightly stale read is fine
+        // because msSinceMutation is a diagnostic signal, not a correctness
+        // dependency.
+        long nowNanos = System.nanoTime();
+        long mutNanos = lastMutationNanos;
+        long msSinceMutation = mutNanos == 0L ? -1L : (nowNanos - mutNanos) / 1_000_000L;
+        boolean mutationDriven = msSinceMutation >= 0L && msSinceMutation < 100L;
+
+        if (!Double.isNaN(lastPivotX)) {
+            double pdx = pivot.x() - lastPivotX;
+            double pdy = pivot.y() - lastPivotY;
+            double pdz = pivot.z() - lastPivotZ;
+            if (Math.abs(pdx) > PIVOT_MOVE_EPSILON
+                || Math.abs(pdy) > PIVOT_MOVE_EPSILON
+                || Math.abs(pdz) > PIVOT_MOVE_EPSILON) {
+                JITTER_LOGGER.debug(
+                    "[pivotMoved] physicsTick={} pivotNow={} delta=({}, {}, {}) src={} lastMutationTick={} msSinceMutation={} mutationDriven={}",
+                    physicsTickCounter, fmt(pivot),
+                    String.format("%.6f", pdx),
+                    String.format("%.6f", pdy),
+                    String.format("%.6f", pdz),
+                    src, lastMutationTick, msSinceMutation, mutationDriven);
+            }
+        }
+        lastPivotX = pivot.x();
+        lastPivotY = pivot.y();
+        lastPivotZ = pivot.z();
+
+        // Periodic [physics] sample (Stage 1, full-precision now).
         boolean comDeltaChanged = Double.isNaN(lastLoggedComDeltaX)
             || Math.abs(rawComDeltaX - lastLoggedComDeltaX) > JITTER_COMDELTA_LOG_STEP;
         if (physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged) {
             JITTER_LOGGER.debug(
-                "[physics] physicsTick={} canonicalPos={} pivotNow={} rawComDeltaX={} effPos={} lastMutationTick={}",
-                physicsTickCounter, canonicalPos, pivot, rawComDeltaX, effPos, lastMutationTick);
+                "[physics] physicsTick={} src={} canonicalPos={} pivotNow={} pivotLocked={} rawComDeltaX={} effPos={} voxelA_world={} lastMutationTick={} msSinceMutation={}",
+                physicsTickCounter, src,
+                fmt(canonicalPos), fmt(pivot), fmt(lockedPositionInModel),
+                String.format("%.6f", rawComDeltaX),
+                fmt(effPos), fmt(voxelA), lastMutationTick, msSinceMutation);
             lastLoggedComDeltaX = rawComDeltaX;
         }
 

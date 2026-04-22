@@ -60,6 +60,14 @@ public final class TrainWindowManager {
         TrainTransformProvider provider,
         List<ServerPlayer> players
     ) {
+        // First time we see this ship, snapshot its inertia so VS's mass-
+        // recalc-on-block-change can be reverted after each window mutation.
+        // See ShipInertiaLocker for the why; this is the "Path A" fix for
+        // the flatbed-adjacent train hop.
+        if (provider.getLockedInertia() == null) {
+            provider.setLockedInertia(ShipInertiaLocker.capture(ship));
+        }
+
         int count = provider.getCount();
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;
@@ -78,18 +86,33 @@ public final class TrainWindowManager {
         // with our setBlock calls (H1). See `.claude/plans/swirling-fluttering-squid.md`.
         Vector3dc pivotPreMutate = new Vector3d(ship.getTransform().getPositionInModel());
         Vector3dc shipWorldPosPreMutate = new Vector3d(shipWorldPos);
+        org.joml.primitives.AABBdc aabbPreMutate = new org.joml.primitives.AABBd(ship.getWorldAABB());
 
         Set<Integer> current = provider.getActiveIndices();
         Set<Integer> desired = new HashSet<>();
         Set<Integer> occupied = new HashSet<>();
 
         for (ServerPlayer player : players) {
-            double dx = player.getX() - shipWx;
-            double dy = player.getY() - shipWy;
-            double dz = player.getZ() - shipWz;
-            if (dx * dx + dy * dy + dz * dz > NEAR_RADIUS_SQ) continue;
+            // Distance from the player to the ship's world AABB — zero if
+            // inside, otherwise the distance to the nearest face. Using the
+            // AABB instead of ship.getTransform().getPosition() matters for
+            // long trains: the ship's origin point sits at one end of a
+            // 180-block-long carriage set, so a player who's walked to the
+            // far end can be 90+ blocks from the origin while still standing
+            // on the train. With the COM-pin fix (ShipInertiaLocker) the
+            // origin no longer drifts along with mutations, so the origin-
+            // distance check was filtering out players before they reached
+            // a carriage boundary — which stopped the rolling window from
+            // adding new carriages.
+            double px = player.getX();
+            double py = player.getY();
+            double pz = player.getZ();
+            double cdx = Math.max(0, Math.max(aabbPreMutate.minX() - px, px - aabbPreMutate.maxX()));
+            double cdy = Math.max(0, Math.max(aabbPreMutate.minY() - py, py - aabbPreMutate.maxY()));
+            double cdz = Math.max(0, Math.max(aabbPreMutate.minZ() - pz, pz - aabbPreMutate.maxZ()));
+            if (cdx * cdx + cdy * cdy + cdz * cdz > NEAR_RADIUS_SQ) continue;
 
-            Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
+            Vector3d local = new Vector3d(px, py, pz);
             ship.getTransform().getWorldToShip().transformPosition(local);
             int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
 
@@ -156,9 +179,24 @@ public final class TrainWindowManager {
         // a flatbed carriage enters/leaves the window because the flatbed's
         // small mass swings the COM by more blocks per shift).
         if (mutated) {
-            logMutationProbe(level, ship, provider, pivotPreMutate, shipWorldPosPreMutate,
-                players, shipWx, shipWy, shipWz, originX);
+            // Record the mutation timestamp BEFORE calling restore so the
+            // physics-thread probe can distinguish "pivot moved due to
+            // this mutation" (msSinceMutation small) from "pivot moved
+            // independently, long after the last mutation" (msSinceMutation
+            // large — would indicate VS recomputes COM spontaneously).
             provider.setLastMutationTick(level.getGameTime());
+            provider.setLastMutationNanos(System.nanoTime());
+
+            // Path A fix: VS's ShipInertiaDataImpl.onSetBlock has already
+            // shifted _centerOfMassInShip and _mass for every block we just
+            // placed/erased. Revert those changes before the next physics
+            // tick reads getCenterOfMass() — that's what was making
+            // positionInModel drift by ~10 blocks per mutation, which our
+            // compensation then translated into the visible hop.
+            ShipInertiaLocker.restore(ship, provider.getLockedInertia());
+
+            logMutationProbe(level, ship, provider, pivotPreMutate, shipWorldPosPreMutate,
+                aabbPreMutate, players, shipWx, shipWy, shipWz, originX);
             BodyTransform compensated = provider.computeCompensatedTransform(ship.getTransform());
             if (compensated != null) {
                 ship.unsafeSetTransform(compensated);
@@ -181,6 +219,7 @@ public final class TrainWindowManager {
         TrainTransformProvider provider,
         Vector3dc pivotPreMutate,
         Vector3dc shipWorldPosPreMutate,
+        org.joml.primitives.AABBdc aabbPreMutate,
         List<ServerPlayer> players,
         double shipWx, double shipWy, double shipWz,
         int originX
@@ -189,14 +228,19 @@ public final class TrainWindowManager {
 
         Vector3dc pivotPostMutate = new Vector3d(ship.getTransform().getPositionInModel());
         Vector3dc shipWorldPosPostMutate = new Vector3d(ship.getTransform().getPosition());
+        org.joml.primitives.AABBdc aabbPostMutate = ship.getWorldAABB();
         Vector3d pivotDelta = new Vector3d(pivotPostMutate).sub(pivotPreMutate);
         Vector3d shipPosDelta = new Vector3d(shipWorldPosPostMutate).sub(shipWorldPosPreMutate);
 
         JITTER_LOGGER.debug(
-            "[windowManager] tick={} shipId={} pivotPre={} pivotPost={} pivotDelta={} shipPosPre={} shipPosPost={} shipPosDelta={}",
+            "[windowManager] tick={} shipId={} pivotPre={} pivotPost={} pivotDelta={} shipPosPre={} shipPosPost={} shipPosDelta={} aabbPre=[{},{},{} → {},{},{}] aabbPost=[{},{},{} → {},{},{}]",
             level.getGameTime(), ship.getId(),
-            pivotPreMutate, pivotPostMutate, pivotDelta,
-            shipWorldPosPreMutate, shipWorldPosPostMutate, shipPosDelta);
+            TrainTransformProvider.fmt(pivotPreMutate), TrainTransformProvider.fmt(pivotPostMutate), TrainTransformProvider.fmt(pivotDelta),
+            TrainTransformProvider.fmt(shipWorldPosPreMutate), TrainTransformProvider.fmt(shipWorldPosPostMutate), TrainTransformProvider.fmt(shipPosDelta),
+            String.format("%.3f", aabbPreMutate.minX()), String.format("%.3f", aabbPreMutate.minY()), String.format("%.3f", aabbPreMutate.minZ()),
+            String.format("%.3f", aabbPreMutate.maxX()), String.format("%.3f", aabbPreMutate.maxY()), String.format("%.3f", aabbPreMutate.maxZ()),
+            String.format("%.3f", aabbPostMutate.minX()), String.format("%.3f", aabbPostMutate.minY()), String.format("%.3f", aabbPostMutate.minZ()),
+            String.format("%.3f", aabbPostMutate.maxX()), String.format("%.3f", aabbPostMutate.maxY()), String.format("%.3f", aabbPostMutate.maxZ()));
 
         for (ServerPlayer player : players) {
             double dx = player.getX() - shipWx;
@@ -208,10 +252,10 @@ public final class TrainWindowManager {
             ship.getTransform().getWorldToShip().transformPosition(local);
             int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
             JITTER_LOGGER.debug(
-                "[pIdx] tick={} player={} worldX={} worldY={} worldZ={} shipLocalX={} pIdx={} committedPIdx={} lastShiftDir={} ticksSinceShift={}",
+                "[pIdx] tick={} player={} worldPos=({}, {}, {}) shipLocalX={} pIdx={} committedPIdx={} lastShiftDir={} ticksSinceShift={}",
                 level.getGameTime(), player.getName().getString(),
-                player.getX(), player.getY(), player.getZ(),
-                local.x, pIdx,
+                String.format("%.6f", player.getX()), String.format("%.6f", player.getY()), String.format("%.6f", player.getZ()),
+                String.format("%.6f", local.x), pIdx,
                 provider.getCommittedPIdx(), provider.getLastShiftDirection(),
                 level.getGameTime() - provider.getLastShiftTick());
         }
