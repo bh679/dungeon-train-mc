@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
 import net.minecraft.core.BlockPos;
@@ -44,6 +46,10 @@ public final class TrainTickEvents {
     // to at least velocity * period / 20 * safety_margin.
     private static final int BLOCK_CLEAR_PERIOD_TICKS = 10;
     private static final int LOOKAHEAD_BLOCKS = 8;
+    // 1 Hz at 20 TPS — picks up chunks that were loaded at spawn time (and so
+    // never re-fire ChunkEvent.Load) plus any that moved into range since the
+    // last scan. Idempotence in TrackGenerator means re-scans are cheap.
+    private static final int TRACK_FILL_PERIOD_TICKS = 20;
 
     private static int tickCounter = 0;
 
@@ -72,6 +78,14 @@ public final class TrainTickEvents {
         if (tickCounter % BLOCK_CLEAR_PERIOD_TICKS == 0) {
             for (LoadedServerShip ship : trains) {
                 clearBlocksAhead(level, ship);
+            }
+        }
+
+        if (DungeonTrainConfig.getGenerateTracks() && tickCounter % TRACK_FILL_PERIOD_TICKS == 0) {
+            for (LoadedServerShip ship : trains) {
+                if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
+                    TrackGenerator.fillRenderDistance(level, ship, provider);
+                }
             }
         }
         tickCounter++;

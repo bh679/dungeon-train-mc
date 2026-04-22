@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -220,6 +221,22 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
     public void setLockedInertia(ShipInertiaLocker.LockedInertia locked) {
         this.lockedInertia = locked;
+    }
+
+    /**
+     * World-space track layout under this train. Null until
+     * {@link TrainAssembler#spawnTrain} attaches one at assembly time.
+     * Written once on the server thread; read on both the server thread
+     * (TrackChunkEvents, periodic tick) and — never on the physics thread.
+     */
+    private volatile TrackGeometry trackGeometry;
+
+    public TrackGeometry getTrackGeometry() {
+        return trackGeometry;
+    }
+
+    public void setTrackGeometry(TrackGeometry geometry) {
+        this.trackGeometry = geometry;
     }
 
     /**
