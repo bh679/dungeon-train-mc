@@ -281,6 +281,27 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     }
 
     /**
+     * ChunkPos longs of chunks already processed by
+     * {@link games.brennan.dungeontrain.tunnel.TunnelGenerator}. Parallel to
+     * {@link #filledChunks} — the tunnel fill is a separate pass with a
+     * wider corridor (±4 vs ±2 on Z), a different qualification check
+     * (underground materials over the ceiling), and its own phase offset in
+     * {@link games.brennan.dungeontrain.event.TrainTickEvents}.
+     */
+    private final Set<Long> tunnelFilledChunks = ConcurrentHashMap.newKeySet();
+
+    public Set<Long> getTunnelFilledChunks() {
+        return tunnelFilledChunks;
+    }
+
+    /** ChunkPos longs queued for deferred tunnel filling — parallel to {@link #pendingChunks}. */
+    private final Set<Long> pendingTunnelChunks = ConcurrentHashMap.newKeySet();
+
+    public Set<Long> getPendingTunnelChunks() {
+        return pendingTunnelChunks;
+    }
+
+    /**
      * Compute the compensated BodyTransform for a given observed ship state.
      *
      * Shared between the physics-thread provider callback (normal path) and the
