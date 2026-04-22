@@ -1,47 +1,131 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.HashSet;
-import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. The shell geometry is
- * driven by the carriage's {@link CarriageArchitecture}; block materials
- * come from the carriage's {@link CarriageStyle} (via its
- * {@link BlockPalette}). Contents (chest / lectern / mobs) are placed
- * lazily by {@link ContentsPopulator} once a player is near — the template
- * only lays down the frame.
+ * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. Four visual variants
+ * are selected per-carriage via {@link CarriageType} and
+ * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
+ *
+ * {@link #placeAt(ServerLevel, BlockPos, CarriageType)} first tries an
+ * NBT-backed template from {@link CarriageTemplateStore}; if none is saved
+ * (or the file is malformed), it falls back to the hardcoded generator in
+ * {@link #legacyPlaceAt(ServerLevel, BlockPos, CarriageType)}.
  */
 public final class CarriageTemplate {
+
+    public enum CarriageType {
+        STANDARD,
+        WINDOWED,
+        SOLID_ROOF,
+        FLATBED
+    }
 
     public static final int LENGTH = 9;
     public static final int WIDTH = 5;
     public static final int HEIGHT = 4;
 
-    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    /**
+     * Lazy-init holder for the {@link BlockState} templates. Keeping
+     * {@code Blocks.*} access off {@link CarriageTemplate}'s own static init
+     * means plain JUnit tests can call {@link #typeForIndex(int)} without
+     * requiring a Forge/Minecraft {@code Bootstrap}. The holder is only
+     * loaded on first reference from {@link #stateAt} (i.e. from a live
+     * server-thread {@code placeAt} call), so there is no behavioural change.
+     */
+    private static final class BlockStates {
+        static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
+        static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
+    }
 
     private CarriageTemplate() {}
 
+    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin) {
+        return placeAt(level, origin, CarriageType.STANDARD);
+    }
+
     /**
-     * Place a single carriage at {@code origin} (minimum corner) using
-     * the given spec. Returns the set of block positions filled — pass
-     * directly to {@code ShipAssembler.assembleToShip()}.
+     * Place a single carriage of the given type at origin (= minimum corner).
+     * Returns the set of block positions filled — pass directly to
+     * {@code ShipAssembler.assembleToShip()}.
      */
-    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageSpec spec) {
+    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, type);
+        if (stored.isPresent()) {
+            stampTemplate(level, origin, stored.get());
+            return collectFootprint(level, origin);
+        }
+        return legacyPlaceAt(level, origin, type);
+    }
+
+    /**
+     * Deterministic type selector for carriage index {@code i}. Shared by the
+     * initial spawn path and the rolling-window manager so carriage index N
+     * always renders the same variant regardless of when it appears.
+     */
+    public static CarriageType typeForIndex(int i) {
+        CarriageType[] types = CarriageType.values();
+        int mod = Math.floorMod(i, types.length);
+        return types[mod];
+    }
+
+    /**
+     * Erase a carriage footprint — set every block in the 9×4×5 region at {@code origin}
+     * to air. Used by the rolling-window manager to remove stale carriages from the
+     * trailing end of the train.
+     */
+    public static void eraseAt(ServerLevel level, BlockPos origin) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                }
+            }
+        }
+    }
+
+    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+    }
+
+    private static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin) {
+        Set<BlockPos> placed = new HashSet<>();
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (!level.getBlockState(pos).isAir()) {
+                        placed.add(pos.immutable());
+                    }
+                }
+            }
+        }
+        return placed;
+    }
+
+    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type) {
         Set<BlockPos> placed = new HashSet<>();
         int doorZ = WIDTH / 2;
-        BlockPalette palette = spec.style().palette();
-        CarriageArchitecture arch = spec.architecture();
 
         for (int dx = 0; dx < LENGTH; dx++) {
             for (int dz = 0; dz < WIDTH; dz++) {
                 for (int dy = 0; dy < HEIGHT; dy++) {
-                    BlockState state = stateAt(dx, dy, dz, doorZ, arch, palette);
+                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
                     if (state == null) continue;
                     BlockPos pos = origin.offset(dx, dy, dz);
                     level.setBlock(pos, state, 3);
@@ -52,65 +136,28 @@ public final class CarriageTemplate {
         return placed;
     }
 
-    /**
-     * Place every carriage in {@code specs} end-to-end along +X. Spec
-     * {@code i} is applied at offset {@code i * LENGTH}.
-     */
-    public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, List<CarriageSpec> specs) {
-        if (specs.isEmpty()) throw new IllegalArgumentException("specs must be non-empty");
-        Set<BlockPos> placed = new HashSet<>();
-        for (int i = 0; i < specs.size(); i++) {
-            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), specs.get(i)));
-        }
-        return placed;
-    }
-
-    /**
-     * Erase a carriage footprint — set every block in the 9×4×5 region at
-     * {@code origin} to air. Used by the rolling-window manager to remove
-     * stale carriages from the trailing end of the train.
-     */
-    public static void eraseAt(ServerLevel level, BlockPos origin) {
-        for (int dx = 0; dx < LENGTH; dx++) {
-            for (int dz = 0; dz < WIDTH; dz++) {
-                for (int dy = 0; dy < HEIGHT; dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), AIR, 3);
-                }
-            }
-        }
-    }
-
-    private static BlockState stateAt(
-        int dx, int dy, int dz, int doorZ,
-        CarriageArchitecture arch, BlockPalette palette
-    ) {
-        if (arch == CarriageArchitecture.FLATBED) {
-            if (dy == 0) return palette.floor();
+    private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
+        if (type == CarriageType.FLATBED) {
+            if (dy == 0) return BlockStates.FLOOR;
             return null;
         }
 
-        if (dy == 0) return palette.floor();
+        if (dy == 0) return BlockStates.FLOOR;
         if (dy == HEIGHT - 1) {
-            return (arch == CarriageArchitecture.SOLID_ROOF)
-                ? palette.solidCeiling()
-                : palette.glassCeiling();
+            return (type == CarriageType.SOLID_ROOF) ? BlockStates.SOLID_CEILING : BlockStates.GLASS_CEILING;
         }
 
-        // Only dx==0 has an end wall. Adjacent carriages share a single wall
-        // (the next carriage's left-end wall) rather than stacking two walls
-        // back-to-back, so an infinite train reads as one connected corridor
-        // instead of a row of independent boxes.
-        boolean onPerimeter = (dx == 0 || dz == 0 || dz == WIDTH - 1);
+        boolean onPerimeter = (dx == 0 || dx == LENGTH - 1 || dz == 0 || dz == WIDTH - 1);
         if (!onPerimeter) return null;
 
-        boolean isEndWall = (dx == 0);
+        boolean isEndWall = (dx == 0 || dx == LENGTH - 1);
         boolean isDoorGap = isEndWall && dz == doorZ && (dy == 1 || dy == 2);
         if (isDoorGap) return null;
 
-        if (arch == CarriageArchitecture.WINDOWED && dy == 2 && !isEndWall) {
-            return palette.window();
+        if (type == CarriageType.WINDOWED && dy == 2 && !isEndWall) {
+            return BlockStates.WINDOW;
         }
 
-        return palette.wallAt(dx, dy, dz);
+        return BlockStates.WALL;
     }
 }

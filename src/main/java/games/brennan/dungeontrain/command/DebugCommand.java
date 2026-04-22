@@ -1,0 +1,76 @@
+package games.brennan.dungeontrain.command;
+
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.debug.CarriageDebug;
+import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.TrainTransformProvider;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import org.slf4j.Logger;
+import org.valkyrienskies.core.api.ships.LoadedServerShip;
+import org.valkyrienskies.mod.common.VSGameUtilsKt;
+
+/**
+ * {@code /dungeontrain debug scan} — walks every active carriage index of
+ * every loaded Dungeon Train and reports sliver candidates (non-air blocks
+ * outside the canonical footprint) via {@link CarriageDebug}.
+ */
+public final class DebugCommand {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    private DebugCommand() {}
+
+    public static LiteralArgumentBuilder<CommandSourceStack> build() {
+        return Commands.literal("debug")
+            .then(Commands.literal("scan").executes(ctx -> runScan(ctx.getSource())));
+    }
+
+    private static int runScan(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        int totalStrays = 0;
+        int trainsScanned = 0;
+
+        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
+            if (!(loaded.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+            trainsScanned++;
+
+            BlockPos origin = provider.getShipyardOrigin();
+            int originX = origin.getX();
+            int originY = origin.getY();
+            int originZ = origin.getZ();
+            int shipStrays = 0;
+            for (Integer i : provider.getActiveIndices()) {
+                BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
+                shipStrays += CarriageDebug.scanForStrays(level, carriageOrigin,
+                    "debug-cmd shipId=" + loaded.getId() + " idx=" + i);
+            }
+            final int fShipStrays = shipStrays;
+            final long fShipId = loaded.getId();
+            source.sendSuccess(() -> Component.literal(
+                "Ship " + fShipId + " — " + fShipStrays + " stray(s) across "
+                    + provider.getActiveIndices().size() + " active carriage(s)"
+            ), false);
+            totalStrays += shipStrays;
+        }
+
+        if (trainsScanned == 0) {
+            source.sendFailure(Component.literal("No Dungeon Train ships loaded in this level."));
+            return 0;
+        }
+        final int fTotal = totalStrays;
+        final int fTrains = trainsScanned;
+        source.sendSuccess(() -> Component.literal(
+            "Debug scan complete: " + fTotal + " total stray(s) across " + fTrains + " train(s). "
+                + "See server log for offsets."
+        ).withStyle(fTotal == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        LOGGER.info("[DungeonTrain][DEBUG] /dungeontrain debug scan: {} strays across {} train(s)",
+            totalStrays, trainsScanned);
+        return 1;
+    }
+}

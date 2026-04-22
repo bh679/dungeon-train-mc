@@ -119,6 +119,21 @@ dependencies {
     // VS ships this jar-in-jar at runtime (META-INF/jars/joml-primitives-1.10.0.jar),
     // so we only need it for compilation.
     compileOnly 'org.joml:joml-primitives:1.10.0'
+
+    // Unit tests — JUnit 5 Jupiter. Scope: pure-logic functions that do NOT need
+    // a live MC/Forge/VS runtime (e.g. CarriageTemplate.typeForIndex). Runtime-
+    // dependent code is covered by Forge GameTestServer integration tests,
+    // tracked separately on Project #16.
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test).configure {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
 }
 
 // Resolve the current git branch at configuration time so it can be baked into
