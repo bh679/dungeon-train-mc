@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.world.TrackGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -99,6 +101,10 @@ public final class TrainAssembler {
         ship.setStatic(true);
         LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={})",
             ship.getId(), shipyardOrigin, count, initialPIdx);
+
+        if (DungeonTrainConfig.isGenerateTracks()) {
+            TrackGenerator.bootstrapForTrain(level, ship);
+        }
         return ship;
     }
 
@@ -115,6 +121,21 @@ public final class TrainAssembler {
             }
         }
         return providers;
+    }
+
+    /**
+     * Return every loaded Dungeon Train {@link ServerShip} in {@code level}.
+     * Used by the track generator, which needs the ship itself (for its world
+     * AABB) rather than the transform provider.
+     */
+    public static List<ServerShip> getActiveTrainShips(ServerLevel level) {
+        List<ServerShip> ships = new ArrayList<>();
+        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
+            if (loaded.getTransformProvider() instanceof TrainTransformProvider) {
+                ships.add(loaded);
+            }
+        }
+        return ships;
     }
 
     /**

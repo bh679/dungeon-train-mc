@@ -9,10 +9,11 @@ import org.apache.commons.lang3.tuple.Pair;
  * Stored per-world at {@code <save>/serverconfig/dungeontrain-server.toml}.
  * Registered from {@link games.brennan.dungeontrain.DungeonTrain} constructor.
  *
- * Exposes three values:
+ * Exposes four values:
  *   - {@code numCarriages} — rolling-window size, [1, 50]
  *   - {@code speed} — train speed along +X in blocks/second, [0.0, 20.0]
  *   - {@code trainY} — world Y where new trains spawn, [-64, 320]
+ *   - {@code generateTracks} — auto-generate stone-brick bridge + rails under trains
  */
 public final class DungeonTrainConfig {
 
@@ -28,10 +29,13 @@ public final class DungeonTrainConfig {
     public static final int MAX_TRAIN_Y = 320;
     public static final int DEFAULT_TRAIN_Y = 78;
 
+    public static final boolean DEFAULT_GENERATE_TRACKS = true;
+
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.IntValue NUM_CARRIAGES;
     public static final ForgeConfigSpec.DoubleValue SPEED;
     public static final ForgeConfigSpec.IntValue TRAIN_Y;
+    public static final ForgeConfigSpec.BooleanValue GENERATE_TRACKS;
 
     static {
         Pair<Holder, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder()
@@ -40,6 +44,7 @@ public final class DungeonTrainConfig {
         NUM_CARRIAGES = pair.getLeft().numCarriages;
         SPEED = pair.getLeft().speed;
         TRAIN_Y = pair.getLeft().trainY;
+        GENERATE_TRACKS = pair.getLeft().generateTracks;
     }
 
     private DungeonTrainConfig() {}
@@ -55,8 +60,11 @@ public final class DungeonTrainConfig {
         ForgeConfigSpec.IntValue trainY = b
                 .comment("World Y coordinate where new trains spawn. Applies to the next spawn only; existing trains keep their current Y.")
                 .defineInRange("trainY", DEFAULT_TRAIN_Y, MIN_TRAIN_Y, MAX_TRAIN_Y);
+        ForgeConfigSpec.BooleanValue generateTracks = b
+                .comment("Auto-generate a 5-wide stone-brick bridge deck with 2 rails beneath the train, extending to render distance along its travel axis. Pillars every 8 blocks over empty space.")
+                .define("generateTracks", DEFAULT_GENERATE_TRACKS);
         b.pop();
-        return new Holder(numCarriages, speed, trainY);
+        return new Holder(numCarriages, speed, trainY, generateTracks);
     }
 
     /**
@@ -80,6 +88,10 @@ public final class DungeonTrainConfig {
         return isLoaded() ? TRAIN_Y.get() : DEFAULT_TRAIN_Y;
     }
 
+    public static boolean isGenerateTracks() {
+        return isLoaded() ? GENERATE_TRACKS.get() : DEFAULT_GENERATE_TRACKS;
+    }
+
     public static void setNumCarriages(int value) {
         if (!isLoaded()) return;
         int clamped = Math.max(MIN_CARRIAGES, Math.min(MAX_CARRIAGES, value));
@@ -101,9 +113,16 @@ public final class DungeonTrainConfig {
         TRAIN_Y.save();
     }
 
+    public static void setGenerateTracks(boolean value) {
+        if (!isLoaded()) return;
+        GENERATE_TRACKS.set(value);
+        GENERATE_TRACKS.save();
+    }
+
     private record Holder(
             ForgeConfigSpec.IntValue numCarriages,
             ForgeConfigSpec.DoubleValue speed,
-            ForgeConfigSpec.IntValue trainY
+            ForgeConfigSpec.IntValue trainY,
+            ForgeConfigSpec.BooleanValue generateTracks
     ) {}
 }
