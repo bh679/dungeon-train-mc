@@ -1,3 +1,12 @@
 {
-  "generator.dungeontrain.dungeon_train": "Dungeon Train"
+  "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y0": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y16": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y48": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y64": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y80": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y96": "Dungeon Train",
+  "dungeontrain.floor_y.label": "Floor Y",
+  "dungeontrain.floor_y.value": "Y = %s",
+  "dungeontrain.floor_y.tooltip": "Bedrock floor elevation. Lower values preserve more of the vanilla deepslate/diamond zone; higher values improve performance. World top stays at Y=320."
 }
