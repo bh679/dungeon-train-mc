@@ -9,9 +9,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * Stored per-world at {@code <save>/serverconfig/dungeontrain-server.toml}.
  * Registered from {@link games.brennan.dungeontrain.DungeonTrain} constructor.
  *
- * Exposes three values:
+ * Exposes four values:
  *   - {@code numCarriages} — rolling-window size, [1, 50]
  *   - {@code speed} — train speed along +X in blocks/second, [0.0, 20.0]
+ *   - {@code trainY} — world Y where new trains spawn, [-64, 320]
  *   - {@code generateTracks} — auto-place world-block tracks under the train
  */
 public final class DungeonTrainConfig {
@@ -24,11 +25,16 @@ public final class DungeonTrainConfig {
     public static final double MAX_SPEED = 20.0;
     public static final double DEFAULT_SPEED = 2.0;
 
+    public static final int MIN_TRAIN_Y = -64;
+    public static final int MAX_TRAIN_Y = 320;
+    public static final int DEFAULT_TRAIN_Y = 78;
+
     public static final boolean DEFAULT_GENERATE_TRACKS = true;
 
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.IntValue NUM_CARRIAGES;
     public static final ForgeConfigSpec.DoubleValue SPEED;
+    public static final ForgeConfigSpec.IntValue TRAIN_Y;
     public static final ForgeConfigSpec.BooleanValue GENERATE_TRACKS;
 
     static {
@@ -37,6 +43,7 @@ public final class DungeonTrainConfig {
         SPEC = pair.getRight();
         NUM_CARRIAGES = pair.getLeft().numCarriages;
         SPEED = pair.getLeft().speed;
+        TRAIN_Y = pair.getLeft().trainY;
         GENERATE_TRACKS = pair.getLeft().generateTracks;
     }
 
@@ -50,11 +57,14 @@ public final class DungeonTrainConfig {
         ForgeConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")
                 .defineInRange("speed", DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
+        ForgeConfigSpec.IntValue trainY = b
+                .comment("World Y coordinate where new trains spawn. Applies to the next spawn only; existing trains keep their current Y.")
+                .defineInRange("trainY", DEFAULT_TRAIN_Y, MIN_TRAIN_Y, MAX_TRAIN_Y);
         ForgeConfigSpec.BooleanValue generateTracks = b
                 .comment("Auto-generate stone-brick tracks, rails, and bridge pillars under every active train.")
                 .define("generateTracks", DEFAULT_GENERATE_TRACKS);
         b.pop();
-        return new Holder(numCarriages, speed, generateTracks);
+        return new Holder(numCarriages, speed, trainY, generateTracks);
     }
 
     /**
@@ -72,6 +82,10 @@ public final class DungeonTrainConfig {
 
     public static double getSpeed() {
         return isLoaded() ? SPEED.get() : DEFAULT_SPEED;
+    }
+
+    public static int getTrainY() {
+        return isLoaded() ? TRAIN_Y.get() : DEFAULT_TRAIN_Y;
     }
 
     public static boolean getGenerateTracks() {
@@ -92,6 +106,13 @@ public final class DungeonTrainConfig {
         SPEED.save();
     }
 
+    public static void setTrainY(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_TRAIN_Y, Math.min(MAX_TRAIN_Y, value));
+        TRAIN_Y.set(clamped);
+        TRAIN_Y.save();
+    }
+
     public static void setGenerateTracks(boolean value) {
         if (!isLoaded()) return;
         GENERATE_TRACKS.set(value);
@@ -101,6 +122,7 @@ public final class DungeonTrainConfig {
     private record Holder(
             ForgeConfigSpec.IntValue numCarriages,
             ForgeConfigSpec.DoubleValue speed,
+            ForgeConfigSpec.IntValue trainY,
             ForgeConfigSpec.BooleanValue generateTracks
     ) {}
 }
