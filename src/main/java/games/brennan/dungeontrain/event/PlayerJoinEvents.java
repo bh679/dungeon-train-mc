@@ -76,6 +76,16 @@ public final class PlayerJoinEvents {
             );
             PlayerTarget target = pickPlayerTarget(level, approxTrainCenter);
 
+            // Teleport the player to their final position BEFORE spawning the
+            // train. If we teleport after assembly, VS's packet listener sees
+            // the movement while the ship's chunks are mid-registration and
+            // logs "moved while colliding with unloaded ships" — the client
+            // gets snapped back to the default world spawn and every
+            // subsequent move is rejected for the same reason, leaving the
+            // player permanently stuck. With no ships in the level yet, the
+            // teleport is unambiguous.
+            player.teleportTo(level, target.px, target.py, target.pz, 0f, 0f);
+
             LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {}",
                 DEFAULT_CARRIAGE_COUNT, trainOrigin);
             ServerShip newShip;
@@ -90,14 +100,15 @@ public final class PlayerJoinEvents {
                 LOGGER.error("[DungeonTrain] Train assembly returned null ship");
                 return;
             }
-            // Use the just-assembled ship directly — re-querying getLoadedShips()
-            // races with VS's loaded-set registration and returns null for several
-            // ticks after assembly, preventing the login teleport.
-            teleportAndLookAt(level, player, newShip, target);
+            lookAtShip(player, newShip);
+            LOGGER.info("[DungeonTrain] Placed {} at ({},{},{}) near new train id={}",
+                player.getName().getString(),
+                String.format("%.1f", target.px), target.py, String.format("%.1f", target.pz),
+                newShip.getId());
             return;
         }
 
-        // Existing train — target is derived from the live ship position.
+        // Existing train — ship is fully registered in VS, teleport is safe.
         Vector3dc trainPos = trainShip.getTransform().getPosition();
         Vector3d trainCenter = new Vector3d(trainPos.x(), trainPos.y(), trainPos.z());
         PlayerTarget target = pickPlayerTarget(level, trainCenter);
@@ -152,13 +163,18 @@ public final class PlayerJoinEvents {
         Vector3dc trainPos = ship.getTransform().getPosition();
 
         player.teleportTo(level, target.px, target.py, target.pz, 0f, 0f);
-        Vec3 lookTarget = new Vec3(trainPos.x(), trainPos.y() + 1.5, trainPos.z());
-        player.lookAt(EntityAnchorArgument.Anchor.EYES, lookTarget);
+        lookAtShip(player, ship);
 
         LOGGER.info("[DungeonTrain] Placed {} at ({},{},{}) looking at train centre ({},{},{})",
             player.getName().getString(),
             String.format("%.1f", target.px), target.py, String.format("%.1f", target.pz),
             String.format("%.1f", trainPos.x()), String.format("%.1f", trainPos.y()), String.format("%.1f", trainPos.z()));
+    }
+
+    private static void lookAtShip(ServerPlayer player, ServerShip ship) {
+        Vector3dc trainPos = ship.getTransform().getPosition();
+        Vec3 lookTarget = new Vec3(trainPos.x(), trainPos.y() + 1.5, trainPos.z());
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, lookTarget);
     }
 
     private record PlayerTarget(double px, int py, double pz) {}
