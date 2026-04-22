@@ -54,7 +54,9 @@ public final class TrackChunkEvents {
             if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) continue;
             // Don't re-queue chunks we've already painted.
             if (provider.getFilledChunks().contains(chunkKey)) continue;
-            provider.getPendingChunks().add(chunkKey);
+            // offer() appends to the tail — drain pops from head, so order
+            // matches load order ≈ spatial proximity to the player.
+            provider.getPendingChunks().offer(chunkKey);
         }
     }
 }

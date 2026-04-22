@@ -16,9 +16,11 @@ import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.ServerShipTransformProvider;
 import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Drives a VS ship at a fixed world-space velocity by prescribing its next
@@ -262,16 +264,19 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
      * 17+ seconds while VS was still settling a freshly-spawned ship.
      *
      * <p>Drained at the rate-limited {@code TrackGenerator.fillRenderDistance}
-     * budget (see {@code CHUNKS_PER_SCAN_BUDGET} — 1 chunk per call every
-     * {@code TRACK_FILL_PERIOD_TICKS} ticks), so a burst of chunk loads at
-     * login spreads its block writes across many ticks instead of one.</p>
+     * budget (see {@code CHUNKS_PER_SCAN_BUDGET}), so a burst of chunk loads
+     * at login spreads its block writes across many ticks instead of one.</p>
      *
-     * <p>ConcurrentHashMap-backed set so enqueue from any Forge event handler
-     * is safe; dedup is free as a bonus.</p>
+     * <p>ConcurrentLinkedDeque (not a HashSet) so drain order matches
+     * chunk-load order — chunks near the player paint before chunks far
+     * away, giving a visually contiguous bed instead of the hash-scattered
+     * patchwork we got with HashSet iteration. Dedup is handled at drain
+     * time via {@link #filledChunks}; occasional duplicates in the queue
+     * are harmless.</p>
      */
-    private final Set<Long> pendingChunks = ConcurrentHashMap.newKeySet();
+    private final Deque<Long> pendingChunks = new ConcurrentLinkedDeque<>();
 
-    public Set<Long> getPendingChunks() {
+    public Deque<Long> getPendingChunks() {
         return pendingChunks;
     }
 

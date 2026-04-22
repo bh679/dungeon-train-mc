@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
-import java.util.Iterator;
+import java.util.Deque;
 import java.util.Set;
 
 /**
@@ -53,16 +53,18 @@ public final class TrackGenerator {
 
     /**
      * Max new (unprocessed) chunks to fill per periodic scan. Caps the
-     * per-tick server-thread cost — a freshly-spawned 20-carriage train
-     * would otherwise try to fill 60+ chunks in one tick, blocking the
-     * server thread long enough to stall VS's physics queue.
+     * per-tick server-thread cost. Now that ChunkEvent.Load only enqueues
+     * (no synchronous setBlocks on the chunk-load tick) the original 17-sec
+     * server-thread wedge is gone and we can safely push this up.
      *
-     * <p>One chunk's worth of placement is ~80 columns × ~2 setBlock calls =
-     * ~160 block changes per scan, ~16ms on server thread. A full render-
-     * distance corridor (~60 chunks) completes in ~3 seconds of in-game
-     * time — subsequent scans hit the cache and exit instantly.</p>
+     * <p>One chunk is ~80 columns × ~2 setBlocks + pillar descent = up to
+     * ~250 block changes per chunk. Budget 4 → ≤1000 setBlocks per call,
+     * fires every {@code TRACK_FILL_PERIOD_TICKS=10} ticks, averages
+     * ~100/tick server-thread cost — still well under the 50 ms budget.
+     * 4/period × 2 periods/sec = 8 chunks/sec fill rate, enough to keep
+     * up with a walking player's loaded-chunk stream.</p>
      */
-    private static final int CHUNKS_PER_SCAN_BUDGET = 1;
+    private static final int CHUNKS_PER_SCAN_BUDGET = 4;
 
     private TrackGenerator() {}
 
@@ -221,26 +223,24 @@ public final class TrackGenerator {
         if (g == null) return;
 
         Set<Long> filled = provider.getFilledChunks();
-        Set<Long> pending = provider.getPendingChunks();
+        Deque<Long> pending = provider.getPendingChunks();
         int budget = CHUNKS_PER_SCAN_BUDGET;
         int drainedFromPending = 0;
 
-        // 1. Drain the pending queue first — these are chunks that ChunkEvent.Load
-        //    just saw, so they're already loaded and likely near a player.
-        if (!pending.isEmpty()) {
-            Iterator<Long> it = pending.iterator();
-            while (budget > 0 && it.hasNext()) {
-                long key = it.next();
-                it.remove();
-                int cx = ChunkPos.getX(key);
-                int cz = ChunkPos.getZ(key);
-                if (filled.contains(key)) continue;
-                if (isShipyardChunk(cx, cz)) continue;
-                if (!level.getChunkSource().hasChunk(cx, cz)) continue;
-                ensureTracksForChunk(level, cx, cz, g, filled);
-                budget--;
-                drainedFromPending++;
-            }
+        // 1. Drain the pending queue first — FIFO so nearby chunks (loaded
+        //    first around the player) paint before far-away chunks. poll()
+        //    is O(1) and removes the head atomically.
+        while (budget > 0) {
+            Long key = pending.poll();
+            if (key == null) break;
+            int cx = ChunkPos.getX(key);
+            int cz = ChunkPos.getZ(key);
+            if (filled.contains(key)) continue;
+            if (isShipyardChunk(cx, cz)) continue;
+            if (!level.getChunkSource().hasChunk(cx, cz)) continue;
+            ensureTracksForChunk(level, cx, cz, g, filled);
+            budget--;
+            drainedFromPending++;
         }
 
         // 2. Then sweep the view-distance corridor for anything still missing
