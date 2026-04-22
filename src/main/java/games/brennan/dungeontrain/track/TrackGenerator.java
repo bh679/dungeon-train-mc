@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -14,15 +15,24 @@ import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
+import java.util.Set;
+
 /**
- * Stateless helpers that fill a chunk — or a whole render-distance corridor —
- * with a 5-wide stone-brick track bed, rails, and pillars-where-needed under
- * a running Dungeon Train.
+ * Stateless helpers that fill a chunk — or a batch of chunks in the render
+ * corridor — with a 5-wide stone-brick track bed, rails, and pillars-where-
+ * needed under a running Dungeon Train.
  *
- * <p>All methods are safe to call on the server thread from either a
- * {@code ChunkEvent.Load} handler or a periodic tick hook. Idempotent: a
- * second call over an already-populated corridor is a cheap no-op (checks the
- * bed block and exits per column).</p>
+ * <p>All methods run on the server thread. A per-train
+ * {@code Set<Long>} (chunk-pos longs) cache lives on
+ * {@link TrainTransformProvider#getFilledChunks()} — once a chunk has been
+ * processed, it's never iterated again, so periodic scans cost only the set
+ * lookups.</p>
+ *
+ * <p>To keep any single tick from blowing the server tick budget on a
+ * large spawn (e.g. 20 carriages × 21 chunks of render distance × ~80
+ * columns = 30k+ {@code setBlock} calls), fills are batched — at most
+ * {@link #CHUNKS_PER_SCAN_BUDGET} previously-unprocessed chunks per
+ * periodic call.</p>
  */
 public final class TrackGenerator {
 
@@ -40,6 +50,18 @@ public final class TrackGenerator {
     /** Fixed-size Z margin when computing chunk corridor — 5-wide track always fits in ±1 chunk. */
     private static final int Z_CHUNK_MARGIN = 1;
 
+    /**
+     * Max new (unprocessed) chunks to fill per periodic scan. Caps the
+     * per-tick server-thread cost — a freshly-spawned 20-carriage train
+     * would otherwise try to fill 60+ chunks in one tick, blocking the
+     * server thread long enough to stall VS's physics queue.
+     *
+     * <p>At 4 chunks/tick × 20 TPS = 80 chunks/sec fill rate, a full
+     * render-distance corridor (~60 chunks) completes in under a second
+     * of in-game time. Subsequent scans hit the cache and exit instantly.</p>
+     */
+    private static final int CHUNKS_PER_SCAN_BUDGET = 4;
+
     private TrackGenerator() {}
 
     /**
@@ -56,16 +78,30 @@ public final class TrackGenerator {
     }
 
     /**
-     * Ensure tracks exist in the given chunk for {@code g}. Cheap-exits if the
-     * chunk doesn't intersect the Z corridor, or if blocks are already placed.
+     * Ensure tracks exist in the given chunk for {@code g}. Hit the provider's
+     * cache first — chunks already processed exit in O(1). On miss, iterate
+     * the chunk's columns and add to the cache on completion.
      */
-    public static void ensureTracksForChunk(ServerLevel level, int chunkX, int chunkZ, TrackGeometry g) {
+    public static void ensureTracksForChunk(
+        ServerLevel level,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g,
+        Set<Long> filledChunks
+    ) {
+        long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
+        if (filledChunks.contains(chunkKey)) return;
+
         int chunkMinX = chunkX << 4;
         int chunkMinZ = chunkZ << 4;
         int chunkMaxZ = chunkMinZ + 15;
 
-        // Z-corridor intersection test.
-        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return;
+        // Z-corridor intersection test — mark out-of-corridor chunks as
+        // processed too so we never look at them again.
+        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) {
+            filledChunks.add(chunkKey);
+            return;
+        }
 
         int zLo = Math.max(g.trackZMin(), chunkMinZ);
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
@@ -76,6 +112,8 @@ public final class TrackGenerator {
                 placeTrackColumn(level, worldX, worldZ, g);
             }
         }
+
+        filledChunks.add(chunkKey);
     }
 
     /**
@@ -89,7 +127,9 @@ public final class TrackGenerator {
         // train or any other VS ship sharing this dimension.
         if (VSGameUtilsKt.getShipObjectManagingPos(level, bedPos) != null) return;
 
-        // Idempotence — bed already placed means we've been here.
+        // Second-line idempotence — if the bed is already stone brick,
+        // something already placed it (a neighbouring train, a previous
+        // cache-cleared scan, etc). Don't overwrite.
         BlockState existingBed = level.getBlockState(bedPos);
         if (existingBed.is(TrackPalette.BED.getBlock())) return;
 
@@ -139,13 +179,15 @@ public final class TrackGenerator {
 
     /**
      * Walk every loaded chunk within server view distance of the train (on X)
-     * times ±1 chunk (on Z) and fill any that don't yet have tracks. Called at
-     * spawn and every ~1s from {@code TrainTickEvents}.
+     * times ±1 chunk (on Z) and fill any that haven't been processed yet.
+     * Bounded by {@link #CHUNKS_PER_SCAN_BUDGET} to spread large initial
+     * fills across multiple ticks.
      */
     public static void fillRenderDistance(ServerLevel level, ServerShip ship, TrainTransformProvider provider) {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
+        Set<Long> filled = provider.getFilledChunks();
         int viewDistance = level.getServer().getPlayerList().getViewDistance();
         if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
 
@@ -153,18 +195,22 @@ public final class TrackGenerator {
         int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
         int centerCz = g.trackCenterZ() >> 4;
 
-        int filled = 0;
-        for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN; cz++) {
-            for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance; cx++) {
+        int budget = CHUNKS_PER_SCAN_BUDGET;
+        for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
+            for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance && budget > 0; cx++) {
                 if (isShipyardChunk(cx, cz)) continue;
+                long key = ChunkPos.asLong(cx, cz);
+                if (filled.contains(key)) continue;
                 if (!level.getChunkSource().hasChunk(cx, cz)) continue;
-                ensureTracksForChunk(level, cx, cz, g);
-                filled++;
+
+                ensureTracksForChunk(level, cx, cz, g, filled);
+                budget--;
             }
         }
-        if (filled > 0 && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("[DungeonTrain] fillRenderDistance: scanned {} chunks around center ({},{}) for ship {}",
-                filled, centerCx, centerCz, ship.getId());
+
+        if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {
+            LOGGER.debug("[DungeonTrain] fillRenderDistance: filled {} new chunks for ship {} (cache size {})",
+                CHUNKS_PER_SCAN_BUDGET - budget, ship.getId(), filled.size());
         }
     }
 }

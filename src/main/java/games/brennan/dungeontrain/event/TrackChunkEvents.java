@@ -45,7 +45,7 @@ public final class TrackChunkEvents {
             if (g == null) continue;
             // Fast Z-corridor prefilter before the generator loop.
             if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) continue;
-            TrackGenerator.ensureTracksForChunk(level, cx, cz, g);
+            TrackGenerator.ensureTracksForChunk(level, cx, cz, g, provider.getFilledChunks());
         }
     }
 }
