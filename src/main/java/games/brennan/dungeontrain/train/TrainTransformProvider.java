@@ -398,7 +398,7 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
             if (Math.abs(pdx) > PIVOT_MOVE_EPSILON
                 || Math.abs(pdy) > PIVOT_MOVE_EPSILON
                 || Math.abs(pdz) > PIVOT_MOVE_EPSILON) {
-                JITTER_LOGGER.debug(
+                JITTER_LOGGER.trace(
                     "[pivotMoved] physicsTick={} pivotNow={} delta=({}, {}, {}) src={} lastMutationTick={} msSinceMutation={} mutationDriven={}",
                     physicsTickCounter, fmt(pivot),
                     String.format("%.6f", pdx),
@@ -415,7 +415,7 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         boolean comDeltaChanged = Double.isNaN(lastLoggedComDeltaX)
             || Math.abs(rawComDeltaX - lastLoggedComDeltaX) > JITTER_COMDELTA_LOG_STEP;
         if (physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged) {
-            JITTER_LOGGER.debug(
+            JITTER_LOGGER.trace(
                 "[physics] physicsTick={} src={} canonicalPos={} pivotNow={} pivotLocked={} rawComDeltaX={} effPos={} voxelA_world={} lastMutationTick={} msSinceMutation={}",
                 physicsTickCounter, src,
                 fmt(canonicalPos), fmt(pivot), fmt(lockedPositionInModel),

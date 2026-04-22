@@ -16,7 +16,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
@@ -38,8 +37,6 @@ import java.util.List;
 public final class TrainTickEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    // See {@link games.brennan.dungeontrain.train.TrainTransformProvider}'s JITTER_LOGGER.
-    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
 
     // Train moves 2 m/s ≈ 0.1 block/tick (MVP velocity in TrainCommand). A 10-tick
     // period clears blocks twice per second; an 8-block look-ahead leaves 7+ blocks
@@ -70,7 +67,6 @@ public final class TrainTickEvents {
 
         for (LoadedServerShip ship : trains) {
             killEntitiesIn(level, ship);
-            logCarryProbeIfMutated(level, ship);
         }
 
         if (tickCounter % BLOCK_CLEAR_PERIOD_TICKS == 0) {
@@ -79,37 +75,6 @@ public final class TrainTickEvents {
             }
         }
         tickCounter++;
-    }
-
-    /**
-     * Stage 1 probe for hypothesis H4 — on ticks where the window manager
-     * just swapped blocks under a player, log the player's deltaMovement,
-     * vehicle, and the block they're standing on. Gated on {@code
-     * provider.getLastMutationTick() == currentTick} so the probe is silent
-     * on ticks without a voxel mutation.
-     */
-    private static void logCarryProbeIfMutated(ServerLevel level, LoadedServerShip ship) {
-        if (!JITTER_LOGGER.isDebugEnabled()) return;
-        if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) return;
-        long currentTick = level.getGameTime();
-        if (provider.getLastMutationTick() != currentTick) return;
-
-        AABBdc aabb = ship.getWorldAABB();
-        AABB mcAabb = new AABB(
-            aabb.minX(), aabb.minY(), aabb.minZ(),
-            aabb.maxX(), aabb.maxY(), aabb.maxZ()
-        );
-        List<Player> carried = level.getEntitiesOfClass(Player.class, mcAabb, Entity::isAlive);
-        for (Player p : carried) {
-            BlockPos below = p.blockPosition().below();
-            BlockState stateBelow = level.getBlockState(below);
-            JITTER_LOGGER.debug(
-                "[carry] tick={} player={} delta={} vehicle={} blockBelow={}@{} onGround={}",
-                currentTick, p.getName().getString(),
-                p.getDeltaMovement(),
-                p.getVehicle() == null ? "null" : p.getVehicle().getType().toString(),
-                stateBelow.getBlock(), below, p.onGround());
-        }
     }
 
     private static List<LoadedServerShip> findTrains(ServerLevel level) {

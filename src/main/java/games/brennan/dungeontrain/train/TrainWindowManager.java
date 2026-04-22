@@ -224,7 +224,7 @@ public final class TrainWindowManager {
         double shipWx, double shipWy, double shipWz,
         int originX
     ) {
-        if (!JITTER_LOGGER.isDebugEnabled()) return;
+        if (!JITTER_LOGGER.isTraceEnabled()) return;
 
         Vector3dc pivotPostMutate = new Vector3d(ship.getTransform().getPositionInModel());
         Vector3dc shipWorldPosPostMutate = new Vector3d(ship.getTransform().getPosition());
@@ -232,7 +232,7 @@ public final class TrainWindowManager {
         Vector3d pivotDelta = new Vector3d(pivotPostMutate).sub(pivotPreMutate);
         Vector3d shipPosDelta = new Vector3d(shipWorldPosPostMutate).sub(shipWorldPosPreMutate);
 
-        JITTER_LOGGER.debug(
+        JITTER_LOGGER.trace(
             "[windowManager] tick={} shipId={} pivotPre={} pivotPost={} pivotDelta={} shipPosPre={} shipPosPost={} shipPosDelta={} aabbPre=[{},{},{} → {},{},{}] aabbPost=[{},{},{} → {},{},{}]",
             level.getGameTime(), ship.getId(),
             TrainTransformProvider.fmt(pivotPreMutate), TrainTransformProvider.fmt(pivotPostMutate), TrainTransformProvider.fmt(pivotDelta),
@@ -251,7 +251,7 @@ public final class TrainWindowManager {
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
             ship.getTransform().getWorldToShip().transformPosition(local);
             int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
-            JITTER_LOGGER.debug(
+            JITTER_LOGGER.trace(
                 "[pIdx] tick={} player={} worldPos=({}, {}, {}) shipLocalX={} pIdx={} committedPIdx={} lastShiftDir={} ticksSinceShift={}",
                 level.getGameTime(), player.getName().getString(),
                 String.format("%.6f", player.getX()), String.format("%.6f", player.getY()), String.format("%.6f", player.getZ()),

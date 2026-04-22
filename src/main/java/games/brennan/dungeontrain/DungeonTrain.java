@@ -40,10 +40,16 @@ public class DungeonTrain {
 
         MinecraftForge.EVENT_BUS.register(this);
 
-        // Stage 1 diagnostic — raise the `games.brennan.dungeontrain.jitter`
-        // namespace to DEBUG so the train-hop probes survive Forge's default
-        // INFO root logger level. Remove once the root cause of the flatbed
-        // hop is confirmed and the probes are demoted to TRACE.
+        // Keeps the `games.brennan.dungeontrain.jitter` namespace at DEBUG
+        // so the [baseline] capture line (spawn) and [tripwire] WARN (large
+        // physics-tick deltas — should never fire in normal play) stay
+        // visible without Forge-wide DEBUG.
+        //
+        // The chatty per-tick probes ([physics], [pivotMoved], [pIdx],
+        // [windowManager], [client]) log at TRACE — set
+        // `-Dforge.logging.console.level=trace` or bump this line to
+        // {@link Level#TRACE} to re-enable them when diagnosing a
+        // regression of the train-hop fix.
         Configurator.setLevel("games.brennan.dungeontrain.jitter", Level.DEBUG);
 
         LOGGER.info("Dungeon Train constructor — mod loading");

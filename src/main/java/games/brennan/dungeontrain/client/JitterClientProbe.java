@@ -48,7 +48,7 @@ public final class JitterClientProbe {
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
-        if (!JITTER_LOGGER.isDebugEnabled()) return;
+        if (!JITTER_LOGGER.isTraceEnabled()) return;
 
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
@@ -77,7 +77,7 @@ public final class JitterClientProbe {
 
             AABBdc aabb = ship.getRenderAABB();
 
-            JITTER_LOGGER.debug(
+            JITTER_LOGGER.trace(
                 "[client] clientTick={} shipId={} shipPos={} pivot={} voxelA_world={} aabb=[{},{},{} → {},{},{}]",
                 clientTickCounter, ship.getId(),
                 String.format("(%.6f, %.6f, %.6f)", shipPos.x(), shipPos.y(), shipPos.z()),
