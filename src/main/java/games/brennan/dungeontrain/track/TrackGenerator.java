@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -179,39 +180,74 @@ public final class TrackGenerator {
     }
 
     /**
-     * Walk every loaded chunk within server view distance of the train (on X)
-     * times ±1 chunk (on Z) and fill any that haven't been processed yet.
-     * Bounded by {@link #CHUNKS_PER_SCAN_BUDGET} to spread large initial
-     * fills across multiple ticks.
+     * Drain up to {@link #CHUNKS_PER_SCAN_BUDGET} chunks of work per call:
+     * first from the pending-chunk queue populated by {@code TrackChunkEvents}
+     * (covers chunks loaded after spawn, anywhere in the world the train
+     * corridor reaches), then by walking the view-distance box around the
+     * train on X × ±{@link #Z_CHUNK_MARGIN} on Z (covers chunks already loaded
+     * at spawn time that never re-fire Load).
+     *
+     * <p>The budget is shared across both sources so a single call does at
+     * most {@code CHUNKS_PER_SCAN_BUDGET} block-writing passes — keeps the
+     * tick cost flat regardless of how many chunks loaded recently.</p>
      */
     public static void fillRenderDistance(ServerLevel level, ServerShip ship, TrainTransformProvider provider) {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
         Set<Long> filled = provider.getFilledChunks();
-        int viewDistance = level.getServer().getPlayerList().getViewDistance();
-        if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
-
-        Vector3dc shipWorldPos = ship.getTransform().getPosition();
-        int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
-        int centerCz = g.trackCenterZ() >> 4;
-
+        Set<Long> pending = provider.getPendingChunks();
         int budget = CHUNKS_PER_SCAN_BUDGET;
-        for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
-            for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance && budget > 0; cx++) {
-                if (isShipyardChunk(cx, cz)) continue;
-                long key = ChunkPos.asLong(cx, cz);
-                if (filled.contains(key)) continue;
-                if (!level.getChunkSource().hasChunk(cx, cz)) continue;
+        int drainedFromPending = 0;
 
+        // 1. Drain the pending queue first — these are chunks that ChunkEvent.Load
+        //    just saw, so they're already loaded and likely near a player.
+        if (!pending.isEmpty()) {
+            Iterator<Long> it = pending.iterator();
+            while (budget > 0 && it.hasNext()) {
+                long key = it.next();
+                it.remove();
+                int cx = ChunkPos.getX(key);
+                int cz = ChunkPos.getZ(key);
+                if (filled.contains(key)) continue;
+                if (isShipyardChunk(cx, cz)) continue;
+                if (!level.getChunkSource().hasChunk(cx, cz)) continue;
                 ensureTracksForChunk(level, cx, cz, g, filled);
                 budget--;
+                drainedFromPending++;
+            }
+        }
+
+        // 2. Then sweep the view-distance corridor for anything still missing
+        //    (chunks loaded at spawn before TrackChunkEvents registered, or
+        //    anything dropped from pending because filled/shipyard/unloaded).
+        int scanned = 0;
+        if (budget > 0) {
+            int viewDistance = level.getServer().getPlayerList().getViewDistance();
+            if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
+
+            Vector3dc shipWorldPos = ship.getTransform().getPosition();
+            int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
+            int centerCz = g.trackCenterZ() >> 4;
+
+            for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
+                for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance && budget > 0; cx++) {
+                    if (isShipyardChunk(cx, cz)) continue;
+                    long key = ChunkPos.asLong(cx, cz);
+                    if (filled.contains(key)) continue;
+                    if (!level.getChunkSource().hasChunk(cx, cz)) continue;
+
+                    ensureTracksForChunk(level, cx, cz, g, filled);
+                    budget--;
+                    scanned++;
+                }
             }
         }
 
         if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("[DungeonTrain] fillRenderDistance: filled {} new chunks for ship {} (cache size {})",
-                CHUNKS_PER_SCAN_BUDGET - budget, ship.getId(), filled.size());
+            LOGGER.debug("[DungeonTrain] fillRenderDistance ship={} drained={} (pending={} scan={}) filled.size={} pending.size={}",
+                ship.getId(), CHUNKS_PER_SCAN_BUDGET - budget, drainedFromPending, scanned,
+                filled.size(), pending.size());
         }
     }
 }

@@ -15,10 +15,16 @@ import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
- * Auto-generates tracks into newly-loaded server chunks that intersect an
- * active train's Z corridor. Paired with the per-tick periodic fill in
- * {@link TrainTickEvents} which handles chunks that were already loaded at
- * spawn (and so never fire Load after this listener registers).
+ * Enqueues newly-loaded server chunks for deferred track filling. Does NOT
+ * paint synchronously — painting on the chunk-load tick was observed to wedge
+ * the server thread for 17+ seconds while VS was still settling a freshly-
+ * spawned ship (moved while colliding with unloaded ships → snap-back loop).
+ *
+ * <p>Paired with the periodic drain in {@link TrainTickEvents}, which pops
+ * one chunk per tick-period from {@link TrainTransformProvider#getPendingChunks()}
+ * via {@link TrackGenerator#fillRenderDistance}. That scan also covers chunks
+ * already loaded at spawn (which never fire Load after this listener
+ * registers).</p>
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class TrackChunkEvents {
@@ -38,14 +44,17 @@ public final class TrackChunkEvents {
 
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
+        long chunkKey = ChunkPos.asLong(cx, cz);
 
         for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
             if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
             TrackGeometry g = provider.getTrackGeometry();
             if (g == null) continue;
-            // Fast Z-corridor prefilter before the generator loop.
+            // Fast Z-corridor prefilter — skip chunks clearly outside this train's strip.
             if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) continue;
-            TrackGenerator.ensureTracksForChunk(level, cx, cz, g, provider.getFilledChunks());
+            // Don't re-queue chunks we've already painted.
+            if (provider.getFilledChunks().contains(chunkKey)) continue;
+            provider.getPendingChunks().add(chunkKey);
         }
     }
 }

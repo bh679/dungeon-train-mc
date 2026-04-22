@@ -256,6 +256,26 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     }
 
     /**
+     * ChunkPos longs queued for deferred filling. The {@code ChunkEvent.Load}
+     * listener only <em>enqueues</em> here (no synchronous setBlock) because
+     * painting on the load tick was observed to wedge the server thread for
+     * 17+ seconds while VS was still settling a freshly-spawned ship.
+     *
+     * <p>Drained at the rate-limited {@code TrackGenerator.fillRenderDistance}
+     * budget (see {@code CHUNKS_PER_SCAN_BUDGET} — 1 chunk per call every
+     * {@code TRACK_FILL_PERIOD_TICKS} ticks), so a burst of chunk loads at
+     * login spreads its block writes across many ticks instead of one.</p>
+     *
+     * <p>ConcurrentHashMap-backed set so enqueue from any Forge event handler
+     * is safe; dedup is free as a bonus.</p>
+     */
+    private final Set<Long> pendingChunks = ConcurrentHashMap.newKeySet();
+
+    public Set<Long> getPendingChunks() {
+        return pendingChunks;
+    }
+
+    /**
      * Compute the compensated BodyTransform for a given observed ship state.
      *
      * Shared between the physics-thread provider callback (normal path) and the
