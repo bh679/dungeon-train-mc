@@ -6,6 +6,9 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [],
   "client": [
+    "CreateWorldScreenAccessor",
+    "CreateWorldScreenMixin",
+    "CreateWorldScreenWorldTabMixin",
     "client.CreateWorldScreenMixin"
   ],
   "server": [],
