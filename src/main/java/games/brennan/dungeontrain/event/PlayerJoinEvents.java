@@ -122,8 +122,25 @@ public final class PlayerJoinEvents {
 
         double px = trainCenter.x() + xOffset;
         double pz = trainCenter.z() + zOffset;
-        int py = level.getHeight(Heightmap.Types.WORLD_SURFACE, Mth.floor(px), Mth.floor(pz));
+        int bx = Mth.floor(px);
+        int bz = Mth.floor(pz);
+        int py = level.getHeight(Heightmap.Types.MOTION_BLOCKING, bx, bz);
+
+        // Guard against heightmap returning minBuildHeight for columns with no
+        // terrain (observed on the raised-floor Dungeon Train preset), which
+        // spawns the player inside the Y=32 floor layer. Walk up from the
+        // proposed Y until we find two blocks of air for the player's hitbox.
+        int maxY = level.getMaxBuildHeight() - 2;
+        while (py < maxY && !canStandAt(level, bx, py, bz)) {
+            py++;
+        }
         return new PlayerTarget(px, py, pz);
+    }
+
+    private static boolean canStandAt(ServerLevel level, int x, int y, int z) {
+        BlockPos feet = new BlockPos(x, y, z);
+        BlockPos head = feet.above();
+        return level.getBlockState(feet).isAir() && level.getBlockState(head).isAir();
     }
 
     private static void teleportAndLookAt(
