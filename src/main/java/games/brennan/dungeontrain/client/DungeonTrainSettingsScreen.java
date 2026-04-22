@@ -33,6 +33,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private final Screen parent;
     private EditBox carriagesField;
     private EditBox speedField;
+    private EditBox trainYField;
 
     public DungeonTrainSettingsScreen(Screen parent) {
         super(Component.literal("Dungeon Train Settings"));
@@ -42,7 +43,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int topY = this.height / 2 - 40;
+        int topY = this.height / 2 - 60;
 
         carriagesField = new EditBox(this.font, centerX + 10, topY, FIELD_WIDTH, FIELD_HEIGHT,
                 Component.literal("Carriages"));
@@ -56,12 +57,18 @@ public final class DungeonTrainSettingsScreen extends Screen {
         speedField.setFilter(DungeonTrainSettingsScreen::isDecimalInput);
         addRenderableWidget(speedField);
 
+        trainYField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 2, FIELD_WIDTH, FIELD_HEIGHT,
+                Component.literal("Train Y"));
+        trainYField.setValue(Integer.toString(DungeonTrainConfig.getTrainY()));
+        trainYField.setFilter(DungeonTrainSettingsScreen::isSignedIntegerInput);
+        addRenderableWidget(trainYField);
+
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveAndClose())
-                .bounds(centerX - 105, topY + ROW_GAP * 2 + 10, 100, 20)
+                .bounds(centerX - 105, topY + ROW_GAP * 3 + 10, 100, 20)
                 .build());
 
         addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
-                .bounds(centerX + 5, topY + ROW_GAP * 2 + 10, 100, 20)
+                .bounds(centerX + 5, topY + ROW_GAP * 3 + 10, 100, 20)
                 .build());
     }
 
@@ -71,43 +78,52 @@ public final class DungeonTrainSettingsScreen extends Screen {
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int centerX = this.width / 2;
-        int topY = this.height / 2 - 40;
+        int topY = this.height / 2 - 60;
 
         graphics.drawCenteredString(this.font, this.title, centerX, topY - 40, 0xFFFFFFFF);
 
         graphics.drawString(this.font, "Carriages:", centerX - LABEL_OFFSET, topY + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "Speed (m/s):", centerX - LABEL_OFFSET, topY + ROW_GAP + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, "Train Y:", centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
 
         String rangeHint = "Carriages " + DungeonTrainConfig.MIN_CARRIAGES + "-" + DungeonTrainConfig.MAX_CARRIAGES
-                + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED;
-        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 2 - 10, 0xFFAAAAAA);
+                + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED
+                + ", Train Y " + DungeonTrainConfig.MIN_TRAIN_Y + "-" + DungeonTrainConfig.MAX_TRAIN_Y;
+        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 3 - 10, 0xFFAAAAAA);
+
+        graphics.drawCenteredString(this.font,
+                "Train Y applies to next spawn only.",
+                centerX, topY + ROW_GAP * 3 + 36, 0xFFAAAAAA);
 
         if (Minecraft.getInstance().getSingleplayerServer() == null) {
             graphics.drawCenteredString(this.font,
                     "Note: live train updates require an active world.",
-                    centerX, topY + ROW_GAP * 2 + 40, 0xFFFFAA55);
+                    centerX, topY + ROW_GAP * 3 + 50, 0xFFFFAA55);
         }
     }
 
     private void saveAndClose() {
         Integer carriages = parseIntOrNull(carriagesField.getValue());
         Double speed = parseDoubleOrNull(speedField.getValue());
+        Integer trainY = parseIntOrNull(trainYField.getValue());
 
-        if (carriages == null || speed == null) {
-            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={}",
-                    carriagesField.getValue(), speedField.getValue());
+        if (carriages == null || speed == null || trainY == null) {
+            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={}",
+                    carriagesField.getValue(), speedField.getValue(), trainYField.getValue());
             return;
         }
 
         DungeonTrainConfig.setNumCarriages(carriages);
         DungeonTrainConfig.setSpeed(speed);
+        DungeonTrainConfig.setTrainY(trainY);
 
         int effectiveCarriages = DungeonTrainConfig.getNumCarriages();
         double effectiveSpeed = DungeonTrainConfig.getSpeed();
+        int effectiveTrainY = DungeonTrainConfig.getTrainY();
 
         applyToLiveTrains(effectiveCarriages, effectiveSpeed);
-        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={}",
-                effectiveCarriages, effectiveSpeed);
+        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={}",
+                effectiveCarriages, effectiveSpeed, effectiveTrainY);
 
         onClose();
     }
@@ -139,6 +155,15 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private static boolean isIntegerInput(String s) {
         if (s.isEmpty()) return true;
         for (int i = 0; i < s.length(); i++) {
+            if (!Character.isDigit(s.charAt(i))) return false;
+        }
+        return true;
+    }
+
+    private static boolean isSignedIntegerInput(String s) {
+        if (s.isEmpty() || s.equals("-")) return true;
+        int start = s.charAt(0) == '-' ? 1 : 0;
+        for (int i = start; i < s.length(); i++) {
             if (!Character.isDigit(s.charAt(i))) return false;
         }
         return true;

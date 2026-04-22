@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -24,7 +25,8 @@ import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
- * Auto-spawns a 10-carriage train at the fixed world origin (0, {@link #TRAIN_Y}, 0)
+ * Auto-spawns a 10-carriage train at the fixed world origin (0, trainY, 0)
+ * — where {@code trainY} comes from {@link DungeonTrainConfig#getTrainY()} —
  * on the first overworld login where no Dungeon Train ship exists yet, then
  * teleports every joining player to a random position alongside the current
  * train, facing it.
@@ -45,8 +47,6 @@ public final class PlayerJoinEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int DEFAULT_CARRIAGE_COUNT = 10;
-    private static final int TRAIN_Y = 150;
-    private static final BlockPos TRAIN_ORIGIN = new BlockPos(0, TRAIN_Y, 0);
     private static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
 
     private static final double X_OFFSET_MAX = 200.0;
@@ -63,20 +63,23 @@ public final class PlayerJoinEvents {
 
         LoadedServerShip trainShip = findTrain(level);
         if (trainShip == null) {
+            int trainY = DungeonTrainConfig.getTrainY();
+            BlockPos trainOrigin = new BlockPos(0, trainY, 0);
+
             // Compute the intended player target up-front so the train's initial
             // carriage window lines up with where the player will stand.
             Vector3d approxTrainCenter = new Vector3d(
-                TRAIN_ORIGIN.getX() + (CarriageTemplate.LENGTH * DEFAULT_CARRIAGE_COUNT) / 2.0,
-                TRAIN_ORIGIN.getY() + CarriageTemplate.HEIGHT / 2.0,
-                TRAIN_ORIGIN.getZ() + CarriageTemplate.WIDTH / 2.0
+                trainOrigin.getX() + (CarriageTemplate.LENGTH * DEFAULT_CARRIAGE_COUNT) / 2.0,
+                trainOrigin.getY() + CarriageTemplate.HEIGHT / 2.0,
+                trainOrigin.getZ() + CarriageTemplate.WIDTH / 2.0
             );
             PlayerTarget target = pickPlayerTarget(level, approxTrainCenter);
 
             LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {}",
-                DEFAULT_CARRIAGE_COUNT, TRAIN_ORIGIN);
+                DEFAULT_CARRIAGE_COUNT, trainOrigin);
             try {
                 Vector3d spawnerPos = new Vector3d(target.px, target.py, target.pz);
-                TrainAssembler.spawnTrain(level, TRAIN_ORIGIN, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
+                TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] Starter train auto-spawn failed", t);
                 return;
