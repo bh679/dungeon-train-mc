@@ -1,5 +1,9 @@
 {
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y-48": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y-32": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_y-16": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y0": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y16": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y48": "Dungeon Train",
