@@ -5,7 +5,13 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [],
-  "client": [],
+  "client": [
+    "CreateWorldScreenAccessor",
+    "CreateWorldScreenMixin",
+    "CreateWorldScreenWorldTabMixin",
+    "client.CreateWorldScreenMixin",
+    "client.CreateWorldScreenDefaultPresetMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
