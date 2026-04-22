@@ -207,6 +207,46 @@ public final class TrackGenerator {
     }
 
     /**
+     * One-time bootstrap called from {@code TrainAssembler.spawnTrain} after
+     * {@link TrackGeometry} is attached. Walks every currently-loaded chunk
+     * in the train's Z corridor within view-distance of the spawn point and
+     * adds it to the train's pending queue.
+     *
+     * <p>Necessary because chunks loaded before this tick already fired
+     * {@code ChunkEvent.Load} while no train existed, so {@code TrackChunkEvents}
+     * skipped them. Without bootstrap they'd be permanently stuck as gaps in
+     * the bed — the periodic scan only runs when pending is empty, and
+     * pending is refilled continuously by new chunk loads.</p>
+     */
+    public static void bootstrapPendingChunks(ServerLevel level, ServerShip ship, TrainTransformProvider provider) {
+        TrackGeometry g = provider.getTrackGeometry();
+        if (g == null) return;
+
+        int viewDistance = level.getServer().getPlayerList().getViewDistance();
+        if (viewDistance <= 0) viewDistance = 10;
+
+        Vector3dc shipWorldPos = ship.getTransform().getPosition();
+        int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
+        int centerCz = g.trackCenterZ() >> 4;
+
+        java.util.Deque<Long> pending = provider.getPendingChunks();
+        Set<Long> filled = provider.getFilledChunks();
+        int queued = 0;
+        for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN; cz++) {
+            for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance; cx++) {
+                if (isShipyardChunk(cx, cz)) continue;
+                if (!level.getChunkSource().hasChunk(cx, cz)) continue;
+                long key = ChunkPos.asLong(cx, cz);
+                if (filled.contains(key)) continue;
+                pending.offer(key);
+                queued++;
+            }
+        }
+        LOGGER.info("[DungeonTrain] Track bootstrap for ship {}: enqueued {} already-loaded chunks (centerCx={}, viewDistance={})",
+            ship.getId(), queued, centerCx, viewDistance);
+    }
+
+    /**
      * Drain up to {@link #CHUNKS_PER_SCAN_BUDGET} chunks of work per call:
      * first from the pending-chunk queue populated by {@code TrackChunkEvents}
      * (covers chunks loaded after spawn, anywhere in the world the train
