@@ -4,7 +4,7 @@
       "type": "dungeontrain:overworld",
       "generator": {
         "type": "minecraft:noise",
-        "settings": "minecraft:overworld",
+        "settings": "dungeontrain:overworld",
         "biome_source": {
           "type": "minecraft:multi_noise",
           "preset": "minecraft:overworld"
