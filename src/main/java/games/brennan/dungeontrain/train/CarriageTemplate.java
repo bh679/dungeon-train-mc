@@ -1,17 +1,26 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. Four visual variants
- * are selected per-carriage via {@link CarriageType}; {@link #placeTrainAt}
- * cycles through them so a train of length ≥ 4 shows one of each.
+ * are selected per-carriage via {@link CarriageType} and
+ * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
+ *
+ * {@link #placeAt(ServerLevel, BlockPos, CarriageType)} first tries an
+ * NBT-backed template from {@link CarriageTemplateStore}; if none is saved
+ * (or the file is malformed), it falls back to the hardcoded generator in
+ * {@link #legacyPlaceAt(ServerLevel, BlockPos, CarriageType)}.
  */
 public final class CarriageTemplate {
 
@@ -26,11 +35,21 @@ public final class CarriageTemplate {
     public static final int WIDTH = 5;
     public static final int HEIGHT = 4;
 
-    private static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
-    private static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
-    private static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
+    /**
+     * Lazy-init holder for the {@link BlockState} templates. Keeping
+     * {@code Blocks.*} access off {@link CarriageTemplate}'s own static init
+     * means plain JUnit tests can call {@link #typeForIndex(int)} without
+     * requiring a Forge/Minecraft {@code Bootstrap}. The holder is only
+     * loaded on first reference from {@link #stateAt} (i.e. from a live
+     * server-thread {@code placeAt} call), so there is no behavioural change.
+     */
+    private static final class BlockStates {
+        static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
+        static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
+        static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
+    }
 
     private CarriageTemplate() {}
 
@@ -44,35 +63,12 @@ public final class CarriageTemplate {
      * {@code ShipAssembler.assembleToShip()}.
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type) {
-        Set<BlockPos> placed = new HashSet<>();
-        int doorZ = WIDTH / 2;
-
-        for (int dx = 0; dx < LENGTH; dx++) {
-            for (int dz = 0; dz < WIDTH; dz++) {
-                for (int dy = 0; dy < HEIGHT; dy++) {
-                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
-                    if (state == null) continue;
-                    BlockPos pos = origin.offset(dx, dy, dz);
-                    level.setBlock(pos, state, 3);
-                    placed.add(pos.immutable());
-                }
-            }
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, type);
+        if (stored.isPresent()) {
+            stampTemplate(level, origin, stored.get());
+            return collectFootprint(level, origin);
         }
-        return placed;
-    }
-
-    /**
-     * Place {@code count} carriages end-to-end along +X. Type is selected
-     * per-carriage as {@code CarriageType.values()[i % 4]} — deterministic,
-     * and every train of length ≥ 4 shows all four variants.
-     */
-    public static Set<BlockPos> placeTrainAt(ServerLevel level, BlockPos origin, int count) {
-        if (count < 1) throw new IllegalArgumentException("count must be >= 1, got " + count);
-        Set<BlockPos> placed = new HashSet<>();
-        for (int i = 0; i < count; i++) {
-            placed.addAll(placeAt(level, origin.offset(i * LENGTH, 0, 0), typeForIndex(i)));
-        }
-        return placed;
+        return legacyPlaceAt(level, origin, type);
     }
 
     /**
@@ -102,15 +98,53 @@ public final class CarriageTemplate {
         }
     }
 
+    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+    }
+
+    private static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin) {
+        Set<BlockPos> placed = new HashSet<>();
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (!level.getBlockState(pos).isAir()) {
+                        placed.add(pos.immutable());
+                    }
+                }
+            }
+        }
+        return placed;
+    }
+
+    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type) {
+        Set<BlockPos> placed = new HashSet<>();
+        int doorZ = WIDTH / 2;
+
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                for (int dy = 0; dy < HEIGHT; dy++) {
+                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
+                    if (state == null) continue;
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    level.setBlock(pos, state, 3);
+                    placed.add(pos.immutable());
+                }
+            }
+        }
+        return placed;
+    }
+
     private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
         if (type == CarriageType.FLATBED) {
-            if (dy == 0) return FLOOR;
+            if (dy == 0) return BlockStates.FLOOR;
             return null;
         }
 
-        if (dy == 0) return FLOOR;
+        if (dy == 0) return BlockStates.FLOOR;
         if (dy == HEIGHT - 1) {
-            return (type == CarriageType.SOLID_ROOF) ? SOLID_CEILING : GLASS_CEILING;
+            return (type == CarriageType.SOLID_ROOF) ? BlockStates.SOLID_CEILING : BlockStates.GLASS_CEILING;
         }
 
         boolean onPerimeter = (dx == 0 || dx == LENGTH - 1 || dz == 0 || dz == WIDTH - 1);
@@ -121,9 +155,9 @@ public final class CarriageTemplate {
         if (isDoorGap) return null;
 
         if (type == CarriageType.WINDOWED && dy == 2 && !isEndWall) {
-            return WINDOW;
+            return BlockStates.WINDOW;
         }
 
-        return WALL;
+        return BlockStates.WALL;
     }
 }

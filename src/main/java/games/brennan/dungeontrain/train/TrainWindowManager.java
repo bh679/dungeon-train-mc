@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
+import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
@@ -32,6 +33,11 @@ public final class TrainWindowManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final double NEAR_RADIUS = 128.0;
     private static final double NEAR_RADIUS_SQ = NEAR_RADIUS * NEAR_RADIUS;
+    // Ticks to wait before accepting a reversed pIdx shift. ~1/3 second at
+    // 20 Hz server tick: long enough to absorb single-tick flaps caused by
+    // block-change/transform sync races, short enough that real direction
+    // changes feel responsive.
+    private static final int REVERSAL_COOLDOWN_TICKS = 6;
 
     private TrainWindowManager() {}
 
@@ -64,6 +70,7 @@ public final class TrainWindowManager {
         double shipWy = shipWorldPos.y();
         double shipWz = shipWorldPos.z();
 
+        Set<Integer> current = provider.getActiveIndices();
         Set<Integer> desired = new HashSet<>();
         Set<Integer> occupied = new HashSet<>();
 
@@ -78,20 +85,43 @@ public final class TrainWindowManager {
             int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
 
             occupied.add(pIdx);
-            for (int i = pIdx - halfBack; i <= pIdx + halfFront; i++) {
+
+            // Reversal debounce: if the player's pIdx flipped direction in the
+            // last few ticks, the previous intended shift is still propagating
+            // to clients. Honour the reversal only after REVERSAL_COOLDOWN
+            // ticks have passed since the last committed shift. Within the
+            // cooldown, treat pIdx as unchanged so the window doesn't flap.
+            int committed = provider.getCommittedPIdx();
+            int lastDir = provider.getLastShiftDirection();
+            long now = level.getGameTime();
+            long ticksSince = now - provider.getLastShiftTick();
+            int effectivePIdx = pIdx;
+            if (pIdx != committed) {
+                int dir = Integer.signum(pIdx - committed);
+                if (lastDir != 0 && dir == -lastDir && ticksSince < REVERSAL_COOLDOWN_TICKS) {
+                    // Reversal too soon — suppress. Player still rides on committed.
+                    effectivePIdx = committed;
+                } else {
+                    provider.setCommittedPIdx(pIdx);
+                    provider.setLastShiftDirection(dir);
+                    provider.setLastShiftTick(now);
+                }
+            }
+
+            for (int i = effectivePIdx - halfBack; i <= effectivePIdx + halfFront; i++) {
                 desired.add(i);
             }
         }
 
         if (desired.isEmpty()) return;
 
-        Set<Integer> current = provider.getActiveIndices();
-
+        boolean mutated = false;
         for (Integer i : desired) {
             if (current.contains(i)) continue;
             BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
             CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i));
             current.add(i);
+            mutated = true;
             LOGGER.debug("[DungeonTrain] Added carriage idx={} at shipyard {}", i, carriageOrigin);
         }
 
@@ -105,7 +135,22 @@ public final class TrainWindowManager {
             BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
             CarriageTemplate.eraseAt(level, carriageOrigin);
             current.remove(i);
+            mutated = true;
             LOGGER.debug("[DungeonTrain] Erased carriage idx={} at shipyard {}", i, carriageOrigin);
+        }
+
+        // After voxel mutations, re-push the compensated transform in the
+        // same server tick. This tightens the client-visible window between
+        // "new voxels applied" and "new transform applied" — otherwise the
+        // client can render the new blocks against the stale transform for
+        // one frame, producing a brief backwards teleport (most visible when
+        // a flatbed carriage enters/leaves the window because the flatbed's
+        // small mass swings the COM by more blocks per shift).
+        if (mutated) {
+            BodyTransform compensated = provider.computeCompensatedTransform(ship.getTransform());
+            if (compensated != null) {
+                ship.unsafeSetTransform(compensated);
+            }
         }
     }
 }
