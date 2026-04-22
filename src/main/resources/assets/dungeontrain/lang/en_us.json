@@ -1,3 +1,7 @@
 {
-  "generator.dungeontrain.dungeon_train": "Dungeon Train"
+  "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "gui.dungeontrain.options.button": "Dungeon Train Options…",
+  "gui.dungeontrain.options.title": "Dungeon Train — World Options",
+  "gui.dungeontrain.options.starts_with_train": "Starts with train",
+  "gui.dungeontrain.options.train_y": "Train Y"
 }

@@ -2,10 +2,10 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -26,10 +26,15 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Auto-spawns a 10-carriage train at the fixed world origin (0, trainY, 0)
- * — where {@code trainY} comes from {@link DungeonTrainConfig#getTrainY()} —
- * on the first overworld login where no Dungeon Train ship exists yet, then
- * teleports every joining player to a random position alongside the current
- * train, facing it.
+ * — where {@code trainY} comes from the per-world
+ * {@link DungeonTrainWorldData} (which falls back to the
+ * {@code DungeonTrainConfig} TOML default for legacy worlds) — on the first
+ * overworld login where no Dungeon Train ship exists yet, then teleports every
+ * joining player to a random position alongside the current train, facing it.
+ *
+ * If the per-world {@code startsWithTrain} flag is false (set by the player on
+ * the Create World screen sub-screen), auto-spawn is skipped entirely; players
+ * are still teleported alongside any existing train.
  *
  * Placement: ±{@link #X_OFFSET_MAX} blocks along X (train's travel axis),
  * {@link #PERP_MIN}..{@link #PERP_MAX} blocks on a random side (+Z or −Z),
@@ -63,7 +68,12 @@ public final class PlayerJoinEvents {
 
         LoadedServerShip trainShip = findTrain(level);
         if (trainShip == null) {
-            int trainY = DungeonTrainConfig.getTrainY();
+            DungeonTrainWorldData data = DungeonTrainWorldData.get(level.getServer().overworld());
+            if (!data.startsWithTrain()) {
+                LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping auto-spawn");
+                return;
+            }
+            int trainY = data.getTrainY();
             BlockPos trainOrigin = new BlockPos(0, trainY, 0);
 
             // Compute the intended player target up-front so the train's initial
