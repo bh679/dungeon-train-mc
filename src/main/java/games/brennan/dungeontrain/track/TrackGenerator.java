@@ -135,18 +135,6 @@ public final class TrackGenerator {
         BlockState existingBed = level.getBlockState(bedPos);
         if (existingBed.is(TrackPalette.BED.getBlock())) return;
 
-        // Snapshot the "real" ground height BEFORE we mutate anything. Every
-        // MC heightmap (including MOTION_BLOCKING_NO_LEAVES) treats stone
-        // brick as a motion-blocking block, so the `level.setBlock` below
-        // would push the heightmap up to bedY+1 and the pillar check would
-        // then conclude the bed is sitting on solid ground. That's the
-        // reason pillars disappeared over floating terrain — read once, up
-        // front, and we stay honest.
-        boolean pillarCandidate = Math.floorMod(worldX, PILLAR_SPACING) == 0;
-        int groundY = pillarCandidate
-            ? level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, worldX, worldZ)
-            : 0;
-
         // 1. Bed.
         level.setBlock(bedPos, TrackPalette.BED, Block.UPDATE_CLIENTS);
 
@@ -160,31 +148,41 @@ public final class TrackGenerator {
             }
         }
 
-        // 3. Pillar — only at every Nth X, and only when ground is below the
-        // bed (bridge case: over air/water/ravine).
-        if (pillarCandidate && groundY < g.bedY() - 1) {
-            placePillar(level, worldX, worldZ, groundY, g.bedY() - 1);
+        // 3. Pillar — only at every Nth X. placePillar scans down from the
+        // bed itself, so the "bed is sitting on solid ground" case is handled
+        // by the first iteration finding non-passable terrain and returning.
+        if (Math.floorMod(worldX, PILLAR_SPACING) == 0) {
+            placePillar(level, worldX, worldZ, g.bedY() - 1);
         }
     }
 
     /**
-     * Fill a pillar column from max(groundY, minBuildHeight+1) up to
-     * pillarTopInclusive. Only replaces air, water, and leaves — preserves any
-     * existing terrain that happens to be in the pillar's path.
+     * Drop a pillar column from {@code pillarTopInclusive} downward until it
+     * hits real terrain (motion-blocking, not water, not leaves, not vines).
+     * Passes through air, any fluid (so pillars reach the seafloor through
+     * ocean water), leaves, and vines — heightmaps like
+     * {@link Heightmap.Types#MOTION_BLOCKING_NO_LEAVES} can't be used here
+     * because they count water surfaces as "ground" and would leave pillars
+     * floating above the ocean; {@link Heightmap.Types#OCEAN_FLOOR} counts
+     * leaves as ground instead. A manual descent handles both biomes.
+     *
+     * <p>If the first block scanned is already solid (mountain, existing
+     * stone brick), returns immediately without placing — that's the "bed
+     * has natural support" case, no pillar needed.</p>
      */
-    private static void placePillar(ServerLevel level, int worldX, int worldZ, int groundY, int pillarTopInclusive) {
-        int pillarBottom = Math.max(groundY, level.getMinBuildHeight() + 1);
+    private static void placePillar(ServerLevel level, int worldX, int worldZ, int pillarTopInclusive) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int py = pillarBottom; py <= pillarTopInclusive; py++) {
+        int minY = level.getMinBuildHeight() + 1;
+        for (int py = pillarTopInclusive; py >= minY; py--) {
             pos.set(worldX, py, worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) continue;
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
             BlockState existing = level.getBlockState(pos);
-            if (existing.isAir()
+            boolean passable = existing.isAir()
                 || !existing.getFluidState().isEmpty()
                 || existing.is(BlockTags.LEAVES)
-                || existing.is(Blocks.VINE)) {
-                level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
-            }
+                || existing.is(Blocks.VINE);
+            if (!passable) return; // hit real terrain (or existing pillar) → supported
+            level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
         }
     }
 
