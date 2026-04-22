@@ -18,6 +18,7 @@ import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Drives a VS ship at a fixed world-space velocity by prescribing its next
@@ -237,6 +238,21 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
     public void setTrackGeometry(TrackGeometry geometry) {
         this.trackGeometry = geometry;
+    }
+
+    /**
+     * ChunkPos longs (see {@link net.minecraft.world.level.ChunkPos#asLong})
+     * of chunks we've already filled with tracks. The periodic scan and the
+     * chunk-load listener both consult this set before iterating block
+     * columns, so re-visiting a chunk is an O(1) hit lookup.
+     *
+     * <p>ConcurrentHashMap-backed set — both the server thread (periodic
+     * tick, chunk events) and future threads can touch it safely.</p>
+     */
+    private final Set<Long> filledChunks = ConcurrentHashMap.newKeySet();
+
+    public Set<Long> getFilledChunks() {
+        return filledChunks;
     }
 
     /**

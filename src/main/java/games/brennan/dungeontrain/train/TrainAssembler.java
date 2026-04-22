@@ -1,8 +1,6 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -116,11 +114,10 @@ public final class TrainAssembler {
         LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={}, track={})",
             ship.getId(), shipyardOrigin, count, initialPIdx, geometry);
 
-        // Initial render-distance fill — covers chunks that were already loaded
-        // at spawn time and therefore will not re-fire ChunkEvent.Load.
-        if (DungeonTrainConfig.getGenerateTracks()) {
-            TrackGenerator.fillRenderDistance(level, ship, provider);
-        }
+        // Deliberate: no synchronous render-distance fill here. The periodic
+        // tick in TrainTickEvents (1 Hz) starts filling ~1 second after spawn,
+        // budgeting 4 chunks per tick so it never stalls the server thread.
+        // ChunkEvent.Load covers newly-streamed chunks as the player explores.
         return ship;
     }
 
