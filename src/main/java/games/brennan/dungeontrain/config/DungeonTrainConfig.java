@@ -9,9 +9,10 @@ import org.apache.commons.lang3.tuple.Pair;
  * Stored per-world at {@code <save>/serverconfig/dungeontrain-server.toml}.
  * Registered from {@link games.brennan.dungeontrain.DungeonTrain} constructor.
  *
- * Exposes two values:
+ * Exposes three values:
  *   - {@code numCarriages} — rolling-window size, [1, 50]
  *   - {@code speed} — train speed along +X in blocks/second, [0.0, 20.0]
+ *   - {@code generateTracks} — auto-place world-block tracks under the train
  */
 public final class DungeonTrainConfig {
 
@@ -23,9 +24,12 @@ public final class DungeonTrainConfig {
     public static final double MAX_SPEED = 20.0;
     public static final double DEFAULT_SPEED = 2.0;
 
+    public static final boolean DEFAULT_GENERATE_TRACKS = true;
+
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.IntValue NUM_CARRIAGES;
     public static final ForgeConfigSpec.DoubleValue SPEED;
+    public static final ForgeConfigSpec.BooleanValue GENERATE_TRACKS;
 
     static {
         Pair<Holder, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder()
@@ -33,6 +37,7 @@ public final class DungeonTrainConfig {
         SPEC = pair.getRight();
         NUM_CARRIAGES = pair.getLeft().numCarriages;
         SPEED = pair.getLeft().speed;
+        GENERATE_TRACKS = pair.getLeft().generateTracks;
     }
 
     private DungeonTrainConfig() {}
@@ -45,8 +50,11 @@ public final class DungeonTrainConfig {
         ForgeConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")
                 .defineInRange("speed", DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
+        ForgeConfigSpec.BooleanValue generateTracks = b
+                .comment("Auto-generate stone-brick tracks, rails, and bridge pillars under every active train.")
+                .define("generateTracks", DEFAULT_GENERATE_TRACKS);
         b.pop();
-        return new Holder(numCarriages, speed);
+        return new Holder(numCarriages, speed, generateTracks);
     }
 
     /**
@@ -66,6 +74,10 @@ public final class DungeonTrainConfig {
         return isLoaded() ? SPEED.get() : DEFAULT_SPEED;
     }
 
+    public static boolean getGenerateTracks() {
+        return isLoaded() ? GENERATE_TRACKS.get() : DEFAULT_GENERATE_TRACKS;
+    }
+
     public static void setNumCarriages(int value) {
         if (!isLoaded()) return;
         int clamped = Math.max(MIN_CARRIAGES, Math.min(MAX_CARRIAGES, value));
@@ -80,8 +92,15 @@ public final class DungeonTrainConfig {
         SPEED.save();
     }
 
+    public static void setGenerateTracks(boolean value) {
+        if (!isLoaded()) return;
+        GENERATE_TRACKS.set(value);
+        GENERATE_TRACKS.save();
+    }
+
     private record Holder(
             ForgeConfigSpec.IntValue numCarriages,
-            ForgeConfigSpec.DoubleValue speed
+            ForgeConfigSpec.DoubleValue speed,
+            ForgeConfigSpec.BooleanValue generateTracks
     ) {}
 }

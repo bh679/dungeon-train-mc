@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -93,12 +96,31 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
 
-        ship.setTransformProvider(new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx));
+        TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx);
+        ship.setTransformProvider(provider);
         // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
         // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
         ship.setStatic(true);
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={})",
-            ship.getId(), shipyardOrigin, count, initialPIdx);
+
+        // Capture world-space track geometry before any ship motion so the
+        // values stay anchored to the spawn point. Bed sits 2 below the
+        // carriage floor (origin.y); rails one above the bed (= one below
+        // the floor). Z spans the full carriage width.
+        TrackGeometry geometry = new TrackGeometry(
+            origin.getY() - 2,
+            origin.getY() - 1,
+            origin.getZ(),
+            origin.getZ() + CarriageTemplate.WIDTH - 1);
+        provider.setTrackGeometry(geometry);
+
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={}, track={})",
+            ship.getId(), shipyardOrigin, count, initialPIdx, geometry);
+
+        // Initial render-distance fill — covers chunks that were already loaded
+        // at spawn time and therefore will not re-fire ChunkEvent.Load.
+        if (DungeonTrainConfig.getGenerateTracks()) {
+            TrackGenerator.fillRenderDistance(level, ship, provider);
+        }
         return ship;
     }
 
