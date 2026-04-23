@@ -83,12 +83,31 @@ public final class CarriageTemplate {
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
-            return collectFootprint(level, origin, dims);
+            Set<BlockPos> placed = collectFootprint(level, origin, dims);
+            if (placed.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
+                    variant.id(), origin);
+            } else {
+                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=stored blocks={}",
+                    variant.id(), origin, placed.size());
+            }
+            return placed;
         }
         if (variant instanceof CarriageVariant.Builtin b) {
-            return legacyPlaceAt(level, origin, b.type(), dims);
+            Set<BlockPos> placed = legacyPlaceAt(level, origin, b.type(), dims);
+            if (placed.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
+                    variant.id(), origin);
+            } else {
+                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=legacy blocks={}",
+                    variant.id(), origin, placed.size());
+            }
+            return placed;
         }
         // Custom variant with no (or mismatched) NBT — nothing to place.
+        LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=custom-variant-missing-nbt. Check {} exists and matches world dims {}x{}x{}.",
+            variant.id(), origin, CarriageTemplateStore.fileFor(variant),
+            dims.length(), dims.width(), dims.height());
         return new HashSet<>();
     }
 
@@ -113,7 +132,15 @@ public final class CarriageTemplate {
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
-            return collectFootprint(level, origin, dims);
+            Set<BlockPos> placed = collectFootprint(level, origin, dims);
+            if (placed.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
+                    variant.id(), origin);
+            } else {
+                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=stored blocks={}",
+                    variant.id(), origin, placed.size());
+            }
+            return placed;
         }
         if (variant instanceof CarriageVariant.Builtin b) {
             CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
@@ -121,8 +148,19 @@ public final class CarriageTemplate {
                 LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — built-in using hardcoded fallback.",
                     variant.id());
             }
-            return legacyPlaceAt(level, origin, b.type(), dims);
+            Set<BlockPos> placed = legacyPlaceAt(level, origin, b.type(), dims);
+            if (placed.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
+                    variant.id(), origin);
+            } else {
+                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=legacy blocks={}",
+                    variant.id(), origin, placed.size());
+            }
+            return placed;
         }
+        LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=custom-variant-missing-nbt. Check {} exists and matches world dims {}x{}x{}.",
+            variant.id(), origin, CarriageTemplateStore.fileFor(variant),
+            dims.length(), dims.width(), dims.height());
         return new HashSet<>();
     }
 

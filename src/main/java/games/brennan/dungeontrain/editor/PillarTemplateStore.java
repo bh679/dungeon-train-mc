@@ -32,14 +32,22 @@ import java.util.Optional;
  * {@link PillarSection} enum instead of a variant registry.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/templates/pillar_<section>.nbt}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/pillars/pillar_<section>.nbt}.
  *       Per-install override; the editor writes here via {@link #save}.</li>
- *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/pillar_<section>.nbt}
+ *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/pillars/pillar_<section>.nbt}
  *       on the classpath. Shipped with the jar.</li>
  *   <li><b>Hardcoded fallback</b> — {@code TrackPalette.PILLAR} stone brick for every
  *       row. Handled by the caller ({@link games.brennan.dungeontrain.track.TrackGenerator})
  *       when {@link #get} returns empty.</li>
  * </ol>
+ *
+ * <p>A separate directory from carriage templates (at
+ * {@code config/dungeontrain/templates/}) so
+ * {@link games.brennan.dungeontrain.train.CarriageVariantRegistry}'s
+ * {@code *.nbt} scan doesn't accidentally register pillar sections
+ * (1×4×7 or 1×1×7 footprint) as custom carriages (9×7×7 footprint),
+ * which would fail placement and leave carriage-sized holes in the
+ * train. Mirrors the pattern established by {@link TunnelTemplateStore}.</p>
  *
  * <p>The store rejects templates whose recorded size doesn't match
  * {@link PillarSection#height()} × 1 × 1 — prevents a stale saved template
@@ -48,11 +56,12 @@ import java.util.Optional;
 public final class PillarTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/templates";
+    private static final String SUBDIR = "dungeontrain/pillars";
+    private static final String LEGACY_SUBDIR = "dungeontrain/templates";
     private static final String FILE_PREFIX = "pillar_";
     private static final String EXT = ".nbt";
-    private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
-    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
+    private static final String RESOURCE_PREFIX = "/data/dungeontrain/pillars/";
+    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/pillars";
 
     private static final Map<PillarSection, Optional<StructureTemplate>> CACHE = new EnumMap<>(PillarSection.class);
     private static final Map<PillarSection, Optional<BlockState[][]>> COLUMN_CACHE = new EnumMap<>(PillarSection.class);
@@ -88,6 +97,46 @@ public final class PillarTemplateStore {
     public static synchronized void clearCache() {
         CACHE.clear();
         COLUMN_CACHE.clear();
+    }
+
+    /**
+     * One-time migration from the legacy carriage-templates directory to
+     * {@link #SUBDIR}. Pre-0.30 builds stored pillar NBTs in
+     * {@code config/dungeontrain/templates/}, which is the same directory
+     * {@link games.brennan.dungeontrain.train.CarriageVariantRegistry} scans
+     * for custom carriage variants — causing pillar ids to be misregistered
+     * as carriages and leaving holes in the train.
+     *
+     * <p>Call this before any carriage-side scan of
+     * {@link CarriageTemplateStore#directory()}. Idempotent: safe to call
+     * repeatedly. Both "legacy file exists, new location empty" (move) and
+     * "both exist" (delete legacy, keep new) outcomes log at INFO so the
+     * migration is visible in user logs.</p>
+     */
+    public static synchronized void migrateFromLegacyDirectory() {
+        Path legacyDir = FMLPaths.CONFIGDIR.get().resolve(LEGACY_SUBDIR);
+        if (!Files.isDirectory(legacyDir)) return;
+        Path newDir = directory();
+        for (PillarSection section : PillarSection.values()) {
+            Path legacy = legacyDir.resolve(FILE_PREFIX + section.id() + EXT);
+            if (!Files.isRegularFile(legacy)) continue;
+            Path target = newDir.resolve(FILE_PREFIX + section.id() + EXT);
+            try {
+                Files.createDirectories(newDir);
+                if (Files.isRegularFile(target)) {
+                    Files.delete(legacy);
+                    LOGGER.info("[DungeonTrain] Pillar template {} already present at {} — removed stale legacy copy at {}",
+                        section.id(), target, legacy);
+                } else {
+                    Files.move(legacy, target);
+                    LOGGER.info("[DungeonTrain] Migrated pillar template {} from {} to {}",
+                        section.id(), legacy, target);
+                }
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Failed to migrate pillar template {} from {} to {}: {}",
+                    section.id(), legacy, target, e.toString());
+            }
+        }
     }
 
     /**

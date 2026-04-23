@@ -123,6 +123,10 @@ public final class CarriageTemplateStore {
             // hardcoded generator (built-ins only) or no-ops (customs).
             loaded = loadFromResource(level, variant, dims);
         }
+        if (loaded.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] No template found for variant={} in config or bundled — caller will fall back (legacy for built-ins, empty for customs).",
+                variant.id());
+        }
         CACHE.put(key, loaded);
         return loaded;
     }

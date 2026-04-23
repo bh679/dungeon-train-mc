@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
@@ -43,6 +44,11 @@ import java.util.TreeSet;
  *       Entries here cover both player-authored customs and local overrides of
  *       shipped customs (same id is deduplicated by the underlying TreeSet).</li>
  * </ol>
+ * Only carriage-sized {@code .nbt} files belong in that directory. Pillar
+ * templates live under {@code config/dungeontrain/pillars/} ({@link PillarTemplateStore})
+ * and tunnel templates under {@code config/dungeontrain/tunnels/}
+ * ({@link games.brennan.dungeontrain.editor.TunnelTemplateStore}) so this scan
+ * can't misinterpret their footprints as carriages and leave gaps in the train.
  * The registry holds only the identifiers — the template bytes stay in
  * {@link CarriageTemplateStore}. Adding or removing a {@code .nbt} file
  * without going through the editor requires a server restart (or
@@ -124,6 +130,11 @@ public final class CarriageVariantRegistry {
 
     /** Reload custom variants from the bundled manifest + the per-install config dir. */
     public static synchronized void reload() {
+        // Move any pre-0.30 pillar NBTs out of the carriage templates dir
+        // before we scan it — otherwise their ids get registered here as
+        // custom carriages and fail placement later (9×7×7 dims check).
+        PillarTemplateStore.migrateFromLegacyDirectory();
+
         CUSTOMS.clear();
         int bundled = loadBundledManifest();
         int config = loadConfigDir();

@@ -74,13 +74,20 @@ public final class TrainAssembler {
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
 
         Set<BlockPos> blocks = new HashSet<>();
+        int emptyCarriages = 0;
         for (int i = firstIdx; i <= lastIdx; i++) {
             BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
-            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin,
-                CarriageTemplate.variantForIndex(i, genCfg), dims, genCfg, i));
+            CarriageVariant variant = CarriageTemplate.variantForIndex(i, genCfg);
+            Set<BlockPos> carriageBlocks = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, i);
+            if (carriageBlocks.isEmpty()) {
+                emptyCarriages++;
+                LOGGER.warn("[DungeonTrain] Spawn produced empty carriage idx={} variant={} at {}",
+                    i, variant.id(), carriageOrigin);
+            }
+            blocks.addAll(carriageBlocks);
         }
-        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, initialPIdx={}, dims={}x{}x{}), assembling...",
-            blocks.size(), count, initialPIdx, dims.length(), dims.width(), dims.height());
+        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, {} empty, initialPIdx={}, dims={}x{}x{}), assembling...",
+            blocks.size(), count, emptyCarriages, initialPIdx, dims.length(), dims.width(), dims.height());
 
         ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
 
