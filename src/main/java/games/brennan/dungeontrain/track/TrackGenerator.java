@@ -23,8 +23,8 @@ import java.util.TreeMap;
 
 /**
  * Stateless helpers that fill a chunk — or a batch of chunks in the render
- * corridor — with a 5-wide stone-brick track bed, rails, height-scaled
- * pillars, and stone arches under a running Dungeon Train.
+ * corridor — with a 5-wide stone-brick track bed, rails, and height-scaled
+ * pillars under a running Dungeon Train.
  *
  * <p>All methods run on the server thread. A per-train
  * {@code Set<Long>} (chunk-pos longs) cache lives on
@@ -34,13 +34,15 @@ import java.util.TreeMap;
  *
  * <p>Pillar layout adapts to terrain depth:</p>
  * <ul>
- *   <li><b>height &lt; 5</b>: spacing {@link #BASE_PILLAR_SPACING}, thickness 1,
- *   no arches — matches pre-0.21 behaviour for flat ground.</li>
+ *   <li><b>height &lt; 5</b>: spacing {@link #BASE_PILLAR_SPACING}, thickness 1
+ *   — matches pre-0.21 behaviour for flat ground.</li>
  *   <li><b>height ≥ 5</b>: spacing = {@code height + BASE_PILLAR_SPACING},
- *   thickness = {@code spacing / 5} (min 1). Stone arches span the gap
- *   between adjacent tall pillars, curving from pillar top down to a
- *   semicircular opening.</li>
+ *   thickness = {@code spacing / 5} (min 1). Over deep terrain, pillars
+ *   are further apart and thicker on X.</li>
  * </ul>
+ *
+ * <p>Arches between pillars are intentionally deferred — they'll come back
+ * in a later iteration once spacing and thickness are visually dialled in.</p>
  *
  * <p>To keep any single tick from blowing the server tick budget on a
  * large spawn (e.g. 20 carriages × 21 chunks of render distance × ~80
@@ -152,35 +154,6 @@ public final class TrackGenerator {
      */
     static int computeThickness(int spacing) {
         return Math.max(1, spacing / 5);
-    }
-
-    /**
-     * Pure helper: arch rise for a span of {@code spacing} blocks. Semicircle —
-     * rise equals half the span. Clamped so it never exceeds
-     * {@code min(heightLeft, heightRight) - 1}, keeping at least one block of
-     * air between the arch apex and the ground.
-     */
-    static int computeArchRise(int spacing, int heightLeft, int heightRight) {
-        int rise = spacing / 2;
-        int maxRise = Math.min(heightLeft, heightRight) - 1;
-        return Math.max(0, Math.min(rise, maxRise));
-    }
-
-    /**
-     * Semicircle arch curve. Returns how many blocks BELOW the bed-top the
-     * arch extends at column {@code worldX} between pillars {@code leftCx}
-     * and {@code rightCx}. Zero at the pillar edges, peaks at {@code rise}
-     * at the midpoint.
-     */
-    static int computeArchDepth(int worldX, int leftCx, int rightCx, int rise) {
-        if (rise <= 0) return 0;
-        double span = rightCx - leftCx;
-        if (span <= 0) return 0;
-        double midX = (leftCx + rightCx) / 2.0;
-        double normalized = (2.0 * (worldX - midX)) / span; // in [-1, 1]
-        double under = 1.0 - normalized * normalized;
-        if (under <= 0.0) return 0;
-        return (int) Math.round(rise * Math.sqrt(under));
     }
 
     /**
@@ -339,37 +312,10 @@ public final class TrackGenerator {
     }
 
     /**
-     * Place the arch cap for one column between two tall pillars. Fills stone
-     * brick from {@code bedY - 1} down to {@code bedY - 1 - archDepth} at
-     * (worldX, worldZ). Below that is left as air — the arch opening.
-     */
-    private static void placeArchColumn(
-        ServerLevel level,
-        int worldX,
-        int worldZ,
-        int bedY,
-        int archDepth
-    ) {
-        if (archDepth <= 0) return;
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int yTop = bedY - 1;
-        int yBottom = bedY - 1 - archDepth;
-        for (int py = yTop; py >= yBottom; py--) {
-            pos.set(worldX, py, worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
-            BlockState existing = level.getBlockState(pos);
-            // Don't overwrite existing solid terrain (e.g. a steep cliff
-            // poking into the arch span). Only fill through passable blocks.
-            if (!isPassable(existing) && !existing.is(TrackPalette.ARCH.getBlock())) continue;
-            level.setBlock(pos, TrackPalette.ARCH, Block.UPDATE_CLIENTS);
-        }
-    }
-
-    /**
      * Ensure tracks exist in the given chunk for {@code g}. Hit the provider's
      * cache first — chunks already processed exit in O(1). On miss, precompute
      * pillar positions in the chunk ± {@link #PILLAR_SCAN_MARGIN} and walk
-     * the chunk's columns, placing bed/rail/pillar/arch blocks as appropriate.
+     * the chunk's columns, placing bed/rail/pillar blocks as appropriate.
      */
     public static void ensureTracksForChunk(
         ServerLevel level,
@@ -397,8 +343,8 @@ public final class TrackGenerator {
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
 
         // Precompute pillar map over [chunkMinX - margin, chunkMaxX + margin]
-        // so that arch rendering at the chunk edges has access to the anchor
-        // pillars on both sides.
+        // so that thick pillars anchored just outside this chunk still fill
+        // their footprint into this chunk.
         NavigableMap<Integer, PillarSpec> pillars = computePillarPositions(
             level,
             chunkMinX - PILLAR_SCAN_MARGIN,
@@ -408,29 +354,7 @@ public final class TrackGenerator {
 
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
-            // Determine this column's pillar/arch role once — shared across
-            // all Z rows in the corridor for this X.
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
-            PillarSpec leftPillar = null;
-            PillarSpec rightPillar = null;
-            int archRise = 0;
-
-            if (containingPillar == null) {
-                Map.Entry<Integer, PillarSpec> floor = pillars.floorEntry(worldX);
-                Map.Entry<Integer, PillarSpec> ceil  = pillars.ceilingEntry(worldX);
-                if (floor != null) leftPillar = floor.getValue();
-                if (ceil  != null) rightPillar = ceil.getValue();
-
-                if (leftPillar != null && rightPillar != null && leftPillar != rightPillar
-                    && leftPillar.height >= TALL_PILLAR_HEIGHT_THRESHOLD
-                    && rightPillar.height >= TALL_PILLAR_HEIGHT_THRESHOLD) {
-                    int span = rightPillar.centerX - leftPillar.centerX;
-                    archRise = computeArchRise(span, leftPillar.height, rightPillar.height);
-                } else {
-                    leftPillar = null;
-                    rightPillar = null;
-                }
-            }
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
                 if (!placeBedAndRail(level, worldX, worldZ, g)) continue;
@@ -438,10 +362,6 @@ public final class TrackGenerator {
                 if (containingPillar != null) {
                     placePillarColumn(level, worldX, worldZ,
                         g.bedY() - 1, containingPillar.groundY);
-                } else if (archRise > 0) {
-                    int archDepth = computeArchDepth(
-                        worldX, leftPillar.centerX, rightPillar.centerX, archRise);
-                    placeArchColumn(level, worldX, worldZ, g.bedY(), archDepth);
                 }
             }
         }
