@@ -7,12 +7,16 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.phys.AABB;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -107,28 +111,39 @@ public final class CarriageContentsTemplate {
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        // setIgnoreEntities(false) so saved entities (armor stands, paintings,
+        // item frames, etc.) get re-spawned alongside the blocks. Defaults
+        // to false, but we set it explicitly for clarity.
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(false);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
     }
 
     /**
      * Capture the interior volume at {@code carriageOrigin} into a fresh
-     * {@link StructureTemplate} — used by the contents editor save flow. Air
-     * positions are excluded, so an all-air interior saves as a zero-size
-     * template (which {@link CarriageContentsStore#save} still writes so the
-     * author can clear contents explicitly).
+     * {@link StructureTemplate} — used by the contents editor save flow.
+     * Includes entities (armor stands, paintings, item frames, etc.) so a
+     * decorated interior round-trips through save/load. Air positions are
+     * excluded so the saved NBT only describes placed blocks. An all-air
+     * interior with no entities still saves as a zero-size template, which
+     * {@link CarriageContentsStore#save} writes so the author can clear
+     * contents explicitly.
+     *
+     * <p>The 4th {@code fillFromWorld} argument is {@code includeEntities}
+     * in 1.20.1 — passing {@code true} is what pulls entities in the AABB
+     * into the template's {@code StructureEntityInfo} list.</p>
      */
     public static StructureTemplate captureTemplate(ServerLevel level, BlockPos carriageOrigin, CarriageDims dims) {
         Vec3i size = interiorSize(dims);
         StructureTemplate template = new StructureTemplate();
-        template.fillFromWorld(level, interiorOrigin(carriageOrigin), size, false, Blocks.AIR);
+        template.fillFromWorld(level, interiorOrigin(carriageOrigin), size, true, Blocks.AIR);
         return template;
     }
 
     /**
-     * Reset the interior volume at {@code carriageOrigin} to air. Used by the
-     * editor before re-stamping contents on {@code enter}, so a previously
-     * placed contents template doesn't blend with the newly chosen one.
+     * Reset the interior volume at {@code carriageOrigin} to air and discard
+     * any non-player entities inside it. Used by the editor before re-stamping
+     * contents on {@code enter}, so previously placed blocks AND entities
+     * don't blend with the newly chosen contents.
      */
     public static void eraseAt(ServerLevel level, BlockPos carriageOrigin, CarriageDims dims) {
         Vec3i size = interiorSize(dims);
@@ -141,6 +156,41 @@ public final class CarriageContentsTemplate {
                     level.setBlock(origin.offset(dx, dy, dz), air, 3);
                 }
             }
+        }
+        discardEntitiesIn(level, origin, size);
+    }
+
+    /**
+     * Public entity-only clear for the interior volume at
+     * {@code carriageOrigin}. Used by the rolling-window spawn path (before
+     * stamping new contents) so leftover armor stands / paintings from a
+     * previous carriage at this shipyard position don't accumulate. The
+     * block-only erase in {@link CarriageTemplate#eraseAt} already handles
+     * stale interior blocks.
+     */
+    public static void discardEntitiesAt(ServerLevel level, BlockPos carriageOrigin, CarriageDims dims) {
+        Vec3i size = interiorSize(dims);
+        if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
+        discardEntitiesIn(level, interiorOrigin(carriageOrigin), size);
+    }
+
+    /**
+     * Remove every non-player entity whose bounding box overlaps the interior
+     * volume. Players are spared so an author who slipped through the barrier
+     * cage mid-edit doesn't get kicked out of existence. Block-entity data is
+     * already handled by the {@code setBlock(air)} pass in
+     * {@link #eraseAt}.
+     */
+    private static void discardEntitiesIn(ServerLevel level, BlockPos interiorOrigin, Vec3i interiorSize) {
+        AABB box = new AABB(
+            interiorOrigin.getX(), interiorOrigin.getY(), interiorOrigin.getZ(),
+            interiorOrigin.getX() + interiorSize.getX(),
+            interiorOrigin.getY() + interiorSize.getY(),
+            interiorOrigin.getZ() + interiorSize.getZ()
+        );
+        List<Entity> entities = level.getEntitiesOfClass(Entity.class, box, e -> !(e instanceof Player));
+        for (Entity e : entities) {
+            e.discard();
         }
     }
 }

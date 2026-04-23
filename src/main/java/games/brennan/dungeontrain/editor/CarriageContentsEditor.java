@@ -122,6 +122,11 @@ public final class CarriageContentsEditor {
         CarriageEditor.rememberReturn(player);
 
         CarriageTemplate.eraseAt(overworld, origin, dims);
+        // Also discard any entities left from a previous edit session
+        // (armor stands / item frames / paintings don't get cleared by the
+        // block-only erase above). Must run before the shell + contents stamp
+        // so the freshly stamped NBT entities don't get caught up in this.
+        CarriageContentsTemplate.eraseAt(overworld, origin, dims);
         // Stamp the shell first — this fills floor/walls/ceiling as context.
         // Uses the 4-arg placeAt so variant-block sidecar entries don't get
         // applied here (the author is editing contents, not the shell).
@@ -197,6 +202,7 @@ public final class CarriageContentsEditor {
         // Stamp the default shell as context, then stamp the source contents
         // on top. Capture the interior region and save under the new id.
         CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
+        CarriageContentsTemplate.eraseAt(overworld, targetOrigin, dims);
         CarriageTemplate.placeAt(overworld, targetOrigin, DEFAULT_SHELL, dims);
         CarriageContentsTemplate.placeAt(overworld, targetOrigin, source, dims);
 

@@ -132,7 +132,7 @@ public final class CarriageTemplate {
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
-            applyContents(level, origin, dims, config, carriageIndex);
+            applyContents(level, origin, variant, dims, config, carriageIndex);
             Set<BlockPos> placed = collectFootprint(level, origin, dims);
             if (placed.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
@@ -154,7 +154,7 @@ public final class CarriageTemplate {
             // volume layout (1,1,1)..(length-2,height-2,width-2) is fixed
             // across stored and legacy shells, so contents placement is
             // stable either way.
-            applyContents(level, origin, dims, config, carriageIndex);
+            applyContents(level, origin, variant, dims, config, carriageIndex);
             if (placed.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
                     variant.id(), origin);
@@ -178,13 +178,27 @@ public final class CarriageTemplate {
      * carriage and stamp its interior blocks on top of the already-placed
      * shell. Wrapped in try/catch so a contents-load failure can't abort the
      * spawn — worst case the interior stays empty with a warning.
+     *
+     * <p>Skipped for the {@link CarriageType#FLATBED} built-in: a flatbed is
+     * just a floor with no walls or roof, so any interior contents would
+     * appear as floating blocks visible from every side. Keep flatbeds empty
+     * so they read as the train's "separators" between enclosed carriages.</p>
      */
     private static void applyContents(
-        ServerLevel level, BlockPos origin, CarriageDims dims,
-        CarriageGenerationConfig config, int carriageIndex
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            return;
+        }
         try {
             CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex);
+            // Clear any entities left over from a previous carriage at this
+            // shipyard position — the block-only clearBoundingBox in
+            // TrainAssembler doesn't discard entities, so armor stands and
+            // paintings from prior contents at this index would otherwise
+            // accumulate each rolling-window cycle.
+            CarriageContentsTemplate.discardEntitiesAt(level, origin, dims);
             CarriageContentsTemplate.placeAt(level, origin, contents, dims);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
