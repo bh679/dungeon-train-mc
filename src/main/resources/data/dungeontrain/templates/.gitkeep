@@ -1,0 +1,9 @@
+# Carriage templates bundled into the mod jar.
+#
+# Files here are consumed by CarriageTemplateStore.loadFromResource at
+# /data/dungeontrain/templates/<carriage_type>.nbt. They are produced by:
+#   - /dungeontrain editor devmode on, then /dungeontrain editor save
+#   - /dungeontrain editor promote <variant>
+#   - /dungeontrain editor promote all
+#
+# Both paths only succeed in a ./gradlew runClient dev session.
