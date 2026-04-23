@@ -132,6 +132,7 @@ public final class CarriageTemplate {
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
+            applyContents(level, origin, dims, config, carriageIndex);
             Set<BlockPos> placed = collectFootprint(level, origin, dims);
             if (placed.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
@@ -149,6 +150,11 @@ public final class CarriageTemplate {
                     variant.id());
             }
             Set<BlockPos> placed = legacyPlaceAt(level, origin, b.type(), dims);
+            // Contents still apply on legacy-shell spawns — the interior
+            // volume layout (1,1,1)..(length-2,height-2,width-2) is fixed
+            // across stored and legacy shells, so contents placement is
+            // stable either way.
+            applyContents(level, origin, dims, config, carriageIndex);
             if (placed.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
                     variant.id(), origin);
@@ -156,12 +162,34 @@ public final class CarriageTemplate {
                 LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=legacy blocks={}",
                     variant.id(), origin, placed.size());
             }
-            return placed;
+            // Re-collect footprint so any contents blocks stamped into the
+            // interior after legacyPlaceAt() returned are included in the
+            // assembler's block set.
+            return collectFootprint(level, origin, dims);
         }
         LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=custom-variant-missing-nbt. Check {} exists and matches world dims {}x{}x{}.",
             variant.id(), origin, CarriageTemplateStore.fileFor(variant),
             dims.length(), dims.width(), dims.height());
         return new HashSet<>();
+    }
+
+    /**
+     * Pick a {@link CarriageContents} variant deterministically for this
+     * carriage and stamp its interior blocks on top of the already-placed
+     * shell. Wrapped in try/catch so a contents-load failure can't abort the
+     * spawn — worst case the interior stays empty with a warning.
+     */
+    private static void applyContents(
+        ServerLevel level, BlockPos origin, CarriageDims dims,
+        CarriageGenerationConfig config, int carriageIndex
+    ) {
+        try {
+            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex);
+            CarriageContentsTemplate.placeAt(level, origin, contents, dims);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
+                origin, carriageIndex, t.toString());
+        }
     }
 
     private static void applyVariantBlocks(
