@@ -6,11 +6,13 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for {@link CarriageTemplate}'s pure-logic functions —
  * the deterministic carriage-variant selector {@link CarriageTemplate#typeForIndex(int)},
- * the {@link CarriageType} enum contract, and the public dimension constants.
+ * the {@link CarriageType} enum contract, and the {@link CarriageDims}
+ * invariants + clamp helper.
  *
  * <p>Runtime-dependent methods ({@code placeAt}, {@code eraseAt}) need a live
  * Forge/Minecraft server and are covered by the Forge GameTestServer integration
@@ -99,17 +101,68 @@ final class CarriageTemplateTest {
         );
     }
 
-    // ---- Dimension constants ----
+    // ---- CarriageDims: default + invariants ----
 
     @Test
-    @DisplayName("LENGTH/WIDTH/HEIGHT match documented carriage footprint (9x9x7)")
-    void constants_haveExpectedDimensions() {
-        // These constants drive TrainAssembler.spawnTrain's offset math,
-        // TrainWindowManager's carriage-index projection, and the wiki
-        // "9 x 9 x 7 (length x width x height)" documentation. Any change
-        // needs a paired wiki + doc update.
-        assertEquals(9, CarriageTemplate.LENGTH, "LENGTH");
-        assertEquals(9, CarriageTemplate.WIDTH, "WIDTH");
-        assertEquals(7, CarriageTemplate.HEIGHT, "HEIGHT");
+    @DisplayName("CarriageDims.DEFAULT is 9x9x7 — the shipped footprint")
+    void carriageDims_default_is9x9x7() {
+        // DEFAULT drives every code path that hasn't got a WorldData dims
+        // tag yet: legacy world saves (missing NBT tags fall back to
+        // CarriageDims.DEFAULT), the options-screen initial field values,
+        // and integration-test fixtures. Any change needs a paired wiki +
+        // doc update.
+        assertEquals(9, CarriageDims.DEFAULT.length(), "length");
+        assertEquals(9, CarriageDims.DEFAULT.width(), "width");
+        assertEquals(7, CarriageDims.DEFAULT.height(), "height");
+    }
+
+    @Test
+    @DisplayName("CarriageDims constructor rejects sub-floor values")
+    void carriageDims_constructor_rejectsBelowFloor() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new CarriageDims(CarriageDims.MIN_LENGTH - 1, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT),
+            "length below floor");
+        assertThrows(IllegalArgumentException.class,
+            () -> new CarriageDims(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH - 1, CarriageDims.MIN_HEIGHT),
+            "width below floor");
+        assertThrows(IllegalArgumentException.class,
+            () -> new CarriageDims(CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT - 1),
+            "height below floor");
+    }
+
+    @Test
+    @DisplayName("CarriageDims constructor rejects above-ceiling values")
+    void carriageDims_constructor_rejectsAboveCeiling() {
+        assertThrows(IllegalArgumentException.class,
+            () -> new CarriageDims(CarriageDims.MAX_LENGTH + 1, CarriageDims.MAX_WIDTH, CarriageDims.MAX_HEIGHT),
+            "length above ceiling");
+        assertThrows(IllegalArgumentException.class,
+            () -> new CarriageDims(CarriageDims.MAX_LENGTH, CarriageDims.MAX_WIDTH + 1, CarriageDims.MAX_HEIGHT),
+            "width above ceiling");
+        assertThrows(IllegalArgumentException.class,
+            () -> new CarriageDims(CarriageDims.MAX_LENGTH, CarriageDims.MAX_WIDTH, CarriageDims.MAX_HEIGHT + 1),
+            "height above ceiling");
+    }
+
+    @Test
+    @DisplayName("CarriageDims.clamp snaps out-of-range values to floor and ceiling")
+    void carriageDims_clamp_snapsToFloorAndCeiling() {
+        // Self-heal path: NBT load + UI input both route through clamp() so
+        // a saved-out-of-range value can't crash the world.
+        CarriageDims belowFloor = CarriageDims.clamp(1, 1, 1);
+        assertEquals(CarriageDims.MIN_LENGTH, belowFloor.length(), "clamp floor length");
+        assertEquals(CarriageDims.MIN_WIDTH, belowFloor.width(), "clamp floor width");
+        assertEquals(CarriageDims.MIN_HEIGHT, belowFloor.height(), "clamp floor height");
+
+        CarriageDims aboveCeiling = CarriageDims.clamp(100, 100, 100);
+        assertEquals(CarriageDims.MAX_LENGTH, aboveCeiling.length(), "clamp ceiling length");
+        assertEquals(CarriageDims.MAX_WIDTH, aboveCeiling.width(), "clamp ceiling width");
+        assertEquals(CarriageDims.MAX_HEIGHT, aboveCeiling.height(), "clamp ceiling height");
+
+        // Pass-through: in-range values survive unchanged.
+        CarriageDims inRange = CarriageDims.clamp(12, 7, 5);
+        assertEquals(12, inRange.length(), "pass-through length");
+        assertEquals(7, inRange.width(), "pass-through width");
+        assertEquals(5, inRange.height(), "pass-through height");
     }
 }

@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.dungeontrain.train.CarriageDims;
+
 /**
  * Client-side static holder for the values picked on
  * {@link DungeonTrainOptionsScreen} during world creation. Read on
@@ -17,16 +19,18 @@ public final class PendingWorldChoices {
 
     private static volatile Integer trainY;
     private static volatile Boolean startsWithTrain;
+    private static volatile CarriageDims dims;
 
     private PendingWorldChoices() {}
 
-    public static void set(int trainY, boolean startsWithTrain) {
+    public static void set(int trainY, boolean startsWithTrain, CarriageDims dims) {
         PendingWorldChoices.trainY = trainY;
         PendingWorldChoices.startsWithTrain = startsWithTrain;
+        PendingWorldChoices.dims = dims;
     }
 
     public static boolean isPresent() {
-        return trainY != null && startsWithTrain != null;
+        return trainY != null && startsWithTrain != null && dims != null;
     }
 
     public static int trainY() {
@@ -37,8 +41,13 @@ public final class PendingWorldChoices {
         return startsWithTrain;
     }
 
+    public static CarriageDims dims() {
+        return dims;
+    }
+
     public static void clear() {
         trainY = null;
         startsWithTrain = null;
+        dims = null;
     }
 }

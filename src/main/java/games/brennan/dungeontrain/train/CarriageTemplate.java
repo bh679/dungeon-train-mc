@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -13,14 +14,15 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Carriage blueprint — a 9×9×7 (X×Z×Y) hollow box. Four visual variants
- * are selected per-carriage via {@link CarriageType} and
+ * Carriage blueprint — a hollow box whose dimensions are captured per-world
+ * in {@link CarriageDims} (default 9×9×7, X×Z×Y). Four visual variants are
+ * selected per-carriage via {@link CarriageType} and
  * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
  *
- * {@link #placeAt(ServerLevel, BlockPos, CarriageType)} first tries an
- * NBT-backed template from {@link CarriageTemplateStore}; if none is saved
- * (or the file is malformed), it falls back to the hardcoded generator in
- * {@link #legacyPlaceAt(ServerLevel, BlockPos, CarriageType)}.
+ * {@link #placeAt(ServerLevel, BlockPos, CarriageType, CarriageDims)} first
+ * tries an NBT-backed template from {@link CarriageTemplateStore}; if none
+ * is saved (or the file's footprint doesn't match the world's current dims),
+ * it falls back to the hardcoded generator in {@link #legacyPlaceAt}.
  */
 public final class CarriageTemplate {
 
@@ -30,10 +32,6 @@ public final class CarriageTemplate {
         SOLID_ROOF,
         FLATBED
     }
-
-    public static final int LENGTH = 9;
-    public static final int WIDTH = 9;
-    public static final int HEIGHT = 7;
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
@@ -53,22 +51,18 @@ public final class CarriageTemplate {
 
     private CarriageTemplate() {}
 
-    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin) {
-        return placeAt(level, origin, CarriageType.STANDARD);
-    }
-
     /**
-     * Place a single carriage of the given type at origin (= minimum corner).
-     * Returns the set of block positions filled — pass directly to
+     * Place a single carriage of the given type + dims at origin (= minimum
+     * corner). Returns the set of block positions filled — pass directly to
      * {@code ShipAssembler.assembleToShip()}.
      */
-    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, type);
+    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, type, dims);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
-            return collectFootprint(level, origin);
+            return collectFootprint(level, origin, dims);
         }
-        return legacyPlaceAt(level, origin, type);
+        return legacyPlaceAt(level, origin, type, dims);
     }
 
     /**
@@ -83,15 +77,16 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Erase a carriage footprint — set every block in the 9×7×9 region at {@code origin}
-     * to air. Used by the rolling-window manager to remove stale carriages from the
+     * Erase a carriage footprint — set every block in the
+     * {@code length × height × width} region at {@code origin} to air. Used
+     * by the rolling-window manager to remove stale carriages from the
      * trailing end of the train.
      */
-    public static void eraseAt(ServerLevel level, BlockPos origin) {
+    public static void eraseAt(ServerLevel level, BlockPos origin, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < LENGTH; dx++) {
-            for (int dz = 0; dz < WIDTH; dz++) {
-                for (int dy = 0; dy < HEIGHT; dy++) {
+        for (int dx = 0; dx < dims.length(); dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
                     level.setBlock(origin.offset(dx, dy, dz), air, 3);
                 }
             }
@@ -103,11 +98,11 @@ public final class CarriageTemplate {
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
     }
 
-    private static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin) {
+    public static Set<BlockPos> collectFootprint(ServerLevel level, BlockPos origin, CarriageDims dims) {
         Set<BlockPos> placed = new HashSet<>();
-        for (int dx = 0; dx < LENGTH; dx++) {
-            for (int dz = 0; dz < WIDTH; dz++) {
-                for (int dy = 0; dy < HEIGHT; dy++) {
+        for (int dx = 0; dx < dims.length(); dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
                     BlockPos pos = origin.offset(dx, dy, dz);
                     if (!level.getBlockState(pos).isAir()) {
                         placed.add(pos.immutable());
@@ -118,14 +113,26 @@ public final class CarriageTemplate {
         return placed;
     }
 
-    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type) {
-        Set<BlockPos> placed = new HashSet<>();
-        int doorZ = WIDTH / 2;
+    /**
+     * True when the NBT template's recorded size matches the provided dims
+     * (X=length, Y=height, Z=width per the {@code StructureTemplate} ordering).
+     * Used by {@link CarriageTemplateStore} to reject stale templates saved
+     * for a different world's dims.
+     */
+    public static boolean sizeMatches(Vec3i templateSize, CarriageDims dims) {
+        return templateSize.getX() == dims.length()
+                && templateSize.getY() == dims.height()
+                && templateSize.getZ() == dims.width();
+    }
 
-        for (int dx = 0; dx < LENGTH; dx++) {
-            for (int dz = 0; dz < WIDTH; dz++) {
-                for (int dy = 0; dy < HEIGHT; dy++) {
-                    BlockState state = stateAt(dx, dy, dz, doorZ, type);
+    private static Set<BlockPos> legacyPlaceAt(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
+        Set<BlockPos> placed = new HashSet<>();
+        int doorZ = dims.width() / 2;
+
+        for (int dx = 0; dx < dims.length(); dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
+                    BlockState state = stateAt(dx, dy, dz, doorZ, type, dims);
                     if (state == null) continue;
                     BlockPos pos = origin.offset(dx, dy, dz);
                     level.setBlock(pos, state, 3);
@@ -136,21 +143,29 @@ public final class CarriageTemplate {
         return placed;
     }
 
-    private static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type) {
+    /**
+     * Decide what block (if any) sits at carriage-local offset {@code (dx,dy,dz)}
+     * for a given type + dims. Returns {@code null} for air — makes the
+     * iteration loops skip without placing.
+     *
+     * <p>Package-private so {@link CarriageTemplateTest} can pin the
+     * perimeter/door/window geometry at non-default dims (e.g. 5×5×5).</p>
+     */
+    static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type, CarriageDims dims) {
         if (type == CarriageType.FLATBED) {
             if (dy == 0) return BlockStates.FLOOR;
             return null;
         }
 
         if (dy == 0) return BlockStates.FLOOR;
-        if (dy == HEIGHT - 1) {
+        if (dy == dims.height() - 1) {
             return (type == CarriageType.SOLID_ROOF) ? BlockStates.SOLID_CEILING : BlockStates.GLASS_CEILING;
         }
 
-        boolean onPerimeter = (dx == 0 || dx == LENGTH - 1 || dz == 0 || dz == WIDTH - 1);
+        boolean onPerimeter = (dx == 0 || dx == dims.length() - 1 || dz == 0 || dz == dims.width() - 1);
         if (!onPerimeter) return null;
 
-        boolean isEndWall = (dx == 0 || dx == LENGTH - 1);
+        boolean isEndWall = (dx == 0 || dx == dims.length() - 1);
         boolean isDoorGap = isEndWall && dz == doorZ && (dy == 1 || dy == 2);
         if (isDoorGap) return null;
 

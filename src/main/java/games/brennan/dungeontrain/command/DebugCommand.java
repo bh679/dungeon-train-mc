@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.debug.CarriageDebug;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -44,11 +44,12 @@ public final class DebugCommand {
             int originX = origin.getX();
             int originY = origin.getY();
             int originZ = origin.getZ();
+            CarriageDims dims = provider.dims();
             int shipStrays = 0;
             for (Integer i : provider.getActiveIndices()) {
-                BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
+                BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
                 shipStrays += CarriageDebug.scanForStrays(level, carriageOrigin,
-                    "debug-cmd shipId=" + loaded.getId() + " idx=" + i);
+                    "debug-cmd shipId=" + loaded.getId() + " idx=" + i, dims);
             }
             final int fShipStrays = shipStrays;
             final long fShipId = loaded.getId();

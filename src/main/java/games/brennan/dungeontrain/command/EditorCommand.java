@@ -6,7 +6,9 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -103,7 +105,8 @@ public final class EditorCommand {
     private static int runSave(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        CarriageType type = CarriageEditor.plotContaining(player.blockPosition());
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        CarriageType type = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (type == null) {
             source.sendFailure(Component.literal(
                 "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."

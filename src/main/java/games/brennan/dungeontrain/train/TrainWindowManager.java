@@ -75,6 +75,10 @@ public final class TrainWindowManager {
         int originX = shipyardOrigin.getX();
         int originY = shipyardOrigin.getY();
         int originZ = shipyardOrigin.getZ();
+        // Per-train dims captured at spawn time. Reading from the provider
+        // (not DungeonTrainWorldData) avoids a SavedData lookup on every
+        // tick for a value that cannot change for this train's lifetime.
+        CarriageDims dims = provider.dims();
 
         Vector3dc shipWorldPos = ship.getTransform().getPosition();
         double shipWx = shipWorldPos.x();
@@ -114,7 +118,7 @@ public final class TrainWindowManager {
 
             Vector3d local = new Vector3d(px, py, pz);
             ship.getTransform().getWorldToShip().transformPosition(local);
-            int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
+            int pIdx = (int) Math.floor((local.x - originX) / (double) dims.length());
 
             occupied.add(pIdx);
 
@@ -150,8 +154,8 @@ public final class TrainWindowManager {
         boolean mutated = false;
         for (Integer i : desired) {
             if (current.contains(i)) continue;
-            BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
-            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i));
+            BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
+            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i), dims);
             current.add(i);
             mutated = true;
             LOGGER.debug("[DungeonTrain] Added carriage idx={} at shipyard {}", i, carriageOrigin);
@@ -164,8 +168,8 @@ public final class TrainWindowManager {
             toErase.add(i);
         }
         for (Integer i : toErase) {
-            BlockPos carriageOrigin = new BlockPos(originX + i * CarriageTemplate.LENGTH, originY, originZ);
-            CarriageTemplate.eraseAt(level, carriageOrigin);
+            BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
+            CarriageTemplate.eraseAt(level, carriageOrigin, dims);
             current.remove(i);
             mutated = true;
             LOGGER.debug("[DungeonTrain] Erased carriage idx={} at shipyard {}", i, carriageOrigin);
@@ -250,7 +254,7 @@ public final class TrainWindowManager {
 
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
             ship.getTransform().getWorldToShip().transformPosition(local);
-            int pIdx = (int) Math.floor((local.x - originX) / (double) CarriageTemplate.LENGTH);
+            int pIdx = (int) Math.floor((local.x - originX) / (double) provider.dims().length());
             JITTER_LOGGER.trace(
                 "[pIdx] tick={} player={} worldPos=({}, {}, {}) shipLocalX={} pIdx={} committedPIdx={} lastShiftDir={} ticksSinceShift={}",
                 level.getGameTime(), player.getName().getString(),

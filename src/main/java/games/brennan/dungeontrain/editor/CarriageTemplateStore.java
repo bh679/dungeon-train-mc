@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import net.minecraft.core.HolderGetter;
@@ -53,12 +54,37 @@ public final class CarriageTemplateStore {
         CACHE.clear();
     }
 
-    public static synchronized Optional<StructureTemplate> get(ServerLevel level, CarriageType type) {
+    /**
+     * Invalidate the whole cache. Wired to {@code ServerStoppedEvent} so a
+     * switch between two single-player worlds with different
+     * {@link CarriageDims} cannot accidentally return a stale template
+     * saved against the previous world's dims.
+     */
+    public static synchronized void clearCache() {
+        CACHE.clear();
+    }
+
+    public static synchronized Optional<StructureTemplate> get(ServerLevel level, CarriageType type, CarriageDims dims) {
         Optional<StructureTemplate> cached = CACHE.get(type);
-        if (cached != null) return cached;
-        Optional<StructureTemplate> loaded = loadFromDisk(level, type);
+        if (cached != null) return filterForDims(type, cached, dims);
+        Optional<StructureTemplate> loaded = loadFromDisk(level, type, dims);
         CACHE.put(type, loaded);
         return loaded;
+    }
+
+    /**
+     * Re-check a cached template against the caller's dims — the cache is
+     * populated once per world but a hot-reloaded world could in principle
+     * change dims mid-session (future editor feature). Returning empty if
+     * the dims no longer match falls the caller back to {@code legacyPlaceAt}.
+     */
+    private static Optional<StructureTemplate> filterForDims(CarriageType type, Optional<StructureTemplate> cached, CarriageDims dims) {
+        if (cached.isEmpty()) return cached;
+        if (CarriageTemplate.sizeMatches(cached.get().getSize(), dims)) return cached;
+        LOGGER.warn(
+            "[DungeonTrain] Cached template {} no longer matches dims {}x{}x{} — falling back.",
+            type, dims.length(), dims.width(), dims.height());
+        return Optional.empty();
     }
 
     public static synchronized void save(CarriageType type, StructureTemplate template) throws IOException {
@@ -83,7 +109,7 @@ public final class CarriageTemplateStore {
         return Files.isRegularFile(fileFor(type));
     }
 
-    private static Optional<StructureTemplate> loadFromDisk(ServerLevel level, CarriageType type) {
+    private static Optional<StructureTemplate> loadFromDisk(ServerLevel level, CarriageType type, CarriageDims dims) {
         Path file = fileFor(type);
         if (!Files.isRegularFile(file)) return Optional.empty();
         try {
@@ -93,13 +119,11 @@ public final class CarriageTemplateStore {
             template.load(blocks, tag);
 
             Vec3i size = template.getSize();
-            if (size.getX() != CarriageTemplate.LENGTH
-                || size.getY() != CarriageTemplate.HEIGHT
-                || size.getZ() != CarriageTemplate.WIDTH) {
+            if (!CarriageTemplate.sizeMatches(size, dims)) {
                 LOGGER.warn(
                     "[DungeonTrain] Template {} has bounds {}x{}x{}, expected {}x{}x{} — ignoring and falling back.",
                     type, size.getX(), size.getY(), size.getZ(),
-                    CarriageTemplate.LENGTH, CarriageTemplate.HEIGHT, CarriageTemplate.WIDTH
+                    dims.length(), dims.height(), dims.width()
                 );
                 return Optional.empty();
             }

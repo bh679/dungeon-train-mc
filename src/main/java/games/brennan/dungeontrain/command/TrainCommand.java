@@ -6,9 +6,10 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -82,8 +83,9 @@ public final class TrainCommand {
             count, player.getName().getString(), origin, speed);
 
         try {
-            ServerShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos);
-            int lengthBlocks = count * CarriageTemplate.LENGTH;
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+            ServerShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
+            int lengthBlocks = count * dims.length();
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
                 ship.getId(), count, lengthBlocks);
             source.sendSuccess(() -> Component.literal(
