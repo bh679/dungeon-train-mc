@@ -24,9 +24,13 @@ import java.util.Optional;
 
 /**
  * Global on-disk store for tunnel templates. One NBT file per
- * {@link TunnelVariant} under {@code config/dungeontrain/templates/} —
- * same directory as carriage templates, distinguished by filename
- * ({@code tunnel_section.nbt}, {@code tunnel_portal.nbt}).
+ * {@link TunnelVariant} under {@code config/dungeontrain/tunnels/} —
+ * a separate directory from carriage templates (at
+ * {@code config/dungeontrain/templates/}) so
+ * {@link games.brennan.dungeontrain.train.CarriageVariantRegistry}'s
+ * {@code *.nbt} scan doesn't accidentally register tunnel variants
+ * (10×14×13 footprint) as custom carriages (9×7×7 footprint), which
+ * would fail placement and leave carriage-sized holes in the train.
  *
  * <p>Mirrors {@link CarriageTemplateStore} — missing or malformed files cause
  * callers to fall back to {@link games.brennan.dungeontrain.tunnel.LegacyTunnelPaint}.</p>
@@ -34,9 +38,8 @@ import java.util.Optional;
 public final class TunnelTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/templates";
+    private static final String SUBDIR = "dungeontrain/tunnels";
     private static final String EXT = ".nbt";
-    private static final String PREFIX = "tunnel_";
 
     private static final Map<TunnelVariant, Optional<StructureTemplate>> CACHE =
         new EnumMap<>(TunnelVariant.class);
@@ -48,7 +51,7 @@ public final class TunnelTemplateStore {
     }
 
     public static Path fileFor(TunnelVariant variant) {
-        return directory().resolve(PREFIX + variant.name().toLowerCase(Locale.ROOT) + EXT);
+        return directory().resolve(variant.name().toLowerCase(Locale.ROOT) + EXT);
     }
 
     public static synchronized void reload() {
