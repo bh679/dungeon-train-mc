@@ -1,20 +1,25 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -55,6 +60,14 @@ public final class VariantOverlayRenderer {
     /** Players who have turned the overlay OFF. Default is "on when in an editor plot". */
     private static final Set<UUID> DISABLED = new HashSet<>();
 
+    /**
+     * Per-player "last position we sent a hover packet for" — so we only
+     * push a new packet when the player crosses a block boundary or stops
+     * looking at a variant-flagged block. Null value means "last packet was
+     * the empty-clear".
+     */
+    private static final Map<UUID, BlockPos> LAST_HOVER_POS = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -70,6 +83,11 @@ public final class VariantOverlayRenderer {
     /** Drop a player's overlay preference (called on editor exit). */
     public static void forget(ServerPlayer player) {
         DISABLED.remove(player.getUUID());
+        BlockPos last = LAST_HOVER_POS.remove(player.getUUID());
+        // Clear the client HUD on exit so it doesn't linger in a non-editor context.
+        if (last != null) {
+            DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+        }
     }
 
     /**
@@ -88,11 +106,21 @@ public final class VariantOverlayRenderer {
 
         for (ServerPlayer player : players) {
             CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
-            if (plotVariant == null) continue;
-            if (!isEnabled(player)) continue;
+            if (plotVariant == null) {
+                // Player left a plot — make sure a stale HUD gets cleared.
+                clearHoverIfStale(player);
+                continue;
+            }
+            if (!isEnabled(player)) {
+                clearHoverIfStale(player);
+                continue;
+            }
 
             CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
-            if (sidecar.isEmpty()) continue;
+            if (sidecar.isEmpty()) {
+                clearHoverIfStale(player);
+                continue;
+            }
 
             BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
             if (plotOrigin == null) continue;
@@ -100,7 +128,13 @@ public final class VariantOverlayRenderer {
             if (emitParticles) {
                 emitOutlineParticles(level, player, plotOrigin, sidecar);
             }
-            renderHoverActionBar(level, player, plotOrigin, sidecar, dims);
+            updateHoverPacket(player, plotOrigin, sidecar, dims);
+        }
+    }
+
+    private static void clearHoverIfStale(ServerPlayer player) {
+        if (LAST_HOVER_POS.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
         }
     }
 
@@ -168,37 +202,55 @@ public final class VariantOverlayRenderer {
         return a + (b - a) * t;
     }
 
-    private static void renderHoverActionBar(
-        ServerLevel level, ServerPlayer player, BlockPos plotOrigin, CarriageVariantBlocks sidecar, CarriageDims dims
+    /**
+     * Raycast the player's eye, figure out which variant-flagged position
+     * (if any) they're currently pointing at, and sync that set of candidate
+     * block ids to the client so the HUD overlay can draw icons. Only sends
+     * a packet when the target block changes — stationary crosshair = zero
+     * network traffic.
+     */
+    private static void updateHoverPacket(
+        ServerPlayer player, BlockPos plotOrigin, CarriageVariantBlocks sidecar, CarriageDims dims
     ) {
         HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
-        if (!(hit instanceof BlockHitResult bhr) || bhr.getType() == HitResult.Type.MISS) return;
-        BlockPos worldPos = bhr.getBlockPos();
-        BlockPos local = worldPos.subtract(plotOrigin);
-        if (!inBounds(local, dims)) return;
-        List<BlockState> states = sidecar.statesAt(local);
-        if (states == null) return;
+        BlockPos flaggedPos = null;
+        List<BlockState> states = null;
+        if (hit instanceof BlockHitResult bhr && bhr.getType() != HitResult.Type.MISS) {
+            BlockPos local = bhr.getBlockPos().subtract(plotOrigin);
+            if (inBounds(local, dims)) {
+                List<BlockState> atPos = sidecar.statesAt(local);
+                if (atPos != null) {
+                    flaggedPos = bhr.getBlockPos().immutable();
+                    states = atPos;
+                }
+            }
+        }
 
-        String names = joinNames(states);
-        Component msg = Component.literal("Variants (" + states.size() + "): ")
-            .withStyle(ChatFormatting.GOLD)
-            .append(Component.literal(names).withStyle(ChatFormatting.WHITE));
-        player.displayClientMessage(msg, true);
+        BlockPos prev = LAST_HOVER_POS.get(player.getUUID());
+        if (flaggedPos == null) {
+            if (prev != null) {
+                LAST_HOVER_POS.remove(player.getUUID());
+                DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
+            }
+            return;
+        }
+        if (flaggedPos.equals(prev)) return;
+
+        LAST_HOVER_POS.put(player.getUUID(), flaggedPos);
+        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
+    }
+
+    private static List<ResourceLocation> toBlockIds(List<BlockState> states) {
+        List<ResourceLocation> out = new ArrayList<>(states.size());
+        for (BlockState s : states) {
+            out.add(BuiltInRegistries.BLOCK.getKey(s.getBlock()));
+        }
+        return out;
     }
 
     private static boolean inBounds(BlockPos p, CarriageDims dims) {
         return p.getX() >= 0 && p.getX() < dims.length()
             && p.getY() >= 0 && p.getY() < dims.height()
             && p.getZ() >= 0 && p.getZ() < dims.width();
-    }
-
-    private static String joinNames(List<BlockState> states) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < states.size(); i++) {
-            if (i > 0) sb.append(", ");
-            sb.append(net.minecraft.core.registries.BuiltInRegistries.BLOCK
-                .getKey(states.get(i).getBlock()).toString());
-        }
-        return sb.toString();
     }
 }

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DungeonTrainSettingsScreen;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
@@ -57,6 +58,7 @@ public class DungeonTrain {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Dungeon Train common setup");
+        event.enqueueWork(DungeonTrainNet::register);
     }
 
     private void clientSetup(final FMLClientSetupEvent event) {
