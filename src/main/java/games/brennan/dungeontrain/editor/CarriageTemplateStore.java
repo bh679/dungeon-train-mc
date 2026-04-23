@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.core.Vec3i;
@@ -20,21 +21,24 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * Three-tier carriage template store.
+ * Three-tier carriage template store, keyed on {@link CarriageVariant}.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/templates/<type>.nbt}, the
- *       per-install override. Server admins / single-player customisations land here.</li>
- *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<type>.nbt} on the
- *       classpath. Ships inside the mod jar and represents the mod's defaults.</li>
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/templates/<id>.nbt}, the
+ *       per-install override. Server admins / single-player customisations land here.
+ *       Custom variants only exist at this tier — they have no bundled resource.</li>
+ *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.nbt} on the
+ *       classpath. Ships inside the mod jar and represents the mod's defaults.
+ *       Only built-ins have bundled copies.</li>
  *   <li><b>Hardcoded fallback</b> — {@link CarriageTemplate#placeAt} drops to its
- *       legacy generator when both above tiers miss.</li>
+ *       legacy generator when both above tiers miss. Only built-ins fall back;
+ *       custom variants with no config-dir file place nothing.</li>
  * </ol>
  *
  * Each tier is filtered against the caller's {@link CarriageDims}; templates
@@ -43,7 +47,8 @@ import java.util.Optional;
  *
  * Authors push edits from the editor to tier 2 either by toggling dev mode
  * ({@link EditorDevMode}) so {@link CarriageEditor#save} writes through to the
- * source tree, or by running {@code /dungeontrain editor promote}.
+ * source tree, or by running {@code /dungeontrain editor promote}. Both paths
+ * only apply to built-ins.
  */
 public final class CarriageTemplateStore {
 
@@ -53,8 +58,9 @@ public final class CarriageTemplateStore {
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
 
-    private static final Map<CarriageType, Optional<StructureTemplate>> CACHE =
-        new EnumMap<>(CarriageType.class);
+    // Cached per-id result — empty optional means "tried all tiers and nothing
+    // found", which short-circuits future spawns without re-reading.
+    private static final Map<String, Optional<StructureTemplate>> CACHE = new HashMap<>();
 
     private CarriageTemplateStore() {}
 
@@ -62,14 +68,18 @@ public final class CarriageTemplateStore {
         return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
     }
 
-    public static Path fileFor(CarriageType type) {
-        return directory().resolve(name(type) + EXT);
+    public static Path fileFor(CarriageVariant variant) {
+        return directory().resolve(variant.id() + EXT);
+    }
+
+    public static Path fileForId(String id) {
+        return directory().resolve(id + EXT);
     }
 
     /**
      * On-disk path to the bundled-resource copy of {@code type}'s template
      * inside the project source tree. Only meaningful in a dev checkout — see
-     * {@link #sourceTreeAvailable()}.
+     * {@link #sourceTreeAvailable()}. Only built-ins ship bundled copies.
      */
     public static Path sourceFileFor(CarriageType type) {
         return sourceDirectory().resolve(name(type) + EXT);
@@ -100,12 +110,15 @@ public final class CarriageTemplateStore {
         CACHE.clear();
     }
 
-    public static synchronized Optional<StructureTemplate> get(ServerLevel level, CarriageType type, CarriageDims dims) {
-        Optional<StructureTemplate> cached = CACHE.get(type);
-        if (cached != null) return filterForDims(type, cached, dims);
-        Optional<StructureTemplate> loaded = loadFromConfig(level, type, dims);
-        if (loaded.isEmpty()) loaded = loadFromResource(level, type, dims);
-        CACHE.put(type, loaded);
+    public static synchronized Optional<StructureTemplate> get(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
+        String key = variant.id();
+        Optional<StructureTemplate> cached = CACHE.get(key);
+        if (cached != null) return filterForDims(variant, cached, dims);
+        Optional<StructureTemplate> loaded = loadFromConfig(level, variant, dims);
+        if (loaded.isEmpty() && variant instanceof CarriageVariant.Builtin b) {
+            loaded = loadFromResource(level, b.type(), dims);
+        }
+        CACHE.put(key, loaded);
         return loaded;
     }
 
@@ -113,32 +126,33 @@ public final class CarriageTemplateStore {
      * Re-check a cached template against the caller's dims — the cache is
      * populated once per world but a hot-reloaded world could in principle
      * change dims mid-session (future editor feature). Returning empty if
-     * the dims no longer match falls the caller back to {@code legacyPlaceAt}.
+     * the dims no longer match falls the caller back to {@code legacyPlaceAt}
+     * for built-ins, or to a no-op for customs.
      */
-    private static Optional<StructureTemplate> filterForDims(CarriageType type, Optional<StructureTemplate> cached, CarriageDims dims) {
+    private static Optional<StructureTemplate> filterForDims(CarriageVariant variant, Optional<StructureTemplate> cached, CarriageDims dims) {
         if (cached.isEmpty()) return cached;
         if (CarriageTemplate.sizeMatches(cached.get().getSize(), dims)) return cached;
         LOGGER.warn(
             "[DungeonTrain] Cached template {} no longer matches dims {}x{}x{} — falling back.",
-            type, dims.length(), dims.width(), dims.height());
+            variant.id(), dims.length(), dims.width(), dims.height());
         return Optional.empty();
     }
 
     /** Write {@code template} to the per-install config-dir copy. */
-    public static synchronized void save(CarriageType type, StructureTemplate template) throws IOException {
+    public static synchronized void save(CarriageVariant variant, StructureTemplate template) throws IOException {
         Path dir = directory();
         Files.createDirectories(dir);
-        Path file = fileFor(type);
+        Path file = fileFor(variant);
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file.toFile());
-        CACHE.put(type, Optional.of(template));
-        LOGGER.info("[DungeonTrain] Saved template {} to {}", type, file);
+        CACHE.put(variant.id(), Optional.of(template));
+        LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
 
     /**
      * Write {@code template} to the source-tree copy that gets bundled into the
      * mod jar at build time. Only succeeds in a dev checkout where the source
-     * tree is on disk and writable.
+     * tree is on disk and writable. Only built-in variants have bundled slots.
      */
     public static synchronized void saveToSource(CarriageType type, StructureTemplate template) throws IOException {
         if (!sourceTreeAvailable()) {
@@ -153,10 +167,11 @@ public final class CarriageTemplateStore {
 
     /**
      * Copy the per-install config-dir copy of {@code type} into the source tree
-     * so it ships with the next build.
+     * so it ships with the next build. Only built-ins can be promoted.
      */
     public static synchronized void promote(CarriageType type) throws IOException {
-        Path src = fileFor(type);
+        CarriageVariant variant = CarriageVariant.of(type);
+        Path src = fileFor(variant);
         if (!Files.isRegularFile(src)) {
             throw new IOException("No saved template for " + name(type) + " in " + src);
         }
@@ -169,35 +184,55 @@ public final class CarriageTemplateStore {
         LOGGER.info("[DungeonTrain] Promoted template {} from {} to {}", type, src, dst);
     }
 
-    public static synchronized boolean delete(CarriageType type) throws IOException {
-        Path file = fileFor(type);
+    public static synchronized boolean delete(CarriageVariant variant) throws IOException {
+        Path file = fileFor(variant);
         boolean existed = Files.deleteIfExists(file);
-        CACHE.put(type, Optional.empty());
-        if (existed) LOGGER.info("[DungeonTrain] Deleted template {} ({})", type, file);
+        CACHE.put(variant.id(), Optional.empty());
+        if (existed) LOGGER.info("[DungeonTrain] Deleted template {} ({})", variant.id(), file);
         return existed;
     }
 
-    public static boolean exists(CarriageType type) {
-        return Files.isRegularFile(fileFor(type));
+    public static boolean exists(CarriageVariant variant) {
+        return Files.isRegularFile(fileFor(variant));
     }
 
-    /** True iff the mod jar bundles a default template for {@code type}. */
-    public static boolean bundled(CarriageType type) {
-        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + name(type) + EXT)) {
+    /**
+     * True iff the mod jar bundles a default template for {@code variant}.
+     * Custom variants never have bundled copies.
+     */
+    public static boolean bundled(CarriageVariant variant) {
+        if (!(variant instanceof CarriageVariant.Builtin)) return false;
+        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + variant.id() + EXT)) {
             return in != null;
         } catch (IOException e) {
             return false;
         }
     }
 
-    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageType type, CarriageDims dims) {
-        Path file = fileFor(type);
+    /**
+     * Move a custom template file from {@code sourceId} to {@code targetId}.
+     * Used by the editor's save-with-rename path for custom-to-custom
+     * renames. Returns false if the source file does not exist.
+     */
+    public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
+        Path src = fileForId(sourceId);
+        Path dst = fileForId(targetId);
+        if (!Files.isRegularFile(src)) return false;
+        Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        Optional<StructureTemplate> cached = CACHE.remove(sourceId);
+        if (cached != null) CACHE.put(targetId, cached);
+        LOGGER.info("[DungeonTrain] Renamed template file {} -> {}", src, dst);
+        return true;
+    }
+
+    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
+        Path file = fileFor(variant);
         if (!Files.isRegularFile(file)) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file.toFile());
-            return loadAndValidate(level, type, dims, tag, "config " + file);
+            return loadAndValidate(level, variant.id(), dims, tag, "config " + file);
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read config template {} at {}: {}", type, file, e.toString());
+            LOGGER.error("[DungeonTrain] Failed to read config template {} at {}: {}", variant.id(), file, e.toString());
             return Optional.empty();
         }
     }
@@ -207,7 +242,7 @@ public final class CarriageTemplateStore {
         try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             CompoundTag tag = NbtIo.readCompressed(in);
-            return loadAndValidate(level, type, dims, tag, "bundled " + resource);
+            return loadAndValidate(level, name(type), dims, tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled template {} at {}: {}", type, resource, e.toString());
             return Optional.empty();
@@ -215,7 +250,7 @@ public final class CarriageTemplateStore {
     }
 
     private static Optional<StructureTemplate> loadAndValidate(
-        ServerLevel level, CarriageType type, CarriageDims dims, CompoundTag tag, String origin
+        ServerLevel level, String id, CarriageDims dims, CompoundTag tag, String origin
     ) {
         StructureTemplate template = new StructureTemplate();
         HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
@@ -225,12 +260,12 @@ public final class CarriageTemplateStore {
         if (!CarriageTemplate.sizeMatches(size, dims)) {
             LOGGER.warn(
                 "[DungeonTrain] Template {} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
-                type, origin, size.getX(), size.getY(), size.getZ(),
+                id, origin, size.getX(), size.getY(), size.getZ(),
                 dims.length(), dims.height(), dims.width()
             );
             return Optional.empty();
         }
-        LOGGER.info("[DungeonTrain] Loaded template {} from {}", type, origin);
+        LOGGER.info("[DungeonTrain] Loaded template {} from {}", id, origin);
         return Optional.of(template);
     }
 

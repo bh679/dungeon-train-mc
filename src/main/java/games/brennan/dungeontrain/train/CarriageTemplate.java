@@ -10,19 +10,23 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 /**
  * Carriage blueprint — a hollow box whose dimensions are captured per-world
- * in {@link CarriageDims} (default 9×7×7, X×Z×Y). Four visual variants are
- * selected per-carriage via {@link CarriageType} and
- * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
+ * in {@link CarriageDims} (default 9×7×7, X×Z×Y). Variants are selected
+ * per-carriage via {@link CarriageVariant} and {@link #variantForIndex(int)}
+ * so a long train cycles deterministically through the full set registered
+ * in {@link CarriageVariantRegistry}.
  *
- * {@link #placeAt(ServerLevel, BlockPos, CarriageType, CarriageDims)} first
- * tries an NBT-backed template from {@link CarriageTemplateStore}; if none
- * is saved (or the file's footprint doesn't match the world's current dims),
- * it falls back to the hardcoded generator in {@link #legacyPlaceAt}.
+ * <p>{@link #placeAt(ServerLevel, BlockPos, CarriageVariant, CarriageDims)}
+ * first tries an NBT-backed template from {@link CarriageTemplateStore}; if
+ * none is saved (or the file's footprint doesn't match the world's current
+ * dims), built-ins fall back to the hardcoded generator in
+ * {@link #legacyPlaceAt}, while custom variants place nothing (their blocks
+ * only exist on disk, never in fallback).
  */
 public final class CarriageTemplate {
 
@@ -36,7 +40,7 @@ public final class CarriageTemplate {
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
      * {@code Blocks.*} access off {@link CarriageTemplate}'s own static init
-     * means plain JUnit tests can call {@link #typeForIndex(int)} without
+     * means plain JUnit tests can call {@link #variantForIndex(int)} without
      * requiring a Forge/Minecraft {@code Bootstrap}. The holder is only
      * loaded on first reference from {@link #stateAt} (i.e. from a live
      * server-thread {@code placeAt} call), so there is no behavioural change.
@@ -52,28 +56,35 @@ public final class CarriageTemplate {
     private CarriageTemplate() {}
 
     /**
-     * Place a single carriage of the given type + dims at origin (= minimum
+     * Place a single carriage of the given variant + dims at origin (= minimum
      * corner). Returns the set of block positions filled — pass directly to
      * {@code ShipAssembler.assembleToShip()}.
      */
-    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, type, dims);
+    public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
             return collectFootprint(level, origin, dims);
         }
-        return legacyPlaceAt(level, origin, type, dims);
+        if (variant instanceof CarriageVariant.Builtin b) {
+            return legacyPlaceAt(level, origin, b.type(), dims);
+        }
+        // Custom variant with no (or mismatched) NBT — nothing to place.
+        return new HashSet<>();
     }
 
     /**
-     * Deterministic type selector for carriage index {@code i}. Shared by the
-     * initial spawn path and the rolling-window manager so carriage index N
-     * always renders the same variant regardless of when it appears.
+     * Deterministic variant selector for carriage index {@code i}. Cycles
+     * through {@link CarriageVariantRegistry#allVariants()} so built-ins come
+     * first, custom variants after. Shared by the initial spawn path and the
+     * rolling-window manager so carriage index N always renders the same
+     * variant regardless of when it appears — provided the registry state is
+     * stable across those calls.
      */
-    public static CarriageType typeForIndex(int i) {
-        CarriageType[] types = CarriageType.values();
-        int mod = Math.floorMod(i, types.length);
-        return types[mod];
+    public static CarriageVariant variantForIndex(int i) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        int mod = Math.floorMod(i, variants.size());
+        return variants.get(mod);
     }
 
     /**
@@ -148,8 +159,9 @@ public final class CarriageTemplate {
      * for a given type + dims. Returns {@code null} for air — makes the
      * iteration loops skip without placing.
      *
-     * <p>Package-private so {@link CarriageTemplateTest} can pin the
-     * perimeter/door/window geometry at non-default dims (e.g. 5×5×5).</p>
+     * <p>Package-private so {@link games.brennan.dungeontrain.train.CarriageTemplateTest}
+     * can pin the perimeter/door/window geometry at non-default dims
+     * (e.g. 5×5×5).</p>
      */
     static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type, CarriageDims dims) {
         if (type == CarriageType.FLATBED) {
