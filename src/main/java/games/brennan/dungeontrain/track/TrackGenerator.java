@@ -2,11 +2,11 @@ package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -228,14 +228,14 @@ public final class TrackGenerator {
         // pillar/arch checks to still run (they have their own idempotence).
         BlockState existingBed = level.getBlockState(bedPos);
         if (!existingBed.is(TrackPalette.BED.getBlock())) {
-            level.setBlock(bedPos, TrackPalette.BED, Block.UPDATE_CLIENTS);
+            SilentBlockOps.setBlockSilent(level, bedPos, TrackPalette.BED);
         }
 
         // Rails on top, at the two inner-edge Z rows (2-block gauge).
         if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
-                level.setBlock(railPos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
+                SilentBlockOps.setBlockSilent(level, railPos, TrackPalette.RAIL);
             }
         }
         return true;
@@ -319,7 +319,7 @@ public final class TrackGenerator {
             if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
             BlockState existing = level.getBlockState(pos);
             if (!isPassable(existing)) return; // hit terrain — this column is done
-            level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
+            SilentBlockOps.setBlockSilent(level, pos.immutable(), TrackPalette.PILLAR);
         }
     }
 
