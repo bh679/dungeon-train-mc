@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.train;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
@@ -11,6 +14,9 @@ import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,12 +32,21 @@ import java.util.TreeSet;
  * The four {@link CarriageType} built-ins come first in declared enum order;
  * custom variants follow in alphabetical order by id.
  *
- * <p>Custom variants are discovered by scanning
- * {@link CarriageTemplateStore#directory()} for {@code .nbt} files whose
- * basenames are not one of the built-in ids. The registry holds only the
- * identifiers — the template bytes stay in {@link CarriageTemplateStore}.
- * Adding or removing a {@code .nbt} file without going through the editor
- * requires a server restart (or {@link #reload()}) to pick up.
+ * <p>Custom variants are discovered from two tiers at server start:
+ * <ol>
+ *   <li><b>Bundled manifest</b> — {@code /data/dungeontrain/templates/customs.json}
+ *       on the classpath lists the ids that ship with the mod jar. These always
+ *       load on a fresh install and pair with the {@code loadFromResource}
+ *       fallback in {@link CarriageTemplateStore}.</li>
+ *   <li><b>Config directory</b> — {@link CarriageTemplateStore#directory()}
+ *       scanned for {@code .nbt} files whose basenames are not built-in ids.
+ *       Entries here cover both player-authored customs and local overrides of
+ *       shipped customs (same id is deduplicated by the underlying TreeSet).</li>
+ * </ol>
+ * The registry holds only the identifiers — the template bytes stay in
+ * {@link CarriageTemplateStore}. Adding or removing a {@code .nbt} file
+ * without going through the editor requires a server restart (or
+ * {@link #reload()}) to pick up.
  *
  * <p>Wired to {@link ServerStartingEvent} for the scan and
  * {@link ServerStoppedEvent} to release state between worlds.
@@ -104,30 +119,91 @@ public final class CarriageVariantRegistry {
         return CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
     }
 
-    /** Rescan the templates directory and rebuild the custom variant list. */
+    /** Classpath location of the shipped-customs manifest. */
+    static final String BUNDLED_MANIFEST_RESOURCE = "/data/dungeontrain/templates/customs.json";
+
+    /** Reload custom variants from the bundled manifest + the per-install config dir. */
     public static synchronized void reload() {
         CUSTOMS.clear();
-        Path dir = CarriageTemplateStore.directory();
-        if (!Files.isDirectory(dir)) return;
+        int bundled = loadBundledManifest();
+        int config = loadConfigDir();
 
+        LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",
+            BUILTINS.size(), CUSTOMS.size(), bundled, config);
+    }
+
+    /**
+     * Read the shipped manifest at {@link #BUNDLED_MANIFEST_RESOURCE} and add
+     * each valid id to {@link #CUSTOMS}. Returns the count of ids added (for
+     * logging). Silently accepts a missing manifest — the file is optional.
+     */
+    private static int loadBundledManifest() {
+        try (InputStream in = CarriageVariantRegistry.class.getResourceAsStream(BUNDLED_MANIFEST_RESOURCE)) {
+            if (in == null) return 0;
+            JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            if (!root.isJsonArray()) {
+                LOGGER.warn("[DungeonTrain] {} is not a JSON array — ignoring", BUNDLED_MANIFEST_RESOURCE);
+                return 0;
+            }
+            JsonArray arr = root.getAsJsonArray();
+            int added = 0;
+            for (JsonElement el : arr) {
+                if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) {
+                    LOGGER.warn("[DungeonTrain] Skipping non-string manifest entry: {}", el);
+                    continue;
+                }
+                String id = el.getAsString().toLowerCase(Locale.ROOT);
+                if (!acceptCustomId(id, "bundled manifest")) continue;
+                if (CUSTOMS.add(id)) added++;
+            }
+            return added;
+        } catch (Exception e) {
+            LOGGER.error("[DungeonTrain] Failed to read bundled manifest {}: {}", BUNDLED_MANIFEST_RESOURCE, e.toString());
+            return 0;
+        }
+    }
+
+    /**
+     * Scan the per-install config directory for {@code .nbt} files and add
+     * their basenames as customs. Returns the count of ids added that weren't
+     * already present (duplicates from the bundled manifest are fine — same id
+     * already resolves to the config-dir copy first in {@code CarriageTemplateStore}).
+     */
+    private static int loadConfigDir() {
+        Path dir = CarriageTemplateStore.directory();
+        if (!Files.isDirectory(dir)) return 0;
+
+        int added = 0;
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.nbt")) {
             for (Path file : stream) {
                 String name = file.getFileName().toString();
                 if (!name.endsWith(".nbt")) continue;
                 String basename = name.substring(0, name.length() - 4).toLowerCase(Locale.ROOT);
                 if (CarriageVariant.isReservedBuiltinName(basename)) continue;
-                if (!CarriageVariant.NAME_PATTERN.matcher(basename).matches()) {
-                    LOGGER.warn("[DungeonTrain] Ignoring template '{}' — invalid name", name);
-                    continue;
-                }
-                CUSTOMS.add(basename);
+                if (!acceptCustomId(basename, "config dir " + file.getFileName())) continue;
+                if (CUSTOMS.add(basename)) added++;
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to scan templates directory {}: {}", dir, e.toString());
         }
+        return added;
+    }
 
-        LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom",
-            BUILTINS.size(), CUSTOMS.size());
+    /**
+     * Validate a candidate custom id against the name pattern and the reserved
+     * built-in namespace. Emits a warning on rejection so stray entries surface
+     * in the log rather than silently disappearing.
+     */
+    private static boolean acceptCustomId(String id, String origin) {
+        if (CarriageVariant.isReservedBuiltinName(id)) {
+            LOGGER.warn("[DungeonTrain] Ignoring custom '{}' from {} — collides with built-in name", id, origin);
+            return false;
+        }
+        if (!CarriageVariant.NAME_PATTERN.matcher(id).matches()) {
+            LOGGER.warn("[DungeonTrain] Ignoring custom '{}' from {} — invalid name", id, origin);
+            return false;
+        }
+        return true;
     }
 
     public static synchronized void clear() {
