@@ -499,7 +499,8 @@ public final class EditorCommand {
     private static int runPillarSave(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        PillarSection section = PillarEditor.plotContaining(player.blockPosition());
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        PillarSection section = PillarEditor.plotContaining(player.blockPosition(), dims);
         if (section == null) {
             source.sendFailure(Component.literal(
                 "Not in a pillar editor plot. Use '/dungeontrain editor pillar enter <top|middle|bottom>' first."

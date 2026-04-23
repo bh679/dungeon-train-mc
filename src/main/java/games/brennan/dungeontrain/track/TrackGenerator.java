@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -298,12 +300,19 @@ public final class TrackGenerator {
     }
 
     /**
-     * Place a pillar column at (worldX, worldZ) from {@code bedY - 1} down to
-     * its individual ground, stamping the three editable
-     * {@link PillarSection} templates — bottom base, repeating middle, top
-     * cap — via {@link PillarTemplateStore}. Each column in a thick pillar
-     * descends independently, so a pillar on sloped terrain still tracks the
-     * slope rather than floating at the centerline's level.
+     * Place the full track-width pillar slice at {@code worldX}, running from
+     * {@code bedY - 1} down to the deepest ground anywhere under the track's
+     * {@code [trackZMin..trackZMax]} span. Stamps the three editable
+     * {@link PillarSection} templates across the whole Z range per row so the
+     * user can design a coherent 1×H×W pillar front face instead of a bunch
+     * of identical single-column stacks.
+     *
+     * <p>Each Z column in the slice is probed independently for its ground,
+     * and the minimum ({@code = deepest}) groundY anchors the whole slice.
+     * Shallower Z columns simply have their lower rows blocked by terrain —
+     * the stamp skips those positions via the non-passable check. The result
+     * is a visually-aligned pillar that follows the deepest bedrock and
+     * tucks into higher-ground edges naturally.</p>
      *
      * <p>Short-column rule: when the column height {@code H < BOTTOM.height +
      * TOP.height}, the bottom is placed first (up to its full height or
@@ -312,25 +321,34 @@ public final class TrackGenerator {
      * decorative cap always lands at the column's top.</p>
      *
      * <p>Missing templates fall back to {@link TrackPalette#PILLAR} per row,
-     * matching the pre-template visual exactly. Air positions in a loaded
-     * template are left untouched so users can design pillar cut-outs.
-     * Ship-owned and non-passable intermediate blocks terminate the stamp
-     * early, same as the pre-template behaviour.</p>
+     * matching the pre-template visual exactly. Air entries in a loaded
+     * template are left untouched so users can design pillar cut-outs.</p>
      */
-    private static void placePillarColumn(
+    private static void placePillarSlice(
         ServerLevel level,
         int worldX,
-        int worldZ,
-        int bedY
+        TrackGeometry g,
+        CarriageDims dims
     ) {
-        int groundY = probeGroundY(level, worldX, worldZ, bedY);
+        int bedY = g.bedY();
         int topInclusive = bedY - 1;
-        int h = topInclusive - groundY + 1;
+
+        // Probe each Z column in the track span; take the minimum (deepest)
+        // as the slice anchor. probeGroundY returns bedY as a sentinel for
+        // "ship intercepts / no pillar needed" — skip those columns so a ship
+        // above one edge doesn't force the whole slice to zero-height.
+        int deepestGroundY = bedY;
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int ground = probeGroundY(level, worldX, z, bedY);
+            if (ground >= bedY) continue;
+            if (ground < deepestGroundY) deepestGroundY = ground;
+        }
+        int h = topInclusive - deepestGroundY + 1;
         if (h <= 0) return;
 
-        Optional<BlockState[]> topCol = PillarTemplateStore.getColumn(level, PillarSection.TOP);
-        Optional<BlockState[]> midCol = PillarTemplateStore.getColumn(level, PillarSection.MIDDLE);
-        Optional<BlockState[]> botCol = PillarTemplateStore.getColumn(level, PillarSection.BOTTOM);
+        Optional<BlockState[][]> topCol = PillarTemplateStore.getColumn(level, PillarSection.TOP, dims);
+        Optional<BlockState[][]> midCol = PillarTemplateStore.getColumn(level, PillarSection.MIDDLE, dims);
+        Optional<BlockState[][]> botCol = PillarTemplateStore.getColumn(level, PillarSection.BOTTOM, dims);
 
         int topH = PillarSection.TOP.height();
         int botH = PillarSection.BOTTOM.height();
@@ -338,50 +356,57 @@ public final class TrackGenerator {
         int placeTopH = Math.min(topH, h - placeBotH);
         int placeMidH = h - placeBotH - placeTopH;
 
-        for (int i = 0; i < placeBotH; i++) {
-            if (!stampRow(level, worldX, groundY + i, worldZ, botCol, i)) return;
-        }
-        for (int i = 0; i < placeMidH; i++) {
-            if (!stampRow(level, worldX, groundY + placeBotH + i, worldZ, midCol, 0)) return;
-        }
-        for (int i = 0; i < placeTopH; i++) {
-            int y = topInclusive - placeTopH + 1 + i;
-            int row = (topH - placeTopH) + i;
-            if (!stampRow(level, worldX, y, worldZ, topCol, row)) return;
+        int zMin = g.trackZMin();
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int zIdx = z - zMin;
+            for (int i = 0; i < placeBotH; i++) {
+                stampSliceCell(level, worldX, deepestGroundY + i, z, botCol, i, zIdx);
+            }
+            for (int i = 0; i < placeMidH; i++) {
+                stampSliceCell(level, worldX, deepestGroundY + placeBotH + i, z, midCol, 0, zIdx);
+            }
+            for (int i = 0; i < placeTopH; i++) {
+                int y = topInclusive - placeTopH + 1 + i;
+                int row = (topH - placeTopH) + i;
+                stampSliceCell(level, worldX, y, z, topCol, row, zIdx);
+            }
         }
     }
 
     /**
-     * Stamp one row of a pillar column. {@code column} is the unpacked
-     * template for the section (or empty for the hardcoded fallback), and
-     * {@code row} is the template-local Y index to sample. Air entries in the
-     * template ({@code null}) are skipped so design cut-outs pass through.
+     * Stamp one cell of a pillar slice. {@code column} is the unpacked
+     * 2D template (row Y × Z offset) for the section, or empty for fallback.
+     * Null template cells are treated as air — the world stays passable.
      *
-     * @return false when the target position is ship-owned or non-passable —
-     *         caller should abandon the rest of the column (matches the
-     *         pre-template early-terminate behaviour).
+     * <p>Unlike the pre-template per-column early-terminate, this method
+     * silently skips ship-owned or non-passable positions without aborting
+     * the rest of the slice. That's the right move for a 1×H×W stamp: one
+     * shallow Z column hitting terrain shouldn't wipe out the rest of the
+     * pillar's face.</p>
      */
-    private static boolean stampRow(
+    private static void stampSliceCell(
         ServerLevel level,
         int x, int y, int z,
-        Optional<BlockState[]> column,
-        int row
+        Optional<BlockState[][]> column,
+        int row,
+        int zIdx
     ) {
         BlockPos pos = new BlockPos(x, y, z);
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return false;
+        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
-        if (!isPassable(existing)) return false;
+        if (!isPassable(existing)) return;
 
         BlockState state;
-        if (column.isPresent() && row >= 0 && row < column.get().length) {
-            BlockState fromTemplate = column.get()[row];
-            if (fromTemplate == null) return true; // template row is air — leave passable
+        if (column.isPresent()
+            && row >= 0 && row < column.get().length
+            && zIdx >= 0 && zIdx < column.get()[row].length) {
+            BlockState fromTemplate = column.get()[row][zIdx];
+            if (fromTemplate == null) return; // template cell is air — leave passable
             state = fromTemplate;
         } else {
             state = TrackPalette.PILLAR;
         }
         SilentBlockOps.setBlockSilent(level, pos, state);
-        return true;
     }
 
     /**
@@ -425,16 +450,20 @@ public final class TrackGenerator {
             g
         );
 
+        // Fetch per-world dims once; the pillar-template store validates
+        // against this, and the call is cheap (SavedData lookup).
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                if (!placeBedAndRail(level, worldX, worldZ, g)) continue;
+                placeBedAndRail(level, worldX, worldZ, g);
+            }
 
-                if (containingPillar != null) {
-                    placePillarColumn(level, worldX, worldZ, g.bedY());
-                }
+            if (containingPillar != null) {
+                placePillarSlice(level, worldX, g, dims);
             }
         }
 

@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
@@ -32,7 +34,9 @@ public final class PillarEditor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int PLOT_Y = 250;
-    private static final int PLOT_Z = 30;
+    /** Pillar row Z-origin. Carriage plots sit at Z=0 with width up to 32,
+     *  so 40 keeps a clean gap even at max carriage width. */
+    private static final int PLOT_Z = 40;
     private static final int PLOT_STEP_X = 20;
     private static final int FIRST_PLOT_X = 0;
 
@@ -56,17 +60,19 @@ public final class PillarEditor {
     }
 
     /**
-     * Find the section whose 1×H×1 plot contains {@code pos} (with a 1-block
-     * outline margin so the player standing on the cage detects too). Returns
-     * {@code null} if {@code pos} is outside every pillar plot.
+     * Find the section whose 1×H×W plot contains {@code pos} (with a 1-block
+     * outline margin so standing on the cage counts). Returns {@code null} if
+     * {@code pos} is outside every pillar plot. {@code dims.width()} supplies
+     * the Z-span of each plot.
      */
-    public static PillarSection plotContaining(BlockPos pos) {
+    public static PillarSection plotContaining(BlockPos pos, CarriageDims dims) {
+        int w = dims.width();
         for (PillarSection section : PillarSection.values()) {
             BlockPos o = plotOrigin(section);
             int h = section.height();
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + 1
                 && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + h
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + 1) {
+                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
                 return section;
             }
         }
@@ -82,41 +88,44 @@ public final class PillarEditor {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOrigin(section);
 
         CarriageEditor.rememberReturn(player);
 
-        eraseAt(overworld, origin, section);
-        stampCurrent(overworld, origin, section);
-        setOutline(overworld, origin, section);
+        eraseAt(overworld, origin, section, dims);
+        stampCurrent(overworld, origin, section, dims);
+        setOutline(overworld, origin, section, dims);
 
         double tx = origin.getX() + 0.5;
         double ty = origin.getY() + 1.0;
-        double tz = origin.getZ() + 0.5;
+        double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} plot at {} (height={})",
-            player.getName().getString(), section.id(), origin, section.height());
+        LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} plot at {} (size=1x{}x{})",
+            player.getName().getString(), section.id(), origin, section.height(), dims.width());
     }
 
     /**
-     * Capture the {@code 1 × height × 1} region at the plot for {@code section}
-     * into a fresh {@link StructureTemplate} and persist it via
-     * {@link PillarTemplateStore}. Air positions are included so a deliberately
-     * empty slot stays empty. When {@link EditorDevMode} is on, the template
-     * is also written to the source tree so it ships with the next build.
+     * Capture the {@code 1 × height × width} region at the plot for
+     * {@code section} into a fresh {@link StructureTemplate} and persist it
+     * via {@link PillarTemplateStore}. Air positions are included so a
+     * deliberately empty slot stays empty. When {@link EditorDevMode} is on,
+     * the template is also written to the source tree so it ships with the
+     * next build.
      */
     public static SaveResult save(ServerPlayer player, PillarSection section) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos origin = plotOrigin(section);
 
-        StructureTemplate template = captureTemplate(overworld, origin, section);
+        StructureTemplate template = captureTemplate(overworld, origin, section, dims);
         PillarTemplateStore.save(section, template);
 
-        LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {} template",
-            player.getName().getString(), section.id());
+        LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {} template (1x{}x{})",
+            player.getName().getString(), section.id(), section.height(), dims.width());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
@@ -129,12 +138,13 @@ public final class PillarEditor {
         }
     }
 
-    /** Erase a 1×H×1 region (plus cage) to air so the fresh stamp lands on a clean slate. */
-    private static void eraseAt(ServerLevel level, BlockPos origin, PillarSection section) {
+    /** Erase a 1×H×W region (plus 1-block outline margin) to air for a clean slate. */
+    private static void eraseAt(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         int h = section.height();
+        int w = dims.width();
         for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
+            for (int dz = -1; dz <= w; dz++) {
                 for (int dy = -1; dy <= h; dy++) {
                     level.setBlock(origin.offset(dx, dy, dz), air, 3);
                 }
@@ -143,12 +153,12 @@ public final class PillarEditor {
     }
 
     /**
-     * Fill the 1×H×1 footprint with the current stored template if any, else
-     * fall back to the stone-brick palette so the cage shows the fallback
-     * visual and the player has something to edit.
+     * Fill the 1×H×W footprint with the current stored template if any, else
+     * stamp the stone-brick fallback across the full width so the player has
+     * something to edit.
      */
-    private static void stampCurrent(ServerLevel level, BlockPos origin, PillarSection section) {
-        Optional<StructureTemplate> stored = PillarTemplateStore.get(level, section);
+    private static void stampCurrent(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
+        Optional<StructureTemplate> stored = PillarTemplateStore.get(level, section, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
@@ -156,27 +166,31 @@ public final class PillarEditor {
         }
         BlockState fallback = TrackPalette.PILLAR;
         int h = section.height();
+        int w = dims.width();
         for (int dy = 0; dy < h; dy++) {
-            level.setBlock(origin.offset(0, dy, 0), fallback, 3);
+            for (int dz = 0; dz < w; dz++) {
+                level.setBlock(origin.offset(0, dy, dz), fallback, 3);
+            }
         }
     }
 
-    private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, PillarSection section) {
+    private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
         StructureTemplate template = new StructureTemplate();
-        Vec3i size = new Vec3i(1, section.height(), 1);
+        Vec3i size = new Vec3i(1, section.height(), dims.width());
         template.fillFromWorld(level, origin, size, false, Blocks.AIR);
         return template;
     }
 
-    /** Barrier cage: 12 edges of a bounding box 1 block outside the 1×H×1 footprint. */
-    private static void setOutline(ServerLevel level, BlockPos origin, PillarSection section) {
+    /** Barrier cage: 12 edges of a bounding box 1 block outside the 1×H×W footprint. */
+    private static void setOutline(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
         int h = section.height();
+        int w = dims.width();
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
         int z0 = origin.getZ() - 1;
         int x1 = origin.getX() + 1;
         int y1 = origin.getY() + h;
-        int z1 = origin.getZ() + 1;
+        int z1 = origin.getZ() + w;
 
         for (int x = x0; x <= x1; x++) {
             for (int y = y0; y <= y1; y++) {
