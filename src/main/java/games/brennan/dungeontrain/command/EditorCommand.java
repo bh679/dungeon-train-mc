@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
@@ -23,8 +22,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.blocks.BlockStateArgument;
-import net.minecraft.commands.arguments.blocks.BlockInput;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -35,7 +32,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -131,27 +127,21 @@ public final class EditorCommand {
     }
 
     /**
-     * {@code /dungeontrain editor variant ...} — author per-position random
-     * variant blocks in the plot the player is standing in. Raycast-based: the
-     * block being looked at (within 8 blocks, inside the plot footprint) is
-     * the subject of set/clear. All changes mutate the in-memory sidecar
-     * eagerly; {@code /editor save} snapshots it to disk alongside the NBT
-     * template.
+     * {@code /dungeontrain editor variant ...} — inspect + reset per-position
+     * random variant blocks for the plot the player is standing in.
+     *
+     * <p>Authoring is now in-world: <b>sneak + right-click</b> a block in the
+     * plot with a different block held in main hand to append that block to
+     * the variants list at the targeted position. See
+     * {@link VariantBlockInteractions}. The commands below only clear / list
+     * entries; they no longer edit the state list directly.</p>
+     *
+     * <p>All changes mutate the in-memory sidecar eagerly;
+     * {@code /editor save} snapshots it to disk alongside the NBT template.</p>
      */
+    @SuppressWarnings("unused") // buildContext retained for symmetry with prior signature + future subcommands
     private static LiteralArgumentBuilder<CommandSourceStack> buildVariantSubtree(CommandBuildContext buildContext) {
         return Commands.literal("variant")
-            .then(Commands.literal("set")
-                .then(Commands.argument("block1", BlockStateArgument.block(buildContext))
-                    .then(Commands.argument("block2", BlockStateArgument.block(buildContext))
-                        .executes(ctx -> runVariantSet(ctx, 2))
-                        .then(Commands.argument("block3", BlockStateArgument.block(buildContext))
-                            .executes(ctx -> runVariantSet(ctx, 3))
-                            .then(Commands.argument("block4", BlockStateArgument.block(buildContext))
-                                .executes(ctx -> runVariantSet(ctx, 4))
-                                .then(Commands.argument("block5", BlockStateArgument.block(buildContext))
-                                    .executes(ctx -> runVariantSet(ctx, 5))
-                                    .then(Commands.argument("block6", BlockStateArgument.block(buildContext))
-                                        .executes(ctx -> runVariantSet(ctx, 6)))))))))
             .then(Commands.literal("clear").executes(ctx -> runVariantClear(ctx.getSource())))
             .then(Commands.literal("list").executes(ctx -> runVariantList(ctx.getSource())))
             .then(Commands.literal("overlay")
@@ -192,44 +182,6 @@ public final class EditorCommand {
             return null;
         }
         return new VariantTarget(plotVariant, local, dims);
-    }
-
-    private static int runVariantSet(CommandContext<CommandSourceStack> ctx, int blockCount) {
-        ServerPlayer player = requirePlayer(ctx.getSource());
-        if (player == null) return 0;
-        VariantTarget target = resolveTarget(ctx.getSource(), player);
-        if (target == null) return 0;
-
-        List<BlockState> states = new ArrayList<>(blockCount);
-        for (int i = 1; i <= blockCount; i++) {
-            BlockInput input = ctx.getArgument("block" + i, BlockInput.class);
-            BlockState state = input.getState();
-            if (state.hasBlockEntity()) {
-                ctx.getSource().sendFailure(Component.literal(
-                    "Block " + i + " (" + BuiltInRegistries.BLOCK.getKey(state.getBlock())
-                        + ") has a block entity — not supported in variant sidecars (v1).")
-                    .withStyle(ChatFormatting.RED));
-                return 0;
-            }
-            states.add(state);
-        }
-
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(target.variant(), target.dims());
-        try {
-            sidecar.put(target.localPos(), states);
-        } catch (IllegalArgumentException e) {
-            ctx.getSource().sendFailure(Component.literal("Variant set rejected: " + e.getMessage())
-                .withStyle(ChatFormatting.RED));
-            return 0;
-        }
-
-        final int count = states.size();
-        final String pos = target.localPos().getX() + "," + target.localPos().getY() + "," + target.localPos().getZ();
-        ctx.getSource().sendSuccess(() -> Component.literal(
-            "Editor: variant (" + count + " states) set at local " + pos
-                + " on '" + target.variant().id() + "'. Run '/dungeontrain editor save' to persist."
-        ).withStyle(ChatFormatting.GREEN), true);
-        return 1;
     }
 
     private static int runVariantClear(CommandSourceStack source) {
