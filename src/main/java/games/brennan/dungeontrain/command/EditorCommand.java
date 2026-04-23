@@ -10,11 +10,14 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TunnelEditor;
+import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -28,12 +31,19 @@ import java.util.Set;
 
 /**
  * {@code /dungeontrain editor ...} subtree — enter, save (with optional
- * rename), exit, list, reset, new, devmode, promote. Wired into the root
- * {@code dungeontrain} command from {@link TrainCommand#register}.
+ * rename), exit, list, reset, new, devmode, promote. Accepts both carriage
+ * variants (resolved via {@link CarriageVariantRegistry}) and tunnel
+ * variants ({@code tunnel_section}, {@code tunnel_portal}) for enter/save/
+ * exit/list/reset. The {@code new}, {@code devmode}, and {@code promote}
+ * subcommands are carriage-only. Wired into the root {@code dungeontrain}
+ * command from {@link TrainCommand#register}.
  */
 public final class EditorCommand {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Prefix that distinguishes tunnel variants from carriage variants in command input. */
+    private static final String TUNNEL_PREFIX = "tunnel_";
 
     /** Built-ins that cannot be renamed via {@code save <new_name>}. */
     private static final Set<String> PROTECTED_BUILTINS = Set.of("standard", "flatbed");
@@ -42,6 +52,9 @@ public final class EditorCommand {
         (ctx, builder) -> {
             for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
                 builder.suggest(v.id());
+            }
+            for (TunnelVariant v : TunnelVariant.values()) {
+                builder.suggest(TUNNEL_PREFIX + v.name().toLowerCase(Locale.ROOT));
             }
             return builder.buildFuture();
         };
@@ -67,15 +80,11 @@ public final class EditorCommand {
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("editor")
             .then(Commands.literal("enter")
-                .executes(ctx -> runEnter(ctx.getSource(), CarriageVariant.of(CarriageType.STANDARD)))
+                .executes(ctx -> runEnterCarriage(ctx.getSource(), CarriageVariant.of(CarriageType.STANDARD)))
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(VARIANT_SUGGESTIONS)
-                    .executes(ctx -> {
-                        CarriageVariant v = parseVariant(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "variant"));
-                        if (v == null) return 0;
-                        return runEnter(ctx.getSource(), v);
-                    })))
+                    .executes(ctx -> runEnter(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "variant")))))
             .then(Commands.literal("save")
                 .executes(ctx -> runSave(ctx.getSource(), null))
                 .then(Commands.argument("new_name", StringArgumentType.word())
@@ -86,12 +95,8 @@ public final class EditorCommand {
             .then(Commands.literal("reset")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(VARIANT_SUGGESTIONS)
-                    .executes(ctx -> {
-                        CarriageVariant v = parseVariant(ctx.getSource(),
-                            StringArgumentType.getString(ctx, "variant"));
-                        if (v == null) return 0;
-                        return runReset(ctx.getSource(), v);
-                    })))
+                    .executes(ctx -> runReset(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "variant")))))
             .then(Commands.literal("new")
                 .then(Commands.argument("name", StringArgumentType.word())
                     .executes(ctx -> runNew(ctx.getSource(),
@@ -163,6 +168,24 @@ public final class EditorCommand {
         }
     }
 
+    /** True when the raw input targets a tunnel variant (prefix {@code tunnel_}). */
+    private static boolean isTunnelInput(String raw) {
+        return raw != null && raw.toLowerCase(Locale.ROOT).startsWith(TUNNEL_PREFIX);
+    }
+
+    /** Parse a tunnel variant argument or return {@code null} (and send an error). */
+    private static TunnelVariant parseTunnelVariant(CommandSourceStack source, String raw) {
+        String body = raw.toLowerCase(Locale.ROOT).substring(TUNNEL_PREFIX.length());
+        try {
+            return TunnelVariant.valueOf(body.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            source.sendFailure(Component.literal(
+                "Unknown tunnel variant '" + raw + "'. Valid: tunnel_section, tunnel_portal"
+            ));
+            return null;
+        }
+    }
+
     private static CarriageVariant parseVariant(CommandSourceStack source, String raw) {
         String id = raw.toLowerCase(Locale.ROOT);
         return CarriageVariantRegistry.find(id).orElseGet(() -> {
@@ -193,6 +216,9 @@ public final class EditorCommand {
             sb.append(v.id());
             first = false;
         }
+        for (TunnelVariant v : TunnelVariant.values()) {
+            sb.append(", ").append(TUNNEL_PREFIX).append(v.name().toLowerCase(Locale.ROOT));
+        }
         return sb.toString();
     }
 
@@ -205,7 +231,18 @@ public final class EditorCommand {
         }
     }
 
-    private static int runEnter(CommandSourceStack source, CarriageVariant variant) {
+    private static int runEnter(CommandSourceStack source, String raw) {
+        if (isTunnelInput(raw)) {
+            TunnelVariant v = parseTunnelVariant(source, raw);
+            if (v == null) return 0;
+            return runEnterTunnel(source, v);
+        }
+        CarriageVariant v = parseVariant(source, raw);
+        if (v == null) return 0;
+        return runEnterCarriage(source, v);
+    }
+
+    private static int runEnterCarriage(CommandSourceStack source, CarriageVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         try {
@@ -224,9 +261,56 @@ public final class EditorCommand {
         }
     }
 
+    private static int runEnterTunnel(CommandSourceStack source, TunnelVariant variant) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        try {
+            TunnelEditor.enter(player, variant);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered '" + TUNNEL_PREFIX + variant.name().toLowerCase(Locale.ROOT)
+                    + "' plot at " + TunnelEditor.plotOrigin(variant)
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor enter (tunnel) failed", t);
+            source.sendFailure(Component.literal("enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
     private static int runSave(CommandSourceStack source, String newName) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+
+        // Tunnel plots take priority — if the player is inside a tunnel plot,
+        // save the tunnel template (ignoring any new_name argument; tunnel
+        // templates don't support rename).
+        TunnelVariant tunnel = TunnelEditor.plotContaining(player.blockPosition());
+        if (tunnel != null) {
+            if (newName != null) {
+                source.sendFailure(Component.literal(
+                    "Tunnel templates don't support rename; run '/dungeontrain editor save' without arguments."
+                ));
+                return 0;
+            }
+            try {
+                TunnelEditor.save(player, tunnel);
+                final TunnelVariant t = tunnel;
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: saved '" + TUNNEL_PREFIX + t.name().toLowerCase(Locale.ROOT) + "' template."
+                ), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor save (tunnel) failed", t);
+                source.sendFailure(Component.literal("save failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         CarriageVariant current = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (current == null) {
@@ -308,7 +392,11 @@ public final class EditorCommand {
     private static int runExit(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        if (!CarriageEditor.exit(player)) {
+        // Try tunnel-session first (separate session map from CarriageEditor).
+        // A user who entered a carriage plot, then a tunnel plot, needs to run
+        // exit twice to unwind both sessions.
+        boolean exited = TunnelEditor.exit(player) || CarriageEditor.exit(player);
+        if (!exited) {
             source.sendFailure(Component.literal(
                 "No saved editor session — nothing to exit to."
             ));
@@ -335,6 +423,12 @@ public final class EditorCommand {
                 .append(" [config: ").append(config ? "yes" : "no")
                 .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
         }
+        sb.append("\nTunnel variants:");
+        for (TunnelVariant v : TunnelVariant.values()) {
+            boolean saved = TunnelTemplateStore.exists(v);
+            sb.append("\n  ").append(TUNNEL_PREFIX).append(v.name().toLowerCase(Locale.ROOT))
+                .append(" — ").append(saved ? "saved" : "fallback (procedural)");
+        }
         sb.append("\nDev mode: ").append(EditorDevMode.isEnabled() ? "ON" : "off");
         sb.append("\nSource tree writable: ").append(CarriageTemplateStore.sourceTreeAvailable() ? "yes" : "no");
         String msg = sb.toString();
@@ -342,7 +436,30 @@ public final class EditorCommand {
         return 1;
     }
 
-    private static int runReset(CommandSourceStack source, CarriageVariant variant) {
+    private static int runReset(CommandSourceStack source, String raw) {
+        if (isTunnelInput(raw)) {
+            TunnelVariant v = parseTunnelVariant(source, raw);
+            if (v == null) return 0;
+            try {
+                boolean deleted = TunnelTemplateStore.delete(v);
+                final TunnelVariant tv = v;
+                source.sendSuccess(() -> Component.literal(
+                    deleted
+                        ? "Editor: deleted '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template."
+                        : "Editor: no '" + TUNNEL_PREFIX + tv.name().toLowerCase(Locale.ROOT) + "' template to delete."
+                ), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor reset (tunnel) failed", t);
+                source.sendFailure(Component.literal("reset failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        CarriageVariant variant = parseVariant(source, raw);
+        if (variant == null) return 0;
         try {
             boolean deleted = CarriageTemplateStore.delete(variant);
             boolean wasCustom = !variant.isBuiltin();
