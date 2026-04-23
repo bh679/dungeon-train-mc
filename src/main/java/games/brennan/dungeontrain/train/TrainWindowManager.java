@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -80,6 +81,12 @@ public final class TrainWindowManager {
         // tick for a value that cannot change for this train's lifetime.
         CarriageDims dims = provider.dims();
 
+        // Generation mode + groupSize are runtime-editable via the settings
+        // screen, so they must be read fresh each tick — new placements then
+        // pick up the new mode without a respawn. The per-world seed portion
+        // is sourced from SavedData (cached by DataStorage, cheap).
+        CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
+
         Vector3dc shipWorldPos = ship.getTransform().getPosition();
         double shipWx = shipWorldPos.x();
         double shipWy = shipWorldPos.y();
@@ -155,7 +162,7 @@ public final class TrainWindowManager {
         for (Integer i : desired) {
             if (current.contains(i)) continue;
             BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
-            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.variantForIndex(i), dims);
+            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.variantForIndex(i, genCfg), dims);
             current.add(i);
             mutated = true;
             LOGGER.debug("[DungeonTrain] Added carriage idx={} at shipyard {}", i, carriageOrigin);

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageGenerationMode;
 
 /**
  * Client-side static holder for the values picked on
@@ -20,17 +21,31 @@ public final class PendingWorldChoices {
     private static volatile Integer trainY;
     private static volatile Boolean startsWithTrain;
     private static volatile CarriageDims dims;
+    private static volatile CarriageGenerationMode generationMode;
+    private static volatile Integer groupSize;
 
     private PendingWorldChoices() {}
 
-    public static void set(int trainY, boolean startsWithTrain, CarriageDims dims) {
+    public static void set(
+            int trainY,
+            boolean startsWithTrain,
+            CarriageDims dims,
+            CarriageGenerationMode generationMode,
+            int groupSize
+    ) {
         PendingWorldChoices.trainY = trainY;
         PendingWorldChoices.startsWithTrain = startsWithTrain;
         PendingWorldChoices.dims = dims;
+        PendingWorldChoices.generationMode = generationMode;
+        PendingWorldChoices.groupSize = groupSize;
     }
 
     public static boolean isPresent() {
-        return trainY != null && startsWithTrain != null && dims != null;
+        return trainY != null
+                && startsWithTrain != null
+                && dims != null
+                && generationMode != null
+                && groupSize != null;
     }
 
     public static int trainY() {
@@ -45,9 +60,19 @@ public final class PendingWorldChoices {
         return dims;
     }
 
+    public static CarriageGenerationMode generationMode() {
+        return generationMode;
+    }
+
+    public static int groupSize() {
+        return groupSize;
+    }
+
     public static void clear() {
         trainY = null;
         startsWithTrain = null;
         dims = null;
+        generationMode = null;
+        groupSize = null;
     }
 }

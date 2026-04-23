@@ -115,8 +115,13 @@ public final class CarriageTemplateStore {
         Optional<StructureTemplate> cached = CACHE.get(key);
         if (cached != null) return filterForDims(variant, cached, dims);
         Optional<StructureTemplate> loaded = loadFromConfig(level, variant, dims);
-        if (loaded.isEmpty() && variant instanceof CarriageVariant.Builtin b) {
-            loaded = loadFromResource(level, b.type(), dims);
+        if (loaded.isEmpty()) {
+            // Bundled fallback applies to both built-ins and any custom ids
+            // declared in the shipped customs manifest. For built-ins the jar
+            // always ships a default; for customs the jar may ship a default.
+            // If neither tier has the template, the caller falls back to the
+            // hardcoded generator (built-ins only) or no-ops (customs).
+            loaded = loadFromResource(level, variant, dims);
         }
         CACHE.put(key, loaded);
         return loaded;
@@ -237,14 +242,14 @@ public final class CarriageTemplateStore {
         }
     }
 
-    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageType type, CarriageDims dims) {
-        String resource = RESOURCE_PREFIX + name(type) + EXT;
+    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
+        String resource = RESOURCE_PREFIX + variant.id() + EXT;
         try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             CompoundTag tag = NbtIo.readCompressed(in);
-            return loadAndValidate(level, name(type), dims, tag, "bundled " + resource);
+            return loadAndValidate(level, variant.id(), dims, tag, "bundled " + resource);
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled template {} at {}: {}", type, resource, e.toString());
+            LOGGER.error("[DungeonTrain] Failed to read bundled template {} at {}: {}", variant.id(), resource, e.toString());
             return Optional.empty();
         }
     }

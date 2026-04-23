@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.train.CarriageGenerationConfig;
+import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -15,6 +17,9 @@ import org.apache.commons.lang3.tuple.Pair;
  *   - {@code trainY} — world Y where new trains spawn, [-64, 320]
  *   - {@code generateTracks} — auto-place world-block tracks under the train
  *   - {@code generateTunnels} — auto-place stone-brick tunnels through thick rock
+ *   - {@code generationMode} — how {@link games.brennan.dungeontrain.train.CarriageTemplate#typeForIndex}
+ *       picks a carriage variant (RANDOM, RANDOM_GROUPED, LOOPING)
+ *   - {@code groupSize} — non-flatbed run length for RANDOM_GROUPED, [1, 16]
  */
 public final class DungeonTrainConfig {
 
@@ -33,12 +38,17 @@ public final class DungeonTrainConfig {
     public static final boolean DEFAULT_GENERATE_TRACKS = true;
     public static final boolean DEFAULT_GENERATE_TUNNELS = true;
 
+    public static final CarriageGenerationMode DEFAULT_GENERATION_MODE = CarriageGenerationMode.RANDOM_GROUPED;
+    public static final int DEFAULT_GROUP_SIZE = CarriageGenerationConfig.DEFAULT_GROUP_SIZE;
+
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.IntValue NUM_CARRIAGES;
     public static final ForgeConfigSpec.DoubleValue SPEED;
     public static final ForgeConfigSpec.IntValue TRAIN_Y;
     public static final ForgeConfigSpec.BooleanValue GENERATE_TRACKS;
     public static final ForgeConfigSpec.BooleanValue GENERATE_TUNNELS;
+    public static final ForgeConfigSpec.EnumValue<CarriageGenerationMode> GENERATION_MODE;
+    public static final ForgeConfigSpec.IntValue GROUP_SIZE;
 
     static {
         Pair<Holder, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder()
@@ -49,6 +59,8 @@ public final class DungeonTrainConfig {
         TRAIN_Y = pair.getLeft().trainY;
         GENERATE_TRACKS = pair.getLeft().generateTracks;
         GENERATE_TUNNELS = pair.getLeft().generateTunnels;
+        GENERATION_MODE = pair.getLeft().generationMode;
+        GROUP_SIZE = pair.getLeft().groupSize;
     }
 
     private DungeonTrainConfig() {}
@@ -70,8 +82,16 @@ public final class DungeonTrainConfig {
         ForgeConfigSpec.BooleanValue generateTunnels = b
                 .comment("Auto-generate stone-brick tunnels with stepped portal entrances where the train runs through thick underground rock.")
                 .define("generateTunnels", DEFAULT_GENERATE_TUNNELS);
+        ForgeConfigSpec.EnumValue<CarriageGenerationMode> generationMode = b
+                .comment("How carriage variants are chosen. RANDOM = each index picks one of the four types at random (seeded per-world for determinism). RANDOM_GROUPED = groups of N random non-flatbed carriages separated by a flatbed. LOOPING = original 4-way cycle (STANDARD → WINDOWED → SOLID_ROOF → FLATBED).")
+                .defineEnum("generationMode", DEFAULT_GENERATION_MODE);
+        ForgeConfigSpec.IntValue groupSize = b
+                .comment("Non-flatbed run length for RANDOM_GROUPED: every Nth carriage becomes a flatbed separator. Ignored by RANDOM and LOOPING modes.")
+                .defineInRange("groupSize", DEFAULT_GROUP_SIZE,
+                        CarriageGenerationConfig.MIN_GROUP_SIZE,
+                        CarriageGenerationConfig.MAX_GROUP_SIZE);
         b.pop();
-        return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels);
+        return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize);
     }
 
     /**
@@ -101,6 +121,14 @@ public final class DungeonTrainConfig {
 
     public static boolean getGenerateTunnels() {
         return isLoaded() ? GENERATE_TUNNELS.get() : DEFAULT_GENERATE_TUNNELS;
+    }
+
+    public static CarriageGenerationMode getGenerationMode() {
+        return isLoaded() ? GENERATION_MODE.get() : DEFAULT_GENERATION_MODE;
+    }
+
+    public static int getGroupSize() {
+        return isLoaded() ? GROUP_SIZE.get() : DEFAULT_GROUP_SIZE;
     }
 
     public static void setNumCarriages(int value) {
@@ -136,11 +164,27 @@ public final class DungeonTrainConfig {
         GENERATE_TUNNELS.save();
     }
 
+    public static void setGenerationMode(CarriageGenerationMode value) {
+        if (!isLoaded() || value == null) return;
+        GENERATION_MODE.set(value);
+        GENERATION_MODE.save();
+    }
+
+    public static void setGroupSize(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(CarriageGenerationConfig.MIN_GROUP_SIZE,
+                Math.min(CarriageGenerationConfig.MAX_GROUP_SIZE, value));
+        GROUP_SIZE.set(clamped);
+        GROUP_SIZE.save();
+    }
+
     private record Holder(
             ForgeConfigSpec.IntValue numCarriages,
             ForgeConfigSpec.DoubleValue speed,
             ForgeConfigSpec.IntValue trainY,
             ForgeConfigSpec.BooleanValue generateTracks,
-            ForgeConfigSpec.BooleanValue generateTunnels
+            ForgeConfigSpec.BooleanValue generateTunnels,
+            ForgeConfigSpec.EnumValue<CarriageGenerationMode> generationMode,
+            ForgeConfigSpec.IntValue groupSize
     ) {}
 }

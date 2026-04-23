@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.PendingWorldChoices;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.api.distmarker.Dist;
@@ -54,14 +56,27 @@ public final class WorldLifecycleEvents {
         int trainY = PendingWorldChoices.trainY();
         boolean startsWithTrain = PendingWorldChoices.startsWithTrain();
         CarriageDims dims = PendingWorldChoices.dims();
+        CarriageGenerationMode generationMode = PendingWorldChoices.generationMode();
+        int groupSize = PendingWorldChoices.groupSize();
 
-        DungeonTrainWorldData.get(overworld).apply(trainY, startsWithTrain, dims);
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        data.apply(trainY, startsWithTrain, dims);
+        // Seed is generated from the overworld's random at world creation and
+        // stays fixed for the world's lifetime so random-mode carriages are
+        // reproducible across reloads.
+        data.setGenerationSeed(overworld.random.nextLong());
         overworld.getDataStorage().save();
+
+        // Mode + groupSize are runtime-editable via the settings screen, so
+        // they live in the per-save Forge TOML rather than SavedData.
+        DungeonTrainConfig.setGenerationMode(generationMode);
+        DungeonTrainConfig.setGroupSize(groupSize);
+
         PendingWorldChoices.clear();
 
         LOGGER.info(
-            "[DungeonTrain] Committed world-creation choices: trainY={} startsWithTrain={} dims={}x{}x{}",
-            trainY, startsWithTrain, dims.length(), dims.width(), dims.height());
+            "[DungeonTrain] Committed world-creation choices: trainY={} startsWithTrain={} dims={}x{}x{} mode={} groupSize={}",
+            trainY, startsWithTrain, dims.length(), dims.width(), dims.height(), generationMode, groupSize);
     }
 
     @SubscribeEvent
