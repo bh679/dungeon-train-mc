@@ -146,6 +146,10 @@ public final class VariantBlockInteractions {
             Component.literal("+ " + newName + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
                 .withStyle(ChatFormatting.GREEN), true);
 
+        // Refresh the icon HUD in the same tick — otherwise the overlay still
+        // shows the pre-add list until the player looks away and back.
+        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
+
         suppressVanillaPlace(event);
     }
 

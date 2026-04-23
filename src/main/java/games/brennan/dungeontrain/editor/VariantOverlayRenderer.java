@@ -248,6 +248,18 @@ public final class VariantOverlayRenderer {
         return out;
     }
 
+    /**
+     * Push an updated hover packet to {@code player} immediately, bypassing
+     * the tick-level "only when the target block changes" gate. Called from
+     * {@link VariantBlockInteractions} right after a shift-right-click
+     * appends a block to the variants list so the HUD reflects the new set
+     * without waiting for the player to look away and back.
+     */
+    public static void pushImmediateHover(ServerPlayer player, BlockPos worldPos, List<BlockState> states) {
+        LAST_HOVER_POS.put(player.getUUID(), worldPos.immutable());
+        DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
+    }
+
     private static boolean inBounds(BlockPos p, CarriageDims dims) {
         return p.getX() >= 0 && p.getX() < dims.length()
             && p.getY() >= 0 && p.getY() < dims.height()
