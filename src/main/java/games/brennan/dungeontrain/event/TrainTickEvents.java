@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
+import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -54,6 +55,12 @@ public final class TrainTickEvents {
     // ticks and spike the server tick past its 50 ms budget.
     private static final int TRACK_FILL_PERIOD_TICKS = 10;
     private static final int TRACK_FILL_PHASE_OFFSET = 5;
+    // Tunnel fill drains at the same period as track fill but lands on a
+    // separate tick (offset 2) so block-clear (offset 0), track-fill (5), and
+    // tunnel-fill (2) never collide on a 10-tick cycle. 1 chunk per call keeps
+    // per-tick cost flat — ~13×9×16 block writes per chunk worst case.
+    private static final int TUNNEL_FILL_PERIOD_TICKS = 10;
+    private static final int TUNNEL_FILL_PHASE_OFFSET = 2;
 
     private static int tickCounter = 0;
 
@@ -90,6 +97,15 @@ public final class TrainTickEvents {
             for (LoadedServerShip ship : trains) {
                 if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
                     TrackGenerator.fillRenderDistance(level, ship, provider);
+                }
+            }
+        }
+
+        if (DungeonTrainConfig.getGenerateTunnels()
+            && Math.floorMod(tickCounter, TUNNEL_FILL_PERIOD_TICKS) == TUNNEL_FILL_PHASE_OFFSET) {
+            for (LoadedServerShip ship : trains) {
+                if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
+                    TunnelGenerator.fillRenderDistance(level, ship, provider);
                 }
             }
         }

@@ -9,11 +9,12 @@ import org.apache.commons.lang3.tuple.Pair;
  * Stored per-world at {@code <save>/serverconfig/dungeontrain-server.toml}.
  * Registered from {@link games.brennan.dungeontrain.DungeonTrain} constructor.
  *
- * Exposes four values:
+ * Exposes:
  *   - {@code numCarriages} — rolling-window size, [1, 50]
  *   - {@code speed} — train speed along +X in blocks/second, [0.0, 20.0]
  *   - {@code trainY} — world Y where new trains spawn, [-64, 320]
  *   - {@code generateTracks} — auto-place world-block tracks under the train
+ *   - {@code generateTunnels} — auto-place stone-brick tunnels through thick rock
  */
 public final class DungeonTrainConfig {
 
@@ -30,12 +31,14 @@ public final class DungeonTrainConfig {
     public static final int DEFAULT_TRAIN_Y = 78;
 
     public static final boolean DEFAULT_GENERATE_TRACKS = true;
+    public static final boolean DEFAULT_GENERATE_TUNNELS = true;
 
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.IntValue NUM_CARRIAGES;
     public static final ForgeConfigSpec.DoubleValue SPEED;
     public static final ForgeConfigSpec.IntValue TRAIN_Y;
     public static final ForgeConfigSpec.BooleanValue GENERATE_TRACKS;
+    public static final ForgeConfigSpec.BooleanValue GENERATE_TUNNELS;
 
     static {
         Pair<Holder, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder()
@@ -45,6 +48,7 @@ public final class DungeonTrainConfig {
         SPEED = pair.getLeft().speed;
         TRAIN_Y = pair.getLeft().trainY;
         GENERATE_TRACKS = pair.getLeft().generateTracks;
+        GENERATE_TUNNELS = pair.getLeft().generateTunnels;
     }
 
     private DungeonTrainConfig() {}
@@ -63,8 +67,11 @@ public final class DungeonTrainConfig {
         ForgeConfigSpec.BooleanValue generateTracks = b
                 .comment("Auto-generate stone-brick tracks, rails, and bridge pillars under every active train.")
                 .define("generateTracks", DEFAULT_GENERATE_TRACKS);
+        ForgeConfigSpec.BooleanValue generateTunnels = b
+                .comment("Auto-generate stone-brick tunnels with stepped portal entrances where the train runs through thick underground rock.")
+                .define("generateTunnels", DEFAULT_GENERATE_TUNNELS);
         b.pop();
-        return new Holder(numCarriages, speed, trainY, generateTracks);
+        return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels);
     }
 
     /**
@@ -90,6 +97,10 @@ public final class DungeonTrainConfig {
 
     public static boolean getGenerateTracks() {
         return isLoaded() ? GENERATE_TRACKS.get() : DEFAULT_GENERATE_TRACKS;
+    }
+
+    public static boolean getGenerateTunnels() {
+        return isLoaded() ? GENERATE_TUNNELS.get() : DEFAULT_GENERATE_TUNNELS;
     }
 
     public static void setNumCarriages(int value) {
@@ -119,10 +130,17 @@ public final class DungeonTrainConfig {
         GENERATE_TRACKS.save();
     }
 
+    public static void setGenerateTunnels(boolean value) {
+        if (!isLoaded()) return;
+        GENERATE_TUNNELS.set(value);
+        GENERATE_TUNNELS.save();
+    }
+
     private record Holder(
             ForgeConfigSpec.IntValue numCarriages,
             ForgeConfigSpec.DoubleValue speed,
             ForgeConfigSpec.IntValue trainY,
-            ForgeConfigSpec.BooleanValue generateTracks
+            ForgeConfigSpec.BooleanValue generateTracks,
+            ForgeConfigSpec.BooleanValue generateTunnels
     ) {}
 }
