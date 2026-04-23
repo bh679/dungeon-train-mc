@@ -7,22 +7,17 @@ import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Editor plots for {@link CarriageType}s — fixed high-Y overworld locations
@@ -56,10 +51,6 @@ public final class CarriageEditor {
         }
         return Map.copyOf(map);
     }
-
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch) {}
-
-    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
     private CarriageEditor() {}
 
@@ -96,7 +87,7 @@ public final class CarriageEditor {
         BlockPos origin = PLOT_ORIGINS.get(type);
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        SESSIONS.putIfAbsent(player.getUUID(), new Session(
+        EditorSessions.saveIfAbsent(player.getUUID(), new EditorSessions.Session(
             player.level().dimension(),
             player.position(),
             player.getYRot(),
@@ -140,7 +131,7 @@ public final class CarriageEditor {
 
     /** Restore player to pre-enter position/dimension. Returns false if no session. */
     public static boolean exit(ServerPlayer player) {
-        Session session = SESSIONS.remove(player.getUUID());
+        EditorSessions.Session session = EditorSessions.remove(player.getUUID());
         if (session == null) return false;
         MinecraftServer server = player.getServer();
         if (server == null) return false;
