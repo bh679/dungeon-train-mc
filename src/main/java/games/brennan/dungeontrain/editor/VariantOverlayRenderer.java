@@ -150,10 +150,10 @@ public final class VariantOverlayRenderer {
 
     /**
      * Resolve which (category, model) the player is currently standing in (if
-     * any) and push an {@link EditorStatusPacket} only when that pair has
-     * changed from the last-seen value. Called once per player per tick —
-     * cheap when the player is outside every plot (single {@code locate} call,
-     * no packet).
+     * any) and push an {@link EditorStatusPacket} only when that pair or the
+     * dev-mode flag has changed from the last-seen value. Called once per
+     * player per tick — cheap when the player is outside every plot (single
+     * {@code locate} call, no packet).
      */
     private static void updateEditorStatus(ServerPlayer player, CarriageDims dims) {
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
@@ -167,10 +167,12 @@ public final class VariantOverlayRenderer {
             return;
         }
         EditorCategory.Located l = located.get();
-        String key = l.category().name() + "|" + l.model().id();
+        boolean devmode = EditorDevMode.isEnabled();
+        String key = l.category().name() + "|" + l.model().id() + "|" + devmode;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
-        DungeonTrainNet.sendTo(player, new EditorStatusPacket(l.category().displayName(), l.model().displayName()));
+        DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+            l.category().displayName(), l.model().displayName(), devmode));
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {

@@ -133,6 +133,7 @@ public final class EditorCommand {
                                 StringArgumentType.getString(ctx, "name"), src);
                         }))))
             .then(Commands.literal("devmode")
+                .executes(ctx -> runDevMode(ctx.getSource(), !EditorDevMode.isEnabled()))
                 .then(Commands.literal("on").executes(ctx -> runDevMode(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runDevMode(ctx.getSource(), false))))
             .then(Commands.literal("promote")

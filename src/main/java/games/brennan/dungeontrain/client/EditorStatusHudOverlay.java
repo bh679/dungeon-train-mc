@@ -35,6 +35,7 @@ public final class EditorStatusHudOverlay {
     /** Current status. Empty strings = hidden. Mutated on the main client thread. */
     private static String category = "";
     private static String model = "";
+    private static boolean devmode = false;
 
     /** Distance from the top of the screen in GUI pixels. */
     private static final int OFFSET_FROM_TOP = 8;
@@ -44,14 +45,16 @@ public final class EditorStatusHudOverlay {
     private EditorStatusHudOverlay() {}
 
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
-    public static void setStatus(String newCategory, String newModel) {
+    public static void setStatus(String newCategory, String newModel, boolean newDevmode) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
+        devmode = newDevmode;
     }
 
     public static void clear() {
         category = "";
         model = "";
+        devmode = false;
     }
 
     /**
@@ -70,14 +73,16 @@ public final class EditorStatusHudOverlay {
             if (mc.options.hideGui) return;
             String c = category;
             String m = model;
+            boolean d = devmode;
             if (c.isEmpty() && m.isEmpty()) return;
-            drawBar(graphics, mc.font, c, m, screenWidth);
+            drawBar(graphics, mc.font, c, m, d, screenWidth);
         };
         event.registerAboveAll("editor_status", overlay);
         LOGGER.info("Editor status HUD overlay registered");
     }
 
-    private static void drawBar(GuiGraphics graphics, Font font, String categoryText, String modelText, int screenWidth) {
+    private static void drawBar(GuiGraphics graphics, Font font, String categoryText, String modelText,
+                                boolean devmodeOn, int screenWidth) {
         Component label = Component.literal("Editor: " + categoryText + " / " + modelText);
         int textWidth = font.width(label);
         int x = (screenWidth - textWidth) / 2;
@@ -86,5 +91,15 @@ public final class EditorStatusHudOverlay {
         // Dark translucent backdrop so the text reads against any sky colour.
         graphics.fill(x - PAD, y - PAD, x + textWidth + PAD, y + font.lineHeight + PAD, 0x80000000);
         graphics.drawString(font, label, x, y, 0xFFFFFF, true);
+
+        if (devmodeOn) {
+            // Yellow [DEV] badge to the right of the status — visually obvious
+            // that saves will also write-through to the source tree.
+            Component devBadge = Component.literal("[DEV]");
+            int badgeWidth = font.width(devBadge);
+            int bx = x + textWidth + PAD + 4;
+            graphics.fill(bx - PAD, y - PAD, bx + badgeWidth + PAD, y + font.lineHeight + PAD, 0x80000000);
+            graphics.drawString(font, devBadge, bx, y, 0xFFFF55, true);
+        }
     }
 }
