@@ -60,6 +60,12 @@ public final class TunnelGenerator {
     /** Number of tiers in the arched interior roof (rising above {@code ceilingY}). */
     private static final int ARCH_TIERS = 3;
 
+    /** Distance between lamp stations along X. Every Nth world X gets a pair of wall lamps. */
+    private static final int LAMP_SPACING = 10;
+
+    /** Lamp Y sits this many blocks above the rail — walking eye height inside the tunnel. */
+    private static final int LAMP_Y_OFFSET_FROM_RAIL = 2;
+
     private TunnelGenerator() {}
 
     /**
@@ -181,9 +187,14 @@ public final class TunnelGenerator {
         }
 
         // 3. Walls: full-height stone-brick columns just outside the airspace.
+        //    Every LAMP_SPACING X blocks a pair of sea lanterns replaces the wall
+        //    stone-brick at walking eye height (railY + LAMP_Y_OFFSET_FROM_RAIL).
+        int lampY = tg.railY() + LAMP_Y_OFFSET_FROM_RAIL;
+        boolean isLampColumn = Math.floorMod(worldX, LAMP_SPACING) == 0;
         for (int y = tg.floorY(); y <= tg.ceilingY(); y++) {
-            setIfNeeded(level, pos, worldX, y, tg.wallMinZ(), TunnelPalette.WALL);
-            setIfNeeded(level, pos, worldX, y, tg.wallMaxZ(), TunnelPalette.WALL);
+            BlockState sideBlock = (isLampColumn && y == lampY) ? TunnelPalette.SEA_LANTERN : TunnelPalette.WALL;
+            setIfNeeded(level, pos, worldX, y, tg.wallMinZ(), sideBlock);
+            setIfNeeded(level, pos, worldX, y, tg.wallMaxZ(), sideBlock);
         }
 
         // 4. Arched interior roof — stepped pyramid profile rising 4 rows above wall tops.

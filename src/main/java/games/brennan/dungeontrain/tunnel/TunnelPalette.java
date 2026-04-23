@@ -12,12 +12,13 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class TunnelPalette {
 
-    public static final BlockState WALL    = Blocks.STONE_BRICKS.defaultBlockState();
-    public static final BlockState CEILING = Blocks.STONE_BRICKS.defaultBlockState();
-    public static final BlockState FLOOR   = Blocks.STONE_BRICKS.defaultBlockState();
-    public static final BlockState PYRAMID = Blocks.STONE_BRICKS.defaultBlockState();
-    public static final Block      STAIRS  = Blocks.STONE_BRICK_STAIRS;
-    public static final BlockState AIR     = Blocks.AIR.defaultBlockState();
+    public static final BlockState WALL        = Blocks.STONE_BRICKS.defaultBlockState();
+    public static final BlockState CEILING     = Blocks.STONE_BRICKS.defaultBlockState();
+    public static final BlockState FLOOR       = Blocks.STONE_BRICKS.defaultBlockState();
+    public static final BlockState PYRAMID     = Blocks.STONE_BRICKS.defaultBlockState();
+    public static final Block      STAIRS      = Blocks.STONE_BRICK_STAIRS;
+    public static final BlockState AIR         = Blocks.AIR.defaultBlockState();
+    public static final BlockState SEA_LANTERN = Blocks.SEA_LANTERN.defaultBlockState();
 
     private TunnelPalette() {}
 
