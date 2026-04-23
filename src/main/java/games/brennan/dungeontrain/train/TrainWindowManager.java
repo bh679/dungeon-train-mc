@@ -162,7 +162,8 @@ public final class TrainWindowManager {
         for (Integer i : desired) {
             if (current.contains(i)) continue;
             BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
-            CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.variantForIndex(i, genCfg), dims);
+            CarriageTemplate.placeAt(level, carriageOrigin,
+                CarriageTemplate.variantForIndex(i, genCfg), dims, genCfg, i);
             current.add(i);
             mutated = true;
             LOGGER.debug("[DungeonTrain] Added carriage idx={} at shipyard {}", i, carriageOrigin);

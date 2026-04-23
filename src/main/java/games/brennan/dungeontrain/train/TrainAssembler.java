@@ -76,7 +76,8 @@ public final class TrainAssembler {
         Set<BlockPos> blocks = new HashSet<>();
         for (int i = firstIdx; i <= lastIdx; i++) {
             BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
-            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.variantForIndex(i, genCfg), dims));
+            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin,
+                CarriageTemplate.variantForIndex(i, genCfg), dims, genCfg, i));
         }
         LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, initialPIdx={}, dims={}x{}x{}), assembling...",
             blocks.size(), count, initialPIdx, dims.length(), dims.width(), dims.height());
