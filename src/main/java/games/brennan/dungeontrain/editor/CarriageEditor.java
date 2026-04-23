@@ -68,6 +68,17 @@ public final class CarriageEditor {
     }
 
     /**
+     * Outcome of {@link #save} — config-dir write always happens (or throws);
+     * the source-tree write is opt-in via {@link EditorDevMode} and reported
+     * separately so the caller can surface partial success.
+     */
+    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
+        public static SaveResult skipped() { return new SaveResult(false, false, null); }
+        public static SaveResult written() { return new SaveResult(true, true, null); }
+        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
+    }
+
+    /**
      * Returns the carriage type whose plot contains {@code pos} (within the
      * footprint plus 1-block outline margin), or {@code null} if none.
      */
@@ -120,9 +131,11 @@ public final class CarriageEditor {
      * Capture the {@code length × height × width} region at the plot for
      * {@code type} into a fresh {@link StructureTemplate} and persist it via
      * {@link CarriageTemplateStore}. Air positions are excluded so the saved
-     * template only describes placed blocks.
+     * template only describes placed blocks. When {@link EditorDevMode} is on,
+     * the same template is also written through to the source tree so it
+     * ships with the next mod build.
      */
-    public static void save(ServerPlayer player, CarriageType type) throws IOException {
+    public static SaveResult save(ServerPlayer player, CarriageType type) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
@@ -136,6 +149,15 @@ public final class CarriageEditor {
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{}",
             player.getName().getString(), type, dims.length(), dims.width(), dims.height());
+
+        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        try {
+            CarriageTemplateStore.saveToSource(type, template);
+            return SaveResult.written();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", type, e.toString());
+            return SaveResult.failed(e.getMessage());
+        }
     }
 
     /** Restore player to pre-enter position/dimension. Returns false if no session. */
