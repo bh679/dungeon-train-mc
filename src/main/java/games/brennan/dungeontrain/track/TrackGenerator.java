@@ -16,18 +16,31 @@ import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Deque;
+import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Stateless helpers that fill a chunk — or a batch of chunks in the render
- * corridor — with a 5-wide stone-brick track bed, rails, and pillars-where-
- * needed under a running Dungeon Train.
+ * corridor — with a 5-wide stone-brick track bed, rails, height-scaled
+ * pillars, and stone arches under a running Dungeon Train.
  *
  * <p>All methods run on the server thread. A per-train
  * {@code Set<Long>} (chunk-pos longs) cache lives on
  * {@link TrainTransformProvider#getFilledChunks()} — once a chunk has been
  * processed, it's never iterated again, so periodic scans cost only the set
  * lookups.</p>
+ *
+ * <p>Pillar layout adapts to terrain depth:</p>
+ * <ul>
+ *   <li><b>height &lt; 5</b>: spacing {@link #BASE_PILLAR_SPACING}, thickness 1,
+ *   no arches — matches pre-0.21 behaviour for flat ground.</li>
+ *   <li><b>height ≥ 5</b>: spacing = {@code height + BASE_PILLAR_SPACING},
+ *   thickness = {@code spacing / 5} (min 1). Stone arches span the gap
+ *   between adjacent tall pillars, curving from pillar top down to a
+ *   semicircular opening.</li>
+ * </ul>
  *
  * <p>To keep any single tick from blowing the server tick budget on a
  * large spawn (e.g. 20 carriages × 21 chunks of render distance × ~80
@@ -39,8 +52,25 @@ public final class TrackGenerator {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Pillars drop every this-many blocks along X. */
-    private static final int PILLAR_SPACING = 8;
+    /** Base spacing on X for short pillars — matches legacy behaviour. */
+    private static final int BASE_PILLAR_SPACING = 8;
+
+    /** Heights at or above this threshold switch on height-scaled spacing + arches. */
+    private static final int TALL_PILLAR_HEIGHT_THRESHOLD = 5;
+
+    /**
+     * Upper bound on computed pillar spacing. Must not exceed {@link #PILLAR_SCAN_MARGIN}
+     * on either side, otherwise the chunk scan would miss pillars whose footprint
+     * spans into the current chunk from outside the scan range.
+     */
+    private static final int MAX_PILLAR_SPACING = 40;
+
+    /**
+     * X-axis margin (in blocks) around each chunk when precomputing pillar
+     * positions. Must be ≥ {@link #MAX_PILLAR_SPACING} so any arch that
+     * touches this chunk has both its anchoring pillars inside the scan.
+     */
+    private static final int PILLAR_SCAN_MARGIN = 40;
 
     /**
      * Normal-world gameplay is bounded far below this. Anything beyond is the
@@ -53,20 +83,43 @@ public final class TrackGenerator {
 
     /**
      * Max new (unprocessed) chunks to fill per periodic scan. Caps the
-     * per-tick server-thread cost. Now that ChunkEvent.Load only enqueues
-     * (no synchronous setBlocks on the chunk-load tick) the original 17-sec
-     * server-thread wedge is gone and we can safely push this up.
-     *
-     * <p>One chunk is ~80 columns × ~2 setBlocks + pillar descent = up to
-     * ~250 block changes per chunk. Budget 4 → ≤1000 setBlocks per call,
-     * fires every {@code TRACK_FILL_PERIOD_TICKS=10} ticks, averages
-     * ~100/tick server-thread cost — still well under the 50 ms budget.
-     * 4/period × 2 periods/sec = 8 chunks/sec fill rate, enough to keep
-     * up with a walking player's loaded-chunk stream.</p>
+     * per-tick server-thread cost. See class-level javadoc for budget reasoning.
      */
     private static final int CHUNKS_PER_SCAN_BUDGET = 4;
 
     private TrackGenerator() {}
+
+    /**
+     * One pillar's geometry — computed once during the per-chunk precompute
+     * and reused by every column in this chunk that lands inside or adjacent
+     * to the pillar.
+     *
+     * @param centerX    world X of the pillar's centerline (always even; see
+     *                   {@link #computePillarPositions})
+     * @param thickness  number of consecutive X columns this pillar occupies.
+     *                   Footprint extends from {@code centerX - (thickness-1)/2}
+     *                   through {@code centerX + thickness/2}. Odd thicknesses
+     *                   are symmetric; even thicknesses bias one block to the
+     *                   right of centerX.
+     * @param groundY    world Y at which the pillar's descent stops (first solid
+     *                   block + 1). This is the Y of the lowest pillar block.
+     * @param height     {@code bedY - 1 - groundY} — how many blocks of pillar
+     *                   sit below the bed. Used as the arch-rise input and as
+     *                   the "tall enough for arch" gate.
+     */
+    private record PillarSpec(int centerX, int thickness, int groundY, int height) {
+        int minX() {
+            return centerX - (thickness - 1) / 2;
+        }
+
+        int maxX() {
+            return minX() + thickness - 1;
+        }
+
+        boolean containsX(int worldX) {
+            return worldX >= minX() && worldX <= maxX();
+        }
+    }
 
     /**
      * Fast coordinate-range filter for VS2 shipyard chunks. VS stores ship
@@ -82,9 +135,241 @@ public final class TrackGenerator {
     }
 
     /**
+     * Pure helper: {@code height < 5} → 8 (base), else {@code height + 8}
+     * clamped to {@link #MAX_PILLAR_SPACING}. Exposed package-private for unit
+     * tests.
+     */
+    static int computeSpacing(int height) {
+        if (height < TALL_PILLAR_HEIGHT_THRESHOLD) return BASE_PILLAR_SPACING;
+        int spacing = height + BASE_PILLAR_SPACING;
+        return Math.min(spacing, MAX_PILLAR_SPACING);
+    }
+
+    /**
+     * Pure helper: one pillar-block of thickness per 5 blocks of spacing,
+     * minimum 1. 8→1, 13→2, 18→3, 23→4, 28→5. Exposed package-private for
+     * unit tests.
+     */
+    static int computeThickness(int spacing) {
+        return Math.max(1, spacing / 5);
+    }
+
+    /**
+     * Pure helper: arch rise for a span of {@code spacing} blocks. Semicircle —
+     * rise equals half the span. Clamped so it never exceeds
+     * {@code min(heightLeft, heightRight) - 1}, keeping at least one block of
+     * air between the arch apex and the ground.
+     */
+    static int computeArchRise(int spacing, int heightLeft, int heightRight) {
+        int rise = spacing / 2;
+        int maxRise = Math.min(heightLeft, heightRight) - 1;
+        return Math.max(0, Math.min(rise, maxRise));
+    }
+
+    /**
+     * Semicircle arch curve. Returns how many blocks BELOW the bed-top the
+     * arch extends at column {@code worldX} between pillars {@code leftCx}
+     * and {@code rightCx}. Zero at the pillar edges, peaks at {@code rise}
+     * at the midpoint.
+     */
+    static int computeArchDepth(int worldX, int leftCx, int rightCx, int rise) {
+        if (rise <= 0) return 0;
+        double span = rightCx - leftCx;
+        if (span <= 0) return 0;
+        double midX = (leftCx + rightCx) / 2.0;
+        double normalized = (2.0 * (worldX - midX)) / span; // in [-1, 1]
+        double under = 1.0 - normalized * normalized;
+        if (under <= 0.0) return 0;
+        return (int) Math.round(rise * Math.sqrt(under));
+    }
+
+    /**
+     * Shared passability predicate used by both ground-depth probing and
+     * pillar descent. Pillars and probes pass through air, fluids, leaves,
+     * and vines — they stop on any other block. Heightmap types can't be
+     * used for this because {@code MOTION_BLOCKING_NO_LEAVES} counts water
+     * as solid (pillars would float over oceans) and {@code OCEAN_FLOOR}
+     * counts leaves as solid (pillars would stop on tree canopies).
+     */
+    private static boolean isPassable(BlockState state) {
+        return state.isAir()
+            || !state.getFluidState().isEmpty()
+            || state.is(BlockTags.LEAVES)
+            || state.is(Blocks.VINE);
+    }
+
+    /**
+     * Walk down from {@code bedY - 1} until a non-passable block is hit.
+     * Returns that block's Y + 1 — i.e., the Y where the pillar's lowest
+     * block would sit. If the bed is already sitting on solid terrain,
+     * returns {@code bedY} (zero-height pillar). If no ground is found down
+     * to {@code minBuildHeight}, returns {@code minBuildHeight + 1}
+     * (pillar reaches world bottom).
+     *
+     * <p>Returns {@code bedY} (sentinel = "no pillar needed / no probe") if
+     * any scanned position is inside a VS ship voxel, since the pillar can't
+     * stop on a ship.</p>
+     */
+    private static int probeGroundY(ServerLevel level, int x, int z, int bedY) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minY = level.getMinBuildHeight() + 1;
+        for (int py = bedY - 1; py >= minY; py--) {
+            pos.set(x, py, z);
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) {
+                // Something ship-owned intercepts — treat as "no free pillar column"
+                // and return a sentinel that makes this a zero-height pillar (no arch).
+                return bedY;
+            }
+            BlockState state = level.getBlockState(pos);
+            if (!isPassable(state)) {
+                return py + 1;
+            }
+        }
+        return minY;
+    }
+
+    /**
+     * Place bed + rails for one column, mirroring legacy behaviour. Does NOT
+     * touch pillar/arch blocks — that's handled by the caller using the
+     * precomputed pillar map.
+     *
+     * @return true if the bed was placed (or was already stone brick from a
+     *         previous pass). false if ship-blocked — caller should skip
+     *         pillar/arch work for this column too.
+     */
+    private static boolean placeBedAndRail(ServerLevel level, int worldX, int worldZ, TrackGeometry g) {
+        BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
+
+        // Skip ship-owned positions — never mutate voxels that belong to our
+        // train or any other VS ship sharing this dimension.
+        if (VSGameUtilsKt.getShipObjectManagingPos(level, bedPos) != null) return false;
+
+        // Second-line idempotence — if the bed is already stone brick,
+        // something already placed it. Don't overwrite, but allow downstream
+        // pillar/arch checks to still run (they have their own idempotence).
+        BlockState existingBed = level.getBlockState(bedPos);
+        if (!existingBed.is(TrackPalette.BED.getBlock())) {
+            level.setBlock(bedPos, TrackPalette.BED, Block.UPDATE_CLIENTS);
+        }
+
+        // Rails on top, at the two inner-edge Z rows (2-block gauge).
+        if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
+            BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
+                level.setBlock(railPos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Precompute pillar positions for X range {@code [scanMinX, scanMaxX]}.
+     * Walks X step-by-step, probes ground depth at the corridor center, and
+     * records a {@link PillarSpec} at every X satisfying the height-scaled
+     * "is a pillar here?" rule.
+     *
+     * <p>The resulting map is keyed by {@code centerX} and ordered, so
+     * {@link NavigableMap#floorEntry} / {@link NavigableMap#ceilingEntry}
+     * give O(log n) lookup of enclosing pillar anchors for any column.</p>
+     *
+     * <p>Pillar placement rule (per X):</p>
+     * <ul>
+     *   <li>If height &lt; 5: placed iff {@code X % 8 == 0} (legacy grid).</li>
+     *   <li>Otherwise: placed iff {@code X % (height + 8) == 0}.</li>
+     * </ul>
+     *
+     * <p>We probe <em>every</em> X (not just even X) because
+     * {@link #computeSpacing} can return odd values (e.g. height 5 → spacing
+     * 13), so odd-X pillars are legal placements. The cost is ~80 probes per
+     * chunk fill — dwarfed by the setBlock cost of the actual fill.</p>
+     *
+     * <p>Because different X's can have different ground depths (and thus
+     * different local spacings), the map can contain irregular gaps — which
+     * is the intended visual: pillars cluster closely over shallow ground
+     * and space out over deep ravines.</p>
+     */
+    private static NavigableMap<Integer, PillarSpec> computePillarPositions(
+        ServerLevel level,
+        int scanMinX,
+        int scanMaxX,
+        TrackGeometry g
+    ) {
+        NavigableMap<Integer, PillarSpec> pillars = new TreeMap<>();
+        int probeZ = g.trackCenterZ();
+
+        for (int x = scanMinX; x <= scanMaxX; x++) {
+            // Skip X's whose probe column lives in an unloaded chunk — probing
+            // there would force-load or return garbage. The neighbouring chunk
+            // will re-compute pillar positions through this X when it loads.
+            if (!level.getChunkSource().hasChunk(x >> 4, probeZ >> 4)) continue;
+
+            int groundY = probeGroundY(level, x, probeZ, g.bedY());
+            int height = g.bedY() - 1 - groundY;
+            if (height < 0) height = 0;
+
+            int spacing = computeSpacing(height);
+            if (Math.floorMod(x, spacing) != 0) continue;
+
+            int thickness = computeThickness(spacing);
+            pillars.put(x, new PillarSpec(x, thickness, groundY, height));
+        }
+        return pillars;
+    }
+
+    /**
+     * Place a solid pillar column at (worldX, worldZ) from {@code bedY - 1}
+     * down to {@code groundY}. Skips ship-owned positions and leaves terrain
+     * below groundY untouched. Uses {@link TrackPalette#PILLAR}.
+     */
+    private static void placePillarColumn(
+        ServerLevel level,
+        int worldX,
+        int worldZ,
+        int pillarTopInclusive,
+        int groundY
+    ) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int py = pillarTopInclusive; py >= groundY; py--) {
+            pos.set(worldX, py, worldZ);
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+            BlockState existing = level.getBlockState(pos);
+            if (!isPassable(existing)) return; // hit terrain before reaching groundY — stop
+            level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /**
+     * Place the arch cap for one column between two tall pillars. Fills stone
+     * brick from {@code bedY - 1} down to {@code bedY - 1 - archDepth} at
+     * (worldX, worldZ). Below that is left as air — the arch opening.
+     */
+    private static void placeArchColumn(
+        ServerLevel level,
+        int worldX,
+        int worldZ,
+        int bedY,
+        int archDepth
+    ) {
+        if (archDepth <= 0) return;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int yTop = bedY - 1;
+        int yBottom = bedY - 1 - archDepth;
+        for (int py = yTop; py >= yBottom; py--) {
+            pos.set(worldX, py, worldZ);
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+            BlockState existing = level.getBlockState(pos);
+            // Don't overwrite existing solid terrain (e.g. a steep cliff
+            // poking into the arch span). Only fill through passable blocks.
+            if (!isPassable(existing) && !existing.is(TrackPalette.ARCH.getBlock())) continue;
+            level.setBlock(pos, TrackPalette.ARCH, Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /**
      * Ensure tracks exist in the given chunk for {@code g}. Hit the provider's
-     * cache first — chunks already processed exit in O(1). On miss, iterate
-     * the chunk's columns and add to the cache on completion.
+     * cache first — chunks already processed exit in O(1). On miss, precompute
+     * pillar positions in the chunk ± {@link #PILLAR_SCAN_MARGIN} and walk
+     * the chunk's columns, placing bed/rail/pillar/arch blocks as appropriate.
      */
     public static void ensureTracksForChunk(
         ServerLevel level,
@@ -97,6 +382,7 @@ public final class TrackGenerator {
         if (filledChunks.contains(chunkKey)) return;
 
         int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
         int chunkMinZ = chunkZ << 4;
         int chunkMaxZ = chunkMinZ + 15;
 
@@ -110,10 +396,53 @@ public final class TrackGenerator {
         int zLo = Math.max(g.trackZMin(), chunkMinZ);
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
 
+        // Precompute pillar map over [chunkMinX - margin, chunkMaxX + margin]
+        // so that arch rendering at the chunk edges has access to the anchor
+        // pillars on both sides.
+        NavigableMap<Integer, PillarSpec> pillars = computePillarPositions(
+            level,
+            chunkMinX - PILLAR_SCAN_MARGIN,
+            chunkMaxX + PILLAR_SCAN_MARGIN,
+            g
+        );
+
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
+            // Determine this column's pillar/arch role once — shared across
+            // all Z rows in the corridor for this X.
+            PillarSpec containingPillar = findPillarContaining(pillars, worldX);
+            PillarSpec leftPillar = null;
+            PillarSpec rightPillar = null;
+            int archRise = 0;
+
+            if (containingPillar == null) {
+                Map.Entry<Integer, PillarSpec> floor = pillars.floorEntry(worldX);
+                Map.Entry<Integer, PillarSpec> ceil  = pillars.ceilingEntry(worldX);
+                if (floor != null) leftPillar = floor.getValue();
+                if (ceil  != null) rightPillar = ceil.getValue();
+
+                if (leftPillar != null && rightPillar != null && leftPillar != rightPillar
+                    && leftPillar.height >= TALL_PILLAR_HEIGHT_THRESHOLD
+                    && rightPillar.height >= TALL_PILLAR_HEIGHT_THRESHOLD) {
+                    int span = rightPillar.centerX - leftPillar.centerX;
+                    archRise = computeArchRise(span, leftPillar.height, rightPillar.height);
+                } else {
+                    leftPillar = null;
+                    rightPillar = null;
+                }
+            }
+
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                placeTrackColumn(level, worldX, worldZ, g);
+                if (!placeBedAndRail(level, worldX, worldZ, g)) continue;
+
+                if (containingPillar != null) {
+                    placePillarColumn(level, worldX, worldZ,
+                        g.bedY() - 1, containingPillar.groundY);
+                } else if (archRise > 0) {
+                    int archDepth = computeArchDepth(
+                        worldX, leftPillar.centerX, rightPillar.centerX, archRise);
+                    placeArchColumn(level, worldX, worldZ, g.bedY(), archDepth);
+                }
             }
         }
 
@@ -121,89 +450,22 @@ public final class TrackGenerator {
     }
 
     /**
-     * Place bed + (optional) rail + (optional) pillar at one (x, z) column.
-     * Skips if the bed position is inside a VS ship or is already laid.
-     */
-    private static void placeTrackColumn(ServerLevel level, int worldX, int worldZ, TrackGeometry g) {
-        BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
-
-        // Skip ship-owned positions — never mutate voxels that belong to our
-        // train or any other VS ship sharing this dimension.
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, bedPos) != null) return;
-
-        // Second-line idempotence — if the bed is already stone brick,
-        // something already placed it (a neighbouring train, a previous
-        // cache-cleared scan, etc). Don't overwrite.
-        BlockState existingBed = level.getBlockState(bedPos);
-        if (existingBed.is(TrackPalette.BED.getBlock())) return;
-
-        // 1. Bed.
-        level.setBlock(bedPos, TrackPalette.BED, Block.UPDATE_CLIENTS);
-
-        // 2. Rails on top, at the two inner-edge Z rows (Z+1 and Z-1 relative
-        // to the 5-wide corridor). For a 5-wide corridor these are trackZMin+1
-        // and trackZMax-1 — a 2-block gauge between rails.
-        if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
-            BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
-                level.setBlock(railPos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
-            }
-        }
-
-        // 3. Pillar — only at every Nth X. placePillar scans down from the
-        // bed itself, so the "bed is sitting on solid ground" case is handled
-        // by the first iteration finding non-passable terrain and returning.
-        if (Math.floorMod(worldX, PILLAR_SPACING) == 0) {
-            placePillar(level, worldX, worldZ, g.bedY() - 1);
-        }
-    }
-
-    /**
-     * Drop a pillar column from {@code pillarTopInclusive} downward until it
-     * hits real terrain (motion-blocking, not water, not leaves, not vines).
-     * Passes through air, any fluid (so pillars reach the seafloor through
-     * ocean water), leaves, and vines — heightmaps like
-     * {@link Heightmap.Types#MOTION_BLOCKING_NO_LEAVES} can't be used here
-     * because they count water surfaces as "ground" and would leave pillars
-     * floating above the ocean; {@link Heightmap.Types#OCEAN_FLOOR} counts
-     * leaves as ground instead. A manual descent handles both biomes.
+     * Return the {@link PillarSpec} whose X-footprint contains {@code worldX},
+     * or {@code null} if {@code worldX} sits in the gap between pillars.
      *
-     * <p>If the first block scanned is already solid (mountain, existing
-     * stone brick), returns immediately without placing — that's the "bed
-     * has natural support" case, no pillar needed.</p>
+     * <p>Checks both the floor and ceiling entries — a thick pillar's center
+     * might be either left or right of {@code worldX} while its footprint
+     * still covers it.</p>
      */
-    private static void placePillar(ServerLevel level, int worldX, int worldZ, int pillarTopInclusive) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight() + 1;
-        int placed = 0;
-        for (int py = pillarTopInclusive; py >= minY; py--) {
-            pos.set(worldX, py, worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("[DungeonTrain] Pillar at ({},{}) STOP at y={} (ship-managed) placed={}",
-                        worldX, worldZ, py, placed);
-                }
-                return;
-            }
-            BlockState existing = level.getBlockState(pos);
-            boolean passable = existing.isAir()
-                || !existing.getFluidState().isEmpty()
-                || existing.is(BlockTags.LEAVES)
-                || existing.is(Blocks.VINE);
-            if (!passable) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("[DungeonTrain] Pillar at ({},{}) STOP at y={} hit={} placed={}",
-                        worldX, worldZ, py, existing.getBlock().builtInRegistryHolder().key().location(), placed);
-                }
-                return;
-            }
-            level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
-            placed++;
-        }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("[DungeonTrain] Pillar at ({},{}) reached minY={} without support, placed={}",
-                worldX, worldZ, minY, placed);
-        }
+    private static PillarSpec findPillarContaining(
+        NavigableMap<Integer, PillarSpec> pillars,
+        int worldX
+    ) {
+        Map.Entry<Integer, PillarSpec> floor = pillars.floorEntry(worldX);
+        if (floor != null && floor.getValue().containsX(worldX)) return floor.getValue();
+        Map.Entry<Integer, PillarSpec> ceil = pillars.ceilingEntry(worldX);
+        if (ceil != null && ceil.getValue().containsX(worldX)) return ceil.getValue();
+        return null;
     }
 
     /**
@@ -229,7 +491,7 @@ public final class TrackGenerator {
         int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
         int centerCz = g.trackCenterZ() >> 4;
 
-        java.util.Deque<Long> pending = provider.getPendingChunks();
+        Deque<Long> pending = provider.getPendingChunks();
         Set<Long> filled = provider.getFilledChunks();
         int queued = 0;
         for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN; cz++) {
@@ -315,4 +577,12 @@ public final class TrackGenerator {
                 filled.size(), pending.size());
         }
     }
+
+    /**
+     * Suppress unused-import warning — {@link Heightmap} is referenced from
+     * javadoc only now, but we keep the import so future contributors see
+     * the historical "why not Heightmap" context near the passability logic.
+     */
+    @SuppressWarnings("unused")
+    private static final Class<?> HEIGHTMAP_DOC_ANCHOR = Heightmap.class;
 }
