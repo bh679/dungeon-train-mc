@@ -100,7 +100,12 @@ public final class TunnelTemplate {
 
     private static void stampTemplate(ServerLevel level, BlockPos origin,
                                       StructureTemplate template, boolean mirrorX) {
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        StructurePlaceSettings settings = new StructurePlaceSettings()
+            .setIgnoreEntities(true)
+            // Skip positions owned by a VS ship so a tunnel stamp that
+            // lands in the chunk the train is currently in doesn't wipe
+            // out carriage voxels with the template's interior-air cells.
+            .addProcessor(VSShipFilterProcessor.INSTANCE);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
     }
