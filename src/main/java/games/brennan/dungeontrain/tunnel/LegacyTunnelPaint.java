@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
@@ -57,6 +58,52 @@ public final class LegacyTunnelPaint {
     public static void paintSection(ServerLevel level, int originX, TunnelGeometry tg) {
         for (int dx = 0; dx < 10; dx++) {
             paintTunnelColumn(level, originX + dx, tg);
+        }
+    }
+
+    /**
+     * Fill the "don't touch" corner wedges above the arched roof (inside the
+     * 10×14×13 template bounding box but outside the arch profile) with
+     * {@link Blocks#STRUCTURE_VOID}. Called only from the editor — the
+     * saved NBT uses {@code STRUCTURE_VOID} as the {@code fillFromWorld}
+     * ignore block, so positions filled here are stripped from the template
+     * and the in-world stamp leaves whatever's already at those corners
+     * (mountain rock) untouched.
+     *
+     * <p>Void markers are placed only where the block is currently air, so
+     * any block the user puts in a corner is preserved and captured
+     * normally.</p>
+     */
+    public static void fillCornersWithVoid(ServerLevel level, int originX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dx = 0; dx < 10; dx++) {
+            int worldX = originX + dx;
+
+            // Arch tiers — at tier k the arch profile occupies z ∈ [wallMinZ+k-1, wallMaxZ-k+1]
+            // (stairs at the outer edges, stones + air inside). Anything
+            // outside that range at tier-y is a corner wedge.
+            for (int tier = 1; tier <= ARCH_TIERS; tier++) {
+                int y = tg.ceilingY() + tier;
+                int inLo = tg.wallMinZ() + tier - 1;
+                int inHi = tg.wallMaxZ() - tier + 1;
+                for (int z = tg.wallMinZ(); z < inLo; z++) {
+                    setVoidIfAir(level, pos, worldX, y, z);
+                }
+                for (int z = inHi + 1; z <= tg.wallMaxZ(); z++) {
+                    setVoidIfAir(level, pos, worldX, y, z);
+                }
+            }
+
+            // Apex cap — stones occupy z ∈ [wallMinZ+ARCH_TIERS+1, wallMaxZ-ARCH_TIERS-1].
+            int apexY = tg.ceilingY() + ARCH_TIERS + 1;
+            int apexInLo = tg.wallMinZ() + ARCH_TIERS + 1;
+            int apexInHi = tg.wallMaxZ() - ARCH_TIERS - 1;
+            for (int z = tg.wallMinZ(); z < apexInLo; z++) {
+                setVoidIfAir(level, pos, worldX, apexY, z);
+            }
+            for (int z = apexInHi + 1; z <= tg.wallMaxZ(); z++) {
+                setVoidIfAir(level, pos, worldX, apexY, z);
+            }
         }
     }
 
@@ -269,5 +316,20 @@ public final class LegacyTunnelPaint {
         BlockState existing = level.getBlockState(pos);
         if (existing.is(TrackPalette.RAIL.getBlock())) return;
         level.setBlock(pos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Place a {@code STRUCTURE_VOID} marker only if the current block is air.
+     * Preserves user edits at corner positions (any non-air block the player
+     * placed there stays). Used by {@link #fillCornersWithVoid}.
+     */
+    private static void setVoidIfAir(ServerLevel level, BlockPos.MutableBlockPos pos,
+                                     int x, int y, int z) {
+        pos.set(x, y, z);
+        if (!level.hasChunkAt(pos)) return;
+        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        BlockState existing = level.getBlockState(pos);
+        if (!existing.isAir()) return;
+        level.setBlock(pos, Blocks.STRUCTURE_VOID.defaultBlockState(), Block.UPDATE_CLIENTS);
     }
 }

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.tunnel.LegacyTunnelPaint;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import net.minecraft.core.BlockPos;
@@ -102,6 +104,11 @@ public final class TunnelEditor {
             // StructurePlaceSettings.setMirror(Mirror.FRONT_BACK).
             TunnelTemplate.placePortalAt(overworld, origin, false);
         }
+        // Mark the corner wedges above the arch with STRUCTURE_VOID so they
+        // are stripped from the saved template and the in-world stamp leaves
+        // whatever's at those positions (mountain rock) alone.
+        TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
+        LegacyTunnelPaint.fillCornersWithVoid(overworld, origin.getX(), tg);
         setOutline(overworld, origin, OUTLINE_BLOCK);
 
         double tx = origin.getX() + TunnelTemplate.LENGTH / 2.0;
@@ -118,12 +125,14 @@ public final class TunnelEditor {
      * fresh {@link StructureTemplate} and persist it via
      * {@link TunnelTemplateStore}.
      *
-     * <p><b>Why {@code null} for {@code toIgnore}:</b> tunnel stamps land
-     * underground, inside solid rock. If air were stripped from the saved
-     * template, the interior airspace would never be carved out — walls and
-     * floor would stamp over existing stone but the player-walkable volume
-     * would stay solid. Carriage templates can ignore air safely because
-     * they spawn in open space; tunnels cannot.</p>
+     * <p><b>Ignore block is {@code STRUCTURE_VOID}</b> (not {@code null} or
+     * {@code AIR}). The editor {@link #enter} pass marks corner wedges
+     * above the arch profile as {@code STRUCTURE_VOID} — those positions
+     * sit inside the bounding box but are rock in-world, so we strip them
+     * from the saved template. Air inside the tunnel IS captured, so the
+     * stamp carves out the interior when placed underground. Anything the
+     * user explicitly puts in a corner (e.g. glowstone) overrides the
+     * void and is captured normally.</p>
      */
     public static void save(ServerPlayer player, TunnelVariant variant) throws IOException {
         MinecraftServer server = player.getServer();
@@ -133,7 +142,7 @@ public final class TunnelEditor {
 
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
-        template.fillFromWorld(overworld, origin, size, false, null);
+        template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
         TunnelTemplateStore.save(variant, template);
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{} template",
