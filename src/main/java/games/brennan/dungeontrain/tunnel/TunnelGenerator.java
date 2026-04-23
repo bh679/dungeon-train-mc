@@ -199,19 +199,21 @@ public final class TunnelGenerator {
             stampPortalAt(level, r.end - 9, tg, true, chunkMinX, chunkMaxX, covered);
         }
 
-        // Middle sections at absolute {@code sx % 10 == 0} alignment,
-        // restricted to the run's middle region so sections never overlap
-        // a portal stamp (entrance [runStart..runStart+9], exit [runEnd-9..runEnd]).
-        int middleStart;
-        if (r.extendsLeft) {
-            // Conservative: entrance could be anywhere in [runStart..baseX-1];
-            // its rightmost column is at most baseX-1+9, but since we don't
-            // know runStart we step 10 inside the visible window so any
-            // unseen entrance at worst covers [baseX-1..baseX+8].
-            middleStart = (r.start + 10);
-        } else {
-            middleStart = r.start + 10;
-        }
+        // Middle sections packed tightly after the entrance portal —
+        // alignment is relative to {@code r.start} (not world-absolute
+        // {@code worldX % 10 == 0}) so sections land flush against the
+        // portal regardless of where the run starts. For a 30-column run
+        // beginning at worldX=53 this gives entrance [53..62], section
+        // [63..72], exit [73..82] with zero procedural gap. Absolute
+        // alignment would have lost the middle section entirely (firstSx=70,
+        // sx+9=79 > middleEnd=72 → no stamp).
+        //
+        // Runs wider than the 56-column qualified window can't see both
+        // ends from a single chunk. Chunks where {@code extendsLeft} is
+        // true derive section alignment from the window-edge {@code r.start}
+        // instead of the real run start, so sections may misalign across
+        // chunk boundaries for very long tunnels — visible but rare.
+        int middleStart = r.start + 10;
         int middleEnd;
         if (r.extendsRight) {
             middleEnd = r.end - 10;
@@ -222,8 +224,7 @@ public final class TunnelGenerator {
             middleEnd = r.start - 1;
         }
 
-        int firstSx = middleStart + Math.floorMod(-middleStart, 10);
-        for (int sx = firstSx; sx + 9 <= middleEnd; sx += 10) {
+        for (int sx = middleStart; sx + 9 <= middleEnd; sx += 10) {
             stampSectionAt(level, sx, tg, chunkMinX, chunkMaxX, covered);
         }
     }
