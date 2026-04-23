@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -212,34 +213,61 @@ public final class TrackGenerator {
     }
 
     /**
-     * Place bed + rails for one column, mirroring legacy behaviour. Does NOT
-     * touch pillar/arch blocks — that's handled by the caller using the
-     * precomputed pillar map.
+     * Place bed + rail cells for one column. When {@code tile} is present,
+     * the cell at {@code [worldX mod TILE_LENGTH][y][worldZ - trackZMin]} is
+     * stamped for each row; {@code null} entries (captured air in the template)
+     * are skipped so the user can author viaduct gaps. When {@code tile} is
+     * empty, falls back to the hardcoded 5-wide bed + 2-block-gauge rail
+     * behavior so worlds with no saved template look identical to the
+     * pre-feature mod.
      *
-     * @return true if the bed was placed (or was already stone brick from a
-     *         previous pass). false if ship-blocked — caller should skip
-     *         pillar/arch work for this column too.
+     * <p>Does NOT touch pillar/arch blocks — that's handled by the caller
+     * using the precomputed pillar map.</p>
+     *
+     * @return false if the bed position is ship-owned (caller should skip the
+     *         pillar slice for this column too); true otherwise.
      */
-    private static boolean placeBedAndRail(ServerLevel level, int worldX, int worldZ, TrackGeometry g) {
+    private static boolean placeTrackColumn(
+        ServerLevel level,
+        int worldX,
+        int worldZ,
+        TrackGeometry g,
+        Optional<BlockState[][][]> tile
+    ) {
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
         // Skip ship-owned positions — never mutate voxels that belong to our
         // train or any other VS ship sharing this dimension.
         if (VSGameUtilsKt.getShipObjectManagingPos(level, bedPos) != null) return false;
 
-        // Second-line idempotence — if the bed is already stone brick,
-        // something already placed it. Don't overwrite, but allow downstream
-        // pillar/arch checks to still run (they have their own idempotence).
-        BlockState existingBed = level.getBlockState(bedPos);
-        if (!existingBed.is(TrackPalette.BED.getBlock())) {
-            SilentBlockOps.setBlockSilent(level, bedPos, TrackPalette.BED);
+        int zOff = worldZ - g.trackZMin();
+        int xMod = Math.floorMod(worldX, TrackTemplate.TILE_LENGTH);
+
+        BlockState bedState = tile.isPresent()
+            ? tile.get()[xMod][0][zOff]
+            : TrackPalette.BED;
+        if (bedState != null) {
+            BlockState existingBed = level.getBlockState(bedPos);
+            if (!existingBed.is(bedState.getBlock())) {
+                SilentBlockOps.setBlockSilent(level, bedPos, bedState);
+            }
         }
 
-        // Rails on top, at the two inner-edge Z rows (2-block gauge).
-        if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
+        BlockState railState;
+        if (tile.isPresent()) {
+            railState = tile.get()[xMod][1][zOff];
+        } else if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
+            railState = TrackPalette.RAIL;
+        } else {
+            railState = null;
+        }
+        if (railState != null) {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
-                SilentBlockOps.setBlockSilent(level, railPos, TrackPalette.RAIL);
+                BlockState existingRail = level.getBlockState(railPos);
+                if (!existingRail.is(railState.getBlock())) {
+                    SilentBlockOps.setBlockSilent(level, railPos, railState);
+                }
             }
         }
         return true;
@@ -450,16 +478,17 @@ public final class TrackGenerator {
             g
         );
 
-        // Fetch per-world dims once; the pillar-template store validates
-        // against this, and the call is cheap (SavedData lookup).
+        // Fetch per-world dims once; the pillar- and track-template stores
+        // validate against this, and the call is cheap (SavedData lookup).
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        Optional<BlockState[][][]> trackTile = TrackTemplateStore.getCells(level, dims);
 
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                placeBedAndRail(level, worldX, worldZ, g);
+                placeTrackColumn(level, worldX, worldZ, g, trackTile);
             }
 
             if (containingPillar != null) {

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
@@ -159,6 +160,17 @@ public final class TrainTickEvents {
         int maxX = (int) Math.floor(Math.max(aabb.maxX(), aabb.maxX() + expX));
         int maxY = (int) Math.floor(Math.max(aabb.maxY(), aabb.maxY() + expY));
         int maxZ = (int) Math.floor(Math.max(aabb.maxZ(), aabb.maxZ() + expZ));
+
+        // Clamp lower Y to the carriage floor so the sweep never dips into
+        // the bed or rail rows (bedY = origin.y − 2, railY = origin.y − 1).
+        // VS's worldAABB can report minY one sub-pixel below origin.y due to
+        // transform precision, which would otherwise floor down to railY and
+        // destroy the authored rail layer 8 blocks ahead of the train.
+        TrackGeometry geometry = provider.getTrackGeometry();
+        if (geometry != null) {
+            int carriageFloorY = geometry.bedY() + 2;
+            if (minY < carriageFloorY) minY = carriageFloorY;
+        }
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int destroyed = 0;
