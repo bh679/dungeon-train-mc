@@ -53,6 +53,24 @@ public final class CarriageEditor {
     private CarriageEditor() {}
 
     /**
+     * Record {@code player}'s current dimension + position + look as the
+     * return-to location for {@code /dungeontrain editor exit}. No-op if the
+     * player already has a saved session, so re-entering an editor plot (even
+     * across carriage and pillar editors) keeps the first entry as the anchor.
+     *
+     * <p>Package-private so {@link PillarEditor} can share the session map
+     * without duplicating the exit plumbing.</p>
+     */
+    static void rememberReturn(ServerPlayer player) {
+        SESSIONS.putIfAbsent(player.getUUID(), new Session(
+            player.level().dimension(),
+            player.position(),
+            player.getYRot(),
+            player.getXRot()
+        ));
+    }
+
+    /**
      * Outcome of {@link #save} — config-dir write always happens (or throws);
      * the source-tree write is opt-in via {@link EditorDevMode} and reported
      * separately so the caller can surface partial success. Source-tree writes
@@ -118,12 +136,7 @@ public final class CarriageEditor {
         }
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        SESSIONS.putIfAbsent(player.getUUID(), new Session(
-            player.level().dimension(),
-            player.position(),
-            player.getYRot(),
-            player.getXRot()
-        ));
+        rememberReturn(player);
 
         // Drop any stale cached sidecar so `editor enter` picks up manual JSON
         // edits made since the last load. Session editing then works against

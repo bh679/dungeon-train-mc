@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -18,6 +21,7 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import java.util.Deque;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -296,31 +300,113 @@ public final class TrackGenerator {
     }
 
     /**
-     * Place a solid pillar column at (worldX, worldZ) from {@code bedY - 1}
-     * down until non-passable terrain stops the descent. Every column in a
-     * pillar's footprint descends independently to <em>its own</em> ground,
-     * so a thick pillar on sloped terrain follows the slope instead of
-     * floating at the center column's level.
+     * Place the full track-width pillar slice at {@code worldX}, running from
+     * {@code bedY - 1} down to the deepest ground anywhere under the track's
+     * {@code [trackZMin..trackZMax]} span. Stamps the three editable
+     * {@link PillarSection} templates across the whole Z range per row so the
+     * user can design a coherent 1×H×W pillar front face instead of a bunch
+     * of identical single-column stacks.
      *
-     * <p>Skips ship-owned positions and stops on any non-passable block
-     * (same passability rules as {@link #probeGroundY}). Uses
-     * {@link TrackPalette#PILLAR}.</p>
+     * <p>Each Z column in the slice is probed independently for its ground,
+     * and the minimum ({@code = deepest}) groundY anchors the whole slice.
+     * Shallower Z columns simply have their lower rows blocked by terrain —
+     * the stamp skips those positions via the non-passable check. The result
+     * is a visually-aligned pillar that follows the deepest bedrock and
+     * tucks into higher-ground edges naturally.</p>
+     *
+     * <p>Short-column rule: when the column height {@code H < BOTTOM.height +
+     * TOP.height}, the bottom is placed first (up to its full height or
+     * {@code H}, whichever is smaller), then the top template fills the
+     * remaining rows with its <em>lowest</em> rows truncated, so the
+     * decorative cap always lands at the column's top.</p>
+     *
+     * <p>Missing templates fall back to {@link TrackPalette#PILLAR} per row,
+     * matching the pre-template visual exactly. Air entries in a loaded
+     * template are left untouched so users can design pillar cut-outs.</p>
      */
-    private static void placePillarColumn(
+    private static void placePillarSlice(
         ServerLevel level,
         int worldX,
-        int worldZ,
-        int pillarTopInclusive
+        TrackGeometry g,
+        CarriageDims dims
     ) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight() + 1;
-        for (int py = pillarTopInclusive; py >= minY; py--) {
-            pos.set(worldX, py, worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
-            BlockState existing = level.getBlockState(pos);
-            if (!isPassable(existing)) return; // hit terrain — this column is done
-            SilentBlockOps.setBlockSilent(level, pos.immutable(), TrackPalette.PILLAR);
+        int bedY = g.bedY();
+        int topInclusive = bedY - 1;
+
+        // Probe each Z column in the track span; take the minimum (deepest)
+        // as the slice anchor. probeGroundY returns bedY as a sentinel for
+        // "ship intercepts / no pillar needed" — skip those columns so a ship
+        // above one edge doesn't force the whole slice to zero-height.
+        int deepestGroundY = bedY;
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int ground = probeGroundY(level, worldX, z, bedY);
+            if (ground >= bedY) continue;
+            if (ground < deepestGroundY) deepestGroundY = ground;
         }
+        int h = topInclusive - deepestGroundY + 1;
+        if (h <= 0) return;
+
+        Optional<BlockState[][]> topCol = PillarTemplateStore.getColumn(level, PillarSection.TOP, dims);
+        Optional<BlockState[][]> midCol = PillarTemplateStore.getColumn(level, PillarSection.MIDDLE, dims);
+        Optional<BlockState[][]> botCol = PillarTemplateStore.getColumn(level, PillarSection.BOTTOM, dims);
+
+        int topH = PillarSection.TOP.height();
+        int botH = PillarSection.BOTTOM.height();
+        int placeBotH = Math.min(botH, h);
+        int placeTopH = Math.min(topH, h - placeBotH);
+        int placeMidH = h - placeBotH - placeTopH;
+
+        int zMin = g.trackZMin();
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int zIdx = z - zMin;
+            for (int i = 0; i < placeBotH; i++) {
+                stampSliceCell(level, worldX, deepestGroundY + i, z, botCol, i, zIdx);
+            }
+            for (int i = 0; i < placeMidH; i++) {
+                stampSliceCell(level, worldX, deepestGroundY + placeBotH + i, z, midCol, 0, zIdx);
+            }
+            for (int i = 0; i < placeTopH; i++) {
+                int y = topInclusive - placeTopH + 1 + i;
+                int row = (topH - placeTopH) + i;
+                stampSliceCell(level, worldX, y, z, topCol, row, zIdx);
+            }
+        }
+    }
+
+    /**
+     * Stamp one cell of a pillar slice. {@code column} is the unpacked
+     * 2D template (row Y × Z offset) for the section, or empty for fallback.
+     * Null template cells are treated as air — the world stays passable.
+     *
+     * <p>Unlike the pre-template per-column early-terminate, this method
+     * silently skips ship-owned or non-passable positions without aborting
+     * the rest of the slice. That's the right move for a 1×H×W stamp: one
+     * shallow Z column hitting terrain shouldn't wipe out the rest of the
+     * pillar's face.</p>
+     */
+    private static void stampSliceCell(
+        ServerLevel level,
+        int x, int y, int z,
+        Optional<BlockState[][]> column,
+        int row,
+        int zIdx
+    ) {
+        BlockPos pos = new BlockPos(x, y, z);
+        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        BlockState existing = level.getBlockState(pos);
+        if (!isPassable(existing)) return;
+
+        BlockState state;
+        if (column.isPresent()
+            && row >= 0 && row < column.get().length
+            && zIdx >= 0 && zIdx < column.get()[row].length) {
+            BlockState fromTemplate = column.get()[row][zIdx];
+            if (fromTemplate == null) return; // template cell is air — leave passable
+            state = fromTemplate;
+        } else {
+            state = TrackPalette.PILLAR;
+        }
+        SilentBlockOps.setBlockSilent(level, pos, state);
     }
 
     /**
@@ -364,16 +450,20 @@ public final class TrackGenerator {
             g
         );
 
+        // Fetch per-world dims once; the pillar-template store validates
+        // against this, and the call is cheap (SavedData lookup).
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                if (!placeBedAndRail(level, worldX, worldZ, g)) continue;
+                placeBedAndRail(level, worldX, worldZ, g);
+            }
 
-                if (containingPillar != null) {
-                    placePillarColumn(level, worldX, worldZ, g.bedY() - 1);
-                }
+            if (containingPillar != null) {
+                placePillarSlice(level, worldX, g, dims);
             }
         }
 
