@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -76,22 +76,23 @@ public final class PlayerJoinEvents {
             }
             int trainY = data.getTrainY();
             BlockPos trainOrigin = new BlockPos(0, trainY, 0);
+            CarriageDims dims = data.dims();
 
             // Compute the intended player target up-front so the train's initial
             // carriage window lines up with where the player will stand.
             Vector3d approxTrainCenter = new Vector3d(
-                trainOrigin.getX() + (CarriageTemplate.LENGTH * DEFAULT_CARRIAGE_COUNT) / 2.0,
-                trainOrigin.getY() + CarriageTemplate.HEIGHT / 2.0,
-                trainOrigin.getZ() + CarriageTemplate.WIDTH / 2.0
+                trainOrigin.getX() + (dims.length() * DEFAULT_CARRIAGE_COUNT) / 2.0,
+                trainOrigin.getY() + dims.height() / 2.0,
+                trainOrigin.getZ() + dims.width() / 2.0
             );
             PlayerTarget target = pickPlayerTarget(level, approxTrainCenter);
 
-            LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {}",
-                DEFAULT_CARRIAGE_COUNT, trainOrigin);
+            LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {} dims={}x{}x{}",
+                DEFAULT_CARRIAGE_COUNT, trainOrigin, dims.length(), dims.width(), dims.height());
             ServerShip spawnedShip;
             try {
                 Vector3d spawnerPos = new Vector3d(target.px, target.py, target.pz);
-                spawnedShip = TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos);
+                spawnedShip = TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos, dims);
             } catch (Throwable t) {
                 LOGGER.error("[DungeonTrain] Starter train auto-spawn failed", t);
                 return;

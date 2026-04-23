@@ -64,6 +64,15 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     private volatile int count;
     private final ResourceKey<Level> dimensionKey;
     private final Set<Integer> activeIndices;
+    /**
+     * Carriage footprint snapshot captured at spawn time. Immutable for the
+     * train's lifetime — matches the "spawn-time-captured, read-only
+     * afterward" pattern used by {@link #shipyardOrigin} and
+     * {@link #trackGeometry}. Lets {@link TrainWindowManager} compute
+     * carriage indices and block-placement offsets without round-tripping
+     * through {@code DungeonTrainWorldData.get(level).dims()} on every tick.
+     */
+    private final CarriageDims dims;
 
     // Lazily captured on the first physics tick so the ship's spawn-time
     // orientation, world position, and model-space pivot become the
@@ -115,12 +124,14 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         BlockPos shipyardOrigin,
         int count,
         ResourceKey<Level> dimensionKey,
-        int initialPIdx
+        int initialPIdx,
+        CarriageDims dims
     ) {
         this.targetVelocity = new Vector3d(targetVelocity);
         this.shipyardOrigin = shipyardOrigin.immutable();
         this.count = count;
         this.dimensionKey = dimensionKey;
+        this.dims = dims;
         this.activeIndices = new HashSet<>();
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;
@@ -164,6 +175,16 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
     public ResourceKey<Level> getDimensionKey() {
         return dimensionKey;
+    }
+
+    /**
+     * Carriage footprint for this train — set at construction time, never
+     * changes. Use from tick-hot-path consumers ({@link TrainWindowManager},
+     * {@link TrainAssembler}) to avoid a {@code DungeonTrainWorldData} lookup
+     * per tick.
+     */
+    public CarriageDims dims() {
+        return dims;
     }
 
     public Set<Integer> getActiveIndices() {

@@ -49,7 +49,7 @@ public final class TrainAssembler {
      * and clears world blocks inside the new train's bounding volume so trapped
      * terrain does not wedge the ship against the world.
      */
-    public static ServerShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos) {
+    public static ServerShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Deleted {} existing train(s) before spawn", deleted);
@@ -58,21 +58,22 @@ public final class TrainAssembler {
         // At spawn time the ship's worldToShip is a pure translation, so the
         // player's shipyard-space X offset from shipyardOrigin equals their
         // world X offset from origin — we can compute pIdx without the ship.
-        int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) CarriageTemplate.LENGTH);
+        int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) dims.length());
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;
         int firstIdx = initialPIdx - halfBack;
         int lastIdx = initialPIdx + halfFront;
 
-        int cleared = clearBoundingBox(level, origin, firstIdx, lastIdx);
+        int cleared = clearBoundingBox(level, origin, firstIdx, lastIdx, dims);
         LOGGER.info("[DungeonTrain] Cleared {} world blocks in train footprint (indices {} to {})", cleared, firstIdx, lastIdx);
 
         Set<BlockPos> blocks = new HashSet<>();
         for (int i = firstIdx; i <= lastIdx; i++) {
-            BlockPos carriageOrigin = origin.offset(i * CarriageTemplate.LENGTH, 0, 0);
-            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i)));
+            BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
+            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.typeForIndex(i), dims));
         }
-        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, initialPIdx={}), assembling...", blocks.size(), count, initialPIdx);
+        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, initialPIdx={}, dims={}x{}x{}), assembling...",
+            blocks.size(), count, initialPIdx, dims.length(), dims.width(), dims.height());
 
         ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
 
@@ -86,7 +87,7 @@ public final class TrainAssembler {
         // z = 12290044.9999669 (micro-fraction below the next integer), VS
         // stores the initial block at shipyard z = 12290045 while a floored
         // origin would give 12290044 — and the rolling-window erase loop
-        // `[originZ, originZ + WIDTH)` would miss the +Z face of every
+        // `[originZ, originZ + width)` would miss the +Z face of every
         // initial carriage, leaving a 1-block sliver.
         Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
         ship.getTransform().getWorldToShip().transformPosition(shipyardOriginVec);
@@ -95,7 +96,7 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
 
-        TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx);
+        TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx, dims);
         ship.setTransformProvider(provider);
         // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
         // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
@@ -109,7 +110,7 @@ public final class TrainAssembler {
             origin.getY() - 2,
             origin.getY() - 1,
             origin.getZ(),
-            origin.getZ() + CarriageTemplate.WIDTH - 1);
+            origin.getZ() + dims.width() - 1);
         provider.setTrackGeometry(geometry);
 
         LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={}, track={})",
@@ -162,17 +163,17 @@ public final class TrainAssembler {
      * box with air. Runs before block placement so the hollow interior does
      * not trap existing terrain inside the assembled ship.
      *
-     * Clears the X range {@code [firstIdx * LENGTH, (lastIdx + 1) * LENGTH)}
+     * Clears the X range {@code [firstIdx * length, (lastIdx + 1) * length)}
      * relative to {@code origin} — matching the shifted carriage placement
      * anchored on index 0.
      */
-    private static int clearBoundingBox(ServerLevel level, BlockPos origin, int firstIdx, int lastIdx) {
-        int startDx = firstIdx * CarriageTemplate.LENGTH;
-        int endDx = (lastIdx + 1) * CarriageTemplate.LENGTH;
+    private static int clearBoundingBox(ServerLevel level, BlockPos origin, int firstIdx, int lastIdx, CarriageDims dims) {
+        int startDx = firstIdx * dims.length();
+        int endDx = (lastIdx + 1) * dims.length();
         int cleared = 0;
         for (int dx = startDx; dx < endDx; dx++) {
-            for (int dy = 0; dy < CarriageTemplate.HEIGHT; dy++) {
-                for (int dz = 0; dz < CarriageTemplate.WIDTH; dz++) {
+            for (int dy = 0; dy < dims.height(); dy++) {
+                for (int dz = 0; dz < dims.width(); dz++) {
                     BlockPos pos = origin.offset(dx, dy, dz);
                     if (!level.getBlockState(pos).isAir()) {
                         level.setBlock(pos, AIR, 3);

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.debug;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Sliver-bug diagnostics. Scans a padded region around a carriage footprint
  * and reports any non-air block that falls OUTSIDE the canonical
- * {@code [0, LENGTH) × [0, HEIGHT) × [0, WIDTH)} footprint — i.e. anything
+ * {@code [0, length) × [0, height) × [0, width)} footprint — i.e. anything
  * the rolling-window erase path would miss. Each stray is logged with its
  * offset from the footprint origin so we can see which axis is leaking.
  *
@@ -31,17 +31,17 @@ public final class CarriageDebug {
     /**
      * Scan the region expanded by {@code pad} blocks on every face around the
      * footprint anchored at {@code footprintOrigin}. Logs non-air blocks that
-     * lie outside the canonical 9×HEIGHT×WIDTH footprint.
+     * lie outside the canonical {@code length × height × width} footprint.
      *
      * @return count of strays found
      */
-    public static int scanForStrays(ServerLevel level, BlockPos footprintOrigin, String tag, int pad) {
+    public static int scanForStrays(ServerLevel level, BlockPos footprintOrigin, String tag, int pad, CarriageDims dims) {
         int ix0 = footprintOrigin.getX();
         int iy0 = footprintOrigin.getY();
         int iz0 = footprintOrigin.getZ();
-        int ix1 = ix0 + CarriageTemplate.LENGTH;
-        int iy1 = iy0 + CarriageTemplate.HEIGHT;
-        int iz1 = iz0 + CarriageTemplate.WIDTH;
+        int ix1 = ix0 + dims.length();
+        int iy1 = iy0 + dims.height();
+        int iz1 = iz0 + dims.width();
 
         List<String> strays = new ArrayList<>();
         for (int x = ix0 - pad; x < ix1 + pad; x++) {
@@ -69,7 +69,7 @@ public final class CarriageDebug {
         return strays.size();
     }
 
-    public static int scanForStrays(ServerLevel level, BlockPos footprintOrigin, String tag) {
-        return scanForStrays(level, footprintOrigin, tag, DEFAULT_PAD);
+    public static int scanForStrays(ServerLevel level, BlockPos footprintOrigin, String tag, CarriageDims dims) {
+        return scanForStrays(level, footprintOrigin, tag, DEFAULT_PAD, dims);
     }
 }

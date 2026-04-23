@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceKey;
@@ -69,12 +71,12 @@ public final class CarriageEditor {
      * Returns the carriage type whose plot contains {@code pos} (within the
      * footprint plus 1-block outline margin), or {@code null} if none.
      */
-    public static CarriageType plotContaining(BlockPos pos) {
+    public static CarriageType plotContaining(BlockPos pos, CarriageDims dims) {
         for (Map.Entry<CarriageType, BlockPos> entry : PLOT_ORIGINS.entrySet()) {
             BlockPos o = entry.getValue();
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + CarriageTemplate.LENGTH
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + CarriageTemplate.HEIGHT
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + CarriageTemplate.WIDTH) {
+            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height()
+                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + dims.width()) {
                 return entry.getKey();
             }
         }
@@ -92,6 +94,7 @@ public final class CarriageEditor {
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         BlockPos origin = PLOT_ORIGINS.get(type);
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         SESSIONS.putIfAbsent(player.getUUID(), new Session(
             player.level().dimension(),
@@ -100,22 +103,22 @@ public final class CarriageEditor {
             player.getXRot()
         ));
 
-        CarriageTemplate.eraseAt(overworld, origin);
-        CarriageTemplate.placeAt(overworld, origin, type);
-        setOutline(overworld, origin, OUTLINE_BLOCK);
+        CarriageTemplate.eraseAt(overworld, origin, dims);
+        CarriageTemplate.placeAt(overworld, origin, type, dims);
+        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
 
-        double tx = origin.getX() + CarriageTemplate.LENGTH / 2.0;
+        double tx = origin.getX() + dims.length() / 2.0;
         double ty = origin.getY() + 1.0;
-        double tz = origin.getZ() + CarriageTemplate.WIDTH / 2.0;
+        double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {}",
-            player.getName().getString(), type, origin);
+        LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{}",
+            player.getName().getString(), type, origin, dims.length(), dims.width(), dims.height());
     }
 
     /**
-     * Capture the 9×HEIGHT×WIDTH region at the plot for {@code type} into a
-     * fresh {@link StructureTemplate} and persist it via
+     * Capture the {@code length × height × width} region at the plot for
+     * {@code type} into a fresh {@link StructureTemplate} and persist it via
      * {@link CarriageTemplateStore}. Air positions are excluded so the saved
      * template only describes placed blocks.
      */
@@ -124,14 +127,15 @@ public final class CarriageEditor {
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
         BlockPos origin = PLOT_ORIGINS.get(type);
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         StructureTemplate template = new StructureTemplate();
-        Vec3i size = new Vec3i(CarriageTemplate.LENGTH, CarriageTemplate.HEIGHT, CarriageTemplate.WIDTH);
+        Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
         template.fillFromWorld(overworld, origin, size, false, Blocks.AIR);
         CarriageTemplateStore.save(type, template);
 
-        LOGGER.info("[DungeonTrain] Editor save: {} -> {} template",
-            player.getName().getString(), type);
+        LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{}",
+            player.getName().getString(), type, dims.length(), dims.width(), dims.height());
     }
 
     /** Restore player to pre-enter position/dimension. Returns false if no session. */
@@ -149,17 +153,18 @@ public final class CarriageEditor {
 
     /**
      * Draw the cage: barrier blocks along the 12 edges of the bounding box
-     * that sits 1 block outside the 9×HEIGHT×WIDTH footprint. Faces are left
-     * empty so the player can fly in and out freely; barriers are invisible
-     * in survival and render as translucent red in creative/spectator.
+     * that sits 1 block outside the {@code length × height × width} footprint.
+     * Faces are left empty so the player can fly in and out freely; barriers
+     * are invisible in survival and render as translucent red in
+     * creative/spectator.
      */
-    private static void setOutline(ServerLevel level, BlockPos origin, BlockState state) {
+    private static void setOutline(ServerLevel level, BlockPos origin, BlockState state, CarriageDims dims) {
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
         int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + CarriageTemplate.LENGTH;
-        int y1 = origin.getY() + CarriageTemplate.HEIGHT;
-        int z1 = origin.getZ() + CarriageTemplate.WIDTH;
+        int x1 = origin.getX() + dims.length();
+        int y1 = origin.getY() + dims.height();
+        int z1 = origin.getZ() + dims.width();
 
         for (int x = x0; x <= x1; x++) {
             for (int y = y0; y <= y1; y++) {
