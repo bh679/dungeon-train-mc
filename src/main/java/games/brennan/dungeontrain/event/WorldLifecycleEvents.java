@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.client.PendingWorldChoices;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -84,6 +85,7 @@ public final class WorldLifecycleEvents {
     public static void onServerStopped(ServerStoppedEvent event) {
         CarriageTemplateStore.clearCache();
         PillarTemplateStore.clearCache();
-        LOGGER.debug("[DungeonTrain] Cleared carriage- and pillar-template caches on server stop.");
+        TrackTemplateStore.clearCache();
+        LOGGER.debug("[DungeonTrain] Cleared carriage-, pillar-, and track-template caches on server stop.");
     }
 }
