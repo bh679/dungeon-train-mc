@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.train;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -8,6 +11,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -32,6 +36,8 @@ import java.util.Set;
  * only exist on disk, never in fallback).
  */
 public final class CarriageTemplate {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public enum CarriageType {
         STANDARD,
@@ -66,6 +72,12 @@ public final class CarriageTemplate {
      * Place a single carriage of the given variant + dims at origin (= minimum
      * corner). Returns the set of block positions filled — pass directly to
      * {@code ShipAssembler.assembleToShip()}.
+     *
+     * <p>This 4-arg overload is kept for call sites that don't have a
+     * carriage index (e.g. the editor's in-plot stamp on {@code enter}): it
+     * places the template as-is without resolving any variant-block sidecar
+     * entries — the editor doesn't want randomised blocks while you're
+     * editing.</p>
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
@@ -78,6 +90,54 @@ public final class CarriageTemplate {
         }
         // Custom variant with no (or mismatched) NBT — nothing to place.
         return new HashSet<>();
+    }
+
+    /**
+     * 6-arg spawn variant — after stamping the NBT template, resolve any
+     * {@link CarriageVariantBlocks} sidecar entries for this variant by picking
+     * a random candidate state per flagged position, deterministically seeded
+     * on {@code (world seed, carriage index, local pos)}. Same seed + same
+     * index = same carriage on reload; different indices along the same track
+     * visibly vary.
+     *
+     * <p>Only applies when the NBT-backed path runs. If a built-in variant
+     * falls back to {@code legacyPlaceAt} (no saved edits), any sidecar is
+     * skipped with a log warning — the legacy geometry doesn't define a stable
+     * position basis for variant blocks.</p>
+     */
+    public static Set<BlockPos> placeAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
+        if (stored.isPresent()) {
+            stampTemplate(level, origin, stored.get());
+            applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
+            return collectFootprint(level, origin, dims);
+        }
+        if (variant instanceof CarriageVariant.Builtin b) {
+            CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+            if (!sidecar.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — built-in using hardcoded fallback.",
+                    variant.id());
+            }
+            return legacyPlaceAt(level, origin, b.type(), dims);
+        }
+        return new HashSet<>();
+    }
+
+    private static void applyVariantBlocks(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        if (sidecar.isEmpty()) return;
+        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+            BlockState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
+            if (picked == null) continue;
+            BlockPos world = origin.offset(e.localPos());
+            SilentBlockOps.setBlockSilent(level, world, picked);
+        }
     }
 
     /**

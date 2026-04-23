@@ -138,6 +138,11 @@ public final class CarriageEditor {
 
         rememberReturn(player);
 
+        // Drop any stale cached sidecar so `editor enter` picks up manual JSON
+        // edits made since the last load. Session editing then works against
+        // the freshly-loaded map; `editor save` persists the result.
+        CarriageVariantBlocks.invalidate(variant.id());
+
         CarriageTemplate.eraseAt(overworld, origin, dims);
         CarriageTemplate.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
@@ -170,13 +175,22 @@ public final class CarriageEditor {
         StructureTemplate template = captureTemplate(overworld, origin, dims);
         CarriageTemplateStore.save(variant, template);
 
-        LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{}",
-            player.getName().getString(), variant.id(), dims.length(), dims.width(), dims.height());
+        // Variant sidecar: snapshot whatever the in-memory cache holds (the
+        // `editor variant set/clear` commands mutate it eagerly during the
+        // session). Empty maps are written as a deleted file so removing every
+        // entry doesn't leave a stale sidecar on disk.
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        sidecar.save(variant);
+
+        LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
+            player.getName().getString(), variant.id(), dims.length(), dims.width(), dims.height(),
+            sidecar.size());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         if (!(variant instanceof CarriageVariant.Builtin builtin)) return SaveResult.skipped();
         try {
             CarriageTemplateStore.saveToSource(builtin.type(), template);
+            sidecar.saveToSource(builtin.type());
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", variant.id(), e.toString());
@@ -219,6 +233,18 @@ public final class CarriageEditor {
             throw new IOException("Source '" + source.id() + "' produced no geometry.");
         }
         CarriageTemplateStore.save(target, template);
+
+        // Copy the source's variant sidecar into the new variant so the
+        // duplicate shares the "pick from these blocks" authoring.
+        CarriageVariantBlocks sourceSidecar = CarriageVariantBlocks.loadFor(source, dims);
+        if (!sourceSidecar.isEmpty()) {
+            CarriageVariantBlocks copy = CarriageVariantBlocks.empty();
+            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
+                copy.put(e.localPos(), e.states());
+            }
+            copy.save(target);
+        }
+
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 
         LOGGER.info("[DungeonTrain] Editor duplicate: {} created '{}' from '{}' at {}",
@@ -250,8 +276,10 @@ public final class CarriageEditor {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
             }
             CarriageTemplateStore.save(renamed, template);
+            CarriageVariantBlocks.rename(currentCustom.name(), renamed.id());
             CarriageVariantRegistry.unregister(currentCustom.name());
             CarriageTemplateStore.delete(currentCustom);
+            CarriageVariantBlocks.invalidate(currentCustom.name());
             LOGGER.info("[DungeonTrain] Editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), currentCustom.name(), renamed.id());
         } else if (current instanceof CarriageVariant.Builtin builtin) {
@@ -259,7 +287,9 @@ public final class CarriageEditor {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
             }
             CarriageTemplateStore.save(renamed, template);
+            CarriageVariantBlocks.rename(builtin.id(), renamed.id());
             CarriageTemplateStore.delete(builtin);
+            CarriageVariantBlocks.invalidate(builtin.id());
             LOGGER.info("[DungeonTrain] Editor saveAs (builtin→custom): {} saved edits of '{}' as new custom '{}', built-in reverts to fallback",
                 player.getName().getString(), builtin.id(), renamed.id());
         }
@@ -277,6 +307,7 @@ public final class CarriageEditor {
         if (dim == null) return false;
         player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
             session.yaw(), session.pitch());
+        VariantOverlayRenderer.forget(player);
         return true;
     }
 

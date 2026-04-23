@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
@@ -77,6 +78,10 @@ public final class TrainTickEvents {
         // carving terrain — it only adds/removes carriages when a player crosses
         // a carriage boundary, so the cost is negligible on idle ticks.
         TrainWindowManager.onLevelTick(level);
+
+        // Editor overlay — cheap when nobody is in an editor plot (short-circuits
+        // per-player via CarriageEditor.plotContaining).
+        VariantOverlayRenderer.onLevelTick(level);
 
         List<LoadedServerShip> trains = findTrains(level);
         if (trains.isEmpty()) {

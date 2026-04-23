@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
@@ -39,7 +40,7 @@ public final class TrainCommand {
 
     private TrainCommand() {}
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext buildContext) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("dungeontrain")
             .requires(s -> s.hasPermission(2))
             .then(Commands.literal("spawn")
@@ -54,7 +55,7 @@ public final class TrainCommand {
             .then(Commands.literal("tracks")
                 .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
-            .then(EditorCommand.build())
+            .then(EditorCommand.build(buildContext))
             .then(DebugCommand.build());
 
         dispatcher.register(root);

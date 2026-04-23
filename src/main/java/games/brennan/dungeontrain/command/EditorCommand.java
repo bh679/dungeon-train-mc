@@ -7,11 +7,13 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
@@ -20,12 +22,20 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -77,7 +87,7 @@ public final class EditorCommand {
 
     private EditorCommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> build() {
+    public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
         return Commands.literal("editor")
             .then(Commands.literal("enter")
                 .executes(ctx -> runEnterCarriage(ctx.getSource(), CarriageVariant.of(CarriageType.STANDARD)))
@@ -154,7 +164,8 @@ public final class EditorCommand {
                                 StringArgumentType.getString(ctx, "section"));
                             if (s == null) return 0;
                             return runPillarPromote(ctx.getSource(), s);
-                        }))));
+                        }))))
+            .then(buildVariantSubtree(buildContext));
     }
 
     private static PillarSection parseSection(CommandSourceStack source, String raw) {
@@ -166,6 +177,132 @@ public final class EditorCommand {
             ));
             return null;
         }
+    }
+
+    /**
+     * {@code /dungeontrain editor variant ...} — inspect + reset per-position
+     * random variant blocks for the plot the player is standing in.
+     *
+     * <p>Authoring is in-world: <b>sneak + right-click</b> a block in the
+     * plot with a different block held in main hand to append that block to
+     * the variants list at the targeted position. See
+     * {@link games.brennan.dungeontrain.editor.VariantBlockInteractions}. The
+     * commands below only clear / list / toggle overlay; they no longer edit
+     * the state list directly.</p>
+     *
+     * <p>All changes mutate the in-memory sidecar eagerly;
+     * {@code /editor save} snapshots it to disk alongside the NBT template.</p>
+     */
+    @SuppressWarnings("unused") // buildContext retained for symmetry with prior signature + future subcommands
+    private static LiteralArgumentBuilder<CommandSourceStack> buildVariantSubtree(CommandBuildContext buildContext) {
+        return Commands.literal("variant")
+            .then(Commands.literal("clear").executes(ctx -> runVariantClear(ctx.getSource())))
+            .then(Commands.literal("list").executes(ctx -> runVariantList(ctx.getSource())))
+            .then(Commands.literal("overlay")
+                .then(Commands.literal("on").executes(ctx -> runVariantOverlay(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runVariantOverlay(ctx.getSource(), false))));
+    }
+
+    /** Resolve the (plot variant, local pos) the player is currently targeting, or null with an error sent. */
+    private record VariantTarget(CarriageVariant variant, BlockPos localPos, CarriageDims dims) {}
+
+    private static VariantTarget resolveTarget(CommandSourceStack source, ServerPlayer player) {
+        ServerLevel level = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
+        if (plotVariant == null) {
+            source.sendFailure(Component.literal(
+                "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."));
+            return null;
+        }
+        HitResult hit = player.pick(8.0, 1.0f, false);
+        if (!(hit instanceof BlockHitResult bhr) || bhr.getType() == HitResult.Type.MISS) {
+            source.sendFailure(Component.literal(
+                "Look directly at a block inside the plot first (8-block reach)."));
+            return null;
+        }
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+        if (plotOrigin == null) {
+            source.sendFailure(Component.literal("Plot origin missing for '" + plotVariant.id() + "'."));
+            return null;
+        }
+        BlockPos local = bhr.getBlockPos().subtract(plotOrigin);
+        if (local.getX() < 0 || local.getX() >= dims.length()
+            || local.getY() < 0 || local.getY() >= dims.height()
+            || local.getZ() < 0 || local.getZ() >= dims.width()) {
+            source.sendFailure(Component.literal(
+                "Target block is outside the plot footprint (local " + local + " vs dims "
+                    + dims.length() + "x" + dims.height() + "x" + dims.width() + ")."));
+            return null;
+        }
+        return new VariantTarget(plotVariant, local, dims);
+    }
+
+    private static int runVariantClear(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        VariantTarget target = resolveTarget(source, player);
+        if (target == null) return 0;
+
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(target.variant(), target.dims());
+        boolean removed = sidecar.remove(target.localPos());
+        final String pos = target.localPos().getX() + "," + target.localPos().getY() + "," + target.localPos().getZ();
+        if (removed) {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: cleared variant at local " + pos + " on '" + target.variant().id()
+                    + "'. Run '/dungeontrain editor save' to persist."
+            ).withStyle(ChatFormatting.GREEN), true);
+        } else {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: no variant at local " + pos + " to clear."
+            ), false);
+        }
+        return removed ? 1 : 0;
+    }
+
+    private static int runVariantList(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel level = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
+        if (plotVariant == null) {
+            source.sendFailure(Component.literal(
+                "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."));
+            return 0;
+        }
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
+        if (sidecar.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "Variants for '" + plotVariant.id() + "': (none)"), false);
+            return 1;
+        }
+        StringBuilder sb = new StringBuilder("Variants for '").append(plotVariant.id()).append("' (")
+            .append(sidecar.size()).append(" entries):");
+        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+            sb.append("\n  ").append(e.localPos().getX()).append(",")
+                .append(e.localPos().getY()).append(",").append(e.localPos().getZ())
+                .append(" → ");
+            boolean first = true;
+            for (BlockState s : e.states()) {
+                if (!first) sb.append(", ");
+                sb.append(BuiltInRegistries.BLOCK.getKey(s.getBlock()));
+                first = false;
+            }
+        }
+        final String msg = sb.toString();
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    private static int runVariantOverlay(CommandSourceStack source, boolean on) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        VariantOverlayRenderer.setEnabled(player, on);
+        source.sendSuccess(() -> Component.literal(
+            "Editor overlay: " + (on ? "ON" : "off") + "."
+        ), false);
+        return 1;
     }
 
     /** True when the raw input targets a tunnel variant (prefix {@code tunnel_}). */

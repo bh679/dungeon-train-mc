@@ -17,6 +17,6 @@ public final class CommandEvents {
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
-        TrainCommand.register(event.getDispatcher());
+        TrainCommand.register(event.getDispatcher(), event.getBuildContext());
     }
 }
