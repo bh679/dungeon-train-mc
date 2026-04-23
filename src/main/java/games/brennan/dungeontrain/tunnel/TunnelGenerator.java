@@ -4,42 +4,55 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
-import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Stateless helpers that paint a stone-brick tunnel around the train's path
- * wherever the rock overhead is thick enough, plus an open cutting on the
- * 20 X columns either side of each tunnel so the pyramid portals are always
- * framed against sky. Mirrors {@link TrackGenerator}: chunk-driven deferred
- * paint with a per-train cache, one chunk per scan.
+ * Dispatcher that paints stone-brick tunnels around the train's path.
+ * Detection + qualification happen here; the actual block placement is
+ * delegated to {@link TunnelTemplate} (NBT-backed, editable via
+ * {@code /dungeontrain editor enter tunnel_section|tunnel_portal}) or falls
+ * back to {@link LegacyTunnelPaint} when no template has been saved.
  *
- * <p>Per <b>tunnel-qualified</b> X column: stone-brick floor (11 wide),
- * 11-wide × 8-tall rectangular airspace, two full-height stone-brick walls,
- * and a stepped arched stone-brick roof that rises 4 rows above the wall
- * tops in a 4-tier profile mirroring the entrance pyramid.</p>
+ * <p><b>Run-based stamping.</b> A tunnel <i>run</i> is a contiguous block
+ * of qualified X columns. For each run visible in the 16+2×APPROACH_MARGIN
+ * qualified window we:</p>
  *
- * <p>Per <b>approach-qualified</b> X column (not tunnel-qualified, but
- * within {@link #APPROACH_MARGIN} blocks of one that is): stone-brick floor
- * (11 wide) + 13-wide × 15-tall air cutting up to the apex height, leaving
- * sky visible above the corridor.</p>
+ * <ol>
+ *   <li>Stamp {@code tunnel_portal} unmirrored at {@code runStart} (the
+ *       actual leftmost qualified column — not rounded to a 10-block
+ *       boundary) if the run is ≥ 10 columns long.</li>
+ *   <li>Stamp {@code tunnel_portal} mirrored on +X at {@code runEnd - 9}
+ *       if the run is ≥ 11 columns long. (For 10-column runs the entrance
+ *       alone covers the whole run.) For 11-19 column runs the two stamps
+ *       overlap — exit wins the overlap since it stamps second — giving
+ *       pyramid facades at both ends.</li>
+ *   <li>Stamp {@code tunnel_section} at every {@code sx % 10 == 0}
+ *       position that fits entirely in the run's middle region
+ *       {@code [runStart + 10, runEnd - 10]}. Absolute alignment (instead
+ *       of relative to {@code runStart}) keeps section boundaries coherent
+ *       across chunks that each see only part of a long run.</li>
+ * </ol>
  *
- * <p>At tunnel-qualified columns that border a non-tunnel neighbour (either
- * direction), a 4-tier stepped stone-brick pyramid is placed on top of the
- * arch — overriding the arch's central air with a solid facade so the
- * portal reads as a single vaulted entrance / exit.</p>
+ * <p>Any qualified column not covered by a stamp falls back to
+ * {@link LegacyTunnelPaint#paintTunnelColumn}. Approach trenches
+ * (non-qualified columns near a tunnel) always stay procedural.</p>
+ *
+ * <p>Runs that touch the qualified window edges have unknown actual
+ * endpoints — for those we skip the out-of-window portal stamp and rely on
+ * the chunk that can see that endpoint to handle it. Middle sections in
+ * window-edge runs start at least 10 blocks inside the window so they
+ * can't overlap an unseen entrance/exit stamp.</p>
  */
 public final class TunnelGenerator {
 
@@ -54,19 +67,18 @@ public final class TunnelGenerator {
     /** Clearing radius around each tunnel region — 20 blocks before and after each portal. */
     private static final int APPROACH_MARGIN = 20;
 
-    /** Half-widths of each pyramid tier. Widths are {11, 9, 7, 5}. */
-    private static final int[] PYRAMID_HALF_WIDTHS = { 5, 4, 3, 2 };
+    /** Minimum qualified-column run length that uses a portal stamp at all. */
+    private static final int MIN_PORTAL_RUN = 10;
 
-    /** Number of tiers in the arched interior roof (rising above {@code ceilingY}). */
-    private static final int ARCH_TIERS = 3;
-
-    /** Distance between lamp stations along X. Every Nth world X gets a pair of wall lamps. */
-    private static final int LAMP_SPACING = 10;
-
-    /** Lamp Y sits this many blocks above the rail — walking eye height inside the tunnel. */
-    private static final int LAMP_Y_OFFSET_FROM_RAIL = 2;
+    /** Minimum run length for stamping BOTH entrance and exit (10-col runs get entrance only). */
+    private static final int MIN_DUAL_PORTAL_RUN = 11;
 
     private TunnelGenerator() {}
+
+    /** A contiguous block of qualified columns detected in a chunk's qualified window. */
+    private record Run(int start, int end, boolean extendsLeft, boolean extendsRight) {
+        int length() { return end - start + 1; }
+    }
 
     /**
      * Ensure tunnel blocks exist in the given chunk for the given track geometry.
@@ -105,21 +117,33 @@ public final class TunnelGenerator {
             qualified[i] = isColumnUnderground(level, baseX + i, tg);
         }
 
+        // Detect runs in the qualified window and stamp portals/sections.
+        // covered[i] tracks which of this chunk's 16 columns are under a
+        // stamp (so they should NOT get procedural paint afterwards).
+        boolean[] covered = new boolean[16];
+        List<Run> runs = detectRuns(qualified, baseX);
+        for (Run r : runs) {
+            stampRun(level, r, tg, chunkMinX, chunkMaxX, covered);
+        }
+
+        // Fill remaining columns procedurally — either plain tunnel,
+        // short-run pyramid, or approach trench.
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
+            if (covered[worldX - chunkMinX]) continue;
             int idx = worldX - baseX;
-            boolean tunnel = qualified[idx];
-            if (tunnel) {
-                paintTunnelColumn(level, worldX, tg);
-                // Portal = tunnel-qualified column bordering a non-tunnel
-                // column on either side. Single-column tunnels (unusual but
-                // legal) get a pyramid too.
+            if (qualified[idx]) {
+                LegacyTunnelPaint.paintTunnelColumn(level, worldX, tg);
+                // Procedural pyramid only for runs too short to get a
+                // portal stamp (< MIN_PORTAL_RUN columns). Longer runs
+                // have their edges covered by portal stamps above so this
+                // branch is skipped naturally.
                 boolean prev = idx > 0 && qualified[idx - 1];
-                boolean next = idx + 1 < size && qualified[idx + 1];
+                boolean next = idx + 1 < qualified.length && qualified[idx + 1];
                 if (!prev || !next) {
-                    placePortalPyramid(level, worldX, tg);
+                    LegacyTunnelPaint.placePortalPyramid(level, worldX, tg);
                 }
             } else if (isNearTunnel(qualified, idx)) {
-                paintApproachColumn(level, worldX, tg);
+                LegacyTunnelPaint.paintApproachColumn(level, worldX, tg);
             }
         }
 
@@ -127,10 +151,165 @@ public final class TunnelGenerator {
     }
 
     /**
-     * Six-sample underground check: at y = ceilingY+1 and ceilingY+2, for
+     * Scan the {@code qualified} window and collect every contiguous block
+     * of qualified columns. Window-edge runs (first / last index qualified)
+     * have {@code extendsLeft} / {@code extendsRight} set so the stamping
+     * logic can skip out-of-window portal placements.
+     */
+    private static List<Run> detectRuns(boolean[] qualified, int baseX) {
+        List<Run> runs = new ArrayList<>();
+        int i = 0;
+        while (i < qualified.length) {
+            if (!qualified[i]) { i++; continue; }
+            int startIdx = i;
+            while (i < qualified.length && qualified[i]) i++;
+            int endIdx = i - 1;
+            runs.add(new Run(
+                baseX + startIdx,
+                baseX + endIdx,
+                startIdx == 0,
+                endIdx == qualified.length - 1
+            ));
+        }
+        return runs;
+    }
+
+    /**
+     * Stamp the portals + middle sections for a single run, and mark the
+     * chunk columns each stamp covers in the {@code covered} array. Stamps
+     * whose origin is outside this chunk's [chunkMinX, chunkMaxX] range
+     * are NOT written by this chunk — the chunk that contains that origin
+     * will write them on its own pass — but we still mark their covered
+     * columns so this chunk skips procedural paint on them.
+     */
+    private static void stampRun(ServerLevel level, Run r, TunnelGeometry tg,
+                                 int chunkMinX, int chunkMaxX, boolean[] covered) {
+        if (r.length() < MIN_PORTAL_RUN) return;
+
+        // Entrance portal — stamped only when we actually see the run's
+        // left edge (otherwise the true runStart is somewhere past the
+        // window and another chunk will stamp it).
+        if (!r.extendsLeft) {
+            stampPortalAt(level, r.start, tg, false, chunkMinX, chunkMaxX, covered);
+        }
+
+        // Exit portal — needs runLength ≥ 11 so it doesn't self-overlap
+        // at runLength == 10 (in which case entrance alone covers the run).
+        if (!r.extendsRight && r.length() >= MIN_DUAL_PORTAL_RUN) {
+            stampPortalAt(level, r.end - 9, tg, true, chunkMinX, chunkMaxX, covered);
+        }
+
+        // Middle sections packed tightly after the entrance portal —
+        // alignment is relative to {@code r.start} (not world-absolute
+        // {@code worldX % 10 == 0}) so sections land flush against the
+        // portal regardless of where the run starts. For a 30-column run
+        // beginning at worldX=53 this gives entrance [53..62], section
+        // [63..72], exit [73..82] with zero procedural gap. Absolute
+        // alignment would have lost the middle section entirely (firstSx=70,
+        // sx+9=79 > middleEnd=72 → no stamp).
+        //
+        // Runs wider than the 56-column qualified window can't see both
+        // ends from a single chunk. Chunks where {@code extendsLeft} is
+        // true derive section alignment from the window-edge {@code r.start}
+        // instead of the real run start, so sections may misalign across
+        // chunk boundaries for very long tunnels — visible but rare.
+        int middleStart = r.start + 10;
+        int middleEnd;
+        if (r.extendsRight) {
+            middleEnd = r.end - 10;
+        } else if (r.length() >= MIN_DUAL_PORTAL_RUN) {
+            middleEnd = r.end - 10;
+        } else {
+            // runLength is 10 — entrance covers everything, no middle.
+            middleEnd = r.start - 1;
+        }
+
+        for (int sx = middleStart; sx + 9 <= middleEnd; sx += 10) {
+            stampSectionAt(level, sx, tg, chunkMinX, chunkMaxX, covered);
+        }
+    }
+
+    /** Stamp (or mark-covered) a portal at {@code origin} — actual
+     *  placeInWorld call only runs if origin is in this chunk's X range
+     *  AND the 2×2 chunk footprint is loaded. Covered[] is marked whether
+     *  we stamp or not, so procedural paint stays off those columns. */
+    private static void stampPortalAt(ServerLevel level, int origin, TunnelGeometry tg,
+                                      boolean mirrorX, int chunkMinX, int chunkMaxX,
+                                      boolean[] covered) {
+        markCovered(covered, origin, origin + 9, chunkMinX, chunkMaxX);
+        if (origin >= chunkMinX && origin <= chunkMaxX
+            && sectionChunksLoaded(level, origin, TunnelTemplate.LENGTH, tg)) {
+            TunnelTemplate.placePortalAt(
+                level,
+                new BlockPos(origin, tg.floorY(), tg.wallMinZ()),
+                mirrorX
+            );
+        }
+    }
+
+    /** Same contract as {@link #stampPortalAt} but places the section template. */
+    private static void stampSectionAt(ServerLevel level, int origin, TunnelGeometry tg,
+                                       int chunkMinX, int chunkMaxX, boolean[] covered) {
+        markCovered(covered, origin, origin + 9, chunkMinX, chunkMaxX);
+        if (origin >= chunkMinX && origin <= chunkMaxX
+            && sectionChunksLoaded(level, origin, TunnelTemplate.LENGTH, tg)) {
+            TunnelTemplate.placeSectionAt(
+                level,
+                new BlockPos(origin, tg.floorY(), tg.wallMinZ())
+            );
+        }
+    }
+
+    private static void markCovered(boolean[] covered, int worldMinX, int worldMaxX,
+                                    int chunkMinX, int chunkMaxX) {
+        int lo = Math.max(worldMinX, chunkMinX);
+        int hi = Math.min(worldMaxX, chunkMaxX);
+        for (int wx = lo; wx <= hi; wx++) {
+            covered[wx - chunkMinX] = true;
+        }
+    }
+
+    /**
+     * Check that every chunk the 10×14×13 section footprint overlaps is
+     * currently loaded. A section spans chunks on both X (when it crosses
+     * a 16-block boundary) and Z (the 13-wide wall span always straddles
+     * at least 2 chunks on Z).
+     */
+    private static boolean sectionChunksLoaded(ServerLevel level, int sectionStart, int lengthX, TunnelGeometry tg) {
+        int minCx = sectionStart >> 4;
+        int maxCx = (sectionStart + lengthX - 1) >> 4;
+        int minCz = tg.wallMinZ() >> 4;
+        int maxCz = tg.wallMaxZ() >> 4;
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) {
+                if (!level.getChunkSource().hasChunk(cx, cz)) return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Six-sample underground check: at y = ceilingY+5 and ceilingY+6, for
      * three Z positions spanning the track corridor (min, center, max), every
      * sampled block must be a natural underground material. Any air, water,
      * plant, or wood disqualifies the column.
+     *
+     * <p>The samples sit <b>two rows above the tunnel's arched apex</b>
+     * ({@code ceilingY + ARCH_TIERS + 1 = ceilingY + 4}) for two reasons:</p>
+     * <ul>
+     *   <li>The train's {@code clearBlocksAhead} forward-slab clear in
+     *       {@code TrainTickEvents} sweeps up to {@code aabb.maxY}. For the
+     *       default 7-tall carriage that's {@code bedY + 9 = ceilingY};
+     *       larger carriages reach {@code ceilingY + (HEIGHT - 7)}. Sampling
+     *       at {@code ceilingY + 5/6} keeps qualification correct for
+     *       carriages up to HEIGHT ≈ 12 — the previous {@code +1/+2} samples
+     *       would be cleared to air for anything taller than 7, falsely
+     *       disqualifying the column.</li>
+     *   <li>A 3-block-thick mountain roof used to qualify but the tunnel's
+     *       arch profile (apex at {@code ceilingY + 4}) would poke out the
+     *       top. Requiring rock at {@code ceilingY + 5/6} guarantees the
+     *       entire arched silhouette is buried.</li>
+     * </ul>
      *
      * <p>Returns {@code false} if the chunk holding these samples isn't
      * loaded — avoids the force-load cost of {@code getBlockState} on an
@@ -139,9 +318,9 @@ public final class TunnelGenerator {
      */
     static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        pos.set(worldX, tg.ceilingY() + 1, tg.centerZ());
+        pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(pos)) return false;
-        int[] ys = { tg.ceilingY() + 1, tg.ceilingY() + 2 };
+        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
         int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
         for (int y : ys) {
             for (int z : zs) {
@@ -162,165 +341,6 @@ public final class TunnelGenerator {
             if (right < qualified.length && qualified[right]) return true;
         }
         return false;
-    }
-
-    private static void paintTunnelColumn(ServerLevel level, int worldX, TunnelGeometry tg) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        // 1. Extend floor outward. [trackZMin..trackZMax] is the existing stone-brick
-        //    bed (from TrackGenerator); tunnel floor needs 11-wide coverage.
-        for (int z = tg.airMinZ(); z <= tg.airMaxZ(); z++) {
-            if (z >= tg.trackZMin() && z <= tg.trackZMax()) continue;
-            setIfNeeded(level, pos, worldX, tg.floorY(), z, TunnelPalette.FLOOR);
-        }
-
-        // 2. Airspace: 11 wide × 9 tall between floor and ceiling (now including
-        //    y=ceilingY since the flat ceiling is gone — replaced by the arch).
-        //    Preserve rails at y=railY, z=railZMin|railZMax (placed by TrackGenerator).
-        int airYMin = tg.railY();
-        int airYMax = tg.ceilingY();
-        for (int y = airYMin; y <= airYMax; y++) {
-            for (int z = tg.airMinZ(); z <= tg.airMaxZ(); z++) {
-                if (y == tg.railY() && (z == tg.railZMin() || z == tg.railZMax())) continue;
-                setAirIfNeeded(level, pos, worldX, y, z);
-            }
-        }
-
-        // 3. Walls: full-height stone-brick columns just outside the airspace.
-        //    Every LAMP_SPACING X blocks a pair of sea lanterns replaces the wall
-        //    stone-brick at walking eye height (railY + LAMP_Y_OFFSET_FROM_RAIL).
-        int lampY = tg.railY() + LAMP_Y_OFFSET_FROM_RAIL;
-        boolean isLampColumn = Math.floorMod(worldX, LAMP_SPACING) == 0;
-        for (int y = tg.floorY(); y <= tg.ceilingY(); y++) {
-            BlockState sideBlock = (isLampColumn && y == lampY) ? TunnelPalette.SEA_LANTERN : TunnelPalette.WALL;
-            setIfNeeded(level, pos, worldX, y, tg.wallMinZ(), sideBlock);
-            setIfNeeded(level, pos, worldX, y, tg.wallMaxZ(), sideBlock);
-        }
-
-        // 4. Arched interior roof — stepped pyramid profile rising 4 rows above wall tops.
-        paintArchedRoof(level, worldX, tg);
-    }
-
-    /**
-     * Stepped arch rising above the tunnel's wall tops, mirroring the portal
-     * pyramid profile. Tier N sits at y = ceilingY + N, with a 1-block inset
-     * per tier from the walls, stone-brick stairs smoothing each step, and
-     * a flat 5-wide stone-brick cap at the apex.
-     */
-    private static void paintArchedRoof(ServerLevel level, int worldX, TunnelGeometry tg) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        for (int tier = 1; tier <= ARCH_TIERS; tier++) {
-            int y = tg.ceilingY() + tier;
-            int stoneZLo = tg.wallMinZ() + tier;        // inner edge of this tier's stone row
-            int stoneZHi = tg.wallMaxZ() - tier;
-
-            // Stone-brick roof edges — two single blocks spanning the tier width.
-            setIfNeeded(level, pos, worldX, y, stoneZLo, TunnelPalette.WALL);
-            setIfNeeded(level, pos, worldX, y, stoneZHi, TunnelPalette.WALL);
-
-            // Smoothing stairs — one block outside stoneZLo/stoneZHi, facing inward
-            // (toward centerZ) so the high half of the stair sits flush with the
-            // stone-brick step on the inside edge.
-            placeStair(level, pos, worldX, y, stoneZLo - 1, Direction.SOUTH);
-            placeStair(level, pos, worldX, y, stoneZHi + 1, Direction.NORTH);
-
-            // Air fill inside the tier.
-            for (int z = stoneZLo + 1; z <= stoneZHi - 1; z++) {
-                setAirIfNeeded(level, pos, worldX, y, z);
-            }
-        }
-
-        // Apex cap: flat stone-brick closing the 5-wide air column at the peak.
-        int apexY = tg.ceilingY() + ARCH_TIERS + 1;
-        int apexZLo = tg.wallMinZ() + ARCH_TIERS + 1;
-        int apexZHi = tg.wallMaxZ() - ARCH_TIERS - 1;
-        for (int z = apexZLo; z <= apexZHi; z++) {
-            setIfNeeded(level, pos, worldX, apexY, z, TunnelPalette.CEILING);
-        }
-    }
-
-    /**
-     * Open cutting — floor extension plus a 13-wide × 15-tall air column, no
-     * walls / no roof. Visually "the train has carved an uncovered trench
-     * into the hillside right up to the portal face".
-     */
-    private static void paintApproachColumn(ServerLevel level, int worldX, TunnelGeometry tg) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        // 1. Floor extension — 11-wide stone-brick at y=floorY, excluding the
-        //    5-wide track bed which TrackGenerator owns.
-        for (int z = tg.airMinZ(); z <= tg.airMaxZ(); z++) {
-            if (z >= tg.trackZMin() && z <= tg.trackZMax()) continue;
-            setIfNeeded(level, pos, worldX, tg.floorY(), z, TunnelPalette.FLOOR);
-        }
-
-        // 2. Air cutting — everything in the tunnel's external cross-section
-        //    from floorY+1 up to the arch apex, across the 13-wide wall span.
-        //    Preserve rails.
-        int topY = tg.ceilingY() + ARCH_TIERS + 1;
-        for (int y = tg.floorY() + 1; y <= topY; y++) {
-            for (int z = tg.wallMinZ(); z <= tg.wallMaxZ(); z++) {
-                if (y == tg.railY() && (z == tg.railZMin() || z == tg.railZMax())) continue;
-                setAirIfNeeded(level, pos, worldX, y, z);
-            }
-        }
-    }
-
-    /**
-     * Stepped portal — 4 tiers of stone-brick stacked above the arched roof,
-     * overriding the arch's central air with a solid facade at the boundary
-     * between tunnel and non-tunnel territory. Stair-smoothed outer edges
-     * match the arched-roof stair convention (facing inward, toward centerZ).
-     */
-    private static void placePortalPyramid(ServerLevel level, int worldX, TunnelGeometry tg) {
-        int centerZ = tg.centerZ();
-        int baseY = tg.ceilingY() + 1;
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-
-        for (int tier = 0; tier < PYRAMID_HALF_WIDTHS.length; tier++) {
-            int y = baseY + tier;
-            int hw = PYRAMID_HALF_WIDTHS[tier];
-            // Core stone-brick row — solid, overrides the arch's air at this X.
-            for (int z = centerZ - hw; z <= centerZ + hw; z++) {
-                setIfNeeded(level, pos, worldX, y, z, TunnelPalette.PYRAMID);
-            }
-            // Stairs at outer edges of this tier, facing inward.
-            placeStair(level, pos, worldX, y, centerZ - hw - 1, Direction.SOUTH);
-            placeStair(level, pos, worldX, y, centerZ + hw + 1, Direction.NORTH);
-        }
-    }
-
-    private static void setIfNeeded(ServerLevel level, BlockPos.MutableBlockPos pos,
-                                    int x, int y, int z, BlockState state) {
-        pos.set(x, y, z);
-        if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
-        BlockState existing = level.getBlockState(pos);
-        if (existing.is(state.getBlock())) return;
-        SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
-    }
-
-    private static void setAirIfNeeded(ServerLevel level, BlockPos.MutableBlockPos pos,
-                                       int x, int y, int z) {
-        pos.set(x, y, z);
-        if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
-        BlockState existing = level.getBlockState(pos);
-        if (existing.isAir()) return;
-        SilentBlockOps.clearBlockSilent(level, pos.immutable());
-    }
-
-    private static void placeStair(ServerLevel level, BlockPos.MutableBlockPos pos,
-                                   int x, int y, int z, Direction facing) {
-        pos.set(x, y, z);
-        if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
-        BlockState existing = level.getBlockState(pos);
-        if (existing.is(TunnelPalette.STAIRS)) return;
-        BlockState state = TunnelPalette.STAIRS.defaultBlockState()
-            .setValue(StairBlock.FACING, facing);
-        SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
     }
 
     /**
