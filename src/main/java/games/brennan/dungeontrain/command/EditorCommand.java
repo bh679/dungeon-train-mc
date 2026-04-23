@@ -8,6 +8,9 @@ import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -47,6 +50,14 @@ public final class EditorCommand {
         (ctx, builder) -> {
             for (CarriageType t : CarriageType.values()) {
                 builder.suggest(t.name().toLowerCase(Locale.ROOT));
+            }
+            return builder.buildFuture();
+        };
+
+    private static final SuggestionProvider<CommandSourceStack> PILLAR_SECTION_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (PillarSection s : PillarSection.values()) {
+                builder.suggest(s.id());
             }
             return builder.buildFuture();
         };
@@ -107,7 +118,49 @@ public final class EditorCommand {
                             StringArgumentType.getString(ctx, "variant"));
                         if (type == null) return 0;
                         return runPromote(ctx.getSource(), type);
-                    })));
+                    })))
+            .then(Commands.literal("pillar")
+                .then(Commands.literal("enter")
+                    .then(Commands.argument("section", StringArgumentType.word())
+                        .suggests(PILLAR_SECTION_SUGGESTIONS)
+                        .executes(ctx -> {
+                            PillarSection s = parseSection(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "section"));
+                            if (s == null) return 0;
+                            return runPillarEnter(ctx.getSource(), s);
+                        })))
+                .then(Commands.literal("save").executes(ctx -> runPillarSave(ctx.getSource())))
+                .then(Commands.literal("list").executes(ctx -> runPillarList(ctx.getSource())))
+                .then(Commands.literal("reset")
+                    .then(Commands.argument("section", StringArgumentType.word())
+                        .suggests(PILLAR_SECTION_SUGGESTIONS)
+                        .executes(ctx -> {
+                            PillarSection s = parseSection(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "section"));
+                            if (s == null) return 0;
+                            return runPillarReset(ctx.getSource(), s);
+                        })))
+                .then(Commands.literal("promote")
+                    .then(Commands.literal("all").executes(ctx -> runPillarPromoteAll(ctx.getSource())))
+                    .then(Commands.argument("section", StringArgumentType.word())
+                        .suggests(PILLAR_SECTION_SUGGESTIONS)
+                        .executes(ctx -> {
+                            PillarSection s = parseSection(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "section"));
+                            if (s == null) return 0;
+                            return runPillarPromote(ctx.getSource(), s);
+                        }))));
+    }
+
+    private static PillarSection parseSection(CommandSourceStack source, String raw) {
+        try {
+            return PillarSection.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            source.sendFailure(Component.literal(
+                "Unknown pillar section '" + raw + "'. Valid: top, middle, bottom"
+            ));
+            return null;
+        }
     }
 
     private static CarriageVariant parseVariant(CommandSourceStack source, String raw) {
@@ -419,6 +472,152 @@ public final class EditorCommand {
         final String errStr = errors.toString();
         source.sendSuccess(() -> Component.literal(
             "Editor: promote all — " + p + " promoted, " + s + " skipped (no config copy)."
+                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
+        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return p > 0 ? 1 : 0;
+    }
+
+    private static int runPillarEnter(CommandSourceStack source, PillarSection section) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        try {
+            PillarEditor.enter(player, section);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered pillar '" + section.id()
+                    + "' plot at " + PillarEditor.plotOrigin(section)
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar enter failed", t);
+            source.sendFailure(Component.literal("pillar enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPillarSave(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        PillarSection section = PillarEditor.plotContaining(player.blockPosition());
+        if (section == null) {
+            source.sendFailure(Component.literal(
+                "Not in a pillar editor plot. Use '/dungeontrain editor pillar enter <top|middle|bottom>' first."
+            ));
+            return 0;
+        }
+        try {
+            PillarEditor.SaveResult result = PillarEditor.save(player, section);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: saved pillar '" + section.id() + "' template (config-dir)."
+            ), true);
+            if (result.sourceAttempted()) {
+                if (result.sourceWritten()) {
+                    source.sendSuccess(() -> Component.literal(
+                        "Editor: also wrote bundled pillar copy to source tree (will ship with next build)."
+                    ).withStyle(ChatFormatting.GREEN), true);
+                } else {
+                    source.sendFailure(Component.literal(
+                        "Editor: pillar source-tree write failed: " + result.sourceError()
+                    ).withStyle(ChatFormatting.YELLOW));
+                }
+            }
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar save failed", t);
+            source.sendFailure(Component.literal("pillar save failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPillarList(CommandSourceStack source) {
+        StringBuilder sb = new StringBuilder("Pillar templates:");
+        for (PillarSection section : PillarSection.values()) {
+            boolean config = PillarTemplateStore.exists(section);
+            boolean bundled = PillarTemplateStore.bundled(section);
+            String status;
+            if (config) status = "config override";
+            else if (bundled) status = "bundled default";
+            else status = "fallback (stone brick)";
+            sb.append("\n  ").append(section.id())
+                .append(" (height=").append(section.height()).append(")")
+                .append(" — ").append(status)
+                .append(" [config: ").append(config ? "yes" : "no")
+                .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
+        }
+        sb.append("\nDev mode: ").append(EditorDevMode.isEnabled() ? "ON" : "off");
+        sb.append("\nSource tree writable: ").append(PillarTemplateStore.sourceTreeAvailable() ? "yes" : "no");
+        String msg = sb.toString();
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    private static int runPillarReset(CommandSourceStack source, PillarSection section) {
+        try {
+            boolean deleted = PillarTemplateStore.delete(section);
+            source.sendSuccess(() -> Component.literal(
+                deleted
+                    ? "Editor: deleted pillar '" + section.id() + "' template."
+                    : "Editor: no pillar '" + section.id() + "' template to delete."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar reset failed", t);
+            source.sendFailure(Component.literal("pillar reset failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPillarPromote(CommandSourceStack source, PillarSection section) {
+        try {
+            PillarTemplateStore.promote(section);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: promoted pillar '" + section.id()
+                    + "' template to source tree (will ship with next build)."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar promote failed for {}", section, t);
+            source.sendFailure(Component.literal("pillar promote failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPillarPromoteAll(CommandSourceStack source) {
+        if (!PillarTemplateStore.sourceTreeAvailable()) {
+            source.sendFailure(Component.literal(
+                "pillar promote all failed: source tree not writable. Are you running ./gradlew runClient?"
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        int promoted = 0;
+        int skipped = 0;
+        StringBuilder errors = new StringBuilder();
+        for (PillarSection section : PillarSection.values()) {
+            if (!PillarTemplateStore.exists(section)) {
+                skipped++;
+                continue;
+            }
+            try {
+                PillarTemplateStore.promote(section);
+                promoted++;
+            } catch (Exception e) {
+                LOGGER.error("[DungeonTrain] editor pillar promote-all failed for {}", section, e);
+                errors.append("\n  ").append(section.id())
+                    .append(": ").append(e.getMessage());
+            }
+        }
+        final int p = promoted;
+        final int s = skipped;
+        final String errStr = errors.toString();
+        source.sendSuccess(() -> Component.literal(
+            "Editor: pillar promote all — " + p + " promoted, " + s + " skipped (no config copy)."
                 + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
         ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;

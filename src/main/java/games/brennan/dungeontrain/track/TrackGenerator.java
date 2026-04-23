@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.track;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -18,6 +19,7 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
 import java.util.Deque;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -296,31 +298,90 @@ public final class TrackGenerator {
     }
 
     /**
-     * Place a solid pillar column at (worldX, worldZ) from {@code bedY - 1}
-     * down until non-passable terrain stops the descent. Every column in a
-     * pillar's footprint descends independently to <em>its own</em> ground,
-     * so a thick pillar on sloped terrain follows the slope instead of
-     * floating at the center column's level.
+     * Place a pillar column at (worldX, worldZ) from {@code bedY - 1} down to
+     * its individual ground, stamping the three editable
+     * {@link PillarSection} templates — bottom base, repeating middle, top
+     * cap — via {@link PillarTemplateStore}. Each column in a thick pillar
+     * descends independently, so a pillar on sloped terrain still tracks the
+     * slope rather than floating at the centerline's level.
      *
-     * <p>Skips ship-owned positions and stops on any non-passable block
-     * (same passability rules as {@link #probeGroundY}). Uses
-     * {@link TrackPalette#PILLAR}.</p>
+     * <p>Short-column rule: when the column height {@code H < BOTTOM.height +
+     * TOP.height}, the bottom is placed first (up to its full height or
+     * {@code H}, whichever is smaller), then the top template fills the
+     * remaining rows with its <em>lowest</em> rows truncated, so the
+     * decorative cap always lands at the column's top.</p>
+     *
+     * <p>Missing templates fall back to {@link TrackPalette#PILLAR} per row,
+     * matching the pre-template visual exactly. Air positions in a loaded
+     * template are left untouched so users can design pillar cut-outs.
+     * Ship-owned and non-passable intermediate blocks terminate the stamp
+     * early, same as the pre-template behaviour.</p>
      */
     private static void placePillarColumn(
         ServerLevel level,
         int worldX,
         int worldZ,
-        int pillarTopInclusive
+        int bedY
     ) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int minY = level.getMinBuildHeight() + 1;
-        for (int py = pillarTopInclusive; py >= minY; py--) {
-            pos.set(worldX, py, worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
-            BlockState existing = level.getBlockState(pos);
-            if (!isPassable(existing)) return; // hit terrain — this column is done
-            SilentBlockOps.setBlockSilent(level, pos.immutable(), TrackPalette.PILLAR);
+        int groundY = probeGroundY(level, worldX, worldZ, bedY);
+        int topInclusive = bedY - 1;
+        int h = topInclusive - groundY + 1;
+        if (h <= 0) return;
+
+        Optional<BlockState[]> topCol = PillarTemplateStore.getColumn(level, PillarSection.TOP);
+        Optional<BlockState[]> midCol = PillarTemplateStore.getColumn(level, PillarSection.MIDDLE);
+        Optional<BlockState[]> botCol = PillarTemplateStore.getColumn(level, PillarSection.BOTTOM);
+
+        int topH = PillarSection.TOP.height();
+        int botH = PillarSection.BOTTOM.height();
+        int placeBotH = Math.min(botH, h);
+        int placeTopH = Math.min(topH, h - placeBotH);
+        int placeMidH = h - placeBotH - placeTopH;
+
+        for (int i = 0; i < placeBotH; i++) {
+            if (!stampRow(level, worldX, groundY + i, worldZ, botCol, i)) return;
         }
+        for (int i = 0; i < placeMidH; i++) {
+            if (!stampRow(level, worldX, groundY + placeBotH + i, worldZ, midCol, 0)) return;
+        }
+        for (int i = 0; i < placeTopH; i++) {
+            int y = topInclusive - placeTopH + 1 + i;
+            int row = (topH - placeTopH) + i;
+            if (!stampRow(level, worldX, y, worldZ, topCol, row)) return;
+        }
+    }
+
+    /**
+     * Stamp one row of a pillar column. {@code column} is the unpacked
+     * template for the section (or empty for the hardcoded fallback), and
+     * {@code row} is the template-local Y index to sample. Air entries in the
+     * template ({@code null}) are skipped so design cut-outs pass through.
+     *
+     * @return false when the target position is ship-owned or non-passable —
+     *         caller should abandon the rest of the column (matches the
+     *         pre-template early-terminate behaviour).
+     */
+    private static boolean stampRow(
+        ServerLevel level,
+        int x, int y, int z,
+        Optional<BlockState[]> column,
+        int row
+    ) {
+        BlockPos pos = new BlockPos(x, y, z);
+        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return false;
+        BlockState existing = level.getBlockState(pos);
+        if (!isPassable(existing)) return false;
+
+        BlockState state;
+        if (column.isPresent() && row >= 0 && row < column.get().length) {
+            BlockState fromTemplate = column.get()[row];
+            if (fromTemplate == null) return true; // template row is air — leave passable
+            state = fromTemplate;
+        } else {
+            state = TrackPalette.PILLAR;
+        }
+        SilentBlockOps.setBlockSilent(level, pos, state);
+        return true;
     }
 
     /**
@@ -372,7 +433,7 @@ public final class TrackGenerator {
                 if (!placeBedAndRail(level, worldX, worldZ, g)) continue;
 
                 if (containingPillar != null) {
-                    placePillarColumn(level, worldX, worldZ, g.bedY() - 1);
+                    placePillarColumn(level, worldX, worldZ, g.bedY());
                 }
             }
         }
