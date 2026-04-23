@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Carriage blueprint — a 9×5×4 (X×Z×Y) hollow box. Four visual variants
+ * Carriage blueprint — a 9×9×7 (X×Z×Y) hollow box. Four visual variants
  * are selected per-carriage via {@link CarriageType} and
  * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
  *
@@ -32,8 +32,8 @@ public final class CarriageTemplate {
     }
 
     public static final int LENGTH = 9;
-    public static final int WIDTH = 5;
-    public static final int HEIGHT = 4;
+    public static final int WIDTH = 9;
+    public static final int HEIGHT = 7;
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
@@ -83,7 +83,7 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Erase a carriage footprint — set every block in the 9×4×5 region at {@code origin}
+     * Erase a carriage footprint — set every block in the 9×7×9 region at {@code origin}
      * to air. Used by the rolling-window manager to remove stale carriages from the
      * trailing end of the train.
      */
