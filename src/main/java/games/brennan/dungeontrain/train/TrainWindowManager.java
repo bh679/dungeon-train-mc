@@ -162,11 +162,17 @@ public final class TrainWindowManager {
         for (Integer i : desired) {
             if (current.contains(i)) continue;
             BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
-            CarriageTemplate.placeAt(level, carriageOrigin,
-                CarriageTemplate.variantForIndex(i, genCfg), dims, genCfg, i);
+            CarriageVariant variant = CarriageTemplate.variantForIndex(i, genCfg);
+            Set<BlockPos> placed = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, i);
             current.add(i);
             mutated = true;
-            LOGGER.debug("[DungeonTrain] Added carriage idx={} at shipyard {}", i, carriageOrigin);
+            if (placed.isEmpty()) {
+                LOGGER.warn("[DungeonTrain] Window placed empty carriage idx={} variant={} at {}",
+                    i, variant.id(), carriageOrigin);
+            } else {
+                LOGGER.info("[DungeonTrain] Added carriage idx={} variant={} at shipyard {} blocks={}",
+                    i, variant.id(), carriageOrigin, placed.size());
+            }
         }
 
         Set<Integer> toErase = new HashSet<>();
