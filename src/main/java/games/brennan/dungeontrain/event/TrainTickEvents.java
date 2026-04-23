@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3dc;
@@ -69,6 +70,18 @@ public final class TrainTickEvents {
     private static int tickCounter = 0;
 
     private TrainTickEvents() {}
+
+    /**
+     * Clean per-player editor state on logout so a re-login doesn't see a
+     * stale "already told the client about this status" entry that suppresses
+     * the next HUD update.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            VariantOverlayRenderer.forget(sp);
+        }
+    }
 
     @SubscribeEvent
     public static void onLevelTick(TickEvent.LevelTickEvent event) {

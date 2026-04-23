@@ -137,15 +137,7 @@ public final class CarriageEditor {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         rememberReturn(player);
-
-        // Drop any stale cached sidecar so `editor enter` picks up manual JSON
-        // edits made since the last load. Session editing then works against
-        // the freshly-loaded map; `editor save` persists the result.
-        CarriageVariantBlocks.invalidate(variant.id());
-
-        CarriageTemplate.eraseAt(overworld, origin, dims);
-        CarriageTemplate.placeAt(overworld, origin, variant, dims);
-        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+        stampPlot(overworld, variant, dims);
 
         double tx = origin.getX() + dims.length() / 2.0;
         double ty = origin.getY() + 1.0;
@@ -154,6 +146,27 @@ public final class CarriageEditor {
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{}",
             player.getName().getString(), variant.id(), origin, dims.length(), dims.width(), dims.height());
+    }
+
+    /**
+     * Erase, place, and cage the plot for {@code variant} without teleporting
+     * anyone. Used by {@link #enter} and by category-wide stamps
+     * ({@code /dt editor carriages}) that need every plot visible at once.
+     * Idempotent — calling it twice against the same variant re-applies the
+     * current stored template.
+     */
+    public static void stampPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
+        BlockPos origin = plotOrigin(variant);
+        if (origin == null) return;
+
+        // Drop any stale cached sidecar so each stamp picks up manual JSON
+        // edits made since the last load. Session editing then works against
+        // the freshly-loaded map; `editor save` persists the result.
+        CarriageVariantBlocks.invalidate(variant.id());
+
+        CarriageTemplate.eraseAt(overworld, origin, dims);
+        CarriageTemplate.placeAt(overworld, origin, variant, dims);
+        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
     }
 
     /**

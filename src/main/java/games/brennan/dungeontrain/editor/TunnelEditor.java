@@ -107,6 +107,24 @@ public final class TunnelEditor {
             player.getXRot()
         ));
 
+        stampPlot(overworld, variant);
+
+        double tx = origin.getX() + TunnelTemplate.LENGTH / 2.0;
+        double ty = origin.getY() + 1.0;
+        double tz = origin.getZ() + TunnelTemplate.WIDTH / 2.0;
+        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+
+        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} plot at {}",
+            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin);
+    }
+
+    /**
+     * Erase, place, and cage the plot for {@code variant} without teleporting.
+     * Used by {@link #enter} and by category-wide stamps
+     * ({@code /dt editor tracks}). Idempotent.
+     */
+    public static void stampPlot(ServerLevel overworld, TunnelVariant variant) {
+        BlockPos origin = PLOT_ORIGINS.get(variant);
         TunnelTemplate.eraseAt(overworld, origin);
         if (variant == TunnelVariant.SECTION) {
             TunnelTemplate.placeSectionAt(overworld, origin);
@@ -122,14 +140,6 @@ public final class TunnelEditor {
         TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
         LegacyTunnelPaint.fillCornersWithVoid(overworld, origin.getX(), tg);
         setOutline(overworld, origin, OUTLINE_BLOCK);
-
-        double tx = origin.getX() + TunnelTemplate.LENGTH / 2.0;
-        double ty = origin.getY() + 1.0;
-        double tz = origin.getZ() + TunnelTemplate.WIDTH / 2.0;
-        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
-
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} plot at {}",
-            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin);
     }
 
     /**

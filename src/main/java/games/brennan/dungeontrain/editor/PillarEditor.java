@@ -92,10 +92,7 @@ public final class PillarEditor {
         BlockPos origin = plotOrigin(section);
 
         CarriageEditor.rememberReturn(player);
-
-        eraseAt(overworld, origin, section, dims);
-        stampCurrent(overworld, origin, section, dims);
-        setOutline(overworld, origin, section, dims);
+        stampPlot(overworld, section, dims);
 
         double tx = origin.getX() + 0.5;
         double ty = origin.getY() + 1.0;
@@ -104,6 +101,18 @@ public final class PillarEditor {
 
         LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} plot at {} (size=1x{}x{})",
             player.getName().getString(), section.id(), origin, section.height(), dims.width());
+    }
+
+    /**
+     * Erase, place, and cage the plot for {@code section} without teleporting.
+     * Used by {@link #enter} and by category-wide stamps
+     * ({@code /dt editor tracks}). Idempotent.
+     */
+    public static void stampPlot(ServerLevel overworld, PillarSection section, CarriageDims dims) {
+        BlockPos origin = plotOrigin(section);
+        eraseAt(overworld, origin, section, dims);
+        stampCurrent(overworld, origin, section, dims);
+        setOutline(overworld, origin, section, dims);
     }
 
     /**
