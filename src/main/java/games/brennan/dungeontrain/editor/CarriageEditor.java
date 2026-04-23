@@ -3,7 +3,8 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -19,15 +20,16 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Editor plots for {@link CarriageType}s — fixed high-Y overworld locations
- * where players build their own carriage variants. Four plots are arranged
- * along +X so all variants are visible at once.
+ * Editor plots for {@link CarriageVariant}s — fixed high-Y overworld locations
+ * where players build their own carriage variants. Plots are arranged along
+ * +X so every variant is visible at once; the list auto-expands as custom
+ * variants are registered.
  *
  * Session state (pre-enter position + dimension + look angles) is kept
  * per-player in RAM. Lost on server restart, which is acceptable for an
@@ -43,19 +45,6 @@ public final class CarriageEditor {
     private static final int FIRST_PLOT_X = 0;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
-    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
-
-    private static final Map<CarriageType, BlockPos> PLOT_ORIGINS = buildPlots();
-
-    private static Map<CarriageType, BlockPos> buildPlots() {
-        Map<CarriageType, BlockPos> map = new EnumMap<>(CarriageType.class);
-        int x = FIRST_PLOT_X;
-        for (CarriageType type : CarriageType.values()) {
-            map.put(type, new BlockPos(x, PLOT_Y, PLOT_Z));
-            x += PLOT_STEP_X;
-        }
-        return Map.copyOf(map);
-    }
 
     public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch) {}
 
@@ -63,14 +52,12 @@ public final class CarriageEditor {
 
     private CarriageEditor() {}
 
-    public static BlockPos plotOrigin(CarriageType type) {
-        return PLOT_ORIGINS.get(type);
-    }
-
     /**
      * Outcome of {@link #save} — config-dir write always happens (or throws);
      * the source-tree write is opt-in via {@link EditorDevMode} and reported
-     * separately so the caller can surface partial success.
+     * separately so the caller can surface partial success. Source-tree writes
+     * only apply to {@link CarriageVariant.Builtin}s; custom variants never
+     * ship bundled so source-tree is always {@link #skipped()} for them.
      */
     public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
         public static SaveResult skipped() { return new SaveResult(false, false, null); }
@@ -79,32 +66,56 @@ public final class CarriageEditor {
     }
 
     /**
-     * Returns the carriage type whose plot contains {@code pos} (within the
+     * Plot origin for {@code variant}. Computed from the current registry
+     * ordering: built-ins in enum order, then customs alphabetically. Returns
+     * {@code null} if the variant is not registered.
+     */
+    public static BlockPos plotOrigin(CarriageVariant variant) {
+        List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
+        String target = variant.id();
+        int index = -1;
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id().equals(target)) {
+                index = i;
+                break;
+            }
+        }
+        if (index < 0) return null;
+        return new BlockPos(FIRST_PLOT_X + index * PLOT_STEP_X, PLOT_Y, PLOT_Z);
+    }
+
+    /**
+     * Returns the variant whose plot contains {@code pos} (within the
      * footprint plus 1-block outline margin), or {@code null} if none.
      */
-    public static CarriageType plotContaining(BlockPos pos, CarriageDims dims) {
-        for (Map.Entry<CarriageType, BlockPos> entry : PLOT_ORIGINS.entrySet()) {
-            BlockPos o = entry.getValue();
+    public static CarriageVariant plotContaining(BlockPos pos, CarriageDims dims) {
+        for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
+            BlockPos o = plotOrigin(variant);
+            if (o == null) continue;
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
                 && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height()
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + dims.width()) {
-                return entry.getKey();
+                return variant;
             }
         }
         return null;
     }
 
     /**
-     * Teleport {@code player} to the plot for {@code type}: save return
+     * Teleport {@code player} to the plot for {@code variant}: save return
      * position, clear the footprint, stamp the current template (or fallback
      * geometry) so the player sees what would spawn today, then place the
      * barrier-block cage around the footprint.
      */
-    public static void enter(ServerPlayer player, CarriageType type) {
+    public static void enter(ServerPlayer player, CarriageVariant variant) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
-        BlockPos origin = PLOT_ORIGINS.get(type);
+        BlockPos origin = plotOrigin(variant);
+        if (origin == null) {
+            LOGGER.warn("[DungeonTrain] Editor enter: unknown variant '{}'", variant.id());
+            return;
+        }
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         SESSIONS.putIfAbsent(player.getUUID(), new Session(
@@ -115,7 +126,7 @@ public final class CarriageEditor {
         ));
 
         CarriageTemplate.eraseAt(overworld, origin, dims);
-        CarriageTemplate.placeAt(overworld, origin, type, dims);
+        CarriageTemplate.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
 
         double tx = origin.getX() + dims.length() / 2.0;
@@ -124,40 +135,123 @@ public final class CarriageEditor {
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{}",
-            player.getName().getString(), type, origin, dims.length(), dims.width(), dims.height());
+            player.getName().getString(), variant.id(), origin, dims.length(), dims.width(), dims.height());
     }
 
     /**
      * Capture the {@code length × height × width} region at the plot for
-     * {@code type} into a fresh {@link StructureTemplate} and persist it via
-     * {@link CarriageTemplateStore}. Air positions are excluded so the saved
-     * template only describes placed blocks. When {@link EditorDevMode} is on,
-     * the same template is also written through to the source tree so it
-     * ships with the next mod build.
+     * {@code variant} into a fresh {@link StructureTemplate} and persist it
+     * via {@link CarriageTemplateStore}. Air positions are excluded so the
+     * saved template only describes placed blocks. When {@link EditorDevMode}
+     * is on and the variant is a built-in, the same template is also written
+     * through to the source tree so it ships with the next mod build.
      */
-    public static SaveResult save(ServerPlayer player, CarriageType type) throws IOException {
+    public static SaveResult save(ServerPlayer player, CarriageVariant variant) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
-        BlockPos origin = PLOT_ORIGINS.get(type);
+        BlockPos origin = plotOrigin(variant);
+        if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        StructureTemplate template = new StructureTemplate();
-        Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
-        template.fillFromWorld(overworld, origin, size, false, Blocks.AIR);
-        CarriageTemplateStore.save(type, template);
+        StructureTemplate template = captureTemplate(overworld, origin, dims);
+        CarriageTemplateStore.save(variant, template);
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{}",
-            player.getName().getString(), type, dims.length(), dims.width(), dims.height());
+            player.getName().getString(), variant.id(), dims.length(), dims.width(), dims.height());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        if (!(variant instanceof CarriageVariant.Builtin builtin)) return SaveResult.skipped();
         try {
-            CarriageTemplateStore.saveToSource(type, template);
+            CarriageTemplateStore.saveToSource(builtin.type(), template);
             return SaveResult.written();
         } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", type, e.toString());
+            LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", variant.id(), e.toString());
             return SaveResult.failed(e.getMessage());
         }
+    }
+
+    /**
+     * Create a new custom variant {@code target} whose template is a duplicate
+     * of {@code source}'s current geometry. Registers the variant so it
+     * immediately shows up in {@link CarriageVariantRegistry} and gets its own
+     * plot on subsequent lookups.
+     *
+     * <p>Fails if {@code source} resolves to no template (i.e. a custom with a
+     * missing file). Built-in sources always succeed because they fall back
+     * through the three-tier store to bundled or hardcoded geometry.
+     */
+    public static BlockPos duplicate(ServerPlayer player, CarriageVariant source, CarriageVariant.Custom target) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        if (!CarriageVariantRegistry.register(target)) {
+            throw new IOException("Variant '" + target.id() + "' is already registered.");
+        }
+
+        BlockPos targetOrigin = plotOrigin(target);
+        if (targetOrigin == null) {
+            CarriageVariantRegistry.unregister(target.id());
+            throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
+        }
+
+        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
+        CarriageTemplate.placeAt(overworld, targetOrigin, source, dims);
+
+        StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
+        if (template.getSize().equals(Vec3i.ZERO)) {
+            CarriageVariantRegistry.unregister(target.id());
+            throw new IOException("Source '" + source.id() + "' produced no geometry.");
+        }
+        CarriageTemplateStore.save(target, template);
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+
+        LOGGER.info("[DungeonTrain] Editor duplicate: {} created '{}' from '{}' at {}",
+            player.getName().getString(), target.id(), source.id(), targetOrigin);
+        return targetOrigin;
+    }
+
+    /**
+     * Save the plot's current geometry under a new name. Follows the
+     * rename-on-save rules documented in {@code EditorCommand}: protected
+     * built-ins ({@code standard}, {@code flatbed}) cannot be renamed; other
+     * built-ins revert to hardcoded fallback and the edited geometry is saved
+     * as a new custom; custom sources are moved to the new name.
+     *
+     * <p>Returns the new variant identifier.
+     */
+    public static CarriageVariant.Custom saveAs(ServerPlayer player, CarriageVariant current, CarriageVariant.Custom renamed) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        BlockPos origin = plotOrigin(current);
+        if (origin == null) throw new IOException("Unknown variant '" + current.id() + "'.");
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        StructureTemplate template = captureTemplate(overworld, origin, dims);
+
+        if (current instanceof CarriageVariant.Custom currentCustom) {
+            if (!CarriageVariantRegistry.register(renamed)) {
+                throw new IOException("Name '" + renamed.id() + "' is already taken.");
+            }
+            CarriageTemplateStore.save(renamed, template);
+            CarriageVariantRegistry.unregister(currentCustom.name());
+            CarriageTemplateStore.delete(currentCustom);
+            LOGGER.info("[DungeonTrain] Editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
+                player.getName().getString(), currentCustom.name(), renamed.id());
+        } else if (current instanceof CarriageVariant.Builtin builtin) {
+            if (!CarriageVariantRegistry.register(renamed)) {
+                throw new IOException("Name '" + renamed.id() + "' is already taken.");
+            }
+            CarriageTemplateStore.save(renamed, template);
+            CarriageTemplateStore.delete(builtin);
+            LOGGER.info("[DungeonTrain] Editor saveAs (builtin→custom): {} saved edits of '{}' as new custom '{}', built-in reverts to fallback",
+                player.getName().getString(), builtin.id(), renamed.id());
+        }
+
+        return renamed;
     }
 
     /** Restore player to pre-enter position/dimension. Returns false if no session. */
@@ -171,6 +265,13 @@ public final class CarriageEditor {
         player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
             session.yaw(), session.pitch());
         return true;
+    }
+
+    private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
+        StructureTemplate template = new StructureTemplate();
+        Vec3i size = new Vec3i(dims.length(), dims.height(), dims.width());
+        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
+        return template;
     }
 
     /**
