@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
@@ -67,10 +68,15 @@ public final class TrainAssembler {
         int cleared = clearBoundingBox(level, origin, firstIdx, lastIdx, dims);
         LOGGER.info("[DungeonTrain] Cleared {} world blocks in train footprint (indices {} to {})", cleared, firstIdx, lastIdx);
 
+        // Pull mode + groupSize from config and seed from per-world SavedData
+        // so the variants selected here match what TrainWindowManager picks
+        // when the rolling window replaces the same carriages later.
+        CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
+
         Set<BlockPos> blocks = new HashSet<>();
         for (int i = firstIdx; i <= lastIdx; i++) {
             BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
-            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.variantForIndex(i), dims));
+            blocks.addAll(CarriageTemplate.placeAt(level, carriageOrigin, CarriageTemplate.variantForIndex(i, genCfg), dims));
         }
         LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, initialPIdx={}, dims={}x{}x{}), assembling...",
             blocks.size(), count, initialPIdx, dims.length(), dims.width(), dims.height());
