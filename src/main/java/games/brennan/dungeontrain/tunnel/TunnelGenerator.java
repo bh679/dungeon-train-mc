@@ -4,11 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3dc;
@@ -298,7 +298,7 @@ public final class TunnelGenerator {
         if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.is(state.getBlock())) return;
-        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+        SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
     }
 
     private static void setAirIfNeeded(ServerLevel level, BlockPos.MutableBlockPos pos,
@@ -308,7 +308,7 @@ public final class TunnelGenerator {
         if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.isAir()) return;
-        level.setBlock(pos, TunnelPalette.AIR, Block.UPDATE_CLIENTS);
+        SilentBlockOps.clearBlockSilent(level, pos.immutable());
     }
 
     private static void placeStair(ServerLevel level, BlockPos.MutableBlockPos pos,
@@ -320,7 +320,7 @@ public final class TunnelGenerator {
         if (existing.is(TunnelPalette.STAIRS)) return;
         BlockState state = TunnelPalette.STAIRS.defaultBlockState()
             .setValue(StairBlock.FACING, facing);
-        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+        SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
     }
 
     /**

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -33,8 +34,9 @@ import java.util.List;
  * moving over empty space — it achieves "train cannot be stopped" without
  * touching VS collision internals (no public API for that in 2.4.x).
  *
- * Blocks and entities are removed WITHOUT drops or XP ({@code destroyBlock(pos,
- * false)} and {@code entity.discard()}).
+ * Blocks and entities are removed silently — no break particles, no break
+ * sound, no item drops, no container spill — via
+ * {@link SilentBlockOps#clearBlockSilent} and {@code entity.discard()}.
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class TrainTickEvents {
@@ -163,7 +165,7 @@ public final class TrainTickEvents {
                     if (state.isAir()) continue;
                     // Never destroy ship-owned blocks — our own carriages or any other VS ship.
                     if (VSGameUtilsKt.getShipObjectManagingPos(level, cursor) != null) continue;
-                    level.destroyBlock(cursor.immutable(), false);
+                    SilentBlockOps.clearBlockSilent(level, cursor.immutable());
                     destroyed++;
                 }
             }
