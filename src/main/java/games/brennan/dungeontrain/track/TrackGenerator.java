@@ -80,8 +80,12 @@ public final class TrackGenerator {
      */
     private static final long SHIPYARD_COORDINATE_CUTOFF = 10_000_000L;
 
-    /** Fixed-size Z margin when computing chunk corridor — 5-wide track always fits in ±1 chunk. */
-    private static final int Z_CHUNK_MARGIN = 1;
+    /**
+     * Fixed-size Z margin for the view-distance sweep. Needs to cover both the
+     * 5-wide track corridor and the 13-wide tunnel wall span. ±2 is enough for
+     * any train whose corridor straddles one chunk boundary.
+     */
+    private static final int Z_CHUNK_MARGIN = 2;
 
     /**
      * Max new (unprocessed) chunks to fill per periodic scan. Caps the
