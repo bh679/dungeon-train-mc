@@ -289,10 +289,27 @@ public final class TunnelGenerator {
     }
 
     /**
-     * Six-sample underground check: at y = ceilingY+1 and ceilingY+2, for
+     * Six-sample underground check: at y = ceilingY+5 and ceilingY+6, for
      * three Z positions spanning the track corridor (min, center, max), every
      * sampled block must be a natural underground material. Any air, water,
      * plant, or wood disqualifies the column.
+     *
+     * <p>The samples sit <b>two rows above the tunnel's arched apex</b>
+     * ({@code ceilingY + ARCH_TIERS + 1 = ceilingY + 4}) for two reasons:</p>
+     * <ul>
+     *   <li>The train's {@code clearBlocksAhead} forward-slab clear in
+     *       {@code TrainTickEvents} sweeps up to {@code aabb.maxY}. For the
+     *       default 7-tall carriage that's {@code bedY + 9 = ceilingY};
+     *       larger carriages reach {@code ceilingY + (HEIGHT - 7)}. Sampling
+     *       at {@code ceilingY + 5/6} keeps qualification correct for
+     *       carriages up to HEIGHT ≈ 12 — the previous {@code +1/+2} samples
+     *       would be cleared to air for anything taller than 7, falsely
+     *       disqualifying the column.</li>
+     *   <li>A 3-block-thick mountain roof used to qualify but the tunnel's
+     *       arch profile (apex at {@code ceilingY + 4}) would poke out the
+     *       top. Requiring rock at {@code ceilingY + 5/6} guarantees the
+     *       entire arched silhouette is buried.</li>
+     * </ul>
      *
      * <p>Returns {@code false} if the chunk holding these samples isn't
      * loaded — avoids the force-load cost of {@code getBlockState} on an
@@ -301,9 +318,9 @@ public final class TunnelGenerator {
      */
     static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        pos.set(worldX, tg.ceilingY() + 1, tg.centerZ());
+        pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(pos)) return false;
-        int[] ys = { tg.ceilingY() + 1, tg.ceilingY() + 2 };
+        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
         int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
         for (int y : ys) {
             for (int z : zs) {
