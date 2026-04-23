@@ -3,17 +3,19 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -26,38 +28,38 @@ import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
- * Auto-spawns a 10-carriage train at the fixed world origin (0, trainY, 0)
- * — where {@code trainY} comes from the per-world
- * {@link DungeonTrainWorldData} (which falls back to the
- * {@code DungeonTrainConfig} TOML default for legacy worlds) — on the first
- * overworld login where no Dungeon Train ship exists yet, then teleports every
- * joining player to a random position alongside the current train, facing it.
+ * Teleports joining players to a random position alongside the current
+ * Dungeon Train, camera aimed at the ship centre.
  *
- * If the per-world {@code startsWithTrain} flag is false (set by the player on
- * the Create World screen sub-screen), auto-spawn is skipped entirely; players
- * are still teleported alongside any existing train.
+ * <p>Train assembly itself lives in
+ * {@link TrainBootstrapEvents#onServerStarted} — by the time
+ * {@link PlayerEvent.PlayerLoggedInEvent} fires the train is already in the
+ * world, so this handler only has to pick a safe ground position and run a
+ * single teleport. If the bootstrap skipped (startsWithTrain=false or
+ * assembly failed) no train exists and this handler is a no-op.</p>
  *
- * Placement: ±{@link #X_OFFSET_MAX} blocks along X (train's travel axis),
- * {@link #PERP_MIN}..{@link #PERP_MAX} blocks on a random side (+Z or −Z),
- * stood on WORLD_SURFACE heightmap, camera aimed at the train via
- * {@link ServerPlayer#lookAt}.
- *
- * When spawning a new train, the player's target position is computed first
- * and passed as the {@code spawnerWorldPos} to {@link TrainAssembler#spawnTrain},
- * so the train's initial carriage window is already centered where the player
- * will stand — zero churn on the rolling-window manager's first tick.
+ * <p>Placement: ±{@link #X_OFFSET_MAX} along the train's travel axis,
+ * {@link #PERP_MIN}..{@link #PERP_MAX} on a random side. The Y coordinate is
+ * found by a custom ground probe ({@link #findGroundY}) that skips air,
+ * water/lava, leaves, and vines — the same passability shape used by
+ * {@code TrackGenerator} — so players never land inside ocean water, on top
+ * of a tree canopy, or below the world floor. Candidates are re-rolled up to
+ * {@link #MAX_ATTEMPTS} times if the spot fails validation
+ * ({@link #isSafePlayerPos}); the last-resort fallback drops the player on
+ * top of the train, which is always safe by construction.</p>
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class PlayerJoinEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int DEFAULT_CARRIAGE_COUNT = 10;
-    private static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
-
     private static final double X_OFFSET_MAX = 200.0;
     private static final double PERP_MIN = 10.0;
     private static final double PERP_MAX = 40.0;
+
+    private static final int MAX_ATTEMPTS = 20;
+    private static final int VOID_CLEARANCE = 5;
+    private static final int CEILING_CLEARANCE = 10;
 
     private PlayerJoinEvents() {}
 
@@ -69,42 +71,15 @@ public final class PlayerJoinEvents {
 
         LoadedServerShip trainShip = findTrain(level);
         if (trainShip == null) {
-            DungeonTrainWorldData data = DungeonTrainWorldData.get(level.getServer().overworld());
-            if (!data.startsWithTrain()) {
-                LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping auto-spawn");
-                return;
-            }
-            int trainY = data.getTrainY();
-            BlockPos trainOrigin = new BlockPos(0, trainY, 0);
-            CarriageDims dims = data.dims();
-
-            // Compute the intended player target up-front so the train's initial
-            // carriage window lines up with where the player will stand.
-            Vector3d approxTrainCenter = new Vector3d(
-                trainOrigin.getX() + (dims.length() * DEFAULT_CARRIAGE_COUNT) / 2.0,
-                trainOrigin.getY() + dims.height() / 2.0,
-                trainOrigin.getZ() + dims.width() / 2.0
-            );
-            PlayerTarget target = pickPlayerTarget(level, approxTrainCenter);
-
-            LOGGER.info("[DungeonTrain] No train present — auto-spawning {} carriages at {} dims={}x{}x{}",
-                DEFAULT_CARRIAGE_COUNT, trainOrigin, dims.length(), dims.width(), dims.height());
-            ServerShip spawnedShip;
-            try {
-                Vector3d spawnerPos = new Vector3d(target.px, target.py, target.pz);
-                spawnedShip = TrainAssembler.spawnTrain(level, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos, dims);
-            } catch (Throwable t) {
-                LOGGER.error("[DungeonTrain] Starter train auto-spawn failed", t);
-                return;
-            }
-            teleportAndLookAt(level, player, spawnedShip, target);
+            LOGGER.info("[DungeonTrain] No train present on login — skipping teleport for {}",
+                player.getName().getString());
             return;
         }
 
-        // Existing train — target is derived from the live ship position.
         Vector3dc trainPos = trainShip.getTransform().getPosition();
         Vector3d trainCenter = new Vector3d(trainPos.x(), trainPos.y(), trainPos.z());
-        PlayerTarget target = pickPlayerTarget(level, trainCenter);
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(level.getServer().overworld());
+        PlayerTarget target = pickPlayerTarget(level, trainCenter, data);
         teleportAndLookAt(level, player, trainShip, target);
     }
 
@@ -117,17 +92,92 @@ public final class PlayerJoinEvents {
         return null;
     }
 
-    private static PlayerTarget pickPlayerTarget(ServerLevel level, Vector3dc trainCenter) {
+    /**
+     * Random offset around {@code trainCenter}, with the Y resolved to a
+     * safe ground position. Retries with fresh offsets up to
+     * {@link #MAX_ATTEMPTS} times if the candidate is in water or otherwise
+     * invalid. Falls back to standing on top of the train if every attempt
+     * fails (e.g. player lands in a full-ocean biome).
+     */
+    private static PlayerTarget pickPlayerTarget(ServerLevel level, Vector3dc trainCenter, DungeonTrainWorldData data) {
         RandomSource rand = level.getRandom();
-        double xOffset = (rand.nextDouble() * 2.0 - 1.0) * X_OFFSET_MAX;
-        double sideSign = rand.nextBoolean() ? 1.0 : -1.0;
-        double perpDist = PERP_MIN + rand.nextDouble() * (PERP_MAX - PERP_MIN);
-        double zOffset = sideSign * perpDist;
+        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            double xOffset = (rand.nextDouble() * 2.0 - 1.0) * X_OFFSET_MAX;
+            double sideSign = rand.nextBoolean() ? 1.0 : -1.0;
+            double perpDist = PERP_MIN + rand.nextDouble() * (PERP_MAX - PERP_MIN);
+            double zOffset = sideSign * perpDist;
 
-        double px = trainCenter.x() + xOffset;
-        double pz = trainCenter.z() + zOffset;
-        int py = level.getHeight(Heightmap.Types.WORLD_SURFACE, Mth.floor(px), Mth.floor(pz));
-        return new PlayerTarget(px, py, pz);
+            double px = trainCenter.x() + xOffset;
+            double pz = trainCenter.z() + zOffset;
+
+            int bx = Mth.floor(px);
+            int bz = Mth.floor(pz);
+            level.getChunk(bx >> 4, bz >> 4, ChunkStatus.FULL, true);
+
+            int groundY = findGroundY(level, bx, bz);
+            int playerY = groundY + 1;
+            if (isSafePlayerPos(level, bx, playerY, bz)) {
+                return new PlayerTarget(px, playerY, pz);
+            }
+        }
+
+        CarriageDims dims = data.dims();
+        int fallbackY = data.getTrainY() + dims.height() + 2;
+        LOGGER.warn("[DungeonTrain] pickPlayerTarget exhausted {} attempts — falling back to top of train (Y={})",
+            MAX_ATTEMPTS, fallbackY);
+        return new PlayerTarget(trainCenter.x(), fallbackY, trainCenter.z());
+    }
+
+    /**
+     * Walk down from the world ceiling through air/fluid/leaves/vines until
+     * a solid block is hit. Returns the Y of that block (ground Y); caller
+     * stands the player at {@code groundY + 1}. Returns
+     * {@code level.getMinBuildHeight() - 1} (sentinel: no ground found) if
+     * every scanned block is passable.
+     */
+    private static int findGroundY(ServerLevel level, int x, int z) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minY = level.getMinBuildHeight();
+        int startY = level.getMaxBuildHeight() - 1;
+        for (int y = startY; y >= minY; y--) {
+            pos.set(x, y, z);
+            BlockState state = level.getBlockState(pos);
+            if (!isPassable(state)) {
+                return y;
+            }
+        }
+        return minY - 1;
+    }
+
+    /**
+     * Mirrors {@code TrackGenerator.isPassable}: the player ground probe
+     * treats air, fluids (water/lava), leaves, and vines as "keep descending"
+     * — any other block counts as ground.
+     */
+    private static boolean isPassable(BlockState state) {
+        return state.isAir()
+            || !state.getFluidState().isEmpty()
+            || state.is(BlockTags.LEAVES)
+            || state.is(Blocks.VINE);
+    }
+
+    /**
+     * Validates a candidate player position. Rejects positions in the void,
+     * against the ceiling, or with water/lava at body/head level (so the
+     * player never spawns submerged even if the ground probe found a solid
+     * seabed under a deep ocean column).
+     */
+    private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z) {
+        if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
+        if (y > level.getMaxBuildHeight() - CEILING_CLEARANCE) return false;
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        // Body and head must be fluid-free — don't drop the player into an ocean column.
+        pos.set(x, y, z);
+        if (!level.getBlockState(pos).getFluidState().isEmpty()) return false;
+        pos.set(x, y + 1, z);
+        if (!level.getBlockState(pos).getFluidState().isEmpty()) return false;
+        return true;
     }
 
     private static void teleportAndLookAt(
