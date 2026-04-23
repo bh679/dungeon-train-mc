@@ -12,26 +12,47 @@ import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Dispatcher that paints stone-brick tunnels around the train's path. Detection
- * + qualification happen here; the actual block placement is delegated to
- * {@link TunnelTemplate} (NBT-backed, editable via
+ * Dispatcher that paints stone-brick tunnels around the train's path.
+ * Detection + qualification happen here; the actual block placement is
+ * delegated to {@link TunnelTemplate} (NBT-backed, editable via
  * {@code /dungeontrain editor enter tunnel_section|tunnel_portal}) or falls
  * back to {@link LegacyTunnelPaint} when no template has been saved.
  *
- * <p>Per-chunk work stays the same: a 16+2×APPROACH_MARGIN column underground
- * sample, then for each X column owned by the chunk we either stamp a
- * {@code tunnel_section} / {@code tunnel_portal} aligned to
- * {@link LegacyTunnelPaint#LAMP_SPACING}, or fall back to per-column procedural
- * paint when the section spans mixed qualification or partially-unloaded
- * chunks.</p>
+ * <p><b>Run-based stamping.</b> A tunnel <i>run</i> is a contiguous block
+ * of qualified X columns. For each run visible in the 16+2×APPROACH_MARGIN
+ * qualified window we:</p>
  *
- * <p>Approach-cutting (20-block open trench before / after each tunnel) stays
- * procedural — the same {@link LegacyTunnelPaint#paintApproachColumn} logic as
- * pre-refactor.</p>
+ * <ol>
+ *   <li>Stamp {@code tunnel_portal} unmirrored at {@code runStart} (the
+ *       actual leftmost qualified column — not rounded to a 10-block
+ *       boundary) if the run is ≥ 10 columns long.</li>
+ *   <li>Stamp {@code tunnel_portal} mirrored on +X at {@code runEnd - 9}
+ *       if the run is ≥ 11 columns long. (For 10-column runs the entrance
+ *       alone covers the whole run.) For 11-19 column runs the two stamps
+ *       overlap — exit wins the overlap since it stamps second — giving
+ *       pyramid facades at both ends.</li>
+ *   <li>Stamp {@code tunnel_section} at every {@code sx % 10 == 0}
+ *       position that fits entirely in the run's middle region
+ *       {@code [runStart + 10, runEnd - 10]}. Absolute alignment (instead
+ *       of relative to {@code runStart}) keeps section boundaries coherent
+ *       across chunks that each see only part of a long run.</li>
+ * </ol>
+ *
+ * <p>Any qualified column not covered by a stamp falls back to
+ * {@link LegacyTunnelPaint#paintTunnelColumn}. Approach trenches
+ * (non-qualified columns near a tunnel) always stay procedural.</p>
+ *
+ * <p>Runs that touch the qualified window edges have unknown actual
+ * endpoints — for those we skip the out-of-window portal stamp and rely on
+ * the chunk that can see that endpoint to handle it. Middle sections in
+ * window-edge runs start at least 10 blocks inside the window so they
+ * can't overlap an unseen entrance/exit stamp.</p>
  */
 public final class TunnelGenerator {
 
@@ -46,15 +67,17 @@ public final class TunnelGenerator {
     /** Clearing radius around each tunnel region — 20 blocks before and after each portal. */
     private static final int APPROACH_MARGIN = 20;
 
+    /** Minimum qualified-column run length that uses a portal stamp at all. */
+    private static final int MIN_PORTAL_RUN = 10;
+
+    /** Minimum run length for stamping BOTH entrance and exit (10-col runs get entrance only). */
+    private static final int MIN_DUAL_PORTAL_RUN = 11;
+
     private TunnelGenerator() {}
 
-    private enum SectionRole {
-        /** Middle section of a run — both neighbours qualified. */
-        SECTION,
-        /** Leftmost section of a run — left neighbour not qualified. Portal opens −X. */
-        PORTAL_ENTRANCE,
-        /** Rightmost section of a run — right neighbour not qualified. Portal opens +X. */
-        PORTAL_EXIT
+    /** A contiguous block of qualified columns detected in a chunk's qualified window. */
+    private record Run(int start, int end, boolean extendsLeft, boolean extendsRight) {
+        int length() { return end - start + 1; }
     }
 
     /**
@@ -94,36 +117,26 @@ public final class TunnelGenerator {
             qualified[i] = isColumnUnderground(level, baseX + i, tg);
         }
 
-        int spacing = LegacyTunnelPaint.LAMP_SPACING;
+        // Detect runs in the qualified window and stamp portals/sections.
+        // covered[i] tracks which of this chunk's 16 columns are under a
+        // stamp (so they should NOT get procedural paint afterwards).
+        boolean[] covered = new boolean[16];
+        List<Run> runs = detectRuns(qualified, baseX);
+        for (Run r : runs) {
+            stampRun(level, r, tg, chunkMinX, chunkMaxX, covered);
+        }
+
+        // Fill remaining columns procedurally — either plain tunnel,
+        // short-run pyramid, or approach trench.
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
+            if (covered[worldX - chunkMinX]) continue;
             int idx = worldX - baseX;
-            int sectionStart = worldX - Math.floorMod(worldX, spacing);
-            int sectionIdx = sectionStart - baseX;
-            SectionRole role = classifySection(qualified, sectionIdx, spacing);
-
-            if (role != null && sectionChunksLoaded(level, sectionStart, spacing, tg)) {
-                // Stamp once per chunk the section overlaps, at the first
-                // column of the section within THIS chunk. Cross-chunk
-                // sections (e.g. origin sx=10 spanning chunks [0..15] and
-                // [16..31]) thus get re-stamped from the neighbour chunk —
-                // idempotent at the block level, and it recovers the case
-                // where the origin chunk painted procedurally because its
-                // neighbour wasn't yet loaded at processing time.
-                int stampTrigger = Math.max(sectionStart, chunkMinX);
-                if (worldX == stampTrigger) {
-                    stampByRole(level, sectionStart, tg, role);
-                }
-                continue; // column is covered by the stamp
-            }
-
-            // Sections owned by a prior chunk that isn't stampable now fall
-            // through to the prior chunk's own fallback — don't repaint here.
-            if (sectionStart < chunkMinX) continue;
-
-            // Fallback: procedural per-column paint (PARTIAL section, single-
-            // section tunnel run, or overlap chunks not all loaded).
             if (qualified[idx]) {
                 LegacyTunnelPaint.paintTunnelColumn(level, worldX, tg);
+                // Procedural pyramid only for runs too short to get a
+                // portal stamp (< MIN_PORTAL_RUN columns). Longer runs
+                // have their edges covered by portal stamps above so this
+                // branch is skipped naturally.
                 boolean prev = idx > 0 && qualified[idx - 1];
                 boolean next = idx + 1 < qualified.length && qualified[idx + 1];
                 if (!prev || !next) {
@@ -138,39 +151,128 @@ public final class TunnelGenerator {
     }
 
     /**
-     * Classify the {@code spacing}-wide section starting at {@code sectionIdx}
-     * in the {@code qualified} array. Returns {@code null} when the section
-     * is not fully qualified OR when it's a single-section run (both
-     * neighbours not qualified) — both cases fall back to per-column paint.
+     * Scan the {@code qualified} window and collect every contiguous block
+     * of qualified columns. Window-edge runs (first / last index qualified)
+     * have {@code extendsLeft} / {@code extendsRight} set so the stamping
+     * logic can skip out-of-window portal placements.
      */
-    private static SectionRole classifySection(boolean[] qualified, int sectionIdx, int spacing) {
-        if (sectionIdx < 0 || sectionIdx + spacing > qualified.length) return null;
-        for (int i = 0; i < spacing; i++) {
-            if (!qualified[sectionIdx + i]) return null;
+    private static List<Run> detectRuns(boolean[] qualified, int baseX) {
+        List<Run> runs = new ArrayList<>();
+        int i = 0;
+        while (i < qualified.length) {
+            if (!qualified[i]) { i++; continue; }
+            int startIdx = i;
+            while (i < qualified.length && qualified[i]) i++;
+            int endIdx = i - 1;
+            runs.add(new Run(
+                baseX + startIdx,
+                baseX + endIdx,
+                startIdx == 0,
+                endIdx == qualified.length - 1
+            ));
         }
-        boolean leftQual = sectionIdx > 0 && qualified[sectionIdx - 1];
-        boolean rightQual = sectionIdx + spacing < qualified.length && qualified[sectionIdx + spacing];
-        if (leftQual && rightQual) return SectionRole.SECTION;
-        if (!leftQual && rightQual) return SectionRole.PORTAL_ENTRANCE;
-        if (leftQual) return SectionRole.PORTAL_EXIT;
-        // Single-section run (!leftQual && !rightQual) — fall back to per-column.
-        return null;
+        return runs;
     }
 
-    private static void stampByRole(ServerLevel level, int sectionStart, TunnelGeometry tg, SectionRole role) {
-        BlockPos origin = new BlockPos(sectionStart, tg.floorY(), tg.wallMinZ());
-        switch (role) {
-            case SECTION -> TunnelTemplate.placeSectionAt(level, origin);
-            case PORTAL_ENTRANCE -> TunnelTemplate.placePortalAt(level, origin, false);
-            case PORTAL_EXIT -> TunnelTemplate.placePortalAt(level, origin, true);
+    /**
+     * Stamp the portals + middle sections for a single run, and mark the
+     * chunk columns each stamp covers in the {@code covered} array. Stamps
+     * whose origin is outside this chunk's [chunkMinX, chunkMaxX] range
+     * are NOT written by this chunk — the chunk that contains that origin
+     * will write them on its own pass — but we still mark their covered
+     * columns so this chunk skips procedural paint on them.
+     */
+    private static void stampRun(ServerLevel level, Run r, TunnelGeometry tg,
+                                 int chunkMinX, int chunkMaxX, boolean[] covered) {
+        if (r.length() < MIN_PORTAL_RUN) return;
+
+        // Entrance portal — stamped only when we actually see the run's
+        // left edge (otherwise the true runStart is somewhere past the
+        // window and another chunk will stamp it).
+        if (!r.extendsLeft) {
+            stampPortalAt(level, r.start, tg, false, chunkMinX, chunkMaxX, covered);
+        }
+
+        // Exit portal — needs runLength ≥ 11 so it doesn't self-overlap
+        // at runLength == 10 (in which case entrance alone covers the run).
+        if (!r.extendsRight && r.length() >= MIN_DUAL_PORTAL_RUN) {
+            stampPortalAt(level, r.end - 9, tg, true, chunkMinX, chunkMaxX, covered);
+        }
+
+        // Middle sections at absolute {@code sx % 10 == 0} alignment,
+        // restricted to the run's middle region so sections never overlap
+        // a portal stamp (entrance [runStart..runStart+9], exit [runEnd-9..runEnd]).
+        int middleStart;
+        if (r.extendsLeft) {
+            // Conservative: entrance could be anywhere in [runStart..baseX-1];
+            // its rightmost column is at most baseX-1+9, but since we don't
+            // know runStart we step 10 inside the visible window so any
+            // unseen entrance at worst covers [baseX-1..baseX+8].
+            middleStart = (r.start + 10);
+        } else {
+            middleStart = r.start + 10;
+        }
+        int middleEnd;
+        if (r.extendsRight) {
+            middleEnd = r.end - 10;
+        } else if (r.length() >= MIN_DUAL_PORTAL_RUN) {
+            middleEnd = r.end - 10;
+        } else {
+            // runLength is 10 — entrance covers everything, no middle.
+            middleEnd = r.start - 1;
+        }
+
+        int firstSx = middleStart + Math.floorMod(-middleStart, 10);
+        for (int sx = firstSx; sx + 9 <= middleEnd; sx += 10) {
+            stampSectionAt(level, sx, tg, chunkMinX, chunkMaxX, covered);
+        }
+    }
+
+    /** Stamp (or mark-covered) a portal at {@code origin} — actual
+     *  placeInWorld call only runs if origin is in this chunk's X range
+     *  AND the 2×2 chunk footprint is loaded. Covered[] is marked whether
+     *  we stamp or not, so procedural paint stays off those columns. */
+    private static void stampPortalAt(ServerLevel level, int origin, TunnelGeometry tg,
+                                      boolean mirrorX, int chunkMinX, int chunkMaxX,
+                                      boolean[] covered) {
+        markCovered(covered, origin, origin + 9, chunkMinX, chunkMaxX);
+        if (origin >= chunkMinX && origin <= chunkMaxX
+            && sectionChunksLoaded(level, origin, TunnelTemplate.LENGTH, tg)) {
+            TunnelTemplate.placePortalAt(
+                level,
+                new BlockPos(origin, tg.floorY(), tg.wallMinZ()),
+                mirrorX
+            );
+        }
+    }
+
+    /** Same contract as {@link #stampPortalAt} but places the section template. */
+    private static void stampSectionAt(ServerLevel level, int origin, TunnelGeometry tg,
+                                       int chunkMinX, int chunkMaxX, boolean[] covered) {
+        markCovered(covered, origin, origin + 9, chunkMinX, chunkMaxX);
+        if (origin >= chunkMinX && origin <= chunkMaxX
+            && sectionChunksLoaded(level, origin, TunnelTemplate.LENGTH, tg)) {
+            TunnelTemplate.placeSectionAt(
+                level,
+                new BlockPos(origin, tg.floorY(), tg.wallMinZ())
+            );
+        }
+    }
+
+    private static void markCovered(boolean[] covered, int worldMinX, int worldMaxX,
+                                    int chunkMinX, int chunkMaxX) {
+        int lo = Math.max(worldMinX, chunkMinX);
+        int hi = Math.min(worldMaxX, chunkMaxX);
+        for (int wx = lo; wx <= hi; wx++) {
+            covered[wx - chunkMinX] = true;
         }
     }
 
     /**
      * Check that every chunk the 10×14×13 section footprint overlaps is
-     * currently loaded. A section spans chunks on both X (when it crosses a
-     * 16-block boundary) and Z (the 13-wide wall span always straddles at
-     * least 2 chunks on Z).
+     * currently loaded. A section spans chunks on both X (when it crosses
+     * a 16-block boundary) and Z (the 13-wide wall span always straddles
+     * at least 2 chunks on Z).
      */
     private static boolean sectionChunksLoaded(ServerLevel level, int sectionStart, int lengthX, TunnelGeometry tg) {
         int minCx = sectionStart >> 4;
