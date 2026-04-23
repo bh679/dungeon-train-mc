@@ -16,5 +16,10 @@
   "gui.dungeontrain.options.button": "Dungeon Train Options…",
   "gui.dungeontrain.options.title": "Dungeon Train — World Options",
   "gui.dungeontrain.options.starts_with_train": "Starts with train",
-  "gui.dungeontrain.options.train_y": "Train Y"
+  "gui.dungeontrain.options.train_y": "Train Y",
+  "gui.dungeontrain.options.generation_mode": "Generation mode",
+  "gui.dungeontrain.options.group_size": "Group size",
+  "gui.dungeontrain.options.mode.random": "Random",
+  "gui.dungeontrain.options.mode.random_grouped": "Random Grouped",
+  "gui.dungeontrain.options.mode.looping": "Looping"
 }

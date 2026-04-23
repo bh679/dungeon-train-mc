@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.world;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -9,20 +10,22 @@ import net.minecraft.world.level.saveddata.SavedData;
 /**
  * Per-world persistence for world-creation choices originally exposed by
  * {@link DungeonTrainConfig}: train Y, "starts with train" auto-spawn toggle,
- * and (since v0.21) carriage length/width/height. Stored at
+ * carriage length/width/height, and (since v0.25) a generation seed that
+ * keeps random-mode carriages deterministic across restarts. Stored at
  * {@code <world>/data/dungeontrain_world.dat} on the overworld
  * {@link ServerLevel}.
  *
  * Back-compat: when no .dat file exists yet (worlds created before this
  * feature landed), {@link #createDefault()} sources the train Y from the
- * server config TOML, defaults auto-spawn to ON, and uses
- * {@link CarriageDims#DEFAULT} (9×7×7) for dims — preserving any tuned
- * value an admin already set in {@code dungeontrain-server.toml}.
+ * server config TOML, defaults auto-spawn to ON, uses
+ * {@link CarriageDims#DEFAULT} (9×7×7) for dims, and leaves the generation
+ * seed at 0 — the first save after world load re-seeds it from the level's
+ * random so legacy worlds get a real per-world seed without a migration step.
  *
- * Individual NBT tags are checked independently so a world saved with
- * only {@code trainY}/{@code startsWithTrain} (pre-dims) loads cleanly
- * with default dims filled in. Clamping happens on read so legacy values
- * outside current floors/ceilings self-heal.
+ * Individual NBT tags are checked independently so a world saved with only
+ * {@code trainY}/{@code startsWithTrain} (pre-dims) loads cleanly with
+ * defaults filled in. Clamping happens on read so legacy values outside
+ * current floors/ceilings self-heal.
  */
 public final class DungeonTrainWorldData extends SavedData {
 
@@ -33,30 +36,43 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_LENGTH = "carriageLength";
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
+    private static final String TAG_GENERATION_SEED = "generationSeed";
 
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
+    private long generationSeed;
 
-    private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims) {
+    private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
         this.dims = dims;
+        this.generationSeed = generationSeed;
     }
 
     public static DungeonTrainWorldData get(ServerLevel overworld) {
-        return overworld.getDataStorage().computeIfAbsent(
+        DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(
             DungeonTrainWorldData::load,
             DungeonTrainWorldData::createDefault,
             NAME
         );
+        // Legacy upgrade path: missing NBT tag loaded as seed=0. Replace with
+        // a real per-world seed drawn from the overworld's random so the
+        // Random/RandomGrouped modes produce the same layout on future
+        // loads. Mark dirty so the fresh seed persists.
+        if (data.generationSeed == 0L) {
+            data.generationSeed = overworld.random.nextLong();
+            data.setDirty();
+        }
+        return data;
     }
 
     private static DungeonTrainWorldData createDefault() {
         return new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
-                CarriageDims.DEFAULT
+                CarriageDims.DEFAULT,
+                0L
         );
     }
 
@@ -77,7 +93,8 @@ public final class DungeonTrainWorldData extends SavedData {
                         tag.getInt(TAG_CARRIAGE_WIDTH),
                         tag.getInt(TAG_CARRIAGE_HEIGHT))
                 : CarriageDims.DEFAULT;
-        return new DungeonTrainWorldData(y, s, d);
+        long seed = tag.contains(TAG_GENERATION_SEED) ? tag.getLong(TAG_GENERATION_SEED) : 0L;
+        return new DungeonTrainWorldData(y, s, d, seed);
     }
 
     @Override
@@ -87,6 +104,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_LENGTH, dims.length());
         tag.putInt(TAG_CARRIAGE_WIDTH, dims.width());
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
+        tag.putLong(TAG_GENERATION_SEED, generationSeed);
         return tag;
     }
 
@@ -102,10 +120,37 @@ public final class DungeonTrainWorldData extends SavedData {
         return dims;
     }
 
+    public long getGenerationSeed() {
+        return generationSeed;
+    }
+
+    /**
+     * Build a complete {@link CarriageGenerationConfig} by pairing the
+     * per-world seed stored here with the mode + groupSize read live from
+     * {@link DungeonTrainConfig}. Called from {@code TrainAssembler} (once at
+     * spawn) and {@code TrainWindowManager} (once per tick).
+     */
+    public CarriageGenerationConfig getGenerationConfig() {
+        return new CarriageGenerationConfig(
+                DungeonTrainConfig.getGenerationMode(),
+                DungeonTrainConfig.getGroupSize(),
+                generationSeed);
+    }
+
     public void apply(int trainY, boolean startsWithTrain, CarriageDims dims) {
         this.trainY = clampY(trainY);
         this.startsWithTrain = startsWithTrain;
         this.dims = dims;
+        setDirty();
+    }
+
+    /**
+     * Explicitly set the per-world generation seed — used by
+     * {@code WorldLifecycleEvents} at integrated-server start to lock in a
+     * value derived from the overworld's random.
+     */
+    public void setGenerationSeed(long seed) {
+        this.generationSeed = seed;
         setDirty();
     }
 

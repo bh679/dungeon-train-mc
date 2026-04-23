@@ -9,17 +9,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 
 /**
  * Carriage blueprint — a hollow box whose dimensions are captured per-world
  * in {@link CarriageDims} (default 9×7×7, X×Z×Y). Variants are selected
- * per-carriage via {@link CarriageVariant} and {@link #variantForIndex(int)}
- * so a long train cycles deterministically through the full set registered
- * in {@link CarriageVariantRegistry}.
+ * per-carriage via {@link CarriageVariant} and
+ * {@link #variantForIndex(int, CarriageGenerationConfig)}; the generation
+ * mode decides whether indices cycle deterministically through the full
+ * registered set, roll seeded dice, or emit fixed-spacing flatbed separators.
  *
  * <p>{@link #placeAt(ServerLevel, BlockPos, CarriageVariant, CarriageDims)}
  * first tries an NBT-backed template from {@link CarriageTemplateStore}; if
@@ -37,10 +40,14 @@ public final class CarriageTemplate {
         FLATBED
     }
 
+    /** Cached immutable handle to the flatbed built-in — used as the Random-Grouped separator. */
+    private static final CarriageVariant FLATBED_VARIANT = CarriageVariant.of(CarriageType.FLATBED);
+
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
      * {@code Blocks.*} access off {@link CarriageTemplate}'s own static init
-     * means plain JUnit tests can call {@link #variantForIndex(int)} without
+     * means plain JUnit tests can call
+     * {@link #variantForIndex(int, CarriageGenerationConfig)} without
      * requiring a Forge/Minecraft {@code Bootstrap}. The holder is only
      * loaded on first reference from {@link #stateAt} (i.e. from a live
      * server-thread {@code placeAt} call), so there is no behavioural change.
@@ -74,17 +81,70 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Deterministic variant selector for carriage index {@code i}. Cycles
-     * through {@link CarriageVariantRegistry#allVariants()} so built-ins come
-     * first, custom variants after. Shared by the initial spawn path and the
-     * rolling-window manager so carriage index N always renders the same
-     * variant regardless of when it appears — provided the registry state is
-     * stable across those calls.
+     * Deterministic variant selector for carriage index {@code i}, dispatched
+     * on {@link CarriageGenerationMode}:
+     *
+     * <ul>
+     *   <li><b>LOOPING</b> — cycles through {@link CarriageVariantRegistry#allVariants()}
+     *       so built-ins come first, customs after (preserves the pre-generation-mode behaviour).</li>
+     *   <li><b>RANDOM</b> — seeded {@code (seed, index)} pick from all variants including
+     *       the flatbed and any registered customs.</li>
+     *   <li><b>RANDOM_GROUPED</b> — every {@code (groupSize + 1)}th index is the built-in
+     *       flatbed; every other index is a seeded pick from all non-flatbed variants
+     *       (built-ins minus FLATBED, plus all customs).</li>
+     * </ul>
+     *
+     * <p>All three modes are pure functions of {@code (i, config, registry state)} —
+     * no {@code java.util.Random} state escapes the call. So long as the registry
+     * is stable, walking back over a stretch of track always re-places the identical
+     * carriage.</p>
      */
-    public static CarriageVariant variantForIndex(int i) {
+    public static CarriageVariant variantForIndex(int i, CarriageGenerationConfig config) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        int mod = Math.floorMod(i, variants.size());
-        return variants.get(mod);
+        if (variants.isEmpty()) {
+            // Defensive: registry should always have the four built-ins, but
+            // if tests clear() it we still need a well-defined answer.
+            return FLATBED_VARIANT;
+        }
+        return switch (config.mode()) {
+            case LOOPING -> variants.get(Math.floorMod(i, variants.size()));
+            case RANDOM -> variants.get(seededPick(config.seed(), i, variants.size()));
+            case RANDOM_GROUPED -> {
+                int cycleLen = config.groupSize() + 1;
+                int pos = Math.floorMod(i, cycleLen);
+                if (pos == config.groupSize()) {
+                    yield FLATBED_VARIANT;
+                }
+                List<CarriageVariant> nonFlatbed = filterOutFlatbed(variants);
+                if (nonFlatbed.isEmpty()) {
+                    // Only the flatbed registered — no meaningful "group member"
+                    // choice, so fall back to flatbed for those slots too.
+                    yield FLATBED_VARIANT;
+                }
+                yield nonFlatbed.get(seededPick(config.seed(), i, nonFlatbed.size()));
+            }
+        };
+    }
+
+    private static List<CarriageVariant> filterOutFlatbed(List<CarriageVariant> variants) {
+        List<CarriageVariant> out = new ArrayList<>(variants.size());
+        for (CarriageVariant v : variants) {
+            if (v instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) continue;
+            out.add(v);
+        }
+        return out;
+    }
+
+    /**
+     * Deterministic {@code [0, bound)} pick from {@code (seed, index)}. Mixes
+     * the index through the 64-bit golden-ratio constant before seeding
+     * {@code Random} so adjacent indices don't produce correlated outputs —
+     * fresh {@code Random} per call is cheap (HotSpot allocates and inlines
+     * away) and keeps the helper pure.
+     */
+    private static int seededPick(long seed, int index, int bound) {
+        long mixed = seed ^ ((long) index * 0x9E3779B97F4A7C15L);
+        return new Random(mixed).nextInt(bound);
     }
 
     /**
