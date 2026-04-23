@@ -116,8 +116,14 @@ public final class TunnelEditor {
     /**
      * Capture the 10×14×13 region at the plot for {@code variant} into a
      * fresh {@link StructureTemplate} and persist it via
-     * {@link TunnelTemplateStore}. Air positions are excluded so the saved
-     * template only describes placed blocks.
+     * {@link TunnelTemplateStore}.
+     *
+     * <p><b>Why {@code null} for {@code toIgnore}:</b> tunnel stamps land
+     * underground, inside solid rock. If air were stripped from the saved
+     * template, the interior airspace would never be carved out — walls and
+     * floor would stamp over existing stone but the player-walkable volume
+     * would stay solid. Carriage templates can ignore air safely because
+     * they spawn in open space; tunnels cannot.</p>
      */
     public static void save(ServerPlayer player, TunnelVariant variant) throws IOException {
         MinecraftServer server = player.getServer();
@@ -127,7 +133,7 @@ public final class TunnelEditor {
 
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
-        template.fillFromWorld(overworld, origin, size, false, Blocks.AIR);
+        template.fillFromWorld(overworld, origin, size, false, null);
         TunnelTemplateStore.save(variant, template);
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{} template",

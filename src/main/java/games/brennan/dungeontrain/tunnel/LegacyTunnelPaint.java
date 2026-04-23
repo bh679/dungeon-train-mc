@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.tunnel;
 
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.track.TrackPalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -74,24 +75,39 @@ public final class LegacyTunnelPaint {
     }
 
     /**
-     * Paint a single-X slice of tunnel: floor extension, airspace, walls
+     * Paint a single-X slice of tunnel: floor (incl. track bed and rails so
+     * the editor plot is self-contained and the saved template carves out
+     * the full 10×14×13 volume when stamped underground), airspace, walls
      * (with sea-lantern pair on lamp columns), and stepped arched roof.
+     *
+     * <p>In-world, track bed + rails already exist at these coordinates
+     * from {@link games.brennan.dungeontrain.track.TrackGenerator}. The
+     * {@link #setIfNeeded} / {@link #placeRail} idempotence guards skip
+     * the duplicate writes so this stays O(0) per already-placed block.</p>
+     *
      * Called for {@code PARTIAL} sections in {@link TunnelGenerator} and as
      * the inner loop of {@link #paintSection}.
      */
     static void paintTunnelColumn(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
-        // 1. Extend floor outward. [trackZMin..trackZMax] is the existing stone-brick
-        //    bed (from TrackGenerator); tunnel floor needs 11-wide coverage.
+        // 1. Full 11-wide stone-brick floor. The middle 5 overlap with the
+        //    track bed that TrackGenerator owns — idempotent on in-world
+        //    repaints (bed is already stone-brick). In the editor plot
+        //    there's no TrackGenerator, so this also gives the player a
+        //    continuous floor to stand on.
         for (int z = tg.airMinZ(); z <= tg.airMaxZ(); z++) {
-            if (z >= tg.trackZMin() && z <= tg.trackZMax()) continue;
             setIfNeeded(level, pos, worldX, tg.floorY(), z, TunnelPalette.FLOOR);
         }
 
+        // 1b. Rails at (railY, railZMin) and (railY, railZMax). Idempotent
+        //     against TrackGenerator's pre-placed rails in-world.
+        placeRail(level, pos, worldX, tg.railY(), tg.railZMin());
+        placeRail(level, pos, worldX, tg.railY(), tg.railZMax());
+
         // 2. Airspace: 11 wide × 9 tall between floor and ceiling (now including
         //    y=ceilingY since the flat ceiling is gone — replaced by the arch).
-        //    Preserve rails at y=railY, z=railZMin|railZMax (placed by TrackGenerator).
+        //    Preserve rails at y=railY, z=railZMin|railZMax (just placed above).
         int airYMin = tg.railY();
         int airYMax = tg.ceilingY();
         for (int y = airYMin; y <= airYMax; y++) {
@@ -236,5 +252,22 @@ public final class LegacyTunnelPaint {
         BlockState state = TunnelPalette.STAIRS.defaultBlockState()
             .setValue(StairBlock.FACING, facing);
         level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Idempotent rail placement — skips if a rail is already there (any shape),
+     * and skips ship-owned voxels. Used so {@link #paintTunnelColumn} can
+     * keep rails present inside templates without stomping on the specific
+     * rail shape {@link games.brennan.dungeontrain.track.TrackGenerator}
+     * already placed.
+     */
+    static void placeRail(ServerLevel level, BlockPos.MutableBlockPos pos,
+                          int x, int y, int z) {
+        pos.set(x, y, z);
+        if (!level.hasChunkAt(pos)) return;
+        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        BlockState existing = level.getBlockState(pos);
+        if (existing.is(TrackPalette.RAIL.getBlock())) return;
+        level.setBlock(pos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
     }
 }
