@@ -96,20 +96,22 @@ public final class TrackGenerator {
      * and reused by every column in this chunk that lands inside or adjacent
      * to the pillar.
      *
-     * @param centerX    world X of the pillar's centerline (always even; see
-     *                   {@link #computePillarPositions})
+     * @param centerX    world X of the pillar's centerline.
      * @param thickness  number of consecutive X columns this pillar occupies.
      *                   Footprint extends from {@code centerX - (thickness-1)/2}
      *                   through {@code centerX + thickness/2}. Odd thicknesses
      *                   are symmetric; even thicknesses bias one block to the
      *                   right of centerX.
-     * @param groundY    world Y at which the pillar's descent stops (first solid
-     *                   block + 1). This is the Y of the lowest pillar block.
-     * @param height     {@code bedY - 1 - groundY} — how many blocks of pillar
-     *                   sit below the bed. Used as the arch-rise input and as
-     *                   the "tall enough for arch" gate.
+     * @param height     Pillar height at the center-probe column
+     *                   ({@code bedY - 1 - centerGroundY}). Used only to gate
+     *                   the height-based spacing/thickness rules — <em>not</em>
+     *                   to cap how far individual columns descend. Each column
+     *                   in the footprint descends to its <em>own</em> ground
+     *                   via the per-column terrain check in
+     *                   {@link #placePillarColumn}, so corners follow sloped
+     *                   ground instead of floating at the center's level.
      */
-    private record PillarSpec(int centerX, int thickness, int groundY, int height) {
+    private record PillarSpec(int centerX, int thickness, int height) {
         int minX() {
             return centerX - (thickness - 1) / 2;
         }
@@ -148,12 +150,12 @@ public final class TrackGenerator {
     }
 
     /**
-     * Pure helper: one pillar-block of thickness per 5 blocks of spacing,
-     * minimum 1. 8→1, 13→2, 18→3, 23→4, 28→5. Exposed package-private for
+     * Pure helper: one pillar-block of thickness per 6 blocks of spacing,
+     * minimum 1. 8→1, 13→2, 18→3, 24→4, 30→5. Exposed package-private for
      * unit tests.
      */
     static int computeThickness(int spacing) {
-        return Math.max(1, spacing / 5);
+        return Math.max(1, spacing / 6);
     }
 
     /**
@@ -284,29 +286,35 @@ public final class TrackGenerator {
             if (Math.floorMod(x, spacing) != 0) continue;
 
             int thickness = computeThickness(spacing);
-            pillars.put(x, new PillarSpec(x, thickness, groundY, height));
+            pillars.put(x, new PillarSpec(x, thickness, height));
         }
         return pillars;
     }
 
     /**
      * Place a solid pillar column at (worldX, worldZ) from {@code bedY - 1}
-     * down to {@code groundY}. Skips ship-owned positions and leaves terrain
-     * below groundY untouched. Uses {@link TrackPalette#PILLAR}.
+     * down until non-passable terrain stops the descent. Every column in a
+     * pillar's footprint descends independently to <em>its own</em> ground,
+     * so a thick pillar on sloped terrain follows the slope instead of
+     * floating at the center column's level.
+     *
+     * <p>Skips ship-owned positions and stops on any non-passable block
+     * (same passability rules as {@link #probeGroundY}). Uses
+     * {@link TrackPalette#PILLAR}.</p>
      */
     private static void placePillarColumn(
         ServerLevel level,
         int worldX,
         int worldZ,
-        int pillarTopInclusive,
-        int groundY
+        int pillarTopInclusive
     ) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        for (int py = pillarTopInclusive; py >= groundY; py--) {
+        int minY = level.getMinBuildHeight() + 1;
+        for (int py = pillarTopInclusive; py >= minY; py--) {
             pos.set(worldX, py, worldZ);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
             BlockState existing = level.getBlockState(pos);
-            if (!isPassable(existing)) return; // hit terrain before reaching groundY — stop
+            if (!isPassable(existing)) return; // hit terrain — this column is done
             level.setBlock(pos, TrackPalette.PILLAR, Block.UPDATE_CLIENTS);
         }
     }
@@ -360,8 +368,7 @@ public final class TrackGenerator {
                 if (!placeBedAndRail(level, worldX, worldZ, g)) continue;
 
                 if (containingPillar != null) {
-                    placePillarColumn(level, worldX, worldZ,
-                        g.bedY() - 1, containingPillar.groundY);
+                    placePillarColumn(level, worldX, worldZ, g.bedY() - 1);
                 }
             }
         }
