@@ -2,10 +2,10 @@ package games.brennan.dungeontrain.tunnel;
 
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.track.TrackPalette;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -276,7 +276,7 @@ public final class LegacyTunnelPaint {
         if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.is(state.getBlock())) return;
-        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+        SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
     }
 
     static void setAirIfNeeded(ServerLevel level, BlockPos.MutableBlockPos pos,
@@ -286,7 +286,7 @@ public final class LegacyTunnelPaint {
         if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.isAir()) return;
-        level.setBlock(pos, TunnelPalette.AIR, Block.UPDATE_CLIENTS);
+        SilentBlockOps.clearBlockSilent(level, pos.immutable());
     }
 
     static void placeStair(ServerLevel level, BlockPos.MutableBlockPos pos,
@@ -298,7 +298,7 @@ public final class LegacyTunnelPaint {
         if (existing.is(TunnelPalette.STAIRS)) return;
         BlockState state = TunnelPalette.STAIRS.defaultBlockState()
             .setValue(StairBlock.FACING, facing);
-        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+        SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
     }
 
     /**
@@ -315,7 +315,7 @@ public final class LegacyTunnelPaint {
         if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.is(TrackPalette.RAIL.getBlock())) return;
-        level.setBlock(pos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
+        SilentBlockOps.setBlockSilent(level, pos.immutable(), TrackPalette.RAIL);
     }
 
     /**
@@ -330,6 +330,6 @@ public final class LegacyTunnelPaint {
         if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
         BlockState existing = level.getBlockState(pos);
         if (!existing.isAir()) return;
-        level.setBlock(pos, Blocks.STRUCTURE_VOID.defaultBlockState(), Block.UPDATE_CLIENTS);
+        SilentBlockOps.setBlockSilent(level, pos.immutable(), Blocks.STRUCTURE_VOID.defaultBlockState());
     }
 }

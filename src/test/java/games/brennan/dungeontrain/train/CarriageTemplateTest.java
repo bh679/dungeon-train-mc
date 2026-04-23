@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -10,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Unit tests for {@link CarriageTemplate}'s pure-logic functions —
- * the deterministic carriage-variant selector {@link CarriageTemplate#typeForIndex(int)},
- * the {@link CarriageType} enum contract, and the {@link CarriageDims}
- * invariants + clamp helper.
+ * the deterministic carriage-variant selector
+ * {@link CarriageTemplate#variantForIndex(int)}, the {@link CarriageType}
+ * enum contract, and the {@link CarriageDims} invariants + clamp helper.
  *
  * <p>Runtime-dependent methods ({@code placeAt}, {@code eraseAt}) need a live
  * Forge/Minecraft server and are covered by the Forge GameTestServer integration
@@ -26,58 +28,84 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 final class CarriageTemplateTest {
 
-    // ---- typeForIndex: deterministic variant cycling ----
+    @BeforeEach
+    @AfterEach
+    void resetRegistry() {
+        // The registry is a global singleton; tests here manipulate its
+        // custom-variant list, so reset it around each test to keep the
+        // built-ins-only baseline for the cycle-length tests.
+        CarriageVariantRegistry.clear();
+    }
+
+    // ---- variantForIndex: deterministic variant cycling ----
 
     @Test
-    @DisplayName("typeForIndex(0) returns STANDARD")
-    void typeForIndex_zero_returnsStandard() {
-        assertEquals(CarriageType.STANDARD, CarriageTemplate.typeForIndex(0));
+    @DisplayName("variantForIndex(0) returns STANDARD")
+    void variantForIndex_zero_returnsStandard() {
+        assertEquals("standard", CarriageTemplate.variantForIndex(0).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(1) returns WINDOWED")
-    void typeForIndex_one_returnsWindowed() {
-        assertEquals(CarriageType.WINDOWED, CarriageTemplate.typeForIndex(1));
+    @DisplayName("variantForIndex(1) returns WINDOWED")
+    void variantForIndex_one_returnsWindowed() {
+        assertEquals("windowed", CarriageTemplate.variantForIndex(1).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(2) returns SOLID_ROOF")
-    void typeForIndex_two_returnsSolidRoof() {
-        assertEquals(CarriageType.SOLID_ROOF, CarriageTemplate.typeForIndex(2));
+    @DisplayName("variantForIndex(2) returns SOLID_ROOF")
+    void variantForIndex_two_returnsSolidRoof() {
+        assertEquals("solid_roof", CarriageTemplate.variantForIndex(2).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(3) returns FLATBED")
-    void typeForIndex_three_returnsFlatbed() {
-        assertEquals(CarriageType.FLATBED, CarriageTemplate.typeForIndex(3));
+    @DisplayName("variantForIndex(3) returns FLATBED")
+    void variantForIndex_three_returnsFlatbed() {
+        assertEquals("flatbed", CarriageTemplate.variantForIndex(3).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(4) wraps back to STANDARD — cycle of 4")
-    void typeForIndex_four_wrapsToStandard() {
-        assertEquals(CarriageType.STANDARD, CarriageTemplate.typeForIndex(4));
+    @DisplayName("variantForIndex(4) wraps back to STANDARD — cycle of 4 with no customs")
+    void variantForIndex_four_wrapsToStandard() {
+        assertEquals("standard", CarriageTemplate.variantForIndex(4).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(-1) returns FLATBED — Math.floorMod(-1, 4) == 3")
-    void typeForIndex_negativeOne_returnsFlatbed() {
+    @DisplayName("variantForIndex(-1) returns FLATBED — Math.floorMod(-1, 4) == 3")
+    void variantForIndex_negativeOne_returnsFlatbed() {
         // Math.floorMod distinguishes from Java's % operator: -1 % 4 == -1,
         // but Math.floorMod(-1, 4) == 3. The rolling-window manager depends
         // on negative indices wrapping forward (carriage index -1 is behind
         // the spawner), so this test pins the contract explicitly.
-        assertEquals(CarriageType.FLATBED, CarriageTemplate.typeForIndex(-1));
+        assertEquals("flatbed", CarriageTemplate.variantForIndex(-1).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(-4) returns STANDARD")
-    void typeForIndex_negativeFour_returnsStandard() {
-        assertEquals(CarriageType.STANDARD, CarriageTemplate.typeForIndex(-4));
+    @DisplayName("variantForIndex(-4) returns STANDARD")
+    void variantForIndex_negativeFour_returnsStandard() {
+        assertEquals("standard", CarriageTemplate.variantForIndex(-4).id());
     }
 
     @Test
-    @DisplayName("typeForIndex(400) returns STANDARD — large multiples of 4 still wrap")
-    void typeForIndex_largeMultipleOfFour_returnsStandard() {
-        assertEquals(CarriageType.STANDARD, CarriageTemplate.typeForIndex(400));
+    @DisplayName("variantForIndex(400) returns STANDARD — large multiples of cycle length still wrap")
+    void variantForIndex_largeMultipleOfFour_returnsStandard() {
+        assertEquals("standard", CarriageTemplate.variantForIndex(400).id());
+    }
+
+    @Test
+    @DisplayName("variantForIndex cycles through built-ins + customs in registration order")
+    void variantForIndex_withCustoms_cyclesThroughAll() {
+        // Register two customs — they are sorted alphabetically by the
+        // registry, so 'aaa_custom' precedes 'zzz_custom' in the cycle.
+        CarriageVariantRegistry.register((CarriageVariant.Custom) CarriageVariant.custom("aaa_custom"));
+        CarriageVariantRegistry.register((CarriageVariant.Custom) CarriageVariant.custom("zzz_custom"));
+
+        assertEquals("standard",    CarriageTemplate.variantForIndex(0).id());
+        assertEquals("windowed",    CarriageTemplate.variantForIndex(1).id());
+        assertEquals("solid_roof",  CarriageTemplate.variantForIndex(2).id());
+        assertEquals("flatbed",     CarriageTemplate.variantForIndex(3).id());
+        assertEquals("aaa_custom",  CarriageTemplate.variantForIndex(4).id());
+        assertEquals("zzz_custom",  CarriageTemplate.variantForIndex(5).id());
+        assertEquals("standard",    CarriageTemplate.variantForIndex(6).id()); // wraps
     }
 
     // ---- CarriageType enum contract ----
@@ -85,9 +113,10 @@ final class CarriageTemplateTest {
     @Test
     @DisplayName("CarriageType has exactly 4 variants in declared order")
     void carriageType_hasFourVariantsInDeclaredOrder() {
-        // Order is part of the public contract: typeForIndex uses
-        // CarriageType.values()[i % 4], and the wiki Features table documents
-        // the STANDARD → WINDOWED → SOLID_ROOF → FLATBED cycle. Reordering the
+        // Order is part of the public contract: variantForIndex cycles through
+        // the registry whose built-in section uses CarriageType.values() in
+        // declaration order, and the wiki Features table documents the
+        // STANDARD → WINDOWED → SOLID_ROOF → FLATBED cycle. Reordering the
         // enum silently changes which variant spawns at any given index, so
         // lock it here.
         assertArrayEquals(
@@ -99,6 +128,23 @@ final class CarriageTemplateTest {
             },
             CarriageType.values()
         );
+    }
+
+    // ---- CarriageVariant validation ----
+
+    @Test
+    @DisplayName("CarriageVariant.custom rejects uppercase, spaces, and reserved names")
+    void carriageVariant_customRejectsInvalidNames() {
+        assertThrows(IllegalArgumentException.class,
+            () -> CarriageVariant.custom("Invalid"), "uppercase");
+        assertThrows(IllegalArgumentException.class,
+            () -> CarriageVariant.custom("has space"), "space");
+        assertThrows(IllegalArgumentException.class,
+            () -> CarriageVariant.custom(""), "empty");
+        assertThrows(IllegalArgumentException.class,
+            () -> CarriageVariant.custom("standard"), "reserved built-in");
+        assertThrows(IllegalArgumentException.class,
+            () -> CarriageVariant.custom("flatbed"), "reserved built-in");
     }
 
     // ---- CarriageDims: default + invariants ----

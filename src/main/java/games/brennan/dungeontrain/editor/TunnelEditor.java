@@ -7,17 +7,22 @@ import games.brennan.dungeontrain.tunnel.TunnelTemplate;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Editor plots for {@link TunnelVariant}s — mirror of {@link CarriageEditor}.
@@ -25,10 +30,13 @@ import java.util.Map;
  * {@code y = 250}, {@code z = 0}, so the tunnel and carriage plots are all
  * visible from a single vantage point when debugging templates.
  *
- * <p>Session state is shared with {@link CarriageEditor} via
- * {@link EditorSessions} — a player can enter a carriage plot, then a tunnel
- * plot, then {@code /dungeontrain editor exit} and still return to their
- * original position.</p>
+ * <p>Session state (pre-enter position) is kept per-player in RAM — same
+ * shape as {@link CarriageEditor}'s {@code Session} but in a separate map.
+ * On {@code /dungeontrain editor exit}, the dispatcher tries
+ * {@link #exit(ServerPlayer)} first; if the player has no tunnel session,
+ * it falls through to {@link CarriageEditor#exit(ServerPlayer)}. This lets a
+ * player who enters a carriage plot, then a tunnel plot, run exit twice to
+ * step back through both sessions.</p>
  */
 public final class TunnelEditor {
 
@@ -40,6 +48,10 @@ public final class TunnelEditor {
     private static final int PLOT_STEP_X = 20;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
+
+    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch) {}
+
+    private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
     private static final Map<TunnelVariant, BlockPos> PLOT_ORIGINS = buildPlots();
 
@@ -88,7 +100,7 @@ public final class TunnelEditor {
         ServerLevel overworld = server.overworld();
         BlockPos origin = PLOT_ORIGINS.get(variant);
 
-        EditorSessions.saveIfAbsent(player.getUUID(), new EditorSessions.Session(
+        SESSIONS.putIfAbsent(player.getUUID(), new Session(
             player.level().dimension(),
             player.position(),
             player.getYRot(),
@@ -147,6 +159,22 @@ public final class TunnelEditor {
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{} template",
             player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /**
+     * Restore player to pre-enter position/dimension. Returns false if no
+     * session — the caller should then try {@link CarriageEditor#exit}.
+     */
+    public static boolean exit(ServerPlayer player) {
+        Session session = SESSIONS.remove(player.getUUID());
+        if (session == null) return false;
+        MinecraftServer server = player.getServer();
+        if (server == null) return false;
+        ServerLevel dim = server.getLevel(session.dimension());
+        if (dim == null) return false;
+        player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
+            session.yaw(), session.pitch());
+        return true;
     }
 
     /**
