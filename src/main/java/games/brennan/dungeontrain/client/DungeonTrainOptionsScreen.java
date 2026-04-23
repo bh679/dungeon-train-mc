@@ -21,7 +21,7 @@ import net.minecraft.network.chat.Component;
  *   <li>Start with a train — auto-spawn on first login</li>
  *   <li>Train Y — world height to place the train at</li>
  *   <li>Carriage length / width / height — per-world footprint
- *       (default 9 × 9 × 7, clamped via {@link CarriageDims#clamp})</li>
+ *       (default 9 × 7 × 7, clamped via {@link CarriageDims#clamp})</li>
  * </ul>
  */
 public final class DungeonTrainOptionsScreen extends Screen {

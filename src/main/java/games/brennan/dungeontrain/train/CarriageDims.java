@@ -6,7 +6,8 @@ package games.brennan.dungeontrain.train;
  * <p>Replaces the previous {@code public static final} constants on
  * {@link CarriageTemplate}. Each world captures its dims at creation time
  * (stored on {@code DungeonTrainWorldData}) and the value is fixed for
- * that world's lifetime. Different worlds can have different dims.</p>
+ * that world's lifetime. Different worlds can have different dims. The
+ * shipped default is 9×7×7.</p>
  *
  * <p>Floors chosen so the {@link CarriageTemplate#stateAt} geometry still
  * produces a coherent carriage:
@@ -36,13 +37,13 @@ public record CarriageDims(int length, int width, int height) {
 
     public static final int MIN_WIDTH = 3;
     public static final int MAX_WIDTH = 32;
-    public static final int DEFAULT_WIDTH = 9;
+    public static final int DEFAULT_WIDTH = 7;
 
     public static final int MIN_HEIGHT = 3;
     public static final int MAX_HEIGHT = 24;
     public static final int DEFAULT_HEIGHT = 7;
 
-    /** Canonical 9×9×7 shipped footprint — used as fallback for legacy world saves. */
+    /** Canonical 9×7×7 shipped footprint — used as fallback for legacy world saves. */
     public static final CarriageDims DEFAULT = new CarriageDims(
             DEFAULT_LENGTH, DEFAULT_WIDTH, DEFAULT_HEIGHT
     );

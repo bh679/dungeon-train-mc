@@ -16,9 +16,8 @@ import net.minecraft.world.level.saveddata.SavedData;
  * Back-compat: when no .dat file exists yet (worlds created before this
  * feature landed), {@link #createDefault()} sources the train Y from the
  * server config TOML, defaults auto-spawn to ON, and uses
- * {@link CarriageDims#DEFAULT} (9×9×7) for dims — preserving any tuned
- * value an admin already set in {@code dungeontrain-server.toml} and
- * matching the hardcoded shipped dims from before this feature.
+ * {@link CarriageDims#DEFAULT} (9×7×7) for dims — preserving any tuned
+ * value an admin already set in {@code dungeontrain-server.toml}.
  *
  * Individual NBT tags are checked independently so a world saved with
  * only {@code trainY}/{@code startsWithTrain} (pre-dims) loads cleanly

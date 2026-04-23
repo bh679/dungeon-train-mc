@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * Carriage blueprint — a hollow box whose dimensions are captured per-world
- * in {@link CarriageDims} (default 9×9×7, X×Z×Y). Four visual variants are
+ * in {@link CarriageDims} (default 9×7×7, X×Z×Y). Four visual variants are
  * selected per-carriage via {@link CarriageType} and
  * {@link #typeForIndex(int)} so a train of length ≥ 4 shows one of each.
  *

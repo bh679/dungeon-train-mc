@@ -104,15 +104,15 @@ final class CarriageTemplateTest {
     // ---- CarriageDims: default + invariants ----
 
     @Test
-    @DisplayName("CarriageDims.DEFAULT is 9x9x7 — the shipped footprint")
-    void carriageDims_default_is9x9x7() {
+    @DisplayName("CarriageDims.DEFAULT is 9x7x7 — the shipped footprint")
+    void carriageDims_default_is9x7x7() {
         // DEFAULT drives every code path that hasn't got a WorldData dims
         // tag yet: legacy world saves (missing NBT tags fall back to
         // CarriageDims.DEFAULT), the options-screen initial field values,
         // and integration-test fixtures. Any change needs a paired wiki +
         // doc update.
         assertEquals(9, CarriageDims.DEFAULT.length(), "length");
-        assertEquals(9, CarriageDims.DEFAULT.width(), "width");
+        assertEquals(7, CarriageDims.DEFAULT.width(), "width");
         assertEquals(7, CarriageDims.DEFAULT.height(), "height");
     }
 
