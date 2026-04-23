@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
@@ -116,4 +117,23 @@ public enum EditorCategory {
 
     /** A category + which specific model the player is standing in. */
     public record Located(EditorCategory category, EditorModel model) {}
+
+    /**
+     * Erase every known editor plot in every category — footprints + barrier
+     * cages all go back to air. Called when the player exits the editor and
+     * when switching categories so stale models don't pile up at Y=250. Cheap
+     * — the total is a handful of plots ({@code CarriageVariantRegistry} size
+     * + 3 pillars + 2 tunnels).
+     */
+    public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
+        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+            CarriageEditor.clearPlot(overworld, v, dims);
+        }
+        for (PillarSection s : PillarSection.values()) {
+            PillarEditor.clearPlot(overworld, s, dims);
+        }
+        for (TunnelVariant t : TunnelVariant.values()) {
+            TunnelEditor.clearPlot(overworld, t);
+        }
+    }
 }

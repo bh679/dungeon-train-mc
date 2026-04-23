@@ -170,6 +170,19 @@ public final class CarriageEditor {
     }
 
     /**
+     * Erase the plot for {@code variant} — footprint cleared to air and the
+     * barrier cage around it removed. Used when switching categories (leaves
+     * no stale carriages visible once the player moves on to tracks) and on
+     * {@code /dt editor exit} (tidy the sky-plots when nobody is editing).
+     */
+    public static void clearPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
+        BlockPos origin = plotOrigin(variant);
+        if (origin == null) return;
+        CarriageTemplate.eraseAt(overworld, origin, dims);
+        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
+    }
+
+    /**
      * Capture the {@code length × height × width} region at the plot for
      * {@code variant} into a fresh {@link StructureTemplate} and persist it
      * via {@link CarriageTemplateStore}. Air positions are excluded so the

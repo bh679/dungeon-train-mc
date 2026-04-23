@@ -411,6 +411,10 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
+        // Clear every plot from every category first — switching from one
+        // category to another should leave no stale models behind.
+        EditorCategory.clearAllPlots(overworld, dims);
+
         // Stamp every plot so the full list is visible at once.
         for (EditorModel model : category.models()) {
             stampCategoryModel(overworld, model, dims);
@@ -621,6 +625,10 @@ public final class EditorCommand {
             ));
             return 0;
         }
+        // Clear every plot so the sky stays tidy for the next session.
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        EditorCategory.clearAllPlots(overworld, dims);
         source.sendSuccess(() -> Component.literal(
             "Editor: exited, returned to previous location."
         ), true);

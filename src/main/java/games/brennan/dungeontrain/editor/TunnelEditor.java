@@ -143,6 +143,16 @@ public final class TunnelEditor {
     }
 
     /**
+     * Erase the plot for {@code variant} — footprint + outline cage cleared
+     * to air. Used on category switch and editor exit.
+     */
+    public static void clearPlot(ServerLevel overworld, TunnelVariant variant) {
+        BlockPos origin = PLOT_ORIGINS.get(variant);
+        TunnelTemplate.eraseAt(overworld, origin);
+        setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
+    }
+
+    /**
      * Capture the 10×14×13 region at the plot for {@code variant} into a
      * fresh {@link StructureTemplate} and persist it via
      * {@link TunnelTemplateStore}.

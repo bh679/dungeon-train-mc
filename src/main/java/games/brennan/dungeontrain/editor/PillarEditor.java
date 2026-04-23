@@ -116,6 +116,18 @@ public final class PillarEditor {
     }
 
     /**
+     * Erase the plot for {@code section} — footprint + outline cage cleared
+     * to air. Used on category switch and editor exit.
+     */
+    public static void clearPlot(ServerLevel overworld, PillarSection section, CarriageDims dims) {
+        BlockPos origin = plotOrigin(section);
+        // {@link #eraseAt} already clears the 1-block outline margin in the
+        // loop bounds ({@code -1 .. h} / {@code -1 .. w}), so the footprint
+        // and the cage both go to air in one sweep.
+        eraseAt(overworld, origin, section, dims);
+    }
+
+    /**
      * Capture the {@code 1 × height × width} region at the plot for
      * {@code section} into a fresh {@link StructureTemplate} and persist it
      * via {@link PillarTemplateStore}. Air positions are included so a

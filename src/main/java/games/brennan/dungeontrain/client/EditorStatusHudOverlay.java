@@ -54,6 +54,15 @@ public final class EditorStatusHudOverlay {
         model = "";
     }
 
+    /**
+     * True when the editor status HUD currently has a status to display.
+     * Other overlays ({@link VersionHudOverlay}) use this to step aside so
+     * the editor bar isn't competing with the mod version string.
+     */
+    public static boolean isActive() {
+        return !category.isEmpty() || !model.isEmpty();
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
         IGuiOverlay overlay = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
