@@ -43,7 +43,7 @@ public final class PillarEditor {
     private static final int PLOT_STEP_X = 20;
     private static final int FIRST_PLOT_X = 0;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
+    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
         public static SaveResult skipped() { return new SaveResult(false, false, null); }
