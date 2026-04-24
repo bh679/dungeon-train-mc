@@ -530,8 +530,9 @@ public final class TrackGenerator {
      * {@code g.bedY() - 1} (same as the pillar top). 3 wide along X centred on
      * {@code centerX}. On the +Z side (non-flipped) the 3 outward Z columns
      * sit at {@code [trackZMax+1 .. trackZMax+3]}; on the -Z side (flipped)
-     * at {@code [trackZMin-3 .. trackZMin-1]}, with {@link Mirror#LEFT_RIGHT}
-     * so the step direction still runs "outward from track".</p>
+     * at {@code [trackZMin-3 .. trackZMin-1]}. The template is saved in its
+     * {@code -Z}-side orientation, so the +Z side gets
+     * {@link Mirror#LEFT_RIGHT} applied when stamped.</p>
      *
      * <p>If the pillar column is taller than 8, a fresh copy of the template
      * is placed every 8 rows downward until the deepest ground is reached.
@@ -591,7 +592,10 @@ public final class TrackGenerator {
                 .setIgnoreEntities(true)
                 .setBoundingBox(clip)
                 .addProcessor(VSShipFilterProcessor.INSTANCE);
-            if (flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+            // Mirror applies to the non-flipped (+Z) side. The saved template
+            // is designed to read correctly on the flipped (-Z) side, so we
+            // mirror it when stamping on the opposite side to match.
+            if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
 
             template.placeInWorld(level, copyOrigin, copyOrigin, settings, level.getRandom(), 3);
 
