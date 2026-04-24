@@ -206,6 +206,20 @@ public final class CarriageTemplateStore {
     }
 
     /**
+     * Load {@code variant}'s template from the bundled tier only — the
+     * classpath {@code /data/dungeontrain/templates/<id>.nbt}. Skips the
+     * config-dir override and the hardcoded fallback. Used by
+     * {@code /dt reset default} to revert a plot to the shipped template
+     * regardless of any user edits saved to the config dir.
+     *
+     * <p>Returns empty when the variant has no bundled copy — custom variants
+     * always, and built-ins that have never been promoted.</p>
+     */
+    public static Optional<StructureTemplate> getBundled(ServerLevel level, CarriageVariant variant, CarriageDims dims) {
+        return loadFromResource(level, variant, dims);
+    }
+
+    /**
      * True iff the mod jar bundles a default template for {@code variant}.
      * Custom variants never have bundled copies.
      */

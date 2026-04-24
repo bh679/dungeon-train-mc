@@ -53,6 +53,11 @@ public final class VersionHudOverlay {
             if (mc.options.hideGui) {
                 return;
             }
+            // Step aside when the editor status HUD is active — keeps the
+            // top-of-screen area uncluttered while the player is editing.
+            if (EditorStatusHudOverlay.isActive()) {
+                return;
+            }
             String text = carriagePresent
                 ? VersionInfo.DISPLAY + " — Carriage: " + formatSigned(carriageIndex)
                 : VersionInfo.DISPLAY;
