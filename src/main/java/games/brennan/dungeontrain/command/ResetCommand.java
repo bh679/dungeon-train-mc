@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
@@ -95,6 +96,10 @@ public final class ResetCommand {
             CarriageEditor.stampPlot(overworld, carriage.variant(), dims);
             return;
         }
+        if (model instanceof EditorModel.ContentsModel contentsModel) {
+            CarriageContentsEditor.stampPlot(overworld, contentsModel.contents(), dims);
+            return;
+        }
         if (model instanceof EditorModel.PillarModel pillar) {
             PillarEditor.stampPlot(overworld, pillar.section(), dims);
             return;
@@ -159,6 +164,12 @@ public final class ResetCommand {
         if (model instanceof EditorModel.TunnelModel tunnel) {
             source.sendFailure(Component.literal(
                 "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '" + tunnel.id() + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        if (model instanceof EditorModel.ContentsModel contentsModel) {
+            source.sendFailure(Component.literal(
+                "Contents templates have no separate bundled tier — '/dt reset default' does not apply to '" + contentsModel.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }

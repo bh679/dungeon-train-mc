@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -24,6 +25,7 @@ import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -33,6 +35,7 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -91,10 +94,28 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
-    private static final SuggestionProvider<CommandSourceStack> PILLAR_SECTION_SUGGESTIONS =
+    /** Like VARIANT_SUGGESTIONS but carriage-only (no tunnels — weight is a carriage concept). */
+    private static final SuggestionProvider<CommandSourceStack> CARRIAGE_VARIANT_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+                builder.suggest(v.id());
+            }
+            return builder.buildFuture();
+        };
+
+    /**
+     * Suggester for {@code /dungeontrain editor pillar ...} targets — covers
+     * both {@link PillarSection} (TOP/MIDDLE/BOTTOM) and {@link PillarAdjunct}
+     * (STAIRS) so {@code enter}, {@code reset}, and {@code promote} all see
+     * the same unified namespace.
+     */
+    private static final SuggestionProvider<CommandSourceStack> PILLAR_TARGET_SUGGESTIONS =
         (ctx, builder) -> {
             for (PillarSection s : PillarSection.values()) {
                 builder.suggest(s.id());
+            }
+            for (PillarAdjunct a : PillarAdjunct.values()) {
+                builder.suggest(a.id());
             }
             return builder.buildFuture();
         };
@@ -103,14 +124,6 @@ public final class EditorCommand {
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
                 builder.suggest(c.id());
-            }
-            return builder.buildFuture();
-        };
-
-    private static final SuggestionProvider<CommandSourceStack> CARRIAGE_VARIANT_SUGGESTIONS =
-        (ctx, builder) -> {
-            for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-                builder.suggest(v.id());
             }
             return builder.buildFuture();
         };
@@ -194,6 +207,7 @@ public final class EditorCommand {
                         return runPromote(ctx.getSource(), type);
                     })))
             .then(Commands.literal("contents")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CONTENTS))
                 .then(Commands.literal("enter")
                     .then(Commands.argument("contents", StringArgumentType.word())
                         .suggests(CONTENTS_SUGGESTIONS)
@@ -231,34 +245,52 @@ public final class EditorCommand {
                             })))))
             .then(Commands.literal("pillar")
                 .then(Commands.literal("enter")
-                    .then(Commands.argument("section", StringArgumentType.word())
-                        .suggests(PILLAR_SECTION_SUGGESTIONS)
+                    .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(PILLAR_TARGET_SUGGESTIONS)
                         .executes(ctx -> {
-                            PillarSection s = parseSection(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "section"));
-                            if (s == null) return 0;
-                            return runPillarEnter(ctx.getSource(), s);
+                            String raw = StringArgumentType.getString(ctx, "target");
+                            PillarSection s = tryParseSection(raw);
+                            if (s != null) return runPillarEnter(ctx.getSource(), s);
+                            PillarAdjunct a = tryParseAdjunct(raw);
+                            if (a != null) return runPillarEnterAdjunct(ctx.getSource(), a);
+                            ctx.getSource().sendFailure(Component.literal(
+                                "Unknown pillar target '" + raw + "'. Valid: "
+                                    + pillarTargetList()
+                            ));
+                            return 0;
                         })))
                 .then(Commands.literal("save").executes(ctx -> runPillarSave(ctx.getSource())))
                 .then(Commands.literal("list").executes(ctx -> runPillarList(ctx.getSource())))
                 .then(Commands.literal("reset")
-                    .then(Commands.argument("section", StringArgumentType.word())
-                        .suggests(PILLAR_SECTION_SUGGESTIONS)
+                    .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(PILLAR_TARGET_SUGGESTIONS)
                         .executes(ctx -> {
-                            PillarSection s = parseSection(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "section"));
-                            if (s == null) return 0;
-                            return runPillarReset(ctx.getSource(), s);
+                            String raw = StringArgumentType.getString(ctx, "target");
+                            PillarSection s = tryParseSection(raw);
+                            if (s != null) return runPillarReset(ctx.getSource(), s);
+                            PillarAdjunct a = tryParseAdjunct(raw);
+                            if (a != null) return runPillarResetAdjunct(ctx.getSource(), a);
+                            ctx.getSource().sendFailure(Component.literal(
+                                "Unknown pillar target '" + raw + "'. Valid: "
+                                    + pillarTargetList()
+                            ));
+                            return 0;
                         })))
                 .then(Commands.literal("promote")
                     .then(Commands.literal("all").executes(ctx -> runPillarPromoteAll(ctx.getSource())))
-                    .then(Commands.argument("section", StringArgumentType.word())
-                        .suggests(PILLAR_SECTION_SUGGESTIONS)
+                    .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(PILLAR_TARGET_SUGGESTIONS)
                         .executes(ctx -> {
-                            PillarSection s = parseSection(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "section"));
-                            if (s == null) return 0;
-                            return runPillarPromote(ctx.getSource(), s);
+                            String raw = StringArgumentType.getString(ctx, "target");
+                            PillarSection s = tryParseSection(raw);
+                            if (s != null) return runPillarPromote(ctx.getSource(), s);
+                            PillarAdjunct a = tryParseAdjunct(raw);
+                            if (a != null) return runPillarPromoteAdjunct(ctx.getSource(), a);
+                            ctx.getSource().sendFailure(Component.literal(
+                                "Unknown pillar target '" + raw + "'. Valid: "
+                                    + pillarTargetList()
+                            ));
+                            return 0;
                         }))))
             .then(Commands.literal("track")
                 .then(Commands.literal("enter").executes(ctx -> runTrackEnter(ctx.getSource())))
@@ -267,6 +299,14 @@ public final class EditorCommand {
                 .then(Commands.literal("reset").executes(ctx -> runTrackReset(ctx.getSource())))
                 .then(Commands.literal("promote").executes(ctx -> runTrackPromote(ctx.getSource()))))
             .then(buildPartSubtree(buildContext))
+            .then(Commands.literal("weight")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("value",
+                            IntegerArgumentType.integer(CarriageWeights.MIN, CarriageWeights.MAX))
+                        .executes(ctx -> runWeightSet(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "variant"),
+                            IntegerArgumentType.getInteger(ctx, "value"))))))
             .then(buildVariantSubtree(buildContext));
     }
 
@@ -277,26 +317,6 @@ public final class EditorCommand {
      * slot is a <b>list</b> of candidate names; spawn picks one
      * deterministically per-carriage-index so a single variant can render
      * differently from car to car.
-     *
-     * <p>Subcommands:
-     * <ul>
-     *   <li>{@code enter <kind> <name>} — teleport to the kind's plot and
-     *       stamp the current template for {@code name} (stone-brick starter
-     *       if none on disk).</li>
-     *   <li>{@code save [new_name]} — save the current session plot under
-     *       the session's name or an explicit {@code new_name}.</li>
-     *   <li>{@code list [kind]} — show registered parts per kind.</li>
-     *   <li>{@code reset <kind> <name>} — delete the config-dir NBT for a part.</li>
-     *   <li>{@code promote all|<kind> <name>} — copy config-dir NBT into the
-     *       source tree so it ships with the next build.</li>
-     *   <li>{@code set <variant> <kind> <name>} — replace the variant's slot
-     *       list with {@code [name]} (use {@code name=none} to strip the
-     *       overlay for that kind — monolithic content shows through).</li>
-     *   <li>{@code add <variant> <kind> <name>} — append {@code name} to the
-     *       list so spawn picks randomly between candidates per carriage.</li>
-     *   <li>{@code remove <variant> <kind> <name>} — drop one candidate.</li>
-     *   <li>{@code show <variant>} / {@code clear <variant>}.</li>
-     * </ul>
      */
     private static LiteralArgumentBuilder<CommandSourceStack> buildPartSubtree(@SuppressWarnings("unused") CommandBuildContext buildContext) {
         return Commands.literal("part")
@@ -381,15 +401,55 @@ public final class EditorCommand {
                         StringArgumentType.getString(c, "variant")))));
     }
 
-    private static PillarSection parseSection(CommandSourceStack source, String raw) {
+    private static int runWeightSet(CommandSourceStack source, String rawVariant, int value) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        try {
+            int stored = CarriageWeights.set(variant.id(), value);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: weight " + variant.id() + "=" + stored
+                    + " (saved to " + CarriageWeights.configPath() + "). "
+                    + "Existing carriages keep their variant until they scroll out."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor weight set failed for {}", variant.id(), t);
+            source.sendFailure(Component.literal("weight failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /** Silent parse — returns null on miss, used by unified pillar target dispatch. */
+    private static PillarSection tryParseSection(String raw) {
         try {
             return PillarSection.valueOf(raw.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            source.sendFailure(Component.literal(
-                "Unknown pillar section '" + raw + "'. Valid: top, middle, bottom"
-            ));
             return null;
         }
+    }
+
+    /** Silent parse — returns null on miss, used by unified pillar target dispatch. */
+    private static PillarAdjunct tryParseAdjunct(String raw) {
+        try {
+            return PillarAdjunct.valueOf(raw.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** Comma-separated list of valid pillar target names for error messages. */
+    private static String pillarTargetList() {
+        StringBuilder sb = new StringBuilder();
+        for (PillarSection s : PillarSection.values()) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(s.id());
+        }
+        for (PillarAdjunct a : PillarAdjunct.values()) {
+            sb.append(", ").append(a.id());
+        }
+        return sb.toString();
     }
 
     /**
@@ -628,6 +688,8 @@ public final class EditorCommand {
             EditorModel head = first.get();
             if (head instanceof EditorModel.CarriageModel cm) {
                 CarriageEditor.enter(player, cm.variant());
+            } else if (head instanceof EditorModel.ContentsModel cm) {
+                CarriageContentsEditor.enter(player, cm.contents(), null);
             } else if (head instanceof EditorModel.PillarModel pm) {
                 PillarEditor.enter(player, pm.section());
             } else if (head instanceof EditorModel.TunnelModel tm) {
@@ -652,6 +714,8 @@ public final class EditorCommand {
     private static void stampCategoryModel(ServerLevel overworld, EditorModel model, CarriageDims dims) {
         if (model instanceof EditorModel.CarriageModel cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
+        } else if (model instanceof EditorModel.ContentsModel cm) {
+            CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
         } else if (model instanceof EditorModel.PillarModel pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
         } else if (model instanceof EditorModel.TunnelModel tm) {
@@ -868,6 +932,7 @@ public final class EditorCommand {
     }
 
     private static int runList(CommandSourceStack source) {
+        CarriageWeights weights = CarriageWeights.current();
         StringBuilder sb = new StringBuilder("Carriage variants:");
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             boolean config = CarriageTemplateStore.exists(v);
@@ -877,8 +942,10 @@ public final class EditorCommand {
             if (config) status = "config override";
             else if (bundled) status = "bundled default";
             else status = v.isBuiltin() ? "fallback (hardcoded)" : "missing (no file)";
+            int weight = weights.weightFor(v.id());
             sb.append("\n  ").append(v.id())
                 .append(" — ").append(kind).append(" | ").append(status)
+                .append(" | weight=").append(weight)
                 .append(" [config: ").append(config ? "yes" : "no")
                 .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
         }
@@ -1077,12 +1144,21 @@ public final class EditorCommand {
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         PillarSection section = PillarEditor.plotContaining(player.blockPosition(), dims);
-        if (section == null) {
-            source.sendFailure(Component.literal(
-                "Not in a pillar editor plot. Use '/dungeontrain editor pillar enter <top|middle|bottom>' first."
-            ));
-            return 0;
+        if (section != null) {
+            return runPillarSaveSection(source, player, section);
         }
+        PillarAdjunct adjunct = PillarEditor.plotContainingAdjunct(player.blockPosition());
+        if (adjunct != null) {
+            return runPillarSaveAdjunct(source, player, adjunct);
+        }
+        source.sendFailure(Component.literal(
+            "Not in a pillar editor plot. Use '/dungeontrain editor pillar enter <"
+                + pillarTargetList() + ">' first."
+        ));
+        return 0;
+    }
+
+    private static int runPillarSaveSection(CommandSourceStack source, ServerPlayer player, PillarSection section) {
         try {
             PillarEditor.SaveResult result = PillarEditor.save(player, section);
             source.sendSuccess(() -> Component.literal(
@@ -1109,6 +1185,33 @@ public final class EditorCommand {
         }
     }
 
+    private static int runPillarSaveAdjunct(CommandSourceStack source, ServerPlayer player, PillarAdjunct adjunct) {
+        try {
+            PillarEditor.SaveResult result = PillarEditor.save(player, adjunct);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: saved pillar adjunct '" + adjunct.id() + "' template (config-dir)."
+            ), true);
+            if (result.sourceAttempted()) {
+                if (result.sourceWritten()) {
+                    source.sendSuccess(() -> Component.literal(
+                        "Editor: also wrote bundled adjunct copy to source tree (will ship with next build)."
+                    ).withStyle(ChatFormatting.GREEN), true);
+                } else {
+                    source.sendFailure(Component.literal(
+                        "Editor: pillar adjunct source-tree write failed: " + result.sourceError()
+                    ).withStyle(ChatFormatting.YELLOW));
+                }
+            }
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar save adjunct failed", t);
+            source.sendFailure(Component.literal("pillar save failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
     private static int runPillarList(CommandSourceStack source) {
         StringBuilder sb = new StringBuilder("Pillar templates:");
         for (PillarSection section : PillarSection.values()) {
@@ -1120,6 +1223,21 @@ public final class EditorCommand {
             else status = "fallback (stone brick)";
             sb.append("\n  ").append(section.id())
                 .append(" (height=").append(section.height()).append(")")
+                .append(" — ").append(status)
+                .append(" [config: ").append(config ? "yes" : "no")
+                .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
+        }
+        sb.append("\nPillar adjuncts:");
+        for (PillarAdjunct adjunct : PillarAdjunct.values()) {
+            boolean config = PillarTemplateStore.existsAdjunct(adjunct);
+            boolean bundled = PillarTemplateStore.bundledAdjunct(adjunct);
+            String status;
+            if (config) status = "config override";
+            else if (bundled) status = "bundled default";
+            else status = "not placed (no fallback)";
+            sb.append("\n  ").append(adjunct.id())
+                .append(" (size=").append(adjunct.xSize()).append("x")
+                .append(adjunct.ySize()).append("x").append(adjunct.zSize()).append(")")
                 .append(" — ").append(status)
                 .append(" [config: ").append(config ? "yes" : "no")
                 .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
@@ -1410,6 +1528,20 @@ public final class EditorCommand {
                     .append(": ").append(e.getMessage());
             }
         }
+        for (PillarAdjunct adjunct : PillarAdjunct.values()) {
+            if (!PillarTemplateStore.existsAdjunct(adjunct)) {
+                skipped++;
+                continue;
+            }
+            try {
+                PillarTemplateStore.promoteAdjunct(adjunct);
+                promoted++;
+            } catch (Exception e) {
+                LOGGER.error("[DungeonTrain] editor pillar promote-all failed for adjunct {}", adjunct, e);
+                errors.append("\n  ").append(adjunct.id())
+                    .append(": ").append(e.getMessage());
+            }
+        }
         final int p = promoted;
         final int s = skipped;
         final String errStr = errors.toString();
@@ -1418,6 +1550,60 @@ public final class EditorCommand {
                 + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
         ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;
+    }
+
+    private static int runPillarEnterAdjunct(CommandSourceStack source, PillarAdjunct adjunct) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        try {
+            PillarEditor.enter(player, adjunct);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered pillar adjunct '" + adjunct.id()
+                    + "' plot at " + PillarEditor.plotOriginAdjunct(adjunct)
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar enter adjunct failed", t);
+            source.sendFailure(Component.literal("pillar enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPillarResetAdjunct(CommandSourceStack source, PillarAdjunct adjunct) {
+        try {
+            boolean deleted = PillarTemplateStore.deleteAdjunct(adjunct);
+            source.sendSuccess(() -> Component.literal(
+                deleted
+                    ? "Editor: deleted pillar adjunct '" + adjunct.id() + "' template."
+                    : "Editor: no pillar adjunct '" + adjunct.id() + "' template to delete."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar reset adjunct failed", t);
+            source.sendFailure(Component.literal("pillar reset failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPillarPromoteAdjunct(CommandSourceStack source, PillarAdjunct adjunct) {
+        try {
+            PillarTemplateStore.promoteAdjunct(adjunct);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: promoted pillar adjunct '" + adjunct.id()
+                    + "' template to source tree (will ship with next build)."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor pillar promote adjunct failed for {}", adjunct, t);
+            source.sendFailure(Component.literal("pillar promote failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 
     private static int runTrackEnter(CommandSourceStack source) {
