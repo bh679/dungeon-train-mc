@@ -75,6 +75,21 @@ public final class EditorStatusHudOverlay {
         return !category.isEmpty() || !model.isEmpty();
     }
 
+    /** Current editor category name (e.g. "carriages"), or empty string when not in an editor plot. */
+    public static String category() {
+        return category;
+    }
+
+    /** Current model id within the active category, or empty when not in an editor plot. */
+    public static String model() {
+        return model;
+    }
+
+    /** Server-reported devmode flag. False when not in an editor plot. */
+    public static boolean isDevModeOn() {
+        return devmode;
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
         IGuiOverlay overlay = (gui, graphics, partialTick, screenWidth, screenHeight) -> {

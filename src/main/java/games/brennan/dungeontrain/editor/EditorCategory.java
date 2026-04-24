@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -22,6 +24,7 @@ import java.util.Optional;
  *
  * <ul>
  *   <li>{@link #CARRIAGES} — every registered {@link CarriageVariant}.</li>
+ *   <li>{@link #CONTENTS} — every registered {@link CarriageContents}.</li>
  *   <li>{@link #TRACKS} — the open-air track tile, then pillars
  *       ({@code bottom → middle → top}), then tunnels
  *       ({@code section → portal}).</li>
@@ -31,6 +34,7 @@ import java.util.Optional;
  */
 public enum EditorCategory {
     CARRIAGES("Carriages"),
+    CONTENTS("Contents"),
     TRACKS("Tracks"),
     ARCHITECTURE("Architecture");
 
@@ -53,6 +57,7 @@ public enum EditorCategory {
     public List<EditorModel> models() {
         return switch (this) {
             case CARRIAGES -> carriageModels();
+            case CONTENTS -> contentsModels();
             case TRACKS -> trackModels();
             case ARCHITECTURE -> List.of();
         };
@@ -84,6 +89,10 @@ public enum EditorCategory {
         if (carriage != null) {
             return Optional.of(new Located(CARRIAGES, new EditorModel.CarriageModel(carriage)));
         }
+        CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
+        if (contents != null) {
+            return Optional.of(new Located(CONTENTS, new EditorModel.ContentsModel(contents)));
+        }
         if (TrackEditor.plotContaining(pos, dims)) {
             return Optional.of(new Located(TRACKS, new EditorModel.TrackModel()));
         }
@@ -103,6 +112,15 @@ public enum EditorCategory {
         List<EditorModel> out = new ArrayList<>(variants.size());
         for (CarriageVariant v : variants) {
             out.add(new EditorModel.CarriageModel(v));
+        }
+        return out;
+    }
+
+    private static List<EditorModel> contentsModels() {
+        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        List<EditorModel> out = new ArrayList<>(all.size());
+        for (CarriageContents c : all) {
+            out.add(new EditorModel.ContentsModel(c));
         }
         return out;
     }
@@ -134,6 +152,9 @@ public enum EditorCategory {
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
+        }
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            CarriageContentsEditor.clearPlot(overworld, c, dims);
         }
         TrackEditor.clearPlot(overworld, dims);
         for (PillarSection s : PillarSection.values()) {
