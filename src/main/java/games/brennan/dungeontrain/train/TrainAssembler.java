@@ -75,10 +75,19 @@ public final class TrainAssembler {
 
         Set<BlockPos> blocks = new HashSet<>();
         int emptyCarriages = 0;
+        // Stash the variant per index so the post-assembly contents pass
+        // doesn't re-pick and risk desyncing with what was placed here.
+        CarriageVariant[] variantByIdx = new CarriageVariant[lastIdx - firstIdx + 1];
         for (int i = firstIdx; i <= lastIdx; i++) {
             BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
             CarriageVariant variant = CarriageTemplate.variantForIndex(i, genCfg);
-            Set<BlockPos> carriageBlocks = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, i);
+            variantByIdx[i - firstIdx] = variant;
+            // applyContents=false: contents (which may spawn entities) are
+            // deferred until AFTER ShipAssembler.assembleToShip because that
+            // call only moves blocks into shipyard space. Entities spawned in
+            // world space here would stay in world space, visible at the
+            // train's original spawn point rather than riding the ship.
+            Set<BlockPos> carriageBlocks = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, i, false);
             if (carriageBlocks.isEmpty()) {
                 emptyCarriages++;
                 LOGGER.warn("[DungeonTrain] Spawn produced empty carriage idx={} variant={} at {}",
@@ -109,6 +118,16 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.x),
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
+
+        // Second pass: apply contents at SHIPYARD coordinates now that the
+        // ship has absorbed our world-space blocks. Entity placement in
+        // shipyard chunks routes through VS's shipyard-entity mixin so
+        // armor stands, paintings, and item frames ride the ship.
+        for (int i = firstIdx; i <= lastIdx; i++) {
+            CarriageVariant variant = variantByIdx[i - firstIdx];
+            BlockPos carriageShipyardOrigin = shipyardOrigin.offset(i * dims.length(), 0, 0);
+            CarriageTemplate.applyContentsAt(level, carriageShipyardOrigin, variant, dims, genCfg, i);
+        }
 
         TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx, dims);
         ship.setTransformProvider(provider);
