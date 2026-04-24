@@ -82,10 +82,7 @@ public final class TrackEditor {
         BlockPos origin = plotOrigin();
 
         CarriageEditor.rememberReturn(player);
-
-        eraseAt(overworld, origin, dims);
-        stampCurrent(overworld, origin, dims);
-        setOutline(overworld, origin, dims);
+        stampPlot(overworld, dims);
 
         double tx = origin.getX() + TrackTemplate.TILE_LENGTH / 2.0;
         double ty = origin.getY() + 1.0;
@@ -95,6 +92,26 @@ public final class TrackEditor {
         LOGGER.info("[DungeonTrain] Track editor enter: {} -> plot at {} (size={}x{}x{})",
             player.getName().getString(), origin,
             TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+    }
+
+    /**
+     * Erase, place, and cage the plot without teleporting. Used by
+     * {@link #enter} and category-wide stamps ({@code /dt editor tracks}).
+     * Idempotent.
+     */
+    public static void stampPlot(ServerLevel overworld, CarriageDims dims) {
+        BlockPos origin = plotOrigin();
+        eraseAt(overworld, origin, dims);
+        stampCurrent(overworld, origin, dims);
+        setOutline(overworld, origin, dims);
+    }
+
+    /** Erase the track plot — footprint + outline cage go to air. */
+    public static void clearPlot(ServerLevel overworld, CarriageDims dims) {
+        BlockPos origin = plotOrigin();
+        // {@link #eraseAt} already clears the 1-block outline margin in the
+        // loop bounds, so the footprint and cage both go to air in one sweep.
+        eraseAt(overworld, origin, dims);
     }
 
     /**

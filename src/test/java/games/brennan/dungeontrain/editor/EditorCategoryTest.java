@@ -61,24 +61,25 @@ final class EditorCategoryTest {
     }
 
     @Test
-    @DisplayName("TRACKS: pillars ground-up then tunnels in enum order")
-    void tracks_orderIsGroundUpThenTunnels() {
+    @DisplayName("TRACKS: track tile, then pillars ground-up, then tunnels in enum order")
+    void tracks_orderIsTrackThenPillarsThenTunnels() {
         List<EditorModel> models = EditorCategory.TRACKS.models();
-        assertEquals(PillarSection.values().length + TunnelVariant.values().length, models.size());
-        assertInstanceOf(EditorModel.PillarModel.class, models.get(0));
-        assertEquals(PillarSection.BOTTOM, ((EditorModel.PillarModel) models.get(0)).section());
-        assertEquals(PillarSection.MIDDLE, ((EditorModel.PillarModel) models.get(1)).section());
-        assertEquals(PillarSection.TOP, ((EditorModel.PillarModel) models.get(2)).section());
-        assertInstanceOf(EditorModel.TunnelModel.class, models.get(3));
-        assertEquals(TunnelVariant.SECTION, ((EditorModel.TunnelModel) models.get(3)).variant());
-        assertEquals(TunnelVariant.PORTAL, ((EditorModel.TunnelModel) models.get(4)).variant());
+        assertEquals(1 + PillarSection.values().length + TunnelVariant.values().length, models.size());
+        assertInstanceOf(EditorModel.TrackModel.class, models.get(0));
+        assertInstanceOf(EditorModel.PillarModel.class, models.get(1));
+        assertEquals(PillarSection.BOTTOM, ((EditorModel.PillarModel) models.get(1)).section());
+        assertEquals(PillarSection.MIDDLE, ((EditorModel.PillarModel) models.get(2)).section());
+        assertEquals(PillarSection.TOP, ((EditorModel.PillarModel) models.get(3)).section());
+        assertInstanceOf(EditorModel.TunnelModel.class, models.get(4));
+        assertEquals(TunnelVariant.SECTION, ((EditorModel.TunnelModel) models.get(4)).variant());
+        assertEquals(TunnelVariant.PORTAL, ((EditorModel.TunnelModel) models.get(5)).variant());
     }
 
     @Test
-    @DisplayName("TRACKS firstModel: pillar_bottom (ground-up entry point)")
-    void tracks_firstIsPillarBottom() {
+    @DisplayName("TRACKS firstModel: track tile (most-used track model)")
+    void tracks_firstIsTrack() {
         EditorModel first = EditorCategory.TRACKS.firstModel().orElseThrow();
-        assertEquals("pillar_bottom", first.id());
+        assertEquals("track", first.id());
     }
 
     @Test

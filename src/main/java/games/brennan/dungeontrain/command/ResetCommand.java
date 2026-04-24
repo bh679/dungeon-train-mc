@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackEditor;
+import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -101,6 +103,10 @@ public final class ResetCommand {
             TunnelEditor.stampPlot(overworld, tunnel.variant());
             return;
         }
+        if (model instanceof EditorModel.TrackModel) {
+            TrackEditor.stampPlot(overworld, dims);
+            return;
+        }
     }
 
     /**
@@ -155,6 +161,23 @@ public final class ResetCommand {
                 "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '" + tunnel.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
+        }
+        if (model instanceof EditorModel.TrackModel) {
+            Optional<StructureTemplate> bundled =
+                TrackTemplateStore.getBundled(overworld, dims);
+            if (bundled.isEmpty()) {
+                source.sendFailure(Component.literal(
+                    "No bundled template for 'track' — nothing to reset to."
+                ).withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+            BlockPos origin = TrackEditor.plotOrigin();
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: reset 'track' to bundled default."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
         }
         return 0;
     }

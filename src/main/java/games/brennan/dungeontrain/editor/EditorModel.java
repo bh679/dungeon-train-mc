@@ -17,7 +17,7 @@ import java.util.Objects;
  * {@link #displayName()} is what the status HUD shows to the player.</p>
  */
 public sealed interface EditorModel
-    permits EditorModel.CarriageModel, EditorModel.PillarModel, EditorModel.TunnelModel {
+    permits EditorModel.CarriageModel, EditorModel.PillarModel, EditorModel.TunnelModel, EditorModel.TrackModel {
 
     /** Stable lower-case identifier — matches the token used in commands. */
     String id();
@@ -55,6 +55,18 @@ public sealed interface EditorModel
         @Override
         public String id() {
             return "tunnel_" + variant.name().toLowerCase(Locale.ROOT);
+        }
+    }
+
+    /**
+     * The single open-air track tile template — one per world, no variants.
+     * Wraps no state; the record form is used purely for sealed-hierarchy
+     * dispatch.
+     */
+    record TrackModel() implements EditorModel {
+        @Override
+        public String id() {
+            return "track";
         }
     }
 }

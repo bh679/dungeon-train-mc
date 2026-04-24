@@ -8,7 +8,10 @@ import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackEditor;
+import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
+import games.brennan.dungeontrain.track.TrackTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate;
@@ -212,6 +215,25 @@ public final class SaveCommand {
             }
             return;
         }
+        if (model instanceof EditorModel.TrackModel) {
+            TrackEditor.SaveResult result = TrackEditor.save(player);
+            if (source != null) {
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: saved 'track' template (config-dir)."), true);
+                if (result.sourceAttempted()) {
+                    if (result.sourceWritten()) {
+                        source.sendSuccess(() -> Component.literal(
+                            "Editor: also wrote bundled track copy to source tree (devmode ON)."
+                        ).withStyle(ChatFormatting.GREEN), true);
+                    } else {
+                        source.sendFailure(Component.literal(
+                            "Editor: track source-tree write failed: " + result.sourceError()
+                        ).withStyle(ChatFormatting.YELLOW));
+                    }
+                }
+            }
+            return;
+        }
         throw new IllegalStateException("Unknown model type: " + model);
     }
 
@@ -267,6 +289,25 @@ public final class SaveCommand {
             ).withStyle(ChatFormatting.YELLOW));
             return;
         }
+        if (model instanceof EditorModel.TrackModel) {
+            if (!TrackTemplateStore.sourceTreeAvailable()) {
+                source.sendFailure(Component.literal(
+                    "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
+                ).withStyle(ChatFormatting.YELLOW));
+                return;
+            }
+            try {
+                TrackTemplateStore.promote();
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: promoted 'track' to source tree (will ship with next build)."
+                ).withStyle(ChatFormatting.GREEN), true);
+            } catch (Exception e) {
+                LOGGER.error("[DungeonTrain] promote track failed", e);
+                source.sendFailure(Component.literal(
+                    "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            }
+            return;
+        }
     }
 
     /**
@@ -290,6 +331,13 @@ public final class SaveCommand {
             PillarTemplateStore.promote(pillar.section());
             return true;
         }
+        if (model instanceof EditorModel.TrackModel) {
+            if (!TrackTemplateStore.sourceTreeAvailable()) {
+                throw new Exception("source tree not writable");
+            }
+            TrackTemplateStore.promote();
+            return true;
+        }
         // Tunnel has no bundled tier.
         return false;
     }
@@ -310,6 +358,11 @@ public final class SaveCommand {
             BlockPos origin = TunnelEditor.plotOrigin(tunnel.variant());
             if (origin == null) return true;
             return countNonAir(level, origin, TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH)
+                < EMPTY_PLOT_THRESHOLD;
+        }
+        if (model instanceof EditorModel.TrackModel) {
+            BlockPos origin = TrackEditor.plotOrigin();
+            return countNonAir(level, origin, TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
         return true;

@@ -44,6 +44,12 @@ final class EditorModelTest {
     }
 
     @Test
+    @DisplayName("TrackModel id is the fixed 'track' token")
+    void track_id() {
+        assertEquals("track", new EditorModel.TrackModel().id());
+    }
+
+    @Test
     @DisplayName("Records reject null constructor args")
     void rejectsNull() {
         assertThrows(NullPointerException.class,

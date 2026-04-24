@@ -22,8 +22,9 @@ import java.util.Optional;
  *
  * <ul>
  *   <li>{@link #CARRIAGES} — every registered {@link CarriageVariant}.</li>
- *   <li>{@link #TRACKS} — pillars ({@code bottom → middle → top}), then
- *       tunnels ({@code section → portal}).</li>
+ *   <li>{@link #TRACKS} — the open-air track tile, then pillars
+ *       ({@code bottom → middle → top}), then tunnels
+ *       ({@code section → portal}).</li>
  *   <li>{@link #ARCHITECTURE} — placeholder, no models yet (walls, floor,
  *       roof coming later).</li>
  * </ul>
@@ -75,13 +76,16 @@ public enum EditorCategory {
 
     /**
      * Resolve which category + model the player's block position falls inside.
-     * Checks carriage plots first, then pillars, then tunnels.
+     * Checks carriage plots first, then track tile, then pillars, then tunnels.
      */
     public static Optional<Located> locate(ServerPlayer player, CarriageDims dims) {
         BlockPos pos = player.blockPosition();
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             return Optional.of(new Located(CARRIAGES, new EditorModel.CarriageModel(carriage)));
+        }
+        if (TrackEditor.plotContaining(pos, dims)) {
+            return Optional.of(new Located(TRACKS, new EditorModel.TrackModel()));
         }
         PillarSection pillar = PillarEditor.plotContaining(pos, dims);
         if (pillar != null) {
@@ -104,7 +108,9 @@ public enum EditorCategory {
     }
 
     private static List<EditorModel> trackModels() {
-        List<EditorModel> out = new ArrayList<>(PillarSection.values().length + TunnelVariant.values().length);
+        List<EditorModel> out = new ArrayList<>(1 + PillarSection.values().length + TunnelVariant.values().length);
+        // Track tile first — it's the "default" track model, most used.
+        out.add(new EditorModel.TrackModel());
         // Ground-up pillar ordering mirrors physical stacking.
         out.add(new EditorModel.PillarModel(PillarSection.BOTTOM));
         out.add(new EditorModel.PillarModel(PillarSection.MIDDLE));
@@ -129,6 +135,7 @@ public enum EditorCategory {
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
         }
+        TrackEditor.clearPlot(overworld, dims);
         for (PillarSection s : PillarSection.values()) {
             PillarEditor.clearPlot(overworld, s, dims);
         }

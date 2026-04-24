@@ -430,6 +430,8 @@ public final class EditorCommand {
                 PillarEditor.enter(player, pm.section());
             } else if (head instanceof EditorModel.TunnelModel tm) {
                 TunnelEditor.enter(player, tm.variant());
+            } else if (head instanceof EditorModel.TrackModel) {
+                TrackEditor.enter(player);
             }
             final EditorModel firstModel = head;
             source.sendSuccess(() -> Component.literal(
@@ -452,6 +454,8 @@ public final class EditorCommand {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
         } else if (model instanceof EditorModel.TunnelModel tm) {
             TunnelEditor.stampPlot(overworld, tm.variant());
+        } else if (model instanceof EditorModel.TrackModel) {
+            TrackEditor.stampPlot(overworld, dims);
         }
     }
 
