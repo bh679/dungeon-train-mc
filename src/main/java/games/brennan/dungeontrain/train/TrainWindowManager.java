@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.CarriageIndexPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -13,9 +15,13 @@ import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Per-tick rolling-window driver: keeps each {@link TrainTransformProvider}-marked
@@ -43,15 +49,48 @@ public final class TrainWindowManager {
     // changes feel responsive.
     private static final int REVERSAL_COOLDOWN_TICKS = 6;
 
+    /**
+     * Per-player last carriage index we pushed to the client via
+     * {@link CarriageIndexPacket}. Server-thread only (entire tick chain is
+     * on the server thread), so no synchronisation needed. Entry absence
+     * means "we haven't sent an index to that player yet, or we've cleared
+     * it". Used to skip duplicate packets (only send on change) and to
+     * detect players who drifted out of range so we can clear their HUD.
+     */
+    private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
+
     private TrainWindowManager() {}
 
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
 
+        Set<UUID> seenThisTick = new HashSet<>();
         for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
             if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
-            updateWindow(level, ship, provider, players);
+            updateWindow(level, ship, provider, players, seenThisTick);
+        }
+        clearDropouts(level, seenThisTick);
+    }
+
+    /**
+     * Send a HUD-clear packet to any player who had a pIdx last tick but
+     * wasn't reached by any train's window this tick (drifted outside
+     * {@link #NEAR_RADIUS}). Also drops offline UUIDs so the tracking map
+     * doesn't grow without bound.
+     */
+    private static void clearDropouts(ServerLevel level, Set<UUID> seenThisTick) {
+        if (LAST_SENT_PIDX.isEmpty()) return;
+        Iterator<Map.Entry<UUID, Integer>> it = LAST_SENT_PIDX.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Integer> entry = it.next();
+            UUID uuid = entry.getKey();
+            if (seenThisTick.contains(uuid)) continue;
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(uuid);
+            if (player != null) {
+                DungeonTrainNet.sendTo(player, CarriageIndexPacket.absent());
+            }
+            it.remove();
         }
     }
 
@@ -59,7 +98,8 @@ public final class TrainWindowManager {
         ServerLevel level,
         LoadedServerShip ship,
         TrainTransformProvider provider,
-        List<ServerPlayer> players
+        List<ServerPlayer> players,
+        Set<UUID> seenThisTick
     ) {
         // First time we see this ship, snapshot its inertia so VS's mass-
         // recalc-on-block-change can be reverted after each window mutation.
@@ -126,6 +166,17 @@ public final class TrainWindowManager {
             Vector3d local = new Vector3d(px, py, pz);
             ship.getTransform().getWorldToShip().transformPosition(local);
             int pIdx = (int) Math.floor((local.x - originX) / (double) dims.length());
+
+            // Push raw pIdx to the client HUD on change. Raw (not committed)
+            // is intentional — the HUD is a real-time debug read; debouncing
+            // would make the value lag behind the player's actual motion.
+            UUID uuid = player.getUUID();
+            seenThisTick.add(uuid);
+            Integer lastSent = LAST_SENT_PIDX.get(uuid);
+            if (lastSent == null || lastSent != pIdx) {
+                DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));
+                LAST_SENT_PIDX.put(uuid, pIdx);
+            }
 
             occupied.add(pIdx);
 

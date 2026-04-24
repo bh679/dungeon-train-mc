@@ -17,7 +17,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  */
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "1";
+    public static final String PROTOCOL_VERSION = "3";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
         .named(new ResourceLocation(DungeonTrain.MOD_ID, "main"))
@@ -38,6 +38,16 @@ public final class DungeonTrainNet {
             .encoder(VariantHoverPacket::encode)
             .decoder(VariantHoverPacket::decode)
             .consumerMainThread(VariantHoverPacket::handle)
+            .add();
+        CHANNEL.messageBuilder(CarriageIndexPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+            .encoder(CarriageIndexPacket::encode)
+            .decoder(CarriageIndexPacket::decode)
+            .consumerMainThread(CarriageIndexPacket::handle)
+            .add();
+        CHANNEL.messageBuilder(EditorStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+            .encoder(EditorStatusPacket::encode)
+            .decoder(EditorStatusPacket::decode)
+            .consumerMainThread(EditorStatusPacket::handle)
             .add();
     }
 

@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -56,9 +57,18 @@ public final class TrainCommand {
                 .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
             .then(EditorCommand.build(buildContext))
+            .then(SaveCommand.build())
+            .then(ResetCommand.build())
             .then(DebugCommand.build());
 
-        dispatcher.register(root);
+        LiteralCommandNode<CommandSourceStack> registered = dispatcher.register(root);
+
+        // `/dt` is a short alias for `/dungeontrain`. Brigadier's redirect
+        // forwards every subcommand under the full name so tab-completion and
+        // execution both work against the same tree — no duplicated wiring.
+        dispatcher.register(Commands.literal("dt")
+            .requires(s -> s.hasPermission(2))
+            .redirect(registered));
     }
 
     private static int runSpawn(CommandSourceStack source, int count) {

@@ -10,9 +10,13 @@ import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackEditor;
+import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
@@ -109,6 +113,13 @@ public final class EditorCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
         return Commands.literal("editor")
+            .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
+            .then(Commands.literal("carriages")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
+            .then(Commands.literal("tracks")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS)))
+            .then(Commands.literal("architecture")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
                 .executes(ctx -> runEnterCarriage(ctx.getSource(), CarriageVariant.of(CarriageType.STANDARD)))
                 .then(Commands.argument("variant", StringArgumentType.word())
@@ -142,6 +153,7 @@ public final class EditorCommand {
                                 StringArgumentType.getString(ctx, "name"), src);
                         }))))
             .then(Commands.literal("devmode")
+                .executes(ctx -> runDevMode(ctx.getSource(), !EditorDevMode.isEnabled()))
                 .then(Commands.literal("on").executes(ctx -> runDevMode(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runDevMode(ctx.getSource(), false))))
             .then(Commands.literal("promote")
@@ -221,6 +233,12 @@ public final class EditorCommand {
                             if (s == null) return 0;
                             return runPillarPromote(ctx.getSource(), s);
                         }))))
+            .then(Commands.literal("track")
+                .then(Commands.literal("enter").executes(ctx -> runTrackEnter(ctx.getSource())))
+                .then(Commands.literal("save").executes(ctx -> runTrackSave(ctx.getSource())))
+                .then(Commands.literal("list").executes(ctx -> runTrackList(ctx.getSource())))
+                .then(Commands.literal("reset").executes(ctx -> runTrackReset(ctx.getSource())))
+                .then(Commands.literal("promote").executes(ctx -> runTrackPromote(ctx.getSource()))))
             .then(buildVariantSubtree(buildContext));
     }
 
@@ -424,6 +442,79 @@ public final class EditorCommand {
         }
     }
 
+    /**
+     * Category-level enter: stamp every plot in {@code category} so the player
+     * can walk between all of them, then teleport them to the first model.
+     * Architecture has no models yet and returns a "coming soon" message.
+     */
+    private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        if (category == EditorCategory.ARCHITECTURE) {
+            source.sendSuccess(() -> Component.literal(
+                "Architecture editor: coming soon. Walls, floor, and roof templates aren't implemented yet."
+            ).withStyle(ChatFormatting.YELLOW), false);
+            return 1;
+        }
+
+        java.util.Optional<EditorModel> first = category.firstModel();
+        if (first.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "Category '" + category.displayName() + "' has no models."));
+            return 0;
+        }
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Clear every plot from every category first — switching from one
+        // category to another should leave no stale models behind.
+        EditorCategory.clearAllPlots(overworld, dims);
+
+        // Stamp every plot so the full list is visible at once.
+        for (EditorModel model : category.models()) {
+            stampCategoryModel(overworld, model, dims);
+        }
+
+        // Teleport to the first via the existing enter path (also handles session + outline).
+        try {
+            EditorModel head = first.get();
+            if (head instanceof EditorModel.CarriageModel cm) {
+                CarriageEditor.enter(player, cm.variant());
+            } else if (head instanceof EditorModel.PillarModel pm) {
+                PillarEditor.enter(player, pm.section());
+            } else if (head instanceof EditorModel.TunnelModel tm) {
+                TunnelEditor.enter(player, tm.variant());
+            } else if (head instanceof EditorModel.TrackModel) {
+                TrackEditor.enter(player);
+            }
+            final EditorModel firstModel = head;
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered '" + category.displayName() + "' at '" + firstModel.displayName() + "'."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor enter-category failed", t);
+            source.sendFailure(Component.literal("enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static void stampCategoryModel(ServerLevel overworld, EditorModel model, CarriageDims dims) {
+        if (model instanceof EditorModel.CarriageModel cm) {
+            CarriageEditor.stampPlot(overworld, cm.variant(), dims);
+        } else if (model instanceof EditorModel.PillarModel pm) {
+            PillarEditor.stampPlot(overworld, pm.section(), dims);
+        } else if (model instanceof EditorModel.TunnelModel tm) {
+            TunnelEditor.stampPlot(overworld, tm.variant());
+        } else if (model instanceof EditorModel.TrackModel) {
+            TrackEditor.stampPlot(overworld, dims);
+        }
+    }
+
     private static int runEnter(CommandSourceStack source, String raw) {
         if (isTunnelInput(raw)) {
             TunnelVariant v = parseTunnelVariant(source, raw);
@@ -603,6 +694,10 @@ public final class EditorCommand {
             ));
             return 0;
         }
+        // Clear every plot so the sky stays tidy for the next session.
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        EditorCategory.clearAllPlots(overworld, dims);
         source.sendSuccess(() -> Component.literal(
             "Editor: exited, returned to previous location."
         ), true);
@@ -1160,5 +1255,111 @@ public final class EditorCommand {
                 + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
         ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;
+    }
+
+    private static int runTrackEnter(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        try {
+            TrackEditor.enter(player);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered track plot at " + TrackEditor.plotOrigin()
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor track enter failed", t);
+            source.sendFailure(Component.literal("track enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runTrackSave(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        if (!TrackEditor.plotContaining(player.blockPosition(), dims)) {
+            source.sendFailure(Component.literal(
+                "Not in the track editor plot. Use '/dungeontrain editor track enter' first."
+            ));
+            return 0;
+        }
+        try {
+            TrackEditor.SaveResult result = TrackEditor.save(player);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: saved track template (config-dir)."
+            ), true);
+            if (result.sourceAttempted()) {
+                if (result.sourceWritten()) {
+                    source.sendSuccess(() -> Component.literal(
+                        "Editor: also wrote bundled track copy to source tree (will ship with next build)."
+                    ).withStyle(ChatFormatting.GREEN), true);
+                } else {
+                    source.sendFailure(Component.literal(
+                        "Editor: track source-tree write failed: " + result.sourceError()
+                    ).withStyle(ChatFormatting.YELLOW));
+                }
+            }
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor track save failed", t);
+            source.sendFailure(Component.literal("track save failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runTrackList(CommandSourceStack source) {
+        boolean config = TrackTemplateStore.exists();
+        boolean bundled = TrackTemplateStore.bundled();
+        String status;
+        if (config) status = "config override";
+        else if (bundled) status = "bundled default";
+        else status = "fallback (hardcoded bed + rails)";
+        StringBuilder sb = new StringBuilder("Track template:");
+        sb.append("\n  track — ").append(status)
+            .append(" [config: ").append(config ? "yes" : "no")
+            .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
+        sb.append("\nDev mode: ").append(EditorDevMode.isEnabled() ? "ON" : "off");
+        sb.append("\nSource tree writable: ").append(TrackTemplateStore.sourceTreeAvailable() ? "yes" : "no");
+        String msg = sb.toString();
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    private static int runTrackReset(CommandSourceStack source) {
+        try {
+            boolean deleted = TrackTemplateStore.delete();
+            source.sendSuccess(() -> Component.literal(
+                deleted
+                    ? "Editor: deleted track template."
+                    : "Editor: no track template to delete."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor track reset failed", t);
+            source.sendFailure(Component.literal("track reset failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runTrackPromote(CommandSourceStack source) {
+        try {
+            TrackTemplateStore.promote();
+            source.sendSuccess(() -> Component.literal(
+                "Editor: promoted track template to source tree (will ship with next build)."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor track promote failed", t);
+            source.sendFailure(Component.literal("track promote failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 }

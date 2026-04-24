@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3dc;
@@ -68,6 +70,18 @@ public final class TrainTickEvents {
     private static int tickCounter = 0;
 
     private TrainTickEvents() {}
+
+    /**
+     * Clean per-player editor state on logout so a re-login doesn't see a
+     * stale "already told the client about this status" entry that suppresses
+     * the next HUD update.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+            VariantOverlayRenderer.forget(sp);
+        }
+    }
 
     @SubscribeEvent
     public static void onLevelTick(TickEvent.LevelTickEvent event) {
@@ -159,6 +173,17 @@ public final class TrainTickEvents {
         int maxX = (int) Math.floor(Math.max(aabb.maxX(), aabb.maxX() + expX));
         int maxY = (int) Math.floor(Math.max(aabb.maxY(), aabb.maxY() + expY));
         int maxZ = (int) Math.floor(Math.max(aabb.maxZ(), aabb.maxZ() + expZ));
+
+        // Clamp lower Y to the carriage floor so the sweep never dips into
+        // the bed or rail rows (bedY = origin.y − 2, railY = origin.y − 1).
+        // VS's worldAABB can report minY one sub-pixel below origin.y due to
+        // transform precision, which would otherwise floor down to railY and
+        // destroy the authored rail layer 8 blocks ahead of the train.
+        TrackGeometry geometry = provider.getTrackGeometry();
+        if (geometry != null) {
+            int carriageFloorY = geometry.bedY() + 2;
+            if (minY < carriageFloorY) minY = carriageFloorY;
+        }
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
         int destroyed = 0;

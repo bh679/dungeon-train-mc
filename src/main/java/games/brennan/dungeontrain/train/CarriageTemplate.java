@@ -250,7 +250,10 @@ public final class CarriageTemplate {
             BlockState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
             if (picked == null) continue;
             BlockPos world = origin.offset(e.localPos());
-            SilentBlockOps.setBlockSilent(level, world, picked);
+            BlockState toPlace = CarriageVariantBlocks.isEmptyPlaceholder(picked)
+                ? Blocks.AIR.defaultBlockState()
+                : picked;
+            SilentBlockOps.setBlockSilent(level, world, toPlace);
         }
     }
 
