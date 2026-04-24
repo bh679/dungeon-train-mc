@@ -527,12 +527,17 @@ public final class TrackGenerator {
      * </pre>
      *
      * <p>Geometry: 3×8×3 template anchored with its top row at
-     * {@code g.bedY() - 1} (same as the pillar top). 3 wide along X centred on
+     * {@code g.bedY() + 2} (3 blocks above the track bed, so the top of the
+     * staircase sits just above the rail). 3 wide along X centred on
      * {@code centerX}. On the +Z side (non-flipped) the 3 outward Z columns
      * sit at {@code [trackZMax+1 .. trackZMax+3]}; on the -Z side (flipped)
      * at {@code [trackZMin-3 .. trackZMin-1]}. The template is saved in its
      * {@code -Z}-side orientation, so the +Z side gets
-     * {@link Mirror#LEFT_RIGHT} applied when stamped.</p>
+     * {@link Mirror#LEFT_RIGHT} applied when stamped. Because that mirror
+     * negates local-z, the stamp origin is shifted by {@code +(STAIRS_Z-1)}
+     * on the mirrored side so the footprint still lands at the intended
+     * {@code [trackZMax+1 .. trackZMax+3]} — same trick {@code TunnelTemplate}
+     * uses for its {@code FRONT_BACK}-mirrored portal.</p>
      *
      * <p>If the pillar column is taller than 8, a fresh copy of the template
      * is placed every 8 rows downward until the deepest ground is reached.
@@ -554,7 +559,8 @@ public final class TrackGenerator {
         if (templateOpt.isEmpty()) return;
         StructureTemplate template = templateOpt.get();
 
-        int topInclusive = g.bedY() - 1;
+        int topInclusive = g.bedY() + 2; // 3 rows above the pillar top so the
+                                          // staircase's cap sits above the rail
         int originX = pillar.centerX() - 1; // centred 3-wide on centerX
         int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
 
@@ -570,18 +576,27 @@ public final class TrackGenerator {
         if (deepestGroundY >= g.bedY()) return;
         if (deepestGroundY > topInclusive) return;
 
+        // When Mirror.LEFT_RIGHT is applied, the template's local Z gets
+        // negated around the stamp origin — so the mirrored template
+        // extends in -Z from originZ. Shifting the stamp origin by
+        // +(STAIRS_Z - 1) makes the final mirrored footprint land at
+        // [originZ .. originZ + STAIRS_Z - 1] again. Same pattern
+        // TunnelTemplate uses for its FRONT_BACK-mirrored portal.
+        int stampOriginZ = !flipped ? originZ + STAIRS_Z - 1 : originZ;
+
         int currentTop = topInclusive;
         while (currentTop >= deepestGroundY) {
             int remaining = currentTop - deepestGroundY + 1;
             int copyHeight = Math.min(STAIRS_Y, remaining);
             int bottomY = currentTop - copyHeight + 1;
 
-            // placeInWorld uses `origin` for the template's (0,0,0) corner.
-            // We always want template Y=STAIRS_Y-1 to land at currentTop, so
-            // origin Y = currentTop - (STAIRS_Y - 1). The BoundingBox clipping
-            // below then discards cells whose world Y is outside
-            // [bottomY, currentTop] — exactly the bottom rows on a partial copy.
-            BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), originZ);
+            // placeInWorld uses `origin` for the template's (0,0,0) corner
+            // (before mirror/rotation). We always want template Y=STAIRS_Y-1
+            // to land at currentTop, so origin Y = currentTop - (STAIRS_Y - 1).
+            // The BoundingBox clipping below then discards cells whose world
+            // Y is outside [bottomY, currentTop] — exactly the bottom rows on
+            // a partial copy.
+            BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), stampOriginZ);
 
             BoundingBox clip = new BoundingBox(
                 originX, bottomY, originZ,
