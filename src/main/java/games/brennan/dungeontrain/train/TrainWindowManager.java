@@ -48,6 +48,10 @@ public final class TrainWindowManager {
     // block-change/transform sync races, short enough that real direction
     // changes feel responsive.
     private static final int REVERSAL_COOLDOWN_TICKS = 6;
+    // Diagnostic gate — the stuck-at-228 freeze happens repeatably at |pIdx|=228.
+    // Logging from 200 onwards gives ~30 carriages of pre-freeze context and
+    // keeps normal early-ride ticks quiet. See plans/linear-marinating-yao.md.
+    private static final int STUCK_LOG_THRESHOLD = 200;
 
     /**
      * Per-player last carriage index we pushed to the client via
@@ -165,7 +169,8 @@ public final class TrainWindowManager {
 
             Vector3d local = new Vector3d(px, py, pz);
             ship.getTransform().getWorldToShip().transformPosition(local);
-            int pIdx = (int) Math.floor((local.x - originX) / (double) dims.length());
+            double rawPIdxFloat = (local.x - originX) / (double) dims.length();
+            int pIdx = (int) Math.floor(rawPIdxFloat);
 
             // Push raw pIdx to the client HUD on change. Raw (not committed)
             // is intentional — the HUD is a real-time debug read; debouncing
@@ -202,7 +207,31 @@ public final class TrainWindowManager {
                 }
             }
 
-            for (int i = effectivePIdx - halfBack; i <= effectivePIdx + halfFront; i++) {
+            if (Math.abs(pIdx) >= STUCK_LOG_THRESHOLD) {
+                Vector3dc shipPos = ship.getTransform().getPosition();
+                net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
+                JITTER_LOGGER.debug(
+                    "[stuck.pIdx] tick={} player={} world=({}, {}, {}) delta=({}, {}, {}) onGround={} vehicle={} "
+                        + "shipPos={} shipLocal=({}, {}, {}) rawPIdx={} pIdx={} committed={} effective={} lastDir={} ticksSince={}",
+                    now, player.getUUID(),
+                    String.format("%.4f", px), String.format("%.4f", py), String.format("%.4f", pz),
+                    String.format("%.4f", vel.x), String.format("%.4f", vel.y), String.format("%.4f", vel.z),
+                    player.onGround(), player.getVehicle() == null ? "null" : player.getVehicle().getType().toString(),
+                    TrainTransformProvider.fmt(shipPos),
+                    String.format("%.4f", local.x), String.format("%.4f", local.y), String.format("%.4f", local.z),
+                    String.format("%.6f", rawPIdxFloat),
+                    pIdx, committed, effectivePIdx, lastDir, ticksSince);
+            }
+
+            // Cap the window range by the chain limits — for trains whose
+            // successor has spawned (ship A), {@code forwardLimit} blocks
+            // painting past the seam. For successors themselves (ship B),
+            // {@code backwardLimit} blocks painting behind their own
+            // origin so they don't overlap the predecessor's trailing
+            // carriages. Defaults are unbounded when chains aren't active.
+            int lo = Math.max(effectivePIdx - halfBack, provider.getBackwardLimit());
+            int hi = Math.min(effectivePIdx + halfFront, provider.getForwardLimit());
+            for (int i = lo; i <= hi; i++) {
                 desired.add(i);
             }
         }
@@ -213,6 +242,17 @@ public final class TrainWindowManager {
         for (Integer i : desired) {
             if (current.contains(i)) continue;
             BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
+            // Check per-carriage persistence first — if the rolling window
+            // erased this carriage earlier (and the player has now walked
+            // back into its range), replay the saved state so block edits,
+            // container contents, and armor-stand poses survive eviction.
+            if (CarriagePersistenceStore.restore(level, ship.getId(), i, carriageOrigin)) {
+                current.add(i);
+                mutated = true;
+                LOGGER.info("[DungeonTrain] Restored carriage idx={} from persistence at shipyard {}",
+                    i, carriageOrigin);
+                continue;
+            }
             CarriageVariant variant = CarriageTemplate.variantForIndex(i, genCfg);
             Set<BlockPos> placed = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, i);
             current.add(i);
@@ -234,6 +274,9 @@ public final class TrainWindowManager {
         }
         for (Integer i : toErase) {
             BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
+            // Snapshot the current shipyard state before erasing so a
+            // future re-entry restores exactly what the player left behind.
+            CarriagePersistenceStore.save(level, ship.getId(), i, carriageOrigin, dims);
             CarriageTemplate.eraseAt(level, carriageOrigin, dims);
             current.remove(i);
             mutated = true;

@@ -6,6 +6,9 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.train.CarriageFootprint;
+import games.brennan.dungeontrain.train.ShipyardShifter;
+import games.brennan.dungeontrain.train.TrainChainManager;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
@@ -21,8 +24,8 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3dc;
-import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
@@ -45,6 +48,15 @@ import java.util.List;
 public final class TrainTickEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    // Diagnostic logger (DEBUG-elevated in DungeonTrain ctor). Feeds the
+    // [stuck.timing] per-tick budget breakdown for the stuck-at-228
+    // investigation (see plans/linear-marinating-yao.md).
+    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    // Any per-tick work over this threshold triggers a timing breakdown
+    // log line at DEBUG so we can see WHICH sub-task is the culprit.
+    // 5 ms = 1/10 of the 50 ms server tick budget — anything above means
+    // real risk of cascading lag.
+    private static final long STUCK_TIMING_THRESHOLD_MS = 5;
 
     // Train moves 2 m/s ≈ 0.1 block/tick (MVP velocity in TrainCommand). A 10-tick
     // period clears blocks twice per second; an 8-block look-ahead leaves 7+ blocks
@@ -88,30 +100,52 @@ public final class TrainTickEvents {
         if (event.phase != TickEvent.Phase.END) return;
         if (!(event.level instanceof ServerLevel level)) return;
 
+        long t0 = System.nanoTime();
+
         // Rolling-window manager runs every tick regardless of whether we're also
         // carving terrain — it only adds/removes carriages when a player crosses
         // a carriage boundary, so the cost is negligible on idle ticks.
         TrainWindowManager.onLevelTick(level);
+        long tAfterWindow = System.nanoTime();
 
         // Editor overlay — cheap when nobody is in an editor plot (short-circuits
         // per-player via CarriageEditor.plotContaining).
         VariantOverlayRenderer.onLevelTick(level);
+        long tAfterOverlay = System.nanoTime();
 
         List<LoadedServerShip> trains = findTrains(level);
+        long tAfterFindTrains = System.nanoTime();
         if (trains.isEmpty()) {
             tickCounter++;
             return;
         }
 
         for (LoadedServerShip ship : trains) {
-            killEntitiesIn(level, ship);
+            if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
+                killEntitiesIn(level, ship, provider);
+            }
         }
+        long tAfterKill = System.nanoTime();
+
+        // Reference-shift pass: keep the ship pivot + canonicalPos
+        // advancing with the player so active carriage voxels stay within
+        // VS's 128-chunk distance limit. Cheap — one per-player pivot
+        // distance check per train per tick. Actual shift fires rarely
+        // (~every 1000 blocks of forward travel). See ShipyardShifter.
+        ShipyardShifter.shiftIfNeeded(level, trains, level.players());
+
+        // Chain-manager pass: once the player crosses the per-train
+        // trigger pIdx, spawn a successor train ahead so they have a
+        // fresh shipyard allocation to walk onto before the predecessor
+        // runs out. See TrainChainManager + plans/floofy-floating-dahl.md.
+        TrainChainManager.maybeSpawnSuccessors(level, trains, level.players());
 
         if (tickCounter % BLOCK_CLEAR_PERIOD_TICKS == 0) {
             for (LoadedServerShip ship : trains) {
                 clearBlocksAhead(level, ship);
             }
         }
+        long tAfterClear = System.nanoTime();
 
         if (DungeonTrainConfig.getGenerateTracks()
             && Math.floorMod(tickCounter, TRACK_FILL_PERIOD_TICKS) == TRACK_FILL_PHASE_OFFSET) {
@@ -121,6 +155,7 @@ public final class TrainTickEvents {
                 }
             }
         }
+        long tAfterTracks = System.nanoTime();
 
         if (DungeonTrainConfig.getGenerateTunnels()
             && Math.floorMod(tickCounter, TUNNEL_FILL_PERIOD_TICKS) == TUNNEL_FILL_PHASE_OFFSET) {
@@ -129,6 +164,22 @@ public final class TrainTickEvents {
                     TunnelGenerator.fillRenderDistance(level, ship, provider);
                 }
             }
+        }
+        long tAfterTunnels = System.nanoTime();
+
+        long totalMs = (tAfterTunnels - t0) / 1_000_000;
+        if (totalMs >= STUCK_TIMING_THRESHOLD_MS) {
+            JITTER_LOGGER.debug(
+                "[stuck.timing] tick={} total={}ms window={}ms overlay={}ms find={}ms kill={}ms clear={}ms tracks={}ms tunnels={}ms trains={}",
+                level.getGameTime(), totalMs,
+                (tAfterWindow - t0) / 1_000_000,
+                (tAfterOverlay - tAfterWindow) / 1_000_000,
+                (tAfterFindTrains - tAfterOverlay) / 1_000_000,
+                (tAfterKill - tAfterFindTrains) / 1_000_000,
+                (tAfterClear - tAfterKill) / 1_000_000,
+                (tAfterTracks - tAfterClear) / 1_000_000,
+                (tAfterTunnels - tAfterTracks) / 1_000_000,
+                trains.size());
         }
         tickCounter++;
     }
@@ -143,14 +194,25 @@ public final class TrainTickEvents {
         return trains;
     }
 
-    private static void killEntitiesIn(ServerLevel level, LoadedServerShip ship) {
-        AABBdc aabb = ship.getWorldAABB();
-        AABB mcAabb = new AABB(
-            aabb.minX(), aabb.minY(), aabb.minZ(),
-            aabb.maxX(), aabb.maxY(), aabb.maxZ()
-        );
+    private static void killEntitiesIn(ServerLevel level, LoadedServerShip ship, TrainTransformProvider provider) {
+        AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
+        if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
+        // Once-per-~10s footprint snapshot so we can see whether our AABB is
+        // actually staying bounded or silently growing like VS's worldAABB.
+        // Gated to committedPIdx past the danger zone so early-ride ticks
+        // stay quiet.
+        if (Math.abs(provider.getCommittedPIdx()) >= 200 && tickCounter % 200 == 0) {
+            JITTER_LOGGER.debug(
+                "[stuck.footprint] tick={} committedPIdx={} activeIdx={} aabb=({}, {}, {}) -> ({}, {}, {}) size=({}x{}x{})",
+                level.getGameTime(), provider.getCommittedPIdx(), provider.getActiveIndices().size(),
+                String.format("%.2f", aabb.minX), String.format("%.2f", aabb.minY), String.format("%.2f", aabb.minZ),
+                String.format("%.2f", aabb.maxX), String.format("%.2f", aabb.maxY), String.format("%.2f", aabb.maxZ),
+                String.format("%.2f", aabb.getXsize()),
+                String.format("%.2f", aabb.getYsize()),
+                String.format("%.2f", aabb.getZsize()));
+        }
         List<Entity> victims = level.getEntitiesOfClass(
-            Entity.class, mcAabb,
+            Entity.class, aabb,
             e -> !(e instanceof Player) && e.isAlive()
         );
         for (Entity e : victims) {
@@ -162,17 +224,18 @@ public final class TrainTickEvents {
         if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) return;
         Vector3dc velocity = provider.getTargetVelocity();
 
-        AABBdc aabb = ship.getWorldAABB();
+        AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
+        if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
         double expX = Math.signum(velocity.x()) * LOOKAHEAD_BLOCKS;
         double expY = Math.signum(velocity.y()) * LOOKAHEAD_BLOCKS;
         double expZ = Math.signum(velocity.z()) * LOOKAHEAD_BLOCKS;
 
-        int minX = (int) Math.floor(Math.min(aabb.minX(), aabb.minX() + expX));
-        int minY = (int) Math.floor(Math.min(aabb.minY(), aabb.minY() + expY));
-        int minZ = (int) Math.floor(Math.min(aabb.minZ(), aabb.minZ() + expZ));
-        int maxX = (int) Math.floor(Math.max(aabb.maxX(), aabb.maxX() + expX));
-        int maxY = (int) Math.floor(Math.max(aabb.maxY(), aabb.maxY() + expY));
-        int maxZ = (int) Math.floor(Math.max(aabb.maxZ(), aabb.maxZ() + expZ));
+        int minX = (int) Math.floor(Math.min(aabb.minX, aabb.minX + expX));
+        int minY = (int) Math.floor(Math.min(aabb.minY, aabb.minY + expY));
+        int minZ = (int) Math.floor(Math.min(aabb.minZ, aabb.minZ + expZ));
+        int maxX = (int) Math.floor(Math.max(aabb.maxX, aabb.maxX + expX));
+        int maxY = (int) Math.floor(Math.max(aabb.maxY, aabb.maxY + expY));
+        int maxZ = (int) Math.floor(Math.max(aabb.maxZ, aabb.maxZ + expZ));
 
         // Clamp lower Y to the carriage floor so the sweep never dips into
         // the bed or rail rows (bedY = origin.y − 2, railY = origin.y − 1).

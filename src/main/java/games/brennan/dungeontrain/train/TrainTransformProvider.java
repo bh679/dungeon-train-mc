@@ -64,6 +64,17 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     private volatile int count;
     private final ResourceKey<Level> dimensionKey;
     private final Set<Integer> activeIndices;
+    // Train-chain metadata — populated by TrainChainManager when it spawns
+    // a successor train for this one. Prevents duplicate successors and
+    // caps the rolling-window forward edge so this ship stops painting
+    // carriages past the seam. See plans/floofy-floating-dahl.md.
+    private volatile int forwardLimit = Integer.MAX_VALUE;
+    private volatile int backwardLimit = Integer.MIN_VALUE;
+    private volatile boolean successorSpawned = false;
+    // Offset added to local pIdx for HUD display — the first train in a
+    // chain reads 0, the second reads (predecessor's base + predecessor's
+    // trigger pIdx), and so on.
+    private final int globalPIdxBase;
     /**
      * Carriage footprint snapshot captured at spawn time. Immutable for the
      * train's lifetime — matches the "spawn-time-captured, read-only
@@ -107,6 +118,11 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     // floating-point round-off. Any real COM recalc will produce deltas far
     // larger than this.
     private static final double PIVOT_MOVE_EPSILON = 1e-6;
+    // One-shot guard so the [panic.canonicalPos] line fires once per
+    // train spawn — otherwise a sustained NaN would spam every physics
+    // tick (60 Hz). The freeze itself stays in effect; this only gates
+    // the log line.
+    private boolean canonicalPosNanLogged;
     // Written by the server thread (TrainWindowManager) and read by the server
     // thread (TrainTickEvents' H4 carry probe) on the same tick — same thread
     // invocation chain, so no synchronization required.
@@ -127,11 +143,24 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         int initialPIdx,
         CarriageDims dims
     ) {
+        this(targetVelocity, shipyardOrigin, count, dimensionKey, initialPIdx, dims, 0);
+    }
+
+    public TrainTransformProvider(
+        Vector3dc targetVelocity,
+        BlockPos shipyardOrigin,
+        int count,
+        ResourceKey<Level> dimensionKey,
+        int initialPIdx,
+        CarriageDims dims,
+        int globalPIdxBase
+    ) {
         this.targetVelocity = new Vector3d(targetVelocity);
         this.shipyardOrigin = shipyardOrigin.immutable();
         this.count = count;
         this.dimensionKey = dimensionKey;
         this.dims = dims;
+        this.globalPIdxBase = globalPIdxBase;
         this.activeIndices = new HashSet<>();
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;
@@ -141,6 +170,34 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         this.committedPIdx = initialPIdx;
         this.lastShiftDirection = 0;
         this.lastShiftTick = 0L;
+    }
+
+    public int getForwardLimit() {
+        return forwardLimit;
+    }
+
+    public void setForwardLimit(int limit) {
+        this.forwardLimit = limit;
+    }
+
+    public int getBackwardLimit() {
+        return backwardLimit;
+    }
+
+    public void setBackwardLimit(int limit) {
+        this.backwardLimit = limit;
+    }
+
+    public boolean isSuccessorSpawned() {
+        return successorSpawned;
+    }
+
+    public void setSuccessorSpawned(boolean v) {
+        this.successorSpawned = v;
+    }
+
+    public int getGlobalPIdxBase() {
+        return globalPIdxBase;
     }
 
     public Vector3dc getTargetVelocity() {
@@ -229,6 +286,67 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
     public void setLastMutationNanos(long nanos) {
         this.lastMutationNanos = nanos;
+    }
+
+    /**
+     * Read-only view of the physics-thread tick counter for the
+     * stuck-player panic dump in {@code TrainTickEvents}. Server thread
+     * reads, physics thread writes; the value is a long, which is not
+     * guaranteed atomic on all JVMs — for diagnostics a slightly stale
+     * read is fine.
+     */
+    public long getPhysicsTickCounter() {
+        return physicsTickCounter;
+    }
+
+    /**
+     * True if {@link #canonicalPos} has been captured (first physics tick
+     * has run) and all components are finite. Used by the panic detector
+     * to flag NaN/∞ propagation as a possible cause of "player stuck".
+     */
+    public boolean isCanonicalPosFinite() {
+        Vector3d p = canonicalPos;
+        if (p == null) return true;
+        return Double.isFinite(p.x) && Double.isFinite(p.y) && Double.isFinite(p.z);
+    }
+
+    public Vector3dc getCanonicalPos() {
+        return canonicalPos;
+    }
+
+    public Vector3dc getLockedPositionInModel() {
+        return lockedPositionInModel;
+    }
+
+    /**
+     * Advance the ship's reference frame forward by {@code shipyardDelta}.
+     * Used by {@link ShipyardShifter} to keep the pivot close to the
+     * player's current shipyard position so active carriage voxels stay
+     * within VS 2.4.11's 128-chunk distance limit from the ship's reference
+     * point. See {@code plans/floofy-floating-dahl.md}.
+     *
+     * <h2>Math</h2>
+     * {@code voxel_world = canonicalPos + rotation·(voxel_shipyard − pivot)}.
+     * Setting {@code pivot += Δ_shipyard} and {@code canonicalPos += rotation·Δ}
+     * leaves every {@code voxel_world} unchanged — the ship's visible
+     * carriages don't hop. The physics-thread jitter probe
+     * ({@link #provideNextTransformAndVelocity}) reads {@code canonicalPos}
+     * at the start of each tick; a concurrent add here produces at most a
+     * one-tick visual stagger, which self-corrects on the next read.
+     *
+     * @param shipyardDelta the vector to add to the shipyard-space pivot —
+     *     typically {@code (shiftBlocks, 0, 0)} for a straight-line train.
+     */
+    public void shiftReference(Vector3dc shipyardDelta) {
+        if (lockedPositionInModel == null || canonicalPos == null) return;
+        Vector3d worldDelta = new Vector3d(shipyardDelta);
+        if (lockedRotation != null) lockedRotation.transform(worldDelta);
+        canonicalPos.add(worldDelta);
+        // Replace the reference — consumers that already captured the old
+        // Vector3dc aren't reading it mid-tick, so swapping pointers is
+        // equivalent to mutating in place but gives a cleaner read
+        // boundary.
+        lockedPositionInModel = new Vector3d(lockedPositionInModel).add(shipyardDelta);
     }
 
     /**
@@ -393,11 +511,34 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
                 fmt(canonicalPos), fmt(lockedPositionInModel));
         }
 
+        // Snapshot the previous canonical position so we can roll back if
+        // the velocity step produces NaN/∞ — propagating a non-finite
+        // canonical position would corrupt every downstream transform and
+        // make the "stuck" symptom permanent rather than recoverable. Cheap
+        // (one Vector3d allocation per physics tick).
+        double prevCanonX = canonicalPos.x;
+        double prevCanonY = canonicalPos.y;
+        double prevCanonZ = canonicalPos.z;
         canonicalPos.add(
             targetVelocity.x() * PHYSICS_DT,
             targetVelocity.y() * PHYSICS_DT,
             targetVelocity.z() * PHYSICS_DT
         );
+        if (!Double.isFinite(canonicalPos.x)
+            || !Double.isFinite(canonicalPos.y)
+            || !Double.isFinite(canonicalPos.z)) {
+            if (!canonicalPosNanLogged) {
+                JITTER_LOGGER.warn(
+                    "[panic.canonicalPos] non-finite canonicalPos after velocity step — freezing at last good value. "
+                        + "physicsTick={} velocity=({}, {}, {}) canonicalBefore=({}, {}, {}) canonicalAfter=({}, {}, {})",
+                    physicsTickCounter,
+                    targetVelocity.x(), targetVelocity.y(), targetVelocity.z(),
+                    prevCanonX, prevCanonY, prevCanonZ,
+                    canonicalPos.x, canonicalPos.y, canonicalPos.z);
+                canonicalPosNanLogged = true;
+            }
+            canonicalPos.set(prevCanonX, prevCanonY, prevCanonZ);
+        }
 
         // The rolling-window manager mutates voxel blocks every server tick;
         // VS may re-center the ship's model-space pivot (positionInModel) on
@@ -420,7 +561,7 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
      * by tens of blocks yet print identically). Six decimal places are
      * enough for sub-mm precision across the MC world bounds.
      */
-    static String fmt(Vector3dc v) {
+    public static String fmt(Vector3dc v) {
         if (v == null) return "null";
         return String.format("(%.6f, %.6f, %.6f)", v.x(), v.y(), v.z());
     }
