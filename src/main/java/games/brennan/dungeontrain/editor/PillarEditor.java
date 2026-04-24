@@ -1,16 +1,19 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -60,6 +63,17 @@ public final class PillarEditor {
     }
 
     /**
+     * Plot origin for {@code adjunct}. Adjuncts come after all pillar sections
+     * on X, stepping by {@link #PLOT_STEP_X} per adjunct.
+     * {@link PillarAdjunct#STAIRS} therefore lands at X=60.
+     */
+    public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct) {
+        int sectionCount = PillarSection.values().length;
+        int index = sectionCount + adjunct.ordinal();
+        return new BlockPos(FIRST_PLOT_X + index * PLOT_STEP_X, PLOT_Y, PLOT_Z);
+    }
+
+    /**
      * Find the section whose 1×H×W plot contains {@code pos} (with a 1-block
      * outline margin so standing on the cage counts). Returns {@code null} if
      * {@code pos} is outside every pillar plot. {@code dims.width()} supplies
@@ -74,6 +88,23 @@ public final class PillarEditor {
                 && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + h
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
                 return section;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Find the adjunct whose {@code xSize × ySize × zSize} plot contains
+     * {@code pos} (with a 1-block outline margin). Returns {@code null} if
+     * {@code pos} is outside every adjunct plot.
+     */
+    public static PillarAdjunct plotContainingAdjunct(BlockPos pos) {
+        for (PillarAdjunct adjunct : PillarAdjunct.values()) {
+            BlockPos o = plotOriginAdjunct(adjunct);
+            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + adjunct.xSize()
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + adjunct.ySize()
+                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + adjunct.zSize()) {
+                return adjunct;
             }
         }
         return null;
@@ -179,6 +210,166 @@ public final class PillarEditor {
         Vec3i size = new Vec3i(1, section.height(), dims.width());
         template.fillFromWorld(level, origin, size, false, Blocks.AIR);
         return template;
+    }
+
+    /**
+     * Teleport {@code player} to the adjunct plot: save their return position,
+     * erase the {@code xSize × ySize × zSize} footprint, stamp the current
+     * template (or procedural fallback) so the player sees what would render
+     * today, then draw the barrier cage.
+     */
+    public static void enter(ServerPlayer player, PillarAdjunct adjunct) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerLevel overworld = server.overworld();
+        BlockPos origin = plotOriginAdjunct(adjunct);
+
+        CarriageEditor.rememberReturn(player);
+
+        eraseAtAdjunct(overworld, origin, adjunct);
+        stampCurrentAdjunct(overworld, origin, adjunct);
+        setOutlineAdjunct(overworld, origin, adjunct);
+
+        double tx = origin.getX() + adjunct.xSize() / 2.0;
+        double ty = origin.getY() + 1.0;
+        double tz = origin.getZ() + adjunct.zSize() / 2.0;
+        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+
+        LOGGER.info("[DungeonTrain] Pillar editor enter adjunct: {} -> {} plot at {} (size={}x{}x{})",
+            player.getName().getString(), adjunct.id(), origin,
+            adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+    }
+
+    /**
+     * Capture the {@code xSize × ySize × zSize} region at the plot for
+     * {@code adjunct} into a fresh {@link StructureTemplate} and persist it
+     * via {@link PillarTemplateStore#saveAdjunct}. Air positions are included
+     * so a deliberately empty cell stays empty. When {@link EditorDevMode} is
+     * on, the template is also written to the source tree.
+     */
+    public static SaveResult save(ServerPlayer player, PillarAdjunct adjunct) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        BlockPos origin = plotOriginAdjunct(adjunct);
+
+        StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
+        PillarTemplateStore.saveAdjunct(adjunct, template);
+
+        LOGGER.info("[DungeonTrain] Pillar editor save adjunct: {} -> {} template ({}x{}x{})",
+            player.getName().getString(), adjunct.id(),
+            adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+
+        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        try {
+            PillarTemplateStore.saveAdjunctToSource(adjunct, template);
+            return SaveResult.written();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: source write failed for {}: {}",
+                adjunct.id(), e.toString());
+            return SaveResult.failed(e.getMessage());
+        }
+    }
+
+    /** Erase the adjunct footprint (plus 1-block outline margin) to air. */
+    private static void eraseAtAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = -1; dx <= adjunct.xSize(); dx++) {
+            for (int dz = -1; dz <= adjunct.zSize(); dz++) {
+                for (int dy = -1; dy <= adjunct.ySize(); dy++) {
+                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                }
+            }
+        }
+    }
+
+    /**
+     * Fill the adjunct footprint with the current stored template if any,
+     * else stamp a procedural stone-brick staircase climbing in +Z so the
+     * author has a sensible starting point to edit.
+     */
+    private static void stampCurrentAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
+        Optional<StructureTemplate> stored = PillarTemplateStore.getAdjunct(level, adjunct);
+        if (stored.isPresent()) {
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            return;
+        }
+        stampProceduralStairsFallback(level, origin, adjunct);
+    }
+
+    /**
+     * Default stair pattern for {@link PillarAdjunct#STAIRS}: stone-brick
+     * stair blocks climb +Z with one step per Y level. Each row across X is
+     * three identical blocks wide so the staircase shows a visible front
+     * face. Below each step, stone brick fills the volume so the stairs
+     * look structural rather than floating.
+     */
+    private static void stampProceduralStairsFallback(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
+        if (adjunct != PillarAdjunct.STAIRS) {
+            // Future adjuncts can add their own fallback; for now, fill with stone brick.
+            BlockState block = TrackPalette.PILLAR;
+            for (int dx = 0; dx < adjunct.xSize(); dx++) {
+                for (int dy = 0; dy < adjunct.ySize(); dy++) {
+                    for (int dz = 0; dz < adjunct.zSize(); dz++) {
+                        level.setBlock(origin.offset(dx, dy, dz), block, 3);
+                    }
+                }
+            }
+            return;
+        }
+        BlockState stairBlock = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(StairBlock.FACING, Direction.SOUTH);
+        BlockState fill = TrackPalette.PILLAR;
+        BlockState air = Blocks.AIR.defaultBlockState();
+        int xs = adjunct.xSize();
+        int ys = adjunct.ySize();
+        int zs = adjunct.zSize();
+        for (int dy = 0; dy < ys; dy++) {
+            int stepZ = Math.min(dy, zs - 1); // last step at max-Z once dy ≥ zs
+            for (int dx = 0; dx < xs; dx++) {
+                for (int dz = 0; dz < zs; dz++) {
+                    BlockState state;
+                    if (dz < stepZ) {
+                        state = fill;          // solid under previous steps
+                    } else if (dz == stepZ) {
+                        state = stairBlock;    // the step itself
+                    } else {
+                        state = air;           // open air above future steps
+                    }
+                    level.setBlock(origin.offset(dx, dy, dz), state, 3);
+                }
+            }
+        }
+    }
+
+    private static StructureTemplate captureAdjunctTemplate(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
+        StructureTemplate template = new StructureTemplate();
+        Vec3i size = new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+        template.fillFromWorld(level, origin, size, false, Blocks.AIR);
+        return template;
+    }
+
+    /** Barrier cage: 12 edges of a bounding box 1 block outside the adjunct footprint. */
+    private static void setOutlineAdjunct(ServerLevel level, BlockPos origin, PillarAdjunct adjunct) {
+        int x0 = origin.getX() - 1;
+        int y0 = origin.getY() - 1;
+        int z0 = origin.getZ() - 1;
+        int x1 = origin.getX() + adjunct.xSize();
+        int y1 = origin.getY() + adjunct.ySize();
+        int z1 = origin.getZ() + adjunct.zSize();
+
+        for (int x = x0; x <= x1; x++) {
+            for (int y = y0; y <= y1; y++) {
+                for (int z = z0; z <= z1; z++) {
+                    int extremes = (x == x0 || x == x1 ? 1 : 0)
+                        + (y == y0 || y == y1 ? 1 : 0)
+                        + (z == z0 || z == z1 ? 1 : 0);
+                    if (extremes < 2) continue;
+                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
+                }
+            }
+        }
     }
 
     /** Barrier cage: 12 edges of a bounding box 1 block outside the 1×H×W footprint. */

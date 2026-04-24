@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.tunnel.VSShipFilterProcessor;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -12,8 +13,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.valkyrienskies.core.api.ships.ServerShip;
@@ -97,6 +102,11 @@ public final class TrackGenerator {
      * per-tick server-thread cost. See class-level javadoc for budget reasoning.
      */
     private static final int CHUNKS_PER_SCAN_BUDGET = 4;
+
+    /** Stairs adjunct footprint: 3 along X (track direction) × 8 tall × 3 outward. */
+    private static final int STAIRS_X = 3;
+    private static final int STAIRS_Y = 8;
+    private static final int STAIRS_Z = 3;
 
     private TrackGenerator() {}
 
@@ -493,10 +503,100 @@ public final class TrackGenerator {
 
             if (containingPillar != null) {
                 placePillarSlice(level, worldX, g, dims);
+                if (worldX == containingPillar.centerX()) {
+                    placeStairsBesidePillar(level, containingPillar, g);
+                }
             }
         }
 
         filledChunks.add(chunkKey);
+    }
+
+    /**
+     * Place the {@link PillarAdjunct#STAIRS} template alongside {@code pillar}
+     * if the selection rule fires for it. Only called once per pillar (at
+     * {@code worldX == pillar.centerX()}) so a thick pillar's N columns don't
+     * trigger N placements.
+     *
+     * <p>Selection rule (world-X based so placement is deterministic and
+     * stable across chunk loads):</p>
+     * <pre>
+     *   stripIndex = floorDiv(centerX, BASE_PILLAR_SPACING)
+     *   hasStairs  = stripIndex % 2 == 0       // every other pillar
+     *   flipped    = floorDiv(stripIndex, 2) % 2 == 1  // alternating side
+     * </pre>
+     *
+     * <p>Geometry: 3×8×3 template anchored with its top row at
+     * {@code g.bedY() - 1} (same as the pillar top). 3 wide along X centred on
+     * {@code centerX}. On the +Z side (non-flipped) the 3 outward Z columns
+     * sit at {@code [trackZMax+1 .. trackZMax+3]}; on the -Z side (flipped)
+     * at {@code [trackZMin-3 .. trackZMin-1]}, with {@link Mirror#LEFT_RIGHT}
+     * so the step direction still runs "outward from track".</p>
+     *
+     * <p>If the pillar column is taller than 8, a fresh copy of the template
+     * is placed every 8 rows downward until the deepest ground is reached.
+     * The bottommost copy is clipped via a {@link BoundingBox} so its lower
+     * rows are discarded — the top rows of the template remain aligned with
+     * the top of that copy, preserving the "top always on top" invariant.</p>
+     */
+    private static void placeStairsBesidePillar(
+        ServerLevel level,
+        PillarSpec pillar,
+        TrackGeometry g
+    ) {
+        int stripIndex = Math.floorDiv(pillar.centerX(), BASE_PILLAR_SPACING);
+        if (Math.floorMod(stripIndex, 2) != 0) return;
+        boolean flipped = Math.floorMod(Math.floorDiv(stripIndex, 2), 2) == 1;
+
+        Optional<StructureTemplate> templateOpt =
+            PillarTemplateStore.getAdjunct(level, games.brennan.dungeontrain.track.PillarAdjunct.STAIRS);
+        if (templateOpt.isEmpty()) return;
+        StructureTemplate template = templateOpt.get();
+
+        int topInclusive = g.bedY() - 1;
+        int originX = pillar.centerX() - 1; // centred 3-wide on centerX
+        int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
+
+        // Probe ground across the 3×3 stair footprint; anchor to the deepest.
+        int deepestGroundY = g.bedY(); // sentinel "no ground found"
+        for (int dx = 0; dx < STAIRS_X; dx++) {
+            for (int dz = 0; dz < STAIRS_Z; dz++) {
+                int ground = probeGroundY(level, originX + dx, originZ + dz, g.bedY());
+                if (ground >= g.bedY()) continue;
+                if (ground < deepestGroundY) deepestGroundY = ground;
+            }
+        }
+        if (deepestGroundY >= g.bedY()) return;
+        if (deepestGroundY > topInclusive) return;
+
+        int currentTop = topInclusive;
+        while (currentTop >= deepestGroundY) {
+            int remaining = currentTop - deepestGroundY + 1;
+            int copyHeight = Math.min(STAIRS_Y, remaining);
+            int bottomY = currentTop - copyHeight + 1;
+
+            // placeInWorld uses `origin` for the template's (0,0,0) corner.
+            // We always want template Y=STAIRS_Y-1 to land at currentTop, so
+            // origin Y = currentTop - (STAIRS_Y - 1). The BoundingBox clipping
+            // below then discards cells whose world Y is outside
+            // [bottomY, currentTop] — exactly the bottom rows on a partial copy.
+            BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), originZ);
+
+            BoundingBox clip = new BoundingBox(
+                originX, bottomY, originZ,
+                originX + STAIRS_X - 1, currentTop, originZ + STAIRS_Z - 1
+            );
+
+            StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setIgnoreEntities(true)
+                .setBoundingBox(clip)
+                .addProcessor(VSShipFilterProcessor.INSTANCE);
+            if (flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+
+            template.placeInWorld(level, copyOrigin, copyOrigin, settings, level.getRandom(), 3);
+
+            currentTop -= STAIRS_Y;
+        }
     }
 
     /**
