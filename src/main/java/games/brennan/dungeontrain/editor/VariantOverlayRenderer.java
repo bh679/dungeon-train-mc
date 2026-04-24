@@ -1,10 +1,14 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+
+import java.util.Optional;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -68,6 +72,13 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, BlockPos> LAST_HOVER_POS = new HashMap<>();
 
+    /**
+     * Per-player "last (category, model) we told the client about", stored as
+     * a single {@code category|model} string for cheap equality. Null means
+     * "the last packet we sent was the empty-clear (or we haven't sent one)".
+     */
+    private static final Map<UUID, String> LAST_STATUS = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -88,6 +99,10 @@ public final class VariantOverlayRenderer {
         if (last != null) {
             DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
         }
+        String lastStatus = LAST_STATUS.remove(player.getUUID());
+        if (lastStatus != null) {
+            DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
+        }
     }
 
     /**
@@ -105,6 +120,8 @@ public final class VariantOverlayRenderer {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
         for (ServerPlayer player : players) {
+            updateEditorStatus(player, dims);
+
             CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
             if (plotVariant == null) {
                 // Player left a plot — make sure a stale HUD gets cleared.
@@ -130,6 +147,50 @@ public final class VariantOverlayRenderer {
             }
             updateHoverPacket(player, plotOrigin, sidecar, dims);
         }
+    }
+
+    /**
+     * Resolve which (category, model) the player is currently standing in (if
+     * any) and push an {@link EditorStatusPacket} only when any of (category,
+     * model, dev-mode, weight) has changed from the last-seen value. Called
+     * once per player per tick — cheap when the player is outside every plot
+     * (single {@code locate} call, no packet).
+     *
+     * <p>Weight is included in the dedup key so {@code /dt editor weight
+     * <variant> <n>} pushes an immediate HUD refresh on the next tick — no
+     * need to leave and re-enter the plot to see the new value.</p>
+     */
+    private static void updateEditorStatus(ServerPlayer player, CarriageDims dims) {
+        Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
+        UUID uuid = player.getUUID();
+        String prev = LAST_STATUS.get(uuid);
+        if (located.isEmpty()) {
+            if (prev != null) {
+                LAST_STATUS.remove(uuid);
+                DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
+            }
+            return;
+        }
+        EditorCategory.Located l = located.get();
+        boolean devmode = EditorDevMode.isEnabled();
+        int weight = weightFor(l.model());
+        String key = l.category().name() + "|" + l.model().id() + "|" + devmode + "|" + weight;
+        if (key.equals(prev)) return;
+        LAST_STATUS.put(uuid, key);
+        DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+            l.category().displayName(), l.model().displayName(), devmode, weight));
+    }
+
+    /**
+     * Variant pick weight for the given model, or {@link EditorStatusPacket#NO_WEIGHT}
+     * for models where weight is not meaningful (pillars, tunnels, track). The
+     * HUD uses the sentinel to decide whether to render the second line.
+     */
+    private static int weightFor(EditorModel model) {
+        if (model instanceof EditorModel.CarriageModel cm) {
+            return CarriageWeights.current().weightFor(cm.variant().id());
+        }
+        return EditorStatusPacket.NO_WEIGHT;
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {

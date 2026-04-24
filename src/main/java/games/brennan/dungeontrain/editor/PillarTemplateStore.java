@@ -256,6 +256,19 @@ public final class PillarTemplateStore {
         return Files.isRegularFile(fileFor(section));
     }
 
+    /**
+     * Load {@code section}'s template from the bundled tier only — the
+     * classpath {@code /data/dungeontrain/pillars/pillar_<section>.nbt}.
+     * Skips the config-dir override and the hardcoded stone-brick fallback.
+     * Used by {@code /dt reset default} to revert a plot to the shipped
+     * template regardless of any user edits saved to the config dir.
+     *
+     * <p>Returns empty when the section has no bundled copy.</p>
+     */
+    public static Optional<StructureTemplate> getBundled(ServerLevel level, PillarSection section, CarriageDims dims) {
+        return loadFromResource(level, section, dims);
+    }
+
     public static boolean bundled(PillarSection section) {
         try (InputStream in = PillarTemplateStore.class.getResourceAsStream(
                 RESOURCE_PREFIX + FILE_PREFIX + section.id() + EXT)) {
