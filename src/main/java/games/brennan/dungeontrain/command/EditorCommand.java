@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.command;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -27,6 +28,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -85,6 +87,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    /** Like VARIANT_SUGGESTIONS but carriage-only (no tunnels — weight is a carriage concept). */
+    private static final SuggestionProvider<CommandSourceStack> CARRIAGE_VARIANT_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
+                builder.suggest(v.id());
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PILLAR_SECTION_SUGGESTIONS =
         (ctx, builder) -> {
             for (PillarSection s : PillarSection.values()) {
@@ -97,14 +108,6 @@ public final class EditorCommand {
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
                 builder.suggest(c.id());
-            }
-            return builder.buildFuture();
-        };
-
-    private static final SuggestionProvider<CommandSourceStack> CARRIAGE_VARIANT_SUGGESTIONS =
-        (ctx, builder) -> {
-            for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-                builder.suggest(v.id());
             }
             return builder.buildFuture();
         };
@@ -239,7 +242,35 @@ public final class EditorCommand {
                 .then(Commands.literal("list").executes(ctx -> runTrackList(ctx.getSource())))
                 .then(Commands.literal("reset").executes(ctx -> runTrackReset(ctx.getSource())))
                 .then(Commands.literal("promote").executes(ctx -> runTrackPromote(ctx.getSource()))))
+            .then(Commands.literal("weight")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("value",
+                            IntegerArgumentType.integer(CarriageWeights.MIN, CarriageWeights.MAX))
+                        .executes(ctx -> runWeightSet(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "variant"),
+                            IntegerArgumentType.getInteger(ctx, "value"))))))
             .then(buildVariantSubtree(buildContext));
+    }
+
+    private static int runWeightSet(CommandSourceStack source, String rawVariant, int value) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        try {
+            int stored = CarriageWeights.set(variant.id(), value);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: weight " + variant.id() + "=" + stored
+                    + " (saved to " + CarriageWeights.configPath() + "). "
+                    + "Existing carriages keep their variant until they scroll out."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor weight set failed for {}", variant.id(), t);
+            source.sendFailure(Component.literal("weight failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 
     private static PillarSection parseSection(CommandSourceStack source, String raw) {
@@ -705,6 +736,7 @@ public final class EditorCommand {
     }
 
     private static int runList(CommandSourceStack source) {
+        CarriageWeights weights = CarriageWeights.current();
         StringBuilder sb = new StringBuilder("Carriage variants:");
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             boolean config = CarriageTemplateStore.exists(v);
@@ -714,8 +746,10 @@ public final class EditorCommand {
             if (config) status = "config override";
             else if (bundled) status = "bundled default";
             else status = v.isBuiltin() ? "fallback (hardcoded)" : "missing (no file)";
+            int weight = weights.weightFor(v.id());
             sb.append("\n  ").append(v.id())
                 .append(" — ").append(kind).append(" | ").append(status)
+                .append(" | weight=").append(weight)
                 .append(" [config: ").append(config ? "yes" : "no")
                 .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
         }

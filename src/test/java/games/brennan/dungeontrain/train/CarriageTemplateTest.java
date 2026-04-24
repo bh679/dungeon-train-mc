@@ -6,11 +6,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -410,5 +413,166 @@ final class CarriageTemplateTest {
         assertEquals(12, inRange.length(), "pass-through length");
         assertEquals(7, inRange.width(), "pass-through width");
         assertEquals(5, inRange.height(), "pass-through height");
+    }
+
+    // ---- Weighted selection: the new overload variantForIndex(i, cfg, weights) ----
+
+    @Test
+    @DisplayName("Weighted: EMPTY weights reproduce the uniform RANDOM sequence — no regression for existing worlds")
+    void weighted_emptyWeightsMatchUniformSequence() {
+        // With every variant at DEFAULT=1, cumulative weights are 1,2,3,4 so
+        // Random.nextInt(4) maps identically to the old variants.get(nextInt(4))
+        // call. This is the core backwards-compat contract for worlds saved
+        // before the weighting feature.
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xCAFEBABEL);
+        for (int i = 0; i < 500; i++) {
+            assertEquals(
+                CarriageTemplate.variantForIndex(i, cfg, CarriageWeights.EMPTY).id(),
+                CarriageTemplate.variantForIndex(i, cfg).id(),
+                "EMPTY weights should match default behaviour at index " + i
+            );
+        }
+    }
+
+    @Test
+    @DisplayName("Weighted: weight=0 excludes a variant from the RANDOM pool")
+    void weighted_zeroWeightExcludes() {
+        CarriageWeights weights = new CarriageWeights(Map.of("windowed", 0));
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 13L);
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < 10_000; i++) {
+            seen.add(CarriageTemplate.variantForIndex(i, cfg, weights).id());
+        }
+        assertFalse(seen.contains("windowed"),
+                "weight=0 variant should never be picked, saw: " + seen);
+        // Sanity: the other three built-ins still come through.
+        assertTrue(seen.contains("standard"));
+        assertTrue(seen.contains("solid_roof"));
+        assertTrue(seen.contains("flatbed"));
+    }
+
+    @Test
+    @DisplayName("Weighted: a 2x weight roughly doubles draw frequency")
+    void weighted_doubleWeightDoublesFrequency() {
+        // standard=2, others=1 → expected share of 'standard' is 2/(2+1+1+1) = 0.4.
+        // Over 20_000 samples with a fixed seed, a ±5% tolerance is loose
+        // enough to avoid flakes but tight enough to catch a broken mapping.
+        CarriageWeights weights = new CarriageWeights(Map.of(
+                "standard", 2,
+                "windowed", 1,
+                "solid_roof", 1,
+                "flatbed", 1
+        ));
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0x1234567L);
+        int total = 20_000;
+        Map<String, Integer> counts = new HashMap<>();
+        for (int i = 0; i < total; i++) {
+            counts.merge(CarriageTemplate.variantForIndex(i, cfg, weights).id(), 1, Integer::sum);
+        }
+        double standardShare = counts.getOrDefault("standard", 0) / (double) total;
+        assertTrue(standardShare > 0.35 && standardShare < 0.45,
+                "expected 'standard' share near 0.40, got " + standardShare + " (counts=" + counts + ")");
+    }
+
+    @Test
+    @DisplayName("Weighted: RANDOM_GROUPED separator slot ignores flatbed weight")
+    void weighted_groupedSeparatorIgnoresFlatbedWeight() {
+        // flatbed=0 would exclude it from the random pool, but the separator
+        // slot at every (groupSize+1)th index is a fixed visual rhythm and
+        // must remain a flatbed regardless of weight.
+        CarriageWeights weights = new CarriageWeights(Map.of("flatbed", 0));
+        int groupSize = 3;
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, groupSize, 77L);
+        int cycleLen = groupSize + 1;
+        for (int cycle = 0; cycle < 10; cycle++) {
+            int separatorIdx = cycle * cycleLen + groupSize;
+            assertEquals("flatbed",
+                    CarriageTemplate.variantForIndex(separatorIdx, cfg, weights).id(),
+                    "separator at idx " + separatorIdx + " must stay flatbed regardless of weight");
+        }
+    }
+
+    @Test
+    @DisplayName("Weighted: RANDOM_GROUPED group slots skip a flatbed-weight=0 variant")
+    void weighted_groupedGroupSlotsRespectWeights() {
+        // In RANDOM_GROUPED, group slots pick from the non-flatbed pool, which
+        // excludes flatbed by construction. This test confirms setting a
+        // non-flatbed weight to 0 keeps it out of the group slots too.
+        CarriageWeights weights = new CarriageWeights(Map.of("windowed", 0));
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, 3, 0L);
+        int cycleLen = 4;
+        for (int cycle = 0; cycle < 200; cycle++) {
+            int base = cycle * cycleLen;
+            for (int offset = 0; offset < 3; offset++) {
+                String id = CarriageTemplate.variantForIndex(base + offset, cfg, weights).id();
+                assertNotEquals("windowed", id,
+                        "weight=0 variant should not appear in group slot at idx " + (base + offset));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Weighted: all-zero pool falls back to uniform (no empty-train crash)")
+    void weighted_allZeroFallsBackToUniform() {
+        CarriageWeights weights = new CarriageWeights(Map.of(
+                "standard", 0,
+                "windowed", 0,
+                "solid_roof", 0,
+                "flatbed", 0
+        ));
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 42L);
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < 10_000; i++) {
+            seen.add(CarriageTemplate.variantForIndex(i, cfg, weights).id());
+        }
+        assertEquals(4, seen.size(),
+                "all-zero pool should fall back to uniform, covering every built-in. Saw: " + seen);
+    }
+
+    @Test
+    @DisplayName("Weighted: same (seed, index, weights) is deterministic across repeat calls")
+    void weighted_isDeterministic() {
+        CarriageWeights weights = new CarriageWeights(Map.of("standard", 5, "flatbed", 3));
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 999L);
+        String first = CarriageTemplate.variantForIndex(17, cfg, weights).id();
+        for (int i = 0; i < 100; i++) {
+            assertEquals(first, CarriageTemplate.variantForIndex(17, cfg, weights).id(), "call " + i);
+        }
+    }
+
+    @Test
+    @DisplayName("Weighted: unknown ids in the map are ignored (default 1 applied to real variants)")
+    void weighted_unknownIdsAreIgnored() {
+        // 'ghost' is not a registered variant, so its 50 weight is dead weight
+        // with no effect on the pool. The four built-ins all get DEFAULT=1, so
+        // the sequence should match EMPTY weights.
+        CarriageWeights weights = new CarriageWeights(Map.of("ghost", 50));
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xABCL);
+        for (int i = 0; i < 200; i++) {
+            assertEquals(
+                CarriageTemplate.variantForIndex(i, cfg, CarriageWeights.EMPTY).id(),
+                CarriageTemplate.variantForIndex(i, cfg, weights).id(),
+                "unknown-id weight should not change output at idx " + i
+            );
+        }
+    }
+
+    @Test
+    @DisplayName("Weighted: clamped weights (>MAX) behave as MAX")
+    void weighted_abovemMaxClampsToMax() {
+        CarriageWeights weights = new CarriageWeights(Map.of("standard", CarriageWeights.MAX + 999));
+        // With standard at MAX(=100) and the others at DEFAULT(=1), standard's
+        // share should be ~100/103 ≈ 0.97.
+        CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 7L);
+        int total = 5_000;
+        int standardCount = 0;
+        for (int i = 0; i < total; i++) {
+            if ("standard".equals(CarriageTemplate.variantForIndex(i, cfg, weights).id())) {
+                standardCount++;
+            }
+        }
+        double share = standardCount / (double) total;
+        assertTrue(share > 0.93 && share < 1.0,
+                "expected 'standard' to dominate near 0.97 under max clamp, got " + share);
     }
 }
