@@ -180,24 +180,36 @@ public final class CarriageTemplate {
 
     /**
      * Deterministic variant selector for carriage index {@code i}, dispatched
-     * on {@link CarriageGenerationMode}:
+     * on {@link CarriageGenerationMode}. Delegates to the weighted overload
+     * using the active server's {@link CarriageWeights#current()}. Weight 1
+     * (the default for any variant not mentioned in {@code weights.json}) makes
+     * the pick uniform over the pool, matching the pre-weighting behaviour.
+     */
+    public static CarriageVariant variantForIndex(int i, CarriageGenerationConfig config) {
+        return variantForIndex(i, config, CarriageWeights.current());
+    }
+
+    /**
+     * Weighted deterministic variant selector for carriage index {@code i},
+     * dispatched on {@link CarriageGenerationMode}:
      *
      * <ul>
      *   <li><b>LOOPING</b> — cycles through {@link CarriageVariantRegistry#allVariants()}
-     *       so built-ins come first, customs after (preserves the pre-generation-mode behaviour).</li>
-     *   <li><b>RANDOM</b> — seeded {@code (seed, index)} pick from all variants including
-     *       the flatbed and any registered customs.</li>
+     *       so built-ins come first, customs after. Ignores {@code weights} —
+     *       the deterministic cycle doesn't apply to random distributions.</li>
+     *   <li><b>RANDOM</b> — seeded {@code (seed, index)} pick from all variants,
+     *       biased by {@code weights}. Weight 0 excludes a variant from the pool.</li>
      *   <li><b>RANDOM_GROUPED</b> — every {@code (groupSize + 1)}th index is the built-in
-     *       flatbed; every other index is a seeded pick from all non-flatbed variants
-     *       (built-ins minus FLATBED, plus all customs).</li>
+     *       flatbed regardless of weights (the separator slot is a fixed visual rhythm);
+     *       every other index is a weighted seeded pick from all non-flatbed variants.</li>
      * </ul>
      *
-     * <p>All three modes are pure functions of {@code (i, config, registry state)} —
-     * no {@code java.util.Random} state escapes the call. So long as the registry
-     * is stable, walking back over a stretch of track always re-places the identical
-     * carriage.</p>
+     * <p>All three modes are pure functions of {@code (i, config, registry state,
+     * weights state)} — no {@code java.util.Random} state escapes the call. So
+     * long as the registry and weights are stable, walking back over a stretch
+     * of track always re-places the identical carriage.</p>
      */
-    public static CarriageVariant variantForIndex(int i, CarriageGenerationConfig config) {
+    public static CarriageVariant variantForIndex(int i, CarriageGenerationConfig config, CarriageWeights weights) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) {
             // Defensive: registry should always have the four built-ins, but
@@ -206,7 +218,7 @@ public final class CarriageTemplate {
         }
         return switch (config.mode()) {
             case LOOPING -> variants.get(Math.floorMod(i, variants.size()));
-            case RANDOM -> variants.get(seededPick(config.seed(), i, variants.size()));
+            case RANDOM -> weightedSeededPick(config.seed(), i, variants, weights);
             case RANDOM_GROUPED -> {
                 int cycleLen = config.groupSize() + 1;
                 int pos = Math.floorMod(i, cycleLen);
@@ -219,7 +231,7 @@ public final class CarriageTemplate {
                     // choice, so fall back to flatbed for those slots too.
                     yield FLATBED_VARIANT;
                 }
-                yield nonFlatbed.get(seededPick(config.seed(), i, nonFlatbed.size()));
+                yield weightedSeededPick(config.seed(), i, nonFlatbed, weights);
             }
         };
     }
@@ -243,6 +255,49 @@ public final class CarriageTemplate {
     private static int seededPick(long seed, int index, int bound) {
         long mixed = seed ^ ((long) index * 0x9E3779B97F4A7C15L);
         return new Random(mixed).nextInt(bound);
+    }
+
+    /**
+     * Weighted counterpart to {@link #seededPick}. Returns a variant from
+     * {@code pool} with probability proportional to its weight as reported by
+     * {@code weights}. Same {@code (seed, index)} mixing as the uniform pick,
+     * so swapping in a {@link CarriageWeights#EMPTY} / all-default map
+     * reproduces the uniform distribution exactly.
+     *
+     * <p>If every variant in the pool has weight 0 the function falls back to
+     * a uniform pick so the carriage placer never has to deal with a degenerate
+     * empty pool. The fallback logs a warning once per server session via
+     * {@link CarriageTemplate#warnAllZeroOnce}.</p>
+     */
+    private static CarriageVariant weightedSeededPick(long seed, int index, List<CarriageVariant> pool, CarriageWeights weights) {
+        int n = pool.size();
+        int[] cumulative = new int[n];
+        int total = 0;
+        for (int i = 0; i < n; i++) {
+            total += weights.weightFor(pool.get(i).id());
+            cumulative[i] = total;
+        }
+        long mixed = seed ^ ((long) index * 0x9E3779B97F4A7C15L);
+        Random rng = new Random(mixed);
+        if (total <= 0) {
+            warnAllZeroOnce();
+            return pool.get(rng.nextInt(n));
+        }
+        int r = rng.nextInt(total);
+        for (int i = 0; i < n; i++) {
+            if (r < cumulative[i]) return pool.get(i);
+        }
+        // Unreachable: r < total and cumulative[n-1] == total. Defensive tail.
+        return pool.get(n - 1);
+    }
+
+    /** Throttle for the all-zero-weights fallback warning — one log line per server session. */
+    private static volatile boolean ALL_ZERO_WARNED = false;
+
+    private static void warnAllZeroOnce() {
+        if (ALL_ZERO_WARNED) return;
+        ALL_ZERO_WARNED = true;
+        LOGGER.warn("[DungeonTrain] Every variant in the random pool has weight 0 — falling back to uniform pick. Check weights.json.");
     }
 
     /**
