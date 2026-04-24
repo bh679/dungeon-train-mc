@@ -55,7 +55,27 @@ public final class TrainAssembler {
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Deleted {} existing train(s) before spawn", deleted);
         }
+        return spawnTrainCore(level, origin, velocity, count, spawnerWorldPos, dims, 0);
+    }
 
+    /**
+     * Spawn a successor train ahead of an existing one — does NOT delete
+     * existing trains or wipe persistence, so two trains coexist and the
+     * player can walk from one onto the next. {@code globalPIdxBase} keeps
+     * the HUD's "carriage number" continuous across the chain. See
+     * {@link games.brennan.dungeontrain.train.TrainChainManager} and
+     * {@code plans/floofy-floating-dahl.md} for the chain architecture.
+     *
+     * @param origin carriage-index-0 anchor in world for the new train
+     * @param spawnerWorldPos world position that seeds {@code initialPIdx}
+     *     (typically the same as origin for a successor — its first
+     *     carriage lives at origin and the window extends forward).
+     */
+    public static ServerShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
+        return spawnTrainCore(level, origin, velocity, count, spawnerWorldPos, dims, globalPIdxBase);
+    }
+
+    private static ServerShip spawnTrainCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
         // At spawn time the ship's worldToShip is a pure translation, so the
         // player's shipyard-space X offset from shipyardOrigin equals their
         // world X offset from origin — we can compute pIdx without the ship.
@@ -129,7 +149,7 @@ public final class TrainAssembler {
             CarriageTemplate.applyContentsAt(level, carriageShipyardOrigin, variant, dims, genCfg, i);
         }
 
-        TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx, dims);
+        TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx, dims, globalPIdxBase);
         ship.setTransformProvider(provider);
         // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
         // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
@@ -146,8 +166,8 @@ public final class TrainAssembler {
             origin.getZ() + dims.width() - 1);
         provider.setTrackGeometry(geometry);
 
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={}, track={})",
-            ship.getId(), shipyardOrigin, count, initialPIdx, geometry);
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={}, globalPIdxBase={}, track={})",
+            ship.getId(), shipyardOrigin, count, initialPIdx, globalPIdxBase, geometry);
 
         // Bootstrap: enqueue every chunk already loaded in the Z corridor.
         // These chunks fired ChunkEvent.Load before this train existed and
@@ -188,6 +208,10 @@ public final class TrainAssembler {
         for (LoadedServerShip ship : trains) {
             ShipAssembler.INSTANCE.deleteShip(level, ship, true, false);
         }
+        // Wipe per-carriage persistence snapshots from the previous train —
+        // a fresh spawn should never restore stale state keyed on the old
+        // train's carriage indices. See CarriagePersistenceStore.
+        CarriagePersistenceStore.clear(level);
         return trains.size();
     }
 

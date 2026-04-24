@@ -148,6 +148,25 @@ public final class ShipInertiaLocker {
     }
 
     /**
+     * Return a new {@link LockedInertia} snapshot whose {@code comInShip} is
+     * {@code prior.comInShip + delta}. Mass and MOI carry over unchanged.
+     * Used by {@link ShipyardShifter} together with
+     * {@code TrainTransformProvider.shiftReference} to advance the ship's
+     * reference frame forward without visibly hopping the ship.
+     *
+     * The caller is responsible for (1) storing the result back on the
+     * provider via {@code setLockedInertia} and (2) calling
+     * {@link #restore(LoadedServerShip, LockedInertia)} so VS's live
+     * {@code ShipInertiaDataImpl._centerOfMassInShip} sees the shifted
+     * value immediately, not after the next rolling-window mutation.
+     */
+    public static LockedInertia shiftCom(LockedInertia prior, Vector3dc delta) {
+        if (prior == null) return null;
+        Vector3d shifted = new Vector3d(prior.comInShip).add(delta);
+        return new LockedInertia(shifted, prior.mass, prior.moi);
+    }
+
+    /**
      * Resolve the ship's {@code ShipInertiaDataImpl} instance. Uses reflection on
      * the method name so we don't need to compile against the internal Ship type.
      * Cached after first successful resolution.
