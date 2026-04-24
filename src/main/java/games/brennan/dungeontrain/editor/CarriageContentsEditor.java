@@ -46,7 +46,7 @@ public final class CarriageContentsEditor {
     private static final int PLOT_STEP_X = 20;
     private static final int FIRST_PLOT_X = 0;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
+    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     /** Fallback shell variant stamped as context when the user doesn't specify one. */
     private static final CarriageVariant DEFAULT_SHELL = CarriageVariant.of(CarriageType.STANDARD);
