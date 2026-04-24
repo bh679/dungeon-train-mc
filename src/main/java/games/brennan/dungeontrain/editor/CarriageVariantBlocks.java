@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
@@ -76,6 +77,20 @@ public final class CarriageVariantBlocks {
 
     /** Minimum candidates per entry — a single-state "variant" is just a fixed block. */
     public static final int MIN_STATES_PER_ENTRY = 2;
+
+    /**
+     * Returns true if {@code state} is a command-block sentinel used in variant
+     * lists to mean "leave this position empty / air at spawn time." Covers all
+     * three command-block kinds (impulse, chain, repeating) so any command block
+     * the author places counts. The sentinel is stored verbatim in the JSON; the
+     * translation to {@code Blocks.AIR} happens in the apply path.
+     */
+    public static boolean isEmptyPlaceholder(BlockState state) {
+        if (state == null) return false;
+        return state.is(Blocks.COMMAND_BLOCK)
+            || state.is(Blocks.CHAIN_COMMAND_BLOCK)
+            || state.is(Blocks.REPEATING_COMMAND_BLOCK);
+    }
 
     // Session cache keyed by variant id. Invalidated on save and on editor
     // enter (re-read from disk so a manual edit picks up immediately).
@@ -292,7 +307,7 @@ public final class CarriageVariantBlocks {
         }
         for (BlockState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
-            if (s.hasBlockEntity()) {
+            if (s.hasBlockEntity() && !isEmptyPlaceholder(s)) {
                 throw new IllegalArgumentException(
                     "block-entity state " + s + " rejected — sidecar cannot preserve BE data");
             }

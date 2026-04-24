@@ -82,7 +82,7 @@ public final class VariantBlockInteractions {
         if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) return;
 
         BlockState newState = blockItem.getBlock().defaultBlockState();
-        if (newState.hasBlockEntity()) {
+        if (newState.hasBlockEntity() && !CarriageVariantBlocks.isEmptyPlaceholder(newState)) {
             player.displayClientMessage(
                 Component.literal("Block-entity blocks aren't supported in variants (v1).")
                     .withStyle(ChatFormatting.RED), true);
@@ -142,9 +142,11 @@ public final class VariantBlockInteractions {
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();
+        boolean sentinel = CarriageVariantBlocks.isEmptyPlaceholder(newState);
+        String label = sentinel ? (newName + " (empty-space)") : newName.toString();
         player.displayClientMessage(
-            Component.literal("+ " + newName + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
-                .withStyle(ChatFormatting.GREEN), true);
+            Component.literal("+ " + label + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
+                .withStyle(sentinel ? ChatFormatting.AQUA : ChatFormatting.GREEN), true);
 
         // Refresh the icon HUD in the same tick — otherwise the overlay still
         // shows the pre-add list until the player looks away and back.
