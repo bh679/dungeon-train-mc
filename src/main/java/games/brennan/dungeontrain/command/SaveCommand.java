@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageContentsEditor;
+import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
@@ -188,6 +190,25 @@ public final class SaveCommand {
             }
             return;
         }
+        if (model instanceof EditorModel.ContentsModel contentsModel) {
+            CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, contentsModel.contents());
+            if (source != null) {
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: saved contents '" + contentsModel.id() + "' template (config-dir)."), true);
+                if (result.sourceAttempted()) {
+                    if (result.sourceWritten()) {
+                        source.sendSuccess(() -> Component.literal(
+                            "Editor: also wrote bundled contents copy to source tree (devmode ON)."
+                        ).withStyle(ChatFormatting.GREEN), true);
+                    } else {
+                        source.sendFailure(Component.literal(
+                            "Editor: contents source-tree write failed: " + result.sourceError()
+                        ).withStyle(ChatFormatting.YELLOW));
+                    }
+                }
+            }
+            return;
+        }
         if (model instanceof EditorModel.PillarModel pillar) {
             PillarEditor.SaveResult result = PillarEditor.save(player, pillar.section());
             if (source != null) {
@@ -264,6 +285,15 @@ public final class SaveCommand {
             }
             return;
         }
+        if (model instanceof EditorModel.ContentsModel) {
+            // Contents promote: source-tree write is handled inside the
+            // SaveResult pathway in CarriageContentsEditor.save() when
+            // devmode is on, so "save default" has no extra action here.
+            source.sendFailure(Component.literal(
+                "Contents templates have no separate bundled tier — '/dt save default' does not apply."
+            ).withStyle(ChatFormatting.YELLOW));
+            return;
+        }
         if (model instanceof EditorModel.PillarModel pillar) {
             if (!PillarTemplateStore.sourceTreeAvailable()) {
                 source.sendFailure(Component.literal(
@@ -324,6 +354,11 @@ public final class SaveCommand {
             CarriageTemplateStore.promote(builtin.type());
             return true;
         }
+        if (model instanceof EditorModel.ContentsModel) {
+            // Contents write-through happens inside CarriageContentsEditor.save
+            // when devmode is on; there's no separate bundled tier to promote.
+            return false;
+        }
         if (model instanceof EditorModel.PillarModel pillar) {
             if (!PillarTemplateStore.sourceTreeAvailable()) {
                 throw new Exception("source tree not writable");
@@ -345,6 +380,12 @@ public final class SaveCommand {
     private static boolean isPlotEmpty(ServerLevel level, EditorModel model, CarriageDims dims) {
         if (model instanceof EditorModel.CarriageModel carriage) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage.variant());
+            if (origin == null) return true;
+            return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
+                < EMPTY_PLOT_THRESHOLD;
+        }
+        if (model instanceof EditorModel.ContentsModel contentsModel) {
+            BlockPos origin = CarriageContentsEditor.plotOrigin(contentsModel.contents());
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;

@@ -180,6 +180,7 @@ public final class EditorCommand {
                         return runPromote(ctx.getSource(), type);
                     })))
             .then(Commands.literal("contents")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CONTENTS))
                 .then(Commands.literal("enter")
                     .then(Commands.argument("contents", StringArgumentType.word())
                         .suggests(CONTENTS_SUGGESTIONS)
@@ -561,6 +562,8 @@ public final class EditorCommand {
             EditorModel head = first.get();
             if (head instanceof EditorModel.CarriageModel cm) {
                 CarriageEditor.enter(player, cm.variant());
+            } else if (head instanceof EditorModel.ContentsModel cm) {
+                CarriageContentsEditor.enter(player, cm.contents(), null);
             } else if (head instanceof EditorModel.PillarModel pm) {
                 PillarEditor.enter(player, pm.section());
             } else if (head instanceof EditorModel.TunnelModel tm) {
@@ -585,6 +588,8 @@ public final class EditorCommand {
     private static void stampCategoryModel(ServerLevel overworld, EditorModel model, CarriageDims dims) {
         if (model instanceof EditorModel.CarriageModel cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
+        } else if (model instanceof EditorModel.ContentsModel cm) {
+            CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
         } else if (model instanceof EditorModel.PillarModel pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
         } else if (model instanceof EditorModel.TunnelModel tm) {

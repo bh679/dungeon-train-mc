@@ -21,5 +21,7 @@
   "gui.dungeontrain.options.group_size": "Group size",
   "gui.dungeontrain.options.mode.random": "Random",
   "gui.dungeontrain.options.mode.random_grouped": "Random Grouped",
-  "gui.dungeontrain.options.mode.looping": "Looping"
+  "gui.dungeontrain.options.mode.looping": "Looping",
+  "key.dungeontrain.command_menu": "Toggle Command Menu",
+  "key.categories.dungeontrain": "Dungeon Train"
 }

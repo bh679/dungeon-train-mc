@@ -60,6 +60,35 @@ public final class CarriageContentsEditor {
     private CarriageContentsEditor() {}
 
     /**
+     * Re-stamp the plot for {@code contents} in-place: fresh shell, fresh
+     * contents, fresh barrier cage. Used by {@code runEnterCategory(CONTENTS)}
+     * to materialise every registered contents plot at once so the player can
+     * walk between them, mirroring the carriages/tracks category enter flow.
+     */
+    public static void stampPlot(ServerLevel overworld, CarriageContents contents, CarriageDims dims) {
+        BlockPos origin = plotOrigin(contents);
+        if (origin == null) return;
+        CarriageTemplate.eraseAt(overworld, origin, dims);
+        CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+        CarriageTemplate.placeAt(overworld, origin, DEFAULT_SHELL, dims);
+        CarriageContentsTemplate.placeAt(overworld, origin, contents, dims);
+        setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+    }
+
+    /**
+     * Erase the plot for {@code contents} — shell + interior back to air,
+     * barrier cage removed. Called by {@code EditorCategory.clearAllPlots}
+     * when switching categories.
+     */
+    public static void clearPlot(ServerLevel overworld, CarriageContents contents, CarriageDims dims) {
+        BlockPos origin = plotOrigin(contents);
+        if (origin == null) return;
+        CarriageTemplate.eraseAt(overworld, origin, dims);
+        CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+        setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
+    }
+
+    /**
      * Plot origin for {@code contents}. Computed from the current registry
      * ordering: built-ins in enum order, then customs alphabetically. Returns
      * {@code null} if the contents is not registered.
