@@ -18,83 +18,155 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Editor plots for the four {@link CarriagePartKind}s — one fixed plot per
- * kind, stacked on the +Z axis past the carriage and pillar rows so every
- * authoring surface is visible from a single vantage.
+ * Editor plots for the four {@link CarriagePartKind}s, laid out as a 2D grid
+ * alongside the carriage plots so {@code /dt editor carriages} shows every
+ * author-able part at a glance.
  *
- * <p>The name of the part currently in each plot is tracked per-player in
- * {@link #PART_SESSIONS} so {@code /dungeontrain editor part save} knows what
- * filename to write to. The return-position session is shared with
- * {@link CarriageEditor#rememberReturn} so a single {@code /editor exit}
- * restores regardless of which editor the player entered last.</p>
- *
- * <p>Plot layout (overworld, {@code Y=250}):
+ * <p>Grid layout (overworld, {@code Y=250}) — everything packs tightly with
+ * a {@link #PLOT_GAP}-block gap between consecutive plot footprints:
  * <ul>
- *   <li>{@link CarriagePartKind#FLOOR}  — {@code Z=80}  (footprint {@code (L-2)×1×(W-2)})</li>
- *   <li>{@link CarriagePartKind#WALLS}  — {@code Z=120} (footprint {@code (L-2)×H×1})</li>
- *   <li>{@link CarriagePartKind#ROOF}   — {@code Z=160} (footprint {@code (L-2)×1×(W-2)})</li>
- *   <li>{@link CarriagePartKind#DOORS}  — {@code Z=200} (footprint {@code 1×H×W})</li>
+ *   <li>The first row ({@link CarriagePartKind#FLOOR}) starts at
+ *       {@link #FIRST_PLOT_Z}; each subsequent kind row starts after the
+ *       previous row's Z extent plus the gap — so a compact grid at default
+ *       dims fits entirely within ~40 blocks of the carriage row.</li>
+ *   <li>Within a row, each registered part name takes an X slot that spans
+ *       the kind's X extent plus the gap, so named slots line up without
+ *       wasted dead space.</li>
  * </ul>
- * All four share {@code X=0}; the {@code Z} offsets leave clearance for the
- * widest carriage/pillar rows at max dims (32×24×32) and keep the rows
- * visibly separated.</p>
+ *
+ * <p>Integration with the editor category system: {@link #stampAllPlots} is
+ * called from {@code EditorCommand.runEnterCategory(CARRIAGES)} to paint every
+ * plot when the player enters the category, and {@link #clearAllPlots} is hung
+ * off {@link EditorCategory#clearAllPlots} so switching categories leaves no
+ * stale barriers or templates behind.</p>
+ *
+ * <p>Per-player session (the {@code (kind, name)} the player is editing) is
+ * still tracked in {@link #PART_SESSIONS} so {@code /editor part save} knows
+ * the filename to write to. The return-position session is shared with
+ * {@link CarriageEditor#rememberReturn} so a single {@code /editor exit}
+ * unwinds regardless of which sub-editor the player entered last.</p>
  */
 public final class CarriagePartEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_X = 0;
+    /** First X slot on any kind row. */
+    private static final int FIRST_PLOT_X = 0;
+
     private static final int PLOT_Y = 250;
-    private static final int FIRST_PLOT_Z = 80;
-    /** Z-step between consecutive part rows. Wide enough for max dims (width=32) plus 8-block breathing room. */
-    private static final int PLOT_STEP_Z = 40;
+
+    /**
+     * First Z row — puts the FLOOR grid at the same Z the TRACKS-category
+     * pillar row uses ({@code Z=40}). Categories clear each other's plots on
+     * switch, so there's no coexistence conflict; the closer placement keeps
+     * the parts grid inside the author's field of view when they enter
+     * CARRIAGES.
+     */
+    private static final int FIRST_PLOT_Z = 40;
+
+    /**
+     * Block gap between consecutive plot footprints on both X (name slots
+     * within a row) and Z (kind rows). Keeps cage barriers visibly separated
+     * while letting the grid pack tight at default dims.
+     */
+    private static final int PLOT_GAP = 5;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
 
     /** (kind, current-name) the player is editing. Empty when the player has never entered a part plot in this session. */
     public record PartSession(CarriagePartKind kind, String name) {}
 
+    /** Where in the world a specific (kind, name) plot can be found. Returned by {@link #plotContaining}. */
+    public record PlotLocation(CarriagePartKind kind, String name) {}
+
     private static final Map<UUID, PartSession> PART_SESSIONS = new HashMap<>();
 
     private CarriagePartEditor() {}
 
     /**
-     * Plot origin for {@code kind} — fixed across the world lifetime. Each
-     * plot's footprint starts at this origin and extends along {@code +X}
-     * (length), {@code +Y} (height), and {@code +Z} (width) by the per-kind
-     * {@link CarriagePartKind#dims(CarriageDims)} extents.
+     * Plot origin for {@code (kind, name)} at the given world dims. Returns
+     * {@code null} when the name isn't currently registered — callers
+     * creating a brand-new part should register first, or use
+     * {@link #nextFreePlotOrigin} to grab the next free slot on the kind's
+     * row.
+     *
+     * <p>X and Z both step by (kind footprint extent + {@link #PLOT_GAP}) so
+     * plots line up with a consistent 5-block gap regardless of dims.</p>
      */
-    public static BlockPos plotOrigin(CarriagePartKind kind) {
-        return new BlockPos(PLOT_X, PLOT_Y, FIRST_PLOT_Z + PLOT_STEP_Z * kind.ordinal());
+    public static BlockPos plotOrigin(CarriagePartKind kind, String name, CarriageDims dims) {
+        int index = nameIndex(kind, name);
+        if (index < 0) return null;
+        return new BlockPos(
+            FIRST_PLOT_X + index * xSlotStride(kind, dims),
+            PLOT_Y,
+            rowStartZ(kind, dims)
+        );
     }
 
     /**
-     * Which kind's plot (if any) contains {@code pos}, within the footprint plus
-     * a 1-block outline margin. Returns {@code null} if {@code pos} is outside
-     * every part plot.
+     * Plot origin for {@code kind} with a generic name that isn't registered
+     * yet — used by {@code /editor part enter <kind> <new_name>} before the
+     * first save. Picks the next free X slot on the kind's row so the new
+     * plot doesn't clobber an existing one.
      */
-    public static CarriagePartKind plotContaining(BlockPos pos, CarriageDims dims) {
+    public static BlockPos nextFreePlotOrigin(CarriagePartKind kind, CarriageDims dims) {
+        int index = CarriagePartRegistry.registeredNames(kind).size();
+        return new BlockPos(
+            FIRST_PLOT_X + index * xSlotStride(kind, dims),
+            PLOT_Y,
+            rowStartZ(kind, dims)
+        );
+    }
+
+    private static int nameIndex(CarriagePartKind kind, String name) {
+        List<String> names = CarriagePartRegistry.registeredNames(kind);
+        return names.indexOf(name);
+    }
+
+    /** X stride between adjacent name slots on the kind's row: kind X extent + gap. */
+    private static int xSlotStride(CarriagePartKind kind, CarriageDims dims) {
+        return kind.dims(dims).getX() + PLOT_GAP;
+    }
+
+    /** Z offset at which {@code kind}'s row begins, accumulated across prior rows' Z extents + gaps. */
+    private static int rowStartZ(CarriagePartKind kind, CarriageDims dims) {
+        int z = FIRST_PLOT_Z;
+        for (CarriagePartKind k : CarriagePartKind.values()) {
+            if (k == kind) return z;
+            z += k.dims(dims).getZ() + PLOT_GAP;
+        }
+        return z;
+    }
+
+    /** Resolve the plot the player is standing in, or {@code null} if outside every part plot (1-block outline margin included). */
+    public static PlotLocation plotContaining(BlockPos pos, CarriageDims dims) {
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            BlockPos o = plotOrigin(kind);
-            Vec3i size = kind.dims(dims);
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + size.getX()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + size.getY()
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + size.getZ()) {
-                return kind;
+            for (String name : CarriagePartRegistry.registeredNames(kind)) {
+                BlockPos o = plotOrigin(kind, name, dims);
+                if (o == null) continue;
+                Vec3i size = kind.dims(dims);
+                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + size.getX()
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + size.getY()
+                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + size.getZ()) {
+                    return new PlotLocation(kind, name);
+                }
             }
         }
         return null;
     }
 
-    /**
-     * The part name the player is currently editing in the given kind's plot,
-     * or empty if they have not yet entered this plot in the current session.
-     */
+    /** Back-compat: returns just the kind the player is standing in, null if none. Same input check as {@link #plotContaining}. */
+    public static CarriagePartKind plotKindContaining(BlockPos pos, CarriageDims dims) {
+        PlotLocation loc = plotContaining(pos, dims);
+        return loc == null ? null : loc.kind();
+    }
+
     public static Optional<PartSession> currentSession(ServerPlayer player) {
         return Optional.ofNullable(PART_SESSIONS.get(player.getUUID()));
     }
@@ -102,8 +174,8 @@ public final class CarriagePartEditor {
     /**
      * Outcome of {@link #save} — config-dir write always happens (or throws);
      * the source-tree write is opt-in via {@link EditorDevMode} and reported
-     * separately. Copy of {@link CarriageEditor.SaveResult}'s shape so
-     * command dispatchers can treat both uniformly.
+     * separately. Copy of {@link CarriageEditor.SaveResult}'s shape so command
+     * dispatchers can treat both uniformly.
      */
     public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
         public static SaveResult skipped() { return new SaveResult(false, false, null); }
@@ -112,19 +184,19 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Teleport {@code player} to the plot for {@code kind}, remember the
-     * return position (shared with {@link CarriageEditor}), erase the
-     * footprint, stamp whichever template currently backs {@code name} (empty
-     * cage if neither config nor bundled tier has it), and wrap the cage with
-     * barrier blocks. The current (kind, name) is stored in
-     * {@link #PART_SESSIONS} so a subsequent {@code save} knows where to write.
+     * Teleport {@code player} to the plot for {@code (kind, name)}, remembering
+     * the return position (shared with {@link CarriageEditor}). Picks
+     * {@link #plotOrigin} for an already-registered name or
+     * {@link #nextFreePlotOrigin} for a fresh one. Stamps the current template
+     * (or a stone-brick starter if nothing's on disk yet) and wraps the cage.
      */
     public static void enter(ServerPlayer player, CarriagePartKind kind, String name) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin(kind);
+        BlockPos origin = plotOrigin(kind, name, dims);
+        if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
         CarriageEditor.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
@@ -145,24 +217,21 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Capture the footprint at the plot for the player's current session into
-     * a fresh {@link StructureTemplate} and persist it via
-     * {@link CarriagePartTemplateStore}. The name is registered in
-     * {@link CarriagePartRegistry} so future completions include it. When
-     * {@link EditorDevMode} is on, the template is also written to the source
-     * tree so it ships with the next build.
-     *
-     * <p>If {@code newName} is non-null, saves under the new name (registering
-     * it) rather than the session's current name; callers should ensure the
-     * session is then updated to the new name so subsequent edits go to the
-     * same file.</p>
+     * Capture the footprint at the plot for {@code (kind, name)} into a fresh
+     * {@link StructureTemplate} and persist it via
+     * {@link CarriagePartTemplateStore}. Registers the name so future
+     * completions and the category-stamp pass include it. When
+     * {@link EditorDevMode} is on, also writes through to the source tree.
      */
     public static SaveResult save(ServerPlayer player, CarriagePartKind kind, String name) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin(kind);
+        // New names use the "next free" slot that `enter` would have picked —
+        // same slot that was stamped if the player entered via the usual path.
+        BlockPos origin = plotOrigin(kind, name, dims);
+        if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);
@@ -185,24 +254,65 @@ public final class CarriagePartEditor {
     }
 
     /**
-     * Stamp the currently-saved template for {@code name} into the plot. When
-     * neither the template exists on disk nor the stored NBT contains any
-     * blocks, fall back to {@link #stampStarter} so the plot is never left as
-     * pure air — without a surface to anchor against, the first-time author
-     * can't right-click to place blocks, which is what leaves
-     * {@code wood.nbt}-style empty-save templates circulating.
+     * Stamp the template for {@code (kind, name)} at its designated plot slot,
+     * with the barrier cage drawn around it. Used by
+     * {@code EditorCommand.runEnterCategory(CARRIAGES)} to paint every part
+     * plot so all authorable parts are visible at once. No-op when the name
+     * isn't registered.
+     */
+    public static void stampPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
+        BlockPos origin = plotOrigin(kind, name, dims);
+        if (origin == null) return;
+        CarriagePartTemplate.eraseAt(level, origin, kind, dims);
+        stampCurrent(level, origin, kind, name, dims);
+        setOutline(level, origin, kind, dims);
+    }
+
+    /**
+     * Stamp every registered part plot across all four kinds. Called by the
+     * CARRIAGES editor-category entry so switching into the category paints
+     * the full 2D parts grid alongside the carriage plots.
+     */
+    public static void stampAllPlots(ServerLevel level, CarriageDims dims) {
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            for (String name : CarriagePartRegistry.registeredNames(kind)) {
+                stampPlot(level, kind, name, dims);
+            }
+        }
+    }
+
+    /**
+     * Erase a single plot's footprint + cage back to air. Called on category
+     * switch so the barrier grid doesn't persist when the player moves to
+     * TRACKS / ARCHITECTURE.
+     */
+    public static void clearPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
+        BlockPos origin = plotOrigin(kind, name, dims);
+        if (origin == null) return;
+        CarriagePartTemplate.eraseAt(level, origin, kind, dims);
+        clearOutline(level, origin, kind, dims);
+    }
+
+    /** Erase every registered part plot. Hung off {@link EditorCategory#clearAllPlots}. */
+    public static void clearAllPlots(ServerLevel level, CarriageDims dims) {
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            for (String name : CarriagePartRegistry.registeredNames(kind)) {
+                clearPlot(level, kind, name, dims);
+            }
+        }
+    }
+
+    /**
+     * Stamp the currently-saved template for {@code name} into the plot, or
+     * (if the stored NBT is empty / missing) a stone-brick starter so the
+     * first-time author always has a placement surface.
      */
     private static void stampCurrent(ServerLevel level, BlockPos origin, CarriagePartKind kind, String name, CarriageDims dims) {
         Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
         if (stored.isPresent()) {
-            // The part template's native footprint is already kind.dims(dims) sized,
-            // so a straight unmirrored stamp at the plot origin fills it exactly.
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
         }
-        // A template that exists but contains zero non-air blocks still lands
-        // an empty stamp, so we re-check after placing — any time the plot is
-        // still all air, stamp a starter surface.
         if (plotIsEmpty(level, origin, kind, dims)) {
             stampStarter(level, origin, kind, dims);
         }
@@ -220,13 +330,6 @@ public final class CarriagePartEditor {
         return true;
     }
 
-    /**
-     * Fill the plot's full footprint with stone bricks as a first-time author
-     * starter. The player can break / replace individual blocks to customise,
-     * and a straight {@code /editor save} captures the starter as-is — gives
-     * the monolithic fallback in {@code tryComposeFromParts} a non-empty
-     * template to stamp, avoiding the zero-block carriage entirely.
-     */
     private static void stampStarter(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims) {
         BlockState brick = Blocks.STONE_BRICKS.defaultBlockState();
         Vec3i size = kind.dims(dims);
@@ -250,6 +353,15 @@ public final class CarriagePartEditor {
 
     /** Barrier cage around the 1-outside-footprint bounding box. */
     private static void setOutline(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims) {
+        applyOutline(level, origin, kind, dims, OUTLINE_BLOCK);
+    }
+
+    /** Erase the barrier cage drawn by {@link #setOutline} — sets every cage edge back to air. */
+    private static void clearOutline(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims) {
+        applyOutline(level, origin, kind, dims, Blocks.AIR.defaultBlockState());
+    }
+
+    private static void applyOutline(ServerLevel level, BlockPos origin, CarriagePartKind kind, CarriageDims dims, BlockState state) {
         Vec3i size = kind.dims(dims);
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
@@ -265,7 +377,7 @@ public final class CarriagePartEditor {
                         + (y == y0 || y == y1 ? 1 : 0)
                         + (z == z0 || z == z1 ? 1 : 0);
                     if (extremes < 2) continue;
-                    level.setBlock(new BlockPos(x, y, z), OUTLINE_BLOCK, 3);
+                    level.setBlock(new BlockPos(x, y, z), state, 3);
                 }
             }
         }

@@ -616,6 +616,13 @@ public final class EditorCommand {
             stampCategoryModel(overworld, model, dims);
         }
 
+        // CARRIAGES also paints the parts grid — floor / walls / roof / doors
+        // templates laid out on new Z rows past the carriage plots so every
+        // authorable part is visible at a glance inside the category.
+        if (category == EditorCategory.CARRIAGES) {
+            CarriagePartEditor.stampAllPlots(overworld, dims);
+        }
+
         // Teleport to the first via the existing enter path (also handles session + outline).
         try {
             EditorModel head = first.get();
@@ -747,15 +754,23 @@ public final class EditorCommand {
         // Part plots take priority over the carriage plot — only the
         // per-player session knows which (kind, name) the player is editing,
         // so runPartSave reads it from CarriagePartEditor.currentSession.
-        CarriagePartKind partKind = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        CarriagePartKind partKind = CarriagePartEditor.plotKindContaining(player.blockPosition(), dims);
         if (partKind != null) {
             return runPartSave(source, newName);
         }
 
         CarriageVariant current = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (current == null) {
+            // Player is outside every plot — but if they've got an active
+            // part editor session from a previous `/editor part enter` or
+            // from a CARRIAGES-category plot they wandered out of, save the
+            // session's part anyway (runPartSave uses plotContaining first
+            // then falls back to the session).
+            if (CarriagePartEditor.currentSession(player).isPresent()) {
+                return runPartSave(source, newName);
+            }
             source.sendFailure(Component.literal(
-                "Not in an editor plot. Use '/dungeontrain editor enter <variant>' first."
+                "Not in an editor plot. Stand in a carriage plot, a part plot, or run '/dungeontrain editor enter <variant>' first."
             ));
             return 0;
         }
@@ -1569,9 +1584,13 @@ public final class EditorCommand {
         String name = rawName.toLowerCase(Locale.ROOT);
         try {
             CarriagePartEditor.enter(player, kind, name);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+            BlockPos plot = CarriagePartEditor.plotOrigin(kind, name, dims);
+            if (plot == null) plot = CarriagePartEditor.nextFreePlotOrigin(kind, dims);
+            final BlockPos plotFinal = plot;
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered part '" + kind.id() + ":" + name
-                    + "' plot at " + CarriagePartEditor.plotOrigin(kind)
+                    + "' plot at " + plotFinal
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -1586,17 +1605,33 @@ public final class EditorCommand {
     private static int runPartSave(CommandSourceStack source, String newName) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        var session = CarriagePartEditor.currentSession(player);
-        if (session.isEmpty()) {
-            source.sendFailure(Component.literal(
-                "No active part editor session. Run '/dungeontrain editor part enter <kind> <name>' first."
-            ));
-            return 0;
+
+        // Resolve (kind, name) from the player's position first — walking into
+        // a plot stamped by `/dt editor carriages` gives the author a source
+        // plot without needing an explicit `/editor part enter` session.
+        // Session is the fallback for when the player is outside every plot
+        // (e.g. right after authoring a fresh name via `part enter`).
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        CarriagePartEditor.PlotLocation loc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        CarriagePartKind kind;
+        String sourceName;
+        if (loc != null) {
+            kind = loc.kind();
+            sourceName = loc.name();
+        } else {
+            var session = CarriagePartEditor.currentSession(player);
+            if (session.isEmpty()) {
+                source.sendFailure(Component.literal(
+                    "No active part editor session. Stand in a part plot or run '/dungeontrain editor part enter <kind> <name>' first."
+                ));
+                return 0;
+            }
+            kind = session.get().kind();
+            sourceName = session.get().name();
         }
-        CarriagePartKind kind = session.get().kind();
         String targetName;
         if (newName == null) {
-            targetName = session.get().name();
+            targetName = sourceName;
         } else {
             if (!validatePartName(source, newName)) return 0;
             targetName = newName.toLowerCase(Locale.ROOT);

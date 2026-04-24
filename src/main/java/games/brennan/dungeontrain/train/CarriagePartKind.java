@@ -115,4 +115,27 @@ public enum CarriagePartKind {
         }
         return null;
     }
+
+    /**
+     * Which part kind (if any) covers carriage-local position
+     * {@code (lx, ly, lz)} in a carriage of dimensions {@code dims}. Returns
+     * {@code null} for interior voxels (inside the hollow shell — not owned
+     * by any part).
+     *
+     * <p>Ordering matches {@link #placements} so the inverse mapping is
+     * consistent: doors own the corner columns, walls own the side strips in
+     * the interior x-range, floor / roof own the inner top and bottom
+     * rectangles, and everything else is interior.</p>
+     */
+    public static CarriagePartKind kindAtLocalPos(int lx, int ly, int lz, CarriageDims dims) {
+        int L = dims.length();
+        int H = dims.height();
+        int W = dims.width();
+        if (lx < 0 || lx >= L || ly < 0 || ly >= H || lz < 0 || lz >= W) return null;
+        if (lx == 0 || lx == L - 1) return DOORS;
+        if (lz == 0 || lz == W - 1) return WALLS;
+        if (ly == 0) return FLOOR;
+        if (ly == H - 1) return ROOF;
+        return null;
+    }
 }

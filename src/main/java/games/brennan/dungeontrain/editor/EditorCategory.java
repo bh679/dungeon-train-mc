@@ -142,5 +142,8 @@ public enum EditorCategory {
         for (TunnelVariant t : TunnelVariant.values()) {
             TunnelEditor.clearPlot(overworld, t);
         }
+        // Parts live adjacent to carriages (Z=80+ rows) but span no other
+        // category, so we clear them alongside everything else when switching.
+        CarriagePartEditor.clearAllPlots(overworld, dims);
     }
 }

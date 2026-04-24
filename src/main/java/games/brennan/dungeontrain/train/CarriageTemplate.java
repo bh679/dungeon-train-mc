@@ -270,7 +270,7 @@ public final class CarriageTemplate {
             String picked = a.pick(kind, seed, carriageIndex);
             if (CarriagePartKind.NONE.equals(picked)) continue;
             if (CarriagePartTemplateStore.get(level, kind, picked, dims).isEmpty()) continue;
-            CarriagePartTemplate.placeAt(level, origin, kind, picked, dims);
+            CarriagePartTemplate.placeAt(level, origin, kind, picked, dims, seed, carriageIndex);
             if (desc.length() > 0) desc.append(",");
             desc.append(kind.id()).append("=").append(picked);
         }

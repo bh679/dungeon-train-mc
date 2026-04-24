@@ -176,6 +176,7 @@ public final class CarriagePartRegistry {
         clear();
         CarriagePartTemplateStore.clearCache();
         CarriageVariantPartsStore.clearCache();
+        CarriagePartVariantBlocks.clearCache();
         CarriagePartEditor.clearSessions();
     }
 }

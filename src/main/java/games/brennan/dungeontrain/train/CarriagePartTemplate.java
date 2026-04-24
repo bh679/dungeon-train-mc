@@ -1,10 +1,14 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
+import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -41,9 +45,16 @@ public final class CarriagePartTemplate {
      * {@code null} / blank / {@code "none"}, or when the store has no matching
      * template (the caller has already fallen back to this path, so logging
      * is handled inside the store).
+     *
+     * <p>After the template stamp, any {@link CarriagePartVariantBlocks}
+     * sidecar for this part is applied on top — variant blocks picked
+     * deterministically from {@code (seed, carriageIndex, localPos)} and
+     * mirrored to match the placement's {@link Mirror} so wall- and door-
+     * mirrored stamps land coherent block states on either side.</p>
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin,
-                               CarriagePartKind kind, String name, CarriageDims dims) {
+                               CarriagePartKind kind, String name, CarriageDims dims,
+                               long seed, int carriageIndex) {
         if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) return;
         Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
         if (stored.isEmpty()) return;
@@ -55,6 +66,62 @@ public final class CarriagePartTemplate {
                 .setMirror(p.mirror());
             template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), 3);
         }
+        applyVariantBlocks(level, carriageOrigin, kind, name, dims, seed, carriageIndex);
+    }
+
+    /**
+     * Overlay any {@link CarriagePartVariantBlocks} entries for {@code name}
+     * onto the stamped part. Each placement stamps again with its mirror
+     * applied to both the {@code localPos} (for world coordinates) and the
+     * chosen {@link BlockState} (for facing / axis properties), so the result
+     * tracks the part template's own mirror-handling.
+     *
+     * <p>The {@code CarriageVariantBlocks} command-block sentinel is honoured
+     * — a picked sentinel resolves to {@link Blocks#AIR} so authors can
+     * randomise "block or empty" within a part.</p>
+     */
+    private static void applyVariantBlocks(ServerLevel level, BlockPos carriageOrigin,
+                                            CarriagePartKind kind, String name, CarriageDims dims,
+                                            long seed, int carriageIndex) {
+        Vec3i partSize = kind.dims(dims);
+        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        if (sidecar.isEmpty()) return;
+
+        for (CarriagePartKind.Placement p : kind.placements(dims)) {
+            BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
+            for (var entry : sidecar.entries()) {
+                BlockState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                if (picked == null) continue;
+                BlockState toPlace = CarriageVariantBlocks.isEmptyPlaceholder(picked)
+                    ? Blocks.AIR.defaultBlockState()
+                    : picked.mirror(p.mirror());
+                BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
+                SilentBlockOps.setBlockSilent(level, world, toPlace);
+            }
+        }
+    }
+
+    /**
+     * Apply the placement's mirror to a local part position, then offset by
+     * {@code stampOrigin} to land the world position. Matches vanilla
+     * {@code StructureTemplate.calculateRelativePosition} with
+     * {@code pivot == stampOrigin} and {@code Rotation.NONE}.
+     */
+    private static BlockPos transformLocal(BlockPos stampOrigin, BlockPos local, Mirror mirror, Vec3i size) {
+        int lx = local.getX();
+        int ly = local.getY();
+        int lz = local.getZ();
+        return switch (mirror) {
+            case LEFT_RIGHT -> new BlockPos(stampOrigin.getX() + lx,
+                                             stampOrigin.getY() + ly,
+                                             stampOrigin.getZ() - lz);
+            case FRONT_BACK -> new BlockPos(stampOrigin.getX() - lx,
+                                             stampOrigin.getY() + ly,
+                                             stampOrigin.getZ() + lz);
+            default -> new BlockPos(stampOrigin.getX() + lx,
+                                     stampOrigin.getY() + ly,
+                                     stampOrigin.getZ() + lz);
+        };
     }
 
     /**
