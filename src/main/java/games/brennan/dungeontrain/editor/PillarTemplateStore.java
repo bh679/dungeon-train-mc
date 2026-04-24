@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
@@ -59,12 +60,14 @@ public final class PillarTemplateStore {
     private static final String SUBDIR = "dungeontrain/pillars";
     private static final String LEGACY_SUBDIR = "dungeontrain/templates";
     private static final String FILE_PREFIX = "pillar_";
+    private static final String ADJUNCT_FILE_PREFIX = "adjunct_";
     private static final String EXT = ".nbt";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/pillars/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/pillars";
 
     private static final Map<PillarSection, Optional<StructureTemplate>> CACHE = new EnumMap<>(PillarSection.class);
     private static final Map<PillarSection, Optional<BlockState[][]>> COLUMN_CACHE = new EnumMap<>(PillarSection.class);
+    private static final Map<PillarAdjunct, Optional<StructureTemplate>> ADJUNCT_CACHE = new EnumMap<>(PillarAdjunct.class);
 
     /**
      * Reflected accessor for {@link StructureTemplate#palettes}, which is
@@ -97,6 +100,15 @@ public final class PillarTemplateStore {
     public static synchronized void clearCache() {
         CACHE.clear();
         COLUMN_CACHE.clear();
+        ADJUNCT_CACHE.clear();
+    }
+
+    public static Path fileFor(PillarAdjunct adjunct) {
+        return directory().resolve(ADJUNCT_FILE_PREFIX + adjunct.id() + EXT);
+    }
+
+    public static Path sourceFileFor(PillarAdjunct adjunct) {
+        return sourceDirectory().resolve(ADJUNCT_FILE_PREFIX + adjunct.id() + EXT);
     }
 
     /**
@@ -264,6 +276,142 @@ public final class PillarTemplateStore {
         } catch (IOException e) {
             return false;
         }
+    }
+
+    /**
+     * Return the loaded adjunct template, three-tier (config → bundled →
+     * empty). No hardcoded fallback — callers treat an empty result as
+     * "don't place this adjunct". Validates footprint against the adjunct's
+     * declared {@code x×y×z} size.
+     */
+    public static synchronized Optional<StructureTemplate> getAdjunct(ServerLevel level, PillarAdjunct adjunct) {
+        Optional<StructureTemplate> cached = ADJUNCT_CACHE.get(adjunct);
+        if (cached != null) return filterAdjunctForSize(adjunct, cached);
+        Optional<StructureTemplate> loaded = loadAdjunctFromConfig(level, adjunct);
+        if (loaded.isEmpty()) {
+            loaded = loadAdjunctFromResource(level, adjunct);
+        }
+        ADJUNCT_CACHE.put(adjunct, loaded);
+        return loaded;
+    }
+
+    public static synchronized void saveAdjunct(PillarAdjunct adjunct, StructureTemplate template) throws IOException {
+        Path dir = directory();
+        Files.createDirectories(dir);
+        Path file = fileFor(adjunct);
+        CompoundTag tag = template.save(new CompoundTag());
+        NbtIo.writeCompressed(tag, file.toFile());
+        ADJUNCT_CACHE.put(adjunct, Optional.of(template));
+        LOGGER.info("[DungeonTrain] Saved pillar adjunct template {} to {}", adjunct.id(), file);
+    }
+
+    public static synchronized void saveAdjunctToSource(PillarAdjunct adjunct, StructureTemplate template) throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path file = sourceFileFor(adjunct);
+        Files.createDirectories(file.getParent());
+        CompoundTag tag = template.save(new CompoundTag());
+        NbtIo.writeCompressed(tag, file.toFile());
+        LOGGER.info("[DungeonTrain] Wrote bundled pillar adjunct template {} to {}", adjunct.id(), file);
+    }
+
+    public static synchronized void promoteAdjunct(PillarAdjunct adjunct) throws IOException {
+        Path src = fileFor(adjunct);
+        if (!Files.isRegularFile(src)) {
+            throw new IOException("No saved pillar adjunct template for " + adjunct.id() + " in " + src);
+        }
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path dst = sourceFileFor(adjunct);
+        Files.createDirectories(dst.getParent());
+        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        LOGGER.info("[DungeonTrain] Promoted pillar adjunct template {} from {} to {}", adjunct.id(), src, dst);
+    }
+
+    public static synchronized boolean deleteAdjunct(PillarAdjunct adjunct) throws IOException {
+        Path file = fileFor(adjunct);
+        boolean existed = Files.deleteIfExists(file);
+        ADJUNCT_CACHE.put(adjunct, Optional.empty());
+        if (existed) LOGGER.info("[DungeonTrain] Deleted pillar adjunct template {} ({})", adjunct.id(), file);
+        return existed;
+    }
+
+    public static boolean existsAdjunct(PillarAdjunct adjunct) {
+        return Files.isRegularFile(fileFor(adjunct));
+    }
+
+    public static boolean bundledAdjunct(PillarAdjunct adjunct) {
+        try (InputStream in = PillarTemplateStore.class.getResourceAsStream(
+                RESOURCE_PREFIX + ADJUNCT_FILE_PREFIX + adjunct.id() + EXT)) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    private static Optional<StructureTemplate> filterAdjunctForSize(PillarAdjunct adjunct, Optional<StructureTemplate> cached) {
+        if (cached.isEmpty()) return cached;
+        Vec3i size = cached.get().getSize();
+        if (adjunctSizeMatches(size, adjunct)) return cached;
+        LOGGER.warn(
+            "[DungeonTrain] Cached pillar adjunct template {} has bounds {}x{}x{}, expected {}x{}x{} — falling back.",
+            adjunct.id(), size.getX(), size.getY(), size.getZ(),
+            adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+        return Optional.empty();
+    }
+
+    private static boolean adjunctSizeMatches(Vec3i size, PillarAdjunct adjunct) {
+        return size.getX() == adjunct.xSize()
+            && size.getY() == adjunct.ySize()
+            && size.getZ() == adjunct.zSize();
+    }
+
+    private static Optional<StructureTemplate> loadAdjunctFromConfig(ServerLevel level, PillarAdjunct adjunct) {
+        Path file = fileFor(adjunct);
+        if (!Files.isRegularFile(file)) return Optional.empty();
+        try {
+            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            return loadAndValidateAdjunct(level, adjunct, tag, "config " + file);
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read config pillar adjunct template {} at {}: {}",
+                adjunct.id(), file, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<StructureTemplate> loadAdjunctFromResource(ServerLevel level, PillarAdjunct adjunct) {
+        String resource = RESOURCE_PREFIX + ADJUNCT_FILE_PREFIX + adjunct.id() + EXT;
+        try (InputStream in = PillarTemplateStore.class.getResourceAsStream(resource)) {
+            if (in == null) return Optional.empty();
+            CompoundTag tag = NbtIo.readCompressed(in);
+            return loadAndValidateAdjunct(level, adjunct, tag, "bundled " + resource);
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read bundled pillar adjunct template {} at {}: {}",
+                adjunct.id(), resource, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<StructureTemplate> loadAndValidateAdjunct(
+        ServerLevel level, PillarAdjunct adjunct, CompoundTag tag, String origin
+    ) {
+        StructureTemplate template = new StructureTemplate();
+        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
+        template.load(blocks, tag);
+
+        Vec3i size = template.getSize();
+        if (!adjunctSizeMatches(size, adjunct)) {
+            LOGGER.warn(
+                "[DungeonTrain] Pillar adjunct template {} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
+                adjunct.id(), origin, size.getX(), size.getY(), size.getZ(),
+                adjunct.xSize(), adjunct.ySize(), adjunct.zSize()
+            );
+            return Optional.empty();
+        }
+        LOGGER.info("[DungeonTrain] Loaded pillar adjunct template {} from {}", adjunct.id(), origin);
+        return Optional.of(template);
     }
 
     private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, PillarSection section, CarriageDims dims) {
