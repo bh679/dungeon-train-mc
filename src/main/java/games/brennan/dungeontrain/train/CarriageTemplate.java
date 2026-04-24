@@ -116,6 +116,27 @@ public final class CarriageTemplate {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        return placeAt(level, origin, variant, dims, config, carriageIndex, true);
+    }
+
+    /**
+     * Overload that lets the caller skip the contents pass. Used by the
+     * initial-spawn path in {@code TrainAssembler.spawnTrain} which places
+     * carriages in WORLD space and then calls {@code ShipAssembler.assembleToShip}
+     * to move the blocks into the ship's shipyard space. Entities from
+     * {@code applyContents} would be spawned in world space and stay there
+     * (VS's shipyard-entity mixin only handles entities already in shipyard
+     * chunks), so TrainAssembler defers the contents pass until after assembly
+     * and runs it at the shipyard coordinates of each carriage.
+     *
+     * <p>The rolling-window spawns in {@code TrainWindowManager} place
+     * directly at shipyard coordinates and so keep {@code applyContents=true}.
+     */
+    public static Set<BlockPos> placeAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean applyContents
+    ) {
         String base = stampBase(level, origin, variant, dims);
         String overlay = stampPartsOverlay(level, origin, variant, dims, config.seed(), carriageIndex);
 
@@ -133,7 +154,62 @@ public final class CarriageTemplate {
             }
         }
 
+        // Contents apply on any source (stored / legacy / parts overlay) —
+        // the interior volume at (1..L-2, 1..H-2, 1..W-2) is identical across
+        // shell variants, so CarriageContentsTemplate doesn't care which one
+        // it lands inside. finishPlace's collectFootprint re-reads the region
+        // afterwards so contents blocks are included in the returned set.
+        if (applyContents && (base != null || overlay != null)) {
+            applyContents(level, origin, variant, dims, config, carriageIndex);
+        }
+
         return finishPlace(level, origin, variant, dims, base, overlay);
+    }
+
+    /**
+     * Public wrapper around the private {@code applyContents} method — exposes
+     * the contents pass so {@code TrainAssembler} can call it in a second pass
+     * after {@code ShipAssembler.assembleToShip}. Passes the variant so
+     * FLATBED skips automatically.
+     */
+    public static void applyContentsAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        applyContents(level, origin, variant, dims, config, carriageIndex);
+    }
+
+    /**
+     * Pick a {@link CarriageContents} variant deterministically for this
+     * carriage and stamp its interior blocks on top of the already-placed
+     * shell. Wrapped in try/catch so a contents-load failure can't abort the
+     * spawn — worst case the interior stays empty with a warning.
+     *
+     * <p>Skipped for the {@link CarriageType#FLATBED} built-in: a flatbed is
+     * just a floor with no walls or roof, so any interior contents would
+     * appear as floating blocks visible from every side. Keep flatbeds empty
+     * so they read as the train's "separators" between enclosed carriages.</p>
+     */
+    private static void applyContents(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            return;
+        }
+        try {
+            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex);
+            // Clear any entities left over from a previous carriage at this
+            // shipyard position — the block-only clearBoundingBox in
+            // TrainAssembler doesn't discard entities, so armor stands and
+            // paintings from prior contents at this index would otherwise
+            // accumulate each rolling-window cycle.
+            CarriageContentsTemplate.discardEntitiesAt(level, origin, dims);
+            CarriageContentsTemplate.placeAt(level, origin, contents, dims);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
+                origin, carriageIndex, t.toString());
+        }
     }
 
     private static void applyVariantBlocks(
@@ -146,7 +222,10 @@ public final class CarriageTemplate {
             BlockState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
             if (picked == null) continue;
             BlockPos world = origin.offset(e.localPos());
-            SilentBlockOps.setBlockSilent(level, world, picked);
+            BlockState toPlace = CarriageVariantBlocks.isEmptyPlaceholder(picked)
+                ? Blocks.AIR.defaultBlockState()
+                : picked;
+            SilentBlockOps.setBlockSilent(level, world, toPlace);
         }
     }
 
