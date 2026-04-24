@@ -193,6 +193,17 @@ public final class TrackTemplateStore {
         return Files.isRegularFile(file());
     }
 
+    /**
+     * Load the track template from the bundled tier only — the classpath
+     * {@code /data/dungeontrain/tracks/track.nbt}. Skips the config-dir
+     * override and the hardcoded fallback. Used by {@code /dt reset default}
+     * to revert the plot to the shipped template regardless of any config-dir
+     * override.
+     */
+    public static Optional<StructureTemplate> getBundled(ServerLevel level, CarriageDims dims) {
+        return loadFromResource(level, dims);
+    }
+
     public static boolean bundled() {
         try (InputStream in = TrackTemplateStore.class.getResourceAsStream(RESOURCE_PATH)) {
             return in != null;

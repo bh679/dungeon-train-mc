@@ -5,11 +5,15 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriageContentsEditor;
+import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
@@ -18,6 +22,8 @@ import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -98,10 +104,25 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+                builder.suggest(c.id());
+            }
+            return builder.buildFuture();
+        };
+
     private EditorCommand() {}
 
     public static LiteralArgumentBuilder<CommandSourceStack> build(CommandBuildContext buildContext) {
         return Commands.literal("editor")
+            .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
+            .then(Commands.literal("carriages")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
+            .then(Commands.literal("tracks")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS)))
+            .then(Commands.literal("architecture")
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
                 .executes(ctx -> runEnterCarriage(ctx.getSource(), CarriageVariant.of(CarriageType.STANDARD)))
                 .then(Commands.argument("variant", StringArgumentType.word())
@@ -135,6 +156,7 @@ public final class EditorCommand {
                                 StringArgumentType.getString(ctx, "name"), src);
                         }))))
             .then(Commands.literal("devmode")
+                .executes(ctx -> runDevMode(ctx.getSource(), !EditorDevMode.isEnabled()))
                 .then(Commands.literal("on").executes(ctx -> runDevMode(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runDevMode(ctx.getSource(), false))))
             .then(Commands.literal("promote")
@@ -147,6 +169,42 @@ public final class EditorCommand {
                         if (type == null) return 0;
                         return runPromote(ctx.getSource(), type);
                     })))
+            .then(Commands.literal("contents")
+                .then(Commands.literal("enter")
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .executes(ctx -> runContentsEnter(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "contents"), null))
+                        .then(Commands.argument("shell_variant", StringArgumentType.word())
+                            .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                            .executes(ctx -> runContentsEnter(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "contents"),
+                                StringArgumentType.getString(ctx, "shell_variant"))))))
+                .then(Commands.literal("save")
+                    .executes(ctx -> runContentsSave(ctx.getSource(), null))
+                    .then(Commands.argument("new_name", StringArgumentType.word())
+                        .executes(ctx -> runContentsSave(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "new_name")))))
+                .then(Commands.literal("list").executes(ctx -> runContentsList(ctx.getSource())))
+                .then(Commands.literal("reset")
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .executes(ctx -> runContentsReset(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "contents")))))
+                .then(Commands.literal("new")
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .executes(ctx -> runContentsNew(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "name"),
+                            CarriageContents.of(CarriageContents.ContentsType.DEFAULT)))
+                        .then(Commands.argument("source", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .executes(ctx -> {
+                                CarriageContents src = parseContents(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "source"));
+                                if (src == null) return 0;
+                                return runContentsNew(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "name"), src);
+                            })))))
             .then(Commands.literal("pillar")
                 .then(Commands.literal("enter")
                     .then(Commands.argument("section", StringArgumentType.word())
@@ -415,6 +473,79 @@ public final class EditorCommand {
         }
     }
 
+    /**
+     * Category-level enter: stamp every plot in {@code category} so the player
+     * can walk between all of them, then teleport them to the first model.
+     * Architecture has no models yet and returns a "coming soon" message.
+     */
+    private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        if (category == EditorCategory.ARCHITECTURE) {
+            source.sendSuccess(() -> Component.literal(
+                "Architecture editor: coming soon. Walls, floor, and roof templates aren't implemented yet."
+            ).withStyle(ChatFormatting.YELLOW), false);
+            return 1;
+        }
+
+        java.util.Optional<EditorModel> first = category.firstModel();
+        if (first.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "Category '" + category.displayName() + "' has no models."));
+            return 0;
+        }
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Clear every plot from every category first — switching from one
+        // category to another should leave no stale models behind.
+        EditorCategory.clearAllPlots(overworld, dims);
+
+        // Stamp every plot so the full list is visible at once.
+        for (EditorModel model : category.models()) {
+            stampCategoryModel(overworld, model, dims);
+        }
+
+        // Teleport to the first via the existing enter path (also handles session + outline).
+        try {
+            EditorModel head = first.get();
+            if (head instanceof EditorModel.CarriageModel cm) {
+                CarriageEditor.enter(player, cm.variant());
+            } else if (head instanceof EditorModel.PillarModel pm) {
+                PillarEditor.enter(player, pm.section());
+            } else if (head instanceof EditorModel.TunnelModel tm) {
+                TunnelEditor.enter(player, tm.variant());
+            } else if (head instanceof EditorModel.TrackModel) {
+                TrackEditor.enter(player);
+            }
+            final EditorModel firstModel = head;
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered '" + category.displayName() + "' at '" + firstModel.displayName() + "'."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor enter-category failed", t);
+            source.sendFailure(Component.literal("enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static void stampCategoryModel(ServerLevel overworld, EditorModel model, CarriageDims dims) {
+        if (model instanceof EditorModel.CarriageModel cm) {
+            CarriageEditor.stampPlot(overworld, cm.variant(), dims);
+        } else if (model instanceof EditorModel.PillarModel pm) {
+            PillarEditor.stampPlot(overworld, pm.section(), dims);
+        } else if (model instanceof EditorModel.TunnelModel tm) {
+            TunnelEditor.stampPlot(overworld, tm.variant());
+        } else if (model instanceof EditorModel.TrackModel) {
+            TrackEditor.stampPlot(overworld, dims);
+        }
+    }
+
     private static int runEnter(CommandSourceStack source, String raw) {
         if (isTunnelInput(raw)) {
             TunnelVariant v = parseTunnelVariant(source, raw);
@@ -468,9 +599,17 @@ public final class EditorCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 
-        // Tunnel plots take priority — if the player is inside a tunnel plot,
-        // save the tunnel template (ignoring any new_name argument; tunnel
-        // templates don't support rename).
+        CarriageDims dimsForDispatch = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+
+        // Contents plots take priority over carriage plots so a player
+        // standing in a contents plot saves the contents template (not the
+        // shell template).
+        CarriageContents contentsInPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dimsForDispatch);
+        if (contentsInPlot != null) {
+            return runContentsSave(source, newName);
+        }
+
+        // Tunnel plots take priority over carriage plots too.
         TunnelVariant tunnel = TunnelEditor.plotContaining(player.blockPosition());
         if (tunnel != null) {
             if (newName != null) {
@@ -586,6 +725,10 @@ public final class EditorCommand {
             ));
             return 0;
         }
+        // Clear every plot so the sky stays tidy for the next session.
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        EditorCategory.clearAllPlots(overworld, dims);
         source.sendSuccess(() -> Component.literal(
             "Editor: exited, returned to previous location."
         ), true);
@@ -888,6 +1031,226 @@ public final class EditorCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor pillar promote failed for {}", section, t);
             source.sendFailure(Component.literal("pillar promote failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static CarriageContents parseContents(CommandSourceStack source, String raw) {
+        String id = raw.toLowerCase(Locale.ROOT);
+        return CarriageContentsRegistry.find(id).orElseGet(() -> {
+            source.sendFailure(Component.literal(
+                "Unknown contents '" + raw + "'. Valid: " + listContentsIds()
+            ));
+            return null;
+        });
+    }
+
+    private static String listContentsIds() {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            if (!first) sb.append(", ");
+            sb.append(c.id());
+            first = false;
+        }
+        return sb.toString();
+    }
+
+    private static int runContentsEnter(CommandSourceStack source, String contentsRaw, String shellRaw) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageContents contents = parseContents(source, contentsRaw);
+        if (contents == null) return 0;
+        CarriageVariant shell = shellRaw == null
+            ? null
+            : CarriageVariantRegistry.find(shellRaw.toLowerCase(Locale.ROOT)).orElse(null);
+        if (shellRaw != null && shell == null) {
+            source.sendFailure(Component.literal(
+                "Unknown shell variant '" + shellRaw + "'. Valid: " + listIds()
+            ));
+            return 0;
+        }
+        try {
+            CarriageContentsEditor.enter(player, contents, shell);
+            final CarriageVariant shellUsed = CarriageContentsEditor.resolveShellOrDefault(shellRaw);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered contents '" + contents.id()
+                    + "' (shell=" + shellUsed.id() + ") plot at "
+                    + CarriageContentsEditor.plotOrigin(contents)
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents enter failed", t);
+            source.sendFailure(Component.literal("contents enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runContentsSave(CommandSourceStack source, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        CarriageContents current = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
+        if (current == null) {
+            source.sendFailure(Component.literal(
+                "Not in a contents editor plot. Use '/dungeontrain editor contents enter <name>' first."
+            ));
+            return 0;
+        }
+
+        if (newName == null) {
+            try {
+                CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, current);
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: saved contents '" + current.id() + "' template (config-dir)."
+                ), true);
+                if (result.sourceAttempted()) {
+                    if (result.sourceWritten()) {
+                        source.sendSuccess(() -> Component.literal(
+                            "Editor: also wrote bundled contents copy to source tree (will ship with next build)."
+                        ).withStyle(ChatFormatting.GREEN), true);
+                    } else {
+                        source.sendFailure(Component.literal(
+                            "Editor: contents source-tree write failed: " + result.sourceError()
+                        ).withStyle(ChatFormatting.YELLOW));
+                    }
+                }
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor contents save failed", t);
+                source.sendFailure(Component.literal("contents save failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        // Rename path.
+        if (current.isBuiltin()) {
+            source.sendFailure(Component.literal(
+                "Cannot rename '" + current.id() + "' — it is a built-in contents variant."
+            ));
+            return 0;
+        }
+        String newId = newName.toLowerCase(Locale.ROOT);
+        if (!CarriageContents.NAME_PATTERN.matcher(newId).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid name '" + newName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
+            ));
+            return 0;
+        }
+        if (CarriageContents.isReservedBuiltinName(newId)) {
+            source.sendFailure(Component.literal(
+                "Name '" + newId + "' is reserved for a built-in."
+            ));
+            return 0;
+        }
+        if (CarriageContentsRegistry.find(newId).isPresent()) {
+            source.sendFailure(Component.literal(
+                "Name '" + newId + "' is already taken."
+            ));
+            return 0;
+        }
+        try {
+            CarriageContents.Custom renamed = (CarriageContents.Custom) CarriageContents.custom(newId);
+            CarriageContentsEditor.saveAs(player, current, renamed);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: saved and renamed contents '" + current.id() + "' → '" + renamed.id() + "'."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents save-rename failed", t);
+            source.sendFailure(Component.literal("contents save failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runContentsList(CommandSourceStack source) {
+        StringBuilder sb = new StringBuilder("Carriage contents variants:");
+        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            boolean config = CarriageContentsStore.exists(c);
+            boolean bundled = CarriageContentsStore.bundled(c);
+            String kind = c.isBuiltin() ? "builtin" : "custom";
+            String status;
+            if (config) status = "config override";
+            else if (bundled) status = "bundled default";
+            else status = c.isBuiltin() ? "fallback (hardcoded)" : "missing (no file)";
+            sb.append("\n  ").append(c.id())
+                .append(" — ").append(kind).append(" | ").append(status)
+                .append(" [config: ").append(config ? "yes" : "no")
+                .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
+        }
+        sb.append("\nDev mode: ").append(EditorDevMode.isEnabled() ? "ON" : "off");
+        sb.append("\nSource tree writable: ").append(CarriageContentsStore.sourceTreeAvailable() ? "yes" : "no");
+        String msg = sb.toString();
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    private static int runContentsReset(CommandSourceStack source, String raw) {
+        CarriageContents contents = parseContents(source, raw);
+        if (contents == null) return 0;
+        try {
+            boolean deleted = CarriageContentsStore.delete(contents);
+            boolean wasCustom = !contents.isBuiltin();
+            if (wasCustom) CarriageContentsRegistry.unregister(contents.id());
+            source.sendSuccess(() -> Component.literal(
+                deleted
+                    ? ("Editor: deleted contents '" + contents.id() + "' template"
+                        + (wasCustom ? " and removed from registry." : "."))
+                    : ("Editor: no contents '" + contents.id() + "' template to delete.")
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents reset failed", t);
+            source.sendFailure(Component.literal("contents reset failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runContentsNew(CommandSourceStack source, String rawName, CarriageContents sourceContents) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (!CarriageContents.NAME_PATTERN.matcher(name).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
+            ));
+            return 0;
+        }
+        if (CarriageContents.isReservedBuiltinName(name)) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is reserved for a built-in."
+            ));
+            return 0;
+        }
+        if (CarriageContentsRegistry.find(name).isPresent()) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is already taken."
+            ));
+            return 0;
+        }
+
+        try {
+            CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
+            var origin = CarriageContentsEditor.duplicate(player, sourceContents, target);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: created contents '" + target.id() + "' from '" + sourceContents.id()
+                    + "' at plot " + origin
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents new failed", t);
+            source.sendFailure(Component.literal("contents new failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;
