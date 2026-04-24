@@ -6,8 +6,13 @@ import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +23,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Interior-contents blueprint — stamps the {@link CarriageContents} template
@@ -111,11 +117,89 @@ public final class CarriageContentsTemplate {
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
-        // setIgnoreEntities(false) so saved entities (armor stands, paintings,
-        // item frames, etc.) get re-spawned alongside the blocks. Defaults
-        // to false, but we set it explicitly for clarity.
-        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(false);
+        // Place BLOCKS only — StructureTemplate's built-in entity placement
+        // was unreliable in shipyard chunks (possibly due to VS's entity
+        // section mixin timing), so we parse the entity list ourselves and
+        // spawn each entity manually below.
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        spawnEntitiesFromTemplate(level, origin, template);
+    }
+
+    /**
+     * Manually iterate the template's saved entity list and spawn each entity
+     * at {@code origin + localPos}. Bypasses {@link StructureTemplate}'s
+     * built-in entity placement because it proved unreliable at shipyard
+     * coordinates. Each entity's UUID is cleared before deserialisation so MC
+     * assigns a fresh one — otherwise every carriage would try to spawn the
+     * same-UUID armor stand and all but the first would drop silently.
+     */
+    private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
+        CompoundTag saved = template.save(new CompoundTag());
+        if (!saved.contains("entities", Tag.TAG_LIST)) {
+            return;
+        }
+        ListTag entries = saved.getList("entities", Tag.TAG_COMPOUND);
+        if (entries.isEmpty()) return;
+        int spawned = 0;
+        for (int i = 0; i < entries.size(); i++) {
+            CompoundTag entry = entries.getCompound(i);
+            if (!entry.contains("nbt", Tag.TAG_COMPOUND) || !entry.contains("pos", Tag.TAG_LIST)) continue;
+            ListTag posList = entry.getList("pos", Tag.TAG_DOUBLE);
+            if (posList.size() != 3) continue;
+            double localX = posList.getDouble(0);
+            double localY = posList.getDouble(1);
+            double localZ = posList.getDouble(2);
+            double worldX = origin.getX() + localX;
+            double worldY = origin.getY() + localY;
+            double worldZ = origin.getZ() + localZ;
+
+            CompoundTag entityNbt = entry.getCompound("nbt").copy();
+            // Fresh UUID so spawning the same template at N carriages doesn't
+            // collide on the UUID index (MC silently drops duplicate UUIDs).
+            entityNbt.putUUID("UUID", UUID.randomUUID());
+            // Rewrite the Pos field to the new world coordinates. Paintings /
+            // item frames also use this field for their hanging position.
+            ListTag newPos = new ListTag();
+            newPos.add(DoubleTag.valueOf(worldX));
+            newPos.add(DoubleTag.valueOf(worldY));
+            newPos.add(DoubleTag.valueOf(worldZ));
+            entityNbt.put("Pos", newPos);
+            // For hanging entities (paintings, item frames) the TileX/Y/Z fields
+            // anchor the attached block. Offset those too if present.
+            if (entityNbt.contains("TileX", Tag.TAG_INT) && entry.contains("blockPos", Tag.TAG_INT_ARRAY)) {
+                int[] localBlock = entry.getIntArray("blockPos");
+                if (localBlock.length == 3) {
+                    entityNbt.putInt("TileX", origin.getX() + localBlock[0]);
+                    entityNbt.putInt("TileY", origin.getY() + localBlock[1]);
+                    entityNbt.putInt("TileZ", origin.getZ() + localBlock[2]);
+                }
+            }
+
+            try {
+                Optional<Entity> created = EntityType.create(entityNbt, level);
+                if (created.isEmpty()) {
+                    LOGGER.warn("[DungeonTrain] Contents: failed to create entity from nbt (id={})",
+                        entityNbt.getString("id"));
+                    continue;
+                }
+                Entity entity = created.get();
+                entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
+                if (level.addFreshEntity(entity)) {
+                    spawned++;
+                } else {
+                    LOGGER.warn("[DungeonTrain] Contents: addFreshEntity rejected {} at ({},{},{})",
+                        entity.getType().getDescriptionId(), worldX, worldY, worldZ);
+                }
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Contents: entity spawn threw for id={}: {}",
+                    entityNbt.getString("id"), t.toString());
+            }
+        }
+        if (spawned > 0) {
+            LOGGER.info("[DungeonTrain] Contents: spawned {} entities at origin={} (template listed {})",
+                spawned, origin, entries.size());
+        }
     }
 
     /**
