@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -73,95 +75,65 @@ public final class CarriageTemplate {
      * corner). Returns the set of block positions filled — pass directly to
      * {@code ShipAssembler.assembleToShip()}.
      *
-     * <p>This 4-arg overload is kept for call sites that don't have a
-     * carriage index (e.g. the editor's in-plot stamp on {@code enter}): it
-     * places the template as-is without resolving any variant-block sidecar
-     * entries — the editor doesn't want randomised blocks while you're
-     * editing.</p>
+     * <p><b>Composition model</b> (overlay, not replace): the carriage's own
+     * monolithic NBT is always stamped first as the base (or, for built-ins
+     * with no NBT, the legacy hardcoded generator runs). If the variant has a
+     * {@code <id>.parts.json} sidecar with non-{@link CarriagePartKind#NONE}
+     * slots, each declared part template is stamped <em>on top</em> of that
+     * base — replacing only the blocks inside its footprint. A part whose
+     * slot is {@code "none"} or whose template is missing from disk becomes a
+     * no-op overlay, leaving the monolithic content in place for that region.
+     * This lets authors customise individual kinds (e.g. swap just the floor)
+     * without having to re-author every kind from scratch.</p>
+     *
+     * <p>This 4-arg overload is used by the editor's in-plot preview and the
+     * duplicate flow — no per-position variant-block randomisation, and the
+     * parts pick is seeded deterministically with {@code (0, 0)} so the
+     * preview is stable across re-entries.</p>
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
-        if (stored.isPresent()) {
-            stampTemplate(level, origin, stored.get());
-            Set<BlockPos> placed = collectFootprint(level, origin, dims);
-            if (placed.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
-                    variant.id(), origin);
-            } else {
-                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=stored blocks={}",
-                    variant.id(), origin, placed.size());
-            }
-            return placed;
-        }
-        if (variant instanceof CarriageVariant.Builtin b) {
-            Set<BlockPos> placed = legacyPlaceAt(level, origin, b.type(), dims);
-            if (placed.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
-                    variant.id(), origin);
-            } else {
-                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=legacy blocks={}",
-                    variant.id(), origin, placed.size());
-            }
-            return placed;
-        }
-        // Custom variant with no (or mismatched) NBT — nothing to place.
-        LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=custom-variant-missing-nbt. Check {} exists and matches world dims {}x{}x{}.",
-            variant.id(), origin, CarriageTemplateStore.fileFor(variant),
-            dims.length(), dims.width(), dims.height());
-        return new HashSet<>();
+        String base = stampBase(level, origin, variant, dims);
+        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0);
+        return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
     /**
-     * 6-arg spawn variant — after stamping the NBT template, resolve any
-     * {@link CarriageVariantBlocks} sidecar entries for this variant by picking
-     * a random candidate state per flagged position, deterministically seeded
-     * on {@code (world seed, carriage index, local pos)}. Same seed + same
-     * index = same carriage on reload; different indices along the same track
-     * visibly vary.
+     * 6-arg spawn variant — same monolithic-base + parts-overlay composition
+     * as the 4-arg overload, but also resolves any
+     * {@link CarriageVariantBlocks} sidecar entries after the stamp pass by
+     * picking a random candidate state per flagged position, deterministically
+     * seeded on {@code (world seed, carriage index, local pos)}. Same seed +
+     * same index = same carriage on reload; different indices along the same
+     * track visibly vary.
      *
-     * <p>Only applies when the NBT-backed path runs. If a built-in variant
-     * falls back to {@code legacyPlaceAt} (no saved edits), any sidecar is
-     * skipped with a log warning — the legacy geometry doesn't define a stable
-     * position basis for variant blocks.</p>
+     * <p>Variant blocks apply on top of NBT-backed content (monolithic stored
+     * template and / or parts overlay). If a built-in falls back to
+     * {@link #legacyPlaceAt} because it has no stored NBT, the sidecar is
+     * skipped — the legacy geometry doesn't define a stable local position
+     * basis for the sidecar entries.</p>
      */
     public static Set<BlockPos> placeAt(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
-        if (stored.isPresent()) {
-            stampTemplate(level, origin, stored.get());
+        String base = stampBase(level, origin, variant, dims);
+        String overlay = stampPartsOverlay(level, origin, variant, dims, config.seed(), carriageIndex);
+
+        // Variant-block overlays are position-based and assume a stable NBT-
+        // backed basis. legacyPlaceAt's hardcoded geometry doesn't qualify,
+        // so skip the sidecar in that case (same gate as before the refactor).
+        boolean nbtBacked = "stored".equals(base) || overlay != null;
+        if (nbtBacked) {
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
-            Set<BlockPos> placed = collectFootprint(level, origin, dims);
-            if (placed.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
-                    variant.id(), origin);
-            } else {
-                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=stored blocks={}",
-                    variant.id(), origin, placed.size());
-            }
-            return placed;
-        }
-        if (variant instanceof CarriageVariant.Builtin b) {
+        } else if ("legacy".equals(base)) {
             CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
             if (!sidecar.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar for '{}' ignored — built-in using hardcoded fallback.",
                     variant.id());
             }
-            Set<BlockPos> placed = legacyPlaceAt(level, origin, b.type(), dims);
-            if (placed.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
-                    variant.id(), origin);
-            } else {
-                LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=legacy blocks={}",
-                    variant.id(), origin, placed.size());
-            }
-            return placed;
         }
-        LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=custom-variant-missing-nbt. Check {} exists and matches world dims {}x{}x{}.",
-            variant.id(), origin, CarriageTemplateStore.fileFor(variant),
-            dims.length(), dims.width(), dims.height());
-        return new HashSet<>();
+
+        return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
     private static void applyVariantBlocks(
@@ -176,6 +148,78 @@ public final class CarriageTemplate {
             BlockPos world = origin.offset(e.localPos());
             SilentBlockOps.setBlockSilent(level, world, picked);
         }
+    }
+
+    /**
+     * Stamp the carriage's monolithic base layer: tier-1 config override →
+     * tier-2 bundled resource (handled inside {@link CarriageTemplateStore})
+     * → tier-3 legacy hardcoded generator (built-ins only). Returns a source
+     * tag for logging, or {@code null} when nothing was stamped (custom
+     * variants without any NBT on disk).
+     */
+    private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
+        Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
+        if (stored.isPresent()) {
+            stampTemplate(level, origin, stored.get());
+            return "stored";
+        }
+        if (variant instanceof CarriageVariant.Builtin b) {
+            legacyPlaceAt(level, origin, b.type(), dims);
+            return "legacy";
+        }
+        return null;
+    }
+
+    /**
+     * Stamp any declared part templates on top of whatever base already sits
+     * in the carriage footprint. Each slot's pick is resolved deterministically
+     * from {@link CarriagePartAssignment#pick}; slots set to
+     * {@link CarriagePartKind#NONE} or whose picked template is missing from
+     * disk are skipped (leaving the base's content in that region untouched).
+     * Returns a short descriptor of which kinds were overlaid, or {@code null}
+     * when no overlay ran.
+     */
+    private static String stampPartsOverlay(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                             CarriageDims dims, long seed, int carriageIndex) {
+        Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
+        if (assignment.isEmpty()) return null;
+        CarriagePartAssignment a = assignment.get();
+        if (a.allNone()) return null;
+
+        StringBuilder desc = new StringBuilder();
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            String picked = a.pick(kind, seed, carriageIndex);
+            if (CarriagePartKind.NONE.equals(picked)) continue;
+            if (CarriagePartTemplateStore.get(level, kind, picked, dims).isEmpty()) continue;
+            CarriagePartTemplate.placeAt(level, origin, kind, picked, dims);
+            if (desc.length() > 0) desc.append(",");
+            desc.append(kind.id()).append("=").append(picked);
+        }
+        return desc.length() == 0 ? null : "parts(" + desc + ")";
+    }
+
+    private static Set<BlockPos> finishPlace(ServerLevel level, BlockPos origin,
+                                             CarriageVariant variant, CarriageDims dims,
+                                             String base, String overlay) {
+        Set<BlockPos> placed = collectFootprint(level, origin, dims);
+        String sources = joinSources(base, overlay);
+        if (placed.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} sources={}{}",
+                variant.id(), origin, sources.isEmpty() ? "none" : sources,
+                sources.isEmpty() ? " (custom variant missing NBT and no parts overlay; "
+                    + CarriageTemplateStore.fileFor(variant) + " not found)" : "");
+        } else {
+            LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} sources={} blocks={}",
+                variant.id(), origin, sources, placed.size());
+        }
+        return placed;
+    }
+
+    private static String joinSources(String base, String overlay) {
+        if (base != null && overlay != null) return base + "+" + overlay;
+        if (base != null) return base;
+        if (overlay != null) return overlay;
+        return "";
     }
 
     /**

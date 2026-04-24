@@ -6,8 +6,12 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
+import games.brennan.dungeontrain.editor.CarriagePartEditor;
+import games.brennan.dungeontrain.editor.CarriagePartRegistry;
+import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
@@ -16,6 +20,8 @@ import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePartAssignment;
+import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -82,6 +88,34 @@ public final class EditorCommand {
             for (PillarSection s : PillarSection.values()) {
                 builder.suggest(s.id());
             }
+            return builder.buildFuture();
+        };
+
+    private static final SuggestionProvider<CommandSourceStack> PART_KIND_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (CarriagePartKind k : CarriagePartKind.values()) builder.suggest(k.id());
+            return builder.buildFuture();
+        };
+
+    /** Suggest part names for the {@code kind} argument parsed earlier in the command. */
+    private static final SuggestionProvider<CommandSourceStack> PART_NAME_SUGGESTIONS =
+        (ctx, builder) -> {
+            CarriagePartKind kind = null;
+            try {
+                kind = CarriagePartKind.fromId(StringArgumentType.getString(ctx, "kind"));
+            } catch (IllegalArgumentException ignored) {
+                // 'kind' not yet typed; offer nothing — user will resolve it on next keystroke.
+            }
+            if (kind != null) {
+                for (String name : CarriagePartRegistry.names(kind)) builder.suggest(name);
+            }
+            return builder.buildFuture();
+        };
+
+    /** Carriage-only variant suggester (no tunnel prefixes) for {@code part set/show/clear}. */
+    private static final SuggestionProvider<CommandSourceStack> CARRIAGE_VARIANT_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (CarriageVariant v : CarriageVariantRegistry.allVariants()) builder.suggest(v.id());
             return builder.buildFuture();
         };
 
@@ -165,7 +199,119 @@ public final class EditorCommand {
                             if (s == null) return 0;
                             return runPillarPromote(ctx.getSource(), s);
                         }))))
+            .then(buildPartSubtree(buildContext))
             .then(buildVariantSubtree(buildContext));
+    }
+
+    /**
+     * {@code /dungeontrain editor part ...} — authoring and assignment for
+     * reusable FLOOR / WALLS / ROOF / DOORS templates that a carriage variant
+     * composes from at spawn time. Each assignment slot is a <b>list</b> of
+     * candidate names; spawn picks one deterministically per-carriage-index
+     * so a single variant can render differently from car to car.
+     *
+     * <p>Subcommands:
+     * <ul>
+     *   <li>{@code enter <kind> <name>} — teleport to the kind's plot and stamp
+     *       the current template for {@code name} (empty cage if none on disk).</li>
+     *   <li>{@code save [new_name]} — save the current session plot under
+     *       either the session's name or the explicit {@code new_name}.</li>
+     *   <li>{@code list [kind]} — show registered parts per kind (or one kind).</li>
+     *   <li>{@code reset <kind> <name>} — delete the config-dir NBT for a part.</li>
+     *   <li>{@code promote all|<kind> <name>} — copy config-dir NBT into the source
+     *       tree so it ships with the next build. Dev-checkout only.</li>
+     *   <li>{@code set <variant> <kind> <name>} — replace the slot's list with a
+     *       single entry (use {@code name=none} to skip that kind).</li>
+     *   <li>{@code add <variant> <kind> <name>} — append a candidate to the slot's
+     *       list; at spawn, one candidate is picked at random per carriage.</li>
+     *   <li>{@code remove <variant> <kind> <name>} — remove one candidate from a
+     *       slot; emptying the list falls back to {@code [none]}.</li>
+     *   <li>{@code show <variant>} — print the variant's parts assignment.</li>
+     *   <li>{@code clear <variant>} — delete the parts.json; variant reverts to
+     *       its monolithic NBT.</li>
+     * </ul>
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> buildPartSubtree(@SuppressWarnings("unused") CommandBuildContext buildContext) {
+        return Commands.literal("part")
+            .then(Commands.literal("enter")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(PART_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(PART_NAME_SUGGESTIONS)
+                        .executes(c -> runPartEnter(c.getSource(),
+                            StringArgumentType.getString(c, "kind"),
+                            StringArgumentType.getString(c, "name"))))))
+            .then(Commands.literal("save")
+                .executes(c -> runPartSave(c.getSource(), null))
+                .then(Commands.argument("new_name", StringArgumentType.word())
+                    .executes(c -> runPartSave(c.getSource(),
+                        StringArgumentType.getString(c, "new_name")))))
+            .then(Commands.literal("list")
+                .executes(c -> runPartList(c.getSource(), null))
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(PART_KIND_SUGGESTIONS)
+                    .executes(c -> runPartList(c.getSource(),
+                        StringArgumentType.getString(c, "kind")))))
+            .then(Commands.literal("reset")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(PART_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(PART_NAME_SUGGESTIONS)
+                        .executes(c -> runPartReset(c.getSource(),
+                            StringArgumentType.getString(c, "kind"),
+                            StringArgumentType.getString(c, "name"))))))
+            .then(Commands.literal("promote")
+                .then(Commands.literal("all").executes(c -> runPartPromoteAll(c.getSource())))
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(PART_KIND_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.word())
+                        .suggests(PART_NAME_SUGGESTIONS)
+                        .executes(c -> runPartPromote(c.getSource(),
+                            StringArgumentType.getString(c, "kind"),
+                            StringArgumentType.getString(c, "name"))))))
+            .then(Commands.literal("set")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(PART_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .suggests(PART_NAME_SUGGESTIONS)
+                            .executes(c -> runPartSet(c.getSource(),
+                                StringArgumentType.getString(c, "variant"),
+                                StringArgumentType.getString(c, "kind"),
+                                StringArgumentType.getString(c, "name")))))))
+            .then(Commands.literal("add")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(PART_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .suggests(PART_NAME_SUGGESTIONS)
+                            .executes(c -> runPartAdd(c.getSource(),
+                                StringArgumentType.getString(c, "variant"),
+                                StringArgumentType.getString(c, "kind"),
+                                StringArgumentType.getString(c, "name")))))))
+            .then(Commands.literal("remove")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(PART_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .suggests(PART_NAME_SUGGESTIONS)
+                            .executes(c -> runPartRemove(c.getSource(),
+                                StringArgumentType.getString(c, "variant"),
+                                StringArgumentType.getString(c, "kind"),
+                                StringArgumentType.getString(c, "name")))))))
+            .then(Commands.literal("show")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .executes(c -> runPartShow(c.getSource(),
+                        StringArgumentType.getString(c, "variant")))))
+            .then(Commands.literal("clear")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .executes(c -> runPartClear(c.getSource(),
+                        StringArgumentType.getString(c, "variant")))));
     }
 
     private static PillarSection parseSection(CommandSourceStack source, String raw) {
@@ -449,6 +595,15 @@ public final class EditorCommand {
         }
 
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+
+        // Part plot next — only the session knows which (kind, name) the
+        // player is editing, so delegate to the part-specific save runner
+        // which reads it. A new_name flips to the part-save rename path.
+        CarriagePartKind partKind = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        if (partKind != null) {
+            return runPartSave(source, newName);
+        }
+
         CarriageVariant current = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (current == null) {
             source.sendFailure(Component.literal(
@@ -876,5 +1031,366 @@ public final class EditorCommand {
                 + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
         ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return p > 0 ? 1 : 0;
+    }
+
+    private static CarriagePartKind parsePartKind(CommandSourceStack source, String raw) {
+        CarriagePartKind kind = CarriagePartKind.fromId(raw);
+        if (kind == null) {
+            source.sendFailure(Component.literal(
+                "Unknown part kind '" + raw + "'. Valid: floor, walls, roof, doors"
+            ));
+        }
+        return kind;
+    }
+
+    private static boolean validatePartName(CommandSourceStack source, String raw) {
+        String norm = raw.toLowerCase(Locale.ROOT);
+        if (!CarriagePartRegistry.NAME_PATTERN.matcher(norm).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid part name '" + raw + "'. Use lowercase letters, digits or underscore (1-32 chars)."
+            ));
+            return false;
+        }
+        if (CarriagePartKind.NONE.equals(norm)) {
+            source.sendFailure(Component.literal(
+                "'" + CarriagePartKind.NONE + "' is reserved — it means 'skip this part'."
+            ));
+            return false;
+        }
+        return true;
+    }
+
+    private static int runPartEnter(CommandSourceStack source, String rawKind, String rawName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        if (!validatePartName(source, rawName)) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        try {
+            CarriagePartEditor.enter(player, kind, name);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: entered part '" + kind.id() + ":" + name
+                    + "' plot at " + CarriagePartEditor.plotOrigin(kind)
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part enter failed", t);
+            source.sendFailure(Component.literal("part enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartSave(CommandSourceStack source, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        var session = CarriagePartEditor.currentSession(player);
+        if (session.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "No active part editor session. Run '/dungeontrain editor part enter <kind> <name>' first."
+            ));
+            return 0;
+        }
+        CarriagePartKind kind = session.get().kind();
+        String targetName;
+        if (newName == null) {
+            targetName = session.get().name();
+        } else {
+            if (!validatePartName(source, newName)) return 0;
+            targetName = newName.toLowerCase(Locale.ROOT);
+        }
+        try {
+            CarriagePartEditor.SaveResult result = CarriagePartEditor.save(player, kind, targetName);
+            final String name = targetName;
+            source.sendSuccess(() -> Component.literal(
+                "Editor: saved part '" + kind.id() + ":" + name + "' (config-dir)."
+            ), true);
+            if (result.sourceAttempted()) {
+                if (result.sourceWritten()) {
+                    source.sendSuccess(() -> Component.literal(
+                        "Editor: also wrote bundled copy to source tree (will ship with next build)."
+                    ).withStyle(ChatFormatting.GREEN), true);
+                } else {
+                    source.sendFailure(Component.literal(
+                        "Editor: source-tree write failed: " + result.sourceError()
+                    ).withStyle(ChatFormatting.YELLOW));
+                }
+            }
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part save failed", t);
+            source.sendFailure(Component.literal("part save failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartList(CommandSourceStack source, String rawKind) {
+        CarriagePartKind filter = null;
+        if (rawKind != null) {
+            filter = parsePartKind(source, rawKind);
+            if (filter == null) return 0;
+        }
+        StringBuilder sb = new StringBuilder("Carriage parts:");
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            if (filter != null && filter != kind) continue;
+            sb.append("\n  [").append(kind.id()).append("]");
+            List<String> names = CarriagePartRegistry.registeredNames(kind);
+            if (names.isEmpty()) {
+                sb.append(" (no templates registered)");
+                continue;
+            }
+            for (String name : names) {
+                boolean config = CarriagePartTemplateStore.exists(kind, name);
+                boolean bundled = CarriagePartTemplateStore.bundled(kind, name);
+                String status;
+                if (config) status = "config override";
+                else if (bundled) status = "bundled default";
+                else status = "registered (no file?)";
+                sb.append("\n    ").append(name)
+                    .append(" — ").append(status)
+                    .append(" [config: ").append(config ? "yes" : "no")
+                    .append(", bundled: ").append(bundled ? "yes" : "no").append("]");
+            }
+        }
+        String msg = sb.toString();
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    private static int runPartReset(CommandSourceStack source, String rawKind, String rawName) {
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        try {
+            boolean deleted = CarriagePartTemplateStore.delete(kind, name);
+            boolean stillBundled = CarriagePartTemplateStore.bundled(kind, name);
+            if (!stillBundled) CarriagePartRegistry.unregister(kind, name);
+            final String msg = deleted
+                ? ("Editor: deleted part '" + kind.id() + ":" + name + "' (config-dir copy)"
+                    + (stillBundled ? " — bundled default remains." : " — no bundled fallback, registry entry removed."))
+                : ("Editor: no config-dir part '" + kind.id() + ":" + name + "' to delete.");
+            source.sendSuccess(() -> Component.literal(msg), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part reset failed", t);
+            source.sendFailure(Component.literal("part reset failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartPromote(CommandSourceStack source, String rawKind, String rawName) {
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        try {
+            CarriagePartTemplateStore.promote(kind, name);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: promoted part '" + kind.id() + ":" + name
+                    + "' to source tree (will ship with next build)."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part promote failed for {}:{}", kind.id(), name, t);
+            source.sendFailure(Component.literal("part promote failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartPromoteAll(CommandSourceStack source) {
+        if (!CarriagePartTemplateStore.sourceTreeAvailable()) {
+            source.sendFailure(Component.literal(
+                "part promote all failed: source tree not writable. Are you running ./gradlew runClient?"
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        int promoted = 0;
+        int skipped = 0;
+        StringBuilder errors = new StringBuilder();
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            for (String name : CarriagePartRegistry.registeredNames(kind)) {
+                if (!CarriagePartTemplateStore.exists(kind, name)) {
+                    skipped++;
+                    continue;
+                }
+                try {
+                    CarriagePartTemplateStore.promote(kind, name);
+                    promoted++;
+                } catch (Exception e) {
+                    LOGGER.error("[DungeonTrain] editor part promote-all failed for {}:{}", kind.id(), name, e);
+                    errors.append("\n  ").append(kind.id()).append(":").append(name)
+                        .append(": ").append(e.getMessage());
+                }
+            }
+        }
+        final int p = promoted;
+        final int s = skipped;
+        final String errStr = errors.toString();
+        source.sendSuccess(() -> Component.literal(
+            "Editor: part promote all — " + p + " promoted, " + s + " skipped (no config copy)."
+                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
+        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return p > 0 ? 1 : 0;
+    }
+
+    /** True if {@code raw} is either a valid known part name or the {@code "none"} sentinel. Error already sent on false. */
+    private static boolean validateSlotName(CommandSourceStack source, CarriagePartKind kind, String raw) {
+        String norm = raw.toLowerCase(Locale.ROOT);
+        if (CarriagePartKind.NONE.equals(norm)) return true;
+        if (!CarriagePartRegistry.NAME_PATTERN.matcher(norm).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid part name '" + raw + "'. Use lowercase letters, digits or underscore (1-32 chars), or 'none'."
+            ));
+            return false;
+        }
+        if (!CarriagePartRegistry.isKnown(kind, norm)) {
+            source.sendFailure(Component.literal(
+                "Unknown part '" + kind.id() + ":" + norm
+                    + "'. Author it via '/dungeontrain editor part enter " + kind.id() + " " + norm + "' and save first."
+            ).withStyle(ChatFormatting.YELLOW));
+            return false;
+        }
+        return true;
+    }
+
+    private static int runPartSet(CommandSourceStack source, String rawVariant, String rawKind, String rawName) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        if (!validateSlotName(source, kind, rawName)) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        try {
+            CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
+            CarriagePartAssignment updated = existing.with(kind, List.of(name));
+            CarriageVariantPartsStore.save(variant, updated);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: '" + variant.id() + "' parts — " + kind.id() + " = [" + name + "]"
+                    + " (current: " + formatAssignment(updated) + ")"
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part set failed", t);
+            source.sendFailure(Component.literal("part set failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartAdd(CommandSourceStack source, String rawVariant, String rawKind, String rawName) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        if (!validateSlotName(source, kind, rawName)) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        try {
+            CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
+            CarriagePartAssignment updated = existing.withAppended(kind, name);
+            CarriageVariantPartsStore.save(variant, updated);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: '" + variant.id() + "' parts — appended '" + name + "' to " + kind.id()
+                    + " (current: " + formatAssignment(updated) + ")"
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part add failed", t);
+            source.sendFailure(Component.literal("part add failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartRemove(CommandSourceStack source, String rawVariant, String rawKind, String rawName) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        try {
+            CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
+            if (!existing.names(kind).contains(name)) {
+                source.sendFailure(Component.literal(
+                    "'" + variant.id() + "' parts: '" + name + "' is not in " + kind.id()
+                        + " (current: " + formatSlot(existing.names(kind)) + ")"
+                ));
+                return 0;
+            }
+            CarriagePartAssignment updated = existing.withRemoved(kind, name);
+            CarriageVariantPartsStore.save(variant, updated);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: '" + variant.id() + "' parts — removed '" + name + "' from " + kind.id()
+                    + " (current: " + formatAssignment(updated) + ")"
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part remove failed", t);
+            source.sendFailure(Component.literal("part remove failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartShow(CommandSourceStack source, String rawVariant) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        var assignment = CarriageVariantPartsStore.get(variant);
+        if (assignment.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "'" + variant.id() + "' has no parts.json — renders as monolithic NBT."
+            ), false);
+            return 1;
+        }
+        String desc = formatAssignment(assignment.get());
+        boolean config = CarriageVariantPartsStore.exists(variant);
+        boolean bundled = CarriageVariantPartsStore.bundled(variant);
+        String origin = config ? "config override" : (bundled ? "bundled default" : "memory only");
+        source.sendSuccess(() -> Component.literal(
+            "'" + variant.id() + "' parts (" + origin + "): " + desc
+        ), false);
+        return 1;
+    }
+
+    private static int runPartClear(CommandSourceStack source, String rawVariant) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        try {
+            boolean deleted = CarriageVariantPartsStore.delete(variant);
+            source.sendSuccess(() -> Component.literal(
+                deleted
+                    ? "Editor: cleared parts.json for '" + variant.id() + "' — will render monolithic NBT."
+                    : "Editor: no parts.json for '" + variant.id() + "' to clear."
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part clear failed", t);
+            source.sendFailure(Component.literal("part clear failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static String formatAssignment(CarriagePartAssignment a) {
+        return "floor=" + formatSlot(a.floor())
+            + ", walls=" + formatSlot(a.walls())
+            + ", roof=" + formatSlot(a.roof())
+            + ", doors=" + formatSlot(a.doors());
+    }
+
+    /** Format a slot list for human output — single-element lists unwrap to the bare name. */
+    private static String formatSlot(List<String> list) {
+        if (list.size() == 1) return list.get(0);
+        return list.toString();
     }
 }
