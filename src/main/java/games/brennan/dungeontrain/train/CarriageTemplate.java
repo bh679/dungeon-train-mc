@@ -128,10 +128,32 @@ public final class CarriageTemplate {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        return placeAt(level, origin, variant, dims, config, carriageIndex, true);
+    }
+
+    /**
+     * Overload that lets the caller skip the contents pass. Used by the
+     * initial-spawn path in {@code TrainAssembler.spawnTrain} which places
+     * carriages in WORLD space and then calls {@code ShipAssembler.assembleToShip}
+     * to move the blocks into the ship's shipyard space. Entities from
+     * {@code applyContents} would be spawned in world space and stay there
+     * (VS's shipyard-entity mixin only handles entities already in shipyard
+     * chunks), so TrainAssembler defers the contents pass until after assembly
+     * and runs it at the shipyard coordinates of each carriage.
+     *
+     * <p>The rolling-window spawns in {@code TrainWindowManager} place
+     * directly at shipyard coordinates and so keep {@code applyContents=true}.
+     */
+    public static Set<BlockPos> placeAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean applyContents
+    ) {
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
             applyVariantBlocks(level, origin, variant, dims, config, carriageIndex);
+            if (applyContents) applyContents(level, origin, variant, dims, config, carriageIndex);
             Set<BlockPos> placed = collectFootprint(level, origin, dims);
             if (placed.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=stored-template-all-air",
@@ -149,6 +171,11 @@ public final class CarriageTemplate {
                     variant.id());
             }
             Set<BlockPos> placed = legacyPlaceAt(level, origin, b.type(), dims);
+            // Contents still apply on legacy-shell spawns — the interior
+            // volume layout (1,1,1)..(length-2,height-2,width-2) is fixed
+            // across stored and legacy shells, so contents placement is
+            // stable either way.
+            if (applyContents) applyContents(level, origin, variant, dims, config, carriageIndex);
             if (placed.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=legacy-generator-empty",
                     variant.id(), origin);
@@ -156,12 +183,61 @@ public final class CarriageTemplate {
                 LOGGER.info("[DungeonTrain] Placed carriage variant={} origin={} source=legacy blocks={}",
                     variant.id(), origin, placed.size());
             }
-            return placed;
+            // Re-collect footprint so any contents blocks stamped into the
+            // interior after legacyPlaceAt() returned are included in the
+            // assembler's block set.
+            return collectFootprint(level, origin, dims);
         }
         LOGGER.warn("[DungeonTrain] Empty carriage placed — variant={} origin={} reason=custom-variant-missing-nbt. Check {} exists and matches world dims {}x{}x{}.",
             variant.id(), origin, CarriageTemplateStore.fileFor(variant),
             dims.length(), dims.width(), dims.height());
         return new HashSet<>();
+    }
+
+    /**
+     * Public wrapper around the private {@code applyContents} method — exposes
+     * the contents pass so {@code TrainAssembler} can call it in a second pass
+     * after {@code ShipAssembler.assembleToShip}. Passes the variant so
+     * FLATBED skips automatically.
+     */
+    public static void applyContentsAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        applyContents(level, origin, variant, dims, config, carriageIndex);
+    }
+
+    /**
+     * Pick a {@link CarriageContents} variant deterministically for this
+     * carriage and stamp its interior blocks on top of the already-placed
+     * shell. Wrapped in try/catch so a contents-load failure can't abort the
+     * spawn — worst case the interior stays empty with a warning.
+     *
+     * <p>Skipped for the {@link CarriageType#FLATBED} built-in: a flatbed is
+     * just a floor with no walls or roof, so any interior contents would
+     * appear as floating blocks visible from every side. Keep flatbeds empty
+     * so they read as the train's "separators" between enclosed carriages.</p>
+     */
+    private static void applyContents(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            return;
+        }
+        try {
+            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex);
+            // Clear any entities left over from a previous carriage at this
+            // shipyard position — the block-only clearBoundingBox in
+            // TrainAssembler doesn't discard entities, so armor stands and
+            // paintings from prior contents at this index would otherwise
+            // accumulate each rolling-window cycle.
+            CarriageContentsTemplate.discardEntitiesAt(level, origin, dims);
+            CarriageContentsTemplate.placeAt(level, origin, contents, dims);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
+                origin, carriageIndex, t.toString());
+        }
     }
 
     private static void applyVariantBlocks(
