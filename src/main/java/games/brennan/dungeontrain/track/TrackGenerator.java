@@ -528,14 +528,17 @@ public final class TrackGenerator {
      *
      * <p>Selection rule: partition world-X into {@link #MIN_STAIRS_SPACING}-
      * wide windows and place stairs on the <em>first</em> pillar in each
-     * window. This keeps stairs roughly {@code MIN_STAIRS_SPACING} apart and
-     * — crucially — never blocks stair placement entirely on variable
-     * terrain where pillars stop landing on multiples of
-     * {@code MIN_STAIRS_SPACING}. The "first pillar in window" check uses
-     * the precomputed pillar map, which already covers a ±{@code
-     * PILLAR_SCAN_MARGIN}=40 band around each chunk, so same-window pillars
-     * are always visible. The alternating side is picked off the window
-     * index so placement is stable across chunk-load order.</p>
+     * window, <em>but only if</em> the previous window's first pillar is at
+     * least {@code MIN_STAIRS_SPACING} away — otherwise a pillar just inside
+     * the boundary (e.g. centerX=40) could land a step away from one just
+     * outside it (e.g. centerX=39). This conservatively skips such close-
+     * neighbour placements; the next window's candidate will try again from
+     * there. Guarantees minimum 40-block spacing between adjacent stairs,
+     * at the cost of an occasional skipped window. The precomputed pillar
+     * map already covers ±{@code PILLAR_SCAN_MARGIN}=40 around each chunk,
+     * which is exactly enough to resolve both the "first in window" and the
+     * "previous window first" lookups. The alternating side is picked off
+     * the window index so placement is stable across chunk-load order.</p>
      *
      * <p>Geometry: 3×8×3 template anchored with its top row at
      * {@code g.bedY() + 2} (3 blocks above the track bed, so the top of the
@@ -573,6 +576,21 @@ public final class TrackGenerator {
         // relevant prior pillar is always in the map.
         Map.Entry<Integer, PillarSpec> prior = pillars.lowerEntry(centerX);
         if (prior != null && prior.getKey() >= windowStart) return;
+
+        // Distance check: the previous window's first pillar — if any —
+        // must be at least MIN_STAIRS_SPACING away. Catches the boundary
+        // case where a pillar at windowStart - 1 (first in prev window)
+        // and our pillar at windowStart would both qualify as "first in
+        // window" but only be 1 apart. Skipping ≥2-window gaps is safe
+        // because consecutive windows span ≥80 blocks, exceeding
+        // MIN_STAIRS_SPACING, so we only need to check one window back.
+        int prevWindowStart = windowStart - MIN_STAIRS_SPACING;
+        Map.Entry<Integer, PillarSpec> prevWindowFirst = pillars.ceilingEntry(prevWindowStart);
+        if (prevWindowFirst != null
+            && prevWindowFirst.getKey() < windowStart
+            && centerX - prevWindowFirst.getKey() < MIN_STAIRS_SPACING) {
+            return;
+        }
 
         boolean flipped = Math.floorMod(windowIndex, 2) == 1;
 
