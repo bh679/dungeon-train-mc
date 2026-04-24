@@ -108,6 +108,14 @@ public final class TrackGenerator {
     private static final int STAIRS_Y = 8;
     private static final int STAIRS_Z = 3;
 
+    /**
+     * Minimum spacing between stair-adjuncted pillars, in blocks. Must be a
+     * multiple of {@link #BASE_PILLAR_SPACING} so that at least one pillar on
+     * flat terrain lands on a multiple of this value (otherwise stairs never
+     * appear). 40 blocks ≈ 5 flat-terrain pillar slots.
+     */
+    private static final int MIN_STAIRS_SPACING = 40;
+
     private TrackGenerator() {}
 
     /**
@@ -521,9 +529,10 @@ public final class TrackGenerator {
      * <p>Selection rule (world-X based so placement is deterministic and
      * stable across chunk loads):</p>
      * <pre>
-     *   stripIndex = floorDiv(centerX, BASE_PILLAR_SPACING)
-     *   hasStairs  = stripIndex % 2 == 0       // every other pillar
-     *   flipped    = floorDiv(stripIndex, 2) % 2 == 1  // alternating side
+     *   stripIndex   = floorDiv(centerX, BASE_PILLAR_SPACING)
+     *   stairsStride = MIN_STAIRS_SPACING / BASE_PILLAR_SPACING  // 5
+     *   hasStairs    = stripIndex % stairsStride == 0              // every 40 blocks on flat ground
+     *   flipped      = floorDiv(stripIndex, stairsStride) % 2 == 1 // alternate side
      * </pre>
      *
      * <p>Geometry: 3×8×3 template anchored with its top row at
@@ -551,8 +560,9 @@ public final class TrackGenerator {
         TrackGeometry g
     ) {
         int stripIndex = Math.floorDiv(pillar.centerX(), BASE_PILLAR_SPACING);
-        if (Math.floorMod(stripIndex, 2) != 0) return;
-        boolean flipped = Math.floorMod(Math.floorDiv(stripIndex, 2), 2) == 1;
+        int stairsStride = MIN_STAIRS_SPACING / BASE_PILLAR_SPACING;
+        if (Math.floorMod(stripIndex, stairsStride) != 0) return;
+        boolean flipped = Math.floorMod(Math.floorDiv(stripIndex, stairsStride), 2) == 1;
 
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunct(level, games.brennan.dungeontrain.track.PillarAdjunct.STAIRS);
