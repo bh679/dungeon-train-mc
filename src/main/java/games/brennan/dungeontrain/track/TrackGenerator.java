@@ -512,7 +512,7 @@ public final class TrackGenerator {
             if (containingPillar != null) {
                 placePillarSlice(level, worldX, g, dims);
                 if (worldX == containingPillar.centerX()) {
-                    placeStairsBesidePillar(level, containingPillar, g);
+                    placeStairsBesidePillar(level, containingPillar, pillars, g);
                 }
             }
         }
@@ -526,14 +526,16 @@ public final class TrackGenerator {
      * {@code worldX == pillar.centerX()}) so a thick pillar's N columns don't
      * trigger N placements.
      *
-     * <p>Selection rule (world-X based so placement is deterministic and
-     * stable across chunk loads):</p>
-     * <pre>
-     *   stripIndex   = floorDiv(centerX, BASE_PILLAR_SPACING)
-     *   stairsStride = MIN_STAIRS_SPACING / BASE_PILLAR_SPACING  // 5
-     *   hasStairs    = stripIndex % stairsStride == 0              // every 40 blocks on flat ground
-     *   flipped      = floorDiv(stripIndex, stairsStride) % 2 == 1 // alternate side
-     * </pre>
+     * <p>Selection rule: partition world-X into {@link #MIN_STAIRS_SPACING}-
+     * wide windows and place stairs on the <em>first</em> pillar in each
+     * window. This keeps stairs roughly {@code MIN_STAIRS_SPACING} apart and
+     * — crucially — never blocks stair placement entirely on variable
+     * terrain where pillars stop landing on multiples of
+     * {@code MIN_STAIRS_SPACING}. The "first pillar in window" check uses
+     * the precomputed pillar map, which already covers a ±{@code
+     * PILLAR_SCAN_MARGIN}=40 band around each chunk, so same-window pillars
+     * are always visible. The alternating side is picked off the window
+     * index so placement is stable across chunk-load order.</p>
      *
      * <p>Geometry: 3×8×3 template anchored with its top row at
      * {@code g.bedY() + 2} (3 blocks above the track bed, so the top of the
@@ -557,12 +559,22 @@ public final class TrackGenerator {
     private static void placeStairsBesidePillar(
         ServerLevel level,
         PillarSpec pillar,
+        NavigableMap<Integer, PillarSpec> pillars,
         TrackGeometry g
     ) {
-        int stripIndex = Math.floorDiv(pillar.centerX(), BASE_PILLAR_SPACING);
-        int stairsStride = MIN_STAIRS_SPACING / BASE_PILLAR_SPACING;
-        if (Math.floorMod(stripIndex, stairsStride) != 0) return;
-        boolean flipped = Math.floorMod(Math.floorDiv(stripIndex, stairsStride), 2) == 1;
+        int centerX = pillar.centerX();
+        int windowIndex = Math.floorDiv(centerX, MIN_STAIRS_SPACING);
+        int windowStart = windowIndex * MIN_STAIRS_SPACING;
+
+        // "First pillar in this MIN_STAIRS_SPACING window?" — if there's any
+        // pillar with a lower centerX that still falls inside [windowStart,
+        // centerX), we're not the first. lowerEntry is O(log n) on the
+        // TreeMap. PILLAR_SCAN_MARGIN ≥ MIN_STAIRS_SPACING ensures the
+        // relevant prior pillar is always in the map.
+        Map.Entry<Integer, PillarSpec> prior = pillars.lowerEntry(centerX);
+        if (prior != null && prior.getKey() >= windowStart) return;
+
+        boolean flipped = Math.floorMod(windowIndex, 2) == 1;
 
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunct(level, games.brennan.dungeontrain.track.PillarAdjunct.STAIRS);
@@ -571,7 +583,7 @@ public final class TrackGenerator {
 
         int topInclusive = g.bedY() + 2; // 3 rows above the pillar top so the
                                           // staircase's cap sits above the rail
-        int originX = pillar.centerX() - 1; // centred 3-wide on centerX
+        int originX = centerX - 1; // centred 3-wide on centerX
         int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
 
         // Probe ground across the 3×3 stair footprint; anchor to the deepest.
