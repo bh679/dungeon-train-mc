@@ -130,24 +130,57 @@ public final class CarriageContentsRegistry {
     }
 
     /**
-     * Deterministic contents pick for a carriage. Seeds a fresh {@link Random}
-     * with {@code worldSeed} XOR'd through the carriage index so the same
-     * world + same index always resolves to the same contents across reloads.
+     * Deterministic <em>weighted</em> contents pick for a carriage. Seeds a
+     * fresh {@link Random} with {@code worldSeed} XOR'd through the carriage
+     * index so the same world + same index always resolves to the same
+     * contents across reloads. Weights come from
+     * {@link CarriageContentsWeights#current()} — weight 0 excludes a contents
+     * from the pool entirely; if every contents has weight 0 the function
+     * falls back to a uniform pick over the full registry (and warns once
+     * per server lifetime so the misconfiguration surfaces).
      *
-     * <p>Uses a position-free variant of the mixing constant used by
-     * {@link games.brennan.dungeontrain.editor.CarriageVariantBlocks#pickIndex}
-     * — the two hashes intentionally differ (additional {@code BlockPos}
-     * constant) so a contents pick and a variant-block pick for the same
-     * carriage are not correlated.
+     * <p>Mirrors {@link games.brennan.dungeontrain.train.CarriageTemplate}'s
+     * {@code weightedSeededPick} shape (cumulative array + threshold draw)
+     * with a position-free seed mixing constant so a contents pick and a
+     * variant-block pick for the same carriage are not correlated.</p>
      */
     public static synchronized CarriageContents pick(long worldSeed, int carriageIndex) {
         List<CarriageContents> all = allContents();
-        if (all.isEmpty()) {
+        int n = all.size();
+        if (n == 0) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
+        CarriageContentsWeights weights = CarriageContentsWeights.current();
+        int[] cumulative = new int[n];
+        int total = 0;
+        for (int i = 0; i < n; i++) {
+            total += weights.weightFor(all.get(i).id());
+            cumulative[i] = total;
+        }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
-        int idx = Math.floorMod(new Random(seed).nextInt(), all.size());
-        return all.get(idx);
+        Random rng = new Random(seed);
+        if (total <= 0) {
+            warnAllZeroOnce();
+            return all.get(rng.nextInt(n));
+        }
+        int r = rng.nextInt(total);
+        for (int i = 0; i < n; i++) {
+            if (r < cumulative[i]) return all.get(i);
+        }
+        // Unreachable: r < total and cumulative[n-1] == total. Defensive tail.
+        return all.get(n - 1);
+    }
+
+    /** One-shot warning when every registered contents has weight 0 — once per server lifetime. */
+    private static volatile boolean ZERO_WARNED = false;
+    private static void warnAllZeroOnce() {
+        if (ZERO_WARNED) return;
+        synchronized (CarriageContentsRegistry.class) {
+            if (ZERO_WARNED) return;
+            ZERO_WARNED = true;
+            LOGGER.warn("[DungeonTrain] All carriage contents have weight 0 — falling back to uniform pick. "
+                + "Set at least one contents weight > 0 in config/dungeontrain/contents/weights.json.");
+        }
     }
 
     /** Reload custom contents from the bundled manifest + the per-install config dir. */
@@ -220,6 +253,7 @@ public final class CarriageContentsRegistry {
 
     public static synchronized void clear() {
         CUSTOMS.clear();
+        ZERO_WARNED = false;
     }
 
     public static synchronized List<String> customIds() {
