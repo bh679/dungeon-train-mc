@@ -163,6 +163,12 @@ public final class PillarEditor {
         }
     }
 
+    /** Erase a single named variant plot for {@code section} — footprint + outline cleared to air. */
+    public static void clearPlot(ServerLevel overworld, PillarSection section, String name, CarriageDims dims) {
+        BlockPos origin = plotOrigin(section, name, dims);
+        eraseAt(overworld, origin, section, dims);
+    }
+
     /**
      * Save the captured template for the {@code (section, name)} the player
      * is currently standing in.

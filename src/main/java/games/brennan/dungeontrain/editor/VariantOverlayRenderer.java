@@ -283,7 +283,7 @@ public final class VariantOverlayRenderer {
             if (partKey.equals(prev)) return;
             LAST_STATUS.put(uuid, partKey);
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                "Parts", partModel, partDevmode, EditorStatusPacket.NO_WEIGHT));
+                "Parts", partModel, partModel, partDevmode, EditorStatusPacket.NO_WEIGHT));
             return;
         }
 
@@ -306,7 +306,7 @@ public final class VariantOverlayRenderer {
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), l.model().displayName(), devmode, weight));
+            l.category().displayName(), l.model().displayName(), l.model().id(), devmode, weight));
     }
 
     /**

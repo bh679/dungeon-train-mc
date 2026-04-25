@@ -19,23 +19,32 @@ import java.util.function.Supplier;
  * {@link games.brennan.dungeontrain.editor.VariantOverlayRenderer} for the
  * detection loop.</p>
  *
+ * <p>{@code model} is the friendly path string the HUD bar renders
+ * ({@code track / track2}, {@code pillar / bottom / stone}). {@code modelId}
+ * is the bare command-token form ({@code track}, {@code pillar_bottom}) the
+ * client menu uses to dispatch {@code /dt editor ...} subcommands. For
+ * carriages and contents the two are identical; for track-side models they
+ * diverge — the menu MUST use {@code modelId} when constructing commands or
+ * the parser rejects the slashes/spaces in the path string.</p>
+ *
  * <p>{@code weight} is the carriage variant's pick weight (0..100) when the
  * model is a carriage; {@link #NO_WEIGHT} ({@value #NO_WEIGHT}) for any model
  * where weight is not meaningful (pillars, tunnels, track) or for the empty
  * clear packet.</p>
  */
-public record EditorStatusPacket(String category, String model, boolean devmode, int weight) {
+public record EditorStatusPacket(String category, String model, String modelId, boolean devmode, int weight) {
 
     /** Sentinel for "weight is not applicable to this model". */
     public static final int NO_WEIGHT = -1;
 
     public static EditorStatusPacket empty() {
-        return new EditorStatusPacket("", "", false, NO_WEIGHT);
+        return new EditorStatusPacket("", "", "", false, NO_WEIGHT);
     }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeUtf(category);
         buf.writeUtf(model);
+        buf.writeUtf(modelId);
         buf.writeBoolean(devmode);
         buf.writeVarInt(weight);
     }
@@ -43,15 +52,16 @@ public record EditorStatusPacket(String category, String model, boolean devmode,
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
         String c = buf.readUtf(64);
         String m = buf.readUtf(64);
+        String id = buf.readUtf(64);
         boolean d = buf.readBoolean();
         int w = buf.readVarInt();
-        return new EditorStatusPacket(c, m, d, w);
+        return new EditorStatusPacket(c, m, id, d, w);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () -> EditorStatusHudOverlay.setStatus(category, model, devmode, weight)));
+            Dist.CLIENT, () -> () -> EditorStatusHudOverlay.setStatus(category, model, modelId, devmode, weight)));
         ctx.setPacketHandled(true);
     }
 }

@@ -21,7 +21,13 @@ public final class EditorMenuScreen implements MenuScreen {
     @Override public List<CommandMenuEntry> entries() {
         boolean devmode = EditorStatusHudOverlay.isDevModeOn();
         String category = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
+        // `model` is the friendly path string (HUD-style, may contain "/").
+        // `modelId` is the bare command-token id used to dispatch /dt editor ...
+        // For carriages and contents the two are identical; for track-side
+        // models (track, pillar_*, tunnel_*) they diverge — only modelId is
+        // safe to splice into a command string.
         String model = EditorStatusHudOverlay.model();
+        String modelId = EditorStatusHudOverlay.modelId();
 
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(new CommandMenuEntry.Toggle(
@@ -87,11 +93,11 @@ public final class EditorMenuScreen implements MenuScreen {
         }
 
         // New / Remove — only meaningful for categories whose models are
-        // user-authorable (carriages, contents). For tracks / pillars /
-        // tunnels / architecture the concept doesn't apply, so the row is
-        // omitted rather than showing buttons that error on click.
-        CommandMenuEntry newEntry = newEntryFor(category, model);
-        CommandMenuEntry removeEntry = removeEntryFor(category, model);
+        // user-authorable (carriages, contents) or whose registry supports
+        // deletion (tracks). For architecture the concept doesn't apply, so
+        // the row is omitted rather than showing buttons that error on click.
+        CommandMenuEntry newEntry = newEntryFor(category, modelId, model);
+        CommandMenuEntry removeEntry = removeEntryFor(category, modelId, model);
         if (newEntry != null && removeEntry != null) {
             out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
         }
@@ -124,7 +130,7 @@ public final class EditorMenuScreen implements MenuScreen {
     /**
      * "New" drills into a {@link NewSourcePickerScreen} for carriages and
      * contents (Blank / Current / Standard seed picker before naming).
-     * For {@code tracks} the model id is the kind tag the player is
+     * For {@code tracks} the {@code modelId} is the kind tag the player is
      * standing on ({@code track}, {@code pillar_top},
      * {@code tunnel_section}, ...) — passed to
      * {@code /dt editor tracks new <kind> <typed-name>}, which clones the
@@ -133,22 +139,27 @@ public final class EditorMenuScreen implements MenuScreen {
      * single-plot editor today, so the menu won't appear there — but the
      * command still works if invoked directly. Returns null for categories
      * that don't support author-authored new models.
+     *
+     * <p>{@code modelId} is the command-token id ({@code track}); {@code model}
+     * is the friendly path string ({@code track / track2}). Carriages and
+     * contents pass {@code modelId} to the picker so any preview state keys
+     * off the same id the server uses.</p>
      */
-    private static CommandMenuEntry newEntryFor(String category, String model) {
+    static CommandMenuEntry newEntryFor(String category, String modelId, String model) {
         return switch (category) {
             case "carriages" -> new CommandMenuEntry.DrillIn(
                 "New",
                 new NewSourcePickerScreen(
-                    NewSourcePickerScreen.Category.CARRIAGES, null, model));
+                    NewSourcePickerScreen.Category.CARRIAGES, null, modelId));
             case "contents" -> new CommandMenuEntry.DrillIn(
                 "New",
                 new NewSourcePickerScreen(
-                    NewSourcePickerScreen.Category.CONTENTS, null, model));
+                    NewSourcePickerScreen.Category.CONTENTS, null, modelId));
             case "tracks" -> {
-                if (model == null || model.isEmpty()) yield null;
+                if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
                     "New", "name",
-                    "dungeontrain editor tracks new " + model);
+                    "dungeontrain editor tracks new " + modelId);
             }
             default -> null;
         };
@@ -164,22 +175,26 @@ public final class EditorMenuScreen implements MenuScreen {
      * {@code /dt editor tracks reset <kind>} — that command no-ops with a
      * friendly error when the active variant is the synthetic
      * {@code default} (you can't remove the built-in fallback).</p>
+     *
+     * <p>{@code modelId} is what gets spliced into the command (must be a
+     * single command token); {@code model} is the friendly path used in the
+     * confirm prompt label.</p>
      */
-    private static CommandMenuEntry removeEntryFor(String category, String model) {
-        if (model == null || model.isEmpty()) return null;
+    static CommandMenuEntry removeEntryFor(String category, String modelId, String model) {
+        if (modelId == null || modelId.isEmpty()) return null;
         return switch (category) {
             case "carriages" -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove '" + model + "'?",
-                    "dungeontrain editor reset " + model));
+                    "dungeontrain editor reset " + modelId));
             case "contents" -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove '" + model + "'?",
-                    "dungeontrain editor contents reset " + model));
+                    "dungeontrain editor contents reset " + modelId));
             case "tracks" -> new CommandMenuEntry.DrillIn(
                 "Remove",
                 new ConfirmScreen("Remove the current variant for '" + model + "'?",
-                    "dungeontrain editor tracks reset " + model));
+                    "dungeontrain editor tracks reset " + modelId));
             default -> null;
         };
     }
