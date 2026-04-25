@@ -1,32 +1,18 @@
 package games.brennan.dungeontrain.editor;
 
-import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.track.TrackTemplate;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Resolves a player position to a track-side editor plot — the open-air
- * track tile, the three pillar sections, the stairs adjunct, or one of the
- * two tunnel kinds. Mirrors {@link CarriagePartEditor#plotContaining} for
- * the carriage-parts editor: returns the {@link TrackKind}, the name being
- * authored (currently always {@link TrackKind#DEFAULT_NAME} since the
- * single-plot editors haven't grown a multi-name UI yet), the plot origin,
- * and the footprint so the variant-overlay + shift-click handlers don't
- * need to know which physical editor backs which kind.
- *
- * <p>Lookup order matches {@link EditorCategory#locate} so the same
- * resolution wins no matter which entry point hits it: track tile first,
- * then pillar sections, then the stairs adjunct, then tunnels. Footprints
- * intentionally don't overlap (different X-rows + Z-rows in the editor
- * plot grid), so the order only matters for the cost of the first-match
- * short-circuit.</p>
+ * Single-pass containment check that resolves a player position to the
+ * exact track-side plot they're standing in — track tile, pillar section,
+ * stairs adjunct, or tunnel kind — including the variant name. Delegates
+ * to {@link TrackSidePlots#locate} for the full grid scan.
  */
 public final class TrackPlotLocator {
 
@@ -42,53 +28,11 @@ public final class TrackPlotLocator {
 
     /**
      * Resolve which track-side plot {@code player} is standing in, or
-     * {@code null} if they're outside every one. Uses the same 1-block
-     * outline-margin contains-check the per-editor {@code plotContaining}
-     * helpers use.
+     * {@code null} if they're outside every one. Walks every registered
+     * variant of every {@link TrackKind} via {@link TrackSidePlots#locate}.
      */
     public static PlotInfo locate(ServerPlayer player, CarriageDims dims) {
-        BlockPos pos = player.blockPosition();
-
-        if (TrackEditor.plotContaining(pos, dims)) {
-            return new PlotInfo(
-                TrackKind.TILE,
-                TrackKind.DEFAULT_NAME,
-                TrackEditor.plotOrigin(),
-                new Vec3i(TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
-            );
-        }
-
-        PillarSection section = PillarEditor.plotContaining(pos, dims);
-        if (section != null) {
-            return new PlotInfo(
-                pillarKind(section),
-                TrackKind.DEFAULT_NAME,
-                PillarEditor.plotOrigin(section),
-                new Vec3i(1, section.height(), dims.width())
-            );
-        }
-
-        PillarAdjunct adjunct = PillarEditor.plotContainingAdjunct(pos);
-        if (adjunct != null) {
-            return new PlotInfo(
-                TrackKind.ADJUNCT_STAIRS,
-                TrackKind.DEFAULT_NAME,
-                PillarEditor.plotOriginAdjunct(adjunct),
-                new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize())
-            );
-        }
-
-        TunnelVariant tunnel = TunnelEditor.plotContaining(pos);
-        if (tunnel != null) {
-            return new PlotInfo(
-                tunnelKind(tunnel),
-                TrackKind.DEFAULT_NAME,
-                TunnelEditor.plotOrigin(tunnel),
-                new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH)
-            );
-        }
-
-        return null;
+        return TrackSidePlots.locate(player.blockPosition(), dims);
     }
 
     /** Map a {@link PillarSection} to its {@link TrackKind}. */

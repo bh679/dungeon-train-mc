@@ -153,7 +153,7 @@ public final class ResetCommand {
                 ).withStyle(ChatFormatting.YELLOW));
                 return 0;
             }
-            BlockPos origin = PillarEditor.plotOrigin(pillar.section());
+            BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
             source.sendSuccess(() -> Component.literal(
@@ -182,7 +182,7 @@ public final class ResetCommand {
                 ).withStyle(ChatFormatting.YELLOW));
                 return 0;
             }
-            BlockPos origin = TrackEditor.plotOrigin();
+            BlockPos origin = TrackEditor.plotOrigin(dims);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
             source.sendSuccess(() -> Component.literal(

@@ -40,10 +40,10 @@ public final class CarriageContentsEditor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int PLOT_Y = 250;
-    /** Contents row Z-origin. Carriage plots at Z=0 (+tunnels past X=80),
-     *  pillar plots at Z=40; 80 gives a clear gap even at max carriage width. */
-    private static final int PLOT_Z = 80;
-    private static final int PLOT_STEP_X = 20;
+    /** Contents row Z-origin. Carriages occupy {@code Z=0} (max width 32),
+     *  so {@code 32 + EditorLayout.GAP = 37} keeps the contents row clear of
+     *  any carriage plot at any width. */
+    private static final int PLOT_Z = CarriageDims.MAX_WIDTH + EditorLayout.GAP;
     private static final int FIRST_PLOT_X = 0;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
@@ -66,7 +66,7 @@ public final class CarriageContentsEditor {
      * walk between them, mirroring the carriages/tracks category enter flow.
      */
     public static void stampPlot(ServerLevel overworld, CarriageContents contents, CarriageDims dims) {
-        BlockPos origin = plotOrigin(contents);
+        BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) return;
         CarriageTemplate.eraseAt(overworld, origin, dims);
         CarriageContentsTemplate.eraseAt(overworld, origin, dims);
@@ -81,7 +81,7 @@ public final class CarriageContentsEditor {
      * when switching categories.
      */
     public static void clearPlot(ServerLevel overworld, CarriageContents contents, CarriageDims dims) {
-        BlockPos origin = plotOrigin(contents);
+        BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) return;
         CarriageTemplate.eraseAt(overworld, origin, dims);
         CarriageContentsTemplate.eraseAt(overworld, origin, dims);
@@ -89,11 +89,12 @@ public final class CarriageContentsEditor {
     }
 
     /**
-     * Plot origin for {@code contents}. Computed from the current registry
-     * ordering: built-ins in enum order, then customs alphabetically. Returns
-     * {@code null} if the contents is not registered.
+     * Plot origin for {@code contents}. Step along {@code +X} is
+     * {@code dims.length() + EditorLayout.GAP} so adjacent plots have a
+     * uniform {@link EditorLayout#GAP}-block air gap, matching every other
+     * editor.
      */
-    public static BlockPos plotOrigin(CarriageContents contents) {
+    public static BlockPos plotOrigin(CarriageContents contents, CarriageDims dims) {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         String target = contents.id();
         int index = -1;
@@ -104,7 +105,14 @@ public final class CarriageContentsEditor {
             }
         }
         if (index < 0) return null;
-        return new BlockPos(FIRST_PLOT_X + index * PLOT_STEP_X, PLOT_Y, PLOT_Z);
+        int step = dims.length() + EditorLayout.GAP;
+        return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
+    }
+
+    /** Legacy single-arg overload that defaults to a min-length carriage. */
+    public static BlockPos plotOrigin(CarriageContents contents) {
+        return plotOrigin(contents, CarriageDims.clamp(
+            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
     }
 
     /**
@@ -115,7 +123,7 @@ public final class CarriageContentsEditor {
      */
     public static CarriageContents plotContaining(BlockPos pos, CarriageDims dims) {
         for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
-            BlockPos o = plotOrigin(contents);
+            BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
                 && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height()
@@ -140,12 +148,12 @@ public final class CarriageContentsEditor {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(contents);
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) {
             LOGGER.warn("[DungeonTrain] Contents editor enter: unknown contents '{}'", contents.id());
             return;
         }
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         CarriageVariant shell = shellVariant != null ? shellVariant : DEFAULT_SHELL;
 
         CarriageEditor.rememberReturn(player);
@@ -186,9 +194,9 @@ public final class CarriageContentsEditor {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(contents);
-        if (origin == null) throw new IOException("Unknown contents '" + contents.id() + "'.");
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(contents, dims);
+        if (origin == null) throw new IOException("Unknown contents '" + contents.id() + "'.");
 
         StructureTemplate template = CarriageContentsTemplate.captureTemplate(overworld, origin, dims);
         CarriageContentsStore.save(contents, template);

@@ -1161,9 +1161,10 @@ public final class EditorCommand {
         if (player == null) return 0;
         try {
             PillarEditor.enter(player, section);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered pillar '" + section.id()
-                    + "' plot at " + PillarEditor.plotOrigin(section)
+                    + "' plot at " + PillarEditor.plotOrigin(section, dims)
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -1179,13 +1180,13 @@ public final class EditorCommand {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-        PillarSection section = PillarEditor.plotContaining(player.blockPosition(), dims);
-        if (section != null) {
-            return runPillarSaveSection(source, player, section);
+        PillarEditor.SectionPlot sectionLoc = PillarEditor.plotContaining(player.blockPosition(), dims);
+        if (sectionLoc != null) {
+            return runPillarSaveSection(source, player, sectionLoc.section());
         }
-        PillarAdjunct adjunct = PillarEditor.plotContainingAdjunct(player.blockPosition());
-        if (adjunct != null) {
-            return runPillarSaveAdjunct(source, player, adjunct);
+        PillarEditor.AdjunctPlot adjunctLoc = PillarEditor.plotContainingAdjunct(player.blockPosition(), dims);
+        if (adjunctLoc != null) {
+            return runPillarSaveAdjunct(source, player, adjunctLoc.adjunct());
         }
         source.sendFailure(Component.literal(
             "Not in a pillar editor plot. Use '/dungeontrain editor pillar enter <"
@@ -1593,9 +1594,10 @@ public final class EditorCommand {
         if (player == null) return 0;
         try {
             PillarEditor.enter(player, adjunct);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered pillar adjunct '" + adjunct.id()
-                    + "' plot at " + PillarEditor.plotOriginAdjunct(adjunct)
+                    + "' plot at " + PillarEditor.plotOriginAdjunct(adjunct, dims)
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -1647,8 +1649,9 @@ public final class EditorCommand {
         if (player == null) return 0;
         try {
             TrackEditor.enter(player);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             source.sendSuccess(() -> Component.literal(
-                "Editor: entered track plot at " + TrackEditor.plotOrigin()
+                "Editor: entered track plot at " + TrackEditor.plotOrigin(dims)
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -2249,12 +2252,21 @@ public final class EditorCommand {
             return 0;
         }
 
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // Source = currently-active variant for this kind. Falls back to
-        // "default" automatically when the player hasn't switched.
-        String sourceName = games.brennan.dungeontrain.editor.TrackEditorState.activeName(kind);
+        // Source name = the variant the player is currently standing on, so
+        // "New" duplicates whatever you're looking at. Falls back to default
+        // when the player isn't in a track-side plot (e.g. command typed via
+        // chat).
+        games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc =
+            games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
+        String sourceName = (loc != null && loc.kind() == kind)
+            ? loc.name()
+            : games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME;
+
         java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> sourceTemplate =
             games.brennan.dungeontrain.track.variant.TrackVariantStore.get(overworld, kind, sourceName, dims);
         if (sourceTemplate.isEmpty()) {
@@ -2270,50 +2282,77 @@ public final class EditorCommand {
             return 0;
         }
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(kind, key);
-        games.brennan.dungeontrain.editor.TrackEditorState.setActive(kind, key);
         restampPlotForKind(overworld, kind, dims);
+        teleportToPlot(player, overworld, kind, key, dims);
 
         source.sendSuccess(() -> Component.literal(
-            "Created " + kind.id() + ":" + key + " from " + sourceName + " — now editing the new variant."
+            "Created " + kind.id() + ":" + key + " from " + sourceName + " — teleported to the new plot."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
     /**
-     * {@code /dt editor tracks reset <kind>} — delete the kind's currently-
-     * active variant (must not be {@code default}), unregister it, swap
-     * active back to {@code default}, restamp.
+     * {@code /dt editor tracks reset <kind>} — delete the variant the
+     * player is currently standing on (must not be {@code default}),
+     * unregister it, restamp, teleport back to default's plot.
      */
     private static int runTrackResetActiveVariant(CommandSourceStack source, String rawKind) {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
 
-        String activeName = games.brennan.dungeontrain.editor.TrackEditorState.activeName(kind);
-        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(activeName)) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        games.brennan.dungeontrain.editor.TrackPlotLocator.PlotInfo loc =
+            games.brennan.dungeontrain.editor.TrackPlotLocator.locate(player, dims);
+        if (loc == null || loc.kind() != kind) {
             source.sendFailure(Component.literal(
-                "Currently editing the synthetic 'default' for " + kind.id() + " — nothing to remove. "
-                + "Pick a custom variant first via /dungeontrain editor tracks new."));
+                "Stand on the " + kind.id() + " variant you want to remove first."));
+            return 0;
+        }
+        String name = loc.name();
+        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(name)) {
+            source.sendFailure(Component.literal(
+                "Standing on the synthetic 'default' for " + kind.id() + " — nothing to remove. "
+                + "Stand on a custom variant first."));
             return 0;
         }
 
         try {
-            games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, activeName);
+            games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);
         } catch (java.io.IOException e) {
             source.sendFailure(Component.literal("Delete failed: " + e.getMessage()));
             return 0;
         }
-        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, activeName);
-        games.brennan.dungeontrain.editor.TrackEditorState.setActive(
-            kind, games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME);
-
-        ServerLevel overworld = source.getServer().overworld();
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, name);
         restampPlotForKind(overworld, kind, dims);
+        teleportToPlot(player, overworld, kind,
+            games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
 
-        final String removedName = activeName;
         source.sendSuccess(() -> Component.literal(
-            "Removed " + kind.id() + ":" + removedName + " — now editing default."
+            "Removed " + kind.id() + ":" + name + " — teleported back to default."
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
+    }
+
+    /**
+     * Teleport {@code player} to the centre of the {@code (kind, name)} plot.
+     * No-op for kinds without a single-plot editor (currently nothing — every
+     * track-side kind has its plot via {@link games.brennan.dungeontrain.editor.TrackSidePlots}).
+     */
+    private static void teleportToPlot(
+        ServerPlayer player, ServerLevel overworld,
+        games.brennan.dungeontrain.track.variant.TrackKind kind, String name,
+        CarriageDims dims
+    ) {
+        BlockPos origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(kind, name, dims);
+        net.minecraft.core.Vec3i fp =
+            games.brennan.dungeontrain.editor.TrackSidePlots.footprint(kind, dims);
+        double tx = origin.getX() + fp.getX() / 2.0;
+        double ty = origin.getY() + 1.0;
+        double tz = origin.getZ() + fp.getZ() / 2.0;
+        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
     }
 }

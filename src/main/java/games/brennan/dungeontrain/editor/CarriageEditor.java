@@ -41,7 +41,6 @@ public final class CarriageEditor {
 
     private static final int PLOT_Y = 250;
     private static final int PLOT_Z = 0;
-    private static final int PLOT_STEP_X = 20;
     private static final int FIRST_PLOT_X = 0;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
@@ -84,11 +83,14 @@ public final class CarriageEditor {
     }
 
     /**
-     * Plot origin for {@code variant}. Computed from the current registry
-     * ordering: built-ins in enum order, then customs alphabetically. Returns
+     * Plot origin for {@code variant}. Step along {@code +X} is
+     * {@code CarriageDims.length() + EditorLayout.GAP} so adjacent plots
+     * always have a uniform {@link EditorLayout#GAP}-block air gap between
+     * footprints — matching the rule used in {@link CarriagePartEditor},
+     * {@link TrackSidePlots}, and {@link CarriageContentsEditor}. Returns
      * {@code null} if the variant is not registered.
      */
-    public static BlockPos plotOrigin(CarriageVariant variant) {
+    public static BlockPos plotOrigin(CarriageVariant variant, CarriageDims dims) {
         List<CarriageVariant> all = CarriageVariantRegistry.allVariants();
         String target = variant.id();
         int index = -1;
@@ -99,7 +101,18 @@ public final class CarriageEditor {
             }
         }
         if (index < 0) return null;
-        return new BlockPos(FIRST_PLOT_X + index * PLOT_STEP_X, PLOT_Y, PLOT_Z);
+        int step = dims.length() + EditorLayout.GAP;
+        return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
+    }
+
+    /**
+     * Legacy single-arg overload that defaults to a min-length carriage. Kept
+     * so callers without {@link CarriageDims} on hand still compile; new code
+     * should pass dims so plot positions match the live world's settings.
+     */
+    public static BlockPos plotOrigin(CarriageVariant variant) {
+        return plotOrigin(variant, CarriageDims.clamp(
+            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
     }
 
     /**
@@ -108,7 +121,7 @@ public final class CarriageEditor {
      */
     public static CarriageVariant plotContaining(BlockPos pos, CarriageDims dims) {
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
-            BlockPos o = plotOrigin(variant);
+            BlockPos o = plotOrigin(variant, dims);
             if (o == null) continue;
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
                 && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height()
@@ -129,12 +142,12 @@ public final class CarriageEditor {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(variant);
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) {
             LOGGER.warn("[DungeonTrain] Editor enter: unknown variant '{}'", variant.id());
             return;
         }
-        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
         rememberReturn(player);
         stampPlot(overworld, variant, dims);
@@ -156,7 +169,7 @@ public final class CarriageEditor {
      * current stored template.
      */
     public static void stampPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
-        BlockPos origin = plotOrigin(variant);
+        BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) return;
 
         // Drop any stale cached sidecar so each stamp picks up manual JSON
@@ -176,7 +189,7 @@ public final class CarriageEditor {
      * {@code /dt editor exit} (tidy the sky-plots when nobody is editing).
      */
     public static void clearPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
-        BlockPos origin = plotOrigin(variant);
+        BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) return;
         CarriageTemplate.eraseAt(overworld, origin, dims);
         setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
@@ -194,9 +207,9 @@ public final class CarriageEditor {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(variant);
-        if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(variant, dims);
+        if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
 
         StructureTemplate template = captureTemplate(overworld, origin, dims);
         CarriageTemplateStore.save(variant, template);
