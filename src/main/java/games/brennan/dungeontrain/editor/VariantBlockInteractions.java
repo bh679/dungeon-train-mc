@@ -2,10 +2,12 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -21,6 +23,7 @@ import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,19 +67,7 @@ public final class VariantBlockInteractions {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
-        if (plotVariant == null) return;
-
-        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
-        if (plotOrigin == null) return;
-
         BlockPos clicked = event.getPos();
-        BlockPos local = clicked.subtract(plotOrigin);
-        if (local.getX() < 0 || local.getX() >= dims.length()
-            || local.getY() < 0 || local.getY() >= dims.height()
-            || local.getZ() < 0 || local.getZ() >= dims.width()) {
-            return;
-        }
 
         ItemStack held = event.getItemStack();
         if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) return;
@@ -90,42 +81,35 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        // Part plot takes priority: if the clicked position falls inside a
+        // part plot, route the shift-click into the part's own variants
+        // sidecar. Part rows sit past the carriage row, so a carriage plot
+        // and a part plot can't simultaneously contain the same position.
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        if (partLoc != null) {
+            handlePartShiftClick(event, player, level, dims, clicked, newState, partLoc);
+            return;
+        }
+
+        CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
+        if (plotVariant == null) return;
+
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+        if (plotOrigin == null) return;
+
+        BlockPos local = clicked.subtract(plotOrigin);
+        if (local.getX() < 0 || local.getX() >= dims.length()
+            || local.getY() < 0 || local.getY() >= dims.height()
+            || local.getZ() < 0 || local.getZ() >= dims.width()) {
+            return;
+        }
+
         BlockState baseState = level.getBlockState(clicked);
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
         List<BlockState> existing = sidecar.statesAt(local);
 
-        List<BlockState> updated = new ArrayList<>();
-        if (existing == null) {
-            // First variant at this position — seed with the base block already
-            // placed here so the entry reads [base, newlyAdded] and the random
-            // pick chooses between the author's intent and the addition.
-            if (baseState.isAir()) {
-                player.displayClientMessage(
-                    Component.literal("Target block is air — place a base block first.")
-                        .withStyle(ChatFormatting.YELLOW), true);
-                suppressVanillaPlace(event);
-                return;
-            }
-            if (baseState.hasBlockEntity()) {
-                player.displayClientMessage(
-                    Component.literal("Base block has a block entity — not supported in variants.")
-                        .withStyle(ChatFormatting.RED), true);
-                suppressVanillaPlace(event);
-                return;
-            }
-            updated.add(baseState);
-            updated.add(newState);
-        } else {
-            if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
-                player.displayClientMessage(
-                    Component.literal("Variant list full (" + MAX_VARIANTS_PER_POSITION + ") — clear or reset this position.")
-                        .withStyle(ChatFormatting.YELLOW), true);
-                suppressVanillaPlace(event);
-                return;
-            }
-            updated.addAll(existing);
-            updated.add(newState);
-        }
+        List<BlockState> updated = buildUpdatedList(existing, baseState, newState, player, event);
+        if (updated == null) return;
 
         try {
             sidecar.put(local, updated);
@@ -137,6 +121,105 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        sendAddedFeedback(player, clicked, local, newState, updated);
+        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
+        suppressVanillaPlace(event);
+    }
+
+    /**
+     * Part-plot branch: resolve {@code (kind, name)} from the player's plot,
+     * compute the clicked block's local position inside the part footprint
+     * (not the whole carriage), and append the held block to that part's own
+     * variants sidecar.
+     */
+    private static void handlePartShiftClick(PlayerInteractEvent.RightClickBlock event,
+                                             ServerPlayer player, ServerLevel level,
+                                             CarriageDims dims, BlockPos clicked,
+                                             BlockState newState, CarriagePartEditor.PlotLocation loc) {
+        CarriagePartKind kind = loc.kind();
+        String name = loc.name();
+        BlockPos plotOrigin = CarriagePartEditor.plotOrigin(kind, name, dims);
+        if (plotOrigin == null) return;
+
+        BlockPos local = clicked.subtract(plotOrigin);
+        Vec3i partSize = kind.dims(dims);
+        if (local.getX() < 0 || local.getX() >= partSize.getX()
+            || local.getY() < 0 || local.getY() >= partSize.getY()
+            || local.getZ() < 0 || local.getZ() >= partSize.getZ()) {
+            return;
+        }
+
+        BlockState baseState = level.getBlockState(clicked);
+        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        List<BlockState> existing = sidecar.statesAt(local);
+        List<BlockState> updated = buildUpdatedList(existing, baseState, newState, player, event);
+        if (updated == null) return;
+
+        try {
+            sidecar.put(local, updated);
+            sidecar.save(kind, name);
+        } catch (IllegalArgumentException e) {
+            player.displayClientMessage(
+                Component.literal("Variant add failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        } catch (IOException e) {
+            player.displayClientMessage(
+                Component.literal("Variant save failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        }
+
+        sendAddedFeedback(player, clicked, local, newState, updated);
+        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
+        suppressVanillaPlace(event);
+    }
+
+    /**
+     * Common "append to variants" logic — seeds with the base block on first
+     * edit, enforces the soft cap, and sends user-facing error messages.
+     * Returns the new list, or {@code null} if a validation message was sent
+     * and the caller should early-return.
+     */
+    private static List<BlockState> buildUpdatedList(List<BlockState> existing, BlockState baseState,
+                                                      BlockState newState, ServerPlayer player,
+                                                      PlayerInteractEvent.RightClickBlock event) {
+        List<BlockState> updated = new ArrayList<>();
+        if (existing == null) {
+            if (baseState.isAir()) {
+                player.displayClientMessage(
+                    Component.literal("Target block is air — place a base block first.")
+                        .withStyle(ChatFormatting.YELLOW), true);
+                suppressVanillaPlace(event);
+                return null;
+            }
+            if (baseState.hasBlockEntity()) {
+                player.displayClientMessage(
+                    Component.literal("Base block has a block entity — not supported in variants.")
+                        .withStyle(ChatFormatting.RED), true);
+                suppressVanillaPlace(event);
+                return null;
+            }
+            updated.add(baseState);
+            updated.add(newState);
+        } else {
+            if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
+                player.displayClientMessage(
+                    Component.literal("Variant list full (" + MAX_VARIANTS_PER_POSITION + ") — clear or reset this position.")
+                        .withStyle(ChatFormatting.YELLOW), true);
+                suppressVanillaPlace(event);
+                return null;
+            }
+            updated.addAll(existing);
+            updated.add(newState);
+        }
+        return updated;
+    }
+
+    private static void sendAddedFeedback(ServerPlayer player, BlockPos clicked, BlockPos local,
+                                           BlockState newState, List<BlockState> updated) {
         ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(newState.getBlock());
         final int count = updated.size();
         final int lx = local.getX();
@@ -147,12 +230,6 @@ public final class VariantBlockInteractions {
         player.displayClientMessage(
             Component.literal("+ " + label + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
                 .withStyle(sentinel ? ChatFormatting.AQUA : ChatFormatting.GREEN), true);
-
-        // Refresh the icon HUD in the same tick — otherwise the overlay still
-        // shows the pre-add list until the player looks away and back.
-        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
-
-        suppressVanillaPlace(event);
     }
 
     /**

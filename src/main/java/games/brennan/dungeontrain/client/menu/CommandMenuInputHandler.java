@@ -69,6 +69,10 @@ public final class CommandMenuInputHandler {
     @SubscribeEvent
     public static void onKey(InputEvent.Key event) {
         if (!CommandMenuState.isOpen() || !CommandMenuState.typingMode()) return;
+        // While a Screen is up (typically MenuTypingScreen, which we open in
+        // beginTyping), keystrokes go through Screen.keyPressed / charTyped
+        // and should not be double-processed here.
+        if (net.minecraft.client.Minecraft.getInstance().screen != null) return;
         int action = event.getAction();
         if (action != GLFW.GLFW_PRESS && action != GLFW.GLFW_REPEAT) return;
 
