@@ -132,9 +132,8 @@ public final class CommandMenuRenderer {
 
         drawHeader(poseStack, buffer, font, count);
 
-        if (CommandMenuState.typingMode()) {
-            drawTypingLine(poseStack, buffer, font, count);
-        }
+        // Typing field is rendered inline at the originating row by drawRow /
+        // drawSplitRow — see isTypingHere(). No top-of-panel field anymore.
 
         buffer.endBatch(PANEL_QUAD);
         poseStack.popPose();
@@ -166,14 +165,29 @@ public final class CommandMenuRenderer {
         float padX = 0.02f;
         float padY = 0.005f;
 
+        boolean typingHere = isTypingHere(rowIndex, 0);
+
         // Base row tint — Toggle rows get a persistent colour to advertise state;
         // everything else is transparent so only the hover highlight colours.
         int baseTint = baseTintFor(entry);
-        if (baseTint != 0) {
+        if (baseTint != 0 && !typingHere) {
             drawQuad(poseStack, buffer,
                 -halfW + padX, cy - halfH + padY,
                 halfW - padX, cy + halfH - padY,
                 baseTint);
+        }
+
+        if (typingHere) {
+            // Green-tinted backdrop with the buffer + cursor in place of the label,
+            // so the user types into the same spot they clicked.
+            drawQuad(poseStack, buffer,
+                -halfW + padX, cy - halfH + padY,
+                halfW - padX, cy + halfH - padY,
+                TYPING_BACKDROP);
+            drawCenteredText(poseStack, buffer, font,
+                CommandMenuState.typedBuffer() + "_",
+                0f, cy, 0xFF000000);
+            return;
         }
 
         if (hovered) {
@@ -204,9 +218,17 @@ public final class CommandMenuRenderer {
         float splitX = (float) (-halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH);
         float rightEnd = halfW - padX;
 
+        boolean typingLeft = isTypingHere(rowIndex, 0);
+        boolean typingRight = isTypingHere(rowIndex, 1);
+
         // Left half
         float leftEnd = splitX - gap / 2f;
-        if (hovered && hoveredSub == 0) {
+        if (typingLeft) {
+            drawQuad(poseStack, buffer,
+                leftStart, cy - halfH + padY,
+                leftEnd, cy + halfH - padY,
+                TYPING_BACKDROP);
+        } else if (hovered && hoveredSub == 0) {
             drawQuad(poseStack, buffer,
                 leftStart, cy - halfH + padY,
                 leftEnd, cy + halfH - padY,
@@ -218,12 +240,18 @@ public final class CommandMenuRenderer {
                 0x30FFFFFF);
         }
         float leftCenterX = (leftStart + leftEnd) / 2f;
-        drawCenteredText(poseStack, buffer, font, labelFor(split.leftEntry()),
-            leftCenterX, cy, hovered && hoveredSub == 0 ? 0xFF000000 : 0xFFFFFFFF);
+        String leftText = typingLeft ? CommandMenuState.typedBuffer() + "_" : labelFor(split.leftEntry());
+        int leftColor = (typingLeft || (hovered && hoveredSub == 0)) ? 0xFF000000 : 0xFFFFFFFF;
+        drawCenteredText(poseStack, buffer, font, leftText, leftCenterX, cy, leftColor);
 
         // Right half
         float rightStart = splitX + gap / 2f;
-        if (hovered && hoveredSub == 1) {
+        if (typingRight) {
+            drawQuad(poseStack, buffer,
+                rightStart, cy - halfH + padY,
+                rightEnd, cy + halfH - padY,
+                TYPING_BACKDROP);
+        } else if (hovered && hoveredSub == 1) {
             drawQuad(poseStack, buffer,
                 rightStart, cy - halfH + padY,
                 rightEnd, cy + halfH - padY,
@@ -235,8 +263,18 @@ public final class CommandMenuRenderer {
                 0x30FFFFFF);
         }
         float rightCenterX = (rightStart + rightEnd) / 2f;
-        drawCenteredText(poseStack, buffer, font, labelFor(split.rightEntry()),
-            rightCenterX, cy, hovered && hoveredSub == 1 ? 0xFF000000 : 0xFFFFFFFF);
+        String rightText = typingRight ? CommandMenuState.typedBuffer() + "_" : labelFor(split.rightEntry());
+        int rightColor = (typingRight || (hovered && hoveredSub == 1)) ? 0xFF000000 : 0xFFFFFFFF;
+        drawCenteredText(poseStack, buffer, font, rightText, rightCenterX, cy, rightColor);
+    }
+
+    /** Backdrop colour for the row currently capturing typed input. Same hue family as the legacy top-of-panel typing line, lower alpha so the text stays legible. */
+    private static final int TYPING_BACKDROP = 0xB033FF99;
+
+    private static boolean isTypingHere(int rowIdx, int subIdx) {
+        return CommandMenuState.typingMode()
+            && CommandMenuState.typingOriginRowIdx() == rowIdx
+            && CommandMenuState.typingOriginSubIdx() == subIdx;
     }
 
     private static void drawTripleRow(
@@ -301,12 +339,6 @@ public final class CommandMenuRenderer {
         if (breadcrumb.isEmpty()) breadcrumb = "Dungeon Train";
         float cy = (float) CommandMenuLayout.headerCenterY(count);
         drawCenteredText(poseStack, buffer, font, breadcrumb, 0f, cy, 0xFFFFEEBB);
-    }
-
-    private static void drawTypingLine(PoseStack poseStack, MultiBufferSource buffer, Font font, int count) {
-        String line = "<" + CommandMenuState.typingArgName() + ">: " + CommandMenuState.typedBuffer() + "_";
-        float cy = (float) (CommandMenuLayout.headerCenterY(count) - CommandMenuLayout.HEADER_HEIGHT * 0.35);
-        drawCenteredText(poseStack, buffer, font, line, 0f, cy, 0xFF33FF99);
     }
 
     private static void drawCenteredText(

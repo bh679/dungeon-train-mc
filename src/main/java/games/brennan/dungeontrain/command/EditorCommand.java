@@ -372,6 +372,10 @@ public final class EditorCommand {
                 .then(Commands.argument("new_name", StringArgumentType.word())
                     .executes(c -> runPartSave(c.getSource(),
                         StringArgumentType.getString(c, "new_name")))))
+            .then(Commands.literal("rename")
+                .then(Commands.argument("new_name", StringArgumentType.word())
+                    .executes(c -> runPartRename(c.getSource(),
+                        StringArgumentType.getString(c, "new_name")))))
             .then(Commands.literal("list")
                 .executes(c -> runPartList(c.getSource(), null))
                 .then(Commands.argument("kind", StringArgumentType.word())
@@ -2263,6 +2267,72 @@ public final class EditorCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part save failed", t);
             source.sendFailure(Component.literal("part save failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartRename(CommandSourceStack source, String newName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        CarriagePartEditor.PlotLocation loc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        CarriagePartKind kind;
+        String oldName;
+        if (loc != null) {
+            kind = loc.kind();
+            oldName = loc.name();
+        } else {
+            var session = CarriagePartEditor.currentSession(player);
+            if (session.isEmpty()) {
+                source.sendFailure(Component.literal(
+                    "Not in a part editor plot. Stand in a part plot or run '/dungeontrain editor part enter <kind> <name>' first."
+                ));
+                return 0;
+            }
+            kind = session.get().kind();
+            oldName = session.get().name();
+        }
+
+        if (!validatePartName(source, newName)) return 0;
+        String target = newName.toLowerCase(Locale.ROOT);
+        if (target.equals(oldName)) {
+            source.sendFailure(Component.literal(
+                "New name '" + target + "' is the same as the current name."
+            ));
+            return 0;
+        }
+        if (CarriagePartRegistry.isKnown(kind, target)) {
+            source.sendFailure(Component.literal(
+                "Name '" + kind.id() + ":" + target + "' is already taken."
+            ));
+            return 0;
+        }
+
+        try {
+            CarriagePartEditor.SaveResult result = CarriagePartEditor.saveAs(player, kind, oldName, target);
+            final String oldRef = oldName;
+            source.sendSuccess(() -> Component.literal(
+                "Editor: renamed part '" + kind.id() + ":" + oldRef
+                    + "' -> '" + kind.id() + ":" + target + "'."
+            ), true);
+            if (result.sourceAttempted()) {
+                if (result.sourceWritten()) {
+                    source.sendSuccess(() -> Component.literal(
+                        "Editor: also wrote bundled copy to source tree (will ship with next build)."
+                    ).withStyle(ChatFormatting.GREEN), true);
+                } else {
+                    source.sendFailure(Component.literal(
+                        "Editor: source-tree write failed: " + result.sourceError()
+                    ).withStyle(ChatFormatting.YELLOW));
+                }
+            }
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part rename failed", t);
+            source.sendFailure(Component.literal("part rename failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;

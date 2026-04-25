@@ -60,6 +60,8 @@ public final class CommandMenuState {
     private static String typingArgName = "";
     private static String typingCommandPrefix = "";
     private static String typingCommandSuffix = "";
+    private static int typingOriginRowIdx = -1;
+    private static int typingOriginSubIdx = 0;
 
     public static boolean isOpen() { return open; }
     public static Vec3 anchorPos() { return anchorPos; }
@@ -72,6 +74,8 @@ public final class CommandMenuState {
     public static boolean typingMode() { return typingMode; }
     public static String typedBuffer() { return typedBuffer; }
     public static String typingArgName() { return typingArgName; }
+    public static int typingOriginRowIdx() { return typingOriginRowIdx; }
+    public static int typingOriginSubIdx() { return typingOriginSubIdx; }
 
     /** Full breadcrumb as a " > " separated title chain (for the header row). */
     public static String breadcrumb() {
@@ -149,6 +153,8 @@ public final class CommandMenuState {
         typedBuffer = "";
         hoveredIdx = -1;
         hoveredSubIdx = 0;
+        typingOriginRowIdx = -1;
+        typingOriginSubIdx = 0;
         stack.clear();
         entries = List.of();
         dismissTypingScreen();
@@ -181,6 +187,12 @@ public final class CommandMenuState {
         if (idx < 0 || idx >= entries.size()) return;
         CommandMenuEntry entry = entries.get(idx);
         LOGGER.info("Menu activate idx={} subIdx={} entry={}", idx, subIdx, entry);
+        // Stash the click location BEFORE dispatchEntry, so a TypeArg activation
+        // inside dispatch (possibly after a Split half-recurse) can pick up the
+        // outer row/sub the user actually clicked. Renderer reads these to
+        // place the inline typing field at the originating button.
+        typingOriginRowIdx = idx;
+        typingOriginSubIdx = subIdx;
         playClickSound();
         dispatchEntry(entry, subIdx);
     }
@@ -199,7 +211,7 @@ public final class CommandMenuState {
         } else if (entry instanceof CommandMenuEntry.Back) {
             goBack();
         } else if (entry instanceof CommandMenuEntry.TypeArg type) {
-            beginTyping(type.argName(), type.commandPrefix(), type.commandSuffix());
+            beginTyping(type.argName(), type.commandPrefix(), type.commandSuffix(), type.initialBuffer());
         } else if (entry instanceof CommandMenuEntry.Toggle toggle) {
             String cmd = toggle.state() ? toggle.cmdToTurnOff() : toggle.cmdToTurnOn();
             CommandRunner.run(cmd);
@@ -228,8 +240,16 @@ public final class CommandMenuState {
      *  field underneath.</p>
      */
     public static void beginTyping(String argName, String prefix, String suffix) {
+        beginTyping(argName, prefix, suffix, "");
+    }
+
+    /** As {@link #beginTyping(String, String, String)} but pre-populates the typing
+     *  buffer with {@code initialBuffer} so the user can edit an existing value
+     *  (used by Rename, where the current name is pre-filled). */
+    public static void beginTyping(String argName, String prefix, String suffix, String initialBuffer) {
         typingMode = true;
-        typedBuffer = "";
+        typedBuffer = initialBuffer == null ? "" : initialBuffer;
+        if (typedBuffer.length() > 32) typedBuffer = typedBuffer.substring(0, 32);
         typingArgName = argName;
         typingCommandPrefix = prefix;
         typingCommandSuffix = suffix == null ? "" : suffix;
@@ -244,6 +264,8 @@ public final class CommandMenuState {
         typingArgName = "";
         typingCommandPrefix = "";
         typingCommandSuffix = "";
+        typingOriginRowIdx = -1;
+        typingOriginSubIdx = 0;
         dismissTypingScreen();
     }
 

@@ -57,6 +57,10 @@ public final class EditorMenuScreen implements MenuScreen {
                             "dungeontrain editor part reset " + kind + " " + name)),
                     0.50
                 ));
+                out.add(new CommandMenuEntry.TypeArg(
+                    "Rename", "new_name",
+                    "dungeontrain editor part rename",
+                    "", name));
             }
             out.add(new CommandMenuEntry.Back("< Back"));
             return out;
@@ -91,6 +95,11 @@ public final class EditorMenuScreen implements MenuScreen {
         if (newEntry != null && removeEntry != null) {
             out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
         }
+
+        // Rename — only for user-authorable categories with a non-builtin id.
+        // Pre-fills the typing field with the current model name.
+        CommandMenuEntry renameEntry = renameEntryFor(category, model);
+        if (renameEntry != null) out.add(renameEntry);
 
         // Weight — carriage variants only. Triple row: [-] / Weight (N) / [+].
         // Side cells nudge by 1 server-side and stay open so the player can
@@ -170,5 +179,37 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor clear"));
             default -> null;
         };
+    }
+
+    /**
+     * "Rename" pre-fills the typing field with the current model id and on
+     * submit runs the category's {@code save <new_name>} subcommand — both
+     * carriages and contents implement that as a true rename (saveAs:
+     * delete-old + write-new + registry update). Returns null for builtin
+     * variants and for categories that don't support author-authored renames.
+     */
+    private static CommandMenuEntry renameEntryFor(String category, String model) {
+        if (model == null || model.isEmpty()) return null;
+        return switch (category) {
+            case "carriages" -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
+                "Rename", "new_name",
+                "dungeontrain editor save",
+                "", model);
+            case "contents" -> isReservedContentsBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
+                "Rename", "new_name",
+                "dungeontrain editor contents save",
+                "", model);
+            default -> null;
+        };
+    }
+
+    /** Match server-side carriage built-in names so the Rename row hides for them. Mirrors PROTECTED_BUILTINS in EditorCommand. */
+    private static boolean isReservedCarriageBuiltin(String id) {
+        return "standard".equals(id) || "flatbed".equals(id);
+    }
+
+    /** Match server-side contents built-in names. Server rejects rename for any builtin via {@code current.isBuiltin()}. */
+    private static boolean isReservedContentsBuiltin(String id) {
+        return "default".equals(id);
     }
 }

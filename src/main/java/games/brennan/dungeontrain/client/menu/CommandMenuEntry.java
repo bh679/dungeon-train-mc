@@ -39,10 +39,17 @@ public sealed interface CommandMenuEntry {
      * {@code commandPrefix + " " + buffer} (with {@code commandSuffix}
      * appended when non-empty, e.g. the {@code [source]} arg of
      * {@code editor new <name> <source>}), ESC cancels.
+     *
+     * <p>{@code initialBuffer} pre-populates the typing field so the user
+     * can edit an existing value (e.g. Rename starts with the current name
+     * already typed). Empty string means start blank.</p>
      */
-    record TypeArg(String label, String argName, String commandPrefix, String commandSuffix) implements CommandMenuEntry {
+    record TypeArg(String label, String argName, String commandPrefix, String commandSuffix, String initialBuffer) implements CommandMenuEntry {
         public TypeArg(String label, String argName, String commandPrefix) {
-            this(label, argName, commandPrefix, "");
+            this(label, argName, commandPrefix, "", "");
+        }
+        public TypeArg(String label, String argName, String commandPrefix, String commandSuffix) {
+            this(label, argName, commandPrefix, commandSuffix, "");
         }
     }
 
