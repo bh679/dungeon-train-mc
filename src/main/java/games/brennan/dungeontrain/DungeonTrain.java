@@ -42,9 +42,12 @@ public class DungeonTrain {
         MinecraftForge.EVENT_BUS.register(this);
 
         // Keeps the `games.brennan.dungeontrain.jitter` namespace at DEBUG
-        // so the [baseline] capture line (spawn) and [tripwire] WARN (large
-        // physics-tick deltas — should never fire in normal play) stay
-        // visible without Forge-wide DEBUG.
+        // so the [baseline] capture line (spawn), [tripwire] WARN (large
+        // physics-tick deltas — should never fire in normal play), and the
+        // stuck-player diagnostics ([stuck.pIdx], [stuck.window],
+        // [stuck.frozen], [panic.canonicalPos]) added by
+        // plans/linear-marinating-yao.md stay visible without Forge-wide
+        // DEBUG.
         //
         // The chatty per-tick probes ([physics], [pivotMoved], [pIdx],
         // [windowManager], [client]) log at TRACE — set

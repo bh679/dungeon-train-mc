@@ -41,7 +41,7 @@ public final class TrackEditor {
      *  max carriage width. */
     private static final int PLOT_Z = 60;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
+    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
         public static SaveResult skipped() { return new SaveResult(false, false, null); }
