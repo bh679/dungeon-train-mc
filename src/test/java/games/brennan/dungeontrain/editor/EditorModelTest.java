@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -44,6 +45,18 @@ final class EditorModelTest {
     }
 
     @Test
+    @DisplayName("AdjunctModel id has adjunct_ prefix; displayName uses the adjunct id")
+    void adjunct_id() {
+        EditorModel.AdjunctModel m = new EditorModel.AdjunctModel(PillarAdjunct.STAIRS);
+        assertEquals("adjunct_stairs", m.id());
+        assertEquals("stairs / default", m.displayName());
+
+        EditorModel.AdjunctModel named =
+            new EditorModel.AdjunctModel(PillarAdjunct.STAIRS, "carved");
+        assertEquals("stairs / carved", named.displayName());
+    }
+
+    @Test
     @DisplayName("TrackModel id is the fixed 'track' token")
     void track_id() {
         assertEquals("track", new EditorModel.TrackModel().id());
@@ -58,5 +71,7 @@ final class EditorModelTest {
             () -> new EditorModel.PillarModel(null));
         assertThrows(NullPointerException.class,
             () -> new EditorModel.TunnelModel(null));
+        assertThrows(NullPointerException.class,
+            () -> new EditorModel.AdjunctModel(null));
     }
 }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -26,7 +27,7 @@ import java.util.Objects;
  * BOTTOM "stone" plot sees {@code Tracks / pillar / bottom / stone}.</p>
  */
 public sealed interface EditorModel
-    permits EditorModel.CarriageModel, EditorModel.ContentsModel, EditorModel.PillarModel, EditorModel.TunnelModel, EditorModel.TrackModel {
+    permits EditorModel.CarriageModel, EditorModel.ContentsModel, EditorModel.PillarModel, EditorModel.AdjunctModel, EditorModel.TunnelModel, EditorModel.TrackModel {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -101,6 +102,33 @@ public sealed interface EditorModel
         @Override
         public String displayName() {
             return "pillar / " + section.id() + " / " + name;
+        }
+    }
+
+    /**
+     * Pillar adjunct + variant name. {@code id()} is
+     * {@code adjunct_<id>} for command dispatch (matching the token format
+     * already accepted by {@code EditorCommand.tryParseAdjunct});
+     * {@code displayName()} is {@code <adjunct-id> / <name>} so the HUD
+     * shows {@code Tracks / stairs / default} when standing in the
+     * stairs default plot.
+     */
+    record AdjunctModel(PillarAdjunct adjunct, String name) implements EditorModel {
+        public AdjunctModel {
+            Objects.requireNonNull(adjunct, "adjunct");
+            Objects.requireNonNull(name, "name");
+        }
+
+        public AdjunctModel(PillarAdjunct adjunct) { this(adjunct, TrackKind.DEFAULT_NAME); }
+
+        @Override
+        public String id() {
+            return "adjunct_" + adjunct.id();
+        }
+
+        @Override
+        public String displayName() {
+            return adjunct.id() + " / " + name;
         }
     }
 

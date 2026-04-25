@@ -48,6 +48,13 @@ final class EditorMenuScreenTest {
     }
 
     @Test
+    @DisplayName("Remove for stairs adjunct uses adjunct_stairs id")
+    void remove_adjunctStairs_usesKindId() {
+        String command = removeCommandFor("tracks", "adjunct_stairs", "stairs / default");
+        assertEquals("dungeontrain editor tracks reset adjunct_stairs", command);
+    }
+
+    @Test
     @DisplayName("Remove for carriages still works (sanity)")
     void remove_carriages_unchanged() {
         String command = removeCommandFor("carriages", "standard", "standard");
@@ -112,6 +119,15 @@ final class EditorMenuScreenTest {
             "tracks", "tunnel_section", "tunnel / section / default");
         assertNotNull(entry);
         assertEquals("dungeontrain editor tracks new tunnel_section", entry.commandPrefix());
+    }
+
+    @Test
+    @DisplayName("New for stairs adjunct uses adjunct_stairs id")
+    void new_adjunctStairs_usesKindId() {
+        CommandMenuEntry.TypeArg entry = (CommandMenuEntry.TypeArg) EditorMenuScreen.newEntryFor(
+            "tracks", "adjunct_stairs", "stairs / default");
+        assertNotNull(entry);
+        assertEquals("dungeontrain editor tracks new adjunct_stairs", entry.commandPrefix());
     }
 
     @Test

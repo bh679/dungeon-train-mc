@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
@@ -102,6 +103,11 @@ public enum EditorCategory {
             return Optional.of(new Located(TRACKS,
                 new EditorModel.PillarModel(pillarLoc.section(), pillarLoc.name())));
         }
+        PillarEditor.AdjunctPlot adjunctLoc = PillarEditor.plotContainingAdjunct(pos, dims);
+        if (adjunctLoc != null) {
+            return Optional.of(new Located(TRACKS,
+                new EditorModel.AdjunctModel(adjunctLoc.adjunct(), adjunctLoc.name())));
+        }
         TunnelEditor.TunnelPlot tunnelLoc = TunnelEditor.plotContainingNamed(pos);
         if (tunnelLoc != null) {
             return Optional.of(new Located(TRACKS,
@@ -129,13 +135,19 @@ public enum EditorCategory {
     }
 
     private static List<EditorModel> trackModels() {
-        List<EditorModel> out = new ArrayList<>(1 + PillarSection.values().length + TunnelVariant.values().length);
+        List<EditorModel> out = new ArrayList<>(
+            1 + PillarSection.values().length + PillarAdjunct.values().length + TunnelVariant.values().length);
         // Track tile first — it's the "default" track model, most used.
         out.add(new EditorModel.TrackModel());
         // Ground-up pillar ordering mirrors physical stacking.
         out.add(new EditorModel.PillarModel(PillarSection.BOTTOM));
         out.add(new EditorModel.PillarModel(PillarSection.MIDDLE));
         out.add(new EditorModel.PillarModel(PillarSection.TOP));
+        // Pillar adjuncts (stairs) sit alongside the pillar column physically;
+        // expose them as their own row of variants right after the pillars.
+        for (PillarAdjunct a : PillarAdjunct.values()) {
+            out.add(new EditorModel.AdjunctModel(a));
+        }
         for (TunnelVariant v : TunnelVariant.values()) {
             out.add(new EditorModel.TunnelModel(v));
         }
@@ -162,6 +174,9 @@ public enum EditorCategory {
         TrackEditor.clearPlot(overworld, dims);
         for (PillarSection s : PillarSection.values()) {
             PillarEditor.clearPlot(overworld, s, dims);
+        }
+        for (PillarAdjunct a : PillarAdjunct.values()) {
+            PillarEditor.clearPlotAdjunct(overworld, a, dims);
         }
         for (TunnelVariant t : TunnelVariant.values()) {
             TunnelEditor.clearPlot(overworld, t);

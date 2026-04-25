@@ -927,6 +927,8 @@ public final class EditorCommand {
                 CarriageContentsEditor.enter(player, cm.contents(), null);
             } else if (head instanceof EditorModel.PillarModel pm) {
                 PillarEditor.enter(player, pm.section());
+            } else if (head instanceof EditorModel.AdjunctModel am) {
+                PillarEditor.enter(player, am.adjunct());
             } else if (head instanceof EditorModel.TunnelModel tm) {
                 TunnelEditor.enter(player, tm.variant());
             } else if (head instanceof EditorModel.TrackModel) {
@@ -953,6 +955,8 @@ public final class EditorCommand {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
         } else if (model instanceof EditorModel.PillarModel pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
+        } else if (model instanceof EditorModel.AdjunctModel am) {
+            PillarEditor.stampPlot(overworld, am.adjunct(), dims);
         } else if (model instanceof EditorModel.TunnelModel tm) {
             TunnelEditor.stampPlot(overworld, tm.variant());
         } else if (model instanceof EditorModel.TrackModel) {
@@ -2692,8 +2696,7 @@ public final class EditorCommand {
 
     /**
      * Restamp the editor plot for {@code kind} so it picks up the just-set
-     * active-variant marker. No-op for kinds without a single-plot editor
-     * (currently {@link games.brennan.dungeontrain.track.variant.TrackKind#ADJUNCT_STAIRS}).
+     * active-variant marker.
      */
     private static void restampPlotForKind(
         ServerLevel overworld, games.brennan.dungeontrain.track.variant.TrackKind kind, CarriageDims dims
@@ -2710,11 +2713,8 @@ public final class EditorCommand {
                 overworld, TunnelVariant.SECTION);
             case TUNNEL_PORTAL -> games.brennan.dungeontrain.editor.TunnelEditor.stampPlot(
                 overworld, TunnelVariant.PORTAL);
-            case ADJUNCT_STAIRS -> {
-                // No editor plot for adjunct stairs; New/Remove still write
-                // the NBT and registry entry — it just won't be visible
-                // until you walk into a stamped instance in-world.
-            }
+            case ADJUNCT_STAIRS -> games.brennan.dungeontrain.editor.PillarEditor.stampPlot(
+                overworld, PillarAdjunct.STAIRS, dims);
         }
     }
 
@@ -2722,9 +2722,7 @@ public final class EditorCommand {
      * Wipe the in-world blocks of the {@code (kind, name)} plot to air. Called
      * from {@code /dt editor tracks reset <kind>} BEFORE the registry
      * unregister so the just-removed variant doesn't leave an orphaned plot
-     * sitting in the world after the player teleports back to default. No-op
-     * for {@link games.brennan.dungeontrain.track.variant.TrackKind#ADJUNCT_STAIRS}
-     * which has no addressable single plot.
+     * sitting in the world after the player teleports back to default.
      */
     private static void clearPlotForVariant(
         ServerLevel overworld, games.brennan.dungeontrain.track.variant.TrackKind kind, String name, CarriageDims dims
@@ -2741,9 +2739,8 @@ public final class EditorCommand {
                 overworld, TunnelVariant.SECTION, name);
             case TUNNEL_PORTAL -> games.brennan.dungeontrain.editor.TunnelEditor.clearPlot(
                 overworld, TunnelVariant.PORTAL, name);
-            case ADJUNCT_STAIRS -> {
-                // No addressable plot — see restampPlotForKind for the same caveat.
-            }
+            case ADJUNCT_STAIRS -> games.brennan.dungeontrain.editor.PillarEditor.clearPlotAdjunct(
+                overworld, PillarAdjunct.STAIRS, name, dims);
         }
     }
 

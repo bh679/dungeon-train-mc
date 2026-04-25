@@ -329,6 +329,10 @@ public final class VariantOverlayRenderer {
             return TrackVariantWeights.weightFor(
                 TrackPlotLocator.pillarKind(pm.section()), pm.name());
         }
+        if (model instanceof EditorModel.AdjunctModel am) {
+            return TrackVariantWeights.weightFor(
+                PillarTemplateStore.adjunctKind(am.adjunct()), am.name());
+        }
         if (model instanceof EditorModel.TunnelModel tm) {
             return TrackVariantWeights.weightFor(
                 TrackPlotLocator.tunnelKind(tm.variant()), tm.name());

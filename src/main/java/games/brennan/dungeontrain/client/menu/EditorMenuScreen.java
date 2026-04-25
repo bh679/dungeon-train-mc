@@ -132,13 +132,11 @@ public final class EditorMenuScreen implements MenuScreen {
      * contents (Blank / Current / Standard seed picker before naming).
      * For {@code tracks} the {@code modelId} is the kind tag the player is
      * standing on ({@code track}, {@code pillar_top},
-     * {@code tunnel_section}, ...) — passed to
+     * {@code tunnel_section}, {@code adjunct_stairs}, ...) — passed to
      * {@code /dt editor tracks new <kind> <typed-name>}, which clones the
      * variant the player is currently standing on under the new name and
-     * teleports them to the new plot. Track-side adjunct stairs has no
-     * single-plot editor today, so the menu won't appear there — but the
-     * command still works if invoked directly. Returns null for categories
-     * that don't support author-authored new models.
+     * teleports them to the new plot. Returns null for categories that
+     * don't support author-authored new models.
      *
      * <p>{@code modelId} is the command-token id ({@code track}); {@code model}
      * is the friendly path string ({@code track / track2}). Carriages and
