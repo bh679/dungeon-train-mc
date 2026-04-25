@@ -7,11 +7,13 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor.SaveResult;
 import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
+import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
@@ -25,6 +27,7 @@ import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -46,15 +49,16 @@ import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -545,6 +549,21 @@ public final class EditorCommand {
     private static int runVariantClear(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        ServerLevel level = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        // Part plot first — same priority as the shift-click capture path so
+        // an author standing in a part plot can clear the part's own sidecar.
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        if (partLoc != null) {
+            return runVariantClearPart(source, player, dims, partLoc);
+        }
+
+        CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
+        if (contentsPlot != null) {
+            return runVariantClearContents(source, player, dims, contentsPlot);
+        }
+
         VariantTarget target = resolveTarget(source, player);
         if (target == null) return 0;
 
@@ -564,11 +583,115 @@ public final class EditorCommand {
         return removed ? 1 : 0;
     }
 
+    private static int runVariantClearPart(CommandSourceStack source, ServerPlayer player,
+                                            CarriageDims dims, CarriagePartEditor.PlotLocation partLoc) {
+        BlockPos hit = lookedAtBlock(source, player);
+        if (hit == null) return 0;
+        BlockPos plotOrigin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
+        if (plotOrigin == null) {
+            source.sendFailure(Component.literal("Plot origin missing for part '"
+                + partLoc.kind().id() + ":" + partLoc.name() + "'."));
+            return 0;
+        }
+        Vec3i partSize = partLoc.kind().dims(dims);
+        BlockPos local = hit.subtract(plotOrigin);
+        if (!inBounds(local, partSize)) {
+            source.sendFailure(Component.literal(
+                "Target block is outside the part footprint (local " + local + ")."));
+            return 0;
+        }
+        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
+            partLoc.kind(), partLoc.name(), partSize);
+        boolean removed = sidecar.remove(local);
+        if (removed) {
+            try {
+                sidecar.save(partLoc.kind(), partLoc.name());
+            } catch (IOException e) {
+                source.sendFailure(Component.literal("Variant save failed: " + e.getMessage()));
+                return 0;
+            }
+        }
+        final String pos = local.getX() + "," + local.getY() + "," + local.getZ();
+        final String label = partLoc.kind().id() + ":" + partLoc.name();
+        if (removed) {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: cleared variant at local " + pos + " on part '" + label + "'."
+            ).withStyle(ChatFormatting.GREEN), true);
+        } else {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: no variant at local " + pos + " to clear on part '" + label + "'."
+            ), false);
+        }
+        return removed ? 1 : 0;
+    }
+
+    private static int runVariantClearContents(CommandSourceStack source, ServerPlayer player,
+                                                 CarriageDims dims, CarriageContents contentsPlot) {
+        BlockPos hit = lookedAtBlock(source, player);
+        if (hit == null) return 0;
+        BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot);
+        if (carriageOrigin == null) {
+            source.sendFailure(Component.literal("Plot origin missing for contents '" + contentsPlot.id() + "'."));
+            return 0;
+        }
+        BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
+        Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+        BlockPos local = hit.subtract(interiorOrigin);
+        if (!inBounds(local, interiorSize)) {
+            source.sendFailure(Component.literal(
+                "Target block is outside the interior footprint (local " + local + ")."));
+            return 0;
+        }
+        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
+        boolean removed = sidecar.remove(local);
+        if (removed) {
+            try {
+                sidecar.save(contentsPlot);
+            } catch (IOException e) {
+                source.sendFailure(Component.literal("Variant save failed: " + e.getMessage()));
+                return 0;
+            }
+        }
+        final String pos = local.getX() + "," + local.getY() + "," + local.getZ();
+        if (removed) {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: cleared variant at local " + pos + " on contents '" + contentsPlot.id() + "'."
+            ).withStyle(ChatFormatting.GREEN), true);
+        } else {
+            source.sendSuccess(() -> Component.literal(
+                "Editor: no variant at local " + pos + " to clear on contents '" + contentsPlot.id() + "'."
+            ), false);
+        }
+        return removed ? 1 : 0;
+    }
+
     private static int runVariantList(CommandSourceStack source) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
         ServerLevel level = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
+        if (partLoc != null) {
+            Vec3i partSize = partLoc.kind().dims(dims);
+            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(
+                partLoc.kind(), partLoc.name(), partSize);
+            sendVariantsListing(source,
+                "part '" + partLoc.kind().id() + ":" + partLoc.name() + "'",
+                sidecar.entries(), sidecar.isEmpty(), sidecar.size());
+            return 1;
+        }
+
+        CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
+        if (contentsPlot != null) {
+            Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+            CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
+            sendVariantsListing(source,
+                "contents '" + contentsPlot.id() + "'",
+                sidecar.entries(), sidecar.isEmpty(), sidecar.size());
+            return 1;
+        }
+
         CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (plotVariant == null) {
             source.sendFailure(Component.literal(
@@ -576,27 +699,52 @@ public final class EditorCommand {
             return 0;
         }
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
-        if (sidecar.isEmpty()) {
-            source.sendSuccess(() -> Component.literal(
-                "Variants for '" + plotVariant.id() + "': (none)"), false);
-            return 1;
+        sendVariantsListing(source,
+            "'" + plotVariant.id() + "'",
+            sidecar.entries(), sidecar.isEmpty(), sidecar.size());
+        return 1;
+    }
+
+    private static void sendVariantsListing(CommandSourceStack source, String label,
+                                             List<CarriageVariantBlocks.Entry> entries,
+                                             boolean isEmpty, int size) {
+        if (isEmpty) {
+            source.sendSuccess(() -> Component.literal("Variants for " + label + ": (none)"), false);
+            return;
         }
-        StringBuilder sb = new StringBuilder("Variants for '").append(plotVariant.id()).append("' (")
-            .append(sidecar.size()).append(" entries):");
-        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+        StringBuilder sb = new StringBuilder("Variants for ").append(label).append(" (")
+            .append(size).append(" entries):");
+        for (CarriageVariantBlocks.Entry e : entries) {
             sb.append("\n  ").append(e.localPos().getX()).append(",")
                 .append(e.localPos().getY()).append(",").append(e.localPos().getZ())
                 .append(" → ");
             boolean first = true;
-            for (BlockState s : e.states()) {
+            for (VariantState s : e.states()) {
                 if (!first) sb.append(", ");
-                sb.append(BuiltInRegistries.BLOCK.getKey(s.getBlock()));
+                sb.append(BuiltInRegistries.BLOCK.getKey(s.state().getBlock()));
+                if (s.hasBlockEntityData()) sb.append(" (+nbt)");
                 first = false;
             }
         }
         final String msg = sb.toString();
         source.sendSuccess(() -> Component.literal(msg), false);
-        return 1;
+    }
+
+    /** Raycast helper for the part/contents clear paths — sends a failure and returns null if no hit. */
+    private static BlockPos lookedAtBlock(CommandSourceStack source, ServerPlayer player) {
+        HitResult hit = player.pick(8.0, 1.0f, false);
+        if (!(hit instanceof BlockHitResult bhr) || bhr.getType() == HitResult.Type.MISS) {
+            source.sendFailure(Component.literal(
+                "Look directly at a block inside the plot first (8-block reach)."));
+            return null;
+        }
+        return bhr.getBlockPos();
+    }
+
+    private static boolean inBounds(BlockPos local, Vec3i size) {
+        return local.getX() >= 0 && local.getX() < size.getX()
+            && local.getY() >= 0 && local.getY() < size.getY()
+            && local.getZ() >= 0 && local.getZ() < size.getZ();
     }
 
     private static int runVariantOverlay(CommandSourceStack source, boolean on) {
