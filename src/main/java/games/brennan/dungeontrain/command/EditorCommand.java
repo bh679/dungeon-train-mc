@@ -30,9 +30,12 @@ import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -156,6 +159,27 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    /**
+     * Suggest variant names for the track kind parsed earlier in the command —
+     * used by {@code /dt editor tracks weight <kind> <name> ...}. Defensive:
+     * if the {@code kind} arg is missing or unrecognised, suggest nothing
+     * rather than spamming the player with errors mid-typing.
+     */
+    private static final SuggestionProvider<CommandSourceStack> TRACK_VARIANT_NAME_SUGGESTIONS =
+        (ctx, builder) -> {
+            games.brennan.dungeontrain.track.variant.TrackKind kind = null;
+            try {
+                String raw = StringArgumentType.getString(ctx, "kind");
+                kind = resolveTrackKindSilent(raw);
+            } catch (IllegalArgumentException ignored) {
+                // 'kind' not yet typed; offer nothing — user will resolve it on next keystroke.
+            }
+            if (kind != null) {
+                for (String name : TrackVariantRegistry.namesFor(kind)) builder.suggest(name);
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PART_KIND_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriagePartKind k : CarriagePartKind.values()) builder.suggest(k.id());
@@ -208,7 +232,24 @@ public final class EditorCommand {
                         .suggests(TRACK_KIND_SUGGESTIONS)
                         .executes(ctx -> runTrackResetActiveVariant(
                             ctx.getSource(),
-                            StringArgumentType.getString(ctx, "kind"))))))
+                            StringArgumentType.getString(ctx, "kind")))))
+                .then(Commands.literal("weight")
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(TRACK_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                            .then(Commands.literal("inc").executes(ctx -> runTrackWeightAdjust(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "kind"),
+                                StringArgumentType.getString(ctx, "name"), +1)))
+                            .then(Commands.literal("dec").executes(ctx -> runTrackWeightAdjust(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "kind"),
+                                StringArgumentType.getString(ctx, "name"), -1)))
+                            .then(Commands.argument("value",
+                                    IntegerArgumentType.integer(TrackVariantWeights.MIN, TrackVariantWeights.MAX))
+                                .executes(ctx -> runTrackWeightSet(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "kind"),
+                                    StringArgumentType.getString(ctx, "name"),
+                                    IntegerArgumentType.getInteger(ctx, "value"))))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -301,7 +342,19 @@ public final class EditorCommand {
                                 CarriageContents contents = parseContents(ctx.getSource(), src);
                                 if (contents == null) return 0;
                                 return runContentsNew(ctx.getSource(), name, contents);
-                            })))))
+                            }))))
+                .then(Commands.literal("weight")
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.literal("inc").executes(ctx -> runContentsWeightAdjust(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "contents"), +1)))
+                        .then(Commands.literal("dec").executes(ctx -> runContentsWeightAdjust(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "contents"), -1)))
+                        .then(Commands.argument("value",
+                                IntegerArgumentType.integer(CarriageContentsWeights.MIN, CarriageContentsWeights.MAX))
+                            .executes(ctx -> runContentsWeightSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "contents"),
+                                IntegerArgumentType.getInteger(ctx, "value")))))))
             .then(Commands.literal("pillar")
                 .then(Commands.literal("enter")
                     .then(Commands.argument("target", StringArgumentType.word())
@@ -510,6 +563,102 @@ public final class EditorCommand {
         if (variant == null) return 0;
         int current = CarriageWeights.current().weightFor(variant.id());
         return runWeightSet(source, rawVariant, current + delta);
+    }
+
+    /**
+     * {@code /dt editor tracks weight <kind> <name> <value>} — set the pick
+     * weight for the {@code (kind, name)} track variant and persist to the
+     * kind's own {@code weights.json}. Mirrors {@link #runWeightSet} but for
+     * track-side variants.
+     */
+    private static int runTrackWeightSet(CommandSourceStack source, String rawKind, String name, int value) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        if (name == null || name.isEmpty()) {
+            source.sendFailure(Component.literal("Variant name is required."));
+            return 0;
+        }
+        try {
+            int stored = TrackVariantWeights.set(kind, name, value);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: weight " + kind.id() + ":" + name + "=" + stored
+                    + " (saved to " + TrackVariantWeights.configPath(kind) + ")."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor tracks weight set failed for {}:{}", kind.id(), name, t);
+            source.sendFailure(Component.literal("track weight failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /** Read-modify-write nudge for track variant weight. Bounds clamp via {@link TrackVariantWeights#set}. */
+    private static int runTrackWeightAdjust(CommandSourceStack source, String rawKind, String name, int delta) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        if (name == null || name.isEmpty()) {
+            source.sendFailure(Component.literal("Variant name is required."));
+            return 0;
+        }
+        int current = TrackVariantWeights.weightFor(kind, name);
+        return runTrackWeightSet(source, rawKind, name, current + delta);
+    }
+
+    /**
+     * {@code /dt editor contents weight <id> <value>} — set the pick weight
+     * for the contents id and persist to {@code config/dungeontrain/contents/weights.json}.
+     * Mirrors {@link #runWeightSet} but for carriage-interior contents.
+     */
+    private static int runContentsWeightSet(CommandSourceStack source, String rawContents, int value) {
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        try {
+            int stored = CarriageContentsWeights.set(contents.id(), value);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: contents weight " + contents.id() + "=" + stored
+                    + " (saved to " + CarriageContentsWeights.configPath() + "). "
+                    + "Existing carriages keep their contents until they scroll out."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents weight set failed for {}", contents.id(), t);
+            source.sendFailure(Component.literal("contents weight failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /** Read-modify-write nudge for contents weight. Bounds clamp via {@link CarriageContentsWeights#set}. */
+    private static int runContentsWeightAdjust(CommandSourceStack source, String rawContents, int delta) {
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        int current = CarriageContentsWeights.current().weightFor(contents.id());
+        return runContentsWeightSet(source, rawContents, current + delta);
+    }
+
+    /**
+     * Silent variant of {@link #parseTrackKind} for use in suggestion
+     * providers (which run mid-typing and shouldn't spam the chat).
+     * Accepts both editor-model ids and TrackKind canonical ids; returns
+     * null on miss.
+     */
+    private static games.brennan.dungeontrain.track.variant.TrackKind resolveTrackKindSilent(String raw) {
+        if (raw == null || raw.isEmpty()) return null;
+        String lc = raw.toLowerCase(Locale.ROOT);
+        switch (lc) {
+            case "track" -> { return games.brennan.dungeontrain.track.variant.TrackKind.TILE; }
+            case "pillar_top" -> { return games.brennan.dungeontrain.track.variant.TrackKind.PILLAR_TOP; }
+            case "pillar_middle" -> { return games.brennan.dungeontrain.track.variant.TrackKind.PILLAR_MIDDLE; }
+            case "pillar_bottom" -> { return games.brennan.dungeontrain.track.variant.TrackKind.PILLAR_BOTTOM; }
+            case "adjunct_stairs" -> { return games.brennan.dungeontrain.track.variant.TrackKind.ADJUNCT_STAIRS; }
+            case "tunnel_section" -> { return games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_SECTION; }
+            case "tunnel_portal" -> { return games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_PORTAL; }
+            default -> {}
+        }
+        return games.brennan.dungeontrain.track.variant.TrackKind.fromId(lc);
     }
 
     /** Silent parse — returns null on miss, used by unified pillar target dispatch. */

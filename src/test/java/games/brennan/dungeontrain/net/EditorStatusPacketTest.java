@@ -9,9 +9,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Wire-format round-trip for {@link EditorStatusPacket}. The {@code modelId}
- * field is the bit that matters for the menu: track-side models send a
- * different string in {@code model} (HUD path) and {@code modelId} (command
- * token) — the encoder/decoder must preserve both independently.
+ * and {@code modelName} fields matter for the menu: track-side models send
+ * different strings in {@code model} (HUD path), {@code modelId} (kind tag),
+ * and {@code modelName} (bare variant name) — the encoder/decoder must
+ * preserve all three independently.
  */
 final class EditorStatusPacketTest {
 
@@ -19,22 +20,23 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip preserves all fields")
     void roundTrip_carriages() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Carriages", "standard", "standard", true, 50);
+            "Carriages", "standard", "standard", "standard", true, 50);
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }
 
     @Test
-    @DisplayName("round-trip keeps model and modelId distinct for track-side models")
-    void roundTrip_tracks_pathStringAndKindSurviveSeparately() {
+    @DisplayName("round-trip keeps model, modelId, and modelName distinct for track-side models")
+    void roundTrip_tracks_pathStringAndKindAndNameSurviveSeparately() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Tracks", "track / track2", "track", false, EditorStatusPacket.NO_WEIGHT);
+            "Tracks", "track / track2", "track", "track2", false, 5);
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals("Tracks", decoded.category());
         assertEquals("track / track2", decoded.model());
         assertEquals("track", decoded.modelId());
+        assertEquals("track2", decoded.modelName());
         assertEquals(false, decoded.devmode());
-        assertEquals(EditorStatusPacket.NO_WEIGHT, decoded.weight());
+        assertEquals(5, decoded.weight());
     }
 
     @Test
@@ -44,22 +46,37 @@ final class EditorStatusPacketTest {
         assertEquals("", decoded.category());
         assertEquals("", decoded.model());
         assertEquals("", decoded.modelId());
+        assertEquals("", decoded.modelName());
         assertEquals(false, decoded.devmode());
         assertEquals(EditorStatusPacket.NO_WEIGHT, decoded.weight());
     }
 
     @Test
-    @DisplayName("round-trip handles pillar and tunnel modelIds")
+    @DisplayName("round-trip handles pillar and tunnel modelIds + modelNames")
     void roundTrip_pillarsAndTunnels() {
         EditorStatusPacket pillar = roundTrip(new EditorStatusPacket(
-            "Tracks", "pillar / bottom / stone", "pillar_bottom", false, EditorStatusPacket.NO_WEIGHT));
+            "Tracks", "pillar / bottom / stone", "pillar_bottom", "stone", false, 3));
         assertEquals("pillar_bottom", pillar.modelId());
+        assertEquals("stone", pillar.modelName());
         assertEquals("pillar / bottom / stone", pillar.model());
+        assertEquals(3, pillar.weight());
 
         EditorStatusPacket tunnel = roundTrip(new EditorStatusPacket(
-            "Tracks", "tunnel / section / default", "tunnel_section", true, EditorStatusPacket.NO_WEIGHT));
+            "Tracks", "tunnel / section / default", "tunnel_section", "default", true, 1));
         assertEquals("tunnel_section", tunnel.modelId());
+        assertEquals("default", tunnel.modelName());
         assertEquals("tunnel / section / default", tunnel.model());
+        assertEquals(1, tunnel.weight());
+    }
+
+    @Test
+    @DisplayName("round-trip handles contents (modelId == modelName)")
+    void roundTrip_contents() {
+        EditorStatusPacket original = new EditorStatusPacket(
+            "Contents", "default", "default", "default", false, 7);
+        EditorStatusPacket decoded = roundTrip(original);
+        assertEquals(original, decoded);
+        assertEquals("default", decoded.modelName());
     }
 
     private static EditorStatusPacket roundTrip(EditorStatusPacket original) {

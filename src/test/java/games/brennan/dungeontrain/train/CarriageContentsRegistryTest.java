@@ -103,7 +103,15 @@ final class CarriageContentsRegistryTest {
         assertThrows(IllegalArgumentException.class, () -> CarriageContents.custom("default"));
     }
 
-    // ---- pick() determinism ----
+    // ---- pick() determinism (weighted) ----
+    //
+    // pick() now uses weighted seeded selection (see CarriageContentsWeights).
+    // With CarriageContentsWeights.current() == EMPTY in unit-test contexts
+    // (no Forge bootstrap), every contents resolves to DEFAULT (=1) so the
+    // distribution is uniform over the active set — these tests assert
+    // *shape* (deterministic, varies-by-input, samples-the-set) rather than
+    // pinning specific ids that would be brittle across pick-algorithm
+    // refactors.
 
     @Test
     @DisplayName("pick: same seed + same carriage index always yields the same contents")

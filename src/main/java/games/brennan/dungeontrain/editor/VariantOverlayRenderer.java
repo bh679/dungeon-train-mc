@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -282,8 +283,10 @@ public final class VariantOverlayRenderer {
             String partKey = "PARTS|" + partModel + "|" + partDevmode;
             if (partKey.equals(prev)) return;
             LAST_STATUS.put(uuid, partKey);
+            // Parts have no weight pool — pass the part name as modelName for
+            // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                "Parts", partModel, partModel, partDevmode, EditorStatusPacket.NO_WEIGHT));
+                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT));
             return;
         }
 
@@ -298,6 +301,7 @@ public final class VariantOverlayRenderer {
         EditorCategory.Located l = located.get();
         boolean devmode = EditorDevMode.isEnabled();
         int weight = weightFor(l.model());
+        String modelName = modelNameFor(l.model());
         // Dedup key includes displayName (not just id) so walking from one
         // named variant to another in the same kind invalidates the cache —
         // model.id() is the kind tag and stays constant across a kind's
@@ -306,21 +310,24 @@ public final class VariantOverlayRenderer {
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), l.model().displayName(), l.model().id(), devmode, weight));
+            l.category().displayName(), l.model().displayName(), l.model().id(), modelName, devmode, weight));
     }
 
     /**
      * Variant pick weight for the given model. Carriage variants pull from
      * {@link CarriageWeights}; track-side models (track tile, pillar
-     * sections, tunnel kinds) pull from {@link TrackVariantWeights} for the
-     * synthetic "default" name. Returns {@link EditorStatusPacket#NO_WEIGHT}
-     * for models that don't yet have weight semantics
-     * ({@link EditorModel.ContentsModel}); the HUD uses the sentinel to
-     * decide whether to render the weight line.
+     * sections, tunnel kinds) pull from {@link TrackVariantWeights}; contents
+     * models pull from {@link CarriageContentsWeights}. The HUD uses
+     * {@link EditorStatusPacket#NO_WEIGHT} as the sentinel for "don't render
+     * the weight line" — currently every {@link EditorModel} variant has a
+     * weight pool, so no model returns the sentinel today.
      */
     private static int weightFor(EditorModel model) {
         if (model instanceof EditorModel.CarriageModel cm) {
             return CarriageWeights.current().weightFor(cm.variant().id());
+        }
+        if (model instanceof EditorModel.ContentsModel cm) {
+            return CarriageContentsWeights.current().weightFor(cm.contents().id());
         }
         if (model instanceof EditorModel.TrackModel tm) {
             return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
@@ -338,6 +345,34 @@ public final class VariantOverlayRenderer {
                 TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
         }
         return EditorStatusPacket.NO_WEIGHT;
+    }
+
+    /**
+     * Bare variant-name segment for the given model — what the editor menu
+     * splices into commands like {@code /dt editor tracks weight <kind>
+     * <name> ...}. For carriages and contents this equals the model id; for
+     * track-side models it's the trailing name segment of the display path.
+     * Falls back to {@link EditorModel#id()} for any future model type that
+     * forgets to override this — never returns null so menu wiring is
+     * NPE-safe.
+     */
+    private static String modelNameFor(EditorModel model) {
+        if (model instanceof EditorModel.CarriageModel cm) {
+            return cm.variant().id();
+        }
+        if (model instanceof EditorModel.ContentsModel cm) {
+            return cm.contents().id();
+        }
+        if (model instanceof EditorModel.TrackModel tm) {
+            return tm.name();
+        }
+        if (model instanceof EditorModel.PillarModel pm) {
+            return pm.name();
+        }
+        if (model instanceof EditorModel.TunnelModel tm) {
+            return tm.name();
+        }
+        return model.id();
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {
