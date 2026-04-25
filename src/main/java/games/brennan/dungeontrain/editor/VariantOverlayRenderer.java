@@ -272,7 +272,11 @@ public final class VariantOverlayRenderer {
         EditorCategory.Located l = located.get();
         boolean devmode = EditorDevMode.isEnabled();
         int weight = weightFor(l.model());
-        String key = l.category().name() + "|" + l.model().id() + "|" + devmode + "|" + weight;
+        // Dedup key includes displayName (not just id) so walking from one
+        // named variant to another in the same kind invalidates the cache —
+        // model.id() is the kind tag and stays constant across a kind's
+        // variants.
+        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
@@ -292,16 +296,16 @@ public final class VariantOverlayRenderer {
         if (model instanceof EditorModel.CarriageModel cm) {
             return CarriageWeights.current().weightFor(cm.variant().id());
         }
-        if (model instanceof EditorModel.TrackModel) {
-            return TrackVariantWeights.weightFor(TrackKind.TILE, TrackKind.DEFAULT_NAME);
+        if (model instanceof EditorModel.TrackModel tm) {
+            return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
         }
         if (model instanceof EditorModel.PillarModel pm) {
             return TrackVariantWeights.weightFor(
-                TrackPlotLocator.pillarKind(pm.section()), TrackKind.DEFAULT_NAME);
+                TrackPlotLocator.pillarKind(pm.section()), pm.name());
         }
         if (model instanceof EditorModel.TunnelModel tm) {
             return TrackVariantWeights.weightFor(
-                TrackPlotLocator.tunnelKind(tm.variant()), TrackKind.DEFAULT_NAME);
+                TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
         }
         return EditorStatusPacket.NO_WEIGHT;
     }

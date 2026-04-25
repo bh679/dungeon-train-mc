@@ -47,6 +47,19 @@ public final class TrackSidePlots {
     public static final int Y_BASELINE = 250;
 
     /**
+     * Z baseline for the track-side row. Chosen to clear both the carriage
+     * row ({@code Z=0..MAX_WIDTH-1}) and the contents row
+     * ({@code Z=MAX_WIDTH+GAP..2*MAX_WIDTH+GAP-1}) with another
+     * {@link EditorLayout#GAP} buffer past the contents row's max-width
+     * extent. Without this buffer the track-tile plot at {@code (0, 250, 0)}
+     * would sit inside the carriage_standard plot at {@code (0, 250, 0)} and
+     * {@link CarriageEditor#plotContaining} would claim the position first.
+     */
+    public static final int Z_BASELINE =
+        2 * games.brennan.dungeontrain.train.CarriageDims.MAX_WIDTH
+        + 2 * EditorLayout.GAP;
+
+    /**
      * X start of each category's column. Defined in declaration order:
      * track tile → tunnels → stairs → pillars. Each value is the previous
      * column's start plus that column's max X size plus
@@ -116,7 +129,7 @@ public final class TrackSidePlots {
         int idx = names.indexOf(name);
         if (idx < 0) idx = 0;
         int step = footprint(kind, dims).getZ() + EditorLayout.GAP;
-        return idx * step;
+        return Z_BASELINE + idx * step;
     }
 
     /**

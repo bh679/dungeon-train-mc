@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
@@ -10,21 +11,27 @@ import java.util.Objects;
 
 /**
  * One editable model inside an {@link EditorCategory} — a carriage variant,
- * a carriage-interior contents variant, a pillar section, a tunnel
- * variant, or the single track tile. Sealed so the dispatch in
- * {@code SaveCommand} / {@code ResetCommand} stays exhaustive.
+ * a carriage-interior contents variant, a pillar section + variant name, a
+ * tunnel kind + variant name, or the track tile + variant name. Sealed so
+ * the dispatch in {@code SaveCommand} / {@code ResetCommand} stays
+ * exhaustive.
  *
- * <p>{@link #id()} is the stable token used in command arguments + logs
- * ({@code standard}, {@code pillar_top}, {@code tunnel_section}).
- * {@link #displayName()} is what the status HUD shows to the player.</p>
+ * <p>{@link #id()} is the stable command-token identifier
+ * ({@code standard}, {@code pillar_top}, {@code tunnel_section},
+ * {@code track}). {@link #displayName()} is the richer HUD string that
+ * also includes the variant name where relevant
+ * ({@code track / default}, {@code pillar / bottom / default},
+ * {@code tunnel / section / default}). The HUD shows
+ * {@code <category> / <displayName>}, so a player standing in the pillar
+ * BOTTOM "stone" plot sees {@code Tracks / pillar / bottom / stone}.</p>
  */
 public sealed interface EditorModel
     permits EditorModel.CarriageModel, EditorModel.ContentsModel, EditorModel.PillarModel, EditorModel.TunnelModel, EditorModel.TrackModel {
 
-    /** Stable lower-case identifier — matches the token used in commands. */
+    /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
 
-    /** Human-readable name for HUD + command output. Currently equal to {@link #id()}. */
+    /** Human-readable display string for the HUD. Defaults to {@link #id()}. */
     default String displayName() { return id(); }
 
     record CarriageModel(CarriageVariant variant) implements EditorModel {
@@ -38,13 +45,6 @@ public sealed interface EditorModel
         }
     }
 
-    /**
-     * Interior contents of a carriage. Parallel to {@link CarriageModel},
-     * but plotted in a separate row (z=80, see
-     * {@link CarriageContentsEditor}) and persisted through the contents
-     * store. The id matches the underlying {@link CarriageContents#id()}
-     * so command args and display strings don't need translation.
-     */
     record ContentsModel(CarriageContents contents) implements EditorModel {
         public ContentsModel {
             Objects.requireNonNull(contents, "contents");
@@ -56,37 +56,75 @@ public sealed interface EditorModel
         }
     }
 
-    record PillarModel(PillarSection section) implements EditorModel {
+    /**
+     * Track-tile variant. {@code id()} is the bare {@code "track"} kind
+     * tag for command dispatch; {@code displayName()} is
+     * {@code track / <name>} so the HUD shows the variant the player is
+     * standing on.
+     */
+    record TrackModel(String name) implements EditorModel {
+        public TrackModel {
+            Objects.requireNonNull(name, "name");
+        }
+
+        public TrackModel() { this(TrackKind.DEFAULT_NAME); }
+
+        @Override
+        public String id() {
+            return "track";
+        }
+
+        @Override
+        public String displayName() {
+            return "track / " + name;
+        }
+    }
+
+    /**
+     * Pillar section + variant name. {@code id()} is
+     * {@code pillar_<section>} for command dispatch; {@code displayName()}
+     * is {@code pillar / <section> / <name>}.
+     */
+    record PillarModel(PillarSection section, String name) implements EditorModel {
         public PillarModel {
             Objects.requireNonNull(section, "section");
+            Objects.requireNonNull(name, "name");
         }
+
+        public PillarModel(PillarSection section) { this(section, TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
             return "pillar_" + section.id();
         }
+
+        @Override
+        public String displayName() {
+            return "pillar / " + section.id() + " / " + name;
+        }
     }
 
-    record TunnelModel(TunnelVariant variant) implements EditorModel {
+    /**
+     * Tunnel kind + variant name. {@code id()} is
+     * {@code tunnel_<variant>} for command dispatch; {@code displayName()}
+     * is {@code tunnel / <variant> / <name>}.
+     */
+    record TunnelModel(TunnelVariant variant, String name) implements EditorModel {
         public TunnelModel {
             Objects.requireNonNull(variant, "variant");
+            Objects.requireNonNull(name, "name");
         }
+
+        public TunnelModel(TunnelVariant variant) { this(variant, TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
             return "tunnel_" + variant.name().toLowerCase(Locale.ROOT);
         }
-    }
 
-    /**
-     * The single open-air track tile template — one per world, no variants.
-     * Wraps no state; the record form is used purely for sealed-hierarchy
-     * dispatch.
-     */
-    record TrackModel() implements EditorModel {
         @Override
-        public String id() {
-            return "track";
+        public String displayName() {
+            return "tunnel / " + variant.name().toLowerCase(Locale.ROOT) + " / " + name;
         }
     }
 }
