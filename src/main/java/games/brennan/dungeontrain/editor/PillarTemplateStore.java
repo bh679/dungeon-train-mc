@@ -250,6 +250,21 @@ public final class PillarTemplateStore {
         return TrackVariantStore.bundled(adjunctKind(adjunct), TrackKind.DEFAULT_NAME);
     }
 
+    /**
+     * Bundled-tier load for {@code adjunct}'s synthetic-default template.
+     * Mirrors {@link #getBundled(ServerLevel, PillarSection, CarriageDims)}
+     * but for adjuncts; pass through to {@link TrackVariantStore#getBundled}
+     * with a sentinel {@link CarriageDims} since adjunct kinds have fixed
+     * dimensions and ignore world dims.
+     */
+    public static Optional<StructureTemplate> getBundledAdjunct(
+        ServerLevel level, PillarAdjunct adjunct
+    ) {
+        CarriageDims dims = CarriageDims.clamp(
+            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
+        return TrackVariantStore.getBundled(level, adjunctKind(adjunct), TrackKind.DEFAULT_NAME, dims);
+    }
+
     /** Map a {@link PillarSection} to its {@link TrackKind}. */
     public static TrackKind pillarKind(PillarSection section) {
         return switch (section) {

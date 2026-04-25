@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.TrackTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -228,6 +229,25 @@ public final class SaveCommand {
             }
             return;
         }
+        if (model instanceof EditorModel.AdjunctModel adjunct) {
+            PillarEditor.SaveResult result = PillarEditor.save(player, adjunct.adjunct());
+            if (source != null) {
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: saved '" + adjunct.id() + "' template (config-dir)."), true);
+                if (result.sourceAttempted()) {
+                    if (result.sourceWritten()) {
+                        source.sendSuccess(() -> Component.literal(
+                            "Editor: also wrote bundled adjunct copy to source tree (devmode ON)."
+                        ).withStyle(ChatFormatting.GREEN), true);
+                    } else {
+                        source.sendFailure(Component.literal(
+                            "Editor: adjunct source-tree write failed: " + result.sourceError()
+                        ).withStyle(ChatFormatting.YELLOW));
+                    }
+                }
+            }
+            return;
+        }
         if (model instanceof EditorModel.TunnelModel tunnel) {
             TunnelEditor.save(player, tunnel.variant());
             if (source != null) {
@@ -313,6 +333,25 @@ public final class SaveCommand {
             }
             return;
         }
+        if (model instanceof EditorModel.AdjunctModel adjunct) {
+            if (!PillarTemplateStore.sourceTreeAvailable()) {
+                source.sendFailure(Component.literal(
+                    "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
+                ).withStyle(ChatFormatting.YELLOW));
+                return;
+            }
+            try {
+                PillarTemplateStore.promoteAdjunct(adjunct.adjunct());
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: promoted '" + adjunct.id() + "' to source tree (will ship with next build)."
+                ).withStyle(ChatFormatting.GREEN), true);
+            } catch (Exception e) {
+                LOGGER.error("[DungeonTrain] promote {} failed", adjunct.id(), e);
+                source.sendFailure(Component.literal(
+                    "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            }
+            return;
+        }
         if (model instanceof EditorModel.TunnelModel) {
             source.sendFailure(Component.literal(
                 "Tunnel templates have no bundled tier — '/dt save default' does not apply."
@@ -366,6 +405,13 @@ public final class SaveCommand {
             PillarTemplateStore.promote(pillar.section());
             return true;
         }
+        if (model instanceof EditorModel.AdjunctModel adjunct) {
+            if (!PillarTemplateStore.sourceTreeAvailable()) {
+                throw new Exception("source tree not writable");
+            }
+            PillarTemplateStore.promoteAdjunct(adjunct.adjunct());
+            return true;
+        }
         if (model instanceof EditorModel.TrackModel) {
             if (!TrackTemplateStore.sourceTreeAvailable()) {
                 throw new Exception("source tree not writable");
@@ -393,6 +439,12 @@ public final class SaveCommand {
         if (model instanceof EditorModel.PillarModel pillar) {
             BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
             return countNonAir(level, origin, 1, pillar.section().height(), dims.width())
+                < EMPTY_PLOT_THRESHOLD;
+        }
+        if (model instanceof EditorModel.AdjunctModel adjunctModel) {
+            PillarAdjunct a = adjunctModel.adjunct();
+            BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
+            return countNonAir(level, origin, a.xSize(), a.ySize(), a.zSize())
                 < EMPTY_PLOT_THRESHOLD;
         }
         if (model instanceof EditorModel.TunnelModel tunnel) {

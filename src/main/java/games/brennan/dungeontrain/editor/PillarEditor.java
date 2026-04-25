@@ -296,6 +296,12 @@ public final class PillarEditor {
         }
     }
 
+    /** Erase a single named variant plot for {@code adjunct} — footprint + outline cleared to air. */
+    public static void clearPlotAdjunct(ServerLevel overworld, PillarAdjunct adjunct, String name, CarriageDims dims) {
+        BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
+        eraseAtAdjunct(overworld, origin, adjunct);
+    }
+
     /**
      * Save the captured adjunct template for the {@code (adjunct, name)}
      * the player is currently standing in.

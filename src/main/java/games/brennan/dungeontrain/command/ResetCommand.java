@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
+import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -104,6 +105,10 @@ public final class ResetCommand {
             PillarEditor.stampPlot(overworld, pillar.section(), dims);
             return;
         }
+        if (model instanceof EditorModel.AdjunctModel adjunct) {
+            PillarEditor.stampPlot(overworld, adjunct.adjunct(), dims);
+            return;
+        }
         if (model instanceof EditorModel.TunnelModel tunnel) {
             TunnelEditor.stampPlot(overworld, tunnel.variant());
             return;
@@ -158,6 +163,24 @@ public final class ResetCommand {
             bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
             source.sendSuccess(() -> Component.literal(
                 "Editor: reset '" + pillar.id() + "' to bundled default."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        }
+        if (model instanceof EditorModel.AdjunctModel adjunctModel) {
+            PillarAdjunct a = adjunctModel.adjunct();
+            Optional<StructureTemplate> bundled =
+                PillarTemplateStore.getBundledAdjunct(overworld, a);
+            if (bundled.isEmpty()) {
+                source.sendFailure(Component.literal(
+                    "No bundled template for '" + adjunctModel.id() + "' — nothing to reset to."
+                ).withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+            BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: reset '" + adjunctModel.id() + "' to bundled default."
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
