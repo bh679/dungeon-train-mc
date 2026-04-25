@@ -190,6 +190,10 @@ public final class CommandMenuState {
         if (entry instanceof CommandMenuEntry.Run run) {
             CommandRunner.run(run.command());
             close();
+        } else if (entry instanceof CommandMenuEntry.Stay stay) {
+            CommandRunner.run(stay.command());
+            // Stay open so the player can click again. The next tick's
+            // rebuild picks up any label change driven by server state.
         } else if (entry instanceof CommandMenuEntry.DrillIn drill) {
             drillIn(drill.target());
         } else if (entry instanceof CommandMenuEntry.Back) {
@@ -203,6 +207,13 @@ public final class CommandMenuState {
             // rebuild will pick up the server-acked devmode value.
         } else if (entry instanceof CommandMenuEntry.Split split) {
             CommandMenuEntry target = subIdx == 1 ? split.rightEntry() : split.leftEntry();
+            dispatchEntry(target, 0);
+        } else if (entry instanceof CommandMenuEntry.Triple triple) {
+            CommandMenuEntry target = switch (subIdx) {
+                case 1 -> triple.middleEntry();
+                case 2 -> triple.rightEntry();
+                default -> triple.leftEntry();
+            };
             dispatchEntry(target, 0);
         }
         // Loading — no-op.

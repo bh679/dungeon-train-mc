@@ -326,6 +326,10 @@ public final class EditorCommand {
             .then(Commands.literal("weight")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.literal("inc").executes(ctx -> runWeightAdjust(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "variant"), +1)))
+                    .then(Commands.literal("dec").executes(ctx -> runWeightAdjust(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "variant"), -1)))
                     .then(Commands.argument("value",
                             IntegerArgumentType.integer(CarriageWeights.MIN, CarriageWeights.MAX))
                         .executes(ctx -> runWeightSet(ctx.getSource(),
@@ -454,6 +458,19 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Read the current weight for {@code rawVariant} and persist it after
+     * applying {@code delta}. {@link CarriageWeights#set} clamps to
+     * {@code [MIN, MAX]} internally, so calling this at the bounds rewrites
+     * the same value (a no-op the player can see in the unchanged HUD).
+     */
+    private static int runWeightAdjust(CommandSourceStack source, String rawVariant, int delta) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        int current = CarriageWeights.current().weightFor(variant.id());
+        return runWeightSet(source, rawVariant, current + delta);
     }
 
     /** Silent parse — returns null on miss, used by unified pillar target dispatch. */
