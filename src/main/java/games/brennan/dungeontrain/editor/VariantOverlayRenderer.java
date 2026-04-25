@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -23,7 +25,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
@@ -167,6 +168,31 @@ public final class VariantOverlayRenderer {
                 updateHoverPacket(player, plotOrigin,
                     pos -> inBounds(pos, dims),
                     sidecar::statesAt);
+                continue;
+            }
+
+            // Contents plot — particles + icon HUD for the contents'
+            // own variant sidecar, anchored to the interior origin (one
+            // block in from each shell wall).
+            CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(playerPos, dims);
+            if (contentsPlot != null) {
+                clearPartHoverIfStale(player);
+                BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot);
+                if (carriageOrigin == null) continue;
+                BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
+                Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+                CarriageContentsVariantBlocks contentsSidecar = CarriageContentsVariantBlocks.loadFor(
+                    contentsPlot, interiorSize);
+                if (contentsSidecar.isEmpty()) {
+                    clearHoverIfStale(player);
+                    continue;
+                }
+                if (emitParticles) {
+                    emitOutlineParticles(level, player, interiorOrigin, contentsSidecar.entries());
+                }
+                updateHoverPacket(player, interiorOrigin,
+                    pos -> inBounds(pos, interiorSize),
+                    contentsSidecar::statesAt);
                 continue;
             }
 
@@ -354,15 +380,15 @@ public final class VariantOverlayRenderer {
     private static void updateHoverPacket(
         ServerPlayer player, BlockPos plotOrigin,
         Predicate<BlockPos> inBoundsFn,
-        Function<BlockPos, List<BlockState>> statesAtFn
+        Function<BlockPos, List<VariantState>> statesAtFn
     ) {
         HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
         BlockPos flaggedPos = null;
-        List<BlockState> states = null;
+        List<VariantState> states = null;
         if (hit instanceof BlockHitResult bhr && bhr.getType() != HitResult.Type.MISS) {
             BlockPos local = bhr.getBlockPos().subtract(plotOrigin);
             if (inBoundsFn.test(local)) {
-                List<BlockState> atPos = statesAtFn.apply(local);
+                List<VariantState> atPos = statesAtFn.apply(local);
                 if (atPos != null) {
                     flaggedPos = bhr.getBlockPos().immutable();
                     states = atPos;
@@ -391,10 +417,10 @@ public final class VariantOverlayRenderer {
             && p.getZ() >= 0 && p.getZ() < size.getZ();
     }
 
-    private static List<ResourceLocation> toBlockIds(List<BlockState> states) {
+    private static List<ResourceLocation> toBlockIds(List<VariantState> states) {
         List<ResourceLocation> out = new ArrayList<>(states.size());
-        for (BlockState s : states) {
-            out.add(BuiltInRegistries.BLOCK.getKey(s.getBlock()));
+        for (VariantState s : states) {
+            out.add(BuiltInRegistries.BLOCK.getKey(s.state().getBlock()));
         }
         return out;
     }
@@ -406,7 +432,7 @@ public final class VariantOverlayRenderer {
      * appends a block to the variants list so the HUD reflects the new set
      * without waiting for the player to look away and back.
      */
-    public static void pushImmediateHover(ServerPlayer player, BlockPos worldPos, List<BlockState> states) {
+    public static void pushImmediateHover(ServerPlayer player, BlockPos worldPos, List<VariantState> states) {
         LAST_HOVER_POS.put(player.getUUID(), worldPos.immutable());
         DungeonTrainNet.sendTo(player, new VariantHoverPacket(toBlockIds(states)));
     }

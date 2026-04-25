@@ -1,19 +1,16 @@
 package games.brennan.dungeontrain.editor;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
@@ -41,11 +38,12 @@ import java.util.Map;
  * stamps the part at spawn time.
  *
  * <p>Storage: {@code config/dungeontrain/parts/<kind>/<name>.variants.json}
- * alongside the part NBT. Schema mirrors the carriage sidecar (v1) —
- * {@code {"schemaVersion": 1, "variants": {"x,y,z": ["minecraft:oak_log",
- * "minecraft:birch_log"]}}}. The {@link CarriageVariantBlocks#isEmptyPlaceholder}
- * sentinel (command-block states) and {@link CarriageVariantBlocks#pickIndex}
- * deterministic mixer are shared — a part's random pick seeds on the same
+ * alongside the part NBT. Schema mirrors {@link CarriageVariantBlocks} (v2 —
+ * candidates can be bare BlockState strings or {@code {state, nbt?}} objects
+ * carrying SNBT for block-entity payloads). The
+ * {@link CarriageVariantBlocks#isEmptyPlaceholder} sentinel (command-block
+ * states) and {@link CarriageVariantBlocks#pickIndex} deterministic mixer are
+ * shared — a part's random pick seeds on the same
  * {@code (worldSeed, carriageIndex, localPos)} basis so a parts-backed
  * carriage's rolling-window re-render stays stable.</p>
  *
@@ -57,7 +55,7 @@ public final class CarriagePartVariantBlocks {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = CarriageVariantBlocks.CURRENT_SCHEMA_VERSION;
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
     private static final String SUBDIR_BASE = "dungeontrain/parts";
@@ -67,9 +65,9 @@ public final class CarriagePartVariantBlocks {
     /** Session cache keyed on {@code <kind>:<name>}. Invalidated on save and on editor enter. */
     private static final Map<String, CarriagePartVariantBlocks> CACHE = new HashMap<>();
 
-    private final Map<BlockPos, List<BlockState>> entries;
+    private final Map<BlockPos, List<VariantState>> entries;
 
-    private CarriagePartVariantBlocks(Map<BlockPos, List<BlockState>> entries) {
+    private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries) {
         this.entries = entries;
     }
 
@@ -136,8 +134,8 @@ public final class CarriagePartVariantBlocks {
         JsonObject obj = root.getAsJsonObject();
         if (obj.has("schemaVersion")) {
             int v = obj.get("schemaVersion").getAsInt();
-            if (v != CURRENT_SCHEMA_VERSION) {
-                LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{} ({}) schemaVersion {} (expected {}) — best-effort parse.",
+            if (v > CURRENT_SCHEMA_VERSION) {
+                LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{} ({}) schemaVersion {} (newer than {}) — best-effort parse.",
                     kind.id(), name, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
@@ -145,42 +143,36 @@ public final class CarriagePartVariantBlocks {
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         JsonObject variants = obj.getAsJsonObject("variants");
-        Map<BlockPos, List<BlockState>> out = new LinkedHashMap<>();
+        Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
+        String contextId = kind.id() + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
-                LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{}: bad pos '{}', skipping.",
-                    kind.id(), name, field.getKey());
+                LOGGER.warn("[DungeonTrain] Part variant sidecar {}: bad pos '{}', skipping.",
+                    contextId, field.getKey());
                 continue;
             }
             if (!inBounds(pos, partSize)) {
-                LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{}: pos {} outside part footprint {}x{}x{}, skipping.",
-                    kind.id(), name, pos, partSize.getX(), partSize.getY(), partSize.getZ());
+                LOGGER.warn("[DungeonTrain] Part variant sidecar {}: pos {} outside part footprint {}x{}x{}, skipping.",
+                    contextId, pos, partSize.getX(), partSize.getY(), partSize.getZ());
                 continue;
             }
             if (!field.getValue().isJsonArray()) continue;
             JsonArray arr = field.getValue().getAsJsonArray();
-            List<BlockState> states = new ArrayList<>(arr.size());
+            List<VariantState> states = new ArrayList<>(arr.size());
             for (JsonElement el : arr) {
-                if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) continue;
-                try {
-                    BlockStateParser.BlockResult parsed = BlockStateParser.parseForBlock(
-                        blocks, el.getAsString(), false);
-                    states.add(parsed.blockState());
-                } catch (Exception e) {
-                    LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{} pos {}: bad state '{}' ({}).",
-                        kind.id(), name, pos, el.getAsString(), e.getMessage());
-                }
+                VariantState parsed = CarriageVariantBlocks.parseVariantElement(el, blocks, contextId, pos);
+                if (parsed != null) states.add(parsed);
             }
             if (states.size() < MIN_STATES_PER_ENTRY) {
-                LOGGER.warn("[DungeonTrain] Part variant sidecar {}:{} pos {}: fewer than {} valid states, dropped.",
-                    kind.id(), name, pos, MIN_STATES_PER_ENTRY);
+                LOGGER.warn("[DungeonTrain] Part variant sidecar {} pos {}: fewer than {} valid states, dropped.",
+                    contextId, pos, MIN_STATES_PER_ENTRY);
                 continue;
             }
             out.put(pos.immutable(), List.copyOf(states));
         }
-        LOGGER.info("[DungeonTrain] Loaded {} part variant entries for {}:{} from {}",
-            out.size(), kind.id(), name, origin);
+        LOGGER.info("[DungeonTrain] Loaded {} part variant entries for {} from {}",
+            out.size(), contextId, origin);
         return new CarriagePartVariantBlocks(out);
     }
 
@@ -210,7 +202,7 @@ public final class CarriagePartVariantBlocks {
 
     public List<CarriageVariantBlocks.Entry> entries() {
         List<CarriageVariantBlocks.Entry> out = new ArrayList<>(entries.size());
-        for (Map.Entry<BlockPos, List<BlockState>> e : entries.entrySet()) {
+        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
             out.add(new CarriageVariantBlocks.Entry(e.getKey(), e.getValue()));
         }
         return Collections.unmodifiableList(out);
@@ -220,24 +212,20 @@ public final class CarriagePartVariantBlocks {
 
     public int size() { return entries.size(); }
 
-    /** Candidate states at {@code localPos}, or {@code null} if no entry. */
-    public List<BlockState> statesAt(BlockPos localPos) {
+    /** Candidate variants at {@code localPos}, or {@code null} if no entry. */
+    public List<VariantState> statesAt(BlockPos localPos) {
         return entries.get(localPos);
     }
 
-    /** Replace the candidate list at {@code localPos}. Rejects block-entity states that aren't the empty-placeholder sentinel. */
-    public synchronized void put(BlockPos localPos, List<BlockState> states) {
+    /** Replace the candidate list at {@code localPos}. v2 supports block-entity states with optional NBT. */
+    public synchronized void put(BlockPos localPos, List<VariantState> states) {
         if (states == null || states.size() < MIN_STATES_PER_ENTRY) {
             throw new IllegalArgumentException(
                 "need at least " + MIN_STATES_PER_ENTRY + " states, got "
                     + (states == null ? 0 : states.size()));
         }
-        for (BlockState s : states) {
+        for (VariantState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
-            if (s.hasBlockEntity() && !CarriageVariantBlocks.isEmptyPlaceholder(s)) {
-                throw new IllegalArgumentException(
-                    "block-entity state " + s + " rejected — sidecar cannot preserve BE data");
-            }
         }
         entries.put(localPos.immutable(), List.copyOf(states));
     }
@@ -247,8 +235,8 @@ public final class CarriagePartVariantBlocks {
     }
 
     /** Deterministic pick — same {@code (worldSeed, carriageIndex, localPos)} → same state across reloads. */
-    public BlockState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
-        List<BlockState> states = entries.get(localPos);
+    public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
+        List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
         int idx = CarriageVariantBlocks.pickIndex(localPos, worldSeed, carriageIndex, states.size());
         return states.get(idx);
@@ -257,20 +245,28 @@ public final class CarriagePartVariantBlocks {
     public synchronized void save(CarriagePartKind kind, String name) throws IOException {
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
-        JsonObject root = new JsonObject();
-        root.addProperty("schemaVersion", CURRENT_SCHEMA_VERSION);
-        JsonObject variants = new JsonObject();
-        for (Map.Entry<BlockPos, List<BlockState>> e : entries.entrySet()) {
-            JsonArray arr = new JsonArray();
-            for (BlockState s : e.getValue()) {
-                arr.add(BlockStateParser.serialize(s));
+        // Hand-written so the v2 mixed-array form (bare strings + objects) stays
+        // diff-clean against existing v1 files. Same shape as CarriageVariantBlocks#toJson.
+        StringBuilder sb = new StringBuilder(256);
+        sb.append("{\n");
+        sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
+        sb.append("  \"variants\": {");
+        boolean first = true;
+        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
+            if (!first) sb.append(",");
+            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": [");
+            boolean firstState = true;
+            for (VariantState s : e.getValue()) {
+                if (!firstState) sb.append(", ");
+                CarriageVariantBlocks.appendVariantJson(sb, s);
+                firstState = false;
             }
-            variants.add(formatPos(e.getKey()), arr);
+            sb.append("]");
+            first = false;
         }
-        root.add("variants", variants);
-        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(root);
+        sb.append("\n  }\n}\n");
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(pretty);
+            w.write(sb.toString());
         }
         CACHE.put(cacheKey(kind, name), this);
         LOGGER.info("[DungeonTrain] Saved part variant sidecar for {}:{} ({} entries) to {}",

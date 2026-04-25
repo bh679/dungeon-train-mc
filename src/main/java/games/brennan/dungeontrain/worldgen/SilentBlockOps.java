@@ -1,10 +1,13 @@
 package games.brennan.dungeontrain.worldgen;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Shared helpers for the train / track / tunnel carving hot paths that must
@@ -41,6 +44,30 @@ public final class SilentBlockOps {
             level.removeBlockEntity(pos);
         }
         level.setBlock(pos, newState, Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Variant that also seeds the new block entity from {@code beNbt}. When
+     * {@code newState} has no BlockEntity or {@code beNbt} is null, this is
+     * equivalent to {@link #setBlockSilent(ServerLevel, BlockPos, BlockState)}.
+     *
+     * <p>Used by the variants v2 placement path so block-entity candidates
+     * (chests, signs, banners, …) round-trip with their NBT contents.</p>
+     */
+    public static void setBlockSilent(ServerLevel level, BlockPos pos, BlockState newState, @Nullable CompoundTag beNbt) {
+        setBlockSilent(level, pos, newState);
+        if (beNbt == null || !newState.hasBlockEntity()) return;
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be == null) return;
+        // Stamp the BE's coordinate fields so load() doesn't overwrite the
+        // freshly-placed position. Vanilla BlockEntity.load reads x/y/z from
+        // the tag if present, so we set them to match the target pos.
+        CompoundTag positioned = beNbt.copy();
+        positioned.putInt("x", pos.getX());
+        positioned.putInt("y", pos.getY());
+        positioned.putInt("z", pos.getZ());
+        be.load(positioned);
+        be.setChanged();
     }
 
     /** Clear the block at {@code pos} to air silently. */

@@ -121,7 +121,12 @@ public final class CarriageContentsRegistry {
      */
     public static synchronized boolean unregister(String id) {
         if (CarriageContents.isReservedBuiltinName(id)) return false;
-        return CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
+        boolean removed = CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
+        if (removed) {
+            games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.invalidate(
+                id.toLowerCase(Locale.ROOT));
+        }
+        return removed;
     }
 
     /**

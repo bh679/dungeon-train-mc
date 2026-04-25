@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -90,13 +91,19 @@ public final class CarriagePartTemplate {
         for (CarriagePartKind.Placement p : kind.placements(dims)) {
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
             for (var entry : sidecar.entries()) {
-                BlockState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
                 if (picked == null) continue;
-                BlockState toPlace = CarriageVariantBlocks.isEmptyPlaceholder(picked)
-                    ? Blocks.AIR.defaultBlockState()
-                    : picked.mirror(p.mirror());
                 BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
-                SilentBlockOps.setBlockSilent(level, world, toPlace);
+                if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                } else {
+                    // Mirror flips state properties (FACING/AXIS); BE NBT
+                    // passes through unchanged — vanilla StructureTemplate
+                    // does the same. Asymmetric BE content (sign text,
+                    // banner patterns) reads forward on both sides.
+                    BlockState toPlace = picked.state().mirror(p.mirror());
+                    SilentBlockOps.setBlockSilent(level, world, toPlace, picked.blockEntityNbt());
+                }
             }
         }
     }

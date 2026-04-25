@@ -274,6 +274,18 @@ public final class CarriageContentsEditor {
         StructureTemplate template = CarriageContentsTemplate.captureTemplate(overworld, targetOrigin, dims);
         CarriageContentsStore.save(target, template);
 
+        // Copy the source's variants sidecar onto the duplicate so authors get
+        // the random-pick set "for free" — same pattern as CarriageEditor.
+        net.minecraft.core.Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+        CarriageContentsVariantBlocks sourceSidecar = CarriageContentsVariantBlocks.loadFor(source, interiorSize);
+        if (!sourceSidecar.isEmpty()) {
+            CarriageContentsVariantBlocks copy = CarriageContentsVariantBlocks.empty();
+            for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
+                copy.put(e.localPos(), e.states());
+            }
+            copy.save(target);
+        }
+
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 
         LOGGER.info("[DungeonTrain] Contents editor duplicate: {} created '{}' from '{}' at {}",
@@ -301,8 +313,10 @@ public final class CarriageContentsEditor {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
             }
             CarriageContentsStore.save(renamed, template);
+            CarriageContentsVariantBlocks.rename(currentCustom.name(), renamed.id());
             CarriageContentsRegistry.unregister(currentCustom.name());
             CarriageContentsStore.delete(currentCustom);
+            CarriageContentsVariantBlocks.invalidate(currentCustom.name());
             LOGGER.info("[DungeonTrain] Contents editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), currentCustom.name(), renamed.id());
         } else if (current instanceof CarriageContents.Builtin builtin) {
@@ -310,7 +324,9 @@ public final class CarriageContentsEditor {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
             }
             CarriageContentsStore.save(renamed, template);
+            CarriageContentsVariantBlocks.rename(builtin.id(), renamed.id());
             CarriageContentsStore.delete(builtin);
+            CarriageContentsVariantBlocks.invalidate(builtin.id());
             LOGGER.info("[DungeonTrain] Contents editor saveAs (builtin→custom): {} saved edits of '{}' as new custom '{}', built-in reverts to fallback",
                 player.getName().getString(), builtin.id(), renamed.id());
         }
