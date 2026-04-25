@@ -14,7 +14,7 @@ import net.minecraft.client.renderer.RenderStateShard;
  * <p>Never instantiated; the private constructor exists only to satisfy the
  * superclass constructor signature.</p>
  */
-final class MenuRenderStates extends RenderStateShard {
+public final class MenuRenderStates extends RenderStateShard {
 
     public static final ShaderStateShard SHADER_POSITION_COLOR = POSITION_COLOR_SHADER;
     public static final TransparencyStateShard TRANSPARENCY_TRANSLUCENT = TRANSLUCENT_TRANSPARENCY;

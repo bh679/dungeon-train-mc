@@ -269,12 +269,28 @@ public final class CarriageTemplate {
 
         StringBuilder desc = new StringBuilder();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            String picked = a.pick(kind, seed, carriageIndex);
-            if (CarriagePartKind.NONE.equals(picked)) continue;
-            if (CarriagePartTemplateStore.get(level, kind, picked, dims).isEmpty()) continue;
-            CarriagePartTemplate.placeAt(level, origin, kind, picked, dims, seed, carriageIndex);
+            // Pick once per placement so walls / doors honour the per-entry
+            // SideMode (BOTH = mirror; ONE = always pick a different name
+            // for the other side; EITHER = seeded coin-flip). Floor / roof
+            // resolves to a single-element list and behaves as before.
+            java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex);
+            boolean stamped = false;
+            for (String picked : picks) {
+                if (!CarriagePartKind.NONE.equals(picked)
+                    && CarriagePartTemplateStore.get(level, kind, picked, dims).isPresent()) {
+                    stamped = true;
+                    break;
+                }
+            }
+            if (!stamped) continue;
+            CarriagePartTemplate.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex);
             if (desc.length() > 0) desc.append(",");
-            desc.append(kind.id()).append("=").append(picked);
+            desc.append(kind.id()).append("=");
+            if (picks.size() == 1 || picks.get(0).equals(picks.get(picks.size() - 1))) {
+                desc.append(picks.get(0));
+            } else {
+                desc.append(String.join("/", picks));
+            }
         }
         return desc.length() == 0 ? null : "parts(" + desc + ")";
     }
