@@ -78,31 +78,60 @@ public final class TrackVariantStore {
     }
 
     /**
-     * One-shot migration from the legacy single-file track template to the
-     * new {@code <kind>/default.nbt} naming scheme. Only handles the track
-     * tile for now — moves {@code config/dungeontrain/tracks/track.nbt} to
-     * {@code config/dungeontrain/tracks/default.nbt} if the latter doesn't
-     * already exist. Tunnel/pillar/adjunct migrations land with their phases.
+     * One-shot migration from legacy single-file template paths to the new
+     * {@code <kind>/default.nbt} naming scheme. Covers every track-side kind:
+     *
+     * <ul>
+     *   <li>{@code tracks/track.nbt} → {@code tracks/default.nbt}</li>
+     *   <li>{@code pillars/pillar_top.nbt} → {@code pillars/top/default.nbt}
+     *       (and {@code middle}, {@code bottom})</li>
+     *   <li>{@code pillars/adjunct_stairs.nbt} → {@code pillars/adjunct_stairs/default.nbt}</li>
+     *   <li>{@code tunnels/section.nbt} → {@code tunnels/section/default.nbt}
+     *       (and {@code portal})</li>
+     * </ul>
      *
      * <p>Idempotent: missing source = no-op, existing destination = no-op
      * (caller's per-install override wins). Logs at INFO when a move actually
-     * happens; silent otherwise.</p>
+     * happens; silent otherwise. Run from
+     * {@link TrackVariantRegistry#reload()} on {@code ServerStartingEvent}
+     * so the directory scan that follows picks up the renamed default.nbt as
+     * the synthetic "default" entry instead of registering the legacy basename
+     * as a custom variant.</p>
      */
     public static synchronized void migrateLegacyPaths() {
-        Path legacyTrack = directory(TrackKind.TILE).resolve("track" + TrackKind.NBT_EXT);
-        Path newTrack = fileFor(TrackKind.TILE, TrackKind.DEFAULT_NAME);
-        if (!Files.isRegularFile(legacyTrack)) return;
-        if (Files.isRegularFile(newTrack)) {
-            LOGGER.info("[DungeonTrain] Legacy track.nbt found at {} but default.nbt already exists at {} — skipping migration.",
-                legacyTrack, newTrack);
+        Path configRoot = FMLPaths.CONFIGDIR.get().resolve("dungeontrain");
+
+        moveLegacy(configRoot.resolve("tracks/track.nbt"),
+            fileFor(TrackKind.TILE, TrackKind.DEFAULT_NAME), "track");
+
+        moveLegacy(configRoot.resolve("pillars/pillar_top.nbt"),
+            fileFor(TrackKind.PILLAR_TOP, TrackKind.DEFAULT_NAME), "pillar_top");
+        moveLegacy(configRoot.resolve("pillars/pillar_middle.nbt"),
+            fileFor(TrackKind.PILLAR_MIDDLE, TrackKind.DEFAULT_NAME), "pillar_middle");
+        moveLegacy(configRoot.resolve("pillars/pillar_bottom.nbt"),
+            fileFor(TrackKind.PILLAR_BOTTOM, TrackKind.DEFAULT_NAME), "pillar_bottom");
+        moveLegacy(configRoot.resolve("pillars/adjunct_stairs.nbt"),
+            fileFor(TrackKind.ADJUNCT_STAIRS, TrackKind.DEFAULT_NAME), "adjunct_stairs");
+
+        moveLegacy(configRoot.resolve("tunnels/section.nbt"),
+            fileFor(TrackKind.TUNNEL_SECTION, TrackKind.DEFAULT_NAME), "tunnel_section");
+        moveLegacy(configRoot.resolve("tunnels/portal.nbt"),
+            fileFor(TrackKind.TUNNEL_PORTAL, TrackKind.DEFAULT_NAME), "tunnel_portal");
+    }
+
+    private static void moveLegacy(Path legacy, Path target, String label) {
+        if (!Files.isRegularFile(legacy)) return;
+        if (Files.isRegularFile(target)) {
+            LOGGER.info("[DungeonTrain] Legacy {} found at {} but default.nbt already exists at {} — skipping migration.",
+                label, legacy, target);
             return;
         }
         try {
-            Files.createDirectories(newTrack.getParent());
-            Files.move(legacyTrack, newTrack);
-            LOGGER.info("[DungeonTrain] Migrated legacy track template {} -> {}", legacyTrack, newTrack);
+            Files.createDirectories(target.getParent());
+            Files.move(legacy, target);
+            LOGGER.info("[DungeonTrain] Migrated legacy {} template {} -> {}", label, legacy, target);
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to migrate {} -> {}: {}", legacyTrack, newTrack, e.toString());
+            LOGGER.error("[DungeonTrain] Failed to migrate {} -> {}: {}", legacy, target, e.toString());
         }
     }
 

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.tunnel.LegacyTunnelPaint;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate;
@@ -126,13 +128,15 @@ public final class TunnelEditor {
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant) {
         BlockPos origin = PLOT_ORIGINS.get(variant);
         TunnelTemplate.eraseAt(overworld, origin);
+        TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
+        String activeName = TrackEditorState.activeName(kind);
         if (variant == TunnelVariant.SECTION) {
-            TunnelTemplate.placeSectionAt(overworld, origin);
+            TunnelTemplate.placeSectionNamed(overworld, origin, activeName);
         } else {
             // Always render the unmirrored (entrance) orientation in the editor;
             // the exit variant at world paint time is the same template with
             // StructurePlaceSettings.setMirror(Mirror.FRONT_BACK).
-            TunnelTemplate.placePortalAt(overworld, origin, false);
+            TunnelTemplate.placePortalNamed(overworld, origin, false, activeName);
         }
         // Mark the corner wedges above the arch with STRUCTURE_VOID so they
         // are stripped from the saved template and the in-world stamp leaves
@@ -175,10 +179,14 @@ public final class TunnelEditor {
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
         template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
-        TunnelTemplateStore.save(variant, template);
 
-        LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{} template",
-            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT));
+        TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
+        String activeName = TrackEditorState.activeName(kind);
+        TrackVariantStore.save(kind, activeName, template);
+
+        LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{} template {}",
+            player.getName().getString(),
+            variant.name().toLowerCase(java.util.Locale.ROOT), activeName);
     }
 
     /**

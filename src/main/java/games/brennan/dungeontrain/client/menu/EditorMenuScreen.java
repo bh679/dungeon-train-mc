@@ -88,6 +88,15 @@ public final class EditorMenuScreen implements MenuScreen {
      * the current model id is passed as the {@code [source]} arg so the
      * duplicate inherits its contents. Returns null for categories that
      * don't support author-authored new models.
+     *
+     * <p>For {@code tracks} the model id is the kind tag the player is
+     * standing on ({@code track}, {@code pillar_top},
+     * {@code tunnel_section}, ...) — passed to
+     * {@code /dt editor tracks new <kind> <typed-name>}, which clones the
+     * kind's currently-active variant under the new name and swaps the
+     * editor's active marker to it. Track-side adjunct stairs has no
+     * single-plot editor today, so the menu won't appear there — but the
+     * command still works if invoked directly.</p>
      */
     private static CommandMenuEntry newEntryFor(String category, String model) {
         return switch (category) {
@@ -99,6 +108,12 @@ public final class EditorMenuScreen implements MenuScreen {
                 "New", "name",
                 "dungeontrain editor contents new",
                 fallback(model, "default"));
+            case "tracks" -> {
+                if (model == null || model.isEmpty()) yield null;
+                yield new CommandMenuEntry.TypeArg(
+                    "New", "name",
+                    "dungeontrain editor tracks new " + model);
+            }
             default -> null;
         };
     }
@@ -108,6 +123,11 @@ public final class EditorMenuScreen implements MenuScreen {
      * {@code /dt editor reset <id>} / {@code /dt editor contents reset <id>}.
      * Drills into a ConfirmScreen first so mis-clicks don't silently wipe
      * the user's work.
+     *
+     * <p>For {@code tracks} the menu drills into a confirm that fires
+     * {@code /dt editor tracks reset <kind>} — that command no-ops with a
+     * friendly error when the active variant is the synthetic
+     * {@code default} (you can't remove the built-in fallback).</p>
      */
     private static CommandMenuEntry removeEntryFor(String category, String model) {
         if (model == null || model.isEmpty()) return null;
@@ -120,6 +140,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 "Remove",
                 new ConfirmScreen("Remove '" + model + "'?",
                     "dungeontrain editor contents reset " + model));
+            case "tracks" -> new CommandMenuEntry.DrillIn(
+                "Remove",
+                new ConfirmScreen("Remove the current variant for '" + model + "'?",
+                    "dungeontrain editor tracks reset " + model));
             default -> null;
         };
     }

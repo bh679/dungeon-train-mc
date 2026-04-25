@@ -120,6 +120,27 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    /**
+     * Suggester for the {@code <kind>} arg in {@code /dt editor tracks
+     * new/reset}. Accepts the editor model id ({@code track},
+     * {@code pillar_top}, {@code tunnel_section}, ...) which is what the
+     * EditorMenuScreen has to hand from the HUD status packet.
+     */
+    private static final SuggestionProvider<CommandSourceStack> TRACK_KIND_SUGGESTIONS =
+        (ctx, builder) -> {
+            builder.suggest("track");
+            for (PillarSection s : PillarSection.values()) {
+                builder.suggest("pillar_" + s.id());
+            }
+            for (PillarAdjunct a : PillarAdjunct.values()) {
+                builder.suggest("adjunct_" + a.id());
+            }
+            for (TunnelVariant v : TunnelVariant.values()) {
+                builder.suggest(TUNNEL_PREFIX + v.name().toLowerCase(Locale.ROOT));
+            }
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> CONTENTS_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriageContents c : CarriageContentsRegistry.allContents()) {
@@ -157,7 +178,21 @@ public final class EditorCommand {
             .then(Commands.literal("carriages")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
             .then(Commands.literal("tracks")
-                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS)))
+                .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))
+                .then(Commands.literal("new")
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(TRACK_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .executes(ctx -> runTrackNewVariant(
+                                ctx.getSource(),
+                                StringArgumentType.getString(ctx, "kind"),
+                                StringArgumentType.getString(ctx, "name"))))))
+                .then(Commands.literal("reset")
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(TRACK_KIND_SUGGESTIONS)
+                        .executes(ctx -> runTrackResetActiveVariant(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "kind"))))))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -2126,5 +2161,159 @@ public final class EditorCommand {
     private static String formatSlot(List<String> list) {
         if (list.size() == 1) return list.get(0);
         return list.toString();
+    }
+
+    /**
+     * Parse the {@code <kind>} arg of {@code /dt editor tracks new/reset}.
+     * Accepts both editor-model ids ({@code track}, {@code pillar_top},
+     * {@code tunnel_section}) — what {@link games.brennan.dungeontrain.client.menu.EditorMenuScreen}
+     * has — and the canonical {@link games.brennan.dungeontrain.track.variant.TrackKind}
+     * id. Returns null + sends a failure message if the input matches
+     * neither namespace.
+     */
+    private static games.brennan.dungeontrain.track.variant.TrackKind parseTrackKind(
+        CommandSourceStack source, String raw
+    ) {
+        if (raw == null || raw.isEmpty()) return null;
+        String lc = raw.toLowerCase(Locale.ROOT);
+        // Editor-model id form (what EditorMenuScreen passes through).
+        switch (lc) {
+            case "track" -> { return games.brennan.dungeontrain.track.variant.TrackKind.TILE; }
+            case "pillar_top" -> { return games.brennan.dungeontrain.track.variant.TrackKind.PILLAR_TOP; }
+            case "pillar_middle" -> { return games.brennan.dungeontrain.track.variant.TrackKind.PILLAR_MIDDLE; }
+            case "pillar_bottom" -> { return games.brennan.dungeontrain.track.variant.TrackKind.PILLAR_BOTTOM; }
+            case "adjunct_stairs" -> { return games.brennan.dungeontrain.track.variant.TrackKind.ADJUNCT_STAIRS; }
+            case "tunnel_section" -> { return games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_SECTION; }
+            case "tunnel_portal" -> { return games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_PORTAL; }
+            default -> {}
+        }
+        games.brennan.dungeontrain.track.variant.TrackKind k =
+            games.brennan.dungeontrain.track.variant.TrackKind.fromId(lc);
+        if (k != null) return k;
+        source.sendFailure(Component.literal(
+            "Unknown track kind '" + raw + "'. Try track, pillar_top/middle/bottom, "
+            + "tunnel_section/portal, or adjunct_stairs."));
+        return null;
+    }
+
+    /**
+     * Restamp the editor plot for {@code kind} so it picks up the just-set
+     * active-variant marker. No-op for kinds without a single-plot editor
+     * (currently {@link games.brennan.dungeontrain.track.variant.TrackKind#ADJUNCT_STAIRS}).
+     */
+    private static void restampPlotForKind(
+        ServerLevel overworld, games.brennan.dungeontrain.track.variant.TrackKind kind, CarriageDims dims
+    ) {
+        switch (kind) {
+            case TILE -> games.brennan.dungeontrain.editor.TrackEditor.stampPlot(overworld, dims);
+            case PILLAR_TOP -> games.brennan.dungeontrain.editor.PillarEditor.stampPlot(
+                overworld, PillarSection.TOP, dims);
+            case PILLAR_MIDDLE -> games.brennan.dungeontrain.editor.PillarEditor.stampPlot(
+                overworld, PillarSection.MIDDLE, dims);
+            case PILLAR_BOTTOM -> games.brennan.dungeontrain.editor.PillarEditor.stampPlot(
+                overworld, PillarSection.BOTTOM, dims);
+            case TUNNEL_SECTION -> games.brennan.dungeontrain.editor.TunnelEditor.stampPlot(
+                overworld, TunnelVariant.SECTION);
+            case TUNNEL_PORTAL -> games.brennan.dungeontrain.editor.TunnelEditor.stampPlot(
+                overworld, TunnelVariant.PORTAL);
+            case ADJUNCT_STAIRS -> {
+                // No editor plot for adjunct stairs; New/Remove still write
+                // the NBT and registry entry — it just won't be visible
+                // until you walk into a stamped instance in-world.
+            }
+        }
+    }
+
+    /**
+     * {@code /dt editor tracks new <kind> <name>} — duplicate the kind's
+     * current active variant under {@code name}, register it, swap the
+     * editor's active marker to it, and restamp the plot so the player sees
+     * the new (initially identical) variant. Subsequent {@code /dt save}
+     * writes through the new name.
+     */
+    private static int runTrackNewVariant(CommandSourceStack source, String rawKind, String name) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        if (name == null || name.isEmpty()) {
+            source.sendFailure(Component.literal("Variant name is required."));
+            return 0;
+        }
+        String key = name.toLowerCase(Locale.ROOT);
+        if (!games.brennan.dungeontrain.track.variant.TrackVariantRegistry.NAME_PATTERN.matcher(key).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid variant name '" + name + "'. Allowed: lowercase letters, digits, underscore (1..32 chars)."));
+            return 0;
+        }
+        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(key)) {
+            source.sendFailure(Component.literal("'default' is reserved — pick another name."));
+            return 0;
+        }
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        // Source = currently-active variant for this kind. Falls back to
+        // "default" automatically when the player hasn't switched.
+        String sourceName = games.brennan.dungeontrain.editor.TrackEditorState.activeName(kind);
+        java.util.Optional<net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate> sourceTemplate =
+            games.brennan.dungeontrain.track.variant.TrackVariantStore.get(overworld, kind, sourceName, dims);
+        if (sourceTemplate.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "Cannot duplicate " + kind.id() + ":" + sourceName + " — no template found at expected size."));
+            return 0;
+        }
+
+        try {
+            games.brennan.dungeontrain.track.variant.TrackVariantStore.save(kind, key, sourceTemplate.get());
+        } catch (java.io.IOException e) {
+            source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
+            return 0;
+        }
+        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(kind, key);
+        games.brennan.dungeontrain.editor.TrackEditorState.setActive(kind, key);
+        restampPlotForKind(overworld, kind, dims);
+
+        source.sendSuccess(() -> Component.literal(
+            "Created " + kind.id() + ":" + key + " from " + sourceName + " — now editing the new variant."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * {@code /dt editor tracks reset <kind>} — delete the kind's currently-
+     * active variant (must not be {@code default}), unregister it, swap
+     * active back to {@code default}, restamp.
+     */
+    private static int runTrackResetActiveVariant(CommandSourceStack source, String rawKind) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+
+        String activeName = games.brennan.dungeontrain.editor.TrackEditorState.activeName(kind);
+        if (games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME.equals(activeName)) {
+            source.sendFailure(Component.literal(
+                "Currently editing the synthetic 'default' for " + kind.id() + " — nothing to remove. "
+                + "Pick a custom variant first via /dungeontrain editor tracks new."));
+            return 0;
+        }
+
+        try {
+            games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, activeName);
+        } catch (java.io.IOException e) {
+            source.sendFailure(Component.literal("Delete failed: " + e.getMessage()));
+            return 0;
+        }
+        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.unregister(kind, activeName);
+        games.brennan.dungeontrain.editor.TrackEditorState.setActive(
+            kind, games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME);
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        restampPlotForKind(overworld, kind, dims);
+
+        final String removedName = activeName;
+        source.sendSuccess(() -> Component.literal(
+            "Removed " + kind.id() + ":" + removedName + " — now editing default."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 }

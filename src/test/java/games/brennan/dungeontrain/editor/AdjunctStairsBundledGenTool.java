@@ -45,7 +45,7 @@ final class AdjunctStairsBundledGenTool {
 
     /** Path relative to the Gradle project root (= working directory for {@code :test}). */
     private static final Path RESOURCE_PATH = Paths.get(
-        "src/main/resources/data/dungeontrain/pillars/adjunct_stairs.nbt");
+        "src/main/resources/data/dungeontrain/pillars/adjunct_stairs/default.nbt");
 
     /** DataVersion for Minecraft 1.20.1 — matches {@code SharedConstants.getCurrentVersion().getDataVersion().getVersion()}. */
     private static final int DATA_VERSION = 3465;

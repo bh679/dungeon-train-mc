@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -134,15 +136,19 @@ public final class TrackEditor {
         BlockPos origin = plotOrigin();
 
         StructureTemplate template = captureTemplate(overworld, origin, dims);
-        TrackTemplateStore.save(template);
+        // Save through TrackVariantStore for the kind's currently-active
+        // variant — defaults to "default" but flips when the player runs
+        // {@code /dt editor tracks new <name>} and we set the active marker.
+        String activeName = TrackEditorState.activeName(TrackKind.TILE);
+        TrackVariantStore.save(TrackKind.TILE, activeName, template);
 
-        LOGGER.info("[DungeonTrain] Track editor save: {} -> template ({}x{}x{})",
-            player.getName().getString(),
+        LOGGER.info("[DungeonTrain] Track editor save: {} -> template {} ({}x{}x{})",
+            player.getName().getString(), activeName,
             TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
-            TrackTemplateStore.saveToSource(template);
+            TrackVariantStore.saveToSource(TrackKind.TILE, activeName, template);
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Track editor save: source write failed: {}", e.toString());
@@ -170,7 +176,10 @@ public final class TrackEditor {
      * has something concrete to edit.
      */
     private static void stampCurrent(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        Optional<StructureTemplate> stored = TrackTemplateStore.get(level, dims);
+        // Read the active variant — same source-of-truth used by save() above
+        // so "edit, save, re-enter" round-trips the named variant.
+        String activeName = TrackEditorState.activeName(TrackKind.TILE);
+        Optional<StructureTemplate> stored = TrackVariantStore.get(level, TrackKind.TILE, activeName, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);

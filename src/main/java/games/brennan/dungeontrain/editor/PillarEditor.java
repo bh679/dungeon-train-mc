@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -174,14 +176,17 @@ public final class PillarEditor {
         BlockPos origin = plotOrigin(section);
 
         StructureTemplate template = captureTemplate(overworld, origin, section, dims);
-        PillarTemplateStore.save(section, template);
+        TrackKind kind = PillarTemplateStore.pillarKind(section);
+        String activeName = TrackEditorState.activeName(kind);
+        TrackVariantStore.save(kind, activeName, template);
 
-        LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {} template (1x{}x{})",
-            player.getName().getString(), section.id(), section.height(), dims.width());
+        LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {} template {} (1x{}x{})",
+            player.getName().getString(), section.id(), activeName,
+            section.height(), dims.width());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
-            PillarTemplateStore.saveToSource(section, template);
+            TrackVariantStore.saveToSource(kind, activeName, template);
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Pillar editor save: source write failed for {}: {}",
@@ -210,7 +215,9 @@ public final class PillarEditor {
      * something to edit.
      */
     private static void stampCurrent(ServerLevel level, BlockPos origin, PillarSection section, CarriageDims dims) {
-        Optional<StructureTemplate> stored = PillarTemplateStore.get(level, section, dims);
+        TrackKind kind = PillarTemplateStore.pillarKind(section);
+        String activeName = TrackEditorState.activeName(kind);
+        Optional<StructureTemplate> stored = TrackVariantStore.get(level, kind, activeName, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
