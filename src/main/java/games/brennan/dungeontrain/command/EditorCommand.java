@@ -29,9 +29,12 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.CarriagePartTemplate;
+import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -178,6 +181,8 @@ public final class EditorCommand {
                     .suggests(VARIANT_SUGGESTIONS)
                     .executes(ctx -> runReset(ctx.getSource(),
                         StringArgumentType.getString(ctx, "variant")))))
+            .then(Commands.literal("clear")
+                .executes(ctx -> runClear(ctx.getSource())))
             .then(Commands.literal("new")
                 .then(Commands.argument("name", StringArgumentType.word())
                     .executes(ctx -> runNew(ctx.getSource(),
@@ -1005,6 +1010,98 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * {@code /dungeontrain editor clear} — wipes every interior block of the
+     * plot the player is currently standing in to air. The barrier-cage
+     * outline is preserved (it sits one block outside the footprint, which
+     * {@code eraseAt} doesn't touch), so the player keeps editing in place
+     * and can re-author from a clean slab. Disk template is unchanged until
+     * the player explicitly hits {@code save}.
+     *
+     * <p>Scope matches the editor menu's New / Remove gating: carriages,
+     * contents, and parts. Tracks / pillars / tunnels / architecture have no
+     * single addressable model id from the menu's perspective, so Clear
+     * intentionally doesn't apply there — invoke their {@code reset} commands
+     * instead if you want to wipe them.</p>
+     */
+    private static int runClear(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos pos = player.blockPosition();
+
+        // Parts plots sit at Z=40+, disjoint from carriage/contents plots —
+        // check first so a part name resolution beats the (unrelated) carriage
+        // plot lookup if the player wandered between rows.
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
+        if (partLoc != null) {
+            try {
+                BlockPos origin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
+                CarriagePartTemplate.eraseAt(overworld, origin, partLoc.kind(), dims);
+                final String id = partLoc.kind().id() + ":" + partLoc.name();
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared all blocks in '" + id + "'."
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor clear (part) failed", t);
+                source.sendFailure(Component.literal("clear failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
+        if (contents != null) {
+            try {
+                BlockPos origin = CarriageContentsEditor.plotOrigin(contents);
+                // Interior-only erase — preserves the carriage shell stamped
+                // around it as visual context. CarriageContentsTemplate.eraseAt
+                // operates on interiorOrigin/interiorSize, so the floor/walls/
+                // ceiling stay put for the author to keep building inside.
+                CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+                final String id = contents.id();
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared all blocks in '" + id + "'."
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor clear (contents) failed", t);
+                source.sendFailure(Component.literal("clear failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
+        if (carriage != null) {
+            try {
+                BlockPos origin = CarriageEditor.plotOrigin(carriage);
+                CarriageTemplate.eraseAt(overworld, origin, dims);
+                final String id = carriage.id();
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared all blocks in '" + id + "'."
+                ).withStyle(ChatFormatting.GREEN), true);
+                return 1;
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] editor clear (carriage) failed", t);
+                source.sendFailure(Component.literal("clear failed: "
+                    + t.getClass().getSimpleName() + ": " + t.getMessage()
+                ).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+        }
+
+        source.sendFailure(Component.literal(
+            "editor clear: stand inside a carriage / contents / parts plot first."
+        ));
+        return 0;
     }
 
     private static int runNew(CommandSourceStack source, String rawName, CarriageVariant sourceVariant) {

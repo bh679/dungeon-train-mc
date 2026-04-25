@@ -40,6 +40,8 @@ public final class EditorMenuScreen implements MenuScreen {
                 new CommandMenuEntry.Run("All", "dungeontrain editor part save all"),
                 0.80
             ));
+            CommandMenuEntry partsClear = clearEntryFor(category, model);
+            if (partsClear != null) out.add(partsClear);
             int sep = model.indexOf(':');
             if (sep > 0 && sep < model.length() - 1) {
                 String kind = model.substring(0, sep);
@@ -68,6 +70,13 @@ public final class EditorMenuScreen implements MenuScreen {
 
         // Reset — no "all" form server-side yet.
         out.add(new CommandMenuEntry.Run("Reset", "dungeontrain reset"));
+
+        // Clear — wipes interior blocks of the current plot to air without
+        // touching the on-disk template (Reset deletes the file; Clear just
+        // empties the world). Only shown for user-authorable categories,
+        // matching the New / Remove gating below.
+        CommandMenuEntry clearEntry = clearEntryFor(category, model);
+        if (clearEntry != null) out.add(clearEntry);
 
         // New / Remove — only meaningful for categories whose models are
         // user-authorable (carriages, contents). For tracks / pillars /
@@ -120,6 +129,24 @@ public final class EditorMenuScreen implements MenuScreen {
                 "Remove",
                 new ConfirmScreen("Remove '" + model + "'?",
                     "dungeontrain editor contents reset " + model));
+            default -> null;
+        };
+    }
+
+    /**
+     * "Clear" wipes every interior block of the current plot to air via
+     * {@code /dt editor clear}. Drills into a ConfirmScreen first since the
+     * action is destructive — same gating as Remove. Returns null for
+     * categories without a single addressable model id (tracks, pillars,
+     * tunnels, architecture).
+     */
+    private static CommandMenuEntry clearEntryFor(String category, String model) {
+        if (model == null || model.isEmpty()) return null;
+        return switch (category) {
+            case "carriages", "contents", "parts" -> new CommandMenuEntry.DrillIn(
+                "Clear",
+                new ConfirmScreen("Clear all blocks in '" + model + "'?",
+                    "dungeontrain editor clear"));
             default -> null;
         };
     }
