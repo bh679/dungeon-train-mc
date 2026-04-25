@@ -109,12 +109,6 @@ public final class CarriageContentsEditor {
         return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
     }
 
-    /** Legacy single-arg overload that defaults to a min-length carriage. */
-    public static BlockPos plotOrigin(CarriageContents contents) {
-        return plotOrigin(contents, CarriageDims.clamp(
-            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
-    }
-
     /**
      * Returns the contents whose plot contains {@code pos} (within the
      * footprint plus 1-block outline margin), or {@code null} if none. Matches
@@ -236,7 +230,7 @@ public final class CarriageContentsEditor {
             throw new IOException("Contents '" + target.id() + "' is already registered.");
         }
 
-        BlockPos targetOrigin = plotOrigin(target);
+        BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
             CarriageContentsRegistry.unregister(target.id());
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
@@ -266,7 +260,7 @@ public final class CarriageContentsEditor {
             throw new IOException("Contents '" + target.id() + "' is already registered.");
         }
 
-        BlockPos targetOrigin = plotOrigin(target);
+        BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
             CarriageContentsRegistry.unregister(target.id());
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
@@ -310,9 +304,9 @@ public final class CarriageContentsEditor {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(current);
-        if (origin == null) throw new IOException("Unknown contents '" + current.id() + "'.");
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(current, dims);
+        if (origin == null) throw new IOException("Unknown contents '" + current.id() + "'.");
 
         StructureTemplate template = CarriageContentsTemplate.captureTemplate(overworld, origin, dims);
 

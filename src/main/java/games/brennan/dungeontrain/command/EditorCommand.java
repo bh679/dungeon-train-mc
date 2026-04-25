@@ -585,7 +585,7 @@ public final class EditorCommand {
                 "Look directly at a block inside the plot first (8-block reach)."));
             return null;
         }
-        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
         if (plotOrigin == null) {
             source.sendFailure(Component.literal("Plot origin missing for '" + plotVariant.id() + "'."));
             return null;
@@ -685,7 +685,7 @@ public final class EditorCommand {
                                                  CarriageDims dims, CarriageContents contentsPlot) {
         BlockPos hit = lookedAtBlock(source, player);
         if (hit == null) return 0;
-        BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot);
+        BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
         if (carriageOrigin == null) {
             source.sendFailure(Component.literal("Plot origin missing for contents '" + contentsPlot.id() + "'."));
             return 0;
@@ -976,9 +976,10 @@ public final class EditorCommand {
         if (player == null) return 0;
         try {
             CarriageEditor.enter(player, variant);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered '" + variant.id()
-                    + "' plot at " + CarriageEditor.plotOrigin(variant)
+                    + "' plot at " + CarriageEditor.plotOrigin(variant, dims)
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -1288,7 +1289,7 @@ public final class EditorCommand {
         CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
         if (contents != null) {
             try {
-                BlockPos origin = CarriageContentsEditor.plotOrigin(contents);
+                BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 // Interior-only erase — preserves the carriage shell stamped
                 // around it as visual context. CarriageContentsTemplate.eraseAt
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
@@ -1311,7 +1312,7 @@ public final class EditorCommand {
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             try {
-                BlockPos origin = CarriageEditor.plotOrigin(carriage);
+                BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
                 CarriageTemplate.eraseAt(overworld, origin, dims);
                 final String id = carriage.id();
                 source.sendSuccess(() -> Component.literal(
@@ -1697,10 +1698,11 @@ public final class EditorCommand {
         try {
             CarriageContentsEditor.enter(player, contents, shell);
             final CarriageVariant shellUsed = CarriageContentsEditor.resolveShellOrDefault(shellRaw);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered contents '" + contents.id()
                     + "' (shell=" + shellUsed.id() + ") plot at "
-                    + CarriageContentsEditor.plotOrigin(contents)
+                    + CarriageContentsEditor.plotOrigin(contents, dims)
             ), true);
             return 1;
         } catch (Throwable t) {

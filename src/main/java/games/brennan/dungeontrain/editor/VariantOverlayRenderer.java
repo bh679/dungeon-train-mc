@@ -154,7 +154,7 @@ public final class VariantOverlayRenderer {
             // the hovered kind) and the variant-blocks icon HUD.
             CarriageVariant plotVariant = CarriageEditor.plotContaining(playerPos, dims);
             if (plotVariant != null) {
-                BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+                BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
                 if (plotOrigin == null) continue;
 
                 updatePartHover(tick, player, plotVariant, plotOrigin, dims);
@@ -179,7 +179,7 @@ public final class VariantOverlayRenderer {
             CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(playerPos, dims);
             if (contentsPlot != null) {
                 clearPartHoverIfStale(player);
-                BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot);
+                BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
                 if (carriageOrigin == null) continue;
                 BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
                 Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);

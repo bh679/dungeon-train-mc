@@ -120,7 +120,7 @@ public final class VariantBlockInteractions {
         CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (plotVariant == null) return;
 
-        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
         if (plotOrigin == null) return;
 
         BlockPos local = clicked.subtract(plotOrigin);
@@ -216,7 +216,7 @@ public final class VariantBlockInteractions {
                                                  ServerPlayer player, ServerLevel level,
                                                  CarriageDims dims, BlockPos clicked,
                                                  VariantState newVariant, CarriageContents contents) {
-        BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents);
+        BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents, dims);
         if (carriageOrigin == null) return;
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
         Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
