@@ -4,12 +4,14 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.tunnel.VSShipFilterProcessor;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -248,12 +250,33 @@ public final class TrackGenerator {
      * @return false if the bed position is ship-owned (caller should skip the
      *         pillar slice for this column too); true otherwise.
      */
+    /**
+     * Per-tile data the column placer needs: the unpacked template cells,
+     * the per-block variants sidecar (may be empty), the world seed, and
+     * the tile's index so the deterministic per-block pick is stable
+     * across reloads. {@code tile} can be empty (caller falls back to the
+     * hardcoded bed + rail palette); {@code sidecar} is null when the tile
+     * has no {@code .variants.json} alongside it.
+     */
+    private record TilePaint(
+        Optional<BlockState[][][]> cells,
+        TrackVariantBlocks sidecar,
+        long worldSeed,
+        long tileIndex
+    ) {
+        BlockState resolveSidecar(BlockState base, int xMod, int y, int zOff) {
+            if (sidecar == null || sidecar.isEmpty() || base == null) return base;
+            BlockState picked = sidecar.resolve(new BlockPos(xMod, y, zOff), worldSeed, (int) tileIndex);
+            return picked != null ? picked : base;
+        }
+    }
+
     private static boolean placeTrackColumn(
         ServerLevel level,
         int worldX,
         int worldZ,
         TrackGeometry g,
-        Optional<BlockState[][][]> tile
+        TilePaint paint
     ) {
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
@@ -264,9 +287,10 @@ public final class TrackGenerator {
         int zOff = worldZ - g.trackZMin();
         int xMod = Math.floorMod(worldX, TrackTemplate.TILE_LENGTH);
 
-        BlockState bedState = tile.isPresent()
-            ? tile.get()[xMod][0][zOff]
+        BlockState bedState = paint.cells().isPresent()
+            ? paint.cells().get()[xMod][0][zOff]
             : TrackPalette.BED;
+        bedState = paint.resolveSidecar(bedState, xMod, 0, zOff);
         if (bedState != null) {
             BlockState existingBed = level.getBlockState(bedPos);
             if (!existingBed.is(bedState.getBlock())) {
@@ -275,13 +299,14 @@ public final class TrackGenerator {
         }
 
         BlockState railState;
-        if (tile.isPresent()) {
-            railState = tile.get()[xMod][1][zOff];
+        if (paint.cells().isPresent()) {
+            railState = paint.cells().get()[xMod][1][zOff];
         } else if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
             railState = TrackPalette.RAIL;
         } else {
             railState = null;
         }
+        railState = paint.resolveSidecar(railState, xMod, 1, zOff);
         if (railState != null) {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
@@ -503,27 +528,31 @@ public final class TrackGenerator {
         // validate against this, and the call is cheap (SavedData lookup).
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
-        // Per-tile variant cache (≤ 5 tiles touch any single 16-wide chunk so
-        // this map stays tiny). Key = tileIndex (X / TILE_LENGTH); value = the
-        // unpacked cells for the registry-picked name at that tile.
+        // Per-tile paint cache (≤ 5 tiles touch any single 16-wide chunk so
+        // this map stays tiny). Key = tileIndex (X / TILE_LENGTH); value =
+        // the registry-picked name's cells + per-block sidecar bundle.
         long worldSeed = level.getSeed();
-        Map<Long, Optional<BlockState[][][]>> tileCells = new HashMap<>();
+        Vec3i tileFootprint = TrackKind.TILE.dims(dims);
+        Map<Long, TilePaint> tilePaints = new HashMap<>();
 
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             long tileIndex = Math.floorDiv((long) worldX, (long) TrackTemplate.TILE_LENGTH);
-            Optional<BlockState[][][]> trackTile = tileCells.computeIfAbsent(
+            TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> {
                     String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx);
-                    return TrackTemplateStore.getCellsFor(level, dims, name);
+                    Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
+                    TrackVariantBlocks sidecar =
+                        TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
+                    return new TilePaint(cells, sidecar, worldSeed, idx);
                 }
             );
 
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                placeTrackColumn(level, worldX, worldZ, g, trackTile);
+                placeTrackColumn(level, worldX, worldZ, g, paint);
             }
 
             if (containingPillar != null) {
