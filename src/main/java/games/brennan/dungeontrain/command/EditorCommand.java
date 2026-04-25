@@ -1060,10 +1060,10 @@ public final class EditorCommand {
         if (contents != null) {
             try {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents);
-                // Mirrors CarriageContentsEditor.enter / clearPlot which wipe
-                // the shell and the contents-template footprint together —
-                // contents plots overlay the same volume as a carriage shell.
-                CarriageTemplate.eraseAt(overworld, origin, dims);
+                // Interior-only erase — preserves the carriage shell stamped
+                // around it as visual context. CarriageContentsTemplate.eraseAt
+                // operates on interiorOrigin/interiorSize, so the floor/walls/
+                // ceiling stay put for the author to keep building inside.
                 CarriageContentsTemplate.eraseAt(overworld, origin, dims);
                 final String id = contents.id();
                 source.sendSuccess(() -> Component.literal(
