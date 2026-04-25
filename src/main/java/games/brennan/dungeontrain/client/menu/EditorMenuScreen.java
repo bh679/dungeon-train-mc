@@ -23,11 +23,15 @@ public final class EditorMenuScreen implements MenuScreen {
         String category = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
         // `model` is the friendly path string (HUD-style, may contain "/").
         // `modelId` is the bare command-token id used to dispatch /dt editor ...
-        // For carriages and contents the two are identical; for track-side
-        // models (track, pillar_*, tunnel_*) they diverge — only modelId is
-        // safe to splice into a command string.
+        // `modelName` is the trailing variant-name segment of the model — for
+        // track-side models the path string is e.g. "track / track2" and the
+        // bare name is "track2". For carriages and contents modelId/modelName
+        // are identical to model. Only modelId/modelName are safe to splice
+        // into a command string.
         String model = EditorStatusHudOverlay.model();
         String modelId = EditorStatusHudOverlay.modelId();
+        String modelName = EditorStatusHudOverlay.modelName();
+        int currentWeight = EditorStatusHudOverlay.weight();
 
         List<CommandMenuEntry> out = new ArrayList<>();
         out.add(new CommandMenuEntry.Toggle(
@@ -107,24 +111,53 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry renameEntry = renameEntryFor(category, model);
         if (renameEntry != null) out.add(renameEntry);
 
-        // Weight — carriage variants only. Triple row: [-] / Weight (N) / [+].
-        // Side cells nudge by 1 server-side and stay open so the player can
-        // tap-tap-tap; middle cell drops into typing mode for an exact value.
-        // Label refreshes via tick rebuild as the HUD picks up the new value.
-        if ("carriages".equals(category) && model != null && !model.isEmpty()) {
-            int w = EditorStatusHudOverlay.weight();
-            String label = w >= 0 ? "Weight (" + w + ")" : "Weight";
-            CommandMenuEntry minus  = new CommandMenuEntry.Stay(
-                "-", "dungeontrain editor weight " + model + " dec");
-            CommandMenuEntry weight = new CommandMenuEntry.TypeArg(
-                label, "0-100", "dungeontrain editor weight " + model);
-            CommandMenuEntry plus   = new CommandMenuEntry.Stay(
-                "+", "dungeontrain editor weight " + model + " inc");
-            out.add(new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90));
-        }
+        // Weight — Triple row: [-] / Weight (N) / [+] for every category that
+        // has a weight pool (carriages, tracks, contents). Side cells nudge by
+        // 1 server-side and stay open so the player can tap-tap-tap; middle
+        // cell drops into typing mode for an exact value. Label refreshes via
+        // tick rebuild as the HUD picks up the new value.
+        CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
+        if (weightRow != null) out.add(weightRow);
 
         out.add(new CommandMenuEntry.Back("< Back"));
         return out;
+    }
+
+    /**
+     * Build a {@link CommandMenuEntry.Triple} for the active model's weight,
+     * or null when the category has no weight pool / no addressable model.
+     * Extracted so the unit test can pin command strings without standing up
+     * the full menu.
+     *
+     * <p>Command shapes:
+     * <ul>
+     *   <li>{@code carriages}: {@code dungeontrain editor weight <modelId> {dec|inc|""}}</li>
+     *   <li>{@code tracks}: {@code dungeontrain editor tracks weight <modelId> <modelName> {dec|inc|""}}</li>
+     *   <li>{@code contents}: {@code dungeontrain editor contents weight <modelId> {dec|inc|""}}</li>
+     * </ul>
+     *
+     * <p>{@code modelId} (not {@code model}) is spliced into commands so
+     * track-side models with friendly path strings ({@code "track / track2"})
+     * don't break the parser. For carriages and contents the two are equal;
+     * for tracks {@code modelName} carries the trailing variant name segment.</p>
+     */
+    static CommandMenuEntry weightTripleFor(String category, String modelId, String modelName, int currentWeight) {
+        if (modelId == null || modelId.isEmpty()) return null;
+        String prefix;
+        switch (category) {
+            case "carriages" -> prefix = "dungeontrain editor weight " + modelId;
+            case "tracks" -> {
+                if (modelName == null || modelName.isEmpty()) return null;
+                prefix = "dungeontrain editor tracks weight " + modelId + " " + modelName;
+            }
+            case "contents" -> prefix = "dungeontrain editor contents weight " + modelId;
+            default -> { return null; }
+        }
+        String label = currentWeight >= 0 ? "Weight (" + currentWeight + ")" : "Weight";
+        CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
+        CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90);
     }
 
     /**

@@ -120,6 +120,90 @@ final class EditorMenuScreenTest {
         assertNull(EditorMenuScreen.newEntryFor("tracks", "", ""));
     }
 
+    // ---- Weight (Triple row) — regression for the modelId fix + new tracks/contents categories ----
+
+    @Test
+    @DisplayName("Weight for carriages uses modelId, not the friendly path string")
+    void weight_carriages_usesModelId() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("carriages", "standard", "standard", 10);
+        assertEquals("dungeontrain editor weight standard dec", commandFor(triple.leftEntry()));
+        assertEquals("dungeontrain editor weight standard", typePrefixFor(triple.middleEntry()));
+        assertEquals("dungeontrain editor weight standard inc", commandFor(triple.rightEntry()));
+    }
+
+    @Test
+    @DisplayName("Weight for tracks splices kind + name into the tracks weight subcommand")
+    void weight_tracks_track() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("tracks", "track", "default", 1);
+        assertEquals("dungeontrain editor tracks weight track default dec", commandFor(triple.leftEntry()));
+        assertEquals("dungeontrain editor tracks weight track default", typePrefixFor(triple.middleEntry()));
+        assertEquals("dungeontrain editor tracks weight track default inc", commandFor(triple.rightEntry()));
+    }
+
+    @Test
+    @DisplayName("Weight for pillar uses pillar_<section> + variant name")
+    void weight_tracks_pillar() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("tracks", "pillar_bottom", "stone", 2);
+        assertEquals("dungeontrain editor tracks weight pillar_bottom stone dec", commandFor(triple.leftEntry()));
+        assertEquals("dungeontrain editor tracks weight pillar_bottom stone", typePrefixFor(triple.middleEntry()));
+        assertEquals("dungeontrain editor tracks weight pillar_bottom stone inc", commandFor(triple.rightEntry()));
+    }
+
+    @Test
+    @DisplayName("Weight for tunnel uses tunnel_<variant> + variant name")
+    void weight_tracks_tunnel() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("tracks", "tunnel_section", "default", 1);
+        assertEquals("dungeontrain editor tracks weight tunnel_section default dec", commandFor(triple.leftEntry()));
+        assertEquals("dungeontrain editor tracks weight tunnel_section default", typePrefixFor(triple.middleEntry()));
+        assertEquals("dungeontrain editor tracks weight tunnel_section default inc", commandFor(triple.rightEntry()));
+    }
+
+    @Test
+    @DisplayName("Weight for contents uses contents id")
+    void weight_contents() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("contents", "default", "default", 1);
+        assertEquals("dungeontrain editor contents weight default dec", commandFor(triple.leftEntry()));
+        assertEquals("dungeontrain editor contents weight default", typePrefixFor(triple.middleEntry()));
+        assertEquals("dungeontrain editor contents weight default inc", commandFor(triple.rightEntry()));
+    }
+
+    @Test
+    @DisplayName("Weight label reflects current weight when >= 0")
+    void weight_label_includesCurrentWeight() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("carriages", "standard", "standard", 42);
+        CommandMenuEntry.TypeArg middle = (CommandMenuEntry.TypeArg) triple.middleEntry();
+        assertEquals("Weight (42)", middle.label());
+    }
+
+    @Test
+    @DisplayName("Weight label is bare 'Weight' when current weight is the NO_WEIGHT sentinel")
+    void weight_label_handlesNoWeightSentinel() {
+        CommandMenuEntry.Triple triple = weightTripleAssertingPresent("carriages", "standard", "standard", -1);
+        CommandMenuEntry.TypeArg middle = (CommandMenuEntry.TypeArg) triple.middleEntry();
+        assertEquals("Weight", middle.label());
+    }
+
+    @Test
+    @DisplayName("Weight returns null for empty modelId (player not in a plot)")
+    void weight_emptyModelId_returnsNull() {
+        assertNull(EditorMenuScreen.weightTripleFor("carriages", "", "", 1));
+        assertNull(EditorMenuScreen.weightTripleFor("tracks", "", "", 1));
+        assertNull(EditorMenuScreen.weightTripleFor("contents", "", "", 1));
+    }
+
+    @Test
+    @DisplayName("Weight returns null for tracks when modelName is empty")
+    void weight_tracks_emptyModelName_returnsNull() {
+        assertNull(EditorMenuScreen.weightTripleFor("tracks", "track", "", 1));
+    }
+
+    @Test
+    @DisplayName("Weight returns null for unknown / weight-less categories")
+    void weight_unknownCategory_returnsNull() {
+        assertNull(EditorMenuScreen.weightTripleFor("architecture", "x", "x", 1));
+        assertNull(EditorMenuScreen.weightTripleFor("parts", "floor:x", "x", 1));
+    }
+
     // ---- helpers ----
 
     /** Drill into the Remove entry's confirm screen and pull the command the Yes button runs. */
@@ -130,5 +214,21 @@ final class EditorMenuScreenTest {
         List<CommandMenuEntry> confirmEntries = drill.target().entries();
         CommandMenuEntry.Run yesButton = assertInstanceOf(CommandMenuEntry.Run.class, confirmEntries.get(0));
         return yesButton.command();
+    }
+
+    private static CommandMenuEntry.Triple weightTripleAssertingPresent(
+        String category, String modelId, String modelName, int currentWeight
+    ) {
+        CommandMenuEntry entry = EditorMenuScreen.weightTripleFor(category, modelId, modelName, currentWeight);
+        assertNotNull(entry, "weightTripleFor returned null for " + category + "/" + modelId + "/" + modelName);
+        return assertInstanceOf(CommandMenuEntry.Triple.class, entry);
+    }
+
+    private static String commandFor(CommandMenuEntry e) {
+        return assertInstanceOf(CommandMenuEntry.Stay.class, e).command();
+    }
+
+    private static String typePrefixFor(CommandMenuEntry e) {
+        return assertInstanceOf(CommandMenuEntry.TypeArg.class, e).commandPrefix();
     }
 }

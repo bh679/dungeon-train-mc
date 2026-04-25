@@ -40,8 +40,15 @@ public final class EditorStatusHudOverlay {
     private static String model = "";
     /** Command-token id for the current model — what the menu hands to {@code /dt editor ...}. May differ from {@link #model} (HUD path string) for track-side models. */
     private static String modelId = "";
+    /**
+     * Bare variant-name segment of the current model (e.g. {@code track2},
+     * {@code stone}, {@code default}). For carriages and contents this equals
+     * {@link #modelId}; for track/pillar/tunnel models it's the trailing name
+     * the menu splices into {@code /dt editor tracks weight <kind> <name> ...}.
+     */
+    private static String modelName = "";
     private static boolean devmode = false;
-    /** Current variant weight for carriage models, or {@link #NO_WEIGHT} when not applicable. */
+    /** Current variant weight for the active model, or {@link #NO_WEIGHT} when not applicable. */
     private static int weight = NO_WEIGHT;
 
     /** Distance from the top of the screen in GUI pixels. */
@@ -54,10 +61,11 @@ public final class EditorStatusHudOverlay {
     private EditorStatusHudOverlay() {}
 
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
-    public static void setStatus(String newCategory, String newModel, String newModelId, boolean newDevmode, int newWeight) {
+    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName, boolean newDevmode, int newWeight) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
+        modelName = newModelName == null ? "" : newModelName;
         devmode = newDevmode;
         weight = newWeight;
     }
@@ -66,6 +74,7 @@ public final class EditorStatusHudOverlay {
         category = "";
         model = "";
         modelId = "";
+        modelName = "";
         devmode = false;
         weight = NO_WEIGHT;
     }
@@ -92,6 +101,11 @@ public final class EditorStatusHudOverlay {
     /** Command-token id for the active model (e.g. {@code track}, {@code pillar_bottom}, {@code standard}). Empty when not in an editor plot. */
     public static String modelId() {
         return modelId;
+    }
+
+    /** Bare variant-name segment of the active model (e.g. {@code track2}, {@code stone}, {@code default}). Empty when not in an editor plot. */
+    public static String modelName() {
+        return modelName;
     }
 
     /** Server-reported devmode flag. False when not in an editor plot. */
