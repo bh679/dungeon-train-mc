@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -355,6 +356,74 @@ public final class CarriagePartEditor {
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Part editor save: source write failed for {}:{}: {}",
                 kind.id(), name, e.toString());
+            return SaveResult.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * Rename the part {@code (kind, oldName)} to {@code (kind, newName)} —
+     * captures the live geometry at the old plot, persists it under the new
+     * name, deletes the old name's config file (and source-tree copy in
+     * devmode), unregisters the old name unless it has a bundled fallback,
+     * relocates the rendered plot, and teleports the player into it.
+     *
+     * <p>Plot positions are derived from registry order, so the new plot
+     * lands at a different X slot than the old one. The player follows.</p>
+     *
+     * @throws IOException if the old plot can't be located or the config-dir
+     *                     write fails. Source-tree write/delete failures are
+     *                     reported via the returned {@link SaveResult}.
+     */
+    public static SaveResult saveAs(ServerPlayer player, CarriagePartKind kind, String oldName, String newName) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        BlockPos oldOrigin = plotOrigin(kind, oldName, dims);
+        if (oldOrigin == null) throw new IOException("Unknown part '" + kind.id() + ":" + oldName + "'.");
+
+        StructureTemplate template = captureTemplate(overworld, oldOrigin, kind, dims);
+
+        CarriagePartTemplateStore.save(kind, newName, template);
+        CarriagePartRegistry.register(kind, newName);
+
+        clearPlot(overworld, kind, oldName, dims);
+        CarriagePartTemplateStore.delete(kind, oldName);
+        boolean stillBundled = CarriagePartTemplateStore.bundled(kind, oldName);
+        if (!stillBundled) CarriagePartRegistry.unregister(kind, oldName);
+
+        BlockPos newOrigin = plotOrigin(kind, newName, dims);
+        if (newOrigin != null) {
+            CarriagePartTemplate.eraseAt(overworld, newOrigin, kind, dims);
+            stampCurrent(overworld, newOrigin, kind, newName, dims);
+            setOutline(overworld, newOrigin, kind, dims);
+
+            Vec3i size = kind.dims(dims);
+            double tx = newOrigin.getX() + size.getX() / 2.0;
+            double ty = newOrigin.getY() + 1.0;
+            double tz = newOrigin.getZ() + size.getZ() / 2.0;
+            player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        }
+
+        PART_SESSIONS.put(player.getUUID(), new PartSession(kind, newName));
+
+        LOGGER.info("[DungeonTrain] Part editor saveAs: {} renamed {}:{} -> {}:{}",
+            player.getName().getString(), kind.id(), oldName, kind.id(), newName);
+
+        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        try {
+            CarriagePartTemplateStore.saveToSource(kind, newName, template);
+            try {
+                Files.deleteIfExists(CarriagePartTemplateStore.sourceFileFor(kind, oldName));
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Part editor saveAs: source-tree delete failed for {}:{}: {}",
+                    kind.id(), oldName, e.toString());
+            }
+            return SaveResult.written();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Part editor saveAs: source write failed for {}:{}: {}",
+                kind.id(), newName, e.toString());
             return SaveResult.failed(e.getMessage());
         }
     }
