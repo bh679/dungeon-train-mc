@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
@@ -17,29 +20,24 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 /**
- * Editor plot for the open-air track tile — fixed overworld location at
- * {@code (0, 250, 60)}, past the pillar row at {@code Z=40}. OPs build a
- * 4×2×W tile (X=tile length × Y=bed+rail rows × Z=carriage width), which
- * {@link games.brennan.dungeontrain.track.TrackGenerator} then re-stamps at
- * every world X along the train corridor.
+ * Editor plots for the open-air track tile. Mirrors
+ * {@link CarriagePartEditor}: one plot per registered variant name in
+ * {@link TrackVariantRegistry}, laid out along {@code +Z} with
+ * {@link EditorLayout#GAP}-block spacing between footprints, sharing the
+ * column at {@link TrackSidePlots#X_TRACK}. Plot positioning lives in
+ * {@link TrackSidePlots} so every track-side editor uses the same grid.
  *
- * <p>Reuses the {@link CarriageEditor} session map via
- * {@link CarriageEditor#rememberReturn} so a single {@code /dungeontrain editor exit}
- * command restores the player regardless of which editor they entered.</p>
+ * <p>{@link CarriageEditor#rememberReturn} is reused for the session map
+ * so a single {@code /dungeontrain editor exit} restores the player no
+ * matter which sub-editor they entered last.</p>
  */
 public final class TrackEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-
-    private static final int PLOT_X = 0;
-    private static final int PLOT_Y = 250;
-    /** Track row Z-origin. Pillar row sits at {@code Z=40} with width up to
-     *  {@code dims.width()} (default 7), so 60 keeps a clean gap even at
-     *  max carriage width. */
-    private static final int PLOT_Z = 60;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
@@ -51,98 +49,118 @@ public final class TrackEditor {
 
     private TrackEditor() {}
 
-    /** Fixed plot origin — the tile's min corner. */
-    public static BlockPos plotOrigin() {
-        return new BlockPos(PLOT_X, PLOT_Y, PLOT_Z);
+    /** Plot origin for the synthetic-default variant. */
+    public static BlockPos plotOrigin(CarriageDims dims) {
+        return TrackSidePlots.plotOriginDefault(TrackKind.TILE, dims);
+    }
+
+    /** Plot origin for {@code (TILE, name)}. Used by the new/remove command. */
+    public static BlockPos plotOrigin(String name, CarriageDims dims) {
+        return TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
     }
 
     /**
-     * True if {@code pos} sits inside the 4×2×W plot plus 1-block outline
-     * margin. Used to route {@code /dungeontrain editor save} to
-     * {@link #save} when the player is standing in the plot.
+     * True if {@code pos} sits inside any registered track-tile variant's
+     * plot. Used as the legacy entry point for back-compat callers; new
+     * code should prefer {@link TrackSidePlots#locate} which returns the
+     * matched name.
      */
     public static boolean plotContaining(BlockPos pos, CarriageDims dims) {
-        BlockPos o = plotOrigin();
-        int w = dims.width();
-        return pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackTemplate.TILE_LENGTH
-            && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackTemplate.HEIGHT
-            && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w;
+        return resolveName(pos, dims) != null;
     }
 
     /**
-     * Teleport {@code player} to the track plot: save return position, erase
-     * the 4×2×W footprint, stamp the current template (or hardcoded fallback)
-     * so the player sees what would paint today, then draw the barrier cage.
+     * Resolved variant name for the plot {@code pos} sits inside, or null
+     * if outside every track-tile plot. Includes the 1-block outline-cage
+     * margin used uniformly across the track-side grid.
+     */
+    public static String resolveName(BlockPos pos, CarriageDims dims) {
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
+            BlockPos o = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
+            int w = dims.width();
+            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackTemplate.TILE_LENGTH
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackTemplate.HEIGHT
+                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
+                return name;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Teleport {@code player} to the default-variant plot. Stamps every
+     * registered tile variant's plot first so the row is fully visible.
      */
     public static void enter(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin();
 
         CarriageEditor.rememberReturn(player);
-        stampPlot(overworld, dims);
+        stampAllPlots(overworld, dims);
 
+        BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
         double tx = origin.getX() + TrackTemplate.TILE_LENGTH / 2.0;
         double ty = origin.getY() + 1.0;
         double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Track editor enter: {} -> plot at {} (size={}x{}x{})",
+        LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered)",
             player.getName().getString(), origin,
-            TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+            TrackVariantRegistry.namesFor(TrackKind.TILE).size());
     }
 
     /**
-     * Erase, place, and cage the plot without teleporting. Used by
-     * {@link #enter} and category-wide stamps ({@code /dt editor tracks}).
-     * Idempotent.
+     * Erase + restamp every registered track-tile variant plot. Idempotent.
+     * Called from {@link #enter} and from category-wide stamps
+     * ({@code /dt editor tracks}).
      */
     public static void stampPlot(ServerLevel overworld, CarriageDims dims) {
-        BlockPos origin = plotOrigin();
+        stampAllPlots(overworld, dims);
+    }
+
+    /** Erase + restamp the single plot for {@code name}. */
+    public static void stampPlot(ServerLevel overworld, String name, CarriageDims dims) {
+        BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         eraseAt(overworld, origin, dims);
-        stampCurrent(overworld, origin, dims);
+        stampNameAt(overworld, origin, name, dims);
         setOutline(overworld, origin, dims);
     }
 
-    /** Erase the track plot — footprint + outline cage go to air. */
+    /** Erase every track-tile plot — footprint + outline cage cleared to air. */
     public static void clearPlot(ServerLevel overworld, CarriageDims dims) {
-        BlockPos origin = plotOrigin();
-        // {@link #eraseAt} already clears the 1-block outline margin in the
-        // loop bounds, so the footprint and cage both go to air in one sweep.
-        eraseAt(overworld, origin, dims);
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
+            BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
+            eraseAt(overworld, origin, dims);
+        }
     }
 
     /**
-     * Capture the {@code 4 × 2 × width} region at the plot into a fresh
-     * {@link StructureTemplate} and persist it via {@link TrackTemplateStore}.
-     *
-     * <p>Air is the ignore block, so air cells are NOT captured — null at
-     * runtime means "leave passable, don't paint" (useful for viaduct gaps or
-     * mid-tile holes). Blocks placed by the user, including rails at any Z,
-     * are captured verbatim.</p>
-     *
-     * <p>When {@link EditorDevMode} is on, the template is also written to the
-     * source tree so it ships with the next build.</p>
+     * Capture the {@code 4 × 2 × width} region at the plot the player is
+     * standing in into a fresh {@link StructureTemplate} and persist it
+     * via {@link TrackVariantStore} for the resolved {@code name}.
      */
     public static SaveResult save(ServerPlayer player) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
-        BlockPos origin = plotOrigin();
 
+        String name = resolveName(player.blockPosition(), dims);
+        if (name == null) throw new IOException("Player is not inside any track-tile plot.");
+
+        BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         StructureTemplate template = captureTemplate(overworld, origin, dims);
-        TrackTemplateStore.save(template);
+        TrackVariantStore.save(TrackKind.TILE, name, template);
 
-        LOGGER.info("[DungeonTrain] Track editor save: {} -> template ({}x{}x{})",
-            player.getName().getString(),
+        LOGGER.info("[DungeonTrain] Track editor save: {} -> tile/{} ({}x{}x{})",
+            player.getName().getString(), name,
             TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
-            TrackTemplateStore.saveToSource(template);
+            TrackVariantStore.saveToSource(TrackKind.TILE, name, template);
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Track editor save: source write failed: {}", e.toString());
@@ -150,7 +168,16 @@ public final class TrackEditor {
         }
     }
 
-    /** Erase a 4×2×W region plus 1-block outline margin to air for a clean slate. */
+    private static void stampAllPlots(ServerLevel overworld, CarriageDims dims) {
+        List<String> names = TrackVariantRegistry.namesFor(TrackKind.TILE);
+        for (String name : names) {
+            BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
+            eraseAt(overworld, origin, dims);
+            stampNameAt(overworld, origin, name, dims);
+            setOutline(overworld, origin, dims);
+        }
+    }
+
     private static void eraseAt(ServerLevel level, BlockPos origin, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         int w = dims.width();
@@ -163,19 +190,14 @@ public final class TrackEditor {
         }
     }
 
-    /**
-     * Fill the 4×2×W footprint with the stored template if any, else stamp the
-     * hardcoded fallback (bed at every Z on {@code y=0}, rails at the two
-     * inner-edge Z rows on {@code y=1}) across every X offset so the player
-     * has something concrete to edit.
-     */
-    private static void stampCurrent(ServerLevel level, BlockPos origin, CarriageDims dims) {
-        Optional<StructureTemplate> stored = TrackTemplateStore.get(level, dims);
+    private static void stampNameAt(ServerLevel level, BlockPos origin, String name, CarriageDims dims) {
+        Optional<StructureTemplate> stored = TrackVariantStore.get(level, TrackKind.TILE, name, dims);
         if (stored.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             stored.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
             return;
         }
+        // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.
         int w = dims.width();
         for (int dx = 0; dx < TrackTemplate.TILE_LENGTH; dx++) {
             for (int dz = 0; dz < w; dz++) {
@@ -194,7 +216,6 @@ public final class TrackEditor {
         return template;
     }
 
-    /** Barrier cage: 12 edges of a bounding box 1 block outside the 4×2×W footprint. */
     private static void setOutline(ServerLevel level, BlockPos origin, CarriageDims dims) {
         int w = dims.width();
         int x0 = origin.getX() - 1;

@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -220,6 +222,32 @@ public final class VariantOverlayRenderer {
                 continue;
             }
 
+            // Track-side plot (track tile / pillar section / stairs adjunct
+            // / tunnel kind) — particles + icon HUD for the kind's own
+            // variants.json sidecar. {@code TrackVariantBlocks.entries()}
+            // returns the same {@link CarriageVariantBlocks.Entry} record
+            // the carriage-side renderer uses, so the existing particle +
+            // hover-packet helpers apply unchanged.
+            TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
+            if (trackLoc != null) {
+                clearPartHoverIfStale(player);
+                games.brennan.dungeontrain.track.variant.TrackVariantBlocks trackSidecar =
+                    games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
+                        trackLoc.kind(), trackLoc.name(), trackLoc.footprint());
+                if (trackSidecar.isEmpty()) {
+                    clearHoverIfStale(player);
+                    continue;
+                }
+                if (emitParticles) {
+                    emitOutlineParticles(level, player, trackLoc.origin(), trackSidecar.entries());
+                }
+                Vec3i footprint = trackLoc.footprint();
+                updateHoverPacket(player, trackLoc.origin(),
+                    pos -> inBounds(pos, footprint),
+                    trackSidecar::statesAt);
+                continue;
+            }
+
             // Outside every plot — clear any stale HUD state.
             clearHoverIfStale(player);
             clearPartHoverIfStale(player);
@@ -270,7 +298,11 @@ public final class VariantOverlayRenderer {
         EditorCategory.Located l = located.get();
         boolean devmode = EditorDevMode.isEnabled();
         int weight = weightFor(l.model());
-        String key = l.category().name() + "|" + l.model().id() + "|" + devmode + "|" + weight;
+        // Dedup key includes displayName (not just id) so walking from one
+        // named variant to another in the same kind invalidates the cache —
+        // model.id() is the kind tag and stays constant across a kind's
+        // variants.
+        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
@@ -278,13 +310,28 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Variant pick weight for the given model, or {@link EditorStatusPacket#NO_WEIGHT}
-     * for models where weight is not meaningful (pillars, tunnels, track). The
-     * HUD uses the sentinel to decide whether to render the second line.
+     * Variant pick weight for the given model. Carriage variants pull from
+     * {@link CarriageWeights}; track-side models (track tile, pillar
+     * sections, tunnel kinds) pull from {@link TrackVariantWeights} for the
+     * synthetic "default" name. Returns {@link EditorStatusPacket#NO_WEIGHT}
+     * for models that don't yet have weight semantics
+     * ({@link EditorModel.ContentsModel}); the HUD uses the sentinel to
+     * decide whether to render the weight line.
      */
     private static int weightFor(EditorModel model) {
         if (model instanceof EditorModel.CarriageModel cm) {
             return CarriageWeights.current().weightFor(cm.variant().id());
+        }
+        if (model instanceof EditorModel.TrackModel tm) {
+            return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
+        }
+        if (model instanceof EditorModel.PillarModel pm) {
+            return TrackVariantWeights.weightFor(
+                TrackPlotLocator.pillarKind(pm.section()), pm.name());
+        }
+        if (model instanceof EditorModel.TunnelModel tm) {
+            return TrackVariantWeights.weightFor(
+                TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
         }
         return EditorStatusPacket.NO_WEIGHT;
     }

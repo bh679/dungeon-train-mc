@@ -107,6 +107,16 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        // Track-side plots (track tile / pillar section / stairs adjunct
+        // / tunnel kind) live in their own X/Z rows past the carriage row,
+        // so they also can't overlap a carriage plot. Route shift-clicks
+        // into the per-kind {@link TrackVariantBlocks} sidecar.
+        TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
+        if (trackLoc != null) {
+            handleTrackShiftClick(event, player, level, clicked, newVariant, trackLoc);
+            return;
+        }
+
         CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (plotVariant == null) return;
 
@@ -230,6 +240,57 @@ public final class VariantBlockInteractions {
         try {
             sidecar.put(local, updated);
             sidecar.save(contents);
+        } catch (IllegalArgumentException e) {
+            player.displayClientMessage(
+                Component.literal("Variant add failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        } catch (IOException e) {
+            player.displayClientMessage(
+                Component.literal("Variant save failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        }
+
+        sendAddedFeedback(player, clicked, local, newVariant, updated);
+        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
+        suppressVanillaPlace(event);
+    }
+
+    /**
+     * Track-side branch: append the held variant to the
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks}
+     * sidecar for the kind/name resolved from {@code loc}. Mirrors
+     * {@link #handlePartShiftClick} — same author flow, different sidecar
+     * (per-{@code (TrackKind, name)} JSON next to the kind's NBT).
+     */
+    private static void handleTrackShiftClick(PlayerInteractEvent.RightClickBlock event,
+                                              ServerPlayer player, ServerLevel level,
+                                              BlockPos clicked, VariantState newVariant,
+                                              TrackPlotLocator.PlotInfo loc) {
+        BlockPos plotOrigin = loc.origin();
+        Vec3i footprint = loc.footprint();
+        BlockPos local = clicked.subtract(plotOrigin);
+        if (local.getX() < 0 || local.getX() >= footprint.getX()
+            || local.getY() < 0 || local.getY() >= footprint.getY()
+            || local.getZ() < 0 || local.getZ() >= footprint.getZ()) {
+            return;
+        }
+
+        BlockState baseState = level.getBlockState(clicked);
+        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks sidecar =
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
+                loc.kind(), loc.name(), footprint);
+        List<VariantState> existing = sidecar.statesAt(local);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
+        if (updated == null) return;
+
+        try {
+            sidecar.put(local, updated);
+            sidecar.save(loc.kind(), loc.name());
         } catch (IllegalArgumentException e) {
             player.displayClientMessage(
                 Component.literal("Variant add failed: " + e.getMessage())

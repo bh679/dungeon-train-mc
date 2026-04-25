@@ -86,6 +86,8 @@ public final class WorldLifecycleEvents {
         CarriageTemplateStore.clearCache();
         PillarTemplateStore.clearCache();
         TrackTemplateStore.clearCache();
+        games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
         LOGGER.debug("[DungeonTrain] Cleared carriage-, pillar-, and track-template caches on server stop.");
     }
 }

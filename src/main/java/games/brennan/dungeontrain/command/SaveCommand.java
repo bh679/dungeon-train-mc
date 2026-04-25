@@ -391,7 +391,7 @@ public final class SaveCommand {
                 < EMPTY_PLOT_THRESHOLD;
         }
         if (model instanceof EditorModel.PillarModel pillar) {
-            BlockPos origin = PillarEditor.plotOrigin(pillar.section());
+            BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
             return countNonAir(level, origin, 1, pillar.section().height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
@@ -402,7 +402,7 @@ public final class SaveCommand {
                 < EMPTY_PLOT_THRESHOLD;
         }
         if (model instanceof EditorModel.TrackModel) {
-            BlockPos origin = TrackEditor.plotOrigin();
+            BlockPos origin = TrackEditor.plotOrigin(dims);
             return countNonAir(level, origin, TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }

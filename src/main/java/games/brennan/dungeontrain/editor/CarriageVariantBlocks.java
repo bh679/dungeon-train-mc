@@ -246,7 +246,7 @@ public final class CarriageVariantBlocks {
      * (v1, BlockState only) or an object {@code {state, nbt?}} (v2). Returns
      * {@code null} on parse failure (caller logs).
      */
-    static VariantState parseVariantElement(JsonElement el,
+    public static VariantState parseVariantElement(JsonElement el,
                                             HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks,
                                             String contextId, BlockPos contextPos) {
         if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
@@ -293,7 +293,7 @@ public final class CarriageVariantBlocks {
     }
 
     /** Package-private for test access — parses a {@code "x,y,z"} key back into a {@link BlockPos}, or null. */
-    static BlockPos parsePos(String key) {
+    public static BlockPos parsePos(String key) {
         String[] parts = key.split(",");
         if (parts.length != 3) return null;
         try {
@@ -495,7 +495,7 @@ public final class CarriageVariantBlocks {
         return sb.toString();
     }
 
-    static void appendVariantJson(StringBuilder sb, VariantState s) {
+    public static void appendVariantJson(StringBuilder sb, VariantState s) {
         String stateStr = BlockStateParser.serialize(s.state());
         if (!s.hasBlockEntityData()) {
             sb.append('"').append(escapeJson(stateStr)).append('"');

@@ -1,10 +1,15 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.LegacyTunnelPaint;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceKey;
@@ -19,86 +24,80 @@ import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Editor plots for {@link TunnelVariant}s — mirror of {@link CarriageEditor}.
- * Two plots sit past the carriage row at {@code x = 80} / {@code x = 100},
- * {@code y = 250}, {@code z = 0}, so the tunnel and carriage plots are all
- * visible from a single vantage point when debugging templates.
+ * Multi-plot editor for tunnel kinds. Layout follows
+ * {@link TrackSidePlots}: SECTION at the {@link TrackSidePlots#X_TUNNELS}
+ * column, PORTAL stacked above SECTION on Y; each kind's registered
+ * variant names lay out along {@code +Z} with
+ * {@link EditorLayout#GAP}-block spacing.
  *
- * <p>Session state (pre-enter position) is kept per-player in RAM — same
- * shape as {@link CarriageEditor}'s {@code Session} but in a separate map.
- * On {@code /dungeontrain editor exit}, the dispatcher tries
- * {@link #exit(ServerPlayer)} first; if the player has no tunnel session,
- * it falls through to {@link CarriageEditor#exit(ServerPlayer)}. This lets a
- * player who enters a carriage plot, then a tunnel plot, run exit twice to
- * step back through both sessions.</p>
+ * <p>Pre-enter session state is per-player; on exit the dispatcher tries
+ * {@link #exit} first, falling back to {@link CarriageEditor#exit}.</p>
  */
 public final class TunnelEditor {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final int PLOT_Y = 250;
-    private static final int PLOT_Z = 0;
-    private static final int FIRST_PLOT_X = 80;
-    private static final int PLOT_STEP_X = 20;
-
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch) {}
 
+    /** Resolved variant + name pair for a player position. */
+    public record TunnelPlot(TunnelVariant variant, String name) {}
+
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
-
-    private static final Map<TunnelVariant, BlockPos> PLOT_ORIGINS = buildPlots();
-
-    private static Map<TunnelVariant, BlockPos> buildPlots() {
-        Map<TunnelVariant, BlockPos> map = new EnumMap<>(TunnelVariant.class);
-        int x = FIRST_PLOT_X;
-        for (TunnelVariant variant : TunnelVariant.values()) {
-            map.put(variant, new BlockPos(x, PLOT_Y, PLOT_Z));
-            x += PLOT_STEP_X;
-        }
-        return Map.copyOf(map);
-    }
 
     private TunnelEditor() {}
 
+    /** Plot origin for {@code (variant, default)}. */
     public static BlockPos plotOrigin(TunnelVariant variant) {
-        return PLOT_ORIGINS.get(variant);
+        CarriageDims dims = CarriageDims.clamp(
+            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
+        return TrackSidePlots.plotOriginDefault(TunnelTemplateStore.tunnelKind(variant), dims);
+    }
+
+    /** Plot origin for {@code (variant, name)}. Tunnel dims are fixed; CarriageDims is ignored. */
+    public static BlockPos plotOrigin(TunnelVariant variant, String name) {
+        CarriageDims dims = CarriageDims.clamp(
+            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
+        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(variant), name, dims);
+    }
+
+    /** Returns the variant whose plot contains {@code pos}, or null. Legacy entry point. */
+    public static TunnelVariant plotContaining(BlockPos pos) {
+        TunnelPlot loc = plotContainingNamed(pos);
+        return loc != null ? loc.variant() : null;
     }
 
     /**
-     * Returns the tunnel variant whose plot contains {@code pos} (within the
-     * 10×14×13 footprint plus 1-block outline margin), or {@code null} if
-     * none.
+     * Returns the {@code (variant, name)} pair whose plot contains
+     * {@code pos}, or null. Includes the 1-block outline-cage margin.
      */
-    public static TunnelVariant plotContaining(BlockPos pos) {
-        for (Map.Entry<TunnelVariant, BlockPos> entry : PLOT_ORIGINS.entrySet()) {
-            BlockPos o = entry.getValue();
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TunnelTemplate.LENGTH
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TunnelTemplate.HEIGHT
-                && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + TunnelTemplate.WIDTH) {
-                return entry.getKey();
+    public static TunnelPlot plotContainingNamed(BlockPos pos) {
+        for (TunnelVariant variant : TunnelVariant.values()) {
+            for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
+                BlockPos o = plotOrigin(variant, name);
+                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TunnelTemplate.LENGTH
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TunnelTemplate.HEIGHT
+                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + TunnelTemplate.WIDTH) {
+                    return new TunnelPlot(variant, name);
+                }
             }
         }
         return null;
     }
 
-    /**
-     * Teleport {@code player} to the plot for {@code variant}: save return
-     * position, clear the footprint, stamp the saved template (or render the
-     * procedural fallback) so the player sees what would spawn today, then
-     * draw the barrier cage around the footprint.
-     */
+    /** Teleport to the default plot for {@code variant}, stamping every variant first. */
     public static void enter(ServerPlayer player, TunnelVariant variant) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
-        BlockPos origin = PLOT_ORIGINS.get(variant);
+        BlockPos origin = plotOrigin(variant, TrackKind.DEFAULT_NAME);
 
         SESSIONS.putIfAbsent(player.getUUID(), new Session(
             player.level().dimension(),
@@ -114,76 +113,78 @@ public final class TunnelEditor {
         double tz = origin.getZ() + TunnelTemplate.WIDTH / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} plot at {}",
-            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin);
+        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} default plot at {} ({} variants)",
+            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin,
+            TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant)).size());
     }
 
-    /**
-     * Erase, place, and cage the plot for {@code variant} without teleporting.
-     * Used by {@link #enter} and by category-wide stamps
-     * ({@code /dt editor tracks}). Idempotent.
-     */
+    /** Erase + restamp every registered variant for {@code variant}. Idempotent. */
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant) {
-        BlockPos origin = PLOT_ORIGINS.get(variant);
+        for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
+            stampPlot(overworld, variant, name);
+        }
+    }
+
+    /** Erase + restamp the single plot for {@code (variant, name)}. */
+    public static void stampPlot(ServerLevel overworld, TunnelVariant variant, String name) {
+        BlockPos origin = plotOrigin(variant, name);
         TunnelTemplate.eraseAt(overworld, origin);
         if (variant == TunnelVariant.SECTION) {
-            TunnelTemplate.placeSectionAt(overworld, origin);
+            TunnelTemplate.placeSectionNamed(overworld, origin, name);
         } else {
             // Always render the unmirrored (entrance) orientation in the editor;
             // the exit variant at world paint time is the same template with
             // StructurePlaceSettings.setMirror(Mirror.FRONT_BACK).
-            TunnelTemplate.placePortalAt(overworld, origin, false);
+            TunnelTemplate.placePortalNamed(overworld, origin, false, name);
         }
-        // Mark the corner wedges above the arch with STRUCTURE_VOID so they
-        // are stripped from the saved template and the in-world stamp leaves
-        // whatever's at those positions (mountain rock) alone.
+        // STRUCTURE_VOID corner-wedge overlay so saved templates strip those
+        // positions and in-world stamps leave the surrounding rock alone.
         TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
         LegacyTunnelPaint.fillCornersWithVoid(overworld, origin.getX(), tg);
         setOutline(overworld, origin, OUTLINE_BLOCK);
     }
 
-    /**
-     * Erase the plot for {@code variant} — footprint + outline cage cleared
-     * to air. Used on category switch and editor exit.
-     */
+    /** Erase every variant plot for {@code variant}. */
     public static void clearPlot(ServerLevel overworld, TunnelVariant variant) {
-        BlockPos origin = PLOT_ORIGINS.get(variant);
-        TunnelTemplate.eraseAt(overworld, origin);
-        setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
+        for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
+            BlockPos origin = plotOrigin(variant, name);
+            TunnelTemplate.eraseAt(overworld, origin);
+            setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
+        }
     }
 
     /**
-     * Capture the 10×14×13 region at the plot for {@code variant} into a
-     * fresh {@link StructureTemplate} and persist it via
-     * {@link TunnelTemplateStore}.
-     *
-     * <p><b>Ignore block is {@code STRUCTURE_VOID}</b> (not {@code null} or
-     * {@code AIR}). The editor {@link #enter} pass marks corner wedges
-     * above the arch profile as {@code STRUCTURE_VOID} — those positions
-     * sit inside the bounding box but are rock in-world, so we strip them
-     * from the saved template. Air inside the tunnel IS captured, so the
-     * stamp carves out the interior when placed underground. Anything the
-     * user explicitly puts in a corner (e.g. glowstone) overrides the
-     * void and is captured normally.</p>
+     * Save the captured 10×14×13 region for the {@code (variant, name)}
+     * the player is currently standing in.
      */
     public static void save(ServerPlayer player, TunnelVariant variant) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
-        BlockPos origin = PLOT_ORIGINS.get(variant);
+
+        TunnelPlot loc = plotContainingNamed(player.blockPosition());
+        if (loc == null || loc.variant() != variant) {
+            throw new IOException("Player is not inside any tunnel_"
+                + variant.name().toLowerCase(java.util.Locale.ROOT) + " plot.");
+        }
+        String name = loc.name();
+        BlockPos origin = plotOrigin(variant, name);
 
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
         template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
-        TunnelTemplateStore.save(variant, template);
 
-        LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{} template",
-            player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT));
+        TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
+        TrackVariantStore.save(kind, name, template);
+
+        LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{}/{} template",
+            player.getName().getString(),
+            variant.name().toLowerCase(java.util.Locale.ROOT), name);
     }
 
     /**
      * Restore player to pre-enter position/dimension. Returns false if no
-     * session — the caller should then try {@link CarriageEditor#exit}.
+     * session — caller should then try {@link CarriageEditor#exit}.
      */
     public static boolean exit(ServerPlayer player) {
         Session session = SESSIONS.remove(player.getUUID());
@@ -197,10 +198,7 @@ public final class TunnelEditor {
         return true;
     }
 
-    /**
-     * Draw the cage: barrier blocks along the 12 edges of the bounding box
-     * that sits 1 block outside the 10×14×13 footprint.
-     */
+    /** Draw the bedrock cage along the 12 edges of the 10×14×13 plot. */
     private static void setOutline(ServerLevel level, BlockPos origin, BlockState state) {
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
@@ -221,4 +219,12 @@ public final class TunnelEditor {
             }
         }
     }
+
+    /** Reference to silence "unused" warnings for the world-data import. */
+    @SuppressWarnings("unused")
+    private static final Class<?> WORLD_DATA = DungeonTrainWorldData.class;
+
+    /** Reference to silence "unused" warning for the list import. */
+    @SuppressWarnings("unused")
+    private static final Class<?> LIST_REF = List.class;
 }

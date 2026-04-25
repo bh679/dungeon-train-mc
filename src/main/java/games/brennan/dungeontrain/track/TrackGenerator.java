@@ -3,11 +3,15 @@ package games.brennan.dungeontrain.track;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.tunnel.VSShipFilterProcessor;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -25,6 +29,7 @@ import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
@@ -245,12 +250,34 @@ public final class TrackGenerator {
      * @return false if the bed position is ship-owned (caller should skip the
      *         pillar slice for this column too); true otherwise.
      */
+    /**
+     * Per-tile data the column placer needs: the unpacked template cells,
+     * the per-block variants sidecar (may be empty), the world seed, and
+     * the tile's index so the deterministic per-block pick is stable
+     * across reloads. {@code tile} can be empty (caller falls back to the
+     * hardcoded bed + rail palette); {@code sidecar} is null when the tile
+     * has no {@code .variants.json} alongside it.
+     */
+    private record TilePaint(
+        Optional<BlockState[][][]> cells,
+        TrackVariantBlocks sidecar,
+        long worldSeed,
+        long tileIndex
+    ) {
+        BlockState resolveSidecar(BlockState base, int xMod, int y, int zOff) {
+            if (sidecar == null || sidecar.isEmpty() || base == null) return base;
+            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
+                new BlockPos(xMod, y, zOff), worldSeed, (int) tileIndex);
+            return picked != null ? picked.state() : base;
+        }
+    }
+
     private static boolean placeTrackColumn(
         ServerLevel level,
         int worldX,
         int worldZ,
         TrackGeometry g,
-        Optional<BlockState[][][]> tile
+        TilePaint paint
     ) {
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
@@ -261,9 +288,10 @@ public final class TrackGenerator {
         int zOff = worldZ - g.trackZMin();
         int xMod = Math.floorMod(worldX, TrackTemplate.TILE_LENGTH);
 
-        BlockState bedState = tile.isPresent()
-            ? tile.get()[xMod][0][zOff]
+        BlockState bedState = paint.cells().isPresent()
+            ? paint.cells().get()[xMod][0][zOff]
             : TrackPalette.BED;
+        bedState = paint.resolveSidecar(bedState, xMod, 0, zOff);
         if (bedState != null) {
             BlockState existingBed = level.getBlockState(bedPos);
             if (!existingBed.is(bedState.getBlock())) {
@@ -272,13 +300,14 @@ public final class TrackGenerator {
         }
 
         BlockState railState;
-        if (tile.isPresent()) {
-            railState = tile.get()[xMod][1][zOff];
+        if (paint.cells().isPresent()) {
+            railState = paint.cells().get()[xMod][1][zOff];
         } else if (worldZ == g.trackZMin() + 1 || worldZ == g.trackZMax() - 1) {
             railState = TrackPalette.RAIL;
         } else {
             railState = null;
         }
+        railState = paint.resolveSidecar(railState, xMod, 1, zOff);
         if (railState != null) {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
@@ -370,6 +399,37 @@ public final class TrackGenerator {
      * matching the pre-template visual exactly. Air entries in a loaded
      * template are left untouched so users can design pillar cut-outs.</p>
      */
+    /**
+     * One pillar section's resolved paint — the unpacked column cells and
+     * the per-block sidecar bundle. Loaded once per pillar slice in
+     * {@link #placePillarSlice} since each section runs over up to 4 (TOP) /
+     * 1 (MIDDLE) / 3 (BOTTOM) rows.
+     */
+    private record PillarPaint(
+        Optional<BlockState[][]> column,
+        TrackVariantBlocks sidecar,
+        long worldSeed,
+        int pillarIndex
+    ) {
+        BlockState resolveSidecar(BlockState base, int row, int zIdx) {
+            if (sidecar == null || sidecar.isEmpty() || base == null) return base;
+            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
+                new BlockPos(0, row, zIdx), worldSeed, pillarIndex);
+            return picked != null ? picked.state() : base;
+        }
+    }
+
+    private static PillarPaint loadPillarPaint(
+        ServerLevel level, PillarSection section, CarriageDims dims, long worldSeed, int pillarIndex
+    ) {
+        TrackKind kind = PillarTemplateStore.pillarKind(section);
+        String name = TrackVariantRegistry.pickName(kind, worldSeed, pillarIndex);
+        Optional<BlockState[][]> col = PillarTemplateStore.getColumnFor(level, section, dims, name);
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+            kind, name, new Vec3i(1, section.height(), dims.width()));
+        return new PillarPaint(col, sidecar, worldSeed, pillarIndex);
+    }
+
     private static void placePillarSlice(
         ServerLevel level,
         int worldX,
@@ -392,9 +452,15 @@ public final class TrackGenerator {
         int h = topInclusive - deepestGroundY + 1;
         if (h <= 0) return;
 
-        Optional<BlockState[][]> topCol = PillarTemplateStore.getColumn(level, PillarSection.TOP, dims);
-        Optional<BlockState[][]> midCol = PillarTemplateStore.getColumn(level, PillarSection.MIDDLE, dims);
-        Optional<BlockState[][]> botCol = PillarTemplateStore.getColumn(level, PillarSection.BOTTOM, dims);
+        // Pick a registry-weighted variant per section, deterministically by
+        // worldSeed + worldX so the same pillar position re-renders identically
+        // across reloads. Each section picks independently — themed pillars
+        // (matching top/middle/bottom names) are out of scope; authors who
+        // want them can bias weights to dominant names.
+        long worldSeed = level.getSeed();
+        PillarPaint top = loadPillarPaint(level, PillarSection.TOP, dims, worldSeed, worldX);
+        PillarPaint mid = loadPillarPaint(level, PillarSection.MIDDLE, dims, worldSeed, worldX);
+        PillarPaint bot = loadPillarPaint(level, PillarSection.BOTTOM, dims, worldSeed, worldX);
 
         int topH = PillarSection.TOP.height();
         int botH = PillarSection.BOTTOM.height();
@@ -406,23 +472,24 @@ public final class TrackGenerator {
         for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
             int zIdx = z - zMin;
             for (int i = 0; i < placeBotH; i++) {
-                stampSliceCell(level, worldX, deepestGroundY + i, z, botCol, i, zIdx);
+                stampSliceCell(level, worldX, deepestGroundY + i, z, bot, i, zIdx);
             }
             for (int i = 0; i < placeMidH; i++) {
-                stampSliceCell(level, worldX, deepestGroundY + placeBotH + i, z, midCol, 0, zIdx);
+                stampSliceCell(level, worldX, deepestGroundY + placeBotH + i, z, mid, 0, zIdx);
             }
             for (int i = 0; i < placeTopH; i++) {
                 int y = topInclusive - placeTopH + 1 + i;
                 int row = (topH - placeTopH) + i;
-                stampSliceCell(level, worldX, y, z, topCol, row, zIdx);
+                stampSliceCell(level, worldX, y, z, top, row, zIdx);
             }
         }
     }
 
     /**
-     * Stamp one cell of a pillar slice. {@code column} is the unpacked
-     * 2D template (row Y × Z offset) for the section, or empty for fallback.
-     * Null template cells are treated as air — the world stays passable.
+     * Stamp one cell of a pillar slice. {@code paint} carries the unpacked
+     * 2D template (row Y × Z offset) plus the per-block sidecar; null
+     * template cells are treated as air. Sidecar resolution applies after
+     * the template lookup, so an authored variant can override any cell.
      *
      * <p>Unlike the pre-template per-column early-terminate, this method
      * silently skips ship-owned or non-passable positions without aborting
@@ -433,7 +500,7 @@ public final class TrackGenerator {
     private static void stampSliceCell(
         ServerLevel level,
         int x, int y, int z,
-        Optional<BlockState[][]> column,
+        PillarPaint paint,
         int row,
         int zIdx
     ) {
@@ -442,6 +509,7 @@ public final class TrackGenerator {
         BlockState existing = level.getBlockState(pos);
         if (!isPassable(existing)) return;
 
+        Optional<BlockState[][]> column = paint.column();
         BlockState state;
         if (column.isPresent()
             && row >= 0 && row < column.get().length
@@ -452,6 +520,8 @@ public final class TrackGenerator {
         } else {
             state = TrackPalette.PILLAR;
         }
+        state = paint.resolveSidecar(state, row, zIdx);
+        if (state == null) return;
         SilentBlockOps.setBlockSilent(level, pos, state);
     }
 
@@ -499,14 +569,32 @@ public final class TrackGenerator {
         // Fetch per-world dims once; the pillar- and track-template stores
         // validate against this, and the call is cheap (SavedData lookup).
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        Optional<BlockState[][][]> trackTile = TrackTemplateStore.getCells(level, dims);
+
+        // Per-tile paint cache (≤ 5 tiles touch any single 16-wide chunk so
+        // this map stays tiny). Key = tileIndex (X / TILE_LENGTH); value =
+        // the registry-picked name's cells + per-block sidecar bundle.
+        long worldSeed = level.getSeed();
+        Vec3i tileFootprint = TrackKind.TILE.dims(dims);
+        Map<Long, TilePaint> tilePaints = new HashMap<>();
 
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
+            long tileIndex = Math.floorDiv((long) worldX, (long) TrackTemplate.TILE_LENGTH);
+            TilePaint paint = tilePaints.computeIfAbsent(
+                tileIndex,
+                idx -> {
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx);
+                    Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
+                    TrackVariantBlocks sidecar =
+                        TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
+                    return new TilePaint(cells, sidecar, worldSeed, idx);
+                }
+            );
+
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
-                placeTrackColumn(level, worldX, worldZ, g, trackTile);
+                placeTrackColumn(level, worldX, worldZ, g, paint);
             }
 
             if (containingPillar != null) {
@@ -594,10 +682,20 @@ public final class TrackGenerator {
 
         boolean flipped = Math.floorMod(windowIndex, 2) == 1;
 
+        // Pick a registry-weighted variant for this stair instance.
+        // tileIndex = centerX so re-walking the same chunk picks the same
+        // variant deterministically.
+        long worldSeed = level.getSeed();
+        String stairsName = TrackVariantRegistry.pickName(
+            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
         Optional<StructureTemplate> templateOpt =
-            PillarTemplateStore.getAdjunct(level, games.brennan.dungeontrain.track.PillarAdjunct.STAIRS);
+            PillarTemplateStore.getAdjunctFor(level,
+                games.brennan.dungeontrain.track.PillarAdjunct.STAIRS, stairsName);
         if (templateOpt.isEmpty()) return;
         StructureTemplate template = templateOpt.get();
+        TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
+            TrackKind.ADJUNCT_STAIRS, stairsName,
+            new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
 
         int topInclusive = g.bedY() + 2; // 3 rows above the pillar top so the
                                           // staircase's cap sits above the rail
@@ -653,6 +751,32 @@ public final class TrackGenerator {
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
 
             template.placeInWorld(level, copyOrigin, copyOrigin, settings, level.getRandom(), 3);
+
+            // Sidecar pass — overwrite flagged template-local positions with
+            // the deterministic per-block pick. Mirror semantics: on the
+            // mirrored (+Z) side template-local Z=k lands at world
+            // {@code originZ + STAIRS_Z - 1 - k}; on the flipped (-Z) side
+            // it lands at {@code originZ + k}. Cells whose template-local Y
+            // would land outside [bottomY, currentTop] are skipped (the
+            // BoundingBox above already kept those out of placeInWorld).
+            if (!stairsSidecar.isEmpty()) {
+                int templateBaseY = currentTop - (STAIRS_Y - 1);
+                for (var entry : stairsSidecar.entries()) {
+                    int lx = entry.localPos().getX();
+                    int ly = entry.localPos().getY();
+                    int lz = entry.localPos().getZ();
+                    int wy = templateBaseY + ly;
+                    if (wy < bottomY || wy > currentTop) continue;
+                    int wx = originX + lx;
+                    int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
+                    BlockPos wpos = new BlockPos(wx, wy, wz);
+                    if (VSGameUtilsKt.getShipObjectManagingPos(level, wpos) != null) continue;
+                    games.brennan.dungeontrain.editor.VariantState picked =
+                        stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
+                    if (picked == null) continue;
+                    SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
+                }
+            }
 
             currentTop -= STAIRS_Y;
         }

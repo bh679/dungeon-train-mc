@@ -1,13 +1,19 @@
 package games.brennan.dungeontrain.tunnel;
 
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Optional;
 
@@ -54,9 +60,25 @@ public final class TunnelTemplate {
      * else delegates to the procedural fallback.
      */
     public static void placeSectionAt(ServerLevel level, BlockPos origin) {
-        Optional<StructureTemplate> stored = TunnelTemplateStore.get(level, TunnelVariant.SECTION);
+        long worldSeed = level.getSeed();
+        int tileIndex = origin.getX();
+        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex);
+        placeSectionNamed(level, origin, name);
+    }
+
+    /**
+     * Editor-facing — stamp the named section variant at {@code origin}
+     * (skips registry weight pick). Falls back to procedural paint if the
+     * named template is missing. Sidecar applied with
+     * {@code tileIndex = origin.getX()} for runtime determinism.
+     */
+    public static void placeSectionNamed(ServerLevel level, BlockPos origin, String name) {
+        long worldSeed = level.getSeed();
+        int tileIndex = origin.getX();
+        Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.SECTION, name);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get(), false);
+            applyTunnelSidecar(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
             return;
         }
         TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
@@ -77,10 +99,25 @@ public final class TunnelTemplate {
      * {@code LENGTH - 1} on X.</p>
      */
     public static void placePortalAt(ServerLevel level, BlockPos origin, boolean mirrorX) {
-        Optional<StructureTemplate> stored = TunnelTemplateStore.get(level, TunnelVariant.PORTAL);
+        long worldSeed = level.getSeed();
+        int tileIndex = origin.getX();
+        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_PORTAL, worldSeed, tileIndex);
+        placePortalNamed(level, origin, mirrorX, name);
+    }
+
+    /**
+     * Editor-facing — stamp the named portal variant at {@code origin}
+     * (skips registry weight pick). See {@link #placeSectionNamed} for
+     * rationale.
+     */
+    public static void placePortalNamed(ServerLevel level, BlockPos origin, boolean mirrorX, String name) {
+        long worldSeed = level.getSeed();
+        int tileIndex = origin.getX();
+        Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.PORTAL, name);
         if (stored.isPresent()) {
             BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
             stampTemplate(level, stampOrigin, stored.get(), mirrorX);
+            applyTunnelSidecar(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
             return;
         }
         TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
@@ -108,5 +145,44 @@ public final class TunnelTemplate {
             .addProcessor(VSShipFilterProcessor.INSTANCE);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+    }
+
+    /**
+     * Sidecar post-pass for a stamped tunnel template. Reads the
+     * {@link TrackVariantBlocks} sidecar for {@code (kind, name)}, walks each
+     * flagged template-local position, computes the world position
+     * (accounting for {@code Mirror.FRONT_BACK} on portal exits), and
+     * overwrites with the deterministic per-block pick.
+     *
+     * <p>{@code origin} is always the canonical-side origin
+     * ({@code (worldX, floorY, wallMinZ)}); the portal's {@code mirrorX}
+     * stamp uses a shifted stampOrigin internally but world positions
+     * computed here are relative to the canonical origin so the same
+     * sidecar entry maps to the same visible block on either side.</p>
+     */
+    private static void applyTunnelSidecar(
+        ServerLevel level, BlockPos origin, boolean mirrorX,
+        TrackKind kind, String name, long worldSeed, int tileIndex
+    ) {
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+            kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
+        if (sidecar.isEmpty()) return;
+        for (var entry : sidecar.entries()) {
+            int lx = entry.localPos().getX();
+            int ly = entry.localPos().getY();
+            int lz = entry.localPos().getZ();
+            // FRONT_BACK negates X around the stamp origin (= origin + (LENGTH-1, 0, 0)),
+            // so for the mirrored side world X = (origin.x + LENGTH - 1) - lx.
+            // For the non-mirrored side world coords = origin + local.
+            int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
+            int wy = origin.getY() + ly;
+            int wz = origin.getZ() + lz;
+            BlockPos wpos = new BlockPos(wx, wy, wz);
+            if (VSGameUtilsKt.getShipObjectManagingPos(level, wpos) != null) continue;
+            games.brennan.dungeontrain.editor.VariantState picked =
+                sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
+            if (picked == null) continue;
+            SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
+        }
     }
 }

@@ -93,16 +93,19 @@ public enum EditorCategory {
         if (contents != null) {
             return Optional.of(new Located(CONTENTS, new EditorModel.ContentsModel(contents)));
         }
-        if (TrackEditor.plotContaining(pos, dims)) {
-            return Optional.of(new Located(TRACKS, new EditorModel.TrackModel()));
+        String trackName = TrackEditor.resolveName(pos, dims);
+        if (trackName != null) {
+            return Optional.of(new Located(TRACKS, new EditorModel.TrackModel(trackName)));
         }
-        PillarSection pillar = PillarEditor.plotContaining(pos, dims);
-        if (pillar != null) {
-            return Optional.of(new Located(TRACKS, new EditorModel.PillarModel(pillar)));
+        PillarEditor.SectionPlot pillarLoc = PillarEditor.plotContaining(pos, dims);
+        if (pillarLoc != null) {
+            return Optional.of(new Located(TRACKS,
+                new EditorModel.PillarModel(pillarLoc.section(), pillarLoc.name())));
         }
-        TunnelVariant tunnel = TunnelEditor.plotContaining(pos);
-        if (tunnel != null) {
-            return Optional.of(new Located(TRACKS, new EditorModel.TunnelModel(tunnel)));
+        TunnelEditor.TunnelPlot tunnelLoc = TunnelEditor.plotContainingNamed(pos);
+        if (tunnelLoc != null) {
+            return Optional.of(new Located(TRACKS,
+                new EditorModel.TunnelModel(tunnelLoc.variant(), tunnelLoc.name())));
         }
         return Optional.empty();
     }
