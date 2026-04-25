@@ -2,105 +2,106 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
-import net.minecraft.core.HolderGetter;
-import net.minecraft.core.Vec3i;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraftforge.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
- * Three-tier store for the single open-air track template, mirroring
- * {@link PillarTemplateStore} but unkeyed — only one track tile exists per
- * world.
+ * Editor-facing facade for the track tile template. Delegates underlying NBT
+ * I/O to {@link TrackVariantStore} for {@link TrackKind#TILE} so the editor's
+ * single-plot UI keeps authoring the synthetic "default" name while
+ * {@link games.brennan.dungeontrain.track.TrackGenerator} can pick any
+ * registered name per tile.
  *
- * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/tracks/track.nbt}.
- *       Per-install override written by {@link TrackEditor#save}.</li>
- *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/tracks/track.nbt}
- *       on the classpath. Shipped with the jar.</li>
- *   <li><b>Hardcoded fallback</b> — handled by
- *       {@link games.brennan.dungeontrain.track.TrackGenerator} when
- *       {@link #getCells} returns empty.</li>
- * </ol>
+ * <p>Cells are unpacked into a {@code BlockState[TILE_LENGTH][HEIGHT][width]}
+ * array using reflection on {@link StructureTemplate#palettes} (private in
+ * vanilla 1.20.1; we don't ship an AT). Per-name unpacked-cell cache lives
+ * here so repeated stamps inside one chunk don't repeat the unpack work.</p>
  *
- * <p>The directory is separate from both the carriage templates
- * ({@code config/dungeontrain/templates/}) and the pillar templates
- * ({@code config/dungeontrain/pillars/}) so
- * {@link games.brennan.dungeontrain.train.CarriageVariantRegistry}'s {@code *.nbt}
- * scan never accidentally registers the track tile (4×2×W footprint) as a
- * custom carriage.</p>
+ * <p>Migration of the legacy {@code config/dungeontrain/tracks/track.nbt}
+ * over to {@code tracks/default.nbt} is handled by
+ * {@link TrackVariantStore#migrateLegacyPaths()}, called from
+ * {@link games.brennan.dungeontrain.track.variant.TrackVariantRegistry#reload()}
+ * at server start.</p>
  */
 public final class TrackTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/tracks";
-    private static final String FILENAME = "track.nbt";
-    private static final String RESOURCE_PATH = "/data/dungeontrain/tracks/track.nbt";
-    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/tracks";
 
-    private static Optional<StructureTemplate> cache;
-    private static Optional<BlockState[][][]> cellsCache;
+    /** Per-name cache of unpacked cells, keyed by lowercase variant name. */
+    private static final Map<String, Optional<BlockState[][][]>> CELLS_CACHE = new HashMap<>();
 
     /**
      * Reflected accessor for {@link StructureTemplate#palettes}. Private in
-     * vanilla 1.20.1; we don't ship an AT. Mirrors {@link PillarTemplateStore}.
+     * vanilla 1.20.1; we don't ship an AT.
      */
     private static Field palettesField;
 
     private TrackTemplateStore() {}
 
+    /** Config dir for track tile NBTs ({@code config/dungeontrain/tracks/}). */
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return TrackVariantStore.directory(TrackKind.TILE);
     }
 
+    /** Path to the synthetic-default track NBT under the config dir. */
     public static Path file() {
-        return directory().resolve(FILENAME);
+        return TrackVariantStore.fileFor(TrackKind.TILE, TrackKind.DEFAULT_NAME);
     }
 
+    /** Path to the synthetic-default track NBT under the source tree (dev mode). */
     public static Path sourceFile() {
-        return sourceDirectory().resolve(FILENAME);
+        return TrackVariantStore.sourceFileFor(TrackKind.TILE, TrackKind.DEFAULT_NAME);
     }
 
     public static boolean sourceTreeAvailable() {
-        Path resources = resourcesRootOrNull();
-        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+        return TrackVariantStore.sourceTreeAvailable();
     }
 
-    /** Release cached template + unpacked cells. Wired to {@code ServerStoppedEvent}. */
+    /** Release every cached unpacked-cells entry. Wired to {@code ServerStoppedEvent}. */
     public static synchronized void clearCache() {
-        cache = null;
-        cellsCache = null;
+        CELLS_CACHE.clear();
     }
 
     /**
-     * Return the template unpacked as {@code BlockState[TILE_LENGTH][HEIGHT][width]}.
-     * First index is the X offset within the tile (0..3), second is the Y row
-     * (0 = bed, 1 = rail), third is the Z offset (0..width-1) within the track
-     * span. Cells recorded as air are {@code null} — the caller decides whether
-     * that means "skip this position" or "use a fallback block".
+     * Editor-facing — return the unpacked cells for the synthetic "default"
+     * variant. Equivalent to {@link #getCellsFor(ServerLevel, CarriageDims, String)
+     * getCellsFor(level, dims, TrackKind.DEFAULT_NAME)}; preserved as the
+     * one-arg call so {@link TrackEditor} doesn't need to know about variant
+     * names.
+     */
+    public static synchronized Optional<BlockState[][][]> getCells(ServerLevel level, CarriageDims dims) {
+        return getCellsFor(level, dims, TrackKind.DEFAULT_NAME);
+    }
+
+    /**
+     * Generator-facing — unpack the named tile's NBT into a
+     * {@code BlockState[TILE_LENGTH][HEIGHT][width]} array. {@code cells[0][0][0]}
+     * is the tile origin (bed row, Z=0). Positions captured as air at save
+     * time stay {@code null} so callers can decide whether that means
+     * "skip" or "fall back".
      *
      * <p>Empty when no config-dir or bundled template exists at the current
      * world's {@code dims.width()}; caller falls back to the hardcoded
      * stone-brick bed + vanilla rail behavior.</p>
      */
-    public static synchronized Optional<BlockState[][][]> getCells(ServerLevel level, CarriageDims dims) {
-        Optional<BlockState[][][]> cached = cellsCache;
+    public static synchronized Optional<BlockState[][][]> getCellsFor(
+        ServerLevel level, CarriageDims dims, String name
+    ) {
+        String key = name == null ? TrackKind.DEFAULT_NAME : name;
+        Optional<BlockState[][][]> cached = CELLS_CACHE.get(key);
         if (cached != null) {
             if (cached.isEmpty()) return cached;
             BlockState[][][] c = cached.get();
@@ -109,179 +110,55 @@ public final class TrackTemplateStore {
                 && c[0][0].length == dims.width()) {
                 return cached;
             }
-            // Dim mismatch — fall through and rebuild.
+            // Dim mismatch — fall through and rebuild below.
         }
-        Optional<StructureTemplate> tmpl = get(level, dims);
+        Optional<StructureTemplate> tmpl = TrackVariantStore.get(level, TrackKind.TILE, key, dims);
         Optional<BlockState[][][]> cells = tmpl.map(t -> extractCells(t, dims.width()));
-        cellsCache = cells;
+        CELLS_CACHE.put(key, cells);
         return cells;
     }
 
+    /** Editor-facing — load the StructureTemplate for "default". */
     public static synchronized Optional<StructureTemplate> get(ServerLevel level, CarriageDims dims) {
-        Optional<StructureTemplate> cached = cache;
-        if (cached != null) return filterForDims(cached, dims);
-        Optional<StructureTemplate> loaded = loadFromConfig(level, dims);
-        if (loaded.isEmpty()) {
-            loaded = loadFromResource(level, dims);
-        }
-        cache = loaded;
-        return loaded;
+        return TrackVariantStore.get(level, TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
     }
 
-    private static Optional<StructureTemplate> filterForDims(Optional<StructureTemplate> cached, CarriageDims dims) {
-        if (cached.isEmpty()) return cached;
-        Vec3i size = cached.get().getSize();
-        if (sizeMatches(size, dims)) return cached;
-        LOGGER.warn(
-            "[DungeonTrain] Cached track template no longer matches width {} — falling back.",
-            dims.width());
-        return Optional.empty();
-    }
-
-    private static boolean sizeMatches(Vec3i size, CarriageDims dims) {
-        return size.getX() == TrackTemplate.TILE_LENGTH
-            && size.getY() == TrackTemplate.HEIGHT
-            && size.getZ() == dims.width();
-    }
-
+    /** Save the editor's captured template back as the "default" variant. */
     public static synchronized void save(StructureTemplate template) throws IOException {
-        Path dir = directory();
-        Files.createDirectories(dir);
-        Path file = file();
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
-        cache = Optional.of(template);
-        cellsCache = null;
-        LOGGER.info("[DungeonTrain] Saved track template to {}", file);
+        TrackVariantStore.save(TrackKind.TILE, TrackKind.DEFAULT_NAME, template);
+        CELLS_CACHE.remove(TrackKind.DEFAULT_NAME);
+        LOGGER.info("[DungeonTrain] Saved track template (default) to {}", file());
     }
 
+    /** Save the editor's captured template into the source tree (dev mode). */
     public static synchronized void saveToSource(StructureTemplate template) throws IOException {
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path file = sourceFile();
-        Files.createDirectories(file.getParent());
-        CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
-        LOGGER.info("[DungeonTrain] Wrote bundled track template to {}", file);
+        TrackVariantStore.saveToSource(TrackKind.TILE, TrackKind.DEFAULT_NAME, template);
     }
 
+    /** Promote the per-install override to the source tree (dev mode). */
     public static synchronized void promote() throws IOException {
-        Path src = file();
-        if (!Files.isRegularFile(src)) {
-            throw new IOException("No saved track template in " + src);
-        }
-        if (!sourceTreeAvailable()) {
-            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
-        }
-        Path dst = sourceFile();
-        Files.createDirectories(dst.getParent());
-        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.info("[DungeonTrain] Promoted track template from {} to {}", src, dst);
+        TrackVariantStore.promote(TrackKind.TILE, TrackKind.DEFAULT_NAME);
     }
 
+    /** Delete the per-install "default" track NBT. Returns true if it existed. */
     public static synchronized boolean delete() throws IOException {
-        Path file = file();
-        boolean existed = Files.deleteIfExists(file);
-        cache = Optional.empty();
-        cellsCache = Optional.empty();
-        if (existed) LOGGER.info("[DungeonTrain] Deleted track template ({})", file);
+        boolean existed = TrackVariantStore.delete(TrackKind.TILE, TrackKind.DEFAULT_NAME);
+        CELLS_CACHE.put(TrackKind.DEFAULT_NAME, Optional.empty());
+        if (existed) LOGGER.info("[DungeonTrain] Deleted track template (default) at {}", file());
         return existed;
     }
 
     public static boolean exists() {
-        return Files.isRegularFile(file());
+        return TrackVariantStore.exists(TrackKind.TILE, TrackKind.DEFAULT_NAME);
     }
 
-    /**
-     * Load the track template from the bundled tier only — the classpath
-     * {@code /data/dungeontrain/tracks/track.nbt}. Skips the config-dir
-     * override and the hardcoded fallback. Used by {@code /dt reset default}
-     * to revert the plot to the shipped template regardless of any config-dir
-     * override.
-     */
+    /** Bundled-only "default" lookup — used by {@code /dt reset}. */
     public static Optional<StructureTemplate> getBundled(ServerLevel level, CarriageDims dims) {
-        return loadFromResource(level, dims);
+        return TrackVariantStore.getBundled(level, TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
     }
 
     public static boolean bundled() {
-        try (InputStream in = TrackTemplateStore.class.getResourceAsStream(RESOURCE_PATH)) {
-            return in != null;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageDims dims) {
-        Path file = file();
-        if (!Files.isRegularFile(file)) return Optional.empty();
-        try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
-            return loadAndValidate(level, dims, tag, "config " + file);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read config track template at {}: {}",
-                file, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageDims dims) {
-        try (InputStream in = TrackTemplateStore.class.getResourceAsStream(RESOURCE_PATH)) {
-            if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in);
-            return loadAndValidate(level, dims, tag, "bundled " + RESOURCE_PATH);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled track template at {}: {}",
-                RESOURCE_PATH, e.toString());
-            return Optional.empty();
-        }
-    }
-
-    private static Optional<StructureTemplate> loadAndValidate(
-        ServerLevel level, CarriageDims dims, CompoundTag tag, String origin
-    ) {
-        StructureTemplate template = new StructureTemplate();
-        HolderGetter<Block> blocks = level.registryAccess().lookupOrThrow(Registries.BLOCK);
-        template.load(blocks, tag);
-
-        Vec3i size = template.getSize();
-        if (!sizeMatches(size, dims)) {
-            LOGGER.warn(
-                "[DungeonTrain] Track template ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
-                origin, size.getX(), size.getY(), size.getZ(),
-                TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width()
-            );
-            return Optional.empty();
-        }
-        LOGGER.info("[DungeonTrain] Loaded track template from {}", origin);
-        return Optional.of(template);
-    }
-
-    private static Path sourceDirectory() {
-        Path dir = sourceDirectoryOrNull();
-        if (dir == null) {
-            throw new IllegalStateException(
-                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
-            );
-        }
-        return dir;
-    }
-
-    private static Path sourceDirectoryOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve(SOURCE_REL_PATH);
-    }
-
-    private static Path resourcesRootOrNull() {
-        Path projectRoot = projectRootOrNull();
-        if (projectRoot == null) return null;
-        return projectRoot.resolve("src/main/resources");
-    }
-
-    private static Path projectRootOrNull() {
-        Path gameDir = FMLPaths.GAMEDIR.get();
-        return gameDir.getParent();
+        return TrackVariantStore.bundled(TrackKind.TILE, TrackKind.DEFAULT_NAME);
     }
 
     /**

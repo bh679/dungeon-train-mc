@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.track;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.tunnel.VSShipFilterProcessor;
@@ -25,6 +27,7 @@ import org.valkyrienskies.core.api.ships.ServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
@@ -499,10 +502,24 @@ public final class TrackGenerator {
         // Fetch per-world dims once; the pillar- and track-template stores
         // validate against this, and the call is cheap (SavedData lookup).
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
-        Optional<BlockState[][][]> trackTile = TrackTemplateStore.getCells(level, dims);
+
+        // Per-tile variant cache (≤ 5 tiles touch any single 16-wide chunk so
+        // this map stays tiny). Key = tileIndex (X / TILE_LENGTH); value = the
+        // unpacked cells for the registry-picked name at that tile.
+        long worldSeed = level.getSeed();
+        Map<Long, Optional<BlockState[][][]>> tileCells = new HashMap<>();
 
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
+            long tileIndex = Math.floorDiv((long) worldX, (long) TrackTemplate.TILE_LENGTH);
+            Optional<BlockState[][][]> trackTile = tileCells.computeIfAbsent(
+                tileIndex,
+                idx -> {
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx);
+                    return TrackTemplateStore.getCellsFor(level, dims, name);
+                }
+            );
+
             PillarSpec containingPillar = findPillarContaining(pillars, worldX);
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
