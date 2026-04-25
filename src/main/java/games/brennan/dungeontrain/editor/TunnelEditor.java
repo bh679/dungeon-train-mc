@@ -153,6 +153,13 @@ public final class TunnelEditor {
         }
     }
 
+    /** Erase a single named variant plot for {@code variant} — interior + outline cleared to air. */
+    public static void clearPlot(ServerLevel overworld, TunnelVariant variant, String name) {
+        BlockPos origin = plotOrigin(variant, name);
+        TunnelTemplate.eraseAt(overworld, origin);
+        setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
+    }
+
     /**
      * Save the captured 10×14×13 region for the {@code (variant, name)}
      * the player is currently standing in.

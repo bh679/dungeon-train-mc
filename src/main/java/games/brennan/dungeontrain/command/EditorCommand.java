@@ -2717,6 +2717,35 @@ public final class EditorCommand {
     }
 
     /**
+     * Wipe the in-world blocks of the {@code (kind, name)} plot to air. Called
+     * from {@code /dt editor tracks reset <kind>} BEFORE the registry
+     * unregister so the just-removed variant doesn't leave an orphaned plot
+     * sitting in the world after the player teleports back to default. No-op
+     * for {@link games.brennan.dungeontrain.track.variant.TrackKind#ADJUNCT_STAIRS}
+     * which has no addressable single plot.
+     */
+    private static void clearPlotForVariant(
+        ServerLevel overworld, games.brennan.dungeontrain.track.variant.TrackKind kind, String name, CarriageDims dims
+    ) {
+        switch (kind) {
+            case TILE -> games.brennan.dungeontrain.editor.TrackEditor.clearPlot(overworld, name, dims);
+            case PILLAR_TOP -> games.brennan.dungeontrain.editor.PillarEditor.clearPlot(
+                overworld, PillarSection.TOP, name, dims);
+            case PILLAR_MIDDLE -> games.brennan.dungeontrain.editor.PillarEditor.clearPlot(
+                overworld, PillarSection.MIDDLE, name, dims);
+            case PILLAR_BOTTOM -> games.brennan.dungeontrain.editor.PillarEditor.clearPlot(
+                overworld, PillarSection.BOTTOM, name, dims);
+            case TUNNEL_SECTION -> games.brennan.dungeontrain.editor.TunnelEditor.clearPlot(
+                overworld, TunnelVariant.SECTION, name);
+            case TUNNEL_PORTAL -> games.brennan.dungeontrain.editor.TunnelEditor.clearPlot(
+                overworld, TunnelVariant.PORTAL, name);
+            case ADJUNCT_STAIRS -> {
+                // No addressable plot — see restampPlotForKind for the same caveat.
+            }
+        }
+    }
+
+    /**
      * {@code /dt editor tracks new <kind> <name>} — duplicate the kind's
      * current active variant under {@code name}, register it, swap the
      * editor's active marker to it, and restamp the plot so the player sees
@@ -2808,6 +2837,12 @@ public final class EditorCommand {
                 + "Stand on a custom variant first."));
             return 0;
         }
+
+        // Wipe the variant's plot blocks BEFORE deregistering so the orphaned
+        // plot doesn't sit in the world after teleport. restampPlotForKind
+        // below only re-stamps registered names, so a leftover plot would
+        // otherwise stay visible indefinitely.
+        clearPlotForVariant(overworld, kind, name, dims);
 
         try {
             games.brennan.dungeontrain.track.variant.TrackVariantStore.delete(kind, name);

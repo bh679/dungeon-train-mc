@@ -38,6 +38,8 @@ public final class EditorStatusHudOverlay {
     /** Current status. Empty strings = hidden. Mutated on the main client thread. */
     private static String category = "";
     private static String model = "";
+    /** Command-token id for the current model — what the menu hands to {@code /dt editor ...}. May differ from {@link #model} (HUD path string) for track-side models. */
+    private static String modelId = "";
     private static boolean devmode = false;
     /** Current variant weight for carriage models, or {@link #NO_WEIGHT} when not applicable. */
     private static int weight = NO_WEIGHT;
@@ -52,9 +54,10 @@ public final class EditorStatusHudOverlay {
     private EditorStatusHudOverlay() {}
 
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
-    public static void setStatus(String newCategory, String newModel, boolean newDevmode, int newWeight) {
+    public static void setStatus(String newCategory, String newModel, String newModelId, boolean newDevmode, int newWeight) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
+        modelId = newModelId == null ? "" : newModelId;
         devmode = newDevmode;
         weight = newWeight;
     }
@@ -62,6 +65,7 @@ public final class EditorStatusHudOverlay {
     public static void clear() {
         category = "";
         model = "";
+        modelId = "";
         devmode = false;
         weight = NO_WEIGHT;
     }
@@ -80,9 +84,14 @@ public final class EditorStatusHudOverlay {
         return category;
     }
 
-    /** Current model id within the active category, or empty when not in an editor plot. */
+    /** Friendly path-style display string for the active model (e.g. {@code track / track2}). Empty when not in an editor plot. Use {@link #modelId()} for command construction. */
     public static String model() {
         return model;
+    }
+
+    /** Command-token id for the active model (e.g. {@code track}, {@code pillar_bottom}, {@code standard}). Empty when not in an editor plot. */
+    public static String modelId() {
+        return modelId;
     }
 
     /** Server-reported devmode flag. False when not in an editor plot. */

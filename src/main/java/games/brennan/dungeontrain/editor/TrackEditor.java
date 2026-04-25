@@ -136,6 +136,12 @@ public final class TrackEditor {
         }
     }
 
+    /** Erase a single named track-tile plot — footprint + outline cleared to air. */
+    public static void clearPlot(ServerLevel overworld, String name, CarriageDims dims) {
+        BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
+        eraseAt(overworld, origin, dims);
+    }
+
     /**
      * Capture the {@code 4 × 2 × width} region at the plot the player is
      * standing in into a fresh {@link StructureTemplate} and persist it
