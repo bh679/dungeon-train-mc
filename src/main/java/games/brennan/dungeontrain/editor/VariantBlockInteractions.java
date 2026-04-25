@@ -35,10 +35,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * In-editor variant authoring via shift-right-click:
+ * In-editor variant authoring via the rebindable variant-place key
+ * (default {@code Z}) plus right-click:
  *
  * <ul>
- *   <li>Player is sneaking and inside an editor plot.</li>
+ *   <li>Player is holding the variant-place key and inside an editor plot.</li>
  *   <li>They look at a block inside the plot footprint.</li>
  *   <li>They right-click it with a placeable block in main hand.</li>
  * </ul>
@@ -48,6 +49,11 @@ import java.util.List;
  * targeted block. First edit also captures the block currently occupying the
  * target position as the base candidate, so the entry reads
  * {@code [base_block, added_block]}.</p>
+ *
+ * <p>Held-state for the variant key lives in {@link VariantHotkeyState}, which
+ * is updated by the client-side {@code VariantHotkeyClient} via the
+ * {@link games.brennan.dungeontrain.net.VariantHotkeyPacket}. Vanilla sneak
+ * no longer triggers variant placement.</p>
  *
  * <p>v2 capture: the held item's BlockState is derived from a
  * {@link BlockPlaceContext} so directional blocks (stairs, logs, doors,
@@ -77,7 +83,7 @@ public final class VariantBlockInteractions {
         // single-source-of-truth and avoid double-processing on integrated SP.
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (event.getHand() != InteractionHand.MAIN_HAND) return;
-        if (!player.isShiftKeyDown()) return;
+        if (!VariantHotkeyState.isHeld(player)) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
