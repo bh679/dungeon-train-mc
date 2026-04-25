@@ -54,6 +54,21 @@ public final class DungeonTrainNet {
             .decoder(VariantHotkeyPacket::decode)
             .consumerMainThread(VariantHotkeyPacket::handle)
             .add();
+        CHANNEL.messageBuilder(PartAssignmentSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+            .encoder(PartAssignmentSyncPacket::encode)
+            .decoder(PartAssignmentSyncPacket::decode)
+            .consumerMainThread(PartAssignmentSyncPacket::handle)
+            .add();
+        CHANNEL.messageBuilder(PartAssignmentEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(PartAssignmentEditPacket::encode)
+            .decoder(PartAssignmentEditPacket::decode)
+            .consumerMainThread(PartAssignmentEditPacket::handle)
+            .add();
+        CHANNEL.messageBuilder(PartMenuTogglePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(PartMenuTogglePacket::encode)
+            .decoder(PartMenuTogglePacket::decode)
+            .consumerMainThread(PartMenuTogglePacket::handle)
+            .add();
     }
 
     /** Convenience: send a packet to the server (client → server). */

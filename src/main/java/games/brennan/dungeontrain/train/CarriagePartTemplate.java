@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -56,18 +57,44 @@ public final class CarriagePartTemplate {
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin,
                                CarriagePartKind kind, String name, CarriageDims dims,
                                long seed, int carriageIndex) {
-        if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) return;
-        Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
-        if (stored.isEmpty()) return;
-        StructureTemplate template = stored.get();
-        for (CarriagePartKind.Placement p : kind.placements(dims)) {
+        // Single-name overload: stamp the same template at every placement.
+        // Equivalent to passing the name N times to the per-placement variant.
+        List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        String[] names = new String[placements.size()];
+        for (int i = 0; i < placements.size(); i++) names[i] = name;
+        placeAtPerPlacement(level, carriageOrigin, kind, List.of(names), dims, seed, carriageIndex);
+    }
+
+    /**
+     * Stamp {@code kind} at each placement using the matching name from
+     * {@code names} (one entry per {@link CarriagePartKind.Placement}).
+     * Honours the per-entry {@link CarriagePartAssignment.SideMode} —
+     * placements whose name is {@link CarriagePartKind#NONE} or whose
+     * template is missing on disk are skipped silently, leaving the base
+     * geometry intact for that side.
+     *
+     * <p>Variant-block overlays still run per name; if the two placements
+     * use different names, each runs its own sidecar lookup. The mirror
+     * for each placement is applied independently.</p>
+     */
+    public static void placeAtPerPlacement(ServerLevel level, BlockPos carriageOrigin,
+                                           CarriagePartKind kind, List<String> names, CarriageDims dims,
+                                           long seed, int carriageIndex) {
+        List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        for (int i = 0; i < placements.size(); i++) {
+            String name = i < names.size() ? names.get(i) : null;
+            if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
+            Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(level, kind, name, dims);
+            if (stored.isEmpty()) continue;
+            StructureTemplate template = stored.get();
+            CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
             template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), 3);
+            applyVariantBlocksForPlacement(level, carriageOrigin, kind, name, dims, seed, carriageIndex, p);
         }
-        applyVariantBlocks(level, carriageOrigin, kind, name, dims, seed, carriageIndex);
     }
 
     /**
@@ -81,29 +108,28 @@ public final class CarriagePartTemplate {
      * — a picked sentinel resolves to {@link Blocks#AIR} so authors can
      * randomise "block or empty" within a part.</p>
      */
-    private static void applyVariantBlocks(ServerLevel level, BlockPos carriageOrigin,
-                                            CarriagePartKind kind, String name, CarriageDims dims,
-                                            long seed, int carriageIndex) {
+    private static void applyVariantBlocksForPlacement(ServerLevel level, BlockPos carriageOrigin,
+                                                       CarriagePartKind kind, String name, CarriageDims dims,
+                                                       long seed, int carriageIndex,
+                                                       CarriagePartKind.Placement p) {
         Vec3i partSize = kind.dims(dims);
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
         if (sidecar.isEmpty()) return;
 
-        for (CarriagePartKind.Placement p : kind.placements(dims)) {
-            BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-            for (var entry : sidecar.entries()) {
-                VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
-                if (picked == null) continue;
-                BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
-                if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
-                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                } else {
-                    // Mirror flips state properties (FACING/AXIS); BE NBT
-                    // passes through unchanged — vanilla StructureTemplate
-                    // does the same. Asymmetric BE content (sign text,
-                    // banner patterns) reads forward on both sides.
-                    BlockState toPlace = picked.state().mirror(p.mirror());
-                    SilentBlockOps.setBlockSilent(level, world, toPlace, picked.blockEntityNbt());
-                }
+        BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
+        for (var entry : sidecar.entries()) {
+            VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+            if (picked == null) continue;
+            BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+            } else {
+                // Mirror flips state properties (FACING/AXIS); BE NBT
+                // passes through unchanged — vanilla StructureTemplate
+                // does the same. Asymmetric BE content (sign text,
+                // banner patterns) reads forward on both sides.
+                BlockState toPlace = picked.state().mirror(p.mirror());
+                SilentBlockOps.setBlockSilent(level, world, toPlace, picked.blockEntityNbt());
             }
         }
     }

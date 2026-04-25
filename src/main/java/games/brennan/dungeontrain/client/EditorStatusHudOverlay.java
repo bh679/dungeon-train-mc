@@ -50,6 +50,8 @@ public final class EditorStatusHudOverlay {
     private static boolean devmode = false;
     /** Current variant weight for the active model, or {@link #NO_WEIGHT} when not applicable. */
     private static int weight = NO_WEIGHT;
+    /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
+    private static boolean partMenuEnabled = true;
 
     /** Distance from the top of the screen in GUI pixels. */
     private static final int OFFSET_FROM_TOP = 8;
@@ -61,13 +63,14 @@ public final class EditorStatusHudOverlay {
     private EditorStatusHudOverlay() {}
 
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
-    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName, boolean newDevmode, int newWeight) {
+    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName, boolean newDevmode, int newWeight, boolean newPartMenuEnabled) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
         modelName = newModelName == null ? "" : newModelName;
         devmode = newDevmode;
         weight = newWeight;
+        partMenuEnabled = newPartMenuEnabled;
     }
 
     public static void clear() {
@@ -77,6 +80,7 @@ public final class EditorStatusHudOverlay {
         modelName = "";
         devmode = false;
         weight = NO_WEIGHT;
+        partMenuEnabled = true;
     }
 
     /**
@@ -116,6 +120,11 @@ public final class EditorStatusHudOverlay {
     /** Current variant weight for the active carriage model, or -1 when not applicable. */
     public static int weight() {
         return weight;
+    }
+
+    /** Server-reported per-player part-position auto-open menu flag. Default true. */
+    public static boolean isPartMenuEnabled() {
+        return partMenuEnabled;
     }
 
     @SubscribeEvent

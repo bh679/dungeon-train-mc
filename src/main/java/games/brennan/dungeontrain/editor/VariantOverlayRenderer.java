@@ -123,6 +123,7 @@ public final class VariantOverlayRenderer {
         }
         LAST_PART_HOVER.remove(player.getUUID());
         LAST_PART_HOVER_TICK.remove(player.getUUID());
+        PartPositionMenuController.forget(player);
     }
 
     /**
@@ -158,6 +159,7 @@ public final class VariantOverlayRenderer {
                 BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
                 if (plotOrigin == null) continue;
 
+                PartPositionMenuController.update(player, plotVariant, plotOrigin, dims);
                 updatePartHover(tick, player, plotVariant, plotOrigin, dims);
 
                 CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
@@ -279,14 +281,15 @@ public final class VariantOverlayRenderer {
             player.blockPosition(), dims);
         if (partLoc != null) {
             boolean partDevmode = EditorDevMode.isEnabled();
+            boolean partMenuEnabled = PartPositionMenuController.isMenuEnabled(player);
             String partModel = partLoc.kind().id() + ":" + partLoc.name();
-            String partKey = "PARTS|" + partModel + "|" + partDevmode;
+            String partKey = "PARTS|" + partModel + "|" + partDevmode + "|" + partMenuEnabled;
             if (partKey.equals(prev)) return;
             LAST_STATUS.put(uuid, partKey);
             // Parts have no weight pool — pass the part name as modelName for
             // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT));
+                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT, partMenuEnabled));
             return;
         }
 
@@ -302,15 +305,16 @@ public final class VariantOverlayRenderer {
         boolean devmode = EditorDevMode.isEnabled();
         int weight = weightFor(l.model());
         String modelName = modelNameFor(l.model());
+        boolean partMenuEnabled = PartPositionMenuController.isMenuEnabled(player);
         // Dedup key includes displayName (not just id) so walking from one
         // named variant to another in the same kind invalidates the cache —
         // model.id() is the kind tag and stays constant across a kind's
         // variants.
-        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight;
+        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight + "|" + partMenuEnabled;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), l.model().displayName(), l.model().id(), modelName, devmode, weight));
+            l.category().displayName(), l.model().displayName(), l.model().id(), modelName, devmode, weight, partMenuEnabled));
     }
 
     /**

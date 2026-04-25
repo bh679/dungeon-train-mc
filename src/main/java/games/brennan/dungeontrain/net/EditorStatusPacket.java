@@ -10,12 +10,14 @@ import java.util.function.Supplier;
 
 /**
  * Server → client: update the editor status HUD bar with the player's current
- * category + model, the session's dev-mode flag, and — for models that have a
- * weight pool — the variant's random-selection weight. Empty strings for both
- * category and model clear the HUD (player is outside every editor plot).
+ * category + model, the session's dev-mode flag, the variant's
+ * random-selection weight, and the part-position auto-open menu flag.
+ * Empty strings for both category and model clear the HUD (player is
+ * outside every editor plot).
  *
- * <p>Sent only when the player's (category, model, devmode, weight) tuple
- * changes — no per-tick spam. See
+ * <p>Sent only when the player's
+ * (category, model, devmode, weight, partMenuEnabled) tuple changes — no
+ * per-tick spam. See
  * {@link games.brennan.dungeontrain.editor.VariantOverlayRenderer} for the
  * detection loop.</p>
  *
@@ -35,14 +37,20 @@ import java.util.function.Supplier;
  * a weighted category (carriages, tracks, pillars, tunnels, contents);
  * {@link #NO_WEIGHT} ({@value #NO_WEIGHT}) for any model where weight is not
  * meaningful (parts, architecture) or for the empty clear packet.</p>
+ *
+ * <p>{@code partMenuEnabled} mirrors the per-player auto-open flag from
+ * {@link games.brennan.dungeontrain.editor.PartPositionMenuController}; the
+ * editor menu's "Part Variant Menu" toggle reads this for state. Defaults
+ * to {@code true} for the empty clear packet so a stale HUD never shows
+ * "menu disabled" out-of-context.</p>
  */
-public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode, int weight) {
+public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode, int weight, boolean partMenuEnabled) {
 
     /** Sentinel for "weight is not applicable to this model". */
     public static final int NO_WEIGHT = -1;
 
     public static EditorStatusPacket empty() {
-        return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT);
+        return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT, true);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -52,6 +60,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeUtf(modelName);
         buf.writeBoolean(devmode);
         buf.writeVarInt(weight);
+        buf.writeBoolean(partMenuEnabled);
     }
 
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
@@ -61,13 +70,14 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         String name = buf.readUtf(64);
         boolean d = buf.readBoolean();
         int w = buf.readVarInt();
-        return new EditorStatusPacket(c, m, id, name, d, w);
+        boolean pme = buf.readBoolean();
+        return new EditorStatusPacket(c, m, id, name, d, w, pme);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () -> EditorStatusHudOverlay.setStatus(category, model, modelId, modelName, devmode, weight)));
+            Dist.CLIENT, () -> () -> EditorStatusHudOverlay.setStatus(category, model, modelId, modelName, devmode, weight, partMenuEnabled)));
         ctx.setPacketHandled(true);
     }
 }

@@ -293,6 +293,9 @@ public final class EditorCommand {
                 .executes(ctx -> runDevMode(ctx.getSource(), !EditorDevMode.isEnabled()))
                 .then(Commands.literal("on").executes(ctx -> runDevMode(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runDevMode(ctx.getSource(), false))))
+            .then(Commands.literal("partmenu")
+                .then(Commands.literal("on").executes(ctx -> runPartMenu(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runPartMenu(ctx.getSource(), false))))
             .then(Commands.literal("promote")
                 .then(Commands.literal("all").executes(ctx -> runPromoteAll(ctx.getSource())))
                 .then(Commands.argument("variant", StringArgumentType.word())
@@ -508,7 +511,14 @@ public final class EditorCommand {
                             .executes(c -> runPartAdd(c.getSource(),
                                 StringArgumentType.getString(c, "variant"),
                                 StringArgumentType.getString(c, "kind"),
-                                StringArgumentType.getString(c, "name")))))))
+                                StringArgumentType.getString(c, "name"),
+                                1))
+                            .then(Commands.argument("weight", IntegerArgumentType.integer(1, 100))
+                                .executes(c -> runPartAdd(c.getSource(),
+                                    StringArgumentType.getString(c, "variant"),
+                                    StringArgumentType.getString(c, "kind"),
+                                    StringArgumentType.getString(c, "name"),
+                                    IntegerArgumentType.getInteger(c, "weight"))))))))
             .then(Commands.literal("remove")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -1569,6 +1579,19 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    private static int runPartMenu(CommandSourceStack source, boolean on) {
+        net.minecraft.server.level.ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Editor partmenu: only players can toggle the menu."));
+            return 0;
+        }
+        games.brennan.dungeontrain.editor.PartPositionMenuController.setMenuEnabled(player, on);
+        source.sendSuccess(() -> Component.literal(
+            "Editor part-position menu: " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
     }
 
     private static int runDevMode(CommandSourceStack source, boolean on) {
@@ -2681,7 +2704,7 @@ public final class EditorCommand {
         String name = rawName.toLowerCase(Locale.ROOT);
         try {
             CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
-            CarriagePartAssignment updated = existing.with(kind, List.of(name));
+            CarriagePartAssignment updated = existing.withNames(kind, List.of(name));
             CarriageVariantPartsStore.save(variant, updated);
             source.sendSuccess(() -> Component.literal(
                 "Editor: '" + variant.id() + "' parts — " + kind.id() + " = [" + name + "]"
@@ -2697,7 +2720,7 @@ public final class EditorCommand {
         }
     }
 
-    private static int runPartAdd(CommandSourceStack source, String rawVariant, String rawKind, String rawName) {
+    private static int runPartAdd(CommandSourceStack source, String rawVariant, String rawKind, String rawName, int weight) {
         CarriageVariant variant = parseVariant(source, rawVariant);
         if (variant == null) return 0;
         CarriagePartKind kind = parsePartKind(source, rawKind);
@@ -2706,10 +2729,10 @@ public final class EditorCommand {
         String name = rawName.toLowerCase(Locale.ROOT);
         try {
             CarriagePartAssignment existing = CarriageVariantPartsStore.get(variant).orElse(CarriagePartAssignment.EMPTY);
-            CarriagePartAssignment updated = existing.withAppended(kind, name);
+            CarriagePartAssignment updated = existing.withAppended(kind, name, weight);
             CarriageVariantPartsStore.save(variant, updated);
             source.sendSuccess(() -> Component.literal(
-                "Editor: '" + variant.id() + "' parts — appended '" + name + "' to " + kind.id()
+                "Editor: '" + variant.id() + "' parts — appended '" + name + "' (weight=" + weight + ") to " + kind.id()
                     + " (current: " + formatAssignment(updated) + ")"
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
@@ -2794,10 +2817,10 @@ public final class EditorCommand {
     }
 
     private static String formatAssignment(CarriagePartAssignment a) {
-        return "floor=" + formatSlot(a.floor())
-            + ", walls=" + formatSlot(a.walls())
-            + ", roof=" + formatSlot(a.roof())
-            + ", doors=" + formatSlot(a.doors());
+        return "floor=" + formatSlot(a.names(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR))
+            + ", walls=" + formatSlot(a.names(games.brennan.dungeontrain.train.CarriagePartKind.WALLS))
+            + ", roof=" + formatSlot(a.names(games.brennan.dungeontrain.train.CarriagePartKind.ROOF))
+            + ", doors=" + formatSlot(a.names(games.brennan.dungeontrain.train.CarriagePartKind.DOORS));
     }
 
     /** Format a slot list for human output — single-element lists unwrap to the bare name. */

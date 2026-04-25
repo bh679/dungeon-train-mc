@@ -111,6 +111,17 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry renameEntry = renameEntryFor(category, model);
         if (renameEntry != null) out.add(renameEntry);
 
+        // Part Variant Menu — carriage variants only. Toggle for the
+        // auto-opening world-space part-position menu.
+        if ("carriages".equals(category)) {
+            boolean pmEnabled = EditorStatusHudOverlay.isPartMenuEnabled();
+            out.add(new CommandMenuEntry.Toggle(
+                "Part Variant Menu", pmEnabled,
+                "dungeontrain editor partmenu on",
+                "dungeontrain editor partmenu off"
+            ));
+        }
+
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that
         // has a weight pool (carriages, tracks, contents). Side cells nudge by
         // 1 server-side and stay open so the player can tap-tap-tap; middle
