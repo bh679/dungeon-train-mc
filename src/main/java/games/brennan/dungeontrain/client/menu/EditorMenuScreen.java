@@ -47,9 +47,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 String kind = model.substring(0, sep);
                 String name = model.substring(sep + 1);
                 out.add(new CommandMenuEntry.Split(
-                    new CommandMenuEntry.TypeArg(
-                        "New", "name",
-                        "dungeontrain editor part enter " + kind),
+                    new CommandMenuEntry.DrillIn(
+                        "New",
+                        new NewSourcePickerScreen(
+                            NewSourcePickerScreen.Category.PARTS, kind, name)),
                     new CommandMenuEntry.DrillIn(
                         "Remove",
                         new ConfirmScreen("Remove '" + model + "'?",
@@ -93,21 +94,22 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * "New" duplicates the current model. The typed name becomes the new id;
-     * the current model id is passed as the {@code [source]} arg so the
-     * duplicate inherits its contents. Returns null for categories that
-     * don't support author-authored new models.
+     * "New" drills into a {@link NewSourcePickerScreen} so the user picks a
+     * seed (Blank / Current / Standard) before naming the model. The typed
+     * name then becomes the new id; the picker's source token decides what
+     * the new plot is stamped with. Returns null for categories that don't
+     * support author-authored new models (tracks, pillars, tunnels, etc.).
      */
     private static CommandMenuEntry newEntryFor(String category, String model) {
         return switch (category) {
-            case "carriages" -> new CommandMenuEntry.TypeArg(
-                "New", "name",
-                "dungeontrain editor new",
-                fallback(model, "standard"));
-            case "contents" -> new CommandMenuEntry.TypeArg(
-                "New", "name",
-                "dungeontrain editor contents new",
-                fallback(model, "default"));
+            case "carriages" -> new CommandMenuEntry.DrillIn(
+                "New",
+                new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CARRIAGES, null, model));
+            case "contents" -> new CommandMenuEntry.DrillIn(
+                "New",
+                new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CONTENTS, null, model));
             default -> null;
         };
     }
@@ -149,9 +151,5 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor clear"));
             default -> null;
         };
-    }
-
-    private static String fallback(String value, String alt) {
-        return (value == null || value.isEmpty()) ? alt : value;
     }
 }

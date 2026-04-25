@@ -12,8 +12,11 @@ import org.lwjgl.glfw.GLFW;
 /**
  * While the worldspace menu is open:
  * <ul>
- *   <li>All attack/use interactions are cancelled and re-routed to activate
- *       the hovered entry.</li>
+ *   <li>All attack/use interactions are cancelled.</li>
+ *   <li>The hovered entry activates on mouse <i>release</i>, not press —
+ *       so a click that started outside the menu doesn't accidentally
+ *       activate when its release lands on a hovered entry, and so the
+ *       user can mouse-down, slide off, and release to cancel.</li>
  *   <li>PlayerInteractEvent variants are also cancelled as a belt-and-braces
  *       guard against right-click placement reaching block logic before
  *       {@link InputEvent.InteractionKeyMappingTriggered} can stop it.</li>
@@ -27,6 +30,13 @@ import org.lwjgl.glfw.GLFW;
 )
 public final class CommandMenuInputHandler {
 
+    /**
+     * True only when a press happened while the menu was open and we're
+     * waiting for the matching release. A release without a prior in-menu
+     * press (e.g. menu opened mid-click) is ignored.
+     */
+    private static boolean pressArmed = false;
+
     private CommandMenuInputHandler() {}
 
     @SubscribeEvent
@@ -34,6 +44,22 @@ public final class CommandMenuInputHandler {
         if (!CommandMenuState.isOpen()) return;
         event.setCanceled(true);
         event.setSwingHand(false);
+        pressArmed = true;
+    }
+
+    @SubscribeEvent
+    public static void onMouseButton(InputEvent.MouseButton.Pre event) {
+        if (!CommandMenuState.isOpen()) {
+            pressArmed = false;
+            return;
+        }
+        if (net.minecraft.client.Minecraft.getInstance().screen != null) return;
+        int btn = event.getButton();
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
+        if (event.getAction() != GLFW.GLFW_RELEASE) return;
+        if (!pressArmed) return;
+        pressArmed = false;
+
         int hovered = CommandMenuState.hoveredIdx();
         int hoveredSub = CommandMenuState.hoveredSubIdx();
         if (hovered >= 0) {
