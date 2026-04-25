@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
+import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -97,6 +100,49 @@ public final class CarriageContentsTemplate {
         LOGGER.warn("[DungeonTrain] No contents placed — contents={} origin={} reason=no-nbt-no-fallback. Check {} exists and matches interior size {}x{}x{}.",
             contents.id(), origin, CarriageContentsStore.fileFor(contents),
             size.getX(), size.getY(), size.getZ());
+    }
+
+    /**
+     * Spawn-time variant-aware overload — stamps the base contents, then
+     * overlays the per-position variants picked deterministically from
+     * {@code (seed, carriageIndex, localPos)}. Editor calls go through the
+     * 4-arg {@link #placeAt(ServerLevel, BlockPos, CarriageContents, CarriageDims)}
+     * overload above so the author always sees the deterministic base, never
+     * the random-pick view.
+     */
+    public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                               CarriageDims dims, long seed, int carriageIndex) {
+        placeAt(level, carriageOrigin, contents, dims);
+        applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+    }
+
+    /**
+     * Overlay any {@link CarriageContentsVariantBlocks} entries for
+     * {@code contents} onto the stamped interior. Each picked
+     * {@link VariantState} is silent-placed at {@code interiorOrigin + localPos}
+     * with the optional block-entity NBT applied. The empty-placeholder
+     * sentinel resolves to AIR so authors can randomise "block or empty"
+     * positions inside an interior.
+     */
+    private static void applyVariantBlocks(ServerLevel level, BlockPos carriageOrigin,
+                                            CarriageContents contents, CarriageDims dims,
+                                            long seed, int carriageIndex) {
+        Vec3i size = interiorSize(dims);
+        if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
+        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
+        if (sidecar.isEmpty()) return;
+
+        BlockPos origin = interiorOrigin(carriageOrigin);
+        for (var entry : sidecar.entries()) {
+            VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+            if (picked == null) continue;
+            BlockPos world = origin.offset(entry.localPos());
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+            } else {
+                SilentBlockOps.setBlockSilent(level, world, picked.state(), picked.blockEntityNbt());
+            }
+        }
     }
 
     /**

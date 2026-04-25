@@ -88,9 +88,15 @@ public final class CommandMenuRaycast {
             if (hitY < centerY - halfH || hitY > centerY + halfH) continue;
 
             int subIdx = 0;
-            if (entries.get(i) instanceof CommandMenuEntry.Split split) {
+            CommandMenuEntry row = entries.get(i);
+            if (row instanceof CommandMenuEntry.Split split) {
                 double splitX = -halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
                 if (hitX > splitX) subIdx = 1;
+            } else if (row instanceof CommandMenuEntry.Triple triple) {
+                double leftBoundary = -halfW + triple.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
+                double rightBoundary = -halfW + triple.middleEnd() * CommandMenuLayout.PANEL_WIDTH;
+                if (hitX > rightBoundary) subIdx = 2;
+                else if (hitX > leftBoundary) subIdx = 1;
             }
             CommandMenuState.setHovered(i, subIdx);
             return;

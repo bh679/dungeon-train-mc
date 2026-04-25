@@ -17,6 +17,7 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -223,6 +224,106 @@ public final class CarriagePartEditor {
     }
 
     /**
+     * Source token accepted by {@link #createFrom}: empty starter, copy of the
+     * part the player is currently in, or copy of the canonical baseline (the
+     * part literally named {@code "standard"}, falling back to the first
+     * registered name for the kind).
+     */
+    public enum NewSource { BLANK, CURRENT, STANDARD }
+
+    /**
+     * Create a brand-new part {@code name} of {@code kind} seeded according
+     * to {@code source}, save its template to disk, and teleport the player
+     * into the new plot. Throws when the name is already registered, when
+     * {@link NewSource#CURRENT} is requested but the player is not standing
+     * in a part of {@code kind}, or when {@link NewSource#STANDARD} cannot
+     * resolve a fallback (e.g. roof has no bundled parts).
+     */
+    public static BlockPos createFrom(ServerPlayer player, CarriagePartKind kind, NewSource source, String name) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        if (CarriagePartRegistry.isKnown(kind, name)) {
+            throw new IOException("Part '" + kind.id() + ":" + name + "' is already registered.");
+        }
+
+        StructureTemplate seed = switch (source) {
+            case BLANK -> null;
+            case CURRENT -> {
+                PlotLocation loc = plotContaining(player.blockPosition(), dims);
+                if (loc == null) {
+                    throw new IOException("Stand inside a " + kind.id() + " plot to copy it.");
+                }
+                if (loc.kind() != kind) {
+                    throw new IOException("Current plot is " + loc.kind().id()
+                        + ", not " + kind.id() + ". Stand in a " + kind.id() + " plot to copy.");
+                }
+                BlockPos srcOrigin = plotOrigin(kind, loc.name(), dims);
+                if (srcOrigin == null) {
+                    throw new IOException("Could not locate plot for source '" + kind.id() + ":" + loc.name() + "'.");
+                }
+                yield captureTemplate(overworld, srcOrigin, kind, dims);
+            }
+            case STANDARD -> {
+                String stdName = resolveStandardName(kind);
+                if (stdName == null) {
+                    throw new IOException("No standard " + kind.id() + " template available to copy.");
+                }
+                Optional<StructureTemplate> stored = CarriagePartTemplateStore.get(overworld, kind, stdName, dims);
+                if (stored.isEmpty()) {
+                    throw new IOException("Standard " + kind.id() + " template '" + stdName + "' is missing on disk.");
+                }
+                yield stored.get();
+            }
+        };
+
+        // Allocate the next free slot before registering so the index lands at
+        // the end of the list (allocation depends on registeredNames().size()).
+        BlockPos targetOrigin = nextFreePlotOrigin(kind, dims);
+        CarriagePartRegistry.register(kind, name);
+
+        CarriagePartTemplate.eraseAt(overworld, targetOrigin, kind, dims);
+        if (seed != null) {
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3);
+        } else {
+            stampStarter(overworld, targetOrigin, kind, dims);
+        }
+        setOutline(overworld, targetOrigin, kind, dims);
+
+        StructureTemplate captured = captureTemplate(overworld, targetOrigin, kind, dims);
+        CarriagePartTemplateStore.save(kind, name, captured);
+
+        CarriageEditor.rememberReturn(player);
+        PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
+
+        Vec3i size = kind.dims(dims);
+        double tx = targetOrigin.getX() + size.getX() / 2.0;
+        double ty = targetOrigin.getY() + 1.0;
+        double tz = targetOrigin.getZ() + size.getZ() / 2.0;
+        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+
+        LOGGER.info("[DungeonTrain] Part editor createFrom: {} -> {}:{} (source={}) plot at {}",
+            player.getName().getString(), kind.id(), name, source, targetOrigin);
+        return targetOrigin;
+    }
+
+    /**
+     * Resolves the seed name for {@link NewSource#STANDARD}: prefer a part
+     * literally called {@code "standard"}; otherwise the first registered name
+     * for the kind. Returns null if the kind has no registered parts at all
+     * (e.g. roof on a fresh install).
+     */
+    private static String resolveStandardName(CarriagePartKind kind) {
+        List<String> names = CarriagePartRegistry.registeredNames(kind);
+        if (names.contains("standard")) return "standard";
+        if (names.isEmpty()) return null;
+        return names.get(0);
+    }
+
+    /**
      * Capture the footprint at the plot for {@code (kind, name)} into a fresh
      * {@link StructureTemplate} and persist it via
      * {@link CarriagePartTemplateStore}. Registers the name so future
@@ -255,6 +356,74 @@ public final class CarriagePartEditor {
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Part editor save: source write failed for {}:{}: {}",
                 kind.id(), name, e.toString());
+            return SaveResult.failed(e.getMessage());
+        }
+    }
+
+    /**
+     * Rename the part {@code (kind, oldName)} to {@code (kind, newName)} —
+     * captures the live geometry at the old plot, persists it under the new
+     * name, deletes the old name's config file (and source-tree copy in
+     * devmode), unregisters the old name unless it has a bundled fallback,
+     * relocates the rendered plot, and teleports the player into it.
+     *
+     * <p>Plot positions are derived from registry order, so the new plot
+     * lands at a different X slot than the old one. The player follows.</p>
+     *
+     * @throws IOException if the old plot can't be located or the config-dir
+     *                     write fails. Source-tree write/delete failures are
+     *                     reported via the returned {@link SaveResult}.
+     */
+    public static SaveResult saveAs(ServerPlayer player, CarriagePartKind kind, String oldName, String newName) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        BlockPos oldOrigin = plotOrigin(kind, oldName, dims);
+        if (oldOrigin == null) throw new IOException("Unknown part '" + kind.id() + ":" + oldName + "'.");
+
+        StructureTemplate template = captureTemplate(overworld, oldOrigin, kind, dims);
+
+        CarriagePartTemplateStore.save(kind, newName, template);
+        CarriagePartRegistry.register(kind, newName);
+
+        clearPlot(overworld, kind, oldName, dims);
+        CarriagePartTemplateStore.delete(kind, oldName);
+        boolean stillBundled = CarriagePartTemplateStore.bundled(kind, oldName);
+        if (!stillBundled) CarriagePartRegistry.unregister(kind, oldName);
+
+        BlockPos newOrigin = plotOrigin(kind, newName, dims);
+        if (newOrigin != null) {
+            CarriagePartTemplate.eraseAt(overworld, newOrigin, kind, dims);
+            stampCurrent(overworld, newOrigin, kind, newName, dims);
+            setOutline(overworld, newOrigin, kind, dims);
+
+            Vec3i size = kind.dims(dims);
+            double tx = newOrigin.getX() + size.getX() / 2.0;
+            double ty = newOrigin.getY() + 1.0;
+            double tz = newOrigin.getZ() + size.getZ() / 2.0;
+            player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        }
+
+        PART_SESSIONS.put(player.getUUID(), new PartSession(kind, newName));
+
+        LOGGER.info("[DungeonTrain] Part editor saveAs: {} renamed {}:{} -> {}:{}",
+            player.getName().getString(), kind.id(), oldName, kind.id(), newName);
+
+        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        try {
+            CarriagePartTemplateStore.saveToSource(kind, newName, template);
+            try {
+                Files.deleteIfExists(CarriagePartTemplateStore.sourceFileFor(kind, oldName));
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Part editor saveAs: source-tree delete failed for {}:{}: {}",
+                    kind.id(), oldName, e.toString());
+            }
+            return SaveResult.written();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Part editor saveAs: source write failed for {}:{}: {}",
+                kind.id(), newName, e.toString());
             return SaveResult.failed(e.getMessage());
         }
     }

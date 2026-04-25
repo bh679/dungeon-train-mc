@@ -266,8 +266,9 @@ public final class TrackGenerator {
     ) {
         BlockState resolveSidecar(BlockState base, int xMod, int y, int zOff) {
             if (sidecar == null || sidecar.isEmpty() || base == null) return base;
-            BlockState picked = sidecar.resolve(new BlockPos(xMod, y, zOff), worldSeed, (int) tileIndex);
-            return picked != null ? picked : base;
+            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
+                new BlockPos(xMod, y, zOff), worldSeed, (int) tileIndex);
+            return picked != null ? picked.state() : base;
         }
     }
 
@@ -412,8 +413,9 @@ public final class TrackGenerator {
     ) {
         BlockState resolveSidecar(BlockState base, int row, int zIdx) {
             if (sidecar == null || sidecar.isEmpty() || base == null) return base;
-            BlockState picked = sidecar.resolve(new BlockPos(0, row, zIdx), worldSeed, pillarIndex);
-            return picked != null ? picked : base;
+            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
+                new BlockPos(0, row, zIdx), worldSeed, pillarIndex);
+            return picked != null ? picked.state() : base;
         }
     }
 
@@ -769,9 +771,10 @@ public final class TrackGenerator {
                     int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
                     BlockPos wpos = new BlockPos(wx, wy, wz);
                     if (VSGameUtilsKt.getShipObjectManagingPos(level, wpos) != null) continue;
-                    BlockState picked = stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
+                    games.brennan.dungeontrain.editor.VariantState picked =
+                        stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
                     if (picked == null) continue;
-                    SilentBlockOps.setBlockSilent(level, wpos, picked);
+                    SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
                 }
             }
 

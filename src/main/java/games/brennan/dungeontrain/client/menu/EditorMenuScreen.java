@@ -40,20 +40,27 @@ public final class EditorMenuScreen implements MenuScreen {
                 new CommandMenuEntry.Run("All", "dungeontrain editor part save all"),
                 0.80
             ));
+            CommandMenuEntry partsClear = clearEntryFor(category, model);
+            if (partsClear != null) out.add(partsClear);
             int sep = model.indexOf(':');
             if (sep > 0 && sep < model.length() - 1) {
                 String kind = model.substring(0, sep);
                 String name = model.substring(sep + 1);
                 out.add(new CommandMenuEntry.Split(
-                    new CommandMenuEntry.TypeArg(
-                        "New", "name",
-                        "dungeontrain editor part enter " + kind),
+                    new CommandMenuEntry.DrillIn(
+                        "New",
+                        new NewSourcePickerScreen(
+                            NewSourcePickerScreen.Category.PARTS, kind, name)),
                     new CommandMenuEntry.DrillIn(
                         "Remove",
                         new ConfirmScreen("Remove '" + model + "'?",
                             "dungeontrain editor part reset " + kind + " " + name)),
                     0.50
                 ));
+                out.add(new CommandMenuEntry.TypeArg(
+                    "Rename", "new_name",
+                    "dungeontrain editor part rename",
+                    "", name));
             }
             out.add(new CommandMenuEntry.Back("< Back"));
             return out;
@@ -66,8 +73,18 @@ public final class EditorMenuScreen implements MenuScreen {
             0.80
         ));
 
-        // Reset — no "all" form server-side yet.
-        out.add(new CommandMenuEntry.Run("Reset", "dungeontrain reset"));
+        // Reset | Clear — paired destructive actions. Reset deletes the
+        // on-disk template; Clear wipes interior blocks to air. Clear is
+        // only available for user-authorable categories, so for the others
+        // (tracks / pillars / tunnels / architecture) fall back to a solo
+        // Reset row.
+        CommandMenuEntry resetEntry = new CommandMenuEntry.Run("Reset", "dungeontrain reset");
+        CommandMenuEntry clearEntry = clearEntryFor(category, model);
+        if (clearEntry != null) {
+            out.add(new CommandMenuEntry.Split(resetEntry, clearEntry, 0.50));
+        } else {
+            out.add(resetEntry);
+        }
 
         // New / Remove — only meaningful for categories whose models are
         // user-authorable (carriages, contents). For tracks / pillars /
@@ -79,35 +96,54 @@ public final class EditorMenuScreen implements MenuScreen {
             out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
         }
 
+        // Rename — only for user-authorable categories with a non-builtin id.
+        // Pre-fills the typing field with the current model name.
+        CommandMenuEntry renameEntry = renameEntryFor(category, model);
+        if (renameEntry != null) out.add(renameEntry);
+
+        // Weight — carriage variants only. Triple row: [-] / Weight (N) / [+].
+        // Side cells nudge by 1 server-side and stay open so the player can
+        // tap-tap-tap; middle cell drops into typing mode for an exact value.
+        // Label refreshes via tick rebuild as the HUD picks up the new value.
+        if ("carriages".equals(category) && model != null && !model.isEmpty()) {
+            int w = EditorStatusHudOverlay.weight();
+            String label = w >= 0 ? "Weight (" + w + ")" : "Weight";
+            CommandMenuEntry minus  = new CommandMenuEntry.Stay(
+                "-", "dungeontrain editor weight " + model + " dec");
+            CommandMenuEntry weight = new CommandMenuEntry.TypeArg(
+                label, "0-100", "dungeontrain editor weight " + model);
+            CommandMenuEntry plus   = new CommandMenuEntry.Stay(
+                "+", "dungeontrain editor weight " + model + " inc");
+            out.add(new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90));
+        }
+
         out.add(new CommandMenuEntry.Back("< Back"));
         return out;
     }
 
     /**
-     * "New" duplicates the current model. The typed name becomes the new id;
-     * the current model id is passed as the {@code [source]} arg so the
-     * duplicate inherits its contents. Returns null for categories that
-     * don't support author-authored new models.
-     *
-     * <p>For {@code tracks} the model id is the kind tag the player is
+     * "New" drills into a {@link NewSourcePickerScreen} for carriages and
+     * contents (Blank / Current / Standard seed picker before naming).
+     * For {@code tracks} the model id is the kind tag the player is
      * standing on ({@code track}, {@code pillar_top},
      * {@code tunnel_section}, ...) — passed to
      * {@code /dt editor tracks new <kind> <typed-name>}, which clones the
-     * kind's currently-active variant under the new name and swaps the
-     * editor's active marker to it. Track-side adjunct stairs has no
+     * variant the player is currently standing on under the new name and
+     * teleports them to the new plot. Track-side adjunct stairs has no
      * single-plot editor today, so the menu won't appear there — but the
-     * command still works if invoked directly.</p>
+     * command still works if invoked directly. Returns null for categories
+     * that don't support author-authored new models.
      */
     private static CommandMenuEntry newEntryFor(String category, String model) {
         return switch (category) {
-            case "carriages" -> new CommandMenuEntry.TypeArg(
-                "New", "name",
-                "dungeontrain editor new",
-                fallback(model, "standard"));
-            case "contents" -> new CommandMenuEntry.TypeArg(
-                "New", "name",
-                "dungeontrain editor contents new",
-                fallback(model, "default"));
+            case "carriages" -> new CommandMenuEntry.DrillIn(
+                "New",
+                new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CARRIAGES, null, model));
+            case "contents" -> new CommandMenuEntry.DrillIn(
+                "New",
+                new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CONTENTS, null, model));
             case "tracks" -> {
                 if (model == null || model.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(
@@ -148,7 +184,53 @@ public final class EditorMenuScreen implements MenuScreen {
         };
     }
 
-    private static String fallback(String value, String alt) {
-        return (value == null || value.isEmpty()) ? alt : value;
+    /**
+     * "Clear" wipes every interior block of the current plot to air via
+     * {@code /dt editor clear}. Drills into a ConfirmScreen first since the
+     * action is destructive — same gating as Remove. Returns null for
+     * categories without a single addressable model id (tracks, pillars,
+     * tunnels, architecture).
+     */
+    private static CommandMenuEntry clearEntryFor(String category, String model) {
+        if (model == null || model.isEmpty()) return null;
+        return switch (category) {
+            case "carriages", "contents", "parts" -> new CommandMenuEntry.DrillIn(
+                "Clear",
+                new ConfirmScreen("Clear all blocks in '" + model + "'?",
+                    "dungeontrain editor clear"));
+            default -> null;
+        };
+    }
+
+    /**
+     * "Rename" pre-fills the typing field with the current model id and on
+     * submit runs the category's {@code save <new_name>} subcommand — both
+     * carriages and contents implement that as a true rename (saveAs:
+     * delete-old + write-new + registry update). Returns null for builtin
+     * variants and for categories that don't support author-authored renames.
+     */
+    private static CommandMenuEntry renameEntryFor(String category, String model) {
+        if (model == null || model.isEmpty()) return null;
+        return switch (category) {
+            case "carriages" -> isReservedCarriageBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
+                "Rename", "new_name",
+                "dungeontrain editor save",
+                "", model);
+            case "contents" -> isReservedContentsBuiltin(model) ? null : new CommandMenuEntry.TypeArg(
+                "Rename", "new_name",
+                "dungeontrain editor contents save",
+                "", model);
+            default -> null;
+        };
+    }
+
+    /** Match server-side carriage built-in names so the Rename row hides for them. Mirrors PROTECTED_BUILTINS in EditorCommand. */
+    private static boolean isReservedCarriageBuiltin(String id) {
+        return "standard".equals(id) || "flatbed".equals(id);
+    }
+
+    /** Match server-side contents built-in names. Server rejects rename for any builtin via {@code current.isBuiltin()}. */
+    private static boolean isReservedContentsBuiltin(String id) {
+        return "default".equals(id);
     }
 }

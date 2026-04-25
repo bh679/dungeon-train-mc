@@ -179,9 +179,10 @@ public final class TunnelTemplate {
             int wz = origin.getZ() + lz;
             BlockPos wpos = new BlockPos(wx, wy, wz);
             if (VSGameUtilsKt.getShipObjectManagingPos(level, wpos) != null) continue;
-            BlockState picked = sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
+            games.brennan.dungeontrain.editor.VariantState picked =
+                sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
             if (picked == null) continue;
-            SilentBlockOps.setBlockSilent(level, wpos, picked);
+            SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
         }
     }
 }

@@ -18,6 +18,15 @@ public sealed interface CommandMenuEntry {
     /** Runs a slash command (no leading /) and closes the menu. */
     record Run(String label, String command) implements CommandMenuEntry {}
 
+    /**
+     * Like {@link Run}, but keeps the menu open after dispatch. Use for
+     * incremental adjustments (e.g. nudge buttons) where the player wants
+     * to click again while watching the result update live. The menu
+     * rebuilds entries each tick, so labels relying on server-pushed state
+     * refresh automatically.
+     */
+    record Stay(String label, String command) implements CommandMenuEntry {}
+
     /** Navigates into a nested {@link MenuScreen}. */
     record DrillIn(String label, MenuScreen target) implements CommandMenuEntry {}
 
@@ -30,10 +39,17 @@ public sealed interface CommandMenuEntry {
      * {@code commandPrefix + " " + buffer} (with {@code commandSuffix}
      * appended when non-empty, e.g. the {@code [source]} arg of
      * {@code editor new <name> <source>}), ESC cancels.
+     *
+     * <p>{@code initialBuffer} pre-populates the typing field so the user
+     * can edit an existing value (e.g. Rename starts with the current name
+     * already typed). Empty string means start blank.</p>
      */
-    record TypeArg(String label, String argName, String commandPrefix, String commandSuffix) implements CommandMenuEntry {
+    record TypeArg(String label, String argName, String commandPrefix, String commandSuffix, String initialBuffer) implements CommandMenuEntry {
         public TypeArg(String label, String argName, String commandPrefix) {
-            this(label, argName, commandPrefix, "");
+            this(label, argName, commandPrefix, "", "");
+        }
+        public TypeArg(String label, String argName, String commandPrefix, String commandSuffix) {
+            this(label, argName, commandPrefix, commandSuffix, "");
         }
     }
 
@@ -58,5 +74,16 @@ public sealed interface CommandMenuEntry {
      */
     record Split(CommandMenuEntry leftEntry, CommandMenuEntry rightEntry, double leftFraction) implements CommandMenuEntry {
         @Override public String label() { return leftEntry.label(); }
+    }
+
+    /**
+     * Three buttons side-by-side in one row. {@link #leftFraction} is the
+     * boundary between left and middle (panel-relative, 0..1);
+     * {@link #middleEnd} is the boundary between middle and right. The
+     * raycast produces {@code subIdx} 0 / 1 / 2 for left / middle / right.
+     */
+    record Triple(CommandMenuEntry leftEntry, CommandMenuEntry middleEntry, CommandMenuEntry rightEntry,
+                  double leftFraction, double middleEnd) implements CommandMenuEntry {
+        @Override public String label() { return middleEntry.label(); }
     }
 }

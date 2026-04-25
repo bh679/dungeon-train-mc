@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
+import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -205,7 +206,7 @@ public final class CarriageTemplate {
             // paintings from prior contents at this index would otherwise
             // accumulate each rolling-window cycle.
             CarriageContentsTemplate.discardEntitiesAt(level, origin, dims);
-            CarriageContentsTemplate.placeAt(level, origin, contents, dims);
+            CarriageContentsTemplate.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
                 origin, carriageIndex, t.toString());
@@ -219,13 +220,14 @@ public final class CarriageTemplate {
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
         if (sidecar.isEmpty()) return;
         for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
-            BlockState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
+            VariantState picked = sidecar.resolve(e.localPos(), config.seed(), carriageIndex);
             if (picked == null) continue;
             BlockPos world = origin.offset(e.localPos());
-            BlockState toPlace = CarriageVariantBlocks.isEmptyPlaceholder(picked)
-                ? Blocks.AIR.defaultBlockState()
-                : picked;
-            SilentBlockOps.setBlockSilent(level, world, toPlace);
+            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
+                SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+            } else {
+                SilentBlockOps.setBlockSilent(level, world, picked.state(), picked.blockEntityNbt());
+            }
         }
     }
 

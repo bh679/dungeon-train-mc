@@ -247,6 +247,39 @@ public final class CarriageEditor {
      * missing file). Built-in sources always succeed because they fall back
      * through the three-tier store to bundled or hardcoded geometry.
      */
+    /**
+     * Create a brand-new custom variant {@code target} with an empty plot —
+     * registered, allocated, caged, but with no template stamped. The author
+     * builds the carriage from scratch on the bedrock floor.
+     */
+    public static BlockPos createBlank(ServerPlayer player, CarriageVariant.Custom target) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        if (!CarriageVariantRegistry.register(target)) {
+            throw new IOException("Variant '" + target.id() + "' is already registered.");
+        }
+
+        BlockPos targetOrigin = plotOrigin(target);
+        if (targetOrigin == null) {
+            CarriageVariantRegistry.unregister(target.id());
+            throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
+        }
+
+        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
+
+        StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
+        CarriageTemplateStore.save(target, template);
+
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+
+        LOGGER.info("[DungeonTrain] Editor createBlank: {} created '{}' at {}",
+            player.getName().getString(), target.id(), targetOrigin);
+        return targetOrigin;
+    }
+
     public static BlockPos duplicate(ServerPlayer player, CarriageVariant source, CarriageVariant.Custom target) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");

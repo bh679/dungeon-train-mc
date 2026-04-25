@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -9,6 +11,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -17,11 +20,15 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +48,13 @@ import java.util.List;
  * targeted block. First edit also captures the block currently occupying the
  * target position as the base candidate, so the entry reads
  * {@code [base_block, added_block]}.</p>
+ *
+ * <p>v2 capture: the held item's BlockState is derived from a
+ * {@link BlockPlaceContext} so directional blocks (stairs, logs, doors,
+ * repeaters, …) get the player's intended facing — not the default. When the
+ * resulting block has a {@link BlockEntity}, the BE NBT is captured from the
+ * held item's {@code BlockEntityTag} (vanilla Ctrl+Pick captures this) with a
+ * fallback to the clicked block's existing BE.</p>
  *
  * <p>The entry is cached in memory (the same cache the runtime
  * {@link CarriageVariantBlocks#loadFor} path reads from). Persist via
@@ -72,14 +86,8 @@ public final class VariantBlockInteractions {
         ItemStack held = event.getItemStack();
         if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) return;
 
-        BlockState newState = blockItem.getBlock().defaultBlockState();
-        if (newState.hasBlockEntity() && !CarriageVariantBlocks.isEmptyPlaceholder(newState)) {
-            player.displayClientMessage(
-                Component.literal("Block-entity blocks aren't supported in variants (v1).")
-                    .withStyle(ChatFormatting.RED), true);
-            suppressVanillaPlace(event);
-            return;
-        }
+        VariantState newVariant = captureVariant(event, level, player, blockItem, held, clicked);
+        if (newVariant == null) return;
 
         // Part plot takes priority: if the clicked position falls inside a
         // part plot, route the shift-click into the part's own variants
@@ -87,7 +95,15 @@ public final class VariantBlockInteractions {
         // and a part plot can't simultaneously contain the same position.
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(player.blockPosition(), dims);
         if (partLoc != null) {
-            handlePartShiftClick(event, player, level, dims, clicked, newState, partLoc);
+            handlePartShiftClick(event, player, level, dims, clicked, newVariant, partLoc);
+            return;
+        }
+
+        // Contents plot dispatch — sits between part and carriage. Contents
+        // and carriage rows occupy distinct Z bands so they can't overlap.
+        CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
+        if (contentsPlot != null) {
+            handleContentsShiftClick(event, player, level, dims, clicked, newVariant, contentsPlot);
             return;
         }
 
@@ -97,7 +113,7 @@ public final class VariantBlockInteractions {
         // into the per-kind {@link TrackVariantBlocks} sidecar.
         TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
         if (trackLoc != null) {
-            handleTrackShiftClick(event, player, level, clicked, newState, trackLoc);
+            handleTrackShiftClick(event, player, level, clicked, newVariant, trackLoc);
             return;
         }
 
@@ -115,10 +131,11 @@ public final class VariantBlockInteractions {
         }
 
         BlockState baseState = level.getBlockState(clicked);
+        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
-        List<BlockState> existing = sidecar.statesAt(local);
+        List<VariantState> existing = sidecar.statesAt(local);
 
-        List<BlockState> updated = buildUpdatedList(existing, baseState, newState, player, event);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
         if (updated == null) return;
 
         try {
@@ -131,7 +148,7 @@ public final class VariantBlockInteractions {
             return;
         }
 
-        sendAddedFeedback(player, clicked, local, newState, updated);
+        sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
     }
@@ -145,7 +162,7 @@ public final class VariantBlockInteractions {
     private static void handlePartShiftClick(PlayerInteractEvent.RightClickBlock event,
                                              ServerPlayer player, ServerLevel level,
                                              CarriageDims dims, BlockPos clicked,
-                                             BlockState newState, CarriagePartEditor.PlotLocation loc) {
+                                             VariantState newVariant, CarriagePartEditor.PlotLocation loc) {
         CarriagePartKind kind = loc.kind();
         String name = loc.name();
         BlockPos plotOrigin = CarriagePartEditor.plotOrigin(kind, name, dims);
@@ -160,9 +177,10 @@ public final class VariantBlockInteractions {
         }
 
         BlockState baseState = level.getBlockState(clicked);
+        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
         CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
-        List<BlockState> existing = sidecar.statesAt(local);
-        List<BlockState> updated = buildUpdatedList(existing, baseState, newState, player, event);
+        List<VariantState> existing = sidecar.statesAt(local);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
         if (updated == null) return;
 
         try {
@@ -182,13 +200,67 @@ public final class VariantBlockInteractions {
             return;
         }
 
-        sendAddedFeedback(player, clicked, local, newState, updated);
+        sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
     }
 
     /**
-     * Track-side branch: append the held block to the
+     * Contents-plot branch: resolve the contents id from the player's plot,
+     * compute the clicked block's local position inside the interior volume
+     * (carriageOrigin + (1,1,1)), and append the held block to that contents'
+     * own variants sidecar. Eager-saves the sidecar — same as the part path —
+     * so author can shift-click and walk away without an explicit save.
+     */
+    private static void handleContentsShiftClick(PlayerInteractEvent.RightClickBlock event,
+                                                 ServerPlayer player, ServerLevel level,
+                                                 CarriageDims dims, BlockPos clicked,
+                                                 VariantState newVariant, CarriageContents contents) {
+        BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents);
+        if (carriageOrigin == null) return;
+        BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
+        Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+
+        BlockPos local = clicked.subtract(interiorOrigin);
+        if (local.getX() < 0 || local.getX() >= interiorSize.getX()
+            || local.getY() < 0 || local.getY() >= interiorSize.getY()
+            || local.getZ() < 0 || local.getZ() >= interiorSize.getZ()) {
+            // Clicked the shell or outside the cage — silently skip so the
+            // shell stamps don't get treated as variant base blocks.
+            return;
+        }
+
+        BlockState baseState = level.getBlockState(clicked);
+        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
+        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+        List<VariantState> existing = sidecar.statesAt(local);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
+        if (updated == null) return;
+
+        try {
+            sidecar.put(local, updated);
+            sidecar.save(contents);
+        } catch (IllegalArgumentException e) {
+            player.displayClientMessage(
+                Component.literal("Variant add failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        } catch (IOException e) {
+            player.displayClientMessage(
+                Component.literal("Variant save failed: " + e.getMessage())
+                    .withStyle(ChatFormatting.RED), true);
+            suppressVanillaPlace(event);
+            return;
+        }
+
+        sendAddedFeedback(player, clicked, local, newVariant, updated);
+        VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
+        suppressVanillaPlace(event);
+    }
+
+    /**
+     * Track-side branch: append the held variant to the
      * {@link games.brennan.dungeontrain.track.variant.TrackVariantBlocks}
      * sidecar for the kind/name resolved from {@code loc}. Mirrors
      * {@link #handlePartShiftClick} — same author flow, different sidecar
@@ -196,7 +268,7 @@ public final class VariantBlockInteractions {
      */
     private static void handleTrackShiftClick(PlayerInteractEvent.RightClickBlock event,
                                               ServerPlayer player, ServerLevel level,
-                                              BlockPos clicked, BlockState newState,
+                                              BlockPos clicked, VariantState newVariant,
                                               TrackPlotLocator.PlotInfo loc) {
         BlockPos plotOrigin = loc.origin();
         Vec3i footprint = loc.footprint();
@@ -208,12 +280,12 @@ public final class VariantBlockInteractions {
         }
 
         BlockState baseState = level.getBlockState(clicked);
+        VariantState baseVariant = captureBaseVariant(level, clicked, baseState);
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks sidecar =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
                 loc.kind(), loc.name(), footprint);
-        List<BlockState> existing = sidecar.statesAt(local);
-
-        List<BlockState> updated = buildUpdatedList(existing, baseState, newState, player, event);
+        List<VariantState> existing = sidecar.statesAt(local);
+        List<VariantState> updated = buildUpdatedList(existing, baseVariant, newVariant, baseState, player, event);
         if (updated == null) return;
 
         try {
@@ -233,9 +305,60 @@ public final class VariantBlockInteractions {
             return;
         }
 
-        sendAddedFeedback(player, clicked, local, newState, updated);
+        sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
+    }
+
+    /**
+     * Derive a {@link VariantState} from the held {@link BlockItem} at the
+     * shift-click target. The {@link BlockState} is computed via
+     * {@link BlockPlaceContext} so directional properties (FACING / AXIS /
+     * HALF / SHAPE) match what vanilla placement would have produced for the
+     * player's look direction. Block-entity NBT is captured from the held
+     * item's {@code BlockEntityTag} first (vanilla Ctrl+Pick stamps this on
+     * the picked stack), with a fallback to the clicked block's existing BE
+     * — useful for the "I edited a chest in-world, now copy it to a variant"
+     * authoring loop.
+     */
+    private static @Nullable VariantState captureVariant(PlayerInteractEvent.RightClickBlock event,
+                                                          ServerLevel level, ServerPlayer player,
+                                                          BlockItem blockItem, ItemStack held, BlockPos clicked) {
+        BlockPlaceContext ctx = new BlockPlaceContext(
+            new UseOnContext(level, player, event.getHand(), held, event.getHitVec()));
+        BlockState newState = blockItem.getBlock().getStateForPlacement(ctx);
+        if (newState == null) newState = blockItem.getBlock().defaultBlockState();
+
+        CompoundTag beNbt = null;
+        if (newState.hasBlockEntity()) {
+            beNbt = BlockItem.getBlockEntityData(held);
+            if (beNbt == null) {
+                BlockState clickedState = level.getBlockState(clicked);
+                if (clickedState.is(newState.getBlock())) {
+                    BlockEntity be = level.getBlockEntity(clicked);
+                    if (be != null) beNbt = be.saveWithoutMetadata();
+                }
+            }
+        }
+        return new VariantState(newState, beNbt);
+    }
+
+    /**
+     * Capture the cell's existing block as a {@link VariantState} so the
+     * first shift-click seeds the candidate list with {@code [base, added]}.
+     * Block-entity payloads are read from the world so an authored chest /
+     * sign / banner round-trips into the variant list with its contents.
+     * Returns {@code null} for air — the caller surfaces the "place a base
+     * block first" toast separately.
+     */
+    private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
+        if (baseState.isAir()) return null;
+        CompoundTag beNbt = null;
+        if (baseState.hasBlockEntity()) {
+            BlockEntity be = level.getBlockEntity(clicked);
+            if (be != null) beNbt = be.saveWithoutMetadata();
+        }
+        return new VariantState(baseState, beNbt);
     }
 
     /**
@@ -244,27 +367,21 @@ public final class VariantBlockInteractions {
      * Returns the new list, or {@code null} if a validation message was sent
      * and the caller should early-return.
      */
-    private static List<BlockState> buildUpdatedList(List<BlockState> existing, BlockState baseState,
-                                                      BlockState newState, ServerPlayer player,
+    private static List<VariantState> buildUpdatedList(List<VariantState> existing, @Nullable VariantState baseVariant,
+                                                      VariantState newVariant, BlockState baseState,
+                                                      ServerPlayer player,
                                                       PlayerInteractEvent.RightClickBlock event) {
-        List<BlockState> updated = new ArrayList<>();
+        List<VariantState> updated = new ArrayList<>();
         if (existing == null) {
-            if (baseState.isAir()) {
+            if (baseVariant == null || baseState.isAir()) {
                 player.displayClientMessage(
                     Component.literal("Target block is air — place a base block first.")
                         .withStyle(ChatFormatting.YELLOW), true);
                 suppressVanillaPlace(event);
                 return null;
             }
-            if (baseState.hasBlockEntity()) {
-                player.displayClientMessage(
-                    Component.literal("Base block has a block entity — not supported in variants.")
-                        .withStyle(ChatFormatting.RED), true);
-                suppressVanillaPlace(event);
-                return null;
-            }
-            updated.add(baseState);
-            updated.add(newState);
+            updated.add(baseVariant);
+            updated.add(newVariant);
         } else {
             if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
                 player.displayClientMessage(
@@ -274,20 +391,26 @@ public final class VariantBlockInteractions {
                 return null;
             }
             updated.addAll(existing);
-            updated.add(newState);
+            updated.add(newVariant);
         }
         return updated;
     }
 
     private static void sendAddedFeedback(ServerPlayer player, BlockPos clicked, BlockPos local,
-                                           BlockState newState, List<BlockState> updated) {
-        ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(newState.getBlock());
+                                           VariantState added, List<VariantState> updated) {
+        ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(added.state().getBlock());
         final int count = updated.size();
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();
-        boolean sentinel = CarriageVariantBlocks.isEmptyPlaceholder(newState);
-        String label = sentinel ? (newName + " (empty-space)") : newName.toString();
+        boolean sentinel = CarriageVariantBlocks.isEmptyPlaceholder(added.state());
+        StringBuilder label = new StringBuilder();
+        if (sentinel) {
+            label.append(newName).append(" (empty-space)");
+        } else {
+            label.append(newName);
+            if (added.hasBlockEntityData()) label.append(" (+nbt)");
+        }
         player.displayClientMessage(
             Component.literal("+ " + label + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
                 .withStyle(sentinel ? ChatFormatting.AQUA : ChatFormatting.GREEN), true);

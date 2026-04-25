@@ -90,6 +90,11 @@ public final class EditorStatusHudOverlay {
         return devmode;
     }
 
+    /** Current variant weight for the active carriage model, or -1 when not applicable. */
+    public static int weight() {
+        return weight;
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
         IGuiOverlay overlay = (gui, graphics, partialTick, screenWidth, screenHeight) -> {

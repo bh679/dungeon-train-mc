@@ -12,6 +12,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
@@ -49,26 +51,32 @@ import java.util.Random;
  * ({@link #bundledResourceFor}). Unlike the NBT store, there is no hardcoded
  * fallback — a variant with no sidecar simply has no random positions.</p>
  *
- * <p>v1 schema:
+ * <p>v2 schema (current):
  * <pre>
  * {
- *   "schemaVersion": 1,
+ *   "schemaVersion": 2,
  *   "variants": {
- *     "3,1,2": ["minecraft:stone", "minecraft:oak_planks"],
- *     "4,1,2": ["minecraft:stone", "minecraft:oak_planks[variant=...]"]
+ *     "3,1,2": [
+ *       "minecraft:stone",
+ *       { "state": "minecraft:bookshelf" },
+ *       { "state": "minecraft:chest[facing=west]", "nbt": "{Items:[...]}" }
+ *     ]
  *   }
  * }
  * </pre>
  * Keys use local coords (same basis as {@code StructureTemplate} block infos).
- * Values use the standard {@code BlockStateParser} block-state string syntax
- * so properties round-trip.</p>
+ * Each candidate is either a bare BlockState string (no BlockEntity payload —
+ * identical to v1) or a {@code {state, nbt?}} object carrying SNBT for the
+ * block entity. v1 files load unchanged; v2 writer emits objects only when
+ * {@code blockEntityNbt != null}, so v1 files round-trip diff-clean as bare
+ * strings.</p>
  */
 public final class CarriageVariantBlocks {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Current schema version written by {@link #save}. */
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    /** Current schema version written by {@link #save}. v2 adds optional per-entry BlockEntity NBT. */
+    public static final int CURRENT_SCHEMA_VERSION = 2;
 
     private static final String SUBDIR = "dungeontrain/templates";
     private static final String EXT = ".variants.json";
@@ -96,25 +104,25 @@ public final class CarriageVariantBlocks {
     // enter (re-read from disk so a manual edit picks up immediately).
     private static final Map<String, CarriageVariantBlocks> CACHE = new HashMap<>();
 
-    /** Local position + candidate states. Ordering of {@code states} is preserved as written. */
-    public record Entry(BlockPos localPos, List<BlockState> states) {
+    /** Local position + candidate variants. Ordering of {@code states} is preserved as written. */
+    public record Entry(BlockPos localPos, List<VariantState> states) {
         public Entry {
             if (localPos == null) throw new IllegalArgumentException("localPos");
             if (states == null || states.size() < MIN_STATES_PER_ENTRY) {
                 throw new IllegalArgumentException(
                     "entry at " + localPos + " must list at least " + MIN_STATES_PER_ENTRY + " states");
             }
-            for (BlockState s : states) {
+            for (VariantState s : states) {
                 if (s == null) throw new IllegalArgumentException("null state in entry " + localPos);
             }
             states = List.copyOf(states);
         }
     }
 
-    /** pos → candidate states. {@link LinkedHashMap} keeps insertion order for deterministic JSON output. */
-    private final Map<BlockPos, List<BlockState>> entries;
+    /** pos → candidate variants. {@link LinkedHashMap} keeps insertion order for deterministic JSON output. */
+    private final Map<BlockPos, List<VariantState>> entries;
 
-    private CarriageVariantBlocks(Map<BlockPos, List<BlockState>> entries) {
+    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries) {
         this.entries = entries;
     }
 
@@ -188,8 +196,8 @@ public final class CarriageVariantBlocks {
         JsonObject obj = root.getAsJsonObject();
         if (obj.has("schemaVersion")) {
             int v = obj.get("schemaVersion").getAsInt();
-            if (v != CURRENT_SCHEMA_VERSION) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {} ({}) has schemaVersion {} (expected {}) — attempting best-effort parse.",
+            if (v > CURRENT_SCHEMA_VERSION) {
+                LOGGER.warn("[DungeonTrain] Variant sidecar {} ({}) has schemaVersion {} (newer than {}) — attempting best-effort parse.",
                     id, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
@@ -200,7 +208,7 @@ public final class CarriageVariantBlocks {
             BuiltInRegistries.BLOCK.asLookup();
 
         JsonObject variants = obj.getAsJsonObject("variants");
-        Map<BlockPos, List<BlockState>> out = new LinkedHashMap<>();
+        Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
@@ -217,20 +225,10 @@ public final class CarriageVariantBlocks {
                 continue;
             }
             JsonArray arr = field.getValue().getAsJsonArray();
-            List<BlockState> states = new ArrayList<>(arr.size());
+            List<VariantState> states = new ArrayList<>(arr.size());
             for (JsonElement el : arr) {
-                if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) {
-                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: non-string entry {}, skipping.", id, pos, el);
-                    continue;
-                }
-                try {
-                    BlockStateParser.BlockResult parsed =
-                        BlockStateParser.parseForBlock(blocks, el.getAsString(), false);
-                    states.add(parsed.blockState());
-                } catch (Exception e) {
-                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: could not parse '{}' ({}), skipping.",
-                        id, pos, el.getAsString(), e.getMessage());
-                }
+                VariantState parsed = parseVariantElement(el, blocks, id, pos);
+                if (parsed != null) states.add(parsed);
             }
             if (states.size() < MIN_STATES_PER_ENTRY) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: fewer than {} valid states, dropping entry.",
@@ -243,8 +241,59 @@ public final class CarriageVariantBlocks {
         return new CarriageVariantBlocks(out);
     }
 
+    /**
+     * Parse one element of a per-cell candidate array — either a bare string
+     * (v1, BlockState only) or an object {@code {state, nbt?}} (v2). Returns
+     * {@code null} on parse failure (caller logs).
+     */
+    public static VariantState parseVariantElement(JsonElement el,
+                                            HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks,
+                                            String contextId, BlockPos contextPos) {
+        if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+            return parseStateString(el.getAsString(), blocks, contextId, contextPos);
+        }
+        if (el.isJsonObject()) {
+            JsonObject obj = el.getAsJsonObject();
+            if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
+                LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
+                    contextId, contextPos);
+                return null;
+            }
+            VariantState base = parseStateString(obj.get("state").getAsString(), blocks, contextId, contextPos);
+            if (base == null) return null;
+            CompoundTag nbt = null;
+            if (obj.has("nbt") && obj.get("nbt").isJsonPrimitive()
+                && obj.get("nbt").getAsJsonPrimitive().isString()) {
+                String snbt = obj.get("nbt").getAsString();
+                try {
+                    nbt = TagParser.parseTag(snbt);
+                } catch (Exception e) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: could not parse 'nbt' SNBT ({}), dropping NBT.",
+                        contextId, contextPos, e.getMessage());
+                }
+            }
+            return new VariantState(base.state(), nbt);
+        }
+        LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
+            contextId, contextPos, el);
+        return null;
+    }
+
+    private static VariantState parseStateString(String raw,
+                                                 HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks,
+                                                 String contextId, BlockPos contextPos) {
+        try {
+            BlockStateParser.BlockResult parsed = BlockStateParser.parseForBlock(blocks, raw, false);
+            return VariantState.of(parsed.blockState());
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: could not parse '{}' ({}), skipping.",
+                contextId, contextPos, raw, e.getMessage());
+            return null;
+        }
+    }
+
     /** Package-private for test access — parses a {@code "x,y,z"} key back into a {@link BlockPos}, or null. */
-    static BlockPos parsePos(String key) {
+    public static BlockPos parsePos(String key) {
         String[] parts = key.split(",");
         if (parts.length != 3) return null;
         try {
@@ -272,7 +321,7 @@ public final class CarriageVariantBlocks {
     /** Iterable snapshot of all entries. */
     public List<Entry> entries() {
         List<Entry> out = new ArrayList<>(entries.size());
-        for (Map.Entry<BlockPos, List<BlockState>> e : entries.entrySet()) {
+        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
             out.add(new Entry(e.getKey(), e.getValue()));
         }
         return Collections.unmodifiableList(out);
@@ -286,31 +335,24 @@ public final class CarriageVariantBlocks {
         return entries.size();
     }
 
-    /** Candidate states at {@code localPos}, or {@code null} if no entry. */
-    public List<BlockState> statesAt(BlockPos localPos) {
+    /** Candidate variants at {@code localPos}, or {@code null} if no entry. */
+    public List<VariantState> statesAt(BlockPos localPos) {
         return entries.get(localPos);
     }
 
     /**
      * Replace the candidate list at {@code localPos}. Requires
-     * {@link #MIN_STATES_PER_ENTRY} or more states. Throws if any state
-     * carries a {@link net.minecraft.world.level.block.entity.BlockEntity}
-     * requirement — block-entity states need NBT that the sidecar does not
-     * carry, and silent placement would drop that data silently. v1 rejects
-     * them; future work can extend the format.
+     * {@link #MIN_STATES_PER_ENTRY} or more entries. v2 supports block-entity
+     * states with optional {@link CompoundTag} payload — see {@link VariantState}.
      */
-    public synchronized void put(BlockPos localPos, List<BlockState> states) {
+    public synchronized void put(BlockPos localPos, List<VariantState> states) {
         if (states == null || states.size() < MIN_STATES_PER_ENTRY) {
             throw new IllegalArgumentException(
                 "need at least " + MIN_STATES_PER_ENTRY + " states, got "
                     + (states == null ? 0 : states.size()));
         }
-        for (BlockState s : states) {
+        for (VariantState s : states) {
             if (s == null) throw new IllegalArgumentException("null state");
-            if (s.hasBlockEntity() && !isEmptyPlaceholder(s)) {
-                throw new IllegalArgumentException(
-                    "block-entity state " + s + " rejected — sidecar cannot preserve BE data");
-            }
         }
         entries.put(localPos.immutable(), List.copyOf(states));
     }
@@ -326,8 +368,8 @@ public final class CarriageVariantBlocks {
      * position — same world + same carriage + same pos → same result across
      * reloads. Returns {@code null} if no entry.
      */
-    public BlockState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
-        List<BlockState> states = entries.get(localPos);
+    public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
+        List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
         int idx = pickIndex(localPos, worldSeed, carriageIndex, states.size());
         return states.get(idx);
@@ -426,6 +468,10 @@ public final class CarriageVariantBlocks {
      * (LinkedHashMap), states in the order the editor recorded them. The
      * hand-rolled writer produces indented output that a human can diff,
      * without pulling in {@code GsonBuilder} for a tiny file.
+     *
+     * <p>Each candidate writes as a bare BlockState string when it has no
+     * BlockEntity NBT (v1-compatible), or as {@code {"state": ..., "nbt": ...}}
+     * when NBT is present.</p>
      */
     private String toJson() {
         StringBuilder sb = new StringBuilder(256);
@@ -433,13 +479,13 @@ public final class CarriageVariantBlocks {
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
         sb.append("  \"variants\": {");
         boolean first = true;
-        for (Map.Entry<BlockPos, List<BlockState>> e : entries.entrySet()) {
+        for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
             if (!first) sb.append(",");
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": [");
             boolean firstState = true;
-            for (BlockState s : e.getValue()) {
+            for (VariantState s : e.getValue()) {
                 if (!firstState) sb.append(", ");
-                sb.append('"').append(escapeJson(BlockStateParser.serialize(s))).append('"');
+                appendVariantJson(sb, s);
                 firstState = false;
             }
             sb.append("]");
@@ -447,6 +493,19 @@ public final class CarriageVariantBlocks {
         }
         sb.append("\n  }\n}\n");
         return sb.toString();
+    }
+
+    public static void appendVariantJson(StringBuilder sb, VariantState s) {
+        String stateStr = BlockStateParser.serialize(s.state());
+        if (!s.hasBlockEntityData()) {
+            sb.append('"').append(escapeJson(stateStr)).append('"');
+            return;
+        }
+        // CompoundTag.toString() returns the canonical SNBT representation —
+        // round-trips with TagParser.parseTag on the read side.
+        sb.append("{\"state\": \"").append(escapeJson(stateStr)).append("\", \"nbt\": \"")
+            .append(escapeJson(s.blockEntityNbt().toString()))
+            .append("\"}");
     }
 
     private static String escapeJson(String s) {
