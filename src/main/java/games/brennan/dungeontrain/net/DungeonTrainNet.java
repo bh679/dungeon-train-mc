@@ -17,7 +17,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  */
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "3";
+    public static final String PROTOCOL_VERSION = "4";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
         .named(new ResourceLocation(DungeonTrain.MOD_ID, "main"))
@@ -49,6 +49,16 @@ public final class DungeonTrainNet {
             .decoder(EditorStatusPacket::decode)
             .consumerMainThread(EditorStatusPacket::handle)
             .add();
+        CHANNEL.messageBuilder(VariantHotkeyPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(VariantHotkeyPacket::encode)
+            .decoder(VariantHotkeyPacket::decode)
+            .consumerMainThread(VariantHotkeyPacket::handle)
+            .add();
+    }
+
+    /** Convenience: send a packet to the server (client → server). */
+    public static void sendToServer(Object packet) {
+        CHANNEL.sendToServer(packet);
     }
 
     /** Convenience: send a packet to a single player. */
