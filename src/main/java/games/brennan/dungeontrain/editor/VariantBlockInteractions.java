@@ -120,7 +120,7 @@ public final class VariantBlockInteractions {
         CarriageVariant plotVariant = CarriageEditor.plotContaining(player.blockPosition(), dims);
         if (plotVariant == null) return;
 
-        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
         if (plotOrigin == null) return;
 
         BlockPos local = clicked.subtract(plotOrigin);

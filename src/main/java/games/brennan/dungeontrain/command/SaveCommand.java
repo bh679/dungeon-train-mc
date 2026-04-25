@@ -379,7 +379,7 @@ public final class SaveCommand {
 
     private static boolean isPlotEmpty(ServerLevel level, EditorModel model, CarriageDims dims) {
         if (model instanceof EditorModel.CarriageModel carriage) {
-            BlockPos origin = CarriageEditor.plotOrigin(carriage.variant());
+            BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;

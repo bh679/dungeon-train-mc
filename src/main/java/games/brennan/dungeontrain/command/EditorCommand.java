@@ -585,7 +585,7 @@ public final class EditorCommand {
                 "Look directly at a block inside the plot first (8-block reach)."));
             return null;
         }
-        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
         if (plotOrigin == null) {
             source.sendFailure(Component.literal("Plot origin missing for '" + plotVariant.id() + "'."));
             return null;
@@ -976,9 +976,10 @@ public final class EditorCommand {
         if (player == null) return 0;
         try {
             CarriageEditor.enter(player, variant);
+            CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered '" + variant.id()
-                    + "' plot at " + CarriageEditor.plotOrigin(variant)
+                    + "' plot at " + CarriageEditor.plotOrigin(variant, dims)
             ), true);
             return 1;
         } catch (Throwable t) {
@@ -1311,7 +1312,7 @@ public final class EditorCommand {
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             try {
-                BlockPos origin = CarriageEditor.plotOrigin(carriage);
+                BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
                 CarriageTemplate.eraseAt(overworld, origin, dims);
                 final String id = carriage.id();
                 source.sendSuccess(() -> Component.literal(

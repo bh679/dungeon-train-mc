@@ -129,7 +129,7 @@ public final class ResetCommand {
                 ).withStyle(ChatFormatting.YELLOW));
                 return 0;
             }
-            BlockPos origin = CarriageEditor.plotOrigin(carriage.variant());
+            BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
             if (origin == null) {
                 source.sendFailure(Component.literal(
                     "Missing plot origin for '" + carriage.id() + "'."

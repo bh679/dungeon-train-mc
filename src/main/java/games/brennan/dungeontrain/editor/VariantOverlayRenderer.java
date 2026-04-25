@@ -154,7 +154,7 @@ public final class VariantOverlayRenderer {
             // the hovered kind) and the variant-blocks icon HUD.
             CarriageVariant plotVariant = CarriageEditor.plotContaining(playerPos, dims);
             if (plotVariant != null) {
-                BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant);
+                BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
                 if (plotOrigin == null) continue;
 
                 updatePartHover(tick, player, plotVariant, plotOrigin, dims);
