@@ -212,6 +212,42 @@ public final class CarriageContentsEditor {
      * duplicate of {@code source}'s current geometry. Registers the contents
      * immediately so it gets its own plot on subsequent lookups.
      */
+    /**
+     * Create a brand-new custom contents {@code target} with an empty interior
+     * — registered, allocated, caged, with the {@link #DEFAULT_SHELL} stamped
+     * for context but no contents template applied. The author builds the
+     * interior from scratch.
+     */
+    public static BlockPos createBlank(ServerPlayer player, CarriageContents.Custom target) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        if (!CarriageContentsRegistry.register(target)) {
+            throw new IOException("Contents '" + target.id() + "' is already registered.");
+        }
+
+        BlockPos targetOrigin = plotOrigin(target);
+        if (targetOrigin == null) {
+            CarriageContentsRegistry.unregister(target.id());
+            throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
+        }
+
+        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
+        CarriageContentsTemplate.eraseAt(overworld, targetOrigin, dims);
+        CarriageTemplate.placeAt(overworld, targetOrigin, DEFAULT_SHELL, dims);
+
+        StructureTemplate template = CarriageContentsTemplate.captureTemplate(overworld, targetOrigin, dims);
+        CarriageContentsStore.save(target, template);
+
+        setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
+
+        LOGGER.info("[DungeonTrain] Contents editor createBlank: {} created '{}' at {}",
+            player.getName().getString(), target.id(), targetOrigin);
+        return targetOrigin;
+    }
+
     public static BlockPos duplicate(ServerPlayer player, CarriageContents source, CarriageContents.Custom target) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");

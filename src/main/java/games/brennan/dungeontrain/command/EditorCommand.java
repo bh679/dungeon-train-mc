@@ -137,6 +137,15 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    /** Source tokens for {@code editor part new <kind> <source> <name>}. */
+    private static final SuggestionProvider<CommandSourceStack> PART_NEW_SOURCE_SUGGESTIONS =
+        (ctx, builder) -> {
+            builder.suggest("blank");
+            builder.suggest("current");
+            builder.suggest("standard");
+            return builder.buildFuture();
+        };
+
     /** Suggest part names for the {@code kind} argument parsed earlier in the command. */
     private static final SuggestionProvider<CommandSourceStack> PART_NAME_SUGGESTIONS =
         (ctx, builder) -> {
@@ -191,11 +200,14 @@ public final class EditorCommand {
                     .then(Commands.argument("source", StringArgumentType.word())
                         .suggests(VARIANT_SUGGESTIONS)
                         .executes(ctx -> {
-                            CarriageVariant src = parseVariant(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "source"));
-                            if (src == null) return 0;
-                            return runNew(ctx.getSource(),
-                                StringArgumentType.getString(ctx, "name"), src);
+                            String name = StringArgumentType.getString(ctx, "name");
+                            String src = StringArgumentType.getString(ctx, "source");
+                            if ("blank".equalsIgnoreCase(src)) {
+                                return runNewBlank(ctx.getSource(), name);
+                            }
+                            CarriageVariant variant = parseVariant(ctx.getSource(), src);
+                            if (variant == null) return 0;
+                            return runNew(ctx.getSource(), name, variant);
                         }))))
             .then(Commands.literal("devmode")
                 .executes(ctx -> runDevMode(ctx.getSource(), !EditorDevMode.isEnabled()))
@@ -242,11 +254,14 @@ public final class EditorCommand {
                         .then(Commands.argument("source", StringArgumentType.word())
                             .suggests(CONTENTS_SUGGESTIONS)
                             .executes(ctx -> {
-                                CarriageContents src = parseContents(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "source"));
-                                if (src == null) return 0;
-                                return runContentsNew(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "name"), src);
+                                String name = StringArgumentType.getString(ctx, "name");
+                                String src = StringArgumentType.getString(ctx, "source");
+                                if ("blank".equalsIgnoreCase(src)) {
+                                    return runContentsNewBlank(ctx.getSource(), name);
+                                }
+                                CarriageContents contents = parseContents(ctx.getSource(), src);
+                                if (contents == null) return 0;
+                                return runContentsNew(ctx.getSource(), name, contents);
                             })))))
             .then(Commands.literal("pillar")
                 .then(Commands.literal("enter")
@@ -333,6 +348,16 @@ public final class EditorCommand {
                         .executes(c -> runPartEnter(c.getSource(),
                             StringArgumentType.getString(c, "kind"),
                             StringArgumentType.getString(c, "name"))))))
+            .then(Commands.literal("new")
+                .then(Commands.argument("kind", StringArgumentType.word())
+                    .suggests(PART_KIND_SUGGESTIONS)
+                    .then(Commands.argument("source", StringArgumentType.word())
+                        .suggests(PART_NEW_SOURCE_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .executes(c -> runPartNew(c.getSource(),
+                                StringArgumentType.getString(c, "kind"),
+                                StringArgumentType.getString(c, "source"),
+                                StringArgumentType.getString(c, "name")))))))
             .then(Commands.literal("save")
                 .executes(c -> runPartSave(c.getSource(), null))
                 .then(Commands.literal("all").executes(c -> runPartSaveAll(c.getSource())))
@@ -1131,6 +1156,7 @@ public final class EditorCommand {
         try {
             CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
             var origin = CarriageEditor.duplicate(player, sourceVariant, target);
+            CarriageEditor.enter(player, target);
             source.sendSuccess(() -> Component.literal(
                 "Editor: created '" + target.id() + "' from '" + sourceVariant.id()
                     + "' at plot " + origin
@@ -1139,6 +1165,52 @@ public final class EditorCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor new failed", t);
             source.sendFailure(Component.literal("new failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * Carriage variant of {@code /dt editor new <name> blank} — registers the
+     * variant and allocates a plot but stamps no geometry, then teleports the
+     * author into the empty plot to build from scratch.
+     */
+    private static int runNewBlank(CommandSourceStack source, String rawName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (!CarriageVariant.NAME_PATTERN.matcher(name).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
+            ));
+            return 0;
+        }
+        if (CarriageVariant.isReservedBuiltinName(name)) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is reserved for a built-in."
+            ));
+            return 0;
+        }
+        if (CarriageVariantRegistry.find(name).isPresent()) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is already taken."
+            ));
+            return 0;
+        }
+
+        try {
+            CarriageVariant.Custom target = (CarriageVariant.Custom) CarriageVariant.custom(name);
+            var origin = CarriageEditor.createBlank(player, target);
+            CarriageEditor.enter(player, target);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: created blank '" + target.id() + "' at plot " + origin
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor new blank failed", t);
+            source.sendFailure(Component.literal("new blank failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;
@@ -1588,6 +1660,7 @@ public final class EditorCommand {
         try {
             CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
             var origin = CarriageContentsEditor.duplicate(player, sourceContents, target);
+            CarriageContentsEditor.enter(player, target, null);
             source.sendSuccess(() -> Component.literal(
                 "Editor: created contents '" + target.id() + "' from '" + sourceContents.id()
                     + "' at plot " + origin
@@ -1596,6 +1669,52 @@ public final class EditorCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents new failed", t);
             source.sendFailure(Component.literal("contents new failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * Contents variant of {@code /dt editor contents new <name> blank} —
+     * registers and allocates the plot with only the default shell stamped,
+     * then teleports the author inside to build the interior from scratch.
+     */
+    private static int runContentsNewBlank(CommandSourceStack source, String rawName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (!CarriageContents.NAME_PATTERN.matcher(name).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
+            ));
+            return 0;
+        }
+        if (CarriageContents.isReservedBuiltinName(name)) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is reserved for a built-in."
+            ));
+            return 0;
+        }
+        if (CarriageContentsRegistry.find(name).isPresent()) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is already taken."
+            ));
+            return 0;
+        }
+
+        try {
+            CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
+            var origin = CarriageContentsEditor.createBlank(player, target);
+            CarriageContentsEditor.enter(player, target, null);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: created blank contents '" + target.id() + "' at plot " + origin
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents new blank failed", t);
+            source.sendFailure(Component.literal("contents new blank failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;
@@ -1880,6 +1999,44 @@ public final class EditorCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor part enter failed", t);
             source.sendFailure(Component.literal("part enter failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runPartNew(CommandSourceStack source, String rawKind, String rawSource, String rawName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        CarriagePartKind kind = parsePartKind(source, rawKind);
+        if (kind == null) return 0;
+        if (!validatePartName(source, rawName)) return 0;
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (CarriagePartRegistry.isKnown(kind, name)) {
+            source.sendFailure(Component.literal(
+                "Part '" + kind.id() + ":" + name + "' is already registered."
+            ));
+            return 0;
+        }
+        CarriagePartEditor.NewSource srcEnum;
+        try {
+            srcEnum = CarriagePartEditor.NewSource.valueOf(rawSource.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            source.sendFailure(Component.literal(
+                "Unknown source '" + rawSource + "'. Valid: blank, current, standard"
+            ));
+            return 0;
+        }
+        try {
+            BlockPos origin = CarriagePartEditor.createFrom(player, kind, srcEnum, name);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: created part '" + kind.id() + ":" + name
+                    + "' (source=" + rawSource.toLowerCase(Locale.ROOT) + ") at " + origin
+            ), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor part new failed", t);
+            source.sendFailure(Component.literal("part new failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
             return 0;
