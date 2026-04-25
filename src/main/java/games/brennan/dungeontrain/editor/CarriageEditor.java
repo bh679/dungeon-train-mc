@@ -106,16 +106,6 @@ public final class CarriageEditor {
     }
 
     /**
-     * Legacy single-arg overload that defaults to a min-length carriage. Kept
-     * so callers without {@link CarriageDims} on hand still compile; new code
-     * should pass dims so plot positions match the live world's settings.
-     */
-    public static BlockPos plotOrigin(CarriageVariant variant) {
-        return plotOrigin(variant, CarriageDims.clamp(
-            CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
-    }
-
-    /**
      * Returns the variant whose plot contains {@code pos} (within the
      * footprint plus 1-block outline margin), or {@code null} if none.
      */
@@ -262,7 +252,7 @@ public final class CarriageEditor {
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
 
-        BlockPos targetOrigin = plotOrigin(target);
+        BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
             CarriageVariantRegistry.unregister(target.id());
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
@@ -290,7 +280,7 @@ public final class CarriageEditor {
             throw new IOException("Variant '" + target.id() + "' is already registered.");
         }
 
-        BlockPos targetOrigin = plotOrigin(target);
+        BlockPos targetOrigin = plotOrigin(target, dims);
         if (targetOrigin == null) {
             CarriageVariantRegistry.unregister(target.id());
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
@@ -337,9 +327,9 @@ public final class CarriageEditor {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
-        BlockPos origin = plotOrigin(current);
-        if (origin == null) throw new IOException("Unknown variant '" + current.id() + "'.");
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = plotOrigin(current, dims);
+        if (origin == null) throw new IOException("Unknown variant '" + current.id() + "'.");
 
         StructureTemplate template = captureTemplate(overworld, origin, dims);
 
