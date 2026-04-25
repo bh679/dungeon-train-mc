@@ -330,6 +330,7 @@ public final class EditorCommand {
                             StringArgumentType.getString(c, "name"))))))
             .then(Commands.literal("save")
                 .executes(c -> runPartSave(c.getSource(), null))
+                .then(Commands.literal("all").executes(c -> runPartSaveAll(c.getSource())))
                 .then(Commands.argument("new_name", StringArgumentType.word())
                     .executes(c -> runPartSave(c.getSource(),
                         StringArgumentType.getString(c, "new_name")))))
@@ -1847,6 +1848,38 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * Iterate every registered part across all four kinds and save each plot's
+     * current footprint. Mirrors {@code dungeontrain save all}'s shape — used
+     * by the editor menu's Save / All split when the player is standing in
+     * the parts grid.
+     */
+    private static int runPartSaveAll(CommandSourceStack source) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        int saved = 0;
+        StringBuilder errors = new StringBuilder();
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            for (String name : CarriagePartRegistry.registeredNames(kind)) {
+                try {
+                    CarriagePartEditor.save(player, kind, name);
+                    saved++;
+                } catch (Exception e) {
+                    LOGGER.error("[DungeonTrain] editor part save-all failed for {}:{}", kind.id(), name, e);
+                    errors.append("\n  ").append(kind.id()).append(":").append(name)
+                        .append(": ").append(e.getMessage());
+                }
+            }
+        }
+        final int s = saved;
+        final String errStr = errors.toString();
+        source.sendSuccess(() -> Component.literal(
+            "Editor: part save all — " + s + " saved"
+                + (errStr.isEmpty() ? "" : "\nErrors:" + errStr)
+        ).withStyle(errStr.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return s > 0 ? 1 : 0;
     }
 
     private static int runPartList(CommandSourceStack source, String rawKind) {

@@ -37,8 +37,12 @@ public final class CommandMenuToggleHandler {
 
         // If any other screen opens while our worldspace menu is up, close
         // it — otherwise the player can't look around (mouse captured by the
-        // screen) and the floating menu becomes useless.
-        if (CommandMenuState.isOpen() && mc.screen != null) {
+        // screen) and the floating menu becomes useless. Exempt our own
+        // MenuTypingScreen though: beginTyping opens it intentionally to
+        // suppress vanilla keybindings, and closing the menu here would
+        // immediately cancel the typing field the user just activated.
+        if (CommandMenuState.isOpen() && mc.screen != null
+                && !(mc.screen instanceof MenuTypingScreen)) {
             CommandMenuState.close();
         }
 

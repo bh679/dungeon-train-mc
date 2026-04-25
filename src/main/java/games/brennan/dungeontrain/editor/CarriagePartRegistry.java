@@ -22,10 +22,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
@@ -61,9 +61,21 @@ public final class CarriagePartRegistry {
     /** Same name shape as {@code CarriageVariant.NAME_PATTERN}: lowercase, digits, underscore, 1-32 chars. */
     public static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,32}$");
 
-    private static final Map<CarriagePartKind, TreeSet<String>> NAMES = new EnumMap<>(CarriagePartKind.class);
+    /**
+     * Insertion-ordered per-kind name set. Ordering matters: the parts grid's
+     * X slot for {@code (kind, name)} is derived from this collection's index
+     * via {@link CarriagePartEditor#plotOrigin}, so any reordering shifts
+     * already-stamped plots to new world positions and the user sees their
+     * authored content land on the wrong slot. Insertion-order means new
+     * names appended at runtime (e.g. via the editor's "New" button) never
+     * displace existing names — the new plot lands at the next free slot
+     * past the last registered name. {@link #reload} sorts the on-disk set
+     * alphabetically once at server start so the order is deterministic
+     * across filesystem implementations.
+     */
+    private static final Map<CarriagePartKind, LinkedHashSet<String>> NAMES = new EnumMap<>(CarriagePartKind.class);
     static {
-        for (CarriagePartKind k : CarriagePartKind.values()) NAMES.put(k, new TreeSet<>());
+        for (CarriagePartKind k : CarriagePartKind.values()) NAMES.put(k, new LinkedHashSet<>());
     }
 
     private CarriagePartRegistry() {}
@@ -152,15 +164,24 @@ public final class CarriagePartRegistry {
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             Path dir = CarriagePartTemplateStore.directory(kind);
             if (!Files.isDirectory(dir)) continue;
+            // Collect filenames first and sort alphabetically — DirectoryStream
+            // is filesystem-ordered (APFS by inode, ext4 by hash), so without
+            // an explicit sort the registry ordering — and therefore the parts
+            // grid's X slot assignments — would differ between machines and
+            // even between sessions on the same machine.
+            List<String> ids = new ArrayList<>();
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.nbt")) {
                 for (Path file : stream) {
                     String fn = file.getFileName().toString();
                     if (!fn.endsWith(".nbt")) continue;
-                    String id = fn.substring(0, fn.length() - 4).toLowerCase(Locale.ROOT);
-                    if (register(kind, id)) added++;
+                    ids.add(fn.substring(0, fn.length() - 4).toLowerCase(Locale.ROOT));
                 }
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Failed to scan parts directory {}: {}", dir, e.toString());
+            }
+            Collections.sort(ids);
+            for (String id : ids) {
+                if (register(kind, id)) added++;
             }
         }
         return added;

@@ -151,6 +151,7 @@ public final class CommandMenuState {
         hoveredSubIdx = 0;
         stack.clear();
         entries = List.of();
+        dismissTypingScreen();
         LOGGER.debug("Command menu closed");
     }
 
@@ -208,7 +209,13 @@ public final class CommandMenuState {
     }
 
     /** Typing-mode activator that also captures a command suffix (e.g. the
-     *  {@code [source]} after the typed name in {@code editor new <name> <source>}). */
+     *  {@code [source]} after the typed name in {@code editor new <name> <source>}).
+     *
+     *  <p>Opens {@link MenuTypingScreen} so vanilla keybindings (movement,
+     *  hotbar, inventory) pause while the player types. The screen is
+     *  invisible — the worldspace menu's renderer keeps drawing the typing
+     *  field underneath.</p>
+     */
     public static void beginTyping(String argName, String prefix, String suffix) {
         typingMode = true;
         typedBuffer = "";
@@ -217,6 +224,7 @@ public final class CommandMenuState {
         typingCommandSuffix = suffix == null ? "" : suffix;
         hoveredIdx = -1;
         hoveredSubIdx = 0;
+        Minecraft.getInstance().setScreen(new MenuTypingScreen());
     }
 
     public static void cancelTyping() {
@@ -225,6 +233,7 @@ public final class CommandMenuState {
         typingArgName = "";
         typingCommandPrefix = "";
         typingCommandSuffix = "";
+        dismissTypingScreen();
     }
 
     public static void submitTyped() {
@@ -235,7 +244,22 @@ public final class CommandMenuState {
             cmd = cmd + " " + typingCommandSuffix;
         }
         CommandRunner.run(cmd);
+        dismissTypingScreen();
         close();
+    }
+
+    /**
+     * Pop our {@link MenuTypingScreen} if it's the active screen. Guarded so
+     * we don't clobber a screen another mod (or the chat HUD) opened. The
+     * screen's own {@link MenuTypingScreen#removed()} also calls
+     * {@link #cancelTyping}; the {@code typingMode} guard there prevents
+     * recursion when the cancel originates from this side.
+     */
+    private static void dismissTypingScreen() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof MenuTypingScreen) {
+            mc.setScreen(null);
+        }
     }
 
     public static void appendTyped(char c) {

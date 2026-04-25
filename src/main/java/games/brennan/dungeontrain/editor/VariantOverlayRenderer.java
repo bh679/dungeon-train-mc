@@ -212,9 +212,28 @@ public final class VariantOverlayRenderer {
      * need to leave and re-enter the plot to see the new value.</p>
      */
     private static void updateEditorStatus(ServerPlayer player, CarriageDims dims) {
-        Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
         UUID uuid = player.getUUID();
         String prev = LAST_STATUS.get(uuid);
+
+        // Part plot first — parts aren't in the EditorModel sealed hierarchy
+        // (would ripple into SaveCommand / ResetCommand dispatchers), so we
+        // build a synthetic status packet with category="Parts" and
+        // model="<kind>:<name>". The client menu (EditorMenuScreen) reads
+        // this and renders a parts-specific Save / Remove row.
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(
+            player.blockPosition(), dims);
+        if (partLoc != null) {
+            boolean partDevmode = EditorDevMode.isEnabled();
+            String partModel = partLoc.kind().id() + ":" + partLoc.name();
+            String partKey = "PARTS|" + partModel + "|" + partDevmode;
+            if (partKey.equals(prev)) return;
+            LAST_STATUS.put(uuid, partKey);
+            DungeonTrainNet.sendTo(player, new EditorStatusPacket(
+                "Parts", partModel, partDevmode, EditorStatusPacket.NO_WEIGHT));
+            return;
+        }
+
+        Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
         if (located.isEmpty()) {
             if (prev != null) {
                 LAST_STATUS.remove(uuid);

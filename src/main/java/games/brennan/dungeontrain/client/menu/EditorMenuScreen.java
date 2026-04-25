@@ -31,6 +31,34 @@ public final class EditorMenuScreen implements MenuScreen {
         ));
         out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
+        // Parts have their own Save / Reset commands — `dungeontrain save`
+        // dispatches via EditorCategory.locate which doesn't see part plots,
+        // so route through the part-aware /editor part subcommands instead.
+        if ("parts".equals(category)) {
+            out.add(new CommandMenuEntry.Split(
+                new CommandMenuEntry.Run("Save", "dungeontrain editor part save"),
+                new CommandMenuEntry.Run("All", "dungeontrain editor part save all"),
+                0.80
+            ));
+            int sep = model.indexOf(':');
+            if (sep > 0 && sep < model.length() - 1) {
+                String kind = model.substring(0, sep);
+                String name = model.substring(sep + 1);
+                out.add(new CommandMenuEntry.Split(
+                    new CommandMenuEntry.TypeArg(
+                        "New", "name",
+                        "dungeontrain editor part enter " + kind),
+                    new CommandMenuEntry.DrillIn(
+                        "Remove",
+                        new ConfirmScreen("Remove '" + model + "'?",
+                            "dungeontrain editor part reset " + kind + " " + name)),
+                    0.50
+                ));
+            }
+            out.add(new CommandMenuEntry.Back("< Back"));
+            return out;
+        }
+
         // Save / Save All — works for every category.
         out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Run("Save", "dungeontrain save"),

@@ -200,6 +200,12 @@ public final class CarriagePartEditor {
 
         CarriageEditor.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
+        // Register the name immediately so plotContaining (used by
+        // EditorStatusHudOverlay, the editor menu auto-stack, and the parts
+        // grid stamping) recognises the new plot before the first save.
+        // Server-restart cleanup is automatic: CarriagePartRegistry.reload()
+        // rebuilds from disk, so an unsaved name drops naturally.
+        CarriagePartRegistry.register(kind, name);
 
         CarriagePartTemplate.eraseAt(overworld, origin, kind, dims);
         stampCurrent(overworld, origin, kind, name, dims);
