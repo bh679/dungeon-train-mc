@@ -69,15 +69,18 @@ public final class EditorMenuScreen implements MenuScreen {
             0.80
         ));
 
-        // Reset — no "all" form server-side yet.
-        out.add(new CommandMenuEntry.Run("Reset", "dungeontrain reset"));
-
-        // Clear — wipes interior blocks of the current plot to air without
-        // touching the on-disk template (Reset deletes the file; Clear just
-        // empties the world). Only shown for user-authorable categories,
-        // matching the New / Remove gating below.
+        // Reset | Clear — paired destructive actions. Reset deletes the
+        // on-disk template; Clear wipes interior blocks to air. Clear is
+        // only available for user-authorable categories, so for the others
+        // (tracks / pillars / tunnels / architecture) fall back to a solo
+        // Reset row.
+        CommandMenuEntry resetEntry = new CommandMenuEntry.Run("Reset", "dungeontrain reset");
         CommandMenuEntry clearEntry = clearEntryFor(category, model);
-        if (clearEntry != null) out.add(clearEntry);
+        if (clearEntry != null) {
+            out.add(new CommandMenuEntry.Split(resetEntry, clearEntry, 0.50));
+        } else {
+            out.add(resetEntry);
+        }
 
         // New / Remove — only meaningful for categories whose models are
         // user-authorable (carriages, contents). For tracks / pillars /
@@ -87,6 +90,22 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry removeEntry = removeEntryFor(category, model);
         if (newEntry != null && removeEntry != null) {
             out.add(new CommandMenuEntry.Split(newEntry, removeEntry, 0.50));
+        }
+
+        // Weight — carriage variants only. Triple row: [-] / Weight (N) / [+].
+        // Side cells nudge by 1 server-side and stay open so the player can
+        // tap-tap-tap; middle cell drops into typing mode for an exact value.
+        // Label refreshes via tick rebuild as the HUD picks up the new value.
+        if ("carriages".equals(category) && model != null && !model.isEmpty()) {
+            int w = EditorStatusHudOverlay.weight();
+            String label = w >= 0 ? "Weight (" + w + ")" : "Weight";
+            CommandMenuEntry minus  = new CommandMenuEntry.Stay(
+                "-", "dungeontrain editor weight " + model + " dec");
+            CommandMenuEntry weight = new CommandMenuEntry.TypeArg(
+                label, "0-100", "dungeontrain editor weight " + model);
+            CommandMenuEntry plus   = new CommandMenuEntry.Stay(
+                "+", "dungeontrain editor weight " + model + " inc");
+            out.add(new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90));
         }
 
         out.add(new CommandMenuEntry.Back("< Back"));

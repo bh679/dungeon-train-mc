@@ -155,6 +155,10 @@ public final class CommandMenuRenderer {
             drawSplitRow(poseStack, buffer, font, split, rowIndex, count, hovered, hoveredSub);
             return;
         }
+        if (entry instanceof CommandMenuEntry.Triple triple) {
+            drawTripleRow(poseStack, buffer, font, triple, rowIndex, count, hovered, hoveredSub);
+            return;
+        }
 
         float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
         float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
@@ -233,6 +237,48 @@ public final class CommandMenuRenderer {
         float rightCenterX = (rightStart + rightEnd) / 2f;
         drawCenteredText(poseStack, buffer, font, labelFor(split.rightEntry()),
             rightCenterX, cy, hovered && hoveredSub == 1 ? 0xFF000000 : 0xFFFFFFFF);
+    }
+
+    private static void drawTripleRow(
+        PoseStack poseStack, MultiBufferSource buffer, Font font,
+        CommandMenuEntry.Triple triple, int rowIndex, int count,
+        boolean hovered, int hoveredSub
+    ) {
+        float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
+        float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
+        float cy = (float) CommandMenuLayout.rowCenterY(rowIndex, count);
+        float padX = 0.02f;
+        float padY = 0.005f;
+        float gap = 0.015f;
+
+        float leftBoundary  = (float) (-halfW + triple.leftFraction() * CommandMenuLayout.PANEL_WIDTH);
+        float rightBoundary = (float) (-halfW + triple.middleEnd()    * CommandMenuLayout.PANEL_WIDTH);
+
+        drawTripleCell(poseStack, buffer, font, triple.leftEntry(),
+            -halfW + padX, leftBoundary - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 0);
+        drawTripleCell(poseStack, buffer, font, triple.middleEntry(),
+            leftBoundary + gap / 2f, rightBoundary - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 1);
+        drawTripleCell(poseStack, buffer, font, triple.rightEntry(),
+            rightBoundary + gap / 2f, halfW - padX, cy, halfH, padY,
+            hovered && hoveredSub == 2);
+    }
+
+    private static void drawTripleCell(
+        PoseStack poseStack, MultiBufferSource buffer, Font font,
+        CommandMenuEntry entry,
+        float xStart, float xEnd, float cy, float halfH, float padY,
+        boolean hovered
+    ) {
+        int tint = hovered ? 0xB0FFCC33 : 0x30FFFFFF;
+        drawQuad(poseStack, buffer,
+            xStart, cy - halfH + padY,
+            xEnd,   cy + halfH - padY,
+            tint);
+        float centerX = (xStart + xEnd) / 2f;
+        drawCenteredText(poseStack, buffer, font, labelFor(entry),
+            centerX, cy, hovered ? 0xFF000000 : 0xFFFFFFFF);
     }
 
     private static int baseTintFor(CommandMenuEntry entry) {
