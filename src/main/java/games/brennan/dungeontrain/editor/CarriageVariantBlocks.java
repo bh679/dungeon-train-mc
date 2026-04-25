@@ -51,32 +51,45 @@ import java.util.Random;
  * ({@link #bundledResourceFor}). Unlike the NBT store, there is no hardcoded
  * fallback — a variant with no sidecar simply has no random positions.</p>
  *
- * <p>v2 schema (current):
+ * <p>v3 schema (current):
  * <pre>
  * {
- *   "schemaVersion": 2,
+ *   "schemaVersion": 3,
  *   "variants": {
  *     "3,1,2": [
  *       "minecraft:stone",
  *       { "state": "minecraft:bookshelf" },
- *       { "state": "minecraft:chest[facing=west]", "nbt": "{Items:[...]}" }
+ *       { "state": "minecraft:chest[facing=west]", "nbt": "{Items:[...]}" },
+ *       { "state": "minecraft:cobblestone", "weight": 3 },
+ *       { "state": "minecraft:gold_block", "locked": true }
  *     ]
  *   }
  * }
  * </pre>
  * Keys use local coords (same basis as {@code StructureTemplate} block infos).
- * Each candidate is either a bare BlockState string (no BlockEntity payload —
- * identical to v1) or a {@code {state, nbt?}} object carrying SNBT for the
- * block entity. v1 files load unchanged; v2 writer emits objects only when
- * {@code blockEntityNbt != null}, so v1 files round-trip diff-clean as bare
- * strings.</p>
+ * Each candidate is either a bare BlockState string (no NBT, weight 1, not
+ * locked — identical to v1) or a {@code {state, nbt?, weight?, locked?}}
+ * object. v1 / v2 files load unchanged; the v3 writer emits objects only
+ * when one of {NBT, non-default weight, locked} is set, so older files
+ * round-trip diff-clean as bare strings.</p>
  */
 public final class CarriageVariantBlocks {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Current schema version written by {@link #save}. v2 adds optional per-entry BlockEntity NBT. */
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    /**
+     * Current schema version written by {@link #save}.
+     * <ul>
+     *   <li>v1 — bare BlockState strings.</li>
+     *   <li>v2 — adds optional per-entry BlockEntity NBT.</li>
+     *   <li>v3 — adds optional per-entry {@code weight} (≥1, default 1)
+     *       and {@code locked} (default false). Older files load with the
+     *       defaults and round-trip diff-clean since the writer only emits
+     *       object form when one of {NBT, non-default weight, locked} is
+     *       set.</li>
+     * </ul>
+     */
+    public static final int CURRENT_SCHEMA_VERSION = 3;
 
     private static final String SUBDIR = "dungeontrain/templates";
     private static final String EXT = ".variants.json";
@@ -243,8 +256,8 @@ public final class CarriageVariantBlocks {
 
     /**
      * Parse one element of a per-cell candidate array — either a bare string
-     * (v1, BlockState only) or an object {@code {state, nbt?}} (v2). Returns
-     * {@code null} on parse failure (caller logs).
+     * (v1, BlockState only) or an object {@code {state, nbt?, weight?, locked?}}
+     * (v2 / v3). Returns {@code null} on parse failure (caller logs).
      */
     public static VariantState parseVariantElement(JsonElement el,
                                             HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks,
@@ -272,7 +285,18 @@ public final class CarriageVariantBlocks {
                         contextId, contextPos, e.getMessage());
                 }
             }
-            return new VariantState(base.state(), nbt);
+            int weight = 1;
+            if (obj.has("weight") && obj.get("weight").isJsonPrimitive()
+                && obj.get("weight").getAsJsonPrimitive().isNumber()) {
+                int raw = obj.get("weight").getAsInt();
+                weight = raw < 1 ? 1 : raw;
+            }
+            boolean locked = false;
+            if (obj.has("locked") && obj.get("locked").isJsonPrimitive()
+                && obj.get("locked").getAsJsonPrimitive().isBoolean()) {
+                locked = obj.get("locked").getAsBoolean();
+            }
+            return new VariantState(base.state(), nbt, weight, locked);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -367,30 +391,106 @@ public final class CarriageVariantBlocks {
      * with the world seed XOR'd through the carriage index and the local
      * position — same world + same carriage + same pos → same result across
      * reloads. Returns {@code null} if no entry.
+     *
+     * <p>Lock short-circuit: if any entry in the cell has
+     * {@link VariantState#locked} = true, the picker bypasses the random
+     * roll and returns the first locked entry. Multiple locked entries are
+     * permitted but only the first one wins — list order is the
+     * tiebreaker, matching the JSON's insertion order.</p>
+     *
+     * <p>Weighted pick: when no entry is locked, the pick respects each
+     * entry's {@link VariantState#weight}. An entry with weight=2 is twice
+     * as likely as one with weight=1 to be chosen. Determinism contract is
+     * unchanged — {@code (seed, carriageIndex, localPos)} → same draw, then
+     * the same draw maps to the same bucket since weights are stable.</p>
      */
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
-        int idx = pickIndex(localPos, worldSeed, carriageIndex, states.size());
+        for (VariantState s : states) {
+            if (s.locked()) return s;
+        }
+        int idx = pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
         return states.get(idx);
     }
 
     /**
-     * Pure-function deterministic index picker used by {@link #resolve}.
-     * Extracted so unit tests can exercise the determinism contract without
-     * needing a Forge/MC bootstrap to construct real {@link BlockState}s.
-     * Mirrors {@code CarriageTemplate.seededPick}'s golden-ratio mix, with
-     * an additional {@code 0xBF58476D1CE4E5B9L} multiplier folding the block
-     * position so two adjacent positions at the same carriage index aren't
-     * correlated.
+     * Uniform-distribution index picker (legacy / test surface). Kept for
+     * the existing schema-version unit tests that operate on raw {@code size}
+     * without constructing {@link VariantState} instances. New callers
+     * should use {@link #pickIndexWeighted}.
+     *
+     * <p>Mirrors {@code CarriageTemplate.seededPick}'s golden-ratio mix,
+     * with an additional {@code 0xBF58476D1CE4E5B9L} multiplier folding the
+     * block position so two adjacent positions at the same carriage index
+     * aren't correlated.</p>
      */
     public static int pickIndex(BlockPos localPos, long worldSeed, int carriageIndex, int size) {
         if (size <= 0) throw new IllegalArgumentException("size must be > 0");
+        return seededRandom(localPos, worldSeed, carriageIndex).nextInt(size);
+    }
+
+    /**
+     * Weighted picker over a list of {@link VariantState}. Materialises
+     * weights to an {@code int[]} and delegates to
+     * {@link #pickIndexFromWeights} so the picker core stays unit-testable
+     * without a Forge/MC bootstrap.
+     *
+     * <p>Caller responsibility: the {@code states} list must be non-empty
+     * and contain no {@link VariantState#locked} entries (otherwise the
+     * caller should short-circuit; weights on locked entries don't matter).</p>
+     */
+    public static int pickIndexWeighted(BlockPos localPos, long worldSeed, int carriageIndex, List<VariantState> states) {
+        if (states.isEmpty()) throw new IllegalArgumentException("states must be non-empty");
+        int[] weights = new int[states.size()];
+        for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
+        return pickIndexFromWeights(localPos, worldSeed, carriageIndex, weights);
+    }
+
+    /**
+     * Pure-data weighted picker — testable without constructing real
+     * {@link VariantState} (and therefore real {@link net.minecraft.world.level.block.state.BlockState})
+     * instances. Sums the weights, draws a uniform {@code [0, total)} from
+     * the deterministic seed mix, walks the array to find the bucket.
+     *
+     * <p>List order is stable (insertion order from the LinkedHashMap-backed
+     * sidecar), so a given seed always selects the same bucket. Determinism
+     * contract: same {@code (worldSeed, carriageIndex, localPos, weights)}
+     * → same result across reloads.</p>
+     */
+    public static int pickIndexFromWeights(BlockPos localPos, long worldSeed, int carriageIndex, int[] weights) {
+        if (weights.length == 0) throw new IllegalArgumentException("weights must be non-empty");
+        int total = 0;
+        for (int w : weights) {
+            // Defensive clamp — VariantState's canonical constructor already
+            // enforces ≥ 1, but external callers might pass raw values.
+            if (w < 1) w = 1;
+            total += w;
+        }
+        // Weights are clamped to [1, ~99] and entry counts are ≤ 32, so
+        // total fits comfortably in int.
+        int draw = seededRandom(localPos, worldSeed, carriageIndex).nextInt(total);
+        int acc = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += Math.max(1, weights[i]);
+            if (draw < acc) return i;
+        }
+        // Fallback for any rounding edge case — should never trigger because acc reaches total.
+        return weights.length - 1;
+    }
+
+    /**
+     * Same seed mix used by both pick paths so the uniform / weighted call
+     * sites land on the same draw for backward-compat behaviour
+     * verification: a v2 sidecar (no weights) re-loaded as v3 with all
+     * weights=1 picks identically to the v2 path.
+     */
+    private static Random seededRandom(BlockPos localPos, long worldSeed, int carriageIndex) {
         long posHash = (((long) localPos.getX() * 31L + localPos.getY()) * 31L + localPos.getZ());
         long seed = worldSeed
             ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
             ^ (posHash * 0xBF58476D1CE4E5B9L);
-        return new Random(seed).nextInt(size);
+        return new Random(seed);
     }
 
     /**
@@ -497,15 +597,27 @@ public final class CarriageVariantBlocks {
 
     public static void appendVariantJson(StringBuilder sb, VariantState s) {
         String stateStr = BlockStateParser.serialize(s.state());
-        if (!s.hasBlockEntityData()) {
+        if (s.isPlainBareString()) {
             sb.append('"').append(escapeJson(stateStr)).append('"');
             return;
         }
-        // CompoundTag.toString() returns the canonical SNBT representation —
-        // round-trips with TagParser.parseTag on the read side.
-        sb.append("{\"state\": \"").append(escapeJson(stateStr)).append("\", \"nbt\": \"")
-            .append(escapeJson(s.blockEntityNbt().toString()))
-            .append("\"}");
+        // Object form — emit only the fields that differ from the default
+        // (state always; nbt / weight / locked only when set) so v1/v2
+        // entries that gain a non-default value still produce the smallest
+        // possible diff.
+        sb.append("{\"state\": \"").append(escapeJson(stateStr)).append("\"");
+        if (s.hasBlockEntityData()) {
+            // CompoundTag.toString() returns the canonical SNBT representation —
+            // round-trips with TagParser.parseTag on the read side.
+            sb.append(", \"nbt\": \"").append(escapeJson(s.blockEntityNbt().toString())).append("\"");
+        }
+        if (s.weight() != 1) {
+            sb.append(", \"weight\": ").append(s.weight());
+        }
+        if (s.locked()) {
+            sb.append(", \"locked\": true");
+        }
+        sb.append("}");
     }
 
     private static String escapeJson(String s) {

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DungeonTrainSettingsScreen;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
@@ -33,6 +34,10 @@ public class DungeonTrain {
 
         modBus.addListener(this::commonSetup);
         modBus.addListener(this::clientSetup);
+
+        // First DeferredRegister in the project — wires the variant
+        // clipboard item produced by the block-variant menu's Copy button.
+        ModItems.register(modBus);
 
         ModLoadingContext.get().registerConfig(
                 ModConfig.Type.SERVER,
