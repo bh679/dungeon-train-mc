@@ -59,12 +59,16 @@ public final class TrackVariantBlocks {
 
     private final Map<BlockPos, List<VariantState>> entries;
 
-    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries) {
+    /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
+    private final Map<BlockPos, Integer> lockIds;
+
+    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this.entries = entries;
+        this.lockIds = lockIds;
     }
 
     public static TrackVariantBlocks empty() {
-        return new TrackVariantBlocks(new LinkedHashMap<>());
+        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     public static Path configPathFor(TrackKind kind, String name) {
@@ -136,6 +140,7 @@ public final class TrackVariantBlocks {
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
+        Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
         String contextId = kind.id() + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = CarriageVariantBlocks.parsePos(field.getKey());
@@ -149,22 +154,21 @@ public final class TrackVariantBlocks {
                     contextId, pos, size.getX(), size.getY(), size.getZ());
                 continue;
             }
-            if (!field.getValue().isJsonArray()) continue;
-            List<VariantState> states = new ArrayList<>();
-            for (JsonElement el : field.getValue().getAsJsonArray()) {
-                VariantState parsed = CarriageVariantBlocks.parseVariantElement(el, blocks, contextId, pos);
-                if (parsed != null) states.add(parsed);
-            }
-            if (states.size() < MIN_STATES_PER_ENTRY) {
+            CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
+                field.getValue(), blocks, contextId, pos);
+            if (cell == null) continue;
+            if (cell.states().size() < MIN_STATES_PER_ENTRY) {
                 LOGGER.warn("[DungeonTrain] Track variant sidecar {} pos {}: fewer than {} valid states, dropped.",
                     contextId, pos, MIN_STATES_PER_ENTRY);
                 continue;
             }
-            out.put(pos.immutable(), List.copyOf(states));
+            BlockPos posI = pos.immutable();
+            out.put(posI, List.copyOf(cell.states()));
+            if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out);
+        return new TrackVariantBlocks(out, outLocks);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -206,18 +210,57 @@ public final class TrackVariantBlocks {
     }
 
     public synchronized boolean remove(BlockPos localPos) {
+        lockIds.remove(localPos);
         return entries.remove(localPos) != null;
     }
 
+    public synchronized int lockIdAt(BlockPos localPos) {
+        return lockIds.getOrDefault(localPos, 0);
+    }
+
+    public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (lockId < 0) lockId = 0;
+        if (lockId == 0) lockIds.remove(localPos);
+        else lockIds.put(localPos.immutable(), lockId);
+    }
+
+    public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
+        if (lockId <= 0) return java.util.Set.of();
+        java.util.Set<BlockPos> out = new java.util.LinkedHashSet<>();
+        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
+            if (e.getValue() == lockId) out.add(e.getKey());
+        }
+        return out;
+    }
+
+    public synchronized int nextFreeLockId() {
+        java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
+        int n = 1;
+        while (used.contains(n)) n++;
+        return n;
+    }
+
     /**
-     * Deterministic pick — same {@code (worldSeed, tileIndex, localPos)} →
-     * same {@link VariantState} across reloads. Shares the
-     * {@link CarriageVariantBlocks#pickIndex} mixer with the carriage path.
+     * Deterministic pick — locked cells share a single roll across the group.
+     * Shares the {@link CarriageVariantBlocks#pickIndexWeighted} /
+     * {@link CarriageVariantBlocks#pickIndexFromLockGroup} mixers with the
+     * carriage path.
      */
     public VariantState resolve(BlockPos localPos, long worldSeed, int tileIndex) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
-        int idx = CarriageVariantBlocks.pickIndex(localPos, worldSeed, tileIndex, states.size());
+        int lockId = lockIdAt(localPos);
+        int idx;
+        if (lockId > 0) {
+            int[] weights = new int[states.size()];
+            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
+            idx = CarriageVariantBlocks.pickIndexFromLockGroup(lockId, worldSeed, tileIndex, weights);
+        } else {
+            idx = CarriageVariantBlocks.pickIndexWeighted(localPos, worldSeed, tileIndex, states);
+        }
         return states.get(idx);
     }
 
@@ -231,14 +274,9 @@ public final class TrackVariantBlocks {
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
             if (!firstEntry) sb.append(",");
             firstEntry = false;
-            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": [");
-            boolean firstState = true;
-            for (VariantState s : e.getValue()) {
-                if (!firstState) sb.append(", ");
-                firstState = false;
-                CarriageVariantBlocks.appendVariantJson(sb, s);
-            }
-            sb.append("]");
+            int lockId = lockIds.getOrDefault(e.getKey(), 0);
+            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
         }
         sb.append("\n  }\n}\n");
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {

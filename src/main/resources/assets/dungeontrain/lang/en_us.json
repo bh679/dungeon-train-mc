@@ -23,6 +23,7 @@
   "gui.dungeontrain.options.mode.random_grouped": "Random Grouped",
   "gui.dungeontrain.options.mode.looping": "Looping",
   "key.dungeontrain.command_menu": "Toggle Command Menu",
-  "key.dungeontrain.variant_place": "Place Block Variant (hold + right-click)",
-  "key.categories.dungeontrain": "Dungeon Train"
+  "key.dungeontrain.variant_place": "Place Block Variant (hold + right-click; tap to open menu)",
+  "key.categories.dungeontrain": "Dungeon Train",
+  "item.dungeontrain.variant_clipboard": "Block Variant Clipboard"
 }
