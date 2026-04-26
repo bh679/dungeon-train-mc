@@ -86,17 +86,18 @@ public final class BlockVariantMenuRaycast {
 
         if (hitY > headerBottom) return BlockVariantMenu.Hit.NONE;
 
-        // Toolbar — 5 cells
+        // Toolbar — 6 cells: Copy | Add | Lock | Remove | Clear | X.
         if (hitY > toolbarBottom) {
-            double cellW = panelW / 5.0;
+            double cellW = panelW / 6.0;
             int idx = (int) Math.floor((hitX + halfW) / cellW);
             if (idx < 0) idx = 0;
-            if (idx > 4) idx = 4;
+            if (idx > 5) idx = 5;
             BlockVariantMenu.CellKind kind = switch (idx) {
                 case 0 -> BlockVariantMenu.CellKind.COPY;
                 case 1 -> BlockVariantMenu.CellKind.ADD;
-                case 2 -> BlockVariantMenu.CellKind.REMOVE;
-                case 3 -> BlockVariantMenu.CellKind.CLEAR;
+                case 2 -> BlockVariantMenu.CellKind.LOCK;
+                case 3 -> BlockVariantMenu.CellKind.REMOVE;
+                case 4 -> BlockVariantMenu.CellKind.CLEAR;
                 default -> BlockVariantMenu.CellKind.CLOSE;
             };
             return new BlockVariantMenu.Hit(kind, -1);
@@ -116,16 +117,11 @@ public final class BlockVariantMenuRaycast {
         double colXL = -halfW + col * colActualW;
         double colXR = colXL + colActualW;
         double xCellW = removeMode ? BlockVariantMenuRenderer.X_CELL_WIDTH : 0.0;
-        double lockCellR = colXR - xCellW;
-        double lockCellL = lockCellR - BlockVariantMenuRenderer.LOCK_CELL_WIDTH;
-        double weightCellR = lockCellL;
+        double weightCellR = colXR - xCellW;
         double weightCellL = weightCellR - BlockVariantMenuRenderer.WEIGHT_CELL_WIDTH;
 
         if (removeMode && hitX >= colXR - BlockVariantMenuRenderer.X_CELL_WIDTH) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_REMOVE_X, idx);
-        }
-        if (hitX >= lockCellL && hitX <= lockCellR) {
-            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_LOCK, idx);
         }
         if (hitX >= weightCellL && hitX <= weightCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_WEIGHT, idx);

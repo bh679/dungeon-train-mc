@@ -60,13 +60,12 @@ public final class BlockVariantMenuRenderer {
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
-    /** A grid column = name cell + weight + lock + (optional) X. Slightly wider than parts to fit longer block ids. */
-    static final double COLUMN_WIDTH = 1.9;
-    /** Five-cell toolbar needs a bit more width than the four-cell part menu. */
-    static final double MIN_PANEL_WIDTH = 2.8;
+    /** A grid column = name cell + weight + (optional) X. */
+    static final double COLUMN_WIDTH = 1.7;
+    /** Six-cell toolbar (Copy/Add/Lock/Remove/Clear/X) needs more width. */
+    static final double MIN_PANEL_WIDTH = 3.2;
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
-    static final double LOCK_CELL_WIDTH = 0.30;
     static final double TEXT_SCALE = 0.012;
 
     private BlockVariantMenuRenderer() {}
@@ -126,28 +125,31 @@ public final class BlockVariantMenuRenderer {
         // Backdrop
         drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, 0xC8000000);
 
-        // Header — show the cell's local position so the player can confirm what they're editing.
+        // Header — show the cell's local position + lock-id so the player can confirm what they're editing.
         double headerCY = halfH - HEADER_HEIGHT / 2.0;
         drawQuad(ps, buffer, -halfW, halfH - HEADER_HEIGHT, halfW, halfH, 0x40FFEEBB);
         net.minecraft.core.BlockPos local = BlockVariantMenu.localPos();
+        int cellLockId = BlockVariantMenu.lockId();
+        String lockLabel = cellLockId > 0 ? "  ·  lock " + cellLockId : "";
         String headerLabel = local == null
             ? "Block Variants"
-            : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ();
+            : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ() + lockLabel;
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFFFFEEBB);
 
-        // Toolbar — 5 cells: Copy | Add | Remove | Clear | X (close).
+        // Toolbar — 6 cells: Copy | Add | Lock | Remove | Clear | X (close).
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 5.0;
-        for (int i = 0; i < 5; i++) {
+        double cellW = panelW / 6.0;
+        for (int i = 0; i < 6; i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
             BlockVariantMenu.CellKind cellKind = switch (i) {
                 case 0 -> BlockVariantMenu.CellKind.COPY;
                 case 1 -> BlockVariantMenu.CellKind.ADD;
-                case 2 -> BlockVariantMenu.CellKind.REMOVE;
-                case 3 -> BlockVariantMenu.CellKind.CLEAR;
+                case 2 -> BlockVariantMenu.CellKind.LOCK;
+                case 3 -> BlockVariantMenu.CellKind.REMOVE;
+                case 4 -> BlockVariantMenu.CellKind.CLEAR;
                 default -> BlockVariantMenu.CellKind.CLOSE;
             };
             boolean isHover = hovered.kind() == cellKind;
@@ -158,6 +160,13 @@ public final class BlockVariantMenuRenderer {
                 tint = isHover ? 0xC0FF8080 : 0x40FF6060;
             } else if (cellKind == BlockVariantMenu.CellKind.COPY) {
                 tint = isHover ? 0xB033FFCC : 0x40339999;
+            } else if (cellKind == BlockVariantMenu.CellKind.LOCK) {
+                if (cellLockId > 0) {
+                    // Locked cell — warm orange to make active state obvious.
+                    tint = isHover ? 0xC0FFAA55 : 0x80CC7733;
+                } else {
+                    tint = isHover ? 0xC0AAAAAA : 0x60777777;
+                }
             } else {
                 tint = isHover ? 0xB0FFCC33 : 0x30FFFFFF;
             }
@@ -166,6 +175,10 @@ public final class BlockVariantMenuRenderer {
             String label = switch (cellKind) {
                 case COPY -> "Copy";
                 case ADD -> "Add";
+                // Lock label shows current cell lock-id: "-" unlocked, or
+                // the digit (e.g. "2") when locked. Cycles to next free
+                // when 0, back to 0 when set.
+                case LOCK -> cellLockId > 0 ? Integer.toString(cellLockId) : "-";
                 case REMOVE -> removeMode ? "Cancel" : "Remove";
                 case CLEAR -> "Clear";
                 case CLOSE -> "X";
@@ -195,13 +208,10 @@ public final class BlockVariantMenuRenderer {
 
             // Cell layout right-to-left:
             //   [X]  (rightmost, remove-mode only)
-            //   [Lock]
             //   [Weight]
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
-            double lockCellR = colXR - xCellW;
-            double lockCellL = lockCellR - LOCK_CELL_WIDTH;
-            double weightCellR = lockCellL;
+            double weightCellR = colXR - xCellW;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
             double nameCellL = colXL;
             double nameCellR = weightCellL;
@@ -224,20 +234,6 @@ public final class BlockVariantMenuRenderer {
             drawCenteredText(ps, buffer, font, Integer.toString(entry.weight()),
                 (weightCellL + weightCellR) / 2.0, rowCY,
                 weightHover ? 0xFF000000 : 0xFFFFFFFF);
-
-            // Lock cell — visual: closed-padlock symbol when locked, open-padlock when not.
-            boolean lockHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_LOCK && hovered.index() == i;
-            int lockTint;
-            if (entry.locked()) {
-                lockTint = lockHover ? 0xC0FFAA55 : 0x80CC7733;
-            } else {
-                lockTint = lockHover ? 0xC0AAAAAA : 0x60777777;
-            }
-            drawQuad(ps, buffer, lockCellL + 0.005, rowBottom + 0.005,
-                lockCellR - 0.005, rowTop - 0.005, lockTint);
-            drawCenteredText(ps, buffer, font, entry.locked() ? "L" : "-",
-                (lockCellL + lockCellR) / 2.0, rowCY,
-                lockHover ? 0xFF000000 : 0xFFFFFFFF);
 
             // Remove [X]
             if (removeMode) {

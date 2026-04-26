@@ -34,27 +34,25 @@ import java.util.List;
 /**
  * Custom mod item produced by the block-variant menu's Copy button.
  * Visually mimics a vanilla command block (model JSON parents
- * {@code minecraft:block/command_block} so it reuses the vanilla atlas
- * without shipping textures). Carries a snapshot of a variant cell's
- * candidate list in its ItemStack NBT under the {@link #NBT_ROOT_KEY} tag.
+ * {@code minecraft:block/command_block}). Carries a snapshot of a variant
+ * cell's candidate list AND its cell-level lock-id in ItemStack NBT under
+ * {@link #NBT_ROOT_KEY} / {@link #NBT_LOCK_ID}.
  *
  * <p>On {@link #useOn} the item:
  * <ol>
- *   <li>Resolves the carriage variant + local pos under the targeted
- *       block face via {@link CarriageEditor#plotContaining}.</li>
- *   <li>Decodes its NBT snapshot to a {@code List<VariantState>} (skipping
- *       silently on parse errors so a stale clipboard from an older mod
- *       version doesn't crash the placement).</li>
- *   <li>Writes the list to {@link CarriageVariantBlocks} for that
- *       variant, persists, and places a vanilla {@link Blocks#COMMAND_BLOCK}
- *       at the targeted face — the existing variant-empty sentinel that
- *       the apply path translates to air at spawn time.</li>
+ *   <li>Resolves the editor plot the player is standing in via
+ *       {@link BlockVariantPlot#resolveAt} (works for any of the four
+ *       editor plot types).</li>
+ *   <li>Decodes its NBT snapshot to a {@code List<VariantState>} plus
+ *       lock-id.</li>
+ *   <li>Writes the list to the plot's sidecar at the targeted cell,
+ *       persists, and places a vanilla {@link Blocks#COMMAND_BLOCK} as the
+ *       editor's empty-placeholder sentinel.</li>
+ *   <li>Restores the lock-id on the new cell so it joins the original's
+ *       lock group — the only way for two cells to end up with the same
+ *       lock-id.</li>
  *   <li>Consumes one item.</li>
  * </ol></p>
- *
- * <p>If used outside any editor plot the item fails with an action-bar
- * message and is not consumed — same UX as the {@code /dungeontrain editor
- * variant} commands when they refuse to mutate non-editor blocks.</p>
  */
 public final class VariantClipboardItem extends Item {
 
@@ -63,11 +61,13 @@ public final class VariantClipboardItem extends Item {
     /** Top-level ItemStack NBT key carrying the variant list. */
     public static final String NBT_ROOT_KEY = "dt_variants";
 
+    /** Top-level NBT key carrying the cell-level lock-id (≥1) — absent / 0 means unlocked. */
+    public static final String NBT_LOCK_ID = "dt_lockId";
+
     /** Per-entry sub-keys, kept short for compact NBT. */
     private static final String NBT_STATE = "s";
     private static final String NBT_BENBT = "n";
     private static final String NBT_WEIGHT = "w";
-    private static final String NBT_LOCKED = "l";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -84,14 +84,9 @@ public final class VariantClipboardItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        // Targeted face: place at the block adjacent to the clicked face,
-        // matching vanilla block-place UX.
         BlockPos placePos = ctx.getClickedPos().relative(ctx.getClickedFace());
         BlockState replaceable = serverLevel.getBlockState(placePos);
         if (!replaceable.canBeReplaced()) {
-            // Allow placement onto the clicked block itself when the player
-            // shift-right-clicks (so the clipboard can overwrite an existing
-            // air-placeholder in the carriage).
             placePos = ctx.getClickedPos();
         }
 
@@ -108,19 +103,24 @@ public final class VariantClipboardItem extends Item {
         }
 
         ItemStack stack = ctx.getItemInHand();
-        List<VariantState> states = decodeStates(stack.getTag());
+        CompoundTag tag = stack.getTag();
+        List<VariantState> states = decodeStates(tag);
+        int lockId = decodeLockId(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             sendActionBar(player, "Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
             return InteractionResult.FAIL;
         }
 
-        // Place the empty-placeholder sentinel (vanilla command block) so
-        // the cell renders as a placeholder in the editor view.
+        // Place the empty-placeholder sentinel.
         serverLevel.setBlock(placePos, Blocks.COMMAND_BLOCK.defaultBlockState(), 3);
 
-        // Write to the sidecar.
+        // Write to the sidecar (states first, then lockId so setLockId's
+        // "cell must exist" precondition is satisfied).
         plot.put(localPos, states);
+        if (lockId > 0) {
+            plot.setLockId(localPos, lockId);
+        }
         try {
             plot.save();
         } catch (IOException e) {
@@ -129,8 +129,9 @@ public final class VariantClipboardItem extends Item {
             return InteractionResult.FAIL;
         }
 
+        String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
         sendActionBar(player, "Pasted " + states.size() + " variants at " + localPos.getX()
-            + "," + localPos.getY() + "," + localPos.getZ(), ChatFormatting.GREEN);
+            + "," + localPos.getY() + "," + localPos.getZ() + suffix, ChatFormatting.GREEN);
 
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
@@ -139,12 +140,10 @@ public final class VariantClipboardItem extends Item {
     }
 
     /**
-     * Encode a variant list into a fresh {@link CompoundTag} ready for
-     * {@link ItemStack#setTag}. Schema mirrors the on-disk JSON v3 format
-     * (state-string, optional NBT, optional weight, optional locked) but
-     * uses NBT primitives instead of JSON for compact in-stack storage.
+     * Encode a variant list + cell lock-id into a fresh {@link CompoundTag}
+     * ready for {@link ItemStack#setTag}.
      */
-    public static CompoundTag encodeStates(List<VariantState> states) {
+    public static CompoundTag encodeStates(List<VariantState> states, int lockId) {
         CompoundTag root = new CompoundTag();
         ListTag list = new ListTag();
         for (VariantState s : states) {
@@ -156,21 +155,16 @@ public final class VariantClipboardItem extends Item {
             if (s.weight() != 1) {
                 entry.putInt(NBT_WEIGHT, s.weight());
             }
-            if (s.locked()) {
-                entry.putBoolean(NBT_LOCKED, true);
-            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
+        if (lockId > 0) {
+            root.putInt(NBT_LOCK_ID, lockId);
+        }
         return root;
     }
 
-    /**
-     * Decode a variant list from an ItemStack's NBT (or null if the stack
-     * has no tag). Returns an empty list when the tag is missing or
-     * malformed — the caller is expected to bounce the placement with a
-     * user-visible error rather than crash.
-     */
+    /** Decode the variant list from an ItemStack's NBT. Empty list when malformed. */
     public static List<VariantState> decodeStates(@Nullable CompoundTag tag) {
         List<VariantState> out = new ArrayList<>();
         if (tag == null || !tag.contains(NBT_ROOT_KEY, Tag.TAG_LIST)) return out;
@@ -192,10 +186,16 @@ public final class VariantClipboardItem extends Item {
             CompoundTag beNbt = entry.contains(NBT_BENBT, Tag.TAG_COMPOUND)
                 ? entry.getCompound(NBT_BENBT) : null;
             int weight = entry.contains(NBT_WEIGHT, Tag.TAG_INT) ? entry.getInt(NBT_WEIGHT) : 1;
-            boolean locked = entry.contains(NBT_LOCKED, Tag.TAG_BYTE) && entry.getBoolean(NBT_LOCKED);
-            out.add(new VariantState(state, beNbt, weight, locked));
+            out.add(new VariantState(state, beNbt, weight));
         }
         return out;
+    }
+
+    /** Decode the cell lock-id from an ItemStack's NBT. Returns 0 when absent. */
+    public static int decodeLockId(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_LOCK_ID, Tag.TAG_INT)) return 0;
+        int v = tag.getInt(NBT_LOCK_ID);
+        return v < 0 ? 0 : v;
     }
 
     private static void sendActionBar(ServerPlayer player, String text, ChatFormatting colour) {
@@ -207,7 +207,11 @@ public final class VariantClipboardItem extends Item {
     @Override
     public Component getName(ItemStack stack) {
         List<VariantState> states = decodeStates(stack.getTag());
+        int lockId = decodeLockId(stack.getTag());
         if (states.isEmpty()) return super.getName(stack);
-        return Component.literal(super.getName(stack).getString() + " (" + states.size() + ")");
+        String suffix = lockId > 0
+            ? " (" + states.size() + ", lock " + lockId + ")"
+            : " (" + states.size() + ")";
+        return Component.literal(super.getName(stack).getString() + suffix);
     }
 }

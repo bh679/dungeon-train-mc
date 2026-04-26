@@ -35,17 +35,18 @@ public record BlockVariantSyncPacket(
     String variantId,
     @Nullable BlockPos localPos,
     List<Entry> entries,
+    int lockId,
     Vec3 anchorPos,
     Vec3 anchorRight,
     Vec3 anchorUp
 ) {
 
-    /** Single per-cell candidate, mirrored on the wire. */
-    public record Entry(String stateString, @Nullable String beNbt, int weight, boolean locked) {}
+    /** Single per-cell candidate, mirrored on the wire. Lock semantics live at the cell level — see {@link BlockVariantSyncPacket#lockId()}. */
+    public record Entry(String stateString, @Nullable String beNbt, int weight) {}
 
     public static BlockVariantSyncPacket empty() {
         return new BlockVariantSyncPacket(
-            "", null, Collections.emptyList(),
+            "", null, Collections.emptyList(), 0,
             Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
     }
 
@@ -59,6 +60,7 @@ public record BlockVariantSyncPacket(
         buf.writeVarInt(localPos.getX());
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
+        buf.writeVarInt(lockId);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -69,7 +71,6 @@ public record BlockVariantSyncPacket(
             buf.writeBoolean(hasNbt);
             if (hasNbt) buf.writeUtf(e.beNbt(), 32767);
             buf.writeVarInt(e.weight());
-            buf.writeBoolean(e.locked());
         }
     }
 
@@ -78,10 +79,11 @@ public record BlockVariantSyncPacket(
         boolean active = buf.readBoolean();
         if (!active) {
             return new BlockVariantSyncPacket(
-                id, null, Collections.emptyList(),
+                id, null, Collections.emptyList(), 0,
                 Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
+        int lockId = buf.readVarInt();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -92,10 +94,9 @@ public record BlockVariantSyncPacket(
             boolean hasNbt = buf.readBoolean();
             String nbt = hasNbt ? buf.readUtf(32767) : null;
             int weight = buf.readVarInt();
-            boolean locked = buf.readBoolean();
-            entries.add(new Entry(stateStr, nbt, weight, locked));
+            entries.add(new Entry(stateStr, nbt, weight));
         }
-        return new BlockVariantSyncPacket(id, local, entries, anchor, right, up);
+        return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {

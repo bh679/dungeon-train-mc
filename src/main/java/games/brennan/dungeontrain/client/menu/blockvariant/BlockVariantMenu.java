@@ -47,10 +47,10 @@ public final class BlockVariantMenu {
         ADD,
         REMOVE,
         CLEAR,
+        LOCK,
         CLOSE,
         ENTRY_NAME,
         ENTRY_WEIGHT,
-        ENTRY_LOCK,
         ENTRY_REMOVE_X,
         SEARCH_FIELD,
         SEARCH_RESULT,
@@ -68,6 +68,7 @@ public final class BlockVariantMenu {
     private static String variantId = "";
     @Nullable private static BlockPos localPos;
     private static List<BlockVariantSyncPacket.Entry> entries = Collections.emptyList();
+    private static int lockId = 0;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
@@ -86,6 +87,7 @@ public final class BlockVariantMenu {
     public static String variantId() { return variantId; }
     @Nullable public static BlockPos localPos() { return localPos; }
     public static List<BlockVariantSyncPacket.Entry> entries() { return entries; }
+    public static int lockId() { return lockId; }
     public static Vec3 anchorPos() { return anchorPos; }
     public static Vec3 anchorRight() { return anchorRight; }
     public static Vec3 anchorUp() { return anchorUp; }
@@ -108,6 +110,7 @@ public final class BlockVariantMenu {
             active = false;
             localPos = null;
             entries = Collections.emptyList();
+            lockId = 0;
             screen = Screen.ROOT;
             removeMode = false;
             searchBuffer = "";
@@ -120,6 +123,7 @@ public final class BlockVariantMenu {
         variantId = packet.variantId();
         localPos = packet.localPos();
         entries = List.copyOf(packet.entries());
+        lockId = packet.lockId();
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();
         anchorUp = packet.anchorUp();

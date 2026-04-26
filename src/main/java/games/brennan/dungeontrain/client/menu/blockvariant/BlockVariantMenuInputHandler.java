@@ -146,6 +146,8 @@ public final class BlockVariantMenuInputHandler {
                 // stateString signals "use held item" rather than the legacy
                 // search-screen path.
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.ADD, variantId, local, -1, "", 0));
+            case LOCK -> DungeonTrainNet.CHANNEL.sendToServer(
+                new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_LOCK_ID, variantId, local, -1, "", 0));
             case REMOVE -> BlockVariantMenu.toggleRemoveMode();
             case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CLEAR, variantId, local, -1, "", 0));
@@ -155,11 +157,6 @@ public final class BlockVariantMenuInputHandler {
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.BUMP_WEIGHT, variantId, local, hit.index(), "", delta));
-            }
-            case ENTRY_LOCK -> {
-                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.TOGGLE_LOCK, variantId, local, hit.index(), "", 0));
             }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;

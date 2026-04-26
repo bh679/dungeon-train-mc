@@ -67,12 +67,16 @@ public final class CarriagePartVariantBlocks {
 
     private final Map<BlockPos, List<VariantState>> entries;
 
-    private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries) {
+    /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
+    private final Map<BlockPos, Integer> lockIds;
+
+    private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this.entries = entries;
+        this.lockIds = lockIds;
     }
 
     public static CarriagePartVariantBlocks empty() {
-        return new CarriagePartVariantBlocks(new LinkedHashMap<>());
+        return new CarriagePartVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     public static Path configPathFor(CarriagePartKind kind, String name) {
@@ -144,6 +148,7 @@ public final class CarriagePartVariantBlocks {
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
+        Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
         String contextId = kind.id() + ":" + name;
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
@@ -157,23 +162,21 @@ public final class CarriagePartVariantBlocks {
                     contextId, pos, partSize.getX(), partSize.getY(), partSize.getZ());
                 continue;
             }
-            if (!field.getValue().isJsonArray()) continue;
-            JsonArray arr = field.getValue().getAsJsonArray();
-            List<VariantState> states = new ArrayList<>(arr.size());
-            for (JsonElement el : arr) {
-                VariantState parsed = CarriageVariantBlocks.parseVariantElement(el, blocks, contextId, pos);
-                if (parsed != null) states.add(parsed);
-            }
-            if (states.size() < MIN_STATES_PER_ENTRY) {
+            CarriageVariantBlocks.ParsedCell cell = CarriageVariantBlocks.parseCellValue(
+                field.getValue(), blocks, contextId, pos);
+            if (cell == null) continue;
+            if (cell.states().size() < MIN_STATES_PER_ENTRY) {
                 LOGGER.warn("[DungeonTrain] Part variant sidecar {} pos {}: fewer than {} valid states, dropped.",
                     contextId, pos, MIN_STATES_PER_ENTRY);
                 continue;
             }
-            out.put(pos.immutable(), List.copyOf(states));
+            BlockPos posI = pos.immutable();
+            out.put(posI, List.copyOf(cell.states()));
+            if (cell.lockId() > 0) outLocks.put(posI, cell.lockId());
         }
         LOGGER.info("[DungeonTrain] Loaded {} part variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new CarriagePartVariantBlocks(out);
+        return new CarriagePartVariantBlocks(out, outLocks);
     }
 
     static BlockPos parsePos(String key) {
@@ -231,14 +234,59 @@ public final class CarriagePartVariantBlocks {
     }
 
     public synchronized boolean remove(BlockPos localPos) {
+        lockIds.remove(localPos);
         return entries.remove(localPos) != null;
     }
 
-    /** Deterministic pick — same {@code (worldSeed, carriageIndex, localPos)} → same state across reloads. */
+    /** Lock-id at {@code localPos}; 0 if unlocked or no entry. */
+    public synchronized int lockIdAt(BlockPos localPos) {
+        return lockIds.getOrDefault(localPos, 0);
+    }
+
+    /**
+     * Set the lock-id for an existing cell. Pass 0 to unlock. Throws if
+     * no cell exists at {@code localPos}.
+     */
+    public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (lockId < 0) lockId = 0;
+        if (lockId == 0) lockIds.remove(localPos);
+        else lockIds.put(localPos.immutable(), lockId);
+    }
+
+    /** Positions sharing the given lock-id. Empty for {@code lockId == 0}. */
+    public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
+        if (lockId <= 0) return java.util.Set.of();
+        java.util.Set<BlockPos> out = new java.util.LinkedHashSet<>();
+        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
+            if (e.getValue() == lockId) out.add(e.getKey());
+        }
+        return out;
+    }
+
+    /** Smallest positive integer not currently used as a lock-id. */
+    public synchronized int nextFreeLockId() {
+        java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
+        int n = 1;
+        while (used.contains(n)) n++;
+        return n;
+    }
+
+    /** Deterministic pick — same {@code (worldSeed, carriageIndex, localPos|lockId)} → same state across reloads. */
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
-        int idx = CarriageVariantBlocks.pickIndex(localPos, worldSeed, carriageIndex, states.size());
+        int lockId = lockIdAt(localPos);
+        int idx;
+        if (lockId > 0) {
+            int[] weights = new int[states.size()];
+            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
+            idx = CarriageVariantBlocks.pickIndexFromLockGroup(lockId, worldSeed, carriageIndex, weights);
+        } else {
+            idx = CarriageVariantBlocks.pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
+        }
         return states.get(idx);
     }
 
@@ -254,14 +302,9 @@ public final class CarriagePartVariantBlocks {
         boolean first = true;
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
             if (!first) sb.append(",");
-            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": [");
-            boolean firstState = true;
-            for (VariantState s : e.getValue()) {
-                if (!firstState) sb.append(", ");
-                CarriageVariantBlocks.appendVariantJson(sb, s);
-                firstState = false;
-            }
-            sb.append("]");
+            int lockId = lockIds.getOrDefault(e.getKey(), 0);
+            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
+            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
             first = false;
         }
         sb.append("\n  }\n}\n");

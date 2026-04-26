@@ -24,10 +24,15 @@ import java.util.function.Supplier;
  *   <li>{@link Op#CLEAR} — drop the whole cell (sidecar entry).</li>
  *   <li>{@link Op#BUMP_WEIGHT} — adjust entry's weight by {@code delta}
  *       (signed; clamped ≥ 1 server-side).</li>
- *   <li>{@link Op#TOGGLE_LOCK} — flip entry's locked flag.</li>
+ *   <li>{@link Op#CYCLE_LOCK_ID} — advance the cell's lock-id. From 0
+ *       (unlocked), goes to {@code nextFreeLockId()} — the smallest
+ *       positive integer not currently used by any cell in this template.
+ *       From a non-zero id, goes back to 0. The only way two cells share
+ *       a lock-id is via Copy / Paste of a clipboard item.</li>
  *   <li>{@link Op#COPY} — server gives the player a {@link
  *       games.brennan.dungeontrain.item.VariantClipboardItem} stack with
- *       the cell's current entries encoded in NBT. No sidecar mutation.</li>
+ *       the cell's current entries (and its lock-id) encoded in NBT. No
+ *       sidecar mutation.</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -37,7 +42,7 @@ import java.util.function.Supplier;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, TOGGLE_LOCK, COPY }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());

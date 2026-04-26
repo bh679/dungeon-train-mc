@@ -51,27 +51,31 @@ import java.util.Random;
  * ({@link #bundledResourceFor}). Unlike the NBT store, there is no hardcoded
  * fallback — a variant with no sidecar simply has no random positions.</p>
  *
- * <p>v3 schema (current):
+ * <p>v4 schema (current):
  * <pre>
  * {
- *   "schemaVersion": 3,
+ *   "schemaVersion": 4,
  *   "variants": {
  *     "3,1,2": [
  *       "minecraft:stone",
  *       { "state": "minecraft:bookshelf" },
  *       { "state": "minecraft:chest[facing=west]", "nbt": "{Items:[...]}" },
- *       { "state": "minecraft:cobblestone", "weight": 3 },
- *       { "state": "minecraft:gold_block", "locked": true }
- *     ]
+ *       { "state": "minecraft:cobblestone", "weight": 3 }
+ *     ],
+ *     "4,1,2": {
+ *       "lockId": 1,
+ *       "states": [ "minecraft:stone", "minecraft:cobblestone" ]
+ *     }
  *   }
  * }
  * </pre>
  * Keys use local coords (same basis as {@code StructureTemplate} block infos).
- * Each candidate is either a bare BlockState string (no NBT, weight 1, not
- * locked — identical to v1) or a {@code {state, nbt?, weight?, locked?}}
- * object. v1 / v2 files load unchanged; the v3 writer emits objects only
- * when one of {NBT, non-default weight, locked} is set, so older files
- * round-trip diff-clean as bare strings.</p>
+ * Each cell value is either a bare states array (lockId=0; v3-shape) or an
+ * object {@code {lockId, states:[...]}} when {@code lockId>0}. Each candidate
+ * inside the states array is either a bare BlockState string or a
+ * {@code {state, nbt?, weight?}} object. v1 / v2 / v3 files load
+ * unchanged; the v4 writer emits the cell-object form only when {@code
+ * lockId>0}, so older files round-trip diff-clean.</p>
  */
 public final class CarriageVariantBlocks {
 
@@ -83,13 +87,21 @@ public final class CarriageVariantBlocks {
      *   <li>v1 — bare BlockState strings.</li>
      *   <li>v2 — adds optional per-entry BlockEntity NBT.</li>
      *   <li>v3 — adds optional per-entry {@code weight} (≥1, default 1)
-     *       and {@code locked} (default false). Older files load with the
-     *       defaults and round-trip diff-clean since the writer only emits
-     *       object form when one of {NBT, non-default weight, locked} is
-     *       set.</li>
+     *       and a per-entry {@code locked} flag (since dropped). Older
+     *       files load with the defaults and round-trip diff-clean since
+     *       the writer only emits object form when one of {NBT,
+     *       non-default weight} is set.</li>
+     *   <li>v4 — adds optional per-cell {@code lockId} (≥0, default 0).
+     *       Cells with the same non-zero {@code lockId} share a runtime
+     *       random pick at spawn (called once per group, all cells in
+     *       the group render the same index). The cell's value is now
+     *       either a bare states array (v3 form, lockId=0) or an object
+     *       {@code {"states":[...], "lockId":N}} (lockId&gt;0). v3
+     *       per-entry {@code locked} fields are silently ignored on
+     *       read.</li>
      * </ul>
      */
-    public static final int CURRENT_SCHEMA_VERSION = 3;
+    public static final int CURRENT_SCHEMA_VERSION = 4;
 
     private static final String SUBDIR = "dungeontrain/templates";
     private static final String EXT = ".variants.json";
@@ -135,12 +147,22 @@ public final class CarriageVariantBlocks {
     /** pos → candidate variants. {@link LinkedHashMap} keeps insertion order for deterministic JSON output. */
     private final Map<BlockPos, List<VariantState>> entries;
 
-    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries) {
+    /**
+     * pos → lock-id (≥1 means locked, 0/missing means unlocked). Cells
+     * with the same non-zero lock-id share a runtime random pick at
+     * spawn — the picker hashes the lock-id instead of the local
+     * position, so all cells in the group land on the same index. The
+     * lock-id space is local to this sidecar (per template).
+     */
+    private final Map<BlockPos, Integer> lockIds;
+
+    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
         this.entries = entries;
+        this.lockIds = lockIds;
     }
 
     public static CarriageVariantBlocks empty() {
-        return new CarriageVariantBlocks(new LinkedHashMap<>());
+        return new CarriageVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
@@ -222,6 +244,7 @@ public final class CarriageVariantBlocks {
 
         JsonObject variants = obj.getAsJsonObject("variants");
         Map<BlockPos, List<VariantState>> out = new LinkedHashMap<>();
+        Map<BlockPos, Integer> outLocks = new LinkedHashMap<>();
         for (Map.Entry<String, JsonElement> field : variants.entrySet()) {
             BlockPos pos = parsePos(field.getKey());
             if (pos == null) {
@@ -233,11 +256,29 @@ public final class CarriageVariantBlocks {
                     id, pos, dims.length(), dims.height(), dims.width());
                 continue;
             }
-            if (!field.getValue().isJsonArray()) {
-                LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is not an array, skipping.", id, pos);
+            JsonArray arr;
+            int lockId = 0;
+            JsonElement value = field.getValue();
+            if (value.isJsonArray()) {
+                arr = value.getAsJsonArray();
+            } else if (value.isJsonObject()) {
+                JsonObject cellObj = value.getAsJsonObject();
+                if (!cellObj.has("states") || !cellObj.get("states").isJsonArray()) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {}: cell at {} missing 'states' array, skipping.",
+                        id, pos);
+                    continue;
+                }
+                arr = cellObj.getAsJsonArray("states");
+                if (cellObj.has("lockId") && cellObj.get("lockId").isJsonPrimitive()
+                    && cellObj.get("lockId").getAsJsonPrimitive().isNumber()) {
+                    int raw = cellObj.get("lockId").getAsInt();
+                    lockId = raw < 0 ? 0 : raw;
+                }
+            } else {
+                LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
+                    id, pos);
                 continue;
             }
-            JsonArray arr = field.getValue().getAsJsonArray();
             List<VariantState> states = new ArrayList<>(arr.size());
             for (JsonElement el : arr) {
                 VariantState parsed = parseVariantElement(el, blocks, id, pos);
@@ -248,10 +289,12 @@ public final class CarriageVariantBlocks {
                     id, pos, MIN_STATES_PER_ENTRY);
                 continue;
             }
-            out.put(pos.immutable(), List.copyOf(states));
+            BlockPos posI = pos.immutable();
+            out.put(posI, List.copyOf(states));
+            if (lockId > 0) outLocks.put(posI, lockId);
         }
         LOGGER.info("[DungeonTrain] Loaded {} variant entries for {} from {}", out.size(), id, origin);
-        return new CarriageVariantBlocks(out);
+        return new CarriageVariantBlocks(out, outLocks);
     }
 
     /**
@@ -291,12 +334,10 @@ public final class CarriageVariantBlocks {
                 int raw = obj.get("weight").getAsInt();
                 weight = raw < 1 ? 1 : raw;
             }
-            boolean locked = false;
-            if (obj.has("locked") && obj.get("locked").isJsonPrimitive()
-                && obj.get("locked").getAsJsonPrimitive().isBoolean()) {
-                locked = obj.get("locked").getAsBoolean();
-            }
-            return new VariantState(base.state(), nbt, weight, locked);
+            // v3 entries had a per-entry "locked" field; v4 moved locking
+            // to the cell level. Old "locked" values are silently dropped
+            // on read — the file rewrites cleanly without it.
+            return new VariantState(base.state(), nbt, weight);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -383,34 +424,81 @@ public final class CarriageVariantBlocks {
 
     /** Remove the entry at {@code localPos}. Returns true if one was present. */
     public synchronized boolean remove(BlockPos localPos) {
+        lockIds.remove(localPos);
         return entries.remove(localPos) != null;
+    }
+
+    /** Lock-id at {@code localPos}; 0 if unlocked or no entry. */
+    public synchronized int lockIdAt(BlockPos localPos) {
+        return lockIds.getOrDefault(localPos, 0);
+    }
+
+    /**
+     * Set the lock-id for an existing cell. Pass 0 to unlock. Throws if
+     * no cell exists at {@code localPos} — only cells with state lists
+     * can be locked.
+     */
+    public synchronized void setLockId(BlockPos localPos, int lockId) {
+        if (!entries.containsKey(localPos)) {
+            throw new IllegalArgumentException("no cell at " + localPos + " — call put first");
+        }
+        if (lockId < 0) lockId = 0;
+        if (lockId == 0) {
+            lockIds.remove(localPos);
+        } else {
+            lockIds.put(localPos.immutable(), lockId);
+        }
+    }
+
+    /** Positions in this sidecar that share the given lock-id. Empty for {@code lockId == 0}. */
+    public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
+        if (lockId <= 0) return java.util.Set.of();
+        java.util.Set<BlockPos> out = new java.util.LinkedHashSet<>();
+        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
+            if (e.getValue() == lockId) out.add(e.getKey());
+        }
+        return out;
+    }
+
+    /**
+     * Smallest positive integer not currently used by any cell as a
+     * lock-id. Used by the menu's Lock-cycle button to allocate a new
+     * group id; the only way two cells end up with the same id is via
+     * Copy / Paste of a clipboard item.
+     */
+    public synchronized int nextFreeLockId() {
+        java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
+        int n = 1;
+        while (used.contains(n)) n++;
+        return n;
     }
 
     /**
      * Deterministic pick at {@code localPos}. Seeds a fresh {@link Random}
-     * with the world seed XOR'd through the carriage index and the local
-     * position — same world + same carriage + same pos → same result across
-     * reloads. Returns {@code null} if no entry.
+     * with the world seed XOR'd through the carriage index and either the
+     * local position (unlocked cells) or the cell's lock-id (locked cells).
+     * Returns {@code null} if no entry.
      *
-     * <p>Lock short-circuit: if any entry in the cell has
-     * {@link VariantState#locked} = true, the picker bypasses the random
-     * roll and returns the first locked entry. Multiple locked entries are
-     * permitted but only the first one wins — list order is the
-     * tiebreaker, matching the JSON's insertion order.</p>
+     * <p>Lock-group pick: when the cell has a non-zero lock-id, every
+     * cell in the group hashes the same {@code (seed, carriageIndex,
+     * lockId)} so they all draw the same index — combined with the
+     * group's shared state list, every cell renders the same block.</p>
      *
-     * <p>Weighted pick: when no entry is locked, the pick respects each
-     * entry's {@link VariantState#weight}. An entry with weight=2 is twice
-     * as likely as one with weight=1 to be chosen. Determinism contract is
-     * unchanged — {@code (seed, carriageIndex, localPos)} → same draw, then
-     * the same draw maps to the same bucket since weights are stable.</p>
+     * <p>Weighted pick: respects each entry's {@link VariantState#weight}.
+     * Determinism contract is unchanged — same inputs → same index.</p>
      */
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
-        for (VariantState s : states) {
-            if (s.locked()) return s;
+        int lockId = lockIdAt(localPos);
+        int idx;
+        if (lockId > 0) {
+            int[] weights = new int[states.size()];
+            for (int i = 0; i < states.size(); i++) weights[i] = states.get(i).weight();
+            idx = pickIndexFromLockGroup(lockId, worldSeed, carriageIndex, weights);
+        } else {
+            idx = pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
         }
-        int idx = pickIndexWeighted(localPos, worldSeed, carriageIndex, states);
         return states.get(idx);
     }
 
@@ -491,6 +579,33 @@ public final class CarriageVariantBlocks {
             ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
             ^ (posHash * 0xBF58476D1CE4E5B9L);
         return new Random(seed);
+    }
+
+    /**
+     * Lock-group variant of {@link #pickIndexFromWeights}: hashes the
+     * lock-id where the unlocked path hashes the local position. Every
+     * cell that shares {@code lockId} therefore draws the same bucket,
+     * which is exactly the "all locked cells render the same block at
+     * spawn" contract.
+     */
+    public static int pickIndexFromLockGroup(int lockId, long worldSeed, int carriageIndex, int[] weights) {
+        if (weights.length == 0) throw new IllegalArgumentException("weights must be non-empty");
+        if (lockId <= 0) throw new IllegalArgumentException("lockId must be > 0");
+        int total = 0;
+        for (int w : weights) {
+            if (w < 1) w = 1;
+            total += w;
+        }
+        long seed = worldSeed
+            ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
+            ^ ((long) lockId * 0xBF58476D1CE4E5B9L);
+        int draw = new Random(seed).nextInt(total);
+        int acc = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += Math.max(1, weights[i]);
+            if (draw < acc) return i;
+        }
+        return weights.length - 1;
     }
 
     /**
@@ -581,18 +696,115 @@ public final class CarriageVariantBlocks {
         boolean first = true;
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
             if (!first) sb.append(",");
-            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": [");
+            int lockId = lockIds.getOrDefault(e.getKey(), 0);
+            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
+            if (lockId > 0) {
+                // Cell-object form for v4 locked cells.
+                sb.append("{ \"lockId\": ").append(lockId).append(", \"states\": [");
+                appendStateArray(sb, e.getValue());
+                sb.append("] }");
+            } else {
+                // Bare-array form (v3-shape) for unlocked cells — keeps
+                // pre-v4 sidecars diff-clean on a no-op resave.
+                sb.append("[");
+                appendStateArray(sb, e.getValue());
+                sb.append("]");
+            }
+            first = false;
+        }
+        sb.append("\n  }\n}\n");
+        return sb.toString();
+    }
+
+    private static void appendStateArray(StringBuilder sb, List<VariantState> states) {
+        boolean firstState = true;
+        for (VariantState s : states) {
+            if (!firstState) sb.append(", ");
+            appendVariantJson(sb, s);
+            firstState = false;
+        }
+    }
+
+    /**
+     * Parsed cell — what {@link #parseCellValue} returns. {@code states}
+     * is the candidate list, {@code lockId} is the v4 cell-level lock-id
+     * (0 when unlocked or for v1/v2/v3 array-form cells).
+     */
+    public record ParsedCell(List<VariantState> states, int lockId) {}
+
+    /**
+     * Parse a {@code "x,y,z" → value} JSON entry into a {@link ParsedCell}.
+     * Accepts both forms:
+     * <ul>
+     *   <li>v3 / pre-v4 — bare array of state elements; {@code lockId = 0}.</li>
+     *   <li>v4 — object {@code {"lockId":N, "states":[...]}}; lockId is read
+     *       from the object (≥0; negatives clamped to 0).</li>
+     * </ul>
+     * Returns {@code null} when the value is malformed (caller logs).
+     * Used by all four block-variant sidecars
+     * ({@link CarriageVariantBlocks}, {@link CarriagePartVariantBlocks},
+     * {@link CarriageContentsVariantBlocks},
+     * {@code TrackVariantBlocks}).
+     */
+    public static ParsedCell parseCellValue(JsonElement value,
+                                            HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks,
+                                            String contextId, BlockPos contextPos) {
+        JsonArray arr;
+        int lockId = 0;
+        if (value.isJsonArray()) {
+            arr = value.getAsJsonArray();
+        } else if (value.isJsonObject()) {
+            JsonObject cellObj = value.getAsJsonObject();
+            if (!cellObj.has("states") || !cellObj.get("states").isJsonArray()) {
+                LOGGER.warn("[DungeonTrain] Variant sidecar {}: cell at {} missing 'states' array, skipping.",
+                    contextId, contextPos);
+                return null;
+            }
+            arr = cellObj.getAsJsonArray("states");
+            if (cellObj.has("lockId") && cellObj.get("lockId").isJsonPrimitive()
+                && cellObj.get("lockId").getAsJsonPrimitive().isNumber()) {
+                int raw = cellObj.get("lockId").getAsInt();
+                lockId = raw < 0 ? 0 : raw;
+            }
+        } else {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {}: value for {} is neither array nor object, skipping.",
+                contextId, contextPos);
+            return null;
+        }
+        List<VariantState> states = new ArrayList<>(arr.size());
+        for (JsonElement el : arr) {
+            VariantState parsed = parseVariantElement(el, blocks, contextId, contextPos);
+            if (parsed != null) states.add(parsed);
+        }
+        return new ParsedCell(states, lockId);
+    }
+
+    /**
+     * Append a cell value to a JSON buffer in the form chosen by
+     * {@code lockId}: bare-array (v3 shape) when {@code lockId == 0}, or
+     * cell-object {@code {lockId, states}} when {@code lockId > 0}.
+     * Used by all four sidecars to keep on-disk output identical.
+     */
+    public static void appendCellJson(StringBuilder sb, List<VariantState> states, int lockId) {
+        if (lockId > 0) {
+            sb.append("{ \"lockId\": ").append(lockId).append(", \"states\": [");
             boolean firstState = true;
-            for (VariantState s : e.getValue()) {
+            for (VariantState s : states) {
+                if (!firstState) sb.append(", ");
+                appendVariantJson(sb, s);
+                firstState = false;
+            }
+            sb.append("] }");
+        } else {
+            sb.append("[");
+            boolean firstState = true;
+            for (VariantState s : states) {
                 if (!firstState) sb.append(", ");
                 appendVariantJson(sb, s);
                 firstState = false;
             }
             sb.append("]");
-            first = false;
         }
-        sb.append("\n  }\n}\n");
-        return sb.toString();
     }
 
     public static void appendVariantJson(StringBuilder sb, VariantState s) {
@@ -602,9 +814,8 @@ public final class CarriageVariantBlocks {
             return;
         }
         // Object form — emit only the fields that differ from the default
-        // (state always; nbt / weight / locked only when set) so v1/v2
-        // entries that gain a non-default value still produce the smallest
-        // possible diff.
+        // (state always; nbt / weight only when set) so v1/v2 entries that
+        // gain a non-default value still produce the smallest possible diff.
         sb.append("{\"state\": \"").append(escapeJson(stateStr)).append("\"");
         if (s.hasBlockEntityData()) {
             // CompoundTag.toString() returns the canonical SNBT representation —
@@ -613,9 +824,6 @@ public final class CarriageVariantBlocks {
         }
         if (s.weight() != 1) {
             sb.append(", \"weight\": ").append(s.weight());
-        }
-        if (s.locked()) {
-            sb.append(", \"locked\": true");
         }
         sb.append("}");
     }

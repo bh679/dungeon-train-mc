@@ -64,6 +64,22 @@ public interface BlockVariantPlot {
     /** Persist to disk. */
     void save() throws IOException;
 
+    /** Lock-id at {@code localPos}; 0 if unlocked or no cell. */
+    int lockIdAt(BlockPos localPos);
+
+    /** Set the lock-id for an existing cell. Pass 0 to unlock. */
+    void setLockId(BlockPos localPos, int lockId);
+
+    /** Positions in this plot sharing the given lock-id. Empty for {@code lockId == 0}. */
+    java.util.Set<BlockPos> positionsWithLockId(int lockId);
+
+    /**
+     * Smallest positive integer not currently used by any cell in this
+     * plot as a lock-id. Used by the menu's Lock toolbar button to
+     * allocate a new group on cycle.
+     */
+    int nextFreeLockId();
+
     /** True when {@code localPos} is inside the footprint. */
     default boolean inBounds(BlockPos localPos) {
         Vec3i f = footprint();
@@ -135,6 +151,10 @@ public interface BlockVariantPlot {
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
         @Override public void save() throws IOException { sidecar.save(variant); }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
@@ -158,6 +178,10 @@ public interface BlockVariantPlot {
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
         @Override public void save() throws IOException { sidecar.save(contents); }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 
     /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
@@ -183,6 +207,10 @@ public interface BlockVariantPlot {
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
         @Override public void save() throws IOException { sidecar.save(kind, name); }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 
     /** Wraps a {@link TrackVariantBlocks} sidecar. */
@@ -208,5 +236,9 @@ public interface BlockVariantPlot {
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
         @Override public void save() throws IOException { sidecar.save(kind, name); }
+        @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
+        @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
+        @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 }

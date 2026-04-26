@@ -30,25 +30,24 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Server-side driver for the block-variant world-space menu. Tap-Z opens
  * the menu on whatever cell the player is looking at — works in any
- * editor plot (carriage variant, contents, carriage part, or track-side)
- * via {@link BlockVariantPlot#resolveAt}, and opens even when the cell
- * has no variants yet (an empty list; the user can populate it via Add).
+ * editor plot via {@link BlockVariantPlot#resolveAt}, and opens even when
+ * the cell has no variants yet.
  *
- * <p>Edit ops ({@link BlockVariantEditPacket}) are validated for OP and
- * plot-membership before mutating the underlying sidecar; the
- * {@link BlockVariantEditPacket.Op#COPY} op produces a
- * {@link VariantClipboardItem} stack with the current entries encoded as
- * NBT and gives it to the player.</p>
+ * <p>Lock semantics live at the cell level: each cell has a {@code lockId}
+ * (0 = unlocked). Cells with the same non-zero lockId form a "lock group"
+ * — they share a single state list (auto-propagated on edit) and roll
+ * the same random index at spawn time. The menu's Lock toolbar button
+ * cycles {@code 0 ↔ nextFreeLockId} on the targeted cell; the only way
+ * cells join an existing group is via Copy / Paste.</p>
  *
- * <p>Anchor orientation: for vertical faces (walls/doors) the panel's up
- * axis is world up. For horizontal faces (floor/ceiling) the up axis is
- * the player's horizontal forward look so the bottom edge of the menu
- * always faces the player — text reads correctly when looking down at a
- * floor or up at a ceiling.</p>
+ * <p>Anchor orientation: vertical faces use world up; horizontal faces
+ * use the player's horizontal forward look so the bottom of the menu
+ * always faces the player.</p>
  */
 public final class BlockVariantMenuController {
 
@@ -61,12 +60,6 @@ public final class BlockVariantMenuController {
 
     private BlockVariantMenuController() {}
 
-    /**
-     * Handle a {@code BlockVariantMenuTogglePacket}. On open: raycast eye,
-     * find the cell under the crosshair, send a sync packet (with the
-     * cell's current entries — possibly empty). On close: send empty
-     * sync (closes client menu).
-     */
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
@@ -98,17 +91,23 @@ public final class BlockVariantMenuController {
             return;
         }
 
+        sendSync(player, plot, localPos, worldPos, bhit.getDirection());
+    }
+
+    /** Compose + send the sync packet for the cell at {@code localPos}. */
+    private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
+                                 BlockPos localPos, BlockPos worldPos, Direction face) {
         List<VariantState> states = plot.statesAt(localPos);
         if (states == null) states = List.of();
-
+        int lockId = plot.lockIdAt(localPos);
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, bhit.getDirection(), states, player));
+            buildSyncPacket(plot, localPos, worldPos, face, states, lockId, player));
     }
 
     /** Compose the sync packet payload — anchor on the targeted face, billboarded toward the player. */
     private static BlockVariantSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
-        Direction face, List<VariantState> states, Player player
+        Direction face, List<VariantState> states, int lockId, Player player
     ) {
         Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
         Vec3 faceCentre = new Vec3(
@@ -117,18 +116,11 @@ public final class BlockVariantMenuController {
             worldPos.getZ() + 0.5 + face.getStepZ() * 0.5);
         Vec3 anchor = faceCentre.add(normal.scale(0.02));
 
-        // Up axis:
-        // - Vertical face (walls/doors) → world up so text reads upright.
-        // - Horizontal face (floor/ceiling) → player's horizontal forward
-        //   so the bottom of the panel faces the player. When looking
-        //   down at the floor, the text reads correctly oriented.
         Vec3 up;
         if (face.getAxis() == Direction.Axis.Y) {
             Vec3 look = player.getLookAngle();
             Vec3 horizontal = new Vec3(look.x, 0, look.z);
-            if (horizontal.lengthSqr() < 1.0e-6) {
-                horizontal = new Vec3(0, 0, 1);
-            }
+            if (horizontal.lengthSqr() < 1.0e-6) horizontal = new Vec3(0, 0, 1);
             up = horizontal.normalize();
         } else {
             up = new Vec3(0, 1, 0);
@@ -139,9 +131,9 @@ public final class BlockVariantMenuController {
         for (VariantState s : states) {
             String stateStr = BlockStateParser.serialize(s.state());
             String beNbt = s.hasBlockEntityData() ? s.blockEntityNbt().toString() : null;
-            entries.add(new BlockVariantSyncPacket.Entry(stateStr, beNbt, s.weight(), s.locked()));
+            entries.add(new BlockVariantSyncPacket.Entry(stateStr, beNbt, s.weight()));
         }
-        return new BlockVariantSyncPacket(plot.key(), localPos, entries, anchor, right, up);
+        return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -166,9 +158,18 @@ public final class BlockVariantMenuController {
             return;
         }
 
+        // CYCLE_LOCK_ID has its own short flow — handle before the
+        // states-list mutation pipeline since it doesn't touch states.
+        if (packet.op() == BlockVariantEditPacket.Op.CYCLE_LOCK_ID) {
+            cycleLockId(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.COPY) {
+            handleCopy(player, plot, localPos);
+            return;
+        }
+
         List<VariantState> current = plot.statesAt(localPos);
-        // null current = no entry yet for this cell. ADD is the only op
-        // that can seed; all other ops bail out of an empty cell.
         boolean wasEmpty = (current == null);
         List<VariantState> mutated = new ArrayList<>(wasEmpty ? List.of() : current);
         boolean dirty = false;
@@ -176,10 +177,6 @@ public final class BlockVariantMenuController {
 
         switch (packet.op()) {
             case ADD -> {
-                // Capture whatever the player is holding in their main hand.
-                // Empty stateString from the client signals "use held item"
-                // (the search-screen path was removed for block variants —
-                // mirrors the hold-Z + right-click capture flow).
                 ItemStack held = player.getMainHandItem();
                 if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) {
                     actionBar(player, "Hold a block in your main hand to add it as a variant",
@@ -188,13 +185,9 @@ public final class BlockVariantMenuController {
                 }
                 BlockState capturedState = blockItem.getBlock().defaultBlockState();
                 CompoundTag itemBeNbt = BlockItem.getBlockEntityData(held);
-                VariantState newVariant = new VariantState(capturedState, itemBeNbt, 1, false);
+                VariantState newVariant = new VariantState(capturedState, itemBeNbt, 1);
 
                 if (wasEmpty) {
-                    // Seed with the current world block as entry #0 so the
-                    // first ADD also captures the "default" state — mirrors
-                    // the right-click-to-add flow in
-                    // VariantBlockInteractions.buildUpdatedList.
                     BlockPos worldPos = plot.origin().offset(localPos);
                     BlockState baseState = level.getBlockState(worldPos);
                     if (baseState.isAir()) {
@@ -234,37 +227,27 @@ public final class BlockVariantMenuController {
                 mutated.set(idx, mutated.get(idx).withWeight(newWeight));
                 dirty = true;
             }
-            case TOGGLE_LOCK -> {
-                if (wasEmpty) return;
-                int idx = packet.entryIndex();
-                if (idx < 0 || idx >= mutated.size()) return;
-                VariantState entry = mutated.get(idx);
-                mutated.set(idx, entry.withLocked(!entry.locked()));
-                dirty = true;
-            }
-            case COPY -> {
-                if (wasEmpty || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-                    actionBar(player, "Nothing to copy — cell needs at least "
-                        + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants",
-                        ChatFormatting.YELLOW);
-                    return;
-                }
-                grantClipboard(player, current);
+            default -> {
+                // CYCLE_LOCK_ID and COPY handled above; nothing else expected.
                 return;
             }
         }
 
         if (!dirty) return;
 
-        if (dropCell) {
-            plot.remove(localPos);
-        } else if (mutated.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-            plot.put(localPos, mutated);
-        } else {
-            // Fewer than MIN entries — sidecar can't accept the put. This
-            // happens after ADD if the seed flow somehow produced only one
-            // entry (shouldn't, since ADD seeds base + new = 2). Safe to skip.
-            return;
+        // Lock-group propagation: if the targeted cell is part of a lock
+        // group, apply the same mutation to every sibling cell so the
+        // group stays in sync.
+        int lockId = plot.lockIdAt(localPos);
+        Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
+        if (targets.isEmpty()) targets = Set.of(localPos);
+
+        for (BlockPos target : targets) {
+            if (dropCell) {
+                plot.remove(target);
+            } else if (mutated.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
+                plot.put(target, mutated);
+            }
         }
         try {
             plot.save();
@@ -280,8 +263,7 @@ public final class BlockVariantMenuController {
             return;
         }
 
-        // Re-sync. Use the player's current crosshair to refresh the
-        // anchor face, falling back to UP if the player has looked away.
+        // Re-sync the targeted cell.
         HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
         Direction face = Direction.UP;
         BlockPos worldPos = plot.origin().offset(localPos);
@@ -289,27 +271,65 @@ public final class BlockVariantMenuController {
             && bhit.getBlockPos().equals(worldPos)) {
             face = bhit.getDirection();
         }
-        DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, mutated, player));
+        sendSync(player, plot, localPos, worldPos, face);
     }
 
-    /** Encode {@code states} into a fresh {@link VariantClipboardItem} and place it in the player's hotbar. */
-    private static void grantClipboard(ServerPlayer player, List<VariantState> states) {
+    /**
+     * Cycle the cell's lock-id: 0 → next free positive integer; non-zero
+     * → 0. Operates only on the targeted cell — to join an existing
+     * group, the player must use Copy / Paste of a clipboard item.
+     *
+     * <p>If the cell has no entries yet (no states), refuse with a hint —
+     * locking only makes sense on populated cells.</p>
+     */
+    private static void cycleLockId(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        if (plot.statesAt(localPos) == null) {
+            actionBar(player, "Add at least one variant before locking", ChatFormatting.YELLOW);
+            return;
+        }
+        int current = plot.lockIdAt(localPos);
+        int next = current > 0 ? 0 : plot.nextFreeLockId();
+        plot.setLockId(localPos, next);
+        try {
+            plot.save();
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] BlockVariantMenu lock save failed for {}: {}",
+                plot.key(), e.toString());
+            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+        }
+        // Re-sync.
+        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
+        Direction face = Direction.UP;
+        BlockPos worldPos = plot.origin().offset(localPos);
+        if (hit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS
+            && bhit.getBlockPos().equals(worldPos)) {
+            face = bhit.getDirection();
+        }
+        sendSync(player, plot, localPos, worldPos, face);
+    }
+
+    /** COPY: build a clipboard ItemStack capturing the cell's states + lockId. */
+    private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
+        List<VariantState> current = plot.statesAt(localPos);
+        if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
+            actionBar(player, "Nothing to copy — cell needs at least "
+                + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        int lockId = plot.lockIdAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.encodeStates(states);
+        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId);
         stack.setTag(tag);
         boolean placed = player.getInventory().add(stack);
-        if (!placed) {
-            player.drop(stack, false);
-        }
-        actionBar(player, "Copied " + states.size() + " variants to clipboard", ChatFormatting.GREEN);
+        if (!placed) player.drop(stack, false);
+        String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
+        actionBar(player, "Copied " + current.size() + " variants" + suffix, ChatFormatting.GREEN);
     }
 
     /**
      * Capture the current world block as a {@link VariantState} for ADD-on-empty-cell
-     * seeding. Mirrors {@code VariantBlockInteractions.captureBaseVariant} —
-     * pulls block-entity NBT off the world so chests / signs / banners
-     * round-trip into the variant list.
+     * seeding.
      */
     private static @Nullable VariantState captureBaseVariant(ServerLevel level, BlockPos clicked, BlockState baseState) {
         if (baseState.isAir()) return null;
