@@ -124,11 +124,18 @@ public final class CarriagePartTemplate {
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
                 SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
             } else {
+                // Apply per-entry rotation BEFORE mirror so the placement
+                // mirror still flips the result correctly (mirror operates
+                // on the final FACING/AXIS, regardless of how it was set).
+                BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                    picked.state(), picked.rotation(),
+                    entry.localPos(), seed, carriageIndex,
+                    sidecar.lockIdAt(entry.localPos()));
                 // Mirror flips state properties (FACING/AXIS); BE NBT
                 // passes through unchanged — vanilla StructureTemplate
                 // does the same. Asymmetric BE content (sign text,
                 // banner patterns) reads forward on both sides.
-                BlockState toPlace = picked.state().mirror(p.mirror());
+                BlockState toPlace = rotated.mirror(p.mirror());
                 SilentBlockOps.setBlockSilent(level, world, toPlace, picked.blockEntityNbt());
             }
         }

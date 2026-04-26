@@ -99,9 +99,13 @@ public final class CarriageVariantBlocks {
      *       {@code {"states":[...], "lockId":N}} (lockId&gt;0). v3
      *       per-entry {@code locked} fields are silently ignored on
      *       read.</li>
+     *   <li>v5 — adds optional per-entry {@code rotation} object
+     *       {@code {"mode": "lock|random|options", "dirs": ["east", ...]}}.
+     *       Default rotation (random with empty mask) is omitted from
+     *       JSON, so v3/v4 entries round-trip diff-clean.</li>
      * </ul>
      */
-    public static final int CURRENT_SCHEMA_VERSION = 4;
+    public static final int CURRENT_SCHEMA_VERSION = 5;
 
     private static final String SUBDIR = "dungeontrain/templates";
     private static final String EXT = ".variants.json";
@@ -334,10 +338,11 @@ public final class CarriageVariantBlocks {
                 int raw = obj.get("weight").getAsInt();
                 weight = raw < 1 ? 1 : raw;
             }
+            VariantRotation rotation = parseRotation(obj.get("rotation"), contextId, contextPos);
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
-            return new VariantState(base.state(), nbt, weight);
+            return new VariantState(base.state(), nbt, weight, rotation);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -822,8 +827,9 @@ public final class CarriageVariantBlocks {
             return;
         }
         // Object form — emit only the fields that differ from the default
-        // (state always; nbt / weight only when set) so v1/v2 entries that
-        // gain a non-default value still produce the smallest possible diff.
+        // (state always; nbt / weight / rotation only when set) so v1/v2
+        // entries that gain a non-default value still produce the smallest
+        // possible diff.
         sb.append("{\"state\": \"").append(escapeJson(stateStr)).append("\"");
         if (s.hasBlockEntityData()) {
             // CompoundTag.toString() returns the canonical SNBT representation —
@@ -832,6 +838,67 @@ public final class CarriageVariantBlocks {
         }
         if (s.weight() != 1) {
             sb.append(", \"weight\": ").append(s.weight());
+        }
+        if (!s.rotation().isDefault()) {
+            sb.append(", \"rotation\": ");
+            appendRotationJson(sb, s.rotation());
+        }
+        sb.append("}");
+    }
+
+    /**
+     * Parse a v5 {@code "rotation"} element ({@code {"mode": "...", "dirs": ["..."]}}).
+     * Returns {@link VariantRotation#NONE} if the element is missing, null,
+     * or malformed. The {@link VariantRotation} canonical constructor
+     * silently re-clamps malformed mode/mask combinations.
+     */
+    private static VariantRotation parseRotation(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonObject()) return VariantRotation.NONE;
+        JsonObject obj = el.getAsJsonObject();
+        VariantRotation.Mode mode = VariantRotation.Mode.RANDOM;
+        if (obj.has("mode") && obj.get("mode").isJsonPrimitive()) {
+            String raw = obj.get("mode").getAsString();
+            try {
+                mode = VariantRotation.Mode.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown rotation mode '{}', defaulting to random.",
+                    contextId, contextPos, raw);
+            }
+        }
+        int dirMask = 0;
+        if (obj.has("dirs") && obj.get("dirs").isJsonArray()) {
+            for (JsonElement d : obj.getAsJsonArray("dirs")) {
+                if (!d.isJsonPrimitive()) continue;
+                String name = d.getAsString().trim().toUpperCase(Locale.ROOT);
+                try {
+                    net.minecraft.core.Direction dir = net.minecraft.core.Direction.valueOf(name);
+                    dirMask |= VariantRotation.maskOf(dir);
+                } catch (IllegalArgumentException ignored) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown rotation dir '{}', skipping.",
+                        contextId, contextPos, name);
+                }
+            }
+        }
+        return new VariantRotation(mode, dirMask);
+    }
+
+    /**
+     * Serialise a {@link VariantRotation} to the v5 JSON shape. Direction
+     * names are written lowercase for human readability; the parser is
+     * case-insensitive.
+     */
+    private static void appendRotationJson(StringBuilder sb, VariantRotation rot) {
+        sb.append("{\"mode\": \"").append(rot.mode().name().toLowerCase(Locale.ROOT)).append("\"");
+        if (rot.dirMask() != 0) {
+            sb.append(", \"dirs\": [");
+            boolean first = true;
+            for (net.minecraft.core.Direction d : net.minecraft.core.Direction.values()) {
+                if ((rot.dirMask() & VariantRotation.maskOf(d)) == 0) continue;
+                if (!first) sb.append(", ");
+                sb.append('"').append(d.name().toLowerCase(Locale.ROOT)).append('"');
+                first = false;
+            }
+            sb.append("]");
         }
         sb.append("}");
     }

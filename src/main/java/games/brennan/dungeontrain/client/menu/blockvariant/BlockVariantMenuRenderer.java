@@ -6,12 +6,16 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.editor.RotationApplier;
+import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
@@ -66,7 +70,11 @@ public final class BlockVariantMenuRenderer {
     static final double MIN_PANEL_WIDTH = 3.2;
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
+    /** ~20% of {@link #COLUMN_WIDTH} so the L/R/O pill segments are comfortable click targets. */
+    static final double ROT_MODE_CELL_WIDTH = 0.34;
+    static final double ROT_DIRS_CELL_WIDTH = 0.32;
     static final double TEXT_SCALE = 0.012;
+    static final double POPUP_BUTTON_SIZE = 0.20;
 
     private BlockVariantMenuRenderer() {}
 
@@ -209,12 +217,22 @@ public final class BlockVariantMenuRenderer {
             // Cell layout right-to-left:
             //   [X]  (rightmost, remove-mode only)
             //   [Weight]
+            //   [RotDirs]   (only when block is rotatable AND mode != RANDOM)
+            //   [RotMode]   (only when block is rotatable)
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
+            BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
+            boolean rotatable = parsed != null && RotationApplier.canRotate(parsed);
+            VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
+            boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
+            double rotDirsCellR = weightCellL;
+            double rotDirsCellL = showDirs ? rotDirsCellR - ROT_DIRS_CELL_WIDTH : rotDirsCellR;
+            double rotModeCellR = rotDirsCellL;
+            double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
             double nameCellL = colXL;
-            double nameCellR = weightCellL;
+            double nameCellR = rotModeCellL;
 
             // Name highlight + label
             boolean nameHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_NAME && hovered.index() == i;
@@ -225,6 +243,13 @@ public final class BlockVariantMenuRenderer {
             drawLeftText(ps, buffer, font, shortenStateLabel(entry.stateString()),
                 nameCellL + 0.04, rowCY,
                 nameHover ? 0xFF000000 : 0xFFFFFFFF);
+
+            // Rotation cells
+            if (rotatable) {
+                drawRotationCells(ps, buffer, font, i, entry,
+                    rotModeCellL, rotModeCellR, rotDirsCellL, rotDirsCellR,
+                    rowBottom, rowTop, rowCY, hovered, showDirs);
+            }
 
             // Weight cell
             boolean weightHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_WEIGHT && hovered.index() == i;
@@ -247,6 +272,167 @@ public final class BlockVariantMenuRenderer {
                     (xCellL + xCellR) / 2.0, rowCY, 0xFFFFFFFF);
             }
         }
+
+        // OPTIONS popup is drawn last so it shadows the row underneath.
+        int popupRow = BlockVariantMenu.rotPopupRowIndex();
+        if (popupRow >= 0 && popupRow < n) {
+            drawRotationOptionsPopup(ps, buffer, font, popupRow, entries.get(popupRow),
+                colActualW, gridTop, halfW, hovered);
+        }
+    }
+
+    /**
+     * Draw the per-row rotation cells: a 3-state mode pill (L/R/O) and a
+     * direction cell whose content depends on mode (label / dot / count).
+     */
+    private static void drawRotationCells(PoseStack ps, MultiBufferSource buffer, Font font,
+                                          int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                          double modeL, double modeR, double dirsL, double dirsR,
+                                          double rowBottom, double rowTop, double rowCY,
+                                          BlockVariantMenu.Hit hovered, boolean showDirs) {
+        VariantRotation.Mode mode = decodeMode(entry.rotMode());
+        int dirMask = entry.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+
+        boolean modeHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ROT_MODE && hovered.index() == rowIndex;
+        boolean dirsHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ROT_DIRS && hovered.index() == rowIndex;
+
+        // Mode pill — three mini-segments, the active one highlighted.
+        double pillBot = rowBottom + 0.02;
+        double pillTop = rowTop - 0.02;
+        double segW = (modeR - modeL - 0.02) / 3.0;
+        for (int seg = 0; seg < 3; seg++) {
+            double sL = modeL + 0.01 + seg * segW;
+            double sR = sL + segW - 0.005;
+            boolean active = seg == mode.ordinal();
+            int tint;
+            if (active) {
+                // Warm/cool/accent depending on mode, brighter on hover.
+                tint = switch (seg) {
+                    case 0 -> modeHover ? 0xC0FFAA55 : 0x80CC7733; // LOCK orange
+                    case 1 -> modeHover ? 0xC066AAFF : 0x8033679B; // RANDOM blue
+                    default -> modeHover ? 0xC0AA66FF : 0x80663399; // OPTIONS purple
+                };
+            } else {
+                tint = modeHover ? 0x60AAAAAA : 0x30777777;
+            }
+            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
+            String label = switch (seg) {
+                case 0 -> "L";
+                case 1 -> "R";
+                default -> "O";
+            };
+            drawCenteredText(ps, buffer, font, label,
+                (sL + sR) / 2.0, rowCY,
+                active ? 0xFFFFFFFF : 0xFF888888);
+        }
+
+        // Direction cell — hidden entirely when mode is RANDOM (no
+        // per-direction concept, so the cell would just take space).
+        if (!showDirs) return;
+        int dirsTint = dirsHover ? 0xC0FFCC33 : 0x40FFFFFF;
+        drawQuad(ps, buffer, dirsL + 0.005, rowBottom + 0.005,
+            dirsR - 0.005, rowTop - 0.005, dirsTint);
+        String dirsLabel = switch (mode) {
+            case LOCK -> dirMask == 0 ? "?" : dirShortName(directionFromLowestBit(dirMask));
+            case OPTIONS -> Integer.bitCount(dirMask) + "/6";
+            default -> "";
+        };
+        drawCenteredText(ps, buffer, font, dirsLabel,
+            (dirsL + dirsR) / 2.0, rowCY,
+            dirsHover ? 0xFF000000 : 0xFFFFFFFF);
+    }
+
+    /**
+     * Floating popup anchored above the row's direction cell — 3×2 grid of
+     * direction toggle buttons used in OPTIONS mode. Buttons reflect
+     * selection state and only toggle directions valid for this block's
+     * rotation property.
+     */
+    private static void drawRotationOptionsPopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                                 int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                                 double colActualW, double gridTop, double halfW,
+                                                 BlockVariantMenu.Hit hovered) {
+        BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
+        if (parsed == null) return;
+        int validMask = RotationApplier.validDirMask(parsed);
+        int dirMask = entry.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+
+        int col = rowIndex / BlockVariantMenu.ROWS_PER_COLUMN;
+        int row = rowIndex % BlockVariantMenu.ROWS_PER_COLUMN;
+        double colXL = -halfW + col * colActualW;
+        double rowTop = gridTop - row * ROW_HEIGHT;
+
+        double popupW = 3 * POPUP_BUTTON_SIZE + 0.04;
+        double popupH = 2 * POPUP_BUTTON_SIZE + 0.04;
+        double popupCX = colXL + colActualW - ROT_DIRS_CELL_WIDTH / 2.0 - WEIGHT_CELL_WIDTH;
+        double popupBot = rowTop + 0.02;
+        double popupTop = popupBot + popupH;
+        double popupL = popupCX - popupW / 2.0;
+        double popupR = popupL + popupW;
+
+        // Backdrop
+        drawQuad(ps, buffer, popupL, popupBot, popupR, popupTop, 0xE0202020);
+
+        // 3 columns × 2 rows: top row = positive (UP, EAST, SOUTH);
+        // bottom row = negative (DOWN, WEST, NORTH). Visually compact.
+        Direction[][] grid = {
+            { Direction.UP, Direction.EAST, Direction.SOUTH },
+            { Direction.DOWN, Direction.WEST, Direction.NORTH }
+        };
+        for (int gy = 0; gy < 2; gy++) {
+            for (int gx = 0; gx < 3; gx++) {
+                Direction d = grid[gy][gx];
+                int bit = VariantRotation.maskOf(d);
+                boolean valid = (validMask & bit) != 0;
+                boolean selected = (dirMask & bit) != 0;
+                boolean btnHover = hovered.kind() == BlockVariantMenu.CellKind.ROT_DIR_OPTION
+                    && hovered.index() == rowIndex && hovered.secondary() == d.ordinal();
+
+                double bL = popupL + 0.02 + gx * POPUP_BUTTON_SIZE;
+                double bR = bL + POPUP_BUTTON_SIZE - 0.005;
+                double bTop = popupTop - 0.02 - gy * POPUP_BUTTON_SIZE;
+                double bBot = bTop - POPUP_BUTTON_SIZE + 0.005;
+
+                int tint;
+                if (!valid) {
+                    tint = 0x40404040;
+                } else if (selected) {
+                    tint = btnHover ? 0xD066FF99 : 0xA033CC66;
+                } else {
+                    tint = btnHover ? 0xC0AAAAAA : 0x60777777;
+                }
+                drawQuad(ps, buffer, bL, bBot, bR, bTop, tint);
+                int textColour = valid ? 0xFFFFFFFF : 0xFF666666;
+                drawCenteredText(ps, buffer, font, dirShortName(d),
+                    (bL + bR) / 2.0, (bTop + bBot) / 2.0, textColour);
+            }
+        }
+    }
+
+    /** Decode wire byte → mode enum, defaulting to RANDOM on out-of-range. */
+    static VariantRotation.Mode decodeMode(byte raw) {
+        int ord = raw & 0xFF;
+        VariantRotation.Mode[] values = VariantRotation.Mode.values();
+        if (ord < 0 || ord >= values.length) return VariantRotation.Mode.RANDOM;
+        return values[ord];
+    }
+
+    /** XU/XD/YU/YD/ZU/ZD short-name for a Direction. */
+    static String dirShortName(Direction d) {
+        return switch (d) {
+            case EAST -> "XU";
+            case WEST -> "XD";
+            case UP -> "YU";
+            case DOWN -> "YD";
+            case SOUTH -> "ZU";
+            case NORTH -> "ZD";
+        };
+    }
+
+    static Direction directionFromLowestBit(int mask) {
+        int ord = Integer.numberOfTrailingZeros(mask);
+        if (ord < 0 || ord >= 6) return Direction.UP;
+        return Direction.values()[ord];
     }
 
     private static void drawSearch(PoseStack ps, MultiBufferSource buffer, Font font) {

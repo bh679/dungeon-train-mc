@@ -1,8 +1,12 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.editor.RotationApplier;
+import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -77,6 +81,25 @@ public final class BlockVariantMenuRaycast {
         double halfW = panelW / 2.0;
         double halfH = panelH / 2.0;
         double colActualW = panelW / colCount;
+
+        double gridTopAbs = halfH - BlockVariantMenuRenderer.HEADER_HEIGHT - BlockVariantMenuRenderer.TOOLBAR_HEIGHT;
+
+        // Popup modal — when open, the popup absorbs every hit inside the
+        // menu panel. Buttons toggle directions; anywhere else inside the
+        // panel closes the popup. The underlying toolbar / row cells
+        // never see the click. Outside the panel returns NONE (no action,
+        // popup stays open).
+        int popupRow = BlockVariantMenu.rotPopupRowIndex();
+        if (popupRow >= 0 && popupRow < n) {
+            BlockVariantMenu.Hit popupHit = popupHit(hitX, hitY, popupRow, entries.get(popupRow),
+                colActualW, gridTopAbs, halfW);
+            if (popupHit != BlockVariantMenu.Hit.NONE) return popupHit;
+            if (hitX >= -halfW && hitX <= halfW && hitY >= -halfH && hitY <= halfH) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ROT_DIR_OPTION, popupRow, -2);
+            }
+            return BlockVariantMenu.Hit.NONE;
+        }
+
         if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) {
             return BlockVariantMenu.Hit.NONE;
         }
@@ -120,13 +143,81 @@ public final class BlockVariantMenuRaycast {
         double weightCellR = colXR - xCellW;
         double weightCellL = weightCellR - BlockVariantMenuRenderer.WEIGHT_CELL_WIDTH;
 
+        BlockVariantSyncPacket.Entry entry = entries.get(idx);
+        BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
+        boolean rotatable = parsed != null && RotationApplier.canRotate(parsed);
+        VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
+        boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
+        double rotDirsCellR = weightCellL;
+        double rotDirsCellL = showDirs ? rotDirsCellR - BlockVariantMenuRenderer.ROT_DIRS_CELL_WIDTH : rotDirsCellR;
+        double rotModeCellR = rotDirsCellL;
+        double rotModeCellL = rotatable ? rotModeCellR - BlockVariantMenuRenderer.ROT_MODE_CELL_WIDTH : rotModeCellR;
+
         if (removeMode && hitX >= colXR - BlockVariantMenuRenderer.X_CELL_WIDTH) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_REMOVE_X, idx);
         }
         if (hitX >= weightCellL && hitX <= weightCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_WEIGHT, idx);
         }
+        if (rotatable && hitX >= rotDirsCellL && hitX <= rotDirsCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ROT_DIRS, idx);
+        }
+        if (rotatable && hitX >= rotModeCellL && hitX <= rotModeCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ROT_MODE, idx);
+        }
         return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_NAME, idx);
+    }
+
+    /**
+     * Hit-test the OPTIONS-mode popup. Geometry mirrors
+     * {@code BlockVariantMenuRenderer#drawRotationOptionsPopup}. Returns
+     * {@link BlockVariantMenu.Hit#NONE} if the ray missed the popup.
+     */
+    private static BlockVariantMenu.Hit popupHit(double hitX, double hitY, int rowIndex,
+                                                 BlockVariantSyncPacket.Entry entry,
+                                                 double colActualW, double gridTop, double halfW) {
+        BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
+        if (parsed == null) return BlockVariantMenu.Hit.NONE;
+        int col = rowIndex / BlockVariantMenu.ROWS_PER_COLUMN;
+        int row = rowIndex % BlockVariantMenu.ROWS_PER_COLUMN;
+        double colXL = -halfW + col * colActualW;
+        double rowTop = gridTop - row * BlockVariantMenuRenderer.ROW_HEIGHT;
+
+        double popupW = 3 * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE + 0.04;
+        double popupH = 2 * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE + 0.04;
+        double popupCX = colXL + colActualW
+            - BlockVariantMenuRenderer.ROT_DIRS_CELL_WIDTH / 2.0
+            - BlockVariantMenuRenderer.WEIGHT_CELL_WIDTH;
+        double popupBot = rowTop + 0.02;
+        double popupTop = popupBot + popupH;
+        double popupL = popupCX - popupW / 2.0;
+        double popupR = popupL + popupW;
+
+        if (hitX < popupL || hitX > popupR || hitY < popupBot || hitY > popupTop) {
+            return BlockVariantMenu.Hit.NONE;
+        }
+
+        Direction[][] grid = {
+            { Direction.UP, Direction.EAST, Direction.SOUTH },
+            { Direction.DOWN, Direction.WEST, Direction.NORTH }
+        };
+        for (int gy = 0; gy < 2; gy++) {
+            for (int gx = 0; gx < 3; gx++) {
+                double bL = popupL + 0.02 + gx * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE;
+                double bR = bL + BlockVariantMenuRenderer.POPUP_BUTTON_SIZE - 0.005;
+                double bTop = popupTop - 0.02 - gy * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE;
+                double bBot = bTop - BlockVariantMenuRenderer.POPUP_BUTTON_SIZE + 0.005;
+                if (hitX >= bL && hitX <= bR && hitY >= bBot && hitY <= bTop) {
+                    return new BlockVariantMenu.Hit(
+                        BlockVariantMenu.CellKind.ROT_DIR_OPTION,
+                        rowIndex,
+                        grid[gy][gx].ordinal());
+                }
+            }
+        }
+        // Hit the popup background but not a button — still consume so the
+        // click closes the popup (handled by the input dispatcher).
+        return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ROT_DIR_OPTION, rowIndex, -1);
     }
 
     private static BlockVariantMenu.Hit searchHit(double hitX, double hitY) {

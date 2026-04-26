@@ -1,16 +1,22 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
+import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Client singleton state for the block-variant world-space menu. Mirrors
@@ -52,14 +58,25 @@ public final class BlockVariantMenu {
         ENTRY_NAME,
         ENTRY_WEIGHT,
         ENTRY_REMOVE_X,
+        ENTRY_ROT_MODE,
+        ENTRY_ROT_DIRS,
+        ROT_DIR_OPTION,
         SEARCH_FIELD,
         SEARCH_RESULT,
         SEARCH_BACK
     }
 
-    /** A specific cell hit by the raycast. */
-    public record Hit(CellKind kind, int index) {
-        public static final Hit NONE = new Hit(CellKind.NONE, -1);
+    /**
+     * A specific cell hit by the raycast. {@code secondary} carries the
+     * direction ordinal for {@link CellKind#ROT_DIR_OPTION} hits in the
+     * OPTIONS-mode floating popup; {@code -1} for all other cells.
+     */
+    public record Hit(CellKind kind, int index, int secondary) {
+        public static final Hit NONE = new Hit(CellKind.NONE, -1, -1);
+
+        public Hit(CellKind kind, int index) {
+            this(kind, index, -1);
+        }
     }
 
     private BlockVariantMenu() {}
@@ -80,8 +97,21 @@ public final class BlockVariantMenu {
 
     private static Hit hovered = Hit.NONE;
 
+    /** -1 = closed; otherwise the row whose OPTIONS popup is open. */
+    private static int rotPopupRowIndex = -1;
+
     /** Cached registry list — built lazily on first ADD_SEARCH entry. */
     @Nullable private static List<String> cachedBlockIds;
+
+    /**
+     * Cache of parsed {@link BlockState}s keyed by their {@code stateString}
+     * — the renderer / raycaster need to call
+     * {@link games.brennan.dungeontrain.editor.RotationApplier#canRotate}
+     * per row each frame, and reparsing the same handful of strings every
+     * frame is wasteful. Cleared whenever the menu sync changes the
+     * targeted cell.
+     */
+    private static final Map<String, BlockState> PARSED_STATE_CACHE = new HashMap<>();
 
     public static boolean isActive() { return active; }
     public static String variantId() { return variantId; }
@@ -96,9 +126,38 @@ public final class BlockVariantMenu {
     public static boolean removeMode() { return removeMode; }
     public static String searchBuffer() { return searchBuffer; }
     public static Hit hovered() { return hovered; }
+    public static int rotPopupRowIndex() { return rotPopupRowIndex; }
 
     public static void setHovered(Hit h) {
         hovered = h == null ? Hit.NONE : h;
+    }
+
+    public static void openRotPopup(int rowIndex) {
+        rotPopupRowIndex = rowIndex;
+    }
+
+    public static void closeRotPopup() {
+        rotPopupRowIndex = -1;
+    }
+
+    /**
+     * Parse and cache a candidate's {@code BlockState}. Returns {@code null}
+     * on parse failure (rare — server sent us a string it had already
+     * serialised, so failures only happen if registries diverge).
+     */
+    @Nullable
+    public static BlockState parseState(String stateString) {
+        if (stateString == null || stateString.isEmpty()) return null;
+        BlockState cached = PARSED_STATE_CACHE.get(stateString);
+        if (cached != null) return cached;
+        try {
+            HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
+            BlockStateParser.BlockResult parsed = BlockStateParser.parseForBlock(blocks, stateString, false);
+            PARSED_STATE_CACHE.put(stateString, parsed.blockState());
+            return parsed.blockState();
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     /**
@@ -115,6 +174,7 @@ public final class BlockVariantMenu {
             removeMode = false;
             searchBuffer = "";
             hovered = Hit.NONE;
+            rotPopupRowIndex = -1;
             return;
         }
         boolean newCell = !packet.variantId().equals(variantId)
@@ -132,6 +192,13 @@ public final class BlockVariantMenu {
             screen = Screen.ROOT;
             removeMode = false;
             searchBuffer = "";
+            rotPopupRowIndex = -1;
+            // Drop the parse cache so old cells' states don't accumulate
+            // (cache is cheap to rebuild — at most ~32 entries per cell).
+            PARSED_STATE_CACHE.clear();
+        } else if (rotPopupRowIndex >= 0 && rotPopupRowIndex >= entries.size()) {
+            // Entry was removed underneath the popup — close it.
+            rotPopupRowIndex = -1;
         }
         hovered = Hit.NONE;
     }
