@@ -163,6 +163,11 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.REMOVE, variantId, local, hit.index(), "", 0));
             }
+            case ENTRY_NAME -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.PREVIEW_ENTRY, variantId, local, hit.index(), "", 0));
+            }
             default -> {}
         }
     }
