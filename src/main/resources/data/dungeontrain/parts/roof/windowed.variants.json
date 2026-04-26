@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 4,
+  "variants": {
+    "5,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:stone_bricks"] },
+    "4,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:stone_bricks"] },
+    "3,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:stone_bricks"] },
+    "2,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:stone_bricks"] },
+    "1,0,2": { "lockId": 1, "states": ["minecraft:glass", "minecraft:stone_bricks"] }
+  }
+}

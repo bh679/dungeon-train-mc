@@ -352,6 +352,12 @@ public final class CarriagePartEditor {
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
             CarriagePartTemplateStore.saveToSource(kind, name, template);
+            // Promote the variants sidecar too — without this, shift-right-click
+            // variant authoring stayed in run/config and was lost on worktree
+            // delete (the same defect the contents editor had pre-0.66.1).
+            Vec3i partSize = kind.dims(dims);
+            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+            sidecar.saveToSource(kind, name);
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Part editor save: source write failed for {}:{}: {}",
@@ -413,10 +419,22 @@ public final class CarriagePartEditor {
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
             CarriagePartTemplateStore.saveToSource(kind, newName, template);
+            // Variants sidecar — write under the new name and clean up the old
+            // name's source file so the rename leaves no stale bundled resource.
+            Vec3i partSize = kind.dims(dims);
+            CarriagePartVariantBlocks newSidecar = CarriagePartVariantBlocks.loadFor(kind, newName, partSize);
+            newSidecar.saveToSource(kind, newName);
             try {
                 Files.deleteIfExists(CarriagePartTemplateStore.sourceFileFor(kind, oldName));
             } catch (IOException e) {
                 LOGGER.warn("[DungeonTrain] Part editor saveAs: source-tree delete failed for {}:{}: {}",
+                    kind.id(), oldName, e.toString());
+            }
+            try {
+                java.nio.file.Path oldVariantsSrc = CarriagePartVariantBlocks.sourcePathFor(kind, oldName);
+                if (oldVariantsSrc != null) Files.deleteIfExists(oldVariantsSrc);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Part editor saveAs: variants source-tree delete failed for {}:{}: {}",
                     kind.id(), oldName, e.toString());
             }
             return SaveResult.written();

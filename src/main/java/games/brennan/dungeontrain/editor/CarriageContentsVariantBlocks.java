@@ -377,11 +377,20 @@ public final class CarriageContentsVariantBlocks {
         CACHE.clear();
     }
 
-    private static Path sourcePathFor(CarriageContents contents) {
+    public static Path sourcePathFor(CarriageContents contents) {
+        return sourcePathForId(contents.id());
+    }
+
+    /**
+     * Like {@link #sourcePathFor(CarriageContents)} but takes a raw id string
+     * — used by saveAs / rename flows to locate (and delete) the source-tree
+     * file under an outgoing name.
+     */
+    public static Path sourcePathForId(String id) {
         Path projectRoot = FMLPaths.GAMEDIR.get().getParent();
         if (projectRoot == null) return null;
         Path resources = projectRoot.resolve("src/main/resources");
         if (!Files.isDirectory(resources) || !Files.isWritable(resources)) return null;
-        return projectRoot.resolve(SOURCE_REL_PATH).resolve(contents.id() + EXT);
+        return projectRoot.resolve(SOURCE_REL_PATH).resolve(id + EXT);
     }
 }
