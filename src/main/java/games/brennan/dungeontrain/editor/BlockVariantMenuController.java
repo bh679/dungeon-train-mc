@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
@@ -217,6 +218,10 @@ public final class BlockVariantMenuController {
             handleCopy(player, plot, localPos);
             return;
         }
+        if (packet.op() == BlockVariantEditPacket.Op.PREVIEW_ENTRY) {
+            previewEntry(level, plot, localPos, packet.entryIndex());
+            return;
+        }
 
         List<VariantState> current = plot.statesAt(localPos);
         boolean wasEmpty = (current == null);
@@ -393,6 +398,34 @@ public final class BlockVariantMenuController {
         // VariantOverlayRenderer tick.
         VariantOverlayRenderer.pushLockIdSnapshot(player);
         resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * PREVIEW_ENTRY: replace the world block at {@code localPos} (and any
+     * lock-group siblings) with the entry at {@code entryIndex}. The
+     * sidecar — state list, weights, lockId — is untouched. Lock-group
+     * propagation matches spawn-time semantics: a locked group rolls one
+     * index and renders the same state across all sibling cells, so the
+     * editor preview must match.
+     *
+     * <p>Out-of-range indices and missing cells return silently; the
+     * client can be slightly stale relative to the sidecar.</p>
+     */
+    private static void previewEntry(ServerLevel level, BlockVariantPlot plot,
+                                     BlockPos localPos, int entryIndex) {
+        List<VariantState> current = plot.statesAt(localPos);
+        if (current == null) return;
+        if (entryIndex < 0 || entryIndex >= current.size()) return;
+        VariantState picked = current.get(entryIndex);
+
+        int lockId = plot.lockIdAt(localPos);
+        Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
+        if (targets.isEmpty()) targets = Set.of(localPos);
+
+        for (BlockPos target : targets) {
+            BlockPos worldPos = plot.origin().offset(target);
+            SilentBlockOps.setBlockSilent(level, worldPos, picked.state(), picked.blockEntityNbt());
+        }
     }
 
     /** COPY: build a clipboard ItemStack capturing the cell's states + lockId. */

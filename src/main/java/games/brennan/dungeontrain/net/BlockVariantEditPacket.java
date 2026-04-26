@@ -33,6 +33,11 @@ import java.util.function.Supplier;
  *       games.brennan.dungeontrain.item.VariantClipboardItem} stack with
  *       the cell's current entries (and its lock-id) encoded in NBT. No
  *       sidecar mutation.</li>
+ *   <li>{@link Op#PREVIEW_ENTRY} — replace the world block at the cell
+ *       (and any lock-group siblings) with the entry at {@code entryIndex}.
+ *       Transient world-only effect — the variant list, weights, and
+ *       lock-id are all unchanged. Used by clicking an entry's name cell
+ *       to visualise that variant in-place.</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -42,7 +47,7 @@ import java.util.function.Supplier;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY, PREVIEW_ENTRY }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());
