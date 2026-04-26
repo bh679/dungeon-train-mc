@@ -61,6 +61,7 @@ public final class CarriagePartVariantBlocks {
     private static final String SUBDIR_BASE = "dungeontrain/parts";
     private static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
+    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
 
     /** Session cache keyed on {@code <kind>:<name>}. Invalidated on save and on editor enter. */
     private static final Map<String, CarriagePartVariantBlocks> CACHE = new HashMap<>();
@@ -298,6 +299,41 @@ public final class CarriagePartVariantBlocks {
     public synchronized void save(CarriagePartKind kind, String name) throws IOException {
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(toJsonText());
+        }
+        CACHE.put(cacheKey(kind, name), this);
+        LOGGER.info("[DungeonTrain] Saved part variant sidecar for {}:{} ({} entries) to {}",
+            kind.id(), name, entries.size(), file);
+    }
+
+    /**
+     * Dev-mode write-through: copy the sidecar into the project source tree
+     * so it ships with the next build. Mirrors
+     * {@link CarriageContentsVariantBlocks#saveToSource}. An empty sidecar
+     * deletes the source file so removing every entry doesn't leave a stale
+     * bundled resource.
+     */
+    public synchronized void saveToSource(CarriagePartKind kind, String name) throws IOException {
+        Path file = sourcePathFor(kind, name);
+        if (file == null) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        if (entries.isEmpty()) {
+            Files.deleteIfExists(file);
+            LOGGER.info("[DungeonTrain] Cleared bundled part variant sidecar for {}:{} (no entries)",
+                kind.id(), name);
+            return;
+        }
+        Files.createDirectories(file.getParent());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(toJsonText());
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled part variant sidecar for {}:{} to {}",
+            kind.id(), name, file);
+    }
+
+    private String toJsonText() {
         // Hand-written so the v2 mixed-array form (bare strings + objects) stays
         // diff-clean against existing v1 files. Same shape as CarriageVariantBlocks#toJson.
         StringBuilder sb = new StringBuilder(256);
@@ -313,12 +349,21 @@ public final class CarriagePartVariantBlocks {
             first = false;
         }
         sb.append("\n  }\n}\n");
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(sb.toString());
-        }
-        CACHE.put(cacheKey(kind, name), this);
-        LOGGER.info("[DungeonTrain] Saved part variant sidecar for {}:{} ({} entries) to {}",
-            kind.id(), name, entries.size(), file);
+        return sb.toString();
+    }
+
+    /**
+     * Resolves the source-tree path for {@code (kind, name)}. Returns null
+     * when the source tree isn't present or writable (production install) so
+     * callers can soft-fail. Mirrors
+     * {@link CarriageContentsVariantBlocks#sourcePathFor}.
+     */
+    public static Path sourcePathFor(CarriagePartKind kind, String name) {
+        Path projectRoot = FMLPaths.GAMEDIR.get().getParent();
+        if (projectRoot == null) return null;
+        Path resources = projectRoot.resolve("src/main/resources");
+        if (!Files.isDirectory(resources) || !Files.isWritable(resources)) return null;
+        return projectRoot.resolve(SOURCE_REL_PATH).resolve(kind.id()).resolve(name + EXT);
     }
 
     public static synchronized boolean delete(CarriagePartKind kind, String name) throws IOException {

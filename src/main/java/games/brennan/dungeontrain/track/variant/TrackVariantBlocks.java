@@ -272,6 +272,41 @@ public final class TrackVariantBlocks {
     public synchronized void save(TrackKind kind, String name) throws IOException {
         Path file = configPathFor(kind, name);
         Files.createDirectories(file.getParent());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(toJsonText());
+        }
+        CACHE.put(cacheKey(kind, name), this);
+        LOGGER.info("[DungeonTrain] Saved track variant sidecar for {}:{} ({} entries) to {}",
+            kind.id(), name, entries.size(), file);
+    }
+
+    /**
+     * Dev-mode write-through: copy the sidecar into the project source tree
+     * so it ships with the next build. Mirrors
+     * {@link games.brennan.dungeontrain.editor.CarriagePartVariantBlocks#saveToSource}.
+     * An empty sidecar deletes the source file so removing every entry doesn't
+     * leave a stale bundled resource.
+     */
+    public synchronized void saveToSource(TrackKind kind, String name) throws IOException {
+        Path file = sourcePathFor(kind, name);
+        if (file == null) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        if (entries.isEmpty()) {
+            Files.deleteIfExists(file);
+            LOGGER.info("[DungeonTrain] Cleared bundled track variant sidecar for {}:{} (no entries)",
+                kind.id(), name);
+            return;
+        }
+        Files.createDirectories(file.getParent());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(toJsonText());
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled track variant sidecar for {}:{} to {}",
+            kind.id(), name, file);
+    }
+
+    private String toJsonText() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
         sb.append("  \"variants\": {");
@@ -284,12 +319,21 @@ public final class TrackVariantBlocks {
             CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId);
         }
         sb.append("\n  }\n}\n");
-        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(sb.toString());
-        }
-        CACHE.put(cacheKey(kind, name), this);
-        LOGGER.info("[DungeonTrain] Saved track variant sidecar for {}:{} ({} entries) to {}",
-            kind.id(), name, entries.size(), file);
+        return sb.toString();
+    }
+
+    /**
+     * Resolves the source-tree path for {@code (kind, name)}. Returns null
+     * when the source tree isn't present or writable (production install) so
+     * callers can soft-fail. Reuses {@link TrackKind#sourceRelativePath} so
+     * the layout matches {@link TrackVariantStore#sourceFileFor}.
+     */
+    public static Path sourcePathFor(TrackKind kind, String name) {
+        Path projectRoot = FMLPaths.GAMEDIR.get().getParent();
+        if (projectRoot == null) return null;
+        Path resources = projectRoot.resolve("src/main/resources");
+        if (!Files.isDirectory(resources) || !Files.isWritable(resources)) return null;
+        return projectRoot.resolve(kind.sourceRelativePath()).resolve(name + TrackKind.VARIANTS_EXT);
     }
 
     public static synchronized boolean delete(TrackKind kind, String name) throws IOException {
