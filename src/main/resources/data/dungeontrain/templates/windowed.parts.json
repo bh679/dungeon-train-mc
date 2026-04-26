@@ -6,19 +6,24 @@
       "weight": 1
     },
     {
-      "name": "wood",
-      "weight": 6
+      "name": "standard",
+      "weight": 10
     }
   ],
   "walls": [
     {
-      "name": "cracked",
+      "name": "standard",
+      "weight": 1,
+      "sideMode": "one"
+    },
+    {
+      "name": "slotwindow",
       "weight": 1,
       "sideMode": "either"
     },
     {
-      "name": "standard",
-      "weight": 6,
+      "name": "smallwindows",
+      "weight": 1,
       "sideMode": "either"
     }
   ],
@@ -26,23 +31,24 @@
     {
       "name": "standard",
       "weight": 1
+    },
+    {
+      "name": "windowed",
+      "weight": 2
     }
   ],
   "doors": [
     {
-      "name": "irondoor",
-      "weight": 1,
-      "sideMode": "either"
-    },
-    {
       "name": "standard",
-      "weight": 10,
-      "sideMode": "either"
+      "weight": 10
     },
     {
       "name": "wooddoor",
-      "weight": 3,
-      "sideMode": "either"
+      "weight": 2
+    },
+    {
+      "name": "irondoor",
+      "weight": 1
     }
   ]
 }
