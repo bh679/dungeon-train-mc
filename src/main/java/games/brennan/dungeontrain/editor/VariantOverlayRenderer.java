@@ -373,6 +373,9 @@ public final class VariantOverlayRenderer {
         if (model instanceof EditorModel.PillarModel pm) {
             return pm.name();
         }
+        if (model instanceof EditorModel.AdjunctModel am) {
+            return am.name();
+        }
         if (model instanceof EditorModel.TunnelModel tm) {
             return tm.name();
         }

@@ -127,7 +127,7 @@ public final class PartPositionMenuInputHandler {
         if (!PartPositionMenu.isActive()) return;
         // Refresh hover so the per-tick state matches the panel even
         // outside the per-frame render call (used by mouse-press arming).
-        if (mc.screen == null) {
+        if (mc.screen == null && !CommandMenuState.isOpen()) {
             PartPositionMenuRaycast.updateHovered();
         }
     }
