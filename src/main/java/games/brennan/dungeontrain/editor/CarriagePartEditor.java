@@ -390,8 +390,7 @@ public final class CarriagePartEditor {
 
         clearPlot(overworld, kind, oldName, dims);
         CarriagePartTemplateStore.delete(kind, oldName);
-        boolean stillBundled = CarriagePartTemplateStore.bundled(kind, oldName);
-        if (!stillBundled) CarriagePartRegistry.unregister(kind, oldName);
+        CarriagePartRegistry.unregister(kind, oldName);
 
         BlockPos newOrigin = plotOrigin(kind, newName, dims);
         if (newOrigin != null) {
