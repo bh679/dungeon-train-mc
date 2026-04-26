@@ -80,6 +80,7 @@ public final class TrackVariantWeights {
         next.put(key, clamped);
         CURRENT.put(kind, next);
         writeConfig(kind, next);
+        trySaveToSource(kind, next);
         LOGGER.info("[DungeonTrain] Set track weight {}:{}={} (persisted to {}).",
             kind.id(), key, clamped, configPath(kind));
         return clamped;
@@ -94,6 +95,7 @@ public final class TrackVariantWeights {
         next.remove(key);
         CURRENT.put(kind, next);
         writeConfig(kind, next);
+        trySaveToSource(kind, next);
         LOGGER.info("[DungeonTrain] Cleared track weight override for {}:{} (persisted to {}).",
             kind.id(), key, configPath(kind));
         return true;
@@ -127,6 +129,59 @@ public final class TrackVariantWeights {
 
     public static String bundledResource(TrackKind kind) {
         return kind.bundledResourcePrefix() + TrackKind.WEIGHTS_FILE;
+    }
+
+    /**
+     * Source-tree path for the bundled weights file (under
+     * {@code src/main/resources/data/dungeontrain/<kind.subdir>/weights.json}).
+     * Returns null outside dev mode. Mirrors
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantStore#sourceFileFor}.
+     */
+    public static Path sourceFile(TrackKind kind) {
+        Path resources = resourcesRootOrNull();
+        if (resources == null) return null;
+        return resources.resolve(bundledResource(kind).substring(1));
+    }
+
+    public static boolean sourceTreeAvailable() {
+        Path resources = resourcesRootOrNull();
+        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+    }
+
+    /**
+     * Write the per-{@code kind} weights map to {@link #sourceFile(TrackKind)}
+     * so a dev's in-game tweak ships with the next build. Throws if the source
+     * tree isn't writable.
+     */
+    public static synchronized void saveToSource(TrackKind kind, Map<String, Integer> weights) throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path file = sourceFile(kind);
+        Files.createDirectories(file.getParent());
+        Map<String, Integer> sorted = new TreeMap<>(weights);
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled track weights for {} to {} (devmode promote).", kind.id(), file);
+    }
+
+    /** Best-effort source-tree write invoked from {@link #set} / {@link #unset}. */
+    private static void trySaveToSource(TrackKind kind, Map<String, Integer> weights) {
+        if (!sourceTreeAvailable()) return;
+        try {
+            saveToSource(kind, weights);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to write bundled track weights for {} to source tree: {} (config write succeeded).",
+                kind.id(), e.toString());
+        }
+    }
+
+    private static Path resourcesRootOrNull() {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path projectRoot = gameDir.getParent();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve("src/main/resources");
     }
 
     private static void writeConfig(TrackKind kind, Map<String, Integer> weights) throws IOException {
