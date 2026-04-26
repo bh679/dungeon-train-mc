@@ -12,7 +12,9 @@ import java.util.Locale;
  * category selection. Save has an "All" companion for category-wide saves.
  * New / Remove act on the model the player is currently standing in —
  * New duplicates it under a typed name, Remove deletes the model after a
- * confirmation prompt. Back pops to the main menu.
+ * confirmation prompt. Exit runs {@code /dungeontrain editor exit} —
+ * unwinds the active editor session, clears the editor plots, and
+ * teleports the player back to where they entered the editor from.
  */
 public final class EditorMenuScreen implements MenuScreen {
 
@@ -72,7 +74,7 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor part rename",
                     "", name));
             }
-            out.add(new CommandMenuEntry.Back("< Back"));
+            out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
             return out;
         }
 
@@ -130,7 +132,7 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
-        out.add(new CommandMenuEntry.Back("< Back"));
+        out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;
     }
 
