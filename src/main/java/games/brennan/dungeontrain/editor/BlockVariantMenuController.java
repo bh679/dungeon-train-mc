@@ -12,13 +12,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -177,11 +176,20 @@ public final class BlockVariantMenuController {
 
         switch (packet.op()) {
             case ADD -> {
-                BlockState parsed = parseStateString(packet.stateString());
-                if (parsed == null) {
-                    actionBar(player, "Bad block id: " + packet.stateString(), ChatFormatting.RED);
+                // Capture whatever the player is holding in their main hand.
+                // Empty stateString from the client signals "use held item"
+                // (the search-screen path was removed for block variants —
+                // mirrors the hold-Z + right-click capture flow).
+                ItemStack held = player.getMainHandItem();
+                if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) {
+                    actionBar(player, "Hold a block in your main hand to add it as a variant",
+                        ChatFormatting.YELLOW);
                     return;
                 }
+                BlockState capturedState = blockItem.getBlock().defaultBlockState();
+                CompoundTag itemBeNbt = BlockItem.getBlockEntityData(held);
+                VariantState newVariant = new VariantState(capturedState, itemBeNbt, 1, false);
+
                 if (wasEmpty) {
                     // Seed with the current world block as entry #0 so the
                     // first ADD also captures the "default" state — mirrors
@@ -200,7 +208,7 @@ public final class BlockVariantMenuController {
                     actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
                     return;
                 }
-                mutated.add(new VariantState(parsed, null, 1, false));
+                mutated.add(newVariant);
                 dirty = true;
             }
             case REMOVE -> {
@@ -311,17 +319,6 @@ public final class BlockVariantMenuController {
             if (be != null) beNbt = be.saveWithoutMetadata();
         }
         return new VariantState(baseState, beNbt);
-    }
-
-    private static BlockState parseStateString(String raw) {
-        if (raw == null || raw.isEmpty()) return null;
-        HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks =
-            BuiltInRegistries.BLOCK.asLookup();
-        try {
-            return BlockStateParser.parseForBlock(blocks, raw, false).blockState();
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {

@@ -141,7 +141,11 @@ public final class BlockVariantMenuInputHandler {
         switch (hit.kind()) {
             case COPY -> DungeonTrainNet.CHANNEL.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.COPY, variantId, local, -1, "", 0));
-            case ADD -> BlockVariantMenu.enterSearch();
+            case ADD -> DungeonTrainNet.CHANNEL.sendToServer(
+                // Server captures the player's main-hand BlockItem — empty
+                // stateString signals "use held item" rather than the legacy
+                // search-screen path.
+                new BlockVariantEditPacket(BlockVariantEditPacket.Op.ADD, variantId, local, -1, "", 0));
             case REMOVE -> BlockVariantMenu.toggleRemoveMode();
             case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CLEAR, variantId, local, -1, "", 0));
