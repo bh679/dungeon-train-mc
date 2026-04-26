@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -20,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -117,14 +119,48 @@ public final class TrackVariantRegistry {
         // picks up the renamed default.nbt as the synthetic "default" entry
         // instead of registering "track" as a custom name. Idempotent.
         TrackVariantStore.migrateLegacyPaths();
-        int total = 0;
+        int bundled = 0;
+        int custom = 0;
         for (TrackKind kind : TrackKind.values()) {
             TreeSet<String> set = NAMES.get(kind);
             set.clear();
-            total += scanDir(kind, set);
+            // Bundled scan first so the per-install config dir's customs land
+            // alphabetically *after* the shipped variants in the same TreeSet
+            // (TreeSet sorts globally, so order is alphabetical regardless —
+            // the count split is what we care about for the log line).
+            bundled += scanBundled(kind, set);
+            custom += scanDir(kind, set);
         }
-        LOGGER.info("[DungeonTrain] Track variant registry loaded — {} custom names across {} kinds",
-            total, TrackKind.values().length);
+        LOGGER.info("[DungeonTrain] Track variant registry loaded — {} bundled + {} custom names across {} kinds",
+            bundled, custom, TrackKind.values().length);
+    }
+
+    /**
+     * Add every {@code .nbt} basename shipped in the mod jar at
+     * {@code /data/dungeontrain/<kind.subdir>/} to the kind's name set,
+     * skipping {@link TrackKind#DEFAULT_NAME} (synthetic, always-present
+     * entry) and any name that fails {@link #NAME_PATTERN}.
+     *
+     * <p>This closes the discovery gap that left {@code TILE} and
+     * {@code ADJUNCT_STAIRS} with only the synthetic default — bundled
+     * variants like {@code sleeperless.nbt} and {@code ladder.nbt} now show
+     * up in the in-world block-variant editor menu without a hand-maintained
+     * manifest file.</p>
+     */
+    private static int scanBundled(TrackKind kind, TreeSet<String> into) {
+        Set<String> scanned = BundledNbtScanner.scanBasenames(
+            TrackVariantRegistry.class, kind.bundledResourcePrefix(), LOGGER);
+        int added = 0;
+        for (String basename : scanned) {
+            if (TrackKind.DEFAULT_NAME.equals(basename)) continue;
+            if (!NAME_PATTERN.matcher(basename).matches()) {
+                LOGGER.warn("[DungeonTrain] Ignoring bundled track variant '{}' for kind {} — invalid name",
+                    basename, kind.id());
+                continue;
+            }
+            if (into.add(basename)) added++;
+        }
+        return added;
     }
 
     private static int scanDir(TrackKind kind, TreeSet<String> into) {
