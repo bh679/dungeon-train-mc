@@ -1386,6 +1386,9 @@ public final class EditorCommand {
         CarriageVariant variant = parseVariant(source, raw);
         if (variant == null) return 0;
         try {
+            ServerLevel overworld = source.getServer().overworld();
+            CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+            CarriageEditor.clearPlot(overworld, variant, dims);
             boolean deleted = CarriageTemplateStore.delete(variant);
             boolean wasCustom = !variant.isBuiltin();
             if (wasCustom) CarriageVariantRegistry.unregister(variant.id());
@@ -1997,6 +2000,9 @@ public final class EditorCommand {
         CarriageContents contents = parseContents(source, raw);
         if (contents == null) return 0;
         try {
+            ServerLevel overworld = source.getServer().overworld();
+            CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+            CarriageContentsEditor.clearPlot(overworld, contents, dims);
             boolean deleted = CarriageContentsStore.delete(contents);
             boolean wasCustom = !contents.isBuiltin();
             if (wasCustom) CarriageContentsRegistry.unregister(contents.id());
@@ -2625,6 +2631,9 @@ public final class EditorCommand {
         if (kind == null) return 0;
         String name = rawName.toLowerCase(Locale.ROOT);
         try {
+            ServerLevel overworld = source.getServer().overworld();
+            CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+            CarriagePartEditor.clearPlot(overworld, kind, name, dims);
             boolean deleted = CarriagePartTemplateStore.delete(kind, name);
             boolean stillBundled = CarriagePartTemplateStore.bundled(kind, name);
             if (!stillBundled) CarriagePartRegistry.unregister(kind, name);
