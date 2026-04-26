@@ -277,6 +277,13 @@ public final class TrainWindowManager {
             // Snapshot the current shipyard state before erasing so a
             // future re-entry restores exactly what the player left behind.
             CarriagePersistenceStore.save(level, ship.getId(), i, carriageOrigin, dims);
+            // Discard live entities BEFORE eraseAt so they don't orphan in
+            // the stale shipyard chunk. The persistence snapshot above
+            // already captured their NBT, so restore() will respawn them
+            // when the player walks back. Without this, each rolling-window
+            // cycle leaves a copy of every armor stand / mob behind in the
+            // shipyard and restore() doubles them up on top.
+            CarriageContentsTemplate.discardEntitiesAt(level, carriageOrigin, dims);
             CarriageTemplate.eraseAt(level, carriageOrigin, dims);
             current.remove(i);
             mutated = true;

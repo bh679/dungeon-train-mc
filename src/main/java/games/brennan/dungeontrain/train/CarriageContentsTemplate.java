@@ -14,8 +14,10 @@ import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,6 +28,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -45,6 +48,41 @@ import java.util.UUID;
 public final class CarriageContentsTemplate {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * Entity types stripped from a captured contents template. Covers transient
+     * junk that lands in the interior AABB during an edit session — dropped
+     * items from blocks the author broke, XP orbs, projectiles, lightning, and
+     * defensively the player itself. Anything not in this set (mobs, armor
+     * stands, paintings, item frames, modded creatures) is preserved.
+     *
+     * <p>Strings are matched against the entity's serialised {@code id} field
+     * via {@link ResourceLocation#toString()}, so modded transient types must
+     * be added here explicitly if they cause problems in the editor.
+     */
+    private static final Set<String> EXCLUDED_ENTITY_IDS = Set.of(
+        "minecraft:item",
+        "minecraft:experience_orb",
+        "minecraft:lightning_bolt",
+        "minecraft:area_effect_cloud",
+        "minecraft:arrow",
+        "minecraft:spectral_arrow",
+        "minecraft:trident",
+        "minecraft:snowball",
+        "minecraft:ender_pearl",
+        "minecraft:egg",
+        "minecraft:eye_of_ender",
+        "minecraft:fishing_bobber",
+        "minecraft:fireball",
+        "minecraft:small_fireball",
+        "minecraft:dragon_fireball",
+        "minecraft:wither_skull",
+        "minecraft:llama_spit",
+        "minecraft:potion",
+        "minecraft:experience_bottle",
+        "minecraft:firework_rocket",
+        "minecraft:player"
+    );
 
     private CarriageContentsTemplate() {}
 
@@ -231,6 +269,16 @@ public final class CarriageContentsTemplate {
                 }
                 Entity entity = created.get();
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
+                // Mobs spawned in shipyard chunks fail vanilla's "any player
+                // within 32/128 blocks" despawn check — the player who triggers
+                // the carriage placement lives in a totally different chunk
+                // (the world-rendered carriage), not the shipyard chunk where
+                // the mob is stored. Force PersistenceRequired so the saved
+                // mob survives regardless of whether the editor-author
+                // remembered to set the flag in the source NBT.
+                if (entity instanceof Mob mob) {
+                    mob.setPersistenceRequired();
+                }
                 if (level.addFreshEntity(entity)) {
                     spawned++;
                 } else {
@@ -251,8 +299,8 @@ public final class CarriageContentsTemplate {
     /**
      * Capture the interior volume at {@code carriageOrigin} into a fresh
      * {@link StructureTemplate} — used by the contents editor save flow.
-     * Includes entities (armor stands, paintings, item frames, etc.) so a
-     * decorated interior round-trips through save/load. Air positions are
+     * Includes entities (armor stands, paintings, item frames, mobs, etc.) so
+     * a decorated interior round-trips through save/load. Air positions are
      * excluded so the saved NBT only describes placed blocks. An all-air
      * interior with no entities still saves as a zero-size template, which
      * {@link CarriageContentsStore#save} writes so the author can clear
@@ -261,12 +309,56 @@ public final class CarriageContentsTemplate {
      * <p>The 4th {@code fillFromWorld} argument is {@code includeEntities}
      * in 1.20.1 — passing {@code true} is what pulls entities in the AABB
      * into the template's {@code StructureEntityInfo} list.</p>
+     *
+     * <p>Transient junk (dropped items, XP orbs, projectiles, lightning,
+     * defensively the player) is stripped post-fill via
+     * {@link #EXCLUDED_ENTITY_IDS} so a block broken mid-edit doesn't bake
+     * its drop into the template forever.</p>
      */
     public static StructureTemplate captureTemplate(ServerLevel level, BlockPos carriageOrigin, CarriageDims dims) {
         Vec3i size = interiorSize(dims);
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, interiorOrigin(carriageOrigin), size, true, Blocks.AIR);
-        return template;
+        return stripExcludedEntities(level, template);
+    }
+
+    /**
+     * Round-trip the template through NBT, dropping any saved entity whose
+     * id matches {@link #EXCLUDED_ENTITY_IDS}. Returns the original template
+     * unchanged when no entities were filtered (avoids a needless reload).
+     * On filter failure (corrupt NBT, missing fields), logs and returns the
+     * original — a leaky filter is preferable to losing the whole capture.
+     */
+    private static StructureTemplate stripExcludedEntities(ServerLevel level, StructureTemplate template) {
+        try {
+            CompoundTag tag = template.save(new CompoundTag());
+            if (!tag.contains("entities", Tag.TAG_LIST)) return template;
+            ListTag original = tag.getList("entities", Tag.TAG_COMPOUND);
+            if (original.isEmpty()) return template;
+            ListTag filtered = new ListTag();
+            int dropped = 0;
+            for (int i = 0; i < original.size(); i++) {
+                CompoundTag entry = original.getCompound(i);
+                String id = entry.contains("nbt", Tag.TAG_COMPOUND)
+                    ? entry.getCompound("nbt").getString("id")
+                    : "";
+                if (EXCLUDED_ENTITY_IDS.contains(id)) {
+                    dropped++;
+                    continue;
+                }
+                filtered.add(entry);
+            }
+            if (dropped == 0) return template;
+            tag.put("entities", filtered);
+            StructureTemplate result = new StructureTemplate();
+            result.load(level.holderLookup(net.minecraft.core.registries.Registries.BLOCK), tag);
+            LOGGER.info("[DungeonTrain] Capture filter dropped {} excluded entit{} from contents template",
+                dropped, dropped == 1 ? "y" : "ies");
+            return result;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Entity filter failed, keeping unfiltered template: {}", t.toString());
+            return template;
+        }
     }
 
     /**
