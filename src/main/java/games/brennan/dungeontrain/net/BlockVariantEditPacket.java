@@ -33,6 +33,15 @@ import java.util.function.Supplier;
  *       games.brennan.dungeontrain.item.VariantClipboardItem} stack with
  *       the cell's current entries (and its lock-id) encoded in NBT. No
  *       sidecar mutation.</li>
+ *   <li>{@link Op#SET_ROTATION_MODE} — set entry's rotation mode.
+ *       {@code entryIndex} = row, {@code delta} = next mode ordinal
+ *       (matches {@link games.brennan.dungeontrain.editor.VariantRotation.Mode#ordinal()}).
+ *       Server re-clamps via {@code VariantRotation}'s canonical
+ *       constructor (e.g. RANDOM forces mask to 0).</li>
+ *   <li>{@link Op#SET_ROTATION_DIRS} — set entry's rotation direction
+ *       mask. {@code entryIndex} = row, {@code delta} = new dirMask
+ *       (6-bit). Mode is preserved (LOCK collapses multi-bit to lowest;
+ *       OPTIONS with mask 0 falls back to RANDOM).</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -42,7 +51,8 @@ import java.util.function.Supplier;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
+                     SET_ROTATION_MODE, SET_ROTATION_DIRS }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());

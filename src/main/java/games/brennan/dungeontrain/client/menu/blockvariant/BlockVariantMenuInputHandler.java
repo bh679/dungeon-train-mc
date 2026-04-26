@@ -2,11 +2,15 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.editor.RotationApplier;
+import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantEditPacket;
 import games.brennan.dungeontrain.net.BlockVariantMenuTogglePacket;
+import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -163,8 +167,89 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.REMOVE, variantId, local, hit.index(), "", 0));
             }
-            default -> {}
+            case ENTRY_ROT_MODE -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                int currentOrd = e.rotMode() & 0xFF;
+                if (currentOrd >= VariantRotation.Mode.values().length) currentOrd = VariantRotation.Mode.RANDOM.ordinal();
+                int nextOrd = (currentOrd + 1) % VariantRotation.Mode.values().length;
+                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_ROTATION_MODE, variantId, local, hit.index(), "", nextOrd));
+                BlockVariantMenu.closeRotPopup();
+            }
+            case ENTRY_ROT_DIRS -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                VariantRotation.Mode mode = decodeMode(e.rotMode());
+                BlockState parsed = BlockVariantMenu.parseState(e.stateString());
+                if (parsed == null) return;
+                int validMask = RotationApplier.validDirMask(parsed);
+                int currentMask = e.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+                if (mode == VariantRotation.Mode.LOCK) {
+                    int nextMask = nextLockBit(currentMask, validMask);
+                    if (nextMask == 0) return;
+                    DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                        BlockVariantEditPacket.Op.SET_ROTATION_DIRS, variantId, local, hit.index(), "", nextMask));
+                } else if (mode == VariantRotation.Mode.OPTIONS) {
+                    BlockVariantMenu.openRotPopup(hit.index());
+                }
+                // RANDOM mode: dir cell is read-only (no per-direction concept).
+            }
+            case ROT_DIR_OPTION -> {
+                int row = hit.index();
+                int dirOrd = hit.secondary();
+                // Sentinel -2: click landed inside the menu panel but outside
+                // the popup — close the popup and absorb the click.
+                if (dirOrd == -2) {
+                    BlockVariantMenu.closeRotPopup();
+                    return;
+                }
+                if (row < 0 || row >= BlockVariantMenu.entries().size()) {
+                    BlockVariantMenu.closeRotPopup();
+                    return;
+                }
+                if (dirOrd < 0 || dirOrd >= 6) return; // backdrop click — ignore (popup stays open)
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(row);
+                BlockState parsed = BlockVariantMenu.parseState(e.stateString());
+                if (parsed == null) return;
+                int validMask = RotationApplier.validDirMask(parsed);
+                int bit = 1 << dirOrd;
+                if ((validMask & bit) == 0) return; // invalid for this block — no-op
+                int currentMask = e.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+                int newMask = currentMask ^ bit;
+                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_ROTATION_DIRS, variantId, local, row, "", newMask));
+            }
+            default -> {
+                // Click outside any cell or on a non-popup cell while popup is open — close popup.
+                if (BlockVariantMenu.rotPopupRowIndex() >= 0) {
+                    BlockVariantMenu.closeRotPopup();
+                }
+            }
         }
+    }
+
+    private static VariantRotation.Mode decodeMode(byte raw) {
+        int ord = raw & 0xFF;
+        VariantRotation.Mode[] values = VariantRotation.Mode.values();
+        if (ord < 0 || ord >= values.length) return VariantRotation.Mode.RANDOM;
+        return values[ord];
+    }
+
+    /**
+     * Cycle to the next valid bit for LOCK mode. Walks Direction.ordinal()
+     * starting after the currently-set bit so repeated clicks move through
+     * the property's allowed directions in order. Wraps around.
+     */
+    private static int nextLockBit(int currentMask, int validMask) {
+        if (validMask == 0) return 0;
+        int currentOrd = currentMask == 0 ? -1 : Integer.numberOfTrailingZeros(currentMask);
+        for (int step = 1; step <= 6; step++) {
+            int probe = (currentOrd + step) % 6;
+            int bit = 1 << probe;
+            if ((validMask & bit) != 0) return bit;
+        }
+        return Integer.lowestOneBit(validMask);
     }
 
     private static void dispatchSearch(BlockVariantMenu.Hit hit) {
