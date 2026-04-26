@@ -106,6 +106,7 @@ public final class CarriageVariantPartsStore {
         }
         CACHE.put(variant.id(), Optional.of(assignment));
         LOGGER.info("[DungeonTrain] Saved parts assignment for {} to {}", variant.id(), file);
+        trySaveToSource(variant, assignment);
     }
 
     public static synchronized void saveToSource(CarriageType type, CarriagePartAssignment assignment) throws IOException {
@@ -126,7 +127,48 @@ public final class CarriageVariantPartsStore {
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(variant.id(), Optional.empty());
         if (existed) LOGGER.info("[DungeonTrain] Deleted parts assignment for {} ({})", variant.id(), file);
+        tryDeleteFromSource(variant);
         return existed;
+    }
+
+    /**
+     * Best-effort source-tree write invoked from {@link #save}. Silent no-op
+     * outside dev mode (production installs have no writable
+     * {@code src/main/resources/}) or for non-builtin variants (custom
+     * carriages have no bundled-resource home). Warn-level log on dev-mode
+     * failures so the config write isn't masked by a source-tree problem.
+     * Mirrors {@link games.brennan.dungeontrain.train.CarriageWeights#trySaveToSource}.
+     */
+    private static void trySaveToSource(CarriageVariant variant, CarriagePartAssignment assignment) {
+        if (!sourceTreeAvailable()) return;
+        if (!(variant instanceof CarriageVariant.Builtin b)) return;
+        try {
+            saveToSource(b.type(), assignment);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to write bundled parts assignment for {} to source tree: {} (config write succeeded).",
+                variant.id(), e.toString());
+        }
+    }
+
+    /**
+     * Best-effort source-tree delete invoked from {@link #delete}. Removes the
+     * promoted {@code <type>.parts.json} so a Clear from the in-game menu also
+     * propagates to the bundled copy in dev — otherwise the next load tier
+     * would fall back to the stale promoted bundled file. Silent no-op outside
+     * dev mode or for non-builtin variants.
+     */
+    private static void tryDeleteFromSource(CarriageVariant variant) {
+        if (!sourceTreeAvailable()) return;
+        if (!(variant instanceof CarriageVariant.Builtin b)) return;
+        try {
+            Path file = sourceFileFor(b.type());
+            if (Files.deleteIfExists(file)) {
+                LOGGER.info("[DungeonTrain] Deleted bundled parts assignment {} (devmode promote).", file);
+            }
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to delete bundled parts assignment for {} from source tree: {} (config delete succeeded).",
+                variant.id(), e.toString());
+        }
     }
 
     public static boolean exists(CarriageVariant variant) {

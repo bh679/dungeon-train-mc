@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "floor": [
+    {
+      "name": "cracked",
+      "weight": 1
+    },
+    {
+      "name": "wood",
+      "weight": 6
+    }
+  ],
+  "walls": [
+    {
+      "name": "cracked",
+      "weight": 1
+    },
+    {
+      "name": "standard",
+      "weight": 6
+    }
+  ],
+  "roof": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "doors": [
+    {
+      "name": "irondoor",
+      "weight": 1
+    },
+    {
+      "name": "standard",
+      "weight": 10
+    },
+    {
+      "name": "wooddoor",
+      "weight": 3
+    }
+  ]
+}
