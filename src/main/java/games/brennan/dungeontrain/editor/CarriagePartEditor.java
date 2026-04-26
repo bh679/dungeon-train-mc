@@ -78,7 +78,7 @@ public final class CarriagePartEditor {
      */
     private static final int PLOT_GAP = 5;
 
-    private static final BlockState OUTLINE_BLOCK = Blocks.BARRIER.defaultBlockState();
+    private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     /** (kind, current-name) the player is editing. Empty when the player has never entered a part plot in this session. */
     public record PartSession(CarriagePartKind kind, String name) {}
