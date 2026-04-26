@@ -16,14 +16,17 @@ import java.util.function.Supplier;
  * <p>{@code op} encodes the action; {@code name} is the entry being
  * targeted ({@code ""} for {@link Op#CLEAR}); {@code delta} is the
  * weight change (only used by {@link Op#BUMP_WEIGHT}, typically +1 or
- * -1). The server validates that the player is actually OP and is
+ * -1). {@link Op#PREVIEW_ENTRY} re-stamps the named variant's template
+ * at the placement under the player's crosshair — assignment list,
+ * weights, and side-mode chips are untouched (transient world-only
+ * effect). The server validates that the player is actually OP and is
  * standing inside the carriage variant's editor plot before mutating —
  * matches the existing slash-command authorisation model.</p>
  */
 public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind kind,
                                        String name, int delta) {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());

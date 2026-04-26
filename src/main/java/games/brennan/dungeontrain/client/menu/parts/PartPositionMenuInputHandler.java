@@ -189,6 +189,13 @@ public final class PartPositionMenuInputHandler {
                 DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.CYCLE_SIDE_MODE, variantId, kind, name, 0));
             }
+            case ENTRY_NAME -> {
+                List<WeightedName> entries = PartPositionMenu.entries();
+                if (hit.index() < 0 || hit.index() >= entries.size()) return;
+                String name = entries.get(hit.index()).name();
+                DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
+                    PartAssignmentEditPacket.Op.PREVIEW_ENTRY, variantId, kind, name, 0));
+            }
             default -> {}
         }
     }
