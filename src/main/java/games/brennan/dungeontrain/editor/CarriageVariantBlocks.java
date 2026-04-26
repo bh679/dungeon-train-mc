@@ -450,6 +450,14 @@ public final class CarriageVariantBlocks {
         }
     }
 
+    /**
+     * Snapshot of every {@code (localPos, lockId)} pair with {@code lockId > 0}.
+     * Returned map is a defensive copy — callers may iterate freely.
+     */
+    public synchronized Map<BlockPos, Integer> allLockIds() {
+        return new LinkedHashMap<>(lockIds);
+    }
+
     /** Positions in this sidecar that share the given lock-id. Empty for {@code lockId == 0}. */
     public synchronized java.util.Set<BlockPos> positionsWithLockId(int lockId) {
         if (lockId <= 0) return java.util.Set.of();

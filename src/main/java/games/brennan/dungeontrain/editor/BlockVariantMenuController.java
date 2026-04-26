@@ -290,6 +290,13 @@ public final class BlockVariantMenuController {
             // Fall through — still re-sync so the client reflects committed state.
         }
 
+        // CLEAR / REMOVE-to-empty drop the cell, which also drops its
+        // lockId (CarriageVariantBlocks.remove). Refresh the all-faces
+        // lock-id overlay so the badges disappear immediately.
+        if (dropCell) {
+            VariantOverlayRenderer.pushLockIdSnapshot(player);
+        }
+
         if (dropCell) {
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
@@ -329,6 +336,10 @@ public final class BlockVariantMenuController {
                 plot.key(), e.toString());
             actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
         }
+        // Refresh the all-faces lock-id overlay immediately so the player
+        // sees the badge appear/disappear without waiting for the next
+        // VariantOverlayRenderer tick.
+        VariantOverlayRenderer.pushLockIdSnapshot(player);
         // Re-sync.
         HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
         Direction face = Direction.UP;

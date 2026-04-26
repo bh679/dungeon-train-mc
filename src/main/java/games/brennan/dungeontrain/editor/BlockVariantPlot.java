@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Common API over the four block-variant sidecar types so the
@@ -72,6 +73,13 @@ public interface BlockVariantPlot {
 
     /** Positions in this plot sharing the given lock-id. Empty for {@code lockId == 0}. */
     java.util.Set<BlockPos> positionsWithLockId(int lockId);
+
+    /**
+     * Snapshot of every {@code (localPos, lockId)} pair in this plot with
+     * {@code lockId > 0}. Defensive copy — callers may iterate freely. Used
+     * by the lock-id all-faces overlay to enumerate which cells need labels.
+     */
+    Map<BlockPos, Integer> allLockIds();
 
     /**
      * Smallest positive integer not currently used by any cell in this
@@ -169,6 +177,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 
@@ -196,6 +205,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 
@@ -225,6 +235,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 
@@ -254,6 +265,7 @@ public interface BlockVariantPlot {
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
+        @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
     }
 }

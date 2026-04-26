@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.item;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -23,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 
@@ -112,8 +114,30 @@ public final class VariantClipboardItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        // Place the empty-placeholder sentinel.
-        serverLevel.setBlock(placePos, Blocks.COMMAND_BLOCK.defaultBlockState(), 3);
+        // Match the source cell's appearance: place the first variant's
+        // BlockState (with NBT if present) so the pasted placeholder reads
+        // the same as the original. The empty-placeholder sentinel is kept
+        // as a vanilla command block so the "leave empty at spawn" cell
+        // type stays visible. Mirrors the Add-on-empty-cell path that
+        // captures the player's placed base block as the first variant
+        // without replacing the world block.
+        VariantState first = states.get(0);
+        boolean firstIsSentinel = CarriageVariantBlocks.isEmptyPlaceholder(first.state());
+        BlockState placeholderState = firstIsSentinel
+            ? Blocks.COMMAND_BLOCK.defaultBlockState()
+            : first.state();
+        serverLevel.setBlock(placePos, placeholderState, 3);
+        if (!firstIsSentinel && first.hasBlockEntityData()) {
+            BlockEntity be = serverLevel.getBlockEntity(placePos);
+            if (be != null) {
+                CompoundTag merged = first.blockEntityNbt().copy();
+                merged.putInt("x", placePos.getX());
+                merged.putInt("y", placePos.getY());
+                merged.putInt("z", placePos.getZ());
+                be.load(merged);
+                be.setChanged();
+            }
+        }
 
         // Write to the sidecar (states first, then lockId so setLockId's
         // "cell must exist" precondition is satisfied).
@@ -127,6 +151,12 @@ public final class VariantClipboardItem extends Item {
             LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
             sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
             return InteractionResult.FAIL;
+        }
+
+        // Refresh the all-faces lock-id overlay so the new badge shows
+        // immediately without waiting for the next overlay tick.
+        if (lockId > 0) {
+            VariantOverlayRenderer.pushLockIdSnapshot(player);
         }
 
         String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";

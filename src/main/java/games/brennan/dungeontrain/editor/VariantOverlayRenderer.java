@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
@@ -97,6 +98,14 @@ public final class VariantOverlayRenderer {
     /** Re-emit the action-bar message at this cadence so Minecraft's ~60-tick fade never wins while hovering. */
     private static final int PART_HOVER_RESEND_TICKS = 10;
 
+    /**
+     * Per-player dedup key for the lock-id snapshot push — encodes
+     * {@code plotKey + each (localPos, lockId)} sorted. {@code null} or
+     * absent means "last sent was an empty snapshot (or none yet)", so a
+     * fresh non-empty plot always pushes on first tick.
+     */
+    private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -124,6 +133,10 @@ public final class VariantOverlayRenderer {
         LAST_PART_HOVER.remove(player.getUUID());
         LAST_PART_HOVER_TICK.remove(player.getUUID());
         PartPositionMenuController.forget(player);
+        // Clear the client lock-id overlay too — player has left every plot.
+        if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
+        }
     }
 
     /**
@@ -142,6 +155,7 @@ public final class VariantOverlayRenderer {
 
         for (ServerPlayer player : players) {
             updateEditorStatus(player, dims);
+            pushLockIdSnapshot(player);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -386,6 +400,70 @@ public final class VariantOverlayRenderer {
         if (LAST_HOVER_POS.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
         }
+    }
+
+    /**
+     * Push a {@link BlockVariantLockIdsPacket} to {@code player} reflecting
+     * every locked cell in their current editor plot. Dedups against the
+     * last-sent snapshot via {@link #LAST_LOCK_SNAPSHOT_KEY} — steady-state
+     * standing inside an unchanging plot generates zero packets after the
+     * first tick.
+     *
+     * <p>Call sites: every server tick from {@link #onLevelTick} (via
+     * {@code pushLockIdSnapshot(player)}); and immediately after any
+     * mutation that may change the plot's lock-id set
+     * ({@link BlockVariantMenuController#cycleLockId}, the REMOVE / CLEAR
+     * branches in {@link BlockVariantMenuController#applyEdit}, and the
+     * {@link games.brennan.dungeontrain.item.VariantClipboardItem#useOn paste path}).</p>
+     *
+     * <p>When the player isn't in any plot, sends the empty sentinel only
+     * if the previous snapshot was non-empty.</p>
+     */
+    public static void pushLockIdSnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        games.brennan.dungeontrain.train.CarriageDims dims =
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            if (LAST_LOCK_SNAPSHOT_KEY.remove(uuid) != null) {
+                DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
+            }
+            return;
+        }
+        java.util.Map<net.minecraft.core.BlockPos, Integer> locks = plot.allLockIds();
+
+        // Build a deterministic key for dedup: plotKey + each (x,y,z=lockId)
+        // pair sorted by position. Cheap and stable across reloads.
+        StringBuilder keyBuf = new StringBuilder(64);
+        keyBuf.append(plot.key()).append('|');
+        java.util.List<java.util.Map.Entry<net.minecraft.core.BlockPos, Integer>> sorted =
+            new java.util.ArrayList<>(locks.entrySet());
+        sorted.sort((a, b) -> {
+            int dx = Integer.compare(a.getKey().getX(), b.getKey().getX());
+            if (dx != 0) return dx;
+            int dy = Integer.compare(a.getKey().getY(), b.getKey().getY());
+            if (dy != 0) return dy;
+            return Integer.compare(a.getKey().getZ(), b.getKey().getZ());
+        });
+        for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> e : sorted) {
+            keyBuf.append(e.getKey().getX()).append(',')
+                  .append(e.getKey().getY()).append(',')
+                  .append(e.getKey().getZ()).append('=')
+                  .append(e.getValue()).append(';');
+        }
+        String snapshotKey = keyBuf.toString();
+        String prev = LAST_LOCK_SNAPSHOT_KEY.get(uuid);
+        if (snapshotKey.equals(prev)) return;
+
+        LAST_LOCK_SNAPSHOT_KEY.put(uuid, snapshotKey);
+        java.util.List<BlockVariantLockIdsPacket.Entry> entries =
+            new java.util.ArrayList<>(sorted.size());
+        for (java.util.Map.Entry<net.minecraft.core.BlockPos, Integer> e : sorted) {
+            entries.add(new BlockVariantLockIdsPacket.Entry(e.getKey(), e.getValue()));
+        }
+        DungeonTrainNet.sendTo(player,
+            new BlockVariantLockIdsPacket(plot.key(), plot.origin(), entries));
     }
 
     /**

@@ -265,6 +265,11 @@ public final class CarriageContentsVariantBlocks {
         return out;
     }
 
+    /** Snapshot of every {@code (localPos, lockId)} pair with {@code lockId > 0}. Defensive copy. */
+    public synchronized Map<BlockPos, Integer> allLockIds() {
+        return new LinkedHashMap<>(lockIds);
+    }
+
     public synchronized int nextFreeLockId() {
         java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
         int n = 1;
