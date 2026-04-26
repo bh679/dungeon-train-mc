@@ -77,7 +77,16 @@ public final class CarriageContentsStore {
      * {@link #sourceTreeAvailable()}.
      */
     public static Path sourceFileFor(CarriageContents contents) {
-        return sourceDirectory().resolve(contents.id() + EXT);
+        return sourceFileForId(contents.id());
+    }
+
+    /**
+     * Like {@link #sourceFileFor(CarriageContents)} but takes a raw id string
+     * — used by saveAs / rename flows to delete the outgoing-name source file
+     * without first having to materialise a {@link CarriageContents}.
+     */
+    public static Path sourceFileForId(String id) {
+        return sourceDirectory().resolve(id + EXT);
     }
 
     public static boolean sourceTreeAvailable() {

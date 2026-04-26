@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.PartAssignmentSyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.CarriagePartTemplate;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -269,6 +270,72 @@ public final class PartPositionMenuController {
     }
 
     /**
+     * Resolve which {@link CarriagePartKind.Placement} index the player's
+     * crosshair is currently on. Mirrors {@link #chosenPlacementOrigin}
+     * but returns the placement's list index instead of its origin offset.
+     * Used by the PREVIEW_ENTRY path to build a per-placement names list
+     * that targets a single side without disturbing the other.
+     */
+    private static int chosenPlacementIndex(
+        CarriagePartKind kind, CarriageDims dims, BlockPos hitLocal
+    ) {
+        return switch (kind) {
+            case FLOOR, ROOF -> 0;
+            case WALLS -> {
+                int hz = hitLocal == null ? 0 : hitLocal.getZ();
+                yield hz <= 0 ? 0 : 1;
+            }
+            case DOORS -> {
+                int hx = hitLocal == null ? 0 : hitLocal.getX();
+                yield hx <= 0 ? 0 : 1;
+            }
+        };
+    }
+
+    /**
+     * Re-stamp {@code name}'s template at the placement under the player's
+     * crosshair. The other placements (for two-placement kinds) are passed
+     * the {@link CarriagePartKind#NONE} sentinel so
+     * {@link CarriagePartTemplate#placeAtPerPlacement} skips them and
+     * leaves the existing stamp in place.
+     *
+     * <p>Seed 0 / carriageIndex 0 matches
+     * {@link CarriageEditor#stampPlot}'s deterministic editor stamp, so
+     * any {@code CarriagePartVariantBlocks} sidecar overlay lands on the
+     * same picks the editor uses on plot entry.</p>
+     *
+     * <p>No assignment mutation — the on-disk parts assignment is
+     * unchanged. Unknown names return silently; client can be slightly
+     * stale after registry reloads.</p>
+     */
+    private static void previewEntry(net.minecraft.server.level.ServerLevel level,
+                                     ServerPlayer player, CarriageVariant variant,
+                                     CarriageDims dims, CarriagePartKind kind, String name) {
+        if (!CarriagePartRegistry.isKnown(kind, name)) {
+            LOGGER.warn("[DungeonTrain] PartMenu PREVIEW_ENTRY rejected: '{}' not a registered {} part",
+                name, kind.id());
+            return;
+        }
+
+        BlockPos plotOrigin = CarriageEditor.plotOrigin(variant, dims);
+        if (plotOrigin == null) return;
+
+        BlockPos hitLocal = null;
+        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
+        if (hit instanceof BlockHitResult b && b.getType() != HitResult.Type.MISS) {
+            hitLocal = b.getBlockPos().subtract(plotOrigin);
+        }
+        int targetIndex = chosenPlacementIndex(kind, dims, hitLocal);
+
+        List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        java.util.ArrayList<String> names = new java.util.ArrayList<>(placements.size());
+        for (int i = 0; i < placements.size(); i++) {
+            names.add(i == targetIndex ? name : CarriagePartKind.NONE);
+        }
+        CarriagePartTemplate.placeAtPerPlacement(level, plotOrigin, kind, names, dims, 0L, 0);
+    }
+
+    /**
      * Apply a {@link PartAssignmentEditPacket} mutation. Authorisation:
      * the player must be OP (matches the existing slash-command policy)
      * and must be standing inside {@code variantId}'s editor plot — so
@@ -289,6 +356,14 @@ public final class PartPositionMenuController {
         if (standingIn == null || !standingIn.id().equals(packet.variantId())) {
             LOGGER.warn("[DungeonTrain] PartMenu edit rejected: player {} not in plot for '{}'",
                 player.getName().getString(), packet.variantId());
+            return;
+        }
+
+        // PREVIEW_ENTRY: re-stamp the named variant's template at the
+        // placement under the player's crosshair. Pure visual swap — no
+        // assignment mutation, no save, no re-sync.
+        if (packet.op() == PartAssignmentEditPacket.Op.PREVIEW_ENTRY) {
+            previewEntry(overworld, player, standingIn, dims, packet.kind(), packet.name());
             return;
         }
 
@@ -318,6 +393,9 @@ public final class PartPositionMenuController {
                 List.of(CarriagePartAssignment.WeightedName.of(CarriagePartKind.NONE)));
             case BUMP_WEIGHT -> current.withWeight(packet.kind(), packet.name(), packet.delta());
             case CYCLE_SIDE_MODE -> current.cycleSideMode(packet.kind(), packet.name());
+            // Unreachable — PREVIEW_ENTRY is handled by an early return above.
+            // Kept here so the switch stays exhaustive over the Op enum.
+            case PREVIEW_ENTRY -> current;
         };
 
         BlockPos plotOrigin = CarriageEditor.plotOrigin(standingIn, dims);

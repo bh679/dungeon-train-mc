@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
@@ -30,8 +31,11 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Server-side driver for the block-variant world-space menu. Tap-Z opens
@@ -59,10 +63,32 @@ public final class BlockVariantMenuController {
     /** Cap on entries per cell — matches the JSON sidecar's practical limit. */
     public static final int MAX_ENTRIES = 32;
 
+    /**
+     * Per-player record of the currently-open menu's anchor face + up-axis.
+     * Lets subsequent re-syncs (after a button click) reuse both the
+     * originally picked face and the originally computed up direction,
+     * so the panel neither jumps to a wrapping side face nor rotates to
+     * track the player's current look angle.
+     */
+    private record OpenMenu(String variantId, BlockPos localPos, Direction face, Vec3 up) {}
+
+    private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
+
     private BlockVariantMenuController() {}
+
+    /** Per-player exit reset — drop the tracked anchor face. */
+    public static void forget(ServerPlayer player) {
+        OPEN.remove(player.getUUID());
+    }
+
+    /** Per-server-stop reset. */
+    public static void clearAll() {
+        OPEN.clear();
+    }
 
     public static void toggle(ServerPlayer player, boolean open) {
         if (!open) {
+            OPEN.remove(player.getUUID());
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
         }
@@ -97,7 +123,24 @@ public final class BlockVariantMenuController {
         BlockPos clampedLocal = clampToFootprint(localPos, plot);
         BlockPos clampedWorld = plot.origin().offset(clampedLocal);
 
-        sendSync(player, plot, clampedLocal, clampedWorld, bhit.getDirection());
+        Direction face = bhit.getDirection();
+        Vec3 up = computeUp(face, player);
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up));
+        sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+    }
+
+    /**
+     * Compute the menu's up-axis for {@code face}: vertical faces snap to
+     * the player's current horizontal look so the panel reads the right way
+     * up; non-vertical faces use world up. Captured once at open time and
+     * frozen in {@link OpenMenu#up()} so re-syncs don't rotate the panel.
+     */
+    private static Vec3 computeUp(Direction face, Player player) {
+        if (face.getAxis() != Direction.Axis.Y) return new Vec3(0, 1, 0);
+        Vec3 look = player.getLookAngle();
+        Vec3 horizontal = new Vec3(look.x, 0, look.z);
+        if (horizontal.lengthSqr() < 1.0e-6) horizontal = new Vec3(0, 0, 1);
+        return horizontal.normalize();
     }
 
     /** Clamp each axis of {@code localPos} into {@code [0, footprint)} so cell lookup always lands on a real cell. */
@@ -111,18 +154,19 @@ public final class BlockVariantMenuController {
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
     private static void sendSync(ServerPlayer player, BlockVariantPlot plot,
-                                 BlockPos localPos, BlockPos worldPos, Direction face) {
+                                 BlockPos localPos, BlockPos worldPos,
+                                 Direction face, Vec3 up) {
         List<VariantState> states = plot.statesAt(localPos);
         if (states == null) states = List.of();
         int lockId = plot.lockIdAt(localPos);
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, states, lockId, player));
+            buildSyncPacket(plot, localPos, worldPos, face, up, states, lockId));
     }
 
-    /** Compose the sync packet payload — anchor on the targeted face, billboarded toward the player. */
+    /** Compose the sync packet payload — anchor on the targeted face with the supplied (frozen) up axis. */
     private static BlockVariantSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
-        Direction face, List<VariantState> states, int lockId, Player player
+        Direction face, Vec3 up, List<VariantState> states, int lockId
     ) {
         Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
         Vec3 faceCentre = new Vec3(
@@ -131,15 +175,6 @@ public final class BlockVariantMenuController {
             worldPos.getZ() + 0.5 + face.getStepZ() * 0.5);
         Vec3 anchor = faceCentre.add(normal.scale(0.02));
 
-        Vec3 up;
-        if (face.getAxis() == Direction.Axis.Y) {
-            Vec3 look = player.getLookAngle();
-            Vec3 horizontal = new Vec3(look.x, 0, look.z);
-            if (horizontal.lengthSqr() < 1.0e-6) horizontal = new Vec3(0, 0, 1);
-            up = horizontal.normalize();
-        } else {
-            up = new Vec3(0, 1, 0);
-        }
         Vec3 right = up.cross(normal).normalize();
 
         List<BlockVariantSyncPacket.Entry> entries = new ArrayList<>(states.size());
@@ -184,6 +219,10 @@ public final class BlockVariantMenuController {
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
             handleCopy(player, plot, localPos);
+            return;
+        }
+        if (packet.op() == BlockVariantEditPacket.Op.PREVIEW_ENTRY) {
+            previewEntry(level, plot, localPos, packet.entryIndex());
             return;
         }
 
@@ -336,19 +375,37 @@ public final class BlockVariantMenuController {
         }
 
         if (dropCell) {
+            OPEN.remove(player.getUUID());
             DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
             return;
         }
 
-        // Re-sync the targeted cell.
-        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
-        Direction face = Direction.UP;
-        BlockPos worldPos = plot.origin().offset(localPos);
-        if (hit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS
-            && bhit.getBlockPos().equals(worldPos)) {
-            face = bhit.getDirection();
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Re-sync the targeted cell using the face the menu was originally
+     * anchored to (looked up in {@link #OPEN}). Avoids re-running
+     * {@code player.pick(...)} — which would let the panel pop onto a
+     * wrapping side face when the billboarded panel extends past the
+     * block edge.
+     */
+    private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot,
+                                       BlockPos localPos) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        Direction face;
+        Vec3 up;
+        if (open != null
+            && open.variantId().equals(plot.key())
+            && open.localPos().equals(localPos)) {
+            face = open.face();
+            up = open.up();
+        } else {
+            face = Direction.UP;
+            up = computeUp(face, player);
         }
-        sendSync(player, plot, localPos, worldPos, face);
+        BlockPos worldPos = plot.origin().offset(localPos);
+        sendSync(player, plot, localPos, worldPos, face, up);
     }
 
     /**
@@ -378,15 +435,35 @@ public final class BlockVariantMenuController {
         // sees the badge appear/disappear without waiting for the next
         // VariantOverlayRenderer tick.
         VariantOverlayRenderer.pushLockIdSnapshot(player);
-        // Re-sync.
-        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
-        Direction face = Direction.UP;
-        BlockPos worldPos = plot.origin().offset(localPos);
-        if (hit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS
-            && bhit.getBlockPos().equals(worldPos)) {
-            face = bhit.getDirection();
+        resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * PREVIEW_ENTRY: replace the world block at {@code localPos} (and any
+     * lock-group siblings) with the entry at {@code entryIndex}. The
+     * sidecar — state list, weights, lockId — is untouched. Lock-group
+     * propagation matches spawn-time semantics: a locked group rolls one
+     * index and renders the same state across all sibling cells, so the
+     * editor preview must match.
+     *
+     * <p>Out-of-range indices and missing cells return silently; the
+     * client can be slightly stale relative to the sidecar.</p>
+     */
+    private static void previewEntry(ServerLevel level, BlockVariantPlot plot,
+                                     BlockPos localPos, int entryIndex) {
+        List<VariantState> current = plot.statesAt(localPos);
+        if (current == null) return;
+        if (entryIndex < 0 || entryIndex >= current.size()) return;
+        VariantState picked = current.get(entryIndex);
+
+        int lockId = plot.lockIdAt(localPos);
+        Set<BlockPos> targets = lockId > 0 ? plot.positionsWithLockId(lockId) : Set.of(localPos);
+        if (targets.isEmpty()) targets = Set.of(localPos);
+
+        for (BlockPos target : targets) {
+            BlockPos worldPos = plot.origin().offset(target);
+            SilentBlockOps.setBlockSilent(level, worldPos, picked.state(), picked.blockEntityNbt());
         }
-        sendSync(player, plot, localPos, worldPos, face);
     }
 
     /** COPY: build a clipboard ItemStack capturing the cell's states + lockId. */

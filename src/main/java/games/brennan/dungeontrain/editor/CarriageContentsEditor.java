@@ -202,6 +202,13 @@ public final class CarriageContentsEditor {
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
             CarriageContentsStore.saveToSource(contents, template);
+            // Promote the variants sidecar too — without this, shift-right-click
+            // variant authoring stayed in run/config and was lost on worktree
+            // delete (the bug PR #79's vase update silently shipped without).
+            net.minecraft.core.Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+            CarriageContentsVariantBlocks sidecar =
+                CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+            sidecar.saveToSource(contents);
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Contents editor save: source write failed for {}: {}", contents.id(), e.toString());
@@ -310,27 +317,54 @@ public final class CarriageContentsEditor {
 
         StructureTemplate template = CarriageContentsTemplate.captureTemplate(overworld, origin, dims);
 
+        String oldId;
         if (current instanceof CarriageContents.Custom currentCustom) {
             if (!CarriageContentsRegistry.register(renamed)) {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
             }
+            oldId = currentCustom.name();
             CarriageContentsStore.save(renamed, template);
-            CarriageContentsVariantBlocks.rename(currentCustom.name(), renamed.id());
-            CarriageContentsRegistry.unregister(currentCustom.name());
+            CarriageContentsVariantBlocks.rename(oldId, renamed.id());
+            CarriageContentsRegistry.unregister(oldId);
             CarriageContentsStore.delete(currentCustom);
-            CarriageContentsVariantBlocks.invalidate(currentCustom.name());
+            CarriageContentsVariantBlocks.invalidate(oldId);
             LOGGER.info("[DungeonTrain] Contents editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
-                player.getName().getString(), currentCustom.name(), renamed.id());
+                player.getName().getString(), oldId, renamed.id());
         } else if (current instanceof CarriageContents.Builtin builtin) {
             if (!CarriageContentsRegistry.register(renamed)) {
                 throw new IOException("Name '" + renamed.id() + "' is already taken.");
             }
+            oldId = builtin.id();
             CarriageContentsStore.save(renamed, template);
-            CarriageContentsVariantBlocks.rename(builtin.id(), renamed.id());
+            CarriageContentsVariantBlocks.rename(oldId, renamed.id());
             CarriageContentsStore.delete(builtin);
-            CarriageContentsVariantBlocks.invalidate(builtin.id());
+            CarriageContentsVariantBlocks.invalidate(oldId);
             LOGGER.info("[DungeonTrain] Contents editor saveAs (builtin→custom): {} saved edits of '{}' as new custom '{}', built-in reverts to fallback",
-                player.getName().getString(), builtin.id(), renamed.id());
+                player.getName().getString(), oldId, renamed.id());
+        } else {
+            return renamed;
+        }
+
+        // Dev-mode write-through: ship the renamed template + sidecar in the
+        // next build, and delete the outgoing-name source files so the rename
+        // doesn't leave a stale bundled resource. Soft-fail on any source-tree
+        // error — config-dir state is the source of truth.
+        if (EditorDevMode.isEnabled()) {
+            try {
+                CarriageContentsStore.saveToSource(renamed, template);
+                net.minecraft.core.Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+                CarriageContentsVariantBlocks newSidecar =
+                    CarriageContentsVariantBlocks.loadFor(renamed, interiorSize);
+                newSidecar.saveToSource(renamed);
+
+                java.nio.file.Path oldNbtSrc = CarriageContentsStore.sourceFileForId(oldId);
+                java.nio.file.Files.deleteIfExists(oldNbtSrc);
+                java.nio.file.Path oldVariantsSrc = CarriageContentsVariantBlocks.sourcePathForId(oldId);
+                if (oldVariantsSrc != null) java.nio.file.Files.deleteIfExists(oldVariantsSrc);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Contents editor saveAs: source write/delete failed for {} -> {}: {}",
+                    oldId, renamed.id(), e.toString());
+            }
         }
 
         return renamed;

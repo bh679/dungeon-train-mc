@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -10,6 +11,7 @@ import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -39,6 +41,8 @@ import java.util.Map;
  * the same plot return the same key.</p>
  */
 public interface BlockVariantPlot {
+
+    Logger LOGGER = LogUtils.getLogger();
 
     /** Stable string key — see class docstring for format. */
     String key();
@@ -173,7 +177,21 @@ public interface BlockVariantPlot {
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
-        @Override public void save() throws IOException { sidecar.save(variant); }
+        @Override public void save() throws IOException {
+            sidecar.save(variant);
+            // Dev-mode write-through: shift-right-click edits should ship in
+            // the next build, not stay trapped in run/config. Mirrors PR #75
+            // for part-assignments. Built-in only — custom variants live in
+            // config alone. Source-tree errors are best-effort.
+            if (EditorDevMode.isEnabled() && variant instanceof CarriageVariant.Builtin builtin) {
+                try {
+                    sidecar.saveToSource(builtin.type());
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for carriage {}: {}",
+                        variant.id(), e.toString());
+                }
+            }
+        }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
@@ -201,7 +219,17 @@ public interface BlockVariantPlot {
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
-        @Override public void save() throws IOException { sidecar.save(contents); }
+        @Override public void save() throws IOException {
+            sidecar.save(contents);
+            if (EditorDevMode.isEnabled()) {
+                try {
+                    sidecar.saveToSource(contents);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for contents {}: {}",
+                        contents.id(), e.toString());
+                }
+            }
+        }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
@@ -231,7 +259,17 @@ public interface BlockVariantPlot {
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
-        @Override public void save() throws IOException { sidecar.save(kind, name); }
+        @Override public void save() throws IOException {
+            sidecar.save(kind, name);
+            if (EditorDevMode.isEnabled()) {
+                try {
+                    sidecar.saveToSource(kind, name);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for part {}:{}: {}",
+                        kind.id(), name, e.toString());
+                }
+            }
+        }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
@@ -261,7 +299,17 @@ public interface BlockVariantPlot {
         @Override public List<VariantState> statesAt(BlockPos l) { return sidecar.statesAt(l); }
         @Override public void put(BlockPos l, List<VariantState> s) { sidecar.put(l, s); }
         @Override public boolean remove(BlockPos l) { return sidecar.remove(l); }
-        @Override public void save() throws IOException { sidecar.save(kind, name); }
+        @Override public void save() throws IOException {
+            sidecar.save(kind, name);
+            if (EditorDevMode.isEnabled()) {
+                try {
+                    sidecar.saveToSource(kind, name);
+                } catch (IOException e) {
+                    LOGGER.warn("[DungeonTrain] BlockVariantPlot: source write failed for track {}:{}: {}",
+                        kind.id(), name, e.toString());
+                }
+            }
+        }
         @Override public int lockIdAt(BlockPos l) { return sidecar.lockIdAt(l); }
         @Override public void setLockId(BlockPos l, int id) { sidecar.setLockId(l, id); }
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
