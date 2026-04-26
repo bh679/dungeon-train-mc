@@ -134,11 +134,6 @@ tasks.named('test', Test).configure {
     testLogging {
         events 'passed', 'skipped', 'failed'
     }
-    // Forward opt-in flags for resource-generator tests (e.g.
-    // AdjunctStairsBundledGenTool) so a regular `:test` run doesn't clobber
-    // committed resources, while `-Dgenerate-adjunct-stairs=true` does.
-    systemProperty 'generate-adjunct-stairs',
-        System.getProperty('generate-adjunct-stairs', 'false')
 }
 
 // Resolve the current git branch at configuration time so it can be baked into
