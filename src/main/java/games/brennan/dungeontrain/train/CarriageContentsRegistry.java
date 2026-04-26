@@ -1,12 +1,10 @@
 package games.brennan.dungeontrain.train;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
+import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.core.BlockPos;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
@@ -15,9 +13,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +22,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -69,8 +65,8 @@ public final class CarriageContentsRegistry {
     /** Sorted custom contents names. Mutations go through register/unregister/reload. */
     private static final TreeSet<String> CUSTOMS = new TreeSet<>();
 
-    /** Classpath location of the shipped-customs manifest. */
-    static final String BUNDLED_MANIFEST_RESOURCE = "/data/dungeontrain/contents/customs.json";
+    /** Classpath prefix for shipped contents NBTs (and the legacy customs manifest). */
+    static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/contents/";
 
     private CarriageContentsRegistry() {}
 
@@ -183,40 +179,41 @@ public final class CarriageContentsRegistry {
         }
     }
 
-    /** Reload custom contents from the bundled manifest + the per-install config dir. */
+    /** Reload custom contents from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
         CUSTOMS.clear();
-        int bundled = loadBundledManifest();
+        int bundled = loadBundledScan();
         int config = loadConfigDir();
 
         LOGGER.info("[DungeonTrain] Carriage contents registry loaded — {} built-in + {} custom ({} bundled, {} config)",
             BUILTINS.size(), CUSTOMS.size(), bundled, config);
     }
 
-    private static int loadBundledManifest() {
-        try (InputStream in = CarriageContentsRegistry.class.getResourceAsStream(BUNDLED_MANIFEST_RESOURCE)) {
-            if (in == null) return 0;
-            JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            if (!root.isJsonArray()) {
-                LOGGER.warn("[DungeonTrain] {} is not a JSON array — ignoring", BUNDLED_MANIFEST_RESOURCE);
-                return 0;
-            }
-            JsonArray arr = root.getAsJsonArray();
-            int added = 0;
-            for (JsonElement el : arr) {
-                if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) {
-                    LOGGER.warn("[DungeonTrain] Skipping non-string contents manifest entry: {}", el);
-                    continue;
-                }
-                String id = el.getAsString().toLowerCase(Locale.ROOT);
-                if (!acceptCustomId(id, "bundled contents manifest")) continue;
-                if (CUSTOMS.add(id)) added++;
-            }
-            return added;
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled contents manifest {}: {}", BUNDLED_MANIFEST_RESOURCE, e.toString());
-            return 0;
+    /**
+     * Discover bundled custom contents by scanning the classpath at
+     * {@link #BUNDLED_RESOURCE_PREFIX} for {@code .nbt} files. Built-in
+     * contents (e.g. {@code default.nbt}) are filtered out via
+     * {@link CarriageContents#isReservedBuiltinName} so they don't enter
+     * {@link #CUSTOMS} or generate spurious drift warnings against the
+     * legacy {@code customs.json}.
+     */
+    private static int loadBundledScan() {
+        Set<String> scanned = BundledNbtScanner.scanBasenames(
+            CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER);
+        TreeSet<String> customsScanned = new TreeSet<>();
+        for (String id : scanned) {
+            if (CarriageContents.isReservedBuiltinName(id)) continue;
+            customsScanned.add(id);
         }
+        Set<String> manifest = BundledNbtScanner.readManifestBasenames(
+            CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, "customs.json", LOGGER);
+        BundledNbtScanner.warnDrift("contents", customsScanned, manifest, LOGGER);
+        int added = 0;
+        for (String id : customsScanned) {
+            if (!acceptCustomId(id, "bundled scan")) continue;
+            if (CUSTOMS.add(id)) added++;
+        }
+        return added;
     }
 
     private static int loadConfigDir() {
