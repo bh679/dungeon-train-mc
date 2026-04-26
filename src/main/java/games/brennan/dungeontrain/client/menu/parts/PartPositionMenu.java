@@ -159,13 +159,24 @@ public final class PartPositionMenu {
         searchBuffer = searchBuffer.substring(0, searchBuffer.length() - 1);
     }
 
-    /** Lowercase substring filter against {@link #registeredNames}. Empty buffer → all names. */
+    /**
+     * Lowercase substring filter against {@link #registeredNames}, with names
+     * already present in {@link #entries} excluded (the player can't add the
+     * same variant twice — server enforces this too). Empty buffer → all
+     * non-already-added names.
+     */
     public static List<String> filteredRegisteredNames() {
-        if (searchBuffer.isEmpty()) return registeredNames;
-        String needle = searchBuffer.toLowerCase(java.util.Locale.ROOT);
+        java.util.Set<String> alreadyAdded = new java.util.HashSet<>(entries.size());
+        for (WeightedName e : entries) alreadyAdded.add(e.name());
+        String needle = searchBuffer.isEmpty()
+            ? null
+            : searchBuffer.toLowerCase(java.util.Locale.ROOT);
         java.util.List<String> out = new java.util.ArrayList<>();
         for (String n : registeredNames) {
-            if (n.toLowerCase(java.util.Locale.ROOT).contains(needle)) out.add(n);
+            String lower = n.toLowerCase(java.util.Locale.ROOT);
+            if (alreadyAdded.contains(lower)) continue;
+            if (needle != null && !lower.contains(needle)) continue;
+            out.add(n);
         }
         return out;
     }
