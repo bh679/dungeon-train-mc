@@ -120,6 +120,7 @@ public record CarriageContentsWeights(Map<String, Integer> byId) {
         next.put(key, clamped);
         current = new CarriageContentsWeights(next);
         writeConfig(current);
+        trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Set carriage contents weight {}={} (persisted to {}).",
                 key, clamped, configPath());
         return clamped;
@@ -136,6 +137,7 @@ public record CarriageContentsWeights(Map<String, Integer> byId) {
         next.remove(key);
         current = new CarriageContentsWeights(next);
         writeConfig(current);
+        trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Cleared carriage contents weight override for {} (persisted to {}).",
                 key, configPath());
         return true;
@@ -195,6 +197,57 @@ public record CarriageContentsWeights(Map<String, Integer> byId) {
 
     public static Path configPath() {
         return FMLPaths.CONFIGDIR.get().resolve(CONFIG_SUBDIR).resolve(CONFIG_FILE);
+    }
+
+    /**
+     * Source-tree path for the bundled weights file (under
+     * {@code src/main/resources/data/dungeontrain/contents/}). Returns null
+     * outside dev mode.
+     */
+    public static Path sourceFile() {
+        Path resources = resourcesRootOrNull();
+        if (resources == null) return null;
+        return resources.resolve(BUNDLED_RESOURCE.substring(1));
+    }
+
+    public static boolean sourceTreeAvailable() {
+        Path resources = resourcesRootOrNull();
+        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+    }
+
+    /**
+     * Write {@code weights} to {@link #sourceFile()} so a dev's in-game tweak
+     * ships with the next build. Throws if the source tree isn't writable.
+     */
+    public static synchronized void saveToSource(CarriageContentsWeights weights) throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path file = sourceFile();
+        Files.createDirectories(file.getParent());
+        Map<String, Integer> sorted = new TreeMap<>(weights.byId());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled contents weights to {} (devmode promote).", file);
+    }
+
+    /** Best-effort source-tree write invoked from {@link #set} / {@link #unset}. */
+    private static void trySaveToSource(CarriageContentsWeights weights) {
+        if (!sourceTreeAvailable()) return;
+        try {
+            saveToSource(weights);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to write bundled contents weights to source tree: {} (config write succeeded).",
+                e.toString());
+        }
+    }
+
+    private static Path resourcesRootOrNull() {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path projectRoot = gameDir.getParent();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve("src/main/resources");
     }
 
     private static Integer parseWeight(String id, JsonElement el, boolean fromResource) {
