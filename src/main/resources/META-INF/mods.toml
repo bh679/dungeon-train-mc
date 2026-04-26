@@ -1,6 +1,7 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
+issueTrackerURL="https://github.com/bh679/dungeon-train-mc/issues"
 
 [[mods]]
 modId="${mod_id}"
@@ -8,6 +9,8 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
+displayURL="https://github.com/bh679/dungeon-train-mc"
+credits="Original game by Brennan Hatton (brennanhatton.itch.io/dungeontrain). Powered by Valkyrien Skies 2."
 logoFile="logo.png"
 
 [[dependencies.${mod_id}]]
@@ -29,6 +32,13 @@ logoFile="logo.png"
     mandatory=true
     versionRange="[2.4.0,)"
     ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="kotlinforforge"
+    mandatory=true
+    versionRange="[4.11.0,)"
+    ordering="NONE"
     side="BOTH"
 
 [[mixins]]
