@@ -266,6 +266,11 @@ public final class CarriagePartVariantBlocks {
         return out;
     }
 
+    /** Snapshot of every {@code (localPos, lockId)} pair with {@code lockId > 0}. Defensive copy. */
+    public synchronized Map<BlockPos, Integer> allLockIds() {
+        return new LinkedHashMap<>(lockIds);
+    }
+
     /** Smallest positive integer not currently used as a lock-id. */
     public synchronized int nextFreeLockId() {
         java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
