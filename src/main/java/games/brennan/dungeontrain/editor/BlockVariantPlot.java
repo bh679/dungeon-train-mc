@@ -80,12 +80,27 @@ public interface BlockVariantPlot {
      */
     int nextFreeLockId();
 
-    /** True when {@code localPos} is inside the footprint. */
+    /** True when {@code localPos} is strictly inside the footprint. Use for edit/paste paths that mutate the sidecar. */
     default boolean inBounds(BlockPos localPos) {
         Vec3i f = footprint();
         return localPos.getX() >= 0 && localPos.getX() < f.getX()
             && localPos.getY() >= 0 && localPos.getY() < f.getY()
             && localPos.getZ() >= 0 && localPos.getZ() < f.getZ();
+    }
+
+    /**
+     * True when {@code localPos} is inside the footprint plus a 1-block
+     * margin on every axis. Matches the tolerance used by
+     * {@link CarriagePartEditor#plotContaining} and the carriage / contents
+     * cage outlines, so clicking on a cage-wall block adjacent to the
+     * actual part still resolves a sensible cell. Used by the menu's open
+     * path; mutating ops still bounds-check via {@link #inBounds}.
+     */
+    default boolean inBoundsTolerant(BlockPos localPos) {
+        Vec3i f = footprint();
+        return localPos.getX() >= -1 && localPos.getX() <= f.getX()
+            && localPos.getY() >= -1 && localPos.getY() <= f.getY()
+            && localPos.getZ() >= -1 && localPos.getZ() <= f.getZ();
     }
 
     // ---------- Resolution ----------

@@ -86,12 +86,26 @@ public final class BlockVariantMenuController {
         }
         BlockPos worldPos = bhit.getBlockPos();
         BlockPos localPos = worldPos.subtract(plot.origin());
-        if (!plot.inBounds(localPos)) {
+        // Tolerant check (1-block cage margin) so clicking a cage wall
+        // adjacent to the part still opens the menu — clamp to in-bounds
+        // so we look up an actual cell, not the cage itself.
+        if (!plot.inBoundsTolerant(localPos)) {
             actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
             return;
         }
+        BlockPos clampedLocal = clampToFootprint(localPos, plot);
+        BlockPos clampedWorld = plot.origin().offset(clampedLocal);
 
-        sendSync(player, plot, localPos, worldPos, bhit.getDirection());
+        sendSync(player, plot, clampedLocal, clampedWorld, bhit.getDirection());
+    }
+
+    /** Clamp each axis of {@code localPos} into {@code [0, footprint)} so cell lookup always lands on a real cell. */
+    private static BlockPos clampToFootprint(BlockPos localPos, BlockVariantPlot plot) {
+        net.minecraft.core.Vec3i f = plot.footprint();
+        int x = Math.max(0, Math.min(f.getX() - 1, localPos.getX()));
+        int y = Math.max(0, Math.min(f.getY() - 1, localPos.getY()));
+        int z = Math.max(0, Math.min(f.getZ() - 1, localPos.getZ()));
+        return new BlockPos(x, y, z);
     }
 
     /** Compose + send the sync packet for the cell at {@code localPos}. */
@@ -178,13 +192,23 @@ public final class BlockVariantMenuController {
         switch (packet.op()) {
             case ADD -> {
                 ItemStack held = player.getMainHandItem();
-                if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) {
-                    actionBar(player, "Hold a block in your main hand to add it as a variant",
+                BlockState capturedState;
+                CompoundTag itemBeNbt;
+                if (held.isEmpty()) {
+                    // Empty hand → add the empty-placeholder sentinel.
+                    // CarriageVariantBlocks.isEmptyPlaceholder translates this
+                    // back to Blocks.AIR at spawn time, so the variant means
+                    // "leave this position empty in the rolled carriage".
+                    capturedState = net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState();
+                    itemBeNbt = null;
+                } else if (!(held.getItem() instanceof BlockItem blockItem)) {
+                    actionBar(player, "Hold a block (or empty hand for air) to add a variant",
                         ChatFormatting.YELLOW);
                     return;
+                } else {
+                    capturedState = blockItem.getBlock().defaultBlockState();
+                    itemBeNbt = BlockItem.getBlockEntityData(held);
                 }
-                BlockState capturedState = blockItem.getBlock().defaultBlockState();
-                CompoundTag itemBeNbt = BlockItem.getBlockEntityData(held);
                 VariantState newVariant = new VariantState(capturedState, itemBeNbt, 1);
 
                 if (wasEmpty) {
