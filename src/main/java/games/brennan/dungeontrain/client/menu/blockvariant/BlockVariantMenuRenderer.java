@@ -322,12 +322,23 @@ public final class BlockVariantMenuRenderer {
      * row label — just the path segment fits the narrow name cell. The
      * full state is preserved in the underlying entry; tooltip / search
      * still uses it.
+     *
+     * <p>Special-case: any vanilla command-block kind is the
+     * empty-placeholder sentinel (see
+     * {@code CarriageVariantBlocks.isEmptyPlaceholder}) and renders as
+     * {@code "nothing"} so authors immediately read it as the
+     * "leave this position empty / air at spawn time" entry.</p>
      */
     static String shortenStateLabel(String stateString) {
         if (stateString == null) return "";
         // Drop properties section "[...]"
         int bracket = stateString.indexOf('[');
         String trimmed = bracket >= 0 ? stateString.substring(0, bracket) : stateString;
+        if (trimmed.equals("minecraft:command_block")
+            || trimmed.equals("minecraft:chain_command_block")
+            || trimmed.equals("minecraft:repeating_command_block")) {
+            return "nothing";
+        }
         int colon = trimmed.indexOf(':');
         return colon >= 0 ? trimmed.substring(colon + 1) : trimmed;
     }
