@@ -301,6 +301,16 @@ public final class PartPositionMenuController {
                         packet.name(), packet.kind().id());
                     yield current;
                 }
+                String normalized = packet.name() == null
+                    ? CarriagePartKind.NONE
+                    : packet.name().toLowerCase(java.util.Locale.ROOT);
+                boolean alreadyPresent = false;
+                for (CarriagePartAssignment.WeightedName e : current.entries(packet.kind())) {
+                    if (e.name().equals(normalized)) { alreadyPresent = true; break; }
+                }
+                if (alreadyPresent) {
+                    yield current;
+                }
                 yield current.withAppended(packet.kind(), packet.name(), 1);
             }
             case REMOVE -> current.withRemoved(packet.kind(), packet.name());

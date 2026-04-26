@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -224,6 +225,13 @@ public final class BlockVariantMenuController {
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
                     return;
+                }
+                for (VariantState existing : mutated) {
+                    if (existing.state().equals(newVariant.state())
+                        && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())) {
+                        actionBar(player, "Variant already in this cell", ChatFormatting.YELLOW);
+                        return;
+                    }
                 }
                 mutated.add(newVariant);
                 dirty = true;
