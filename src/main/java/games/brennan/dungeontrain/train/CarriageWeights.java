@@ -124,6 +124,7 @@ public record CarriageWeights(Map<String, Integer> byId) {
         next.put(key, clamped);
         current = new CarriageWeights(next);
         writeConfig(current);
+        trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Set carriage weight {}={} (persisted to {}).",
                 key, clamped, configPath());
         return clamped;
@@ -140,6 +141,7 @@ public record CarriageWeights(Map<String, Integer> byId) {
         next.remove(key);
         current = new CarriageWeights(next);
         writeConfig(current);
+        trySaveToSource(current);
         LOGGER.info("[DungeonTrain] Cleared carriage weight override for {} (persisted to {}).",
                 key, configPath());
         return true;
@@ -210,6 +212,65 @@ public record CarriageWeights(Map<String, Integer> byId) {
 
     public static Path configPath() {
         return FMLPaths.CONFIGDIR.get().resolve(CONFIG_SUBDIR).resolve(CONFIG_FILE);
+    }
+
+    /**
+     * Source-tree path for the bundled weights file, computed by stripping the
+     * leading slash from {@link #BUNDLED_RESOURCE} and resolving it under
+     * {@code <projectRoot>/src/main/resources/}. Returns null when the source
+     * tree is unreachable (production install). Mirrors
+     * {@link games.brennan.dungeontrain.track.variant.TrackVariantStore#sourceTreeAvailable()}.
+     */
+    public static Path sourceFile() {
+        Path resources = resourcesRootOrNull();
+        if (resources == null) return null;
+        return resources.resolve(BUNDLED_RESOURCE.substring(1));
+    }
+
+    public static boolean sourceTreeAvailable() {
+        Path resources = resourcesRootOrNull();
+        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+    }
+
+    /**
+     * Write {@code weights} to {@link #sourceFile()} so a dev's in-game tweak
+     * ships with the next build. Throws if the source tree isn't writable —
+     * callers that don't want a hard failure should go through
+     * {@link #trySaveToSource}.
+     */
+    public static synchronized void saveToSource(CarriageWeights weights) throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path file = sourceFile();
+        Files.createDirectories(file.getParent());
+        Map<String, Integer> sorted = new TreeMap<>(weights.byId());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled carriage weights to {} (devmode promote).", file);
+    }
+
+    /**
+     * Best-effort source-tree write invoked from {@link #set} / {@link #unset}.
+     * Silent no-op outside dev mode; warn-level log on dev-mode failures so the
+     * config write isn't masked by a source-tree problem.
+     */
+    private static void trySaveToSource(CarriageWeights weights) {
+        if (!sourceTreeAvailable()) return;
+        try {
+            saveToSource(weights);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to write bundled carriage weights to source tree: {} (config write succeeded).",
+                e.toString());
+        }
+    }
+
+    private static Path resourcesRootOrNull() {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        Path projectRoot = gameDir.getParent();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve("src/main/resources");
     }
 
     /**
