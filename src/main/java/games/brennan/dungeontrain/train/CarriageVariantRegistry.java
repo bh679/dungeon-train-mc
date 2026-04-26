@@ -1,13 +1,11 @@
 package games.brennan.dungeontrain.train;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -15,9 +13,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 
 /**
@@ -125,10 +121,10 @@ public final class CarriageVariantRegistry {
         return CUSTOMS.remove(id.toLowerCase(Locale.ROOT));
     }
 
-    /** Classpath location of the shipped-customs manifest. */
-    static final String BUNDLED_MANIFEST_RESOURCE = "/data/dungeontrain/templates/customs.json";
+    /** Classpath prefix for shipped carriage templates (and the legacy customs manifest). */
+    static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/templates/";
 
-    /** Reload custom variants from the bundled manifest + the per-install config dir. */
+    /** Reload custom variants from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
         // Move any pre-0.30 pillar NBTs out of the carriage templates dir
         // before we scan it — otherwise their ids get registered here as
@@ -136,7 +132,7 @@ public final class CarriageVariantRegistry {
         PillarTemplateStore.migrateFromLegacyDirectory();
 
         CUSTOMS.clear();
-        int bundled = loadBundledManifest();
+        int bundled = loadBundledScan();
         int config = loadConfigDir();
 
         LOGGER.info("[DungeonTrain] Carriage variant registry loaded — {} built-in + {} custom ({} bundled, {} config)",
@@ -144,34 +140,36 @@ public final class CarriageVariantRegistry {
     }
 
     /**
-     * Read the shipped manifest at {@link #BUNDLED_MANIFEST_RESOURCE} and add
-     * each valid id to {@link #CUSTOMS}. Returns the count of ids added (for
-     * logging). Silently accepts a missing manifest — the file is optional.
+     * Discover bundled custom variants by scanning the classpath at
+     * {@link #BUNDLED_RESOURCE_PREFIX} for {@code .nbt} files and registering
+     * every basename that isn't reserved for a built-in {@link CarriageType}.
+     *
+     * <p>Built-in NBTs ({@code standard.nbt}, {@code flatbed.nbt},
+     * {@code windowed.nbt}, {@code solid_roof.nbt}) override the legacy
+     * stamping geometry for the four enum entries — they ship in the same
+     * directory but are NOT customs and must never enter {@link #CUSTOMS}.
+     * The {@link CarriageVariant#isReservedBuiltinName} filter keeps them
+     * out of both the registration loop and the drift comparison so the
+     * cross-check doesn't generate spurious "missing from manifest" warnings
+     * about expected built-ins.</p>
      */
-    private static int loadBundledManifest() {
-        try (InputStream in = CarriageVariantRegistry.class.getResourceAsStream(BUNDLED_MANIFEST_RESOURCE)) {
-            if (in == null) return 0;
-            JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-            if (!root.isJsonArray()) {
-                LOGGER.warn("[DungeonTrain] {} is not a JSON array — ignoring", BUNDLED_MANIFEST_RESOURCE);
-                return 0;
-            }
-            JsonArray arr = root.getAsJsonArray();
-            int added = 0;
-            for (JsonElement el : arr) {
-                if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) {
-                    LOGGER.warn("[DungeonTrain] Skipping non-string manifest entry: {}", el);
-                    continue;
-                }
-                String id = el.getAsString().toLowerCase(Locale.ROOT);
-                if (!acceptCustomId(id, "bundled manifest")) continue;
-                if (CUSTOMS.add(id)) added++;
-            }
-            return added;
-        } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] Failed to read bundled manifest {}: {}", BUNDLED_MANIFEST_RESOURCE, e.toString());
-            return 0;
+    private static int loadBundledScan() {
+        Set<String> scanned = BundledNbtScanner.scanBasenames(
+            CarriageVariantRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER);
+        TreeSet<String> customsScanned = new TreeSet<>();
+        for (String id : scanned) {
+            if (CarriageVariant.isReservedBuiltinName(id)) continue;
+            customsScanned.add(id);
         }
+        Set<String> manifest = BundledNbtScanner.readManifestBasenames(
+            CarriageVariantRegistry.class, BUNDLED_RESOURCE_PREFIX, "customs.json", LOGGER);
+        BundledNbtScanner.warnDrift("templates", customsScanned, manifest, LOGGER);
+        int added = 0;
+        for (String id : customsScanned) {
+            if (!acceptCustomId(id, "bundled scan")) continue;
+            if (CUSTOMS.add(id)) added++;
+        }
+        return added;
     }
 
     /**

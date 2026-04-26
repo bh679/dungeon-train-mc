@@ -1,11 +1,9 @@
 package games.brennan.dungeontrain.editor;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -13,9 +11,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -129,31 +125,32 @@ public final class CarriagePartRegistry {
 
     public static synchronized void reload() {
         clear();
-        int bundled = loadBundledManifests();
+        int bundled = loadBundledScans();
         int config = loadConfigDirs();
         LOGGER.info("[DungeonTrain] Part registry loaded — {} bundled + {} config parts across {} kinds",
             bundled, config, CarriagePartKind.values().length);
     }
 
-    private static int loadBundledManifests() {
+    /**
+     * Discover bundled part templates by scanning the classpath at
+     * {@code /data/dungeontrain/parts/<kind>/} for {@code .nbt} files —
+     * supersedes the hand-maintained {@code manifest.json} that this method
+     * used to read. The legacy manifest is still cross-checked for
+     * transitional drift detection: any disagreement between scan and
+     * manifest produces a WARN, surfacing the drift before the manifest
+     * files are deleted in a follow-up commit.
+     */
+    private static int loadBundledScans() {
         int added = 0;
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            String resource = "/data/dungeontrain/parts/" + kind.id() + "/manifest.json";
-            try (InputStream in = CarriagePartRegistry.class.getResourceAsStream(resource)) {
-                if (in == null) continue;
-                JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                if (!root.isJsonArray()) {
-                    LOGGER.warn("[DungeonTrain] {} is not a JSON array — ignoring", resource);
-                    continue;
-                }
-                JsonArray arr = root.getAsJsonArray();
-                for (JsonElement el : arr) {
-                    if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isString()) continue;
-                    String id = el.getAsString().toLowerCase(Locale.ROOT);
-                    if (register(kind, id)) added++;
-                }
-            } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] Failed to read bundled parts manifest {}: {}", resource, e.toString());
+            String prefix = "/data/dungeontrain/parts/" + kind.id() + "/";
+            Set<String> scanned = BundledNbtScanner.scanBasenames(
+                CarriagePartRegistry.class, prefix, LOGGER);
+            Set<String> manifest = BundledNbtScanner.readManifestBasenames(
+                CarriagePartRegistry.class, prefix, "manifest.json", LOGGER);
+            BundledNbtScanner.warnDrift("parts/" + kind.id(), scanned, manifest, LOGGER);
+            for (String id : scanned) {
+                if (register(kind, id)) added++;
             }
         }
         return added;
