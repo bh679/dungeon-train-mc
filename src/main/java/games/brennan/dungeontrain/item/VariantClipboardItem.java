@@ -1,11 +1,10 @@
 package games.brennan.dungeontrain.item;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
@@ -97,17 +96,16 @@ public final class VariantClipboardItem extends Item {
         }
 
         CarriageDims dims = DungeonTrainWorldData.get(serverLevel).dims();
-        CarriageVariant variant = CarriageEditor.plotContaining(placePos, dims);
-        if (variant == null) {
-            sendActionBar(player, "Place inside a carriage variant editor plot", ChatFormatting.YELLOW);
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            sendActionBar(player, "Stand inside a block-variant editor plot to paste", ChatFormatting.YELLOW);
             return InteractionResult.FAIL;
         }
-        BlockPos plotOrigin = CarriageEditor.plotOrigin(variant, dims);
-        if (plotOrigin == null) {
-            sendActionBar(player, "Editor plot origin missing", ChatFormatting.RED);
+        BlockPos localPos = placePos.subtract(plot.origin());
+        if (!plot.inBounds(localPos)) {
+            sendActionBar(player, "Target is outside the plot's footprint", ChatFormatting.YELLOW);
             return InteractionResult.FAIL;
         }
-        BlockPos localPos = placePos.subtract(plotOrigin);
 
         ItemStack stack = ctx.getItemInHand();
         List<VariantState> states = decodeStates(stack.getTag());
@@ -122,12 +120,11 @@ public final class VariantClipboardItem extends Item {
         serverLevel.setBlock(placePos, Blocks.COMMAND_BLOCK.defaultBlockState(), 3);
 
         // Write to the sidecar.
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
-        sidecar.put(localPos, states);
+        plot.put(localPos, states);
         try {
-            sidecar.save(variant);
+            plot.save();
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] VariantClipboard save failed for '{}': {}", variant.id(), e.toString());
+            LOGGER.error("[DungeonTrain] VariantClipboard save failed for {}: {}", plot.key(), e.toString());
             sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
             return InteractionResult.FAIL;
         }
