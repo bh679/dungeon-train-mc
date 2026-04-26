@@ -41,8 +41,21 @@ public record BlockVariantSyncPacket(
     Vec3 anchorUp
 ) {
 
-    /** Single per-cell candidate, mirrored on the wire. Lock semantics live at the cell level — see {@link BlockVariantSyncPacket#lockId()}. */
-    public record Entry(String stateString, @Nullable String beNbt, int weight) {}
+    /**
+     * Single per-cell candidate, mirrored on the wire. Lock semantics live
+     * at the cell level — see {@link BlockVariantSyncPacket#lockId()}.
+     *
+     * <p>{@code rotMode} ordinal: 0=LOCK, 1=RANDOM, 2=OPTIONS — matches
+     * {@link games.brennan.dungeontrain.editor.VariantRotation.Mode#ordinal()}.
+     * Out-of-range values on read are treated as RANDOM with mask 0
+     * (the {@code VariantRotation.NONE} default).</p>
+     *
+     * <p>{@code rotDirMask} is the same 6-bit mask over
+     * {@link net.minecraft.core.Direction#ordinal()} as the JSON sidecar
+     * uses.</p>
+     */
+    public record Entry(String stateString, @Nullable String beNbt, int weight,
+                        byte rotMode, byte rotDirMask) {}
 
     public static BlockVariantSyncPacket empty() {
         return new BlockVariantSyncPacket(
@@ -71,6 +84,8 @@ public record BlockVariantSyncPacket(
             buf.writeBoolean(hasNbt);
             if (hasNbt) buf.writeUtf(e.beNbt(), 32767);
             buf.writeVarInt(e.weight());
+            buf.writeByte(e.rotMode());
+            buf.writeByte(e.rotDirMask());
         }
     }
 
@@ -94,7 +109,9 @@ public record BlockVariantSyncPacket(
             boolean hasNbt = buf.readBoolean();
             String nbt = hasNbt ? buf.readUtf(32767) : null;
             int weight = buf.readVarInt();
-            entries.add(new Entry(stateStr, nbt, weight));
+            byte rotMode = buf.readByte();
+            byte rotDirMask = buf.readByte();
+            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }

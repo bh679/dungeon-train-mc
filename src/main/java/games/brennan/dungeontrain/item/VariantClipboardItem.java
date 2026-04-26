@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -70,6 +71,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_STATE = "s";
     private static final String NBT_BENBT = "n";
     private static final String NBT_WEIGHT = "w";
+    private static final String NBT_ROT_MODE = "rm";
+    private static final String NBT_ROT_DIRS = "rd";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -185,6 +188,11 @@ public final class VariantClipboardItem extends Item {
             if (s.weight() != 1) {
                 entry.putInt(NBT_WEIGHT, s.weight());
             }
+            VariantRotation rot = s.rotation();
+            if (!rot.isDefault()) {
+                entry.putByte(NBT_ROT_MODE, (byte) rot.mode().ordinal());
+                entry.putByte(NBT_ROT_DIRS, (byte) rot.dirMask());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -216,7 +224,18 @@ public final class VariantClipboardItem extends Item {
             CompoundTag beNbt = entry.contains(NBT_BENBT, Tag.TAG_COMPOUND)
                 ? entry.getCompound(NBT_BENBT) : null;
             int weight = entry.contains(NBT_WEIGHT, Tag.TAG_INT) ? entry.getInt(NBT_WEIGHT) : 1;
-            out.add(new VariantState(state, beNbt, weight));
+            VariantRotation rotation = VariantRotation.NONE;
+            if (entry.contains(NBT_ROT_MODE, Tag.TAG_BYTE)) {
+                int ord = entry.getByte(NBT_ROT_MODE) & 0xFF;
+                int mask = entry.contains(NBT_ROT_DIRS, Tag.TAG_BYTE)
+                    ? entry.getByte(NBT_ROT_DIRS) & 0xFF
+                    : 0;
+                VariantRotation.Mode[] modes = VariantRotation.Mode.values();
+                if (ord >= 0 && ord < modes.length) {
+                    rotation = new VariantRotation(modes[ord], mask);
+                }
+            }
+            out.add(new VariantState(state, beNbt, weight, rotation));
         }
         return out;
     }

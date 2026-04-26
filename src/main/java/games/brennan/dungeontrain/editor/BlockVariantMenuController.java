@@ -181,7 +181,10 @@ public final class BlockVariantMenuController {
         for (VariantState s : states) {
             String stateStr = BlockStateParser.serialize(s.state());
             String beNbt = s.hasBlockEntityData() ? s.blockEntityNbt().toString() : null;
-            entries.add(new BlockVariantSyncPacket.Entry(stateStr, beNbt, s.weight()));
+            VariantRotation rot = s.rotation();
+            entries.add(new BlockVariantSyncPacket.Entry(
+                stateStr, beNbt, s.weight(),
+                (byte) rot.mode().ordinal(), (byte) rot.dirMask()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -298,6 +301,40 @@ public final class BlockVariantMenuController {
                 mutated.set(idx, mutated.get(idx).withWeight(newWeight));
                 dirty = true;
             }
+            case SET_ROTATION_MODE -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int ord = packet.delta();
+                VariantRotation.Mode[] modes = VariantRotation.Mode.values();
+                if (ord < 0 || ord >= modes.length) return;
+                VariantRotation prev = mutated.get(idx).rotation();
+                int seedMask = prev.dirMask();
+                int validMask = RotationApplier.validDirMask(mutated.get(idx).state());
+                // Seed mask when transitioning from a no-mask state (RANDOM)
+                // so the canonical constructor doesn't collapse the new mode
+                // back to RANDOM and the cycle visibly advances.
+                if (modes[ord] == VariantRotation.Mode.LOCK && seedMask == 0) {
+                    seedMask = Integer.lowestOneBit(validMask);
+                } else if (modes[ord] == VariantRotation.Mode.OPTIONS && seedMask == 0) {
+                    seedMask = validMask;
+                }
+                VariantRotation next = new VariantRotation(modes[ord], seedMask);
+                mutated.set(idx, mutated.get(idx).withRotation(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_ROTATION_DIRS -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int newMask = packet.delta() & VariantRotation.ALL_DIRS_MASK;
+                VariantRotation prev = mutated.get(idx).rotation();
+                VariantRotation next = new VariantRotation(prev.mode(), newMask);
+                mutated.set(idx, mutated.get(idx).withRotation(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             default -> {
                 // CYCLE_LOCK_ID and COPY handled above; nothing else expected.
                 return;
@@ -316,6 +353,7 @@ public final class BlockVariantMenuController {
         for (BlockPos target : targets) {
             if (dropCell) {
                 plot.remove(target);
+                VariantEditorPreviewState.clearPinned(plot.key(), target);
             } else if (mutated.size() >= CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
                 plot.put(target, mutated);
             }

@@ -266,9 +266,14 @@ public final class TrackGenerator {
     ) {
         BlockState resolveSidecar(BlockState base, int xMod, int y, int zOff) {
             if (sidecar == null || sidecar.isEmpty() || base == null) return base;
+            BlockPos local = new BlockPos(xMod, y, zOff);
             games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
-                new BlockPos(xMod, y, zOff), worldSeed, (int) tileIndex);
-            return picked != null ? picked.state() : base;
+                local, worldSeed, (int) tileIndex);
+            if (picked == null) return base;
+            return games.brennan.dungeontrain.editor.RotationApplier.apply(
+                picked.state(), picked.rotation(),
+                local, worldSeed, (int) tileIndex,
+                sidecar.lockIdAt(local));
         }
     }
 
@@ -413,9 +418,14 @@ public final class TrackGenerator {
     ) {
         BlockState resolveSidecar(BlockState base, int row, int zIdx) {
             if (sidecar == null || sidecar.isEmpty() || base == null) return base;
+            BlockPos local = new BlockPos(0, row, zIdx);
             games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
-                new BlockPos(0, row, zIdx), worldSeed, pillarIndex);
-            return picked != null ? picked.state() : base;
+                local, worldSeed, pillarIndex);
+            if (picked == null) return base;
+            return games.brennan.dungeontrain.editor.RotationApplier.apply(
+                picked.state(), picked.rotation(),
+                local, worldSeed, pillarIndex,
+                sidecar.lockIdAt(local));
         }
     }
 
@@ -774,7 +784,11 @@ public final class TrackGenerator {
                     games.brennan.dungeontrain.editor.VariantState picked =
                         stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
                     if (picked == null) continue;
-                    SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
+                    BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        picked.state(), picked.rotation(),
+                        entry.localPos(), worldSeed, centerX,
+                        stairsSidecar.lockIdAt(entry.localPos()));
+                    SilentBlockOps.setBlockSilent(level, wpos, rotated, picked.blockEntityNbt());
                 }
             }
 

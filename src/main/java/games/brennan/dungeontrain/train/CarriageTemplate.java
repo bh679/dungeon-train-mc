@@ -226,7 +226,11 @@ public final class CarriageTemplate {
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
                 SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
             } else {
-                SilentBlockOps.setBlockSilent(level, world, picked.state(), picked.blockEntityNbt());
+                BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                    picked.state(), picked.rotation(),
+                    e.localPos(), config.seed(), carriageIndex,
+                    sidecar.lockIdAt(e.localPos()));
+                SilentBlockOps.setBlockSilent(level, world, rotated, picked.blockEntityNbt());
             }
         }
     }

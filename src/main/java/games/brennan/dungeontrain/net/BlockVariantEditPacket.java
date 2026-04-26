@@ -38,6 +38,15 @@ import java.util.function.Supplier;
  *       Transient world-only effect — the variant list, weights, and
  *       lock-id are all unchanged. Used by clicking an entry's name cell
  *       to visualise that variant in-place.</li>
+ *   <li>{@link Op#SET_ROTATION_MODE} — set entry's rotation mode.
+ *       {@code entryIndex} = row, {@code delta} = next mode ordinal
+ *       (matches {@link games.brennan.dungeontrain.editor.VariantRotation.Mode#ordinal()}).
+ *       Server re-clamps via {@code VariantRotation}'s canonical
+ *       constructor (e.g. RANDOM forces mask to 0).</li>
+ *   <li>{@link Op#SET_ROTATION_DIRS} — set entry's rotation direction
+ *       mask. {@code entryIndex} = row, {@code delta} = new dirMask
+ *       (6-bit). Mode is preserved (LOCK collapses multi-bit to lowest;
+ *       OPTIONS with mask 0 falls back to RANDOM).</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -47,7 +56,8 @@ import java.util.function.Supplier;
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY, PREVIEW_ENTRY }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
+                     PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());

@@ -6,10 +6,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * One entry in a v4 variants sidecar: a {@link BlockState} plus optional
+ * One entry in a v5 variants sidecar: a {@link BlockState} plus optional
  * {@link CompoundTag} {@code BlockEntity} payload, plus a per-entry
- * {@code weight} (default 1, ≥ 1). Pure data — equality is by value so
- * the picker / overlay / list code can compare entries safely.
+ * {@code weight} (default 1, ≥ 1), plus a per-entry {@link VariantRotation}
+ * (default {@link VariantRotation#NONE}). Pure data — equality is by value
+ * so the picker / overlay / list code can compare entries safely.
  *
  * <p>Schema history:
  * <ul>
@@ -24,9 +25,13 @@ import org.jetbrains.annotations.Nullable;
  *   <li>v4 — adds a per-cell {@code lockId} stored alongside the
  *       state list. Per-entry weight stays here; lock semantics live on
  *       the cell, not the entry.</li>
+ *   <li>v5 — adds a per-entry {@link VariantRotation} so each candidate
+ *       can declare a fixed / random / options-restricted facing applied
+ *       at spawn time. Default rotation is omitted from JSON so v3/v4
+ *       files round-trip diff-clean.</li>
  * </ul></p>
  */
-public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight) {
+public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight, VariantRotation rotation) {
 
     public VariantState {
         if (state == null) throw new IllegalArgumentException("state");
@@ -38,20 +43,27 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
             // Defensive copy so callers can't mutate the entry's NBT after handoff.
             blockEntityNbt = blockEntityNbt.copy();
         }
+        if (rotation == null) rotation = VariantRotation.NONE;
+    }
+
+    /** Three-arg overload defaulting rotation to {@link VariantRotation#NONE}. */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight) {
+        this(state, blockEntityNbt, weight, VariantRotation.NONE);
     }
 
     /**
-     * Two-arg overload for v2-era callers — defaults {@code weight=1}.
-     * Kept so the existing capture-and-append flow in
-     * {@link VariantBlockInteractions} compiles unchanged.
+     * Two-arg overload for v2-era callers — defaults {@code weight=1} and
+     * rotation to {@link VariantRotation#NONE}. Kept so the existing
+     * capture-and-append flow in {@link VariantBlockInteractions} compiles
+     * unchanged.
      */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt) {
-        this(state, blockEntityNbt, 1);
+        this(state, blockEntityNbt, 1, VariantRotation.NONE);
     }
 
-    /** State-only constructor — equivalent to a v1 entry (weight 1, no NBT). */
+    /** State-only constructor — equivalent to a v1 entry (weight 1, no NBT, default rotation). */
     public static VariantState of(BlockState state) {
-        return new VariantState(state, null, 1);
+        return new VariantState(state, null, 1, VariantRotation.NONE);
     }
 
     public boolean hasBlockEntityData() {
@@ -60,11 +72,16 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
 
     /** True when the entry has no extras over v1 — drives bare-string vs object-form JSON serialisation. */
     public boolean isPlainBareString() {
-        return blockEntityNbt == null && weight == 1;
+        return blockEntityNbt == null && weight == 1 && rotation.isDefault();
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation);
+    }
+
+    /** Return a copy with {@code rotation} replaced. */
+    public VariantState withRotation(VariantRotation newRotation) {
+        return new VariantState(state, blockEntityNbt, weight, newRotation);
     }
 }
