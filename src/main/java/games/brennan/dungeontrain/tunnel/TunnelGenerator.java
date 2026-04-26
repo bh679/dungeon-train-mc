@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.tunnel;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.event.TunnelChunkEvents;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -367,6 +368,13 @@ public final class TunnelGenerator {
                 if (filled.contains(key)) continue;
                 if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
                 if (!level.getChunkSource().hasChunk(cx, cz)) continue;
+                // Defer paint while the chunk's autosave is in flight — the
+                // upstream race between server-thread mutation and IOWorker
+                // NBT iteration causes a sporadic CME otherwise.
+                if (TunnelChunkEvents.isSaveBusy(key)) {
+                    pending.add(key);
+                    continue;
+                }
                 ensureTunnelForChunk(level, cx, cz, g, filled);
                 budget--;
                 drainedFromPending++;
@@ -388,6 +396,10 @@ public final class TunnelGenerator {
                     long key = ChunkPos.asLong(cx, cz);
                     if (filled.contains(key)) continue;
                     if (!level.getChunkSource().hasChunk(cx, cz)) continue;
+                    // Same save-busy guard as the pending-drain path above —
+                    // sweep will revisit the chunk on a later tick once
+                    // IOWorker has finished serialising its NBT.
+                    if (TunnelChunkEvents.isSaveBusy(key)) continue;
                     ensureTunnelForChunk(level, cx, cz, g, filled);
                     budget--;
                     scanned++;
