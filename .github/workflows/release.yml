@@ -75,3 +75,48 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bash scripts/publish-wiki.sh
+
+      - name: Check mod-platform publish prerequisites
+        id: publish_check
+        env:
+          MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          MODRINTH_PROJECT_ID: ${{ vars.MODRINTH_PROJECT_ID }}
+          CURSEFORGE_PROJECT_ID: ${{ vars.CURSEFORGE_PROJECT_ID }}
+        run: |
+          MODRINTH_READY=false
+          CURSEFORGE_READY=false
+          if [ -n "$MODRINTH_TOKEN" ] && [ -n "$MODRINTH_PROJECT_ID" ]; then
+            MODRINTH_READY=true
+          else
+            echo "::warning::Modrinth secret/variable missing — skipping Modrinth publish."
+          fi
+          if [ -n "$CURSEFORGE_TOKEN" ] && [ -n "$CURSEFORGE_PROJECT_ID" ]; then
+            CURSEFORGE_READY=true
+          else
+            echo "::warning::CurseForge secret/variable missing — skipping CurseForge publish."
+          fi
+          echo "modrinth=$MODRINTH_READY" >> "$GITHUB_OUTPUT"
+          echo "curseforge=$CURSEFORGE_READY" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Modrinth + CurseForge
+        if: steps.publish_check.outputs.modrinth == 'true' || steps.publish_check.outputs.curseforge == 'true'
+        uses: Kir-Antipov/mc-publish@v3.3
+        with:
+          modrinth-id: ${{ steps.publish_check.outputs.modrinth == 'true' && vars.MODRINTH_PROJECT_ID || '' }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+          curseforge-id: ${{ steps.publish_check.outputs.curseforge == 'true' && vars.CURSEFORGE_PROJECT_ID || '' }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+          files: build/libs/dungeontrain-*.jar
+          name: Dungeon Train ${{ env.RELEASE_TAG }}
+          version: ${{ env.RELEASE_TAG }}
+          version-type: release
+          loaders: forge
+          game-versions: 1.20.1
+          dependencies: |
+            valkyrien-skies(required)
+            kotlin-for-forge(required)
+          java: 17
+          retry-attempts: 2
+          retry-delay: 10000
+          fail-mode: warn
