@@ -58,6 +58,10 @@ public final class VersionHudOverlay {
             if (EditorStatusHudOverlay.isActive()) {
                 return;
             }
+            // Release builds run on `main`; the version/branch suffix is dev-only noise there.
+            if ("main".equals(VersionInfo.BRANCH)) {
+                return;
+            }
             String text = carriagePresent
                 ? VersionInfo.DISPLAY + " — Carriage: " + formatSigned(carriageIndex)
                 : VersionInfo.DISPLAY;

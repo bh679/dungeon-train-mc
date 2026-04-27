@@ -80,8 +80,14 @@ public final class VariantHotkeyClient {
         public static void onClientTick(TickEvent.ClientTickEvent event) {
             if (event.phase != TickEvent.Phase.END) return;
             tick++;
-            if (Minecraft.getInstance().getConnection() == null) {
-                lastSentHeld = false;
+            if (Minecraft.getInstance().getConnection() == null
+                    || !EditorStatusHudOverlay.isActive()) {
+                if (lastSentHeld) {
+                    // Walked out of an editor plot mid-hold — release on the
+                    // server so right-click-to-add doesn't stay armed.
+                    DungeonTrainNet.sendToServer(new VariantHotkeyPacket(false));
+                    lastSentHeld = false;
+                }
                 pressStartTick = -1;
                 useDuringPress = false;
                 return;
