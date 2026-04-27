@@ -26,7 +26,8 @@ public record ContainerContentsSyncPacket(
     String plotKey,
     @Nullable BlockPos localPos,
     List<Entry> entries,
-    int fillCount,
+    int fillMin,
+    int fillMax,
     int containerSize,
     Vec3 anchorPos,
     Vec3 anchorRight,
@@ -34,13 +35,14 @@ public record ContainerContentsSyncPacket(
 ) {
 
     /**
-     * Single pool entry on the wire — item registry id, stack count, weight.
+     * Single pool entry on the wire — item registry id, max stack count, weight.
+     * {@code count} is a max — roll-time produces a uniform-random value in {@code [1, count]}.
      */
     public record Entry(String itemId, int count, int weight) {}
 
     public static ContainerContentsSyncPacket empty() {
         return new ContainerContentsSyncPacket(
-            "", null, Collections.emptyList(), -1, 0,
+            "", null, Collections.emptyList(), 0, -1, 0,
             Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
     }
 
@@ -54,8 +56,9 @@ public record ContainerContentsSyncPacket(
         buf.writeVarInt(localPos.getX());
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
-        // Sentinel-allowing signed encoding so FILL_ALL (-1) round-trips.
-        buf.writeInt(fillCount);
+        // Sentinel-allowing signed encoding so FILL_ALL (-1) round-trips on fillMax.
+        buf.writeInt(fillMin);
+        buf.writeInt(fillMax);
         buf.writeVarInt(containerSize);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
@@ -73,11 +76,12 @@ public record ContainerContentsSyncPacket(
         boolean active = buf.readBoolean();
         if (!active) {
             return new ContainerContentsSyncPacket(
-                key, null, Collections.emptyList(), -1, 0,
+                key, null, Collections.emptyList(), 0, -1, 0,
                 Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
-        int fillCount = buf.readInt();
+        int fillMin = buf.readInt();
+        int fillMax = buf.readInt();
         int containerSize = buf.readVarInt();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
@@ -90,7 +94,7 @@ public record ContainerContentsSyncPacket(
             int weight = buf.readVarInt();
             entries.add(new Entry(id, count, weight));
         }
-        return new ContainerContentsSyncPacket(key, local, entries, fillCount, containerSize, anchor, right, up);
+        return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {

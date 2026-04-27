@@ -53,19 +53,24 @@ public final class ContainerContentsRoller {
         int totalWeight = pool.totalWeight();
         if (totalWeight <= 0) return baseNbt;
 
-        // Resolve which slot indices get rolled. fillCount == FILL_ALL → every
-        // slot. Otherwise pick a deterministic subset of size min(fillCount,
-        // slots) using a seeded Fisher–Yates over the slot indices.
-        int[] slotsToFill = resolveSlotSubset(slots, pool.fillCount(), localPos, worldSeed, carriageIndex);
+        // Roll K = uniform random in [fillMin, effectiveMax] (inclusive).
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? slots : Math.min(pool.fillMax(), slots);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
+        int[] slotsToFill = resolveSlotSubset(slots, k, localPos, worldSeed, carriageIndex);
 
         ListTag items = new ListTag();
         for (int slot : slotsToFill) {
             ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
             if (picked == null || picked.isAir()) continue;
+            // Per-entry count is treated as a max — roll the actual stack
+            // count uniformly in [1, picked.count()] for variety per slot.
+            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
             CompoundTag stack = new CompoundTag();
             stack.putByte("Slot", (byte) slot);
             stack.putString("id", picked.itemId().toString());
-            stack.putByte("Count", (byte) Math.max(1, Math.min(64, picked.count())));
+            stack.putByte("Count", (byte) Math.max(1, Math.min(64, rolledCount)));
             items.add(stack);
         }
 
@@ -76,22 +81,56 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Pick which slot indices participate in the roll. For
-     * {@link ContainerContentsPool#FILL_ALL} returns {@code [0..slots)}.
-     * Otherwise returns a deterministically-shuffled prefix of length
-     * {@code min(fillCount, slots)} so the same chest at the same seed
-     * fills the same set of slots (and the spatial pattern stays varied
-     * across nearby chests via the localPos mix).
+     * Deterministic K = uniform integer in {@code [min, max]}. Same mixer
+     * basis as the slot-pick / count rolls but with a distinct salt so all
+     * three rolls are independent.
      */
-    private static int[] resolveSlotSubset(int slots, int fillCount, BlockPos localPos,
+    private static int rollKCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex) {
+        if (max <= min) return min;
+        long state = worldSeed
+            ^ ((long) localPos.getX() * MIX_X)
+            ^ ((long) localPos.getY() * MIX_Y)
+            ^ ((long) localPos.getZ() * MIX_Z)
+            ^ ((long) carriageIndex * MIX_C)
+            ^ 0x5BD1E995L; // K-roll salt
+        state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+        state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+        state = state ^ (state >>> 31);
+        int range = max - min + 1;
+        return min + (int) ((state & 0x7FFFFFFFFFFFFFFFL) % range);
+    }
+
+    /**
+     * Deterministic stack count for a slot — uniform in {@code [1, max]}.
+     * Independent salt so it doesn't correlate with the entry pick.
+     */
+    private static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        if (max <= 1) return 1;
+        long state = worldSeed
+            ^ ((long) localPos.getX() * MIX_X)
+            ^ ((long) localPos.getY() * MIX_Y)
+            ^ ((long) localPos.getZ() * MIX_Z)
+            ^ ((long) carriageIndex * MIX_C)
+            ^ ((long) slot * MIX_S)
+            ^ 0xA5A5A5A5DEADBEEFL; // count-roll salt
+        state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+        state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+        state = state ^ (state >>> 31);
+        return 1 + (int) ((state & 0x7FFFFFFFFFFFFFFFL) % max);
+    }
+
+    /**
+     * Pick {@code count} slot indices from {@code [0..slots)} via seeded
+     * Fisher–Yates. Returns the prefix of length {@code count}.
+     */
+    private static int[] resolveSlotSubset(int slots, int count, BlockPos localPos,
                                            long worldSeed, int carriageIndex) {
-        if (fillCount == ContainerContentsPool.FILL_ALL || fillCount >= slots) {
+        if (count >= slots) {
             int[] all = new int[slots];
             for (int i = 0; i < slots; i++) all[i] = i;
             return all;
         }
-        if (fillCount <= 0) return new int[0];
-        // Fisher–Yates with a splittable-mixer-derived RNG.
+        if (count <= 0) return new int[0];
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
             ^ ((long) localPos.getY() * MIX_Y)
@@ -108,8 +147,8 @@ public final class ContainerContentsRoller {
             order[i] = order[j];
             order[j] = tmp;
         }
-        int[] picked = new int[fillCount];
-        System.arraycopy(order, 0, picked, 0, fillCount);
+        int[] picked = new int[count];
+        System.arraycopy(order, 0, picked, 0, count);
         return picked;
     }
 

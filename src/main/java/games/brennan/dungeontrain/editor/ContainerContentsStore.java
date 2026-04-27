@@ -44,7 +44,8 @@ import java.util.Map;
  *   "schemaVersion": 1,
  *   "pools": {
  *     "x,y,z": {
- *       "fillCount": 5,
+ *       "fillMin": 1,
+ *       "fillMax": 10,
  *       "entries": [
  *         { "id": "minecraft:diamond", "count": 3, "weight": 5 },
  *         { "id": "minecraft:air", "count": 1, "weight": 20 }
@@ -102,11 +103,10 @@ public final class ContainerContentsStore {
     }
 
     public synchronized void putPool(BlockPos localPos, ContainerContentsPool pool) {
-        // Drop only when truly default (no entries AND default fillCount) so
+        // Drop only when truly default (no entries AND default fill range) so
         // a player who sets Fill before adding any items doesn't lose the
-        // fillCount setting between clicks.
-        if (pool == null
-            || (pool.isEmpty() && pool.fillCount() == ContainerContentsPool.FILL_ALL)) {
+        // setting between clicks.
+        if (pool == null || (pool.isEmpty() && pool.isDefaultRange())) {
             pools.remove(localPos);
         } else {
             pools.put(localPos.immutable(), pool);
@@ -141,8 +141,11 @@ public final class ContainerContentsStore {
             if (!first) sb.append(",");
             ContainerContentsPool pool = e.getValue();
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": {");
-            if (pool.fillCount() != ContainerContentsPool.FILL_ALL) {
-                sb.append("\n      \"fillCount\": ").append(pool.fillCount()).append(",");
+            if (pool.fillMin() != 0) {
+                sb.append("\n      \"fillMin\": ").append(pool.fillMin()).append(",");
+            }
+            if (pool.fillMax() != ContainerContentsPool.FILL_ALL) {
+                sb.append("\n      \"fillMax\": ").append(pool.fillMax()).append(",");
             }
             sb.append("\n      \"entries\": [");
             boolean firstEntry = true;
@@ -187,13 +190,22 @@ public final class ContainerContentsStore {
                     if (pos == null) continue;
                     JsonElement value = e.getValue();
                     JsonArray arr;
-                    int fillCount = ContainerContentsPool.FILL_ALL;
+                    int fillMin = 0;
+                    int fillMax = ContainerContentsPool.FILL_ALL;
                     if (value.isJsonArray()) {
-                        // Legacy form (no fillCount field).
+                        // Legacy form (no fill fields).
                         arr = value.getAsJsonArray();
                     } else if (value.isJsonObject()) {
                         JsonObject po = value.getAsJsonObject();
-                        if (po.has("fillCount")) fillCount = po.get("fillCount").getAsInt();
+                        // v1 stored fillCount (single value); promote to both
+                        // min and max so legacy data round-trips with fixed K.
+                        if (po.has("fillCount")) {
+                            int legacy = po.get("fillCount").getAsInt();
+                            fillMin = legacy == ContainerContentsPool.FILL_ALL ? 0 : legacy;
+                            fillMax = legacy;
+                        }
+                        if (po.has("fillMin")) fillMin = po.get("fillMin").getAsInt();
+                        if (po.has("fillMax")) fillMax = po.get("fillMax").getAsInt();
                         if (!po.has("entries") || !po.get("entries").isJsonArray()) continue;
                         arr = po.getAsJsonArray("entries");
                     } else {
@@ -211,7 +223,7 @@ public final class ContainerContentsStore {
                         entries.add(new ContainerContentsEntry(id, count, weight));
                     }
                     if (!entries.isEmpty()) {
-                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillCount));
+                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));
                     }
                 }
             }

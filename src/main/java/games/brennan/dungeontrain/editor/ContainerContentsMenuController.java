@@ -157,7 +157,7 @@ public final class ContainerContentsMenuController {
                 e.itemId().toString(), e.count(), e.weight()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
-            pool.fillCount(), containerSize, anchor, right, up);
+            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up);
     }
 
     public static void applyEdit(ServerPlayer player, ContainerContentsEditPacket packet) {
@@ -245,19 +245,33 @@ public final class ContainerContentsMenuController {
                 next = current.replaced(idx, e.withCount(newCount));
                 dirty = true;
             }
-            case BUMP_FILL_COUNT -> {
-                // Cycle: FILL_ALL → 0 → 1 → … → 64 → FILL_ALL
-                // Click = +1 step, shift-click = -1 step (delta carries the sign).
-                int cur = current.fillCount();
-                int newFill;
+            case BUMP_FILL_MIN -> {
+                // Linear bump in [0, MAX_FILL_BOUND]. Clamped to ≤ fillMax
+                // (treating FILL_ALL as +∞).
+                int cur = current.fillMin();
+                int next0 = Math.max(0, Math.min(ContainerContentsPool.MAX_FILL_BOUND, cur + packet.delta()));
+                if (current.fillMax() != ContainerContentsPool.FILL_ALL && next0 > current.fillMax()) {
+                    next0 = current.fillMax();
+                }
+                next = current.withFillMin(next0);
+                dirty = true;
+            }
+            case BUMP_FILL_MAX -> {
+                // Cycle through FILL_ALL → 0 → 1 … → MAX → FILL_ALL.
+                int cur = current.fillMax();
+                int next0;
                 if (packet.delta() > 0) {
-                    newFill = cur == ContainerContentsPool.FILL_ALL ? 0 : cur + 1;
-                    if (newFill > 64) newFill = ContainerContentsPool.FILL_ALL;
+                    next0 = cur == ContainerContentsPool.FILL_ALL ? 0 : cur + 1;
+                    if (next0 > ContainerContentsPool.MAX_FILL_BOUND) next0 = ContainerContentsPool.FILL_ALL;
                 } else {
-                    newFill = cur == ContainerContentsPool.FILL_ALL ? 64
+                    next0 = cur == ContainerContentsPool.FILL_ALL
+                        ? ContainerContentsPool.MAX_FILL_BOUND
                         : (cur == 0 ? ContainerContentsPool.FILL_ALL : cur - 1);
                 }
-                next = current.withFillCount(newFill);
+                // Bring fillMin down if it would exceed the new ceiling.
+                int newMin = current.fillMin();
+                if (next0 != ContainerContentsPool.FILL_ALL && newMin > next0) newMin = next0;
+                next = current.withFillMax(next0).withFillMin(newMin);
                 dirty = true;
             }
         }

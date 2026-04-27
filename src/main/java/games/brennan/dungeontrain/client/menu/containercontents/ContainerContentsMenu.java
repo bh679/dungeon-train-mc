@@ -27,7 +27,8 @@ public final class ContainerContentsMenu {
     public enum CellKind {
         NONE,
         ADD,
-        FILL,
+        FILL_MIN,
+        FILL_MAX,
         CLEAR,
         CLOSE,
         ENTRY_NAME,
@@ -51,7 +52,8 @@ public final class ContainerContentsMenu {
     private static String plotKey = "";
     @Nullable private static BlockPos localPos;
     private static List<ContainerContentsSyncPacket.Entry> entries = Collections.emptyList();
-    private static int fillCount = -1;
+    private static int fillMin = 0;
+    private static int fillMax = -1;
     private static int containerSize = 0;
     private static Vec3 anchorPos = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
@@ -68,7 +70,8 @@ public final class ContainerContentsMenu {
     public static String plotKey() { return plotKey; }
     @Nullable public static BlockPos localPos() { return localPos; }
     public static List<ContainerContentsSyncPacket.Entry> entries() { return entries; }
-    public static int fillCount() { return fillCount; }
+    public static int fillMin() { return fillMin; }
+    public static int fillMax() { return fillMax; }
     public static int containerSize() { return containerSize; }
     public static Vec3 anchorPos() { return anchorPos; }
     public static Vec3 anchorRight() { return anchorRight; }
@@ -96,7 +99,8 @@ public final class ContainerContentsMenu {
         plotKey = packet.plotKey();
         localPos = packet.localPos();
         entries = List.copyOf(packet.entries());
-        fillCount = packet.fillCount();
+        fillMin = packet.fillMin();
+        fillMax = packet.fillMax();
         containerSize = packet.containerSize();
         anchorPos = packet.anchorPos();
         anchorRight = packet.anchorRight();

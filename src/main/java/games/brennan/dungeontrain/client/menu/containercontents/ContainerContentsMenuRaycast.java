@@ -85,16 +85,17 @@ public final class ContainerContentsMenuRaycast {
 
         if (hitY > headerBottom) return ContainerContentsMenu.Hit.NONE;
 
-        // Toolbar — 4 cells: Add | Fill | Clear | X
+        // Toolbar — 5 cells: Add | FillMin | FillMax | Clear | X
         if (hitY > toolbarBottom) {
-            double cellW = panelW / 4.0;
+            double cellW = panelW / 5.0;
             int idx = (int) Math.floor((hitX + halfW) / cellW);
             if (idx < 0) idx = 0;
-            if (idx > 3) idx = 3;
+            if (idx > 4) idx = 4;
             ContainerContentsMenu.CellKind kind = switch (idx) {
                 case 0 -> ContainerContentsMenu.CellKind.ADD;
-                case 1 -> ContainerContentsMenu.CellKind.FILL;
-                case 2 -> ContainerContentsMenu.CellKind.CLEAR;
+                case 1 -> ContainerContentsMenu.CellKind.FILL_MIN;
+                case 2 -> ContainerContentsMenu.CellKind.FILL_MAX;
+                case 3 -> ContainerContentsMenu.CellKind.CLEAR;
                 default -> ContainerContentsMenu.CellKind.CLOSE;
             };
             return new ContainerContentsMenu.Hit(kind, -1);

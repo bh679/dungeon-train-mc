@@ -127,36 +127,39 @@ public final class ContainerContentsMenuRenderer {
             : "Container Contents @ " + local.getX() + "," + local.getY() + "," + local.getZ();
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFF99CCFF);
 
-        // Toolbar — 4 cells: Add | Fill | Clear | X
+        // Toolbar — 5 cells: Add | FillMin | FillMax | Clear | X
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 4.0;
-        int fc = ContainerContentsMenu.fillCount();
+        double cellW = panelW / 5.0;
+        int fmin = ContainerContentsMenu.fillMin();
+        int fmax = ContainerContentsMenu.fillMax();
         int cs = ContainerContentsMenu.containerSize();
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
             ContainerContentsMenu.CellKind cellKind = switch (i) {
                 case 0 -> ContainerContentsMenu.CellKind.ADD;
-                case 1 -> ContainerContentsMenu.CellKind.FILL;
-                case 2 -> ContainerContentsMenu.CellKind.CLEAR;
+                case 1 -> ContainerContentsMenu.CellKind.FILL_MIN;
+                case 2 -> ContainerContentsMenu.CellKind.FILL_MAX;
+                case 3 -> ContainerContentsMenu.CellKind.CLEAR;
                 default -> ContainerContentsMenu.CellKind.CLOSE;
             };
             boolean isHover = hovered.kind() == cellKind;
             int tint = switch (cellKind) {
                 case CLOSE -> isHover ? 0xC0FF8080 : 0x40FF6060;
                 case CLEAR -> isHover ? 0xC0FFAA66 : 0x40CC7733;
-                case FILL -> isHover ? 0xC0FFCC55 : 0x4099AA33;
+                case FILL_MIN, FILL_MAX -> isHover ? 0xC0FFCC55 : 0x4099AA33;
                 default -> isHover ? 0xB066FF99 : 0x4033CC66;
             };
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
                 case ADD -> "Add";
-                case FILL -> {
-                    String count = fc < 0 ? "all" : Integer.toString(fc);
-                    yield cs > 0 ? "Fill: " + count + "/" + cs : "Fill: " + count;
+                case FILL_MIN -> "min " + fmin;
+                case FILL_MAX -> {
+                    String shown = fmax < 0 ? "all" : Integer.toString(fmax);
+                    yield cs > 0 ? "max " + shown + "/" + cs : "max " + shown;
                 }
                 case CLEAR -> "Clear";
                 case CLOSE -> "X";

@@ -17,7 +17,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  */
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "8";
+    public static final String PROTOCOL_VERSION = "9";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
         .named(new ResourceLocation(DungeonTrain.MOD_ID, "main"))

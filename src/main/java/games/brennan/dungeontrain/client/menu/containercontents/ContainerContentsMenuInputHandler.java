@@ -139,10 +139,15 @@ public final class ContainerContentsMenuInputHandler {
                 // the held stack's item + count. Mirrors the block-variant
                 // ADD behaviour: hold an item, click Add.
                 ContainerContentsEditPacket.Op.ADD, plotKey, local, -1, "", 0));
-            case FILL -> {
+            case FILL_MIN -> {
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
-                    ContainerContentsEditPacket.Op.BUMP_FILL_COUNT, plotKey, local, -1, "", delta));
+                    ContainerContentsEditPacket.Op.BUMP_FILL_MIN, plotKey, local, -1, "", delta));
+            }
+            case FILL_MAX -> {
+                int delta = shift ? -1 : 1;
+                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.BUMP_FILL_MAX, plotKey, local, -1, "", delta));
             }
             case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.CLEAR, plotKey, local, -1, "", 0));

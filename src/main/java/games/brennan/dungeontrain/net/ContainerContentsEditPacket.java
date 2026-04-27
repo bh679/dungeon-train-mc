@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
                                           int entryIndex, String itemId, int delta) {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_COUNT }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX }
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());
