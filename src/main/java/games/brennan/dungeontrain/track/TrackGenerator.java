@@ -6,9 +6,12 @@ import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.ShipFilterProcessor;
+import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
-import games.brennan.dungeontrain.tunnel.VSShipFilterProcessor;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.Vec3i;
@@ -25,8 +28,6 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.ServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Deque;
 import java.util.HashMap;
@@ -218,11 +219,12 @@ public final class TrackGenerator {
      * stop on a ship.</p>
      */
     private static int probeGroundY(ServerLevel level, int x, int z, int bedY) {
+        Shipyard shipyard = Shipyards.of(level);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int minY = level.getMinBuildHeight() + 1;
         for (int py = bedY - 1; py >= minY; py--) {
             pos.set(x, py, z);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) {
+            if (shipyard.isInShip(pos)) {
                 // Something ship-owned intercepts — treat as "no free pillar column"
                 // and return a sentinel that makes this a zero-height pillar (no arch).
                 return bedY;
@@ -284,11 +286,12 @@ public final class TrackGenerator {
         TrackGeometry g,
         TilePaint paint
     ) {
+        Shipyard shipyard = Shipyards.of(level);
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
         // Skip ship-owned positions — never mutate voxels that belong to our
-        // train or any other VS ship sharing this dimension.
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, bedPos) != null) return false;
+        // train or any other ship sharing this dimension.
+        if (shipyard.isInShip(bedPos)) return false;
 
         int zOff = worldZ - g.trackZMin();
         int xMod = Math.floorMod(worldX, TrackTemplate.TILE_LENGTH);
@@ -315,7 +318,7 @@ public final class TrackGenerator {
         railState = paint.resolveSidecar(railState, xMod, 1, zOff);
         if (railState != null) {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, railPos) == null) {
+            if (!shipyard.isInShip(railPos)) {
                 BlockState existingRail = level.getBlockState(railPos);
                 if (!existingRail.is(railState.getBlock())) {
                     SilentBlockOps.setBlockSilent(level, railPos, railState);
@@ -515,7 +518,7 @@ public final class TrackGenerator {
         int zIdx
     ) {
         BlockPos pos = new BlockPos(x, y, z);
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        if (Shipyards.of(level).isInShip(pos)) return;
         BlockState existing = level.getBlockState(pos);
         if (!isPassable(existing)) return;
 
@@ -754,7 +757,7 @@ public final class TrackGenerator {
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setBoundingBox(clip)
-                .addProcessor(VSShipFilterProcessor.INSTANCE);
+                .addProcessor(ShipFilterProcessor.INSTANCE);
             // Mirror applies to the non-flipped (+Z) side. The saved template
             // is designed to read correctly on the flipped (-Z) side, so we
             // mirror it when stamping on the opposite side to match.
@@ -770,6 +773,7 @@ public final class TrackGenerator {
             // would land outside [bottomY, currentTop] are skipped (the
             // BoundingBox above already kept those out of placeInWorld).
             if (!stairsSidecar.isEmpty()) {
+                Shipyard shipyard = Shipyards.of(level);
                 int templateBaseY = currentTop - (STAIRS_Y - 1);
                 for (var entry : stairsSidecar.entries()) {
                     int lx = entry.localPos().getX();
@@ -780,7 +784,7 @@ public final class TrackGenerator {
                     int wx = originX + lx;
                     int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
                     BlockPos wpos = new BlockPos(wx, wy, wz);
-                    if (VSGameUtilsKt.getShipObjectManagingPos(level, wpos) != null) continue;
+                    if (shipyard.isInShip(wpos)) continue;
                     games.brennan.dungeontrain.editor.VariantState picked =
                         stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
                     if (picked == null) continue;
@@ -827,14 +831,14 @@ public final class TrackGenerator {
      * the bed — the periodic scan only runs when pending is empty, and
      * pending is refilled continuously by new chunk loads.</p>
      */
-    public static void bootstrapPendingChunks(ServerLevel level, ServerShip ship, TrainTransformProvider provider) {
+    public static void bootstrapPendingChunks(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
         int viewDistance = level.getServer().getPlayerList().getViewDistance();
         if (viewDistance <= 0) viewDistance = 10;
 
-        Vector3dc shipWorldPos = ship.getTransform().getPosition();
+        Vector3dc shipWorldPos = ship.currentWorldPosition();
         int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
         int centerCz = g.trackCenterZ() >> 4;
 
@@ -852,7 +856,7 @@ public final class TrackGenerator {
             }
         }
         LOGGER.info("[DungeonTrain] Track bootstrap for ship {}: enqueued {} already-loaded chunks (centerCx={}, viewDistance={})",
-            ship.getId(), queued, centerCx, viewDistance);
+            ship.id(), queued, centerCx, viewDistance);
     }
 
     /**
@@ -867,7 +871,7 @@ public final class TrackGenerator {
      * most {@code CHUNKS_PER_SCAN_BUDGET} block-writing passes — keeps the
      * tick cost flat regardless of how many chunks loaded recently.</p>
      */
-    public static void fillRenderDistance(ServerLevel level, ServerShip ship, TrainTransformProvider provider) {
+    public static void fillRenderDistance(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
@@ -900,7 +904,7 @@ public final class TrackGenerator {
             int viewDistance = level.getServer().getPlayerList().getViewDistance();
             if (viewDistance <= 0) viewDistance = 10; // dedicated-server fallback
 
-            Vector3dc shipWorldPos = ship.getTransform().getPosition();
+            Vector3dc shipWorldPos = ship.currentWorldPosition();
             int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
             int centerCz = g.trackCenterZ() >> 4;
 
@@ -920,7 +924,7 @@ public final class TrackGenerator {
 
         if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {
             LOGGER.debug("[DungeonTrain] fillRenderDistance ship={} drained={} (pending={} scan={}) filled.size={} pending.size={}",
-                ship.getId(), CHUNKS_PER_SCAN_BUDGET - budget, drainedFromPending, scanned,
+                ship.id(), CHUNKS_PER_SCAN_BUDGET - budget, drainedFromPending, scanned,
                 filled.size(), pending.size());
         }
     }

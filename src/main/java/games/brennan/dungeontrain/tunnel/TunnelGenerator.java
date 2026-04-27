@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.tunnel;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.event.TunnelChunkEvents;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -11,7 +12,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.ServerShip;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -349,7 +349,7 @@ public final class TunnelGenerator {
      * first the pending queue populated by {@code TunnelChunkEvents}, then a
      * sweep of the view-distance corridor on X × ±{@link #Z_CHUNK_MARGIN} on Z.
      */
-    public static void fillRenderDistance(ServerLevel level, ServerShip ship, TrainTransformProvider provider) {
+    public static void fillRenderDistance(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
@@ -386,7 +386,7 @@ public final class TunnelGenerator {
             int viewDistance = level.getServer().getPlayerList().getViewDistance();
             if (viewDistance <= 0) viewDistance = 10;
 
-            Vector3dc shipWorldPos = ship.getTransform().getPosition();
+            Vector3dc shipWorldPos = ship.currentWorldPosition();
             int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
             int centerCz = g.trackCenterZ() >> 4;
 
@@ -409,7 +409,7 @@ public final class TunnelGenerator {
 
         if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {
             LOGGER.debug("[DungeonTrain] fillTunnelRenderDistance ship={} drained={} (pending={} scan={}) filled.size={} pending.size={}",
-                ship.getId(), CHUNKS_PER_SCAN_BUDGET - budget, drainedFromPending, scanned,
+                ship.id(), CHUNKS_PER_SCAN_BUDGET - budget, drainedFromPending, scanned,
                 filled.size(), pending.size());
         }
     }

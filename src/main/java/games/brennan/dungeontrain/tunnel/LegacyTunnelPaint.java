@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.tunnel;
 
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -9,7 +10,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Procedural fallback painting for tunnel sections, portals, and approach
@@ -273,7 +273,7 @@ public final class LegacyTunnelPaint {
                             int x, int y, int z, BlockState state) {
         pos.set(x, y, z);
         if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        if (Shipyards.of(level).isInShip(pos)) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.is(state.getBlock())) return;
         SilentBlockOps.setBlockSilent(level, pos.immutable(), state);
@@ -283,7 +283,7 @@ public final class LegacyTunnelPaint {
                                int x, int y, int z) {
         pos.set(x, y, z);
         if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        if (Shipyards.of(level).isInShip(pos)) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.isAir()) return;
         SilentBlockOps.clearBlockSilent(level, pos.immutable());
@@ -293,7 +293,7 @@ public final class LegacyTunnelPaint {
                            int x, int y, int z, Direction facing) {
         pos.set(x, y, z);
         if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        if (Shipyards.of(level).isInShip(pos)) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.is(TunnelPalette.STAIRS)) return;
         BlockState state = TunnelPalette.STAIRS.defaultBlockState()
@@ -312,7 +312,7 @@ public final class LegacyTunnelPaint {
                           int x, int y, int z) {
         pos.set(x, y, z);
         if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        if (Shipyards.of(level).isInShip(pos)) return;
         BlockState existing = level.getBlockState(pos);
         if (existing.is(TrackPalette.RAIL.getBlock())) return;
         SilentBlockOps.setBlockSilent(level, pos.immutable(), TrackPalette.RAIL);
@@ -327,7 +327,7 @@ public final class LegacyTunnelPaint {
                                      int x, int y, int z) {
         pos.set(x, y, z);
         if (!level.hasChunkAt(pos)) return;
-        if (VSGameUtilsKt.getShipObjectManagingPos(level, pos) != null) return;
+        if (Shipyards.of(level).isInShip(pos)) return;
         BlockState existing = level.getBlockState(pos);
         if (!existing.isAir()) return;
         SilentBlockOps.setBlockSilent(level, pos.immutable(), Blocks.STRUCTURE_VOID.defaultBlockState());

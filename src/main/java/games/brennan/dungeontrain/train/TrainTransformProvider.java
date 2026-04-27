@@ -1,20 +1,18 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.ship.InertiaSnapshot;
+import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
-import org.valkyrienskies.core.api.ships.ServerShipTransformProvider;
-import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 
 import java.util.Deque;
 import java.util.HashSet;
@@ -36,7 +34,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * Window state (shipyard origin, carriage count, active indices) lives
  * here so the rolling-window manager can read/write it via one cast.
  */
-public final class TrainTransformProvider implements ServerShipTransformProvider {
+public final class TrainTransformProvider implements KinematicDriver {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     // Diagnostic logger for the flatbed-hop investigation (Stage 1 of the
@@ -352,16 +350,17 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     /**
      * Snapshot of the ship's inertia at spawn time. When non-null, {@link
      * TrainWindowManager} writes these values back onto the ship after every
-     * voxel mutation so VS doesn't move {@code positionInModel}. See
-     * {@link ShipInertiaLocker} for the mechanism.
+     * voxel mutation so the underlying physics mod doesn't move
+     * {@code positionInModel}. See {@code ship.vs.VsInertiaLocker} for the
+     * VS-specific reflection mechanism.
      */
-    private volatile ShipInertiaLocker.LockedInertia lockedInertia;
+    private volatile InertiaSnapshot lockedInertia;
 
-    public ShipInertiaLocker.LockedInertia getLockedInertia() {
+    public InertiaSnapshot getLockedInertia() {
         return lockedInertia;
     }
 
-    public void setLockedInertia(ShipInertiaLocker.LockedInertia locked) {
+    public void setLockedInertia(InertiaSnapshot locked) {
         this.lockedInertia = locked;
     }
 
@@ -441,9 +440,9 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
     }
 
     /**
-     * Compute the compensated BodyTransform for a given observed ship state.
+     * Compute the compensated tick output for a given observed ship state.
      *
-     * Shared between the physics-thread provider callback (normal path) and the
+     * Shared between the physics-thread driver callback (normal path) and the
      * rolling-window manager (called on the server thread right after block
      * mutations) so the voxel change and transform update land in the same
      * server tick — otherwise the client may render the new voxels against the
@@ -453,29 +452,31 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
      * physics tick has run); callers should leave the transform alone in that
      * case.
      */
-    public BodyTransform computeCompensatedTransform(ShipTransform current) {
+    public TickOutput computeCompensatedTransform(TickInput current) {
         if (lockedRotation == null) return null;
 
         Vector3d effectivePos = computeEffectivePosition(
-            canonicalPos, current.getPositionInModel(), lockedPositionInModel, lockedRotation);
+            canonicalPos, current.currentPositionInModel(), lockedPositionInModel, lockedRotation);
 
-        double rawComDeltaX = current.getPositionInModel().x() - lockedPositionInModel.x();
+        double rawComDeltaX = current.currentPositionInModel().x() - lockedPositionInModel.x();
         if (rawComDeltaX * rawComDeltaX > COM_DRIFT_LOG_THRESHOLD_SQ
             && Math.abs(rawComDeltaX - lastLoggedDriftX) > 0.5) {
             LOGGER.debug("[DungeonTrain] Pivot drift: rawComDeltaX={} — compensating", rawComDeltaX);
             lastLoggedDriftX = rawComDeltaX;
         }
 
-        return current.toBuilder()
-            .position(effectivePos)
-            .rotation(lockedRotation)
-            .build();
+        return new TickOutput(
+            effectivePos,
+            lockedRotation,
+            current.currentPositionInModel(),
+            targetVelocity,
+            ZERO_OMEGA);
     }
 
     /**
      * Pure-logic helper for the pivot-drift compensation math. Extracted so
      * unit tests can exercise the arithmetic without mocking VS's
-     * {@link ShipTransform} / {@link BodyTransform} interfaces.
+     * {@link KinematicDriver.TickInput} / {@link KinematicDriver.TickOutput} types.
      *
      * Formula: {@code effectivePos = canonicalPos + lockedRotation · (currentPivot − lockedPivot)}.
      *
@@ -492,16 +493,12 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
         return new Vector3d(canonicalPos).add(comDelta);
     }
 
-    @NotNull
     @Override
-    public NextTransformAndVelocityData provideNextTransformAndVelocity(
-        @NotNull ShipTransform prev,
-        @NotNull ShipTransform current
-    ) {
+    public TickOutput nextTransform(TickInput input) {
         if (lockedRotation == null) {
-            lockedRotation = new Quaterniond(current.getRotation());
-            canonicalPos = new Vector3d(current.getPosition());
-            lockedPositionInModel = new Vector3d(current.getPositionInModel());
+            lockedRotation = new Quaterniond(input.currentRotation());
+            canonicalPos = new Vector3d(input.currentPosition());
+            lockedPositionInModel = new Vector3d(input.currentPositionInModel());
             // Stage 2b P4 — sanity-log the captured baseline. Non-identity
             // rotation would change the sign convention of the compensation
             // math and matter a lot for diagnosis; print it once.
@@ -542,15 +539,15 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
 
         // The rolling-window manager mutates voxel blocks every server tick;
         // VS may re-center the ship's model-space pivot (positionInModel) on
-        // the new COM regardless of setStatic(true). Setting the builder's
+        // the new COM regardless of setStatic(true). Setting the output's
         // positionInModel to our locked baseline is not enough — VS appears
         // to ignore or re-derive it. So we COMPENSATE the world-space
         // position by the observed pivot drift, which keeps the voxel-to-
         // world mapping anchored to the original pivot no matter which pivot
         // VS actually uses for rendering.
-        BodyTransform nextTransform = computeCompensatedTransform(current);
-        logPhysicsProbe(current, nextTransform);
-        return new NextTransformAndVelocityData(nextTransform, targetVelocity, ZERO_OMEGA);
+        TickOutput next = computeCompensatedTransform(input);
+        logPhysicsProbe(input, next);
+        return next;
     }
 
     /**
@@ -573,11 +570,11 @@ public final class TrainTransformProvider implements ServerShipTransformProvider
      * expected straight-line velocity step. Answers the direct question
      * "is the COM moving, and if so, when and by how much?".
      */
-    private void logPhysicsProbe(ShipTransform current, BodyTransform nextTransform) {
+    private void logPhysicsProbe(TickInput current, TickOutput nextTransform) {
         physicsTickCounter++;
-        Vector3dc effPos = nextTransform.getPosition();
-        Vector3dc pivot = current.getPositionInModel();
-        Vector3dc pivotInReturned = nextTransform.getPositionInModel();
+        Vector3dc effPos = nextTransform.position();
+        Vector3dc pivot = current.currentPositionInModel();
+        Vector3dc pivotInReturned = nextTransform.positionInModel();
         double rawComDeltaX = pivot.x() - lockedPositionInModel.x();
 
         // Stage 2b P2 — voxel world-position sample. Voxel A = shipyard origin

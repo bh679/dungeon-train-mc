@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -11,10 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.core.api.ships.ServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
-import org.valkyrienskies.mod.common.assembly.ShipAssembler;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,12 +21,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Spawns a carriage-shaped Valkyrien Skies ship and drives it at constant
- * velocity via a {@link TrainTransformProvider} (kinematic drive — bypasses
- * the force-based mass threshold that froze 20-carriage trains).
+ * Spawns a carriage-shaped managed ship and drives it at constant velocity
+ * via a {@link TrainTransformProvider} (kinematic drive — bypasses the
+ * force-based mass threshold that froze 20-carriage trains).
  *
- * All VS API usage is confined to this file + {@link TrainTransformProvider}
- * so a future VS version bump touches a minimal surface area.
+ * <p>All ship-physics interaction goes through the {@link Shipyard} port,
+ * so a future swap to a different physics mod (Sable) only changes the
+ * {@code ship.vs.*} adapter package.</p>
  */
 public final class TrainAssembler {
 
@@ -37,8 +37,9 @@ public final class TrainAssembler {
     private TrainAssembler() {}
 
     /**
-     * Spawn an N-carriage train as a single VS ship moving at {@code velocity}.
-     * All carriages share one rigid body and one kinematic transform provider.
+     * Spawn an N-carriage train as a single managed ship moving at
+     * {@code velocity}. All carriages share one rigid body and one kinematic
+     * transform driver.
      *
      * {@code origin} anchors carriage index 0 in world space. The physical
      * placement is shifted so the initial carriages cover indices
@@ -50,7 +51,7 @@ public final class TrainAssembler {
      * and clears world blocks inside the new train's bounding volume so trapped
      * terrain does not wedge the ship against the world.
      */
-    public static ServerShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
+    public static ManagedShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
             LOGGER.info("[DungeonTrain] Deleted {} existing train(s) before spawn", deleted);
@@ -71,11 +72,11 @@ public final class TrainAssembler {
      *     (typically the same as origin for a successor — its first
      *     carriage lives at origin and the window extends forward).
      */
-    public static ServerShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
+    public static ManagedShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
         return spawnTrainCore(level, origin, velocity, count, spawnerWorldPos, dims, globalPIdxBase);
     }
 
-    private static ServerShip spawnTrainCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
+    private static ManagedShip spawnTrainCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
         // At spawn time the ship's worldToShip is a pure translation, so the
         // player's shipyard-space X offset from shipyardOrigin equals their
         // world X offset from origin — we can compute pIdx without the ship.
@@ -118,7 +119,7 @@ public final class TrainAssembler {
         LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, {} empty, initialPIdx={}, dims={}x{}x{}), assembling...",
             blocks.size(), count, emptyCarriages, initialPIdx, dims.length(), dims.width(), dims.height());
 
-        ServerShip ship = ShipAssembler.assembleToShip(level, blocks, 1.0);
+        ManagedShip ship = Shipyards.of(level).assemble(blocks, 1.0);
 
         // shipyardOrigin anchors carriage index 0. Even though we didn't place a
         // carriage at `origin` when firstIdx != 0, worldToShip is still a pure
@@ -133,7 +134,7 @@ public final class TrainAssembler {
         // `[originZ, originZ + width)` would miss the +Z face of every
         // initial carriage, leaving a 1-block sliver.
         Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
-        ship.getTransform().getWorldToShip().transformPosition(shipyardOriginVec);
+        ship.worldToShip(shipyardOriginVec);
         BlockPos shipyardOrigin = new BlockPos(
             (int) Math.round(shipyardOriginVec.x),
             (int) Math.round(shipyardOriginVec.y),
@@ -150,8 +151,8 @@ public final class TrainAssembler {
         }
 
         TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx, dims, globalPIdxBase);
-        ship.setTransformProvider(provider);
-        // Skip VS dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
+        ship.setKinematicDriver(provider);
+        // Skip dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
         // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
         ship.setStatic(true);
 
@@ -166,8 +167,8 @@ public final class TrainAssembler {
             origin.getZ() + dims.width() - 1);
         provider.setTrackGeometry(geometry);
 
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform provider, marked static (shipyardOrigin={}, count={}, initialPIdx={}, globalPIdxBase={}, track={})",
-            ship.getId(), shipyardOrigin, count, initialPIdx, globalPIdxBase, geometry);
+        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform driver, marked static (shipyardOrigin={}, count={}, initialPIdx={}, globalPIdxBase={}, track={})",
+            ship.id(), shipyardOrigin, count, initialPIdx, globalPIdxBase, geometry);
 
         // Bootstrap: enqueue every chunk already loaded in the Z corridor.
         // These chunks fired ChunkEvent.Load before this train existed and
@@ -185,8 +186,8 @@ public final class TrainAssembler {
      */
     public static List<TrainTransformProvider> getActiveTrainProviders(ServerLevel level) {
         List<TrainTransformProvider> providers = new ArrayList<>();
-        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (loaded.getTransformProvider() instanceof TrainTransformProvider p) {
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider p) {
                 providers.add(p);
             }
         }
@@ -194,19 +195,20 @@ public final class TrainAssembler {
     }
 
     /**
-     * Delete every loaded ship in {@code level} whose transform provider is a
+     * Delete every loaded ship in {@code level} whose kinematic driver is a
      * {@link TrainTransformProvider} — i.e. every Dungeon Train we've previously
      * spawned. Returns the number of ships deleted.
      */
     private static int deleteExistingTrains(ServerLevel level) {
-        List<LoadedServerShip> trains = new ArrayList<>();
-        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (loaded.getTransformProvider() instanceof TrainTransformProvider) {
-                trains.add(loaded);
+        Shipyard shipyard = Shipyards.of(level);
+        List<ManagedShip> trains = new ArrayList<>();
+        for (ManagedShip ship : shipyard.findAll()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
+                trains.add(ship);
             }
         }
-        for (LoadedServerShip ship : trains) {
-            ShipAssembler.INSTANCE.deleteShip(level, ship, true, false);
+        for (ManagedShip ship : trains) {
+            shipyard.delete(ship);
         }
         // Wipe per-carriage persistence snapshots from the previous train —
         // a fresh spawn should never restore stale state keyed on the old

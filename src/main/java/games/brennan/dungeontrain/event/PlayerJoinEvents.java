@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -23,9 +25,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.core.api.ships.ServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Teleports joining players to a random position alongside the current
@@ -69,23 +68,23 @@ public final class PlayerJoinEvents {
         if (!(player.level() instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
 
-        LoadedServerShip trainShip = findTrain(level);
+        ManagedShip trainShip = findTrain(level);
         if (trainShip == null) {
             LOGGER.info("[DungeonTrain] No train present on login — skipping teleport for {}",
                 player.getName().getString());
             return;
         }
 
-        Vector3dc trainPos = trainShip.getTransform().getPosition();
+        Vector3dc trainPos = trainShip.currentWorldPosition();
         Vector3d trainCenter = new Vector3d(trainPos.x(), trainPos.y(), trainPos.z());
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level.getServer().overworld());
         PlayerTarget target = pickPlayerTarget(level, trainCenter, data);
         teleportAndLookAt(level, player, trainShip, target);
     }
 
-    private static LoadedServerShip findTrain(ServerLevel level) {
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (ship.getTransformProvider() instanceof TrainTransformProvider) {
+    private static ManagedShip findTrain(ServerLevel level) {
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
                 return ship;
             }
         }
@@ -183,10 +182,10 @@ public final class PlayerJoinEvents {
     private static void teleportAndLookAt(
         ServerLevel level,
         ServerPlayer player,
-        ServerShip ship,
+        ManagedShip ship,
         PlayerTarget target
     ) {
-        Vector3dc trainPos = ship.getTransform().getPosition();
+        Vector3dc trainPos = ship.currentWorldPosition();
 
         player.teleportTo(level, target.px, target.py, target.pz, 0f, 0f);
         Vec3 lookTarget = new Vec3(trainPos.x(), trainPos.y() + 1.5, trainPos.z());

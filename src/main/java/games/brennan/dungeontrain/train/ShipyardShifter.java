@@ -1,12 +1,13 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.ship.InertiaSnapshot;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
 
 import java.util.List;
 
@@ -18,7 +19,8 @@ import java.util.List;
  *
  * <h2>Why</h2>
  * With our ship pinned at spawn (see {@link TrainTransformProvider}'s
- * {@code lockedPositionInModel} and {@link ShipInertiaLocker}'s COM pin),
+ * {@code lockedPositionInModel} and the COM pin in
+ * {@code ship.vs.VsInertiaLocker}),
  * the pivot stays at the spawn location forever. The player walking the
  * rolling-window train past ~228 carriages puts their carriage voxel >
  * 2048 blocks (= 128 chunks) from the pivot. VS refuses to trust the
@@ -61,19 +63,19 @@ public final class ShipyardShifter {
 
     public static void shiftIfNeeded(
         ServerLevel level,
-        List<LoadedServerShip> trains,
+        List<ManagedShip> trains,
         List<ServerPlayer> players
     ) {
         if (players.isEmpty() || trains.isEmpty()) return;
-        for (LoadedServerShip ship : trains) {
-            if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+        for (ManagedShip ship : trains) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
             considerShift(level, ship, provider, players);
         }
     }
 
     private static void considerShift(
         ServerLevel level,
-        LoadedServerShip ship,
+        ManagedShip ship,
         TrainTransformProvider provider,
         List<ServerPlayer> players
     ) {
@@ -89,7 +91,7 @@ public final class ShipyardShifter {
         ServerPlayer worstPlayer = null;
         for (ServerPlayer player : players) {
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
-            ship.getTransform().getWorldToShip().transformPosition(local);
+            ship.worldToShip(local);
             double offset = local.x - pivot.x();
             if (Math.abs(offset) > Math.abs(worstOffset)) {
                 worstOffset = offset;
@@ -112,13 +114,14 @@ public final class ShipyardShifter {
         double pivotBeforeX = pivot.x();
 
         provider.shiftReference(delta);
-        ShipInertiaLocker.LockedInertia locked = provider.getLockedInertia();
+        InertiaSnapshot locked = provider.getLockedInertia();
         if (locked != null) {
-            ShipInertiaLocker.LockedInertia shifted = ShipInertiaLocker.shiftCom(locked, delta);
+            InertiaSnapshot shifted = locked.shifted(delta);
             provider.setLockedInertia(shifted);
-            // Immediately restore into VS's live inertia fields so the next
-            // physics tick's getCenterOfMass() read sees the new COM.
-            ShipInertiaLocker.restore(ship, shifted);
+            // Immediately restore into the physics mod's live inertia fields
+            // so the next physics tick's getCenterOfMass() read sees the new
+            // COM.
+            ship.restoreInertia(shifted);
         }
 
         Vector3dc canonAfter = provider.getCanonicalPos();
@@ -126,7 +129,7 @@ public final class ShipyardShifter {
         JITTER_LOGGER.info(
             "[stuck.shift] tick={} shipId={} player={} offsetBefore={} shiftBy={} "
                 + "pivotX={} -> {} canonicalX={} -> {}",
-            level.getGameTime(), ship.getId(),
+            level.getGameTime(), ship.id(),
             worstPlayer.getUUID(),
             String.format("%.2f", worstOffset),
             String.format("%.2f", shiftMag),

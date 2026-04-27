@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -15,8 +17,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Assembles the starter train at {@link ServerStartedEvent} — before any
@@ -73,9 +73,9 @@ public final class TrainBootstrapEvents {
         }
     }
 
-    private static LoadedServerShip findTrain(ServerLevel level) {
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (ship.getTransformProvider() instanceof TrainTransformProvider) {
+    private static ManagedShip findTrain(ServerLevel level) {
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
                 return ship;
             }
         }

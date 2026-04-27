@@ -1,4 +1,4 @@
-package games.brennan.dungeontrain.client;
+package games.brennan.dungeontrain.ship.vs;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
@@ -18,32 +18,40 @@ import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
- * Stage 2b P5 — client-side transform probe.
+ * Stage 2b P5 — client-side transform probe (VS-specific).
  *
  * <p>On each client tick (20 Hz), logs the render-transform of every
- * Valkyrien Skies ship within 200 blocks of the local player. Output goes
- * to the {@code games.brennan.dungeontrain.jitter} category alongside the
- * server-side probes so {@code grep [client]} + {@code grep [physics]} on
- * the same log file gives side-by-side server/client views of the ship.</p>
+ * Valkyrien Skies ship within 200 blocks of the local player. Output
+ * goes to the {@code games.brennan.dungeontrain.jitter} category
+ * alongside the server-side probes so {@code grep [client]} +
+ * {@code grep [physics]} on the same log file gives side-by-side
+ * server/client views of the ship.</p>
  *
- * <p>The key diagnostic question: does the client's rendered ship position
- * oscillate the same way the server's {@code effPos} does? If yes, the
- * user's hop is the server-side oscillation leaking through the network.
- * If no, the oscillation is server-internal noise and the real hop is from
- * a different source (entity carry, client-side prediction, voxel sync).</p>
+ * <p>The key diagnostic question: does the client's rendered ship
+ * position oscillate the same way the server's {@code effPos} does?
+ * If yes, the user's hop is the server-side oscillation leaking
+ * through the network. If no, the oscillation is server-internal
+ * noise and the real hop is from a different source (entity carry,
+ * client-side prediction, voxel sync).</p>
  *
- * <p>Registered on {@code Dist.CLIENT} only so dedicated-server runs don't
- * pull in client-only classes ({@link Minecraft}, {@link ClientLevel}).</p>
+ * <p>Lives in {@code ship.vs} because it queries VS's
+ * {@code ClientShip} render transform directly. When swapping the
+ * physics mod, write a {@code ship.<modname>.JitterClientProbe}
+ * equivalent or drop client-side jitter probing entirely.</p>
+ *
+ * <p>Registered on {@code Dist.CLIENT} only so dedicated-server runs
+ * don't pull in client-only classes ({@link Minecraft},
+ * {@link ClientLevel}).</p>
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
-public final class JitterClientProbe {
+public final class VsJitterClientProbe {
 
     private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
     private static final double NEAR_RADIUS_SQ = 200.0 * 200.0;
 
     private static long clientTickCounter = 0L;
 
-    private JitterClientProbe() {}
+    private VsJitterClientProbe() {}
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {

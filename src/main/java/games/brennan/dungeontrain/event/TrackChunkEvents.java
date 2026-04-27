@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -11,8 +13,6 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Enqueues newly-loaded server chunks for deferred track filling. Does NOT
@@ -46,8 +46,8 @@ public final class TrackChunkEvents {
         int chunkMaxZ = chunkMinZ + 15;
         long chunkKey = ChunkPos.asLong(cx, cz);
 
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
             TrackGeometry g = provider.getTrackGeometry();
             if (g == null) continue;
             // Fast Z-corridor prefilter — skip chunks clearly outside this train's strip.

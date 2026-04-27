@@ -1,16 +1,16 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.ship.ManagedShip;
 import net.minecraft.world.phys.AABB;
 import org.joml.Vector3d;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.core.api.ships.properties.ShipTransform;
 
 import java.util.Set;
 
 /**
  * Computes the world-space AABB of a train's currently-active carriages
- * — {@link #activeWorldAABB(LoadedServerShip, TrainTransformProvider)}
- * replaces {@code ship.getWorldAABB()} in per-tick hot paths.
+ * — {@link #activeWorldAABB(ManagedShip, TrainTransformProvider)}
+ * replaces the underlying physics mod's whole-ship AABB in per-tick hot
+ * paths.
  *
  * <h2>Why</h2>
  * VS 2.4.11's {@code ship.getWorldAABB()} covers every chunk the ship
@@ -23,9 +23,8 @@ import java.util.Set;
  * <h2>How</h2>
  * Union the eight corners of each active carriage's shipyard-space box
  * (origin + (length, height, width)) transformed to world space via
- * {@code ship.getTransform().getShipToWorld()}. Size is bounded by
- * the rolling-window count (~10 carriages) regardless of how far the
- * train has rolled.
+ * {@link ManagedShip#shipToWorld}. Size is bounded by the rolling-window
+ * count (~10 carriages) regardless of how far the train has rolled.
  */
 public final class CarriageFootprint {
 
@@ -36,7 +35,7 @@ public final class CarriageFootprint {
      * {@link AABB#ofSize(net.minecraft.world.phys.Vec3, double, double, double)}-like
      * empty AABB at origin when the train has no active carriages yet.
      */
-    public static AABB activeWorldAABB(LoadedServerShip ship, TrainTransformProvider provider) {
+    public static AABB activeWorldAABB(ManagedShip ship, TrainTransformProvider provider) {
         Set<Integer> active = provider.getActiveIndices();
         if (active.isEmpty()) {
             // No active carriages → no work to do. Return a degenerate AABB
@@ -69,7 +68,6 @@ public final class CarriageFootprint {
         double syMinZ = originZ;
         double syMaxZ = originZ + width;
 
-        ShipTransform transform = ship.getTransform();
         // Transform all 8 corners — the ship may be rotated (even though
         // Dungeon Train locks rotation via setStatic(true), keeping the
         // math general costs 8 matrix-vector products per tick vs 2 and
@@ -84,7 +82,7 @@ public final class CarriageFootprint {
             for (double y : ys) {
                 for (double z : zs) {
                     tmp.set(x, y, z);
-                    transform.getShipToWorld().transformPosition(tmp);
+                    ship.shipToWorld(tmp);
                     if (tmp.x < minWX) minWX = tmp.x;
                     if (tmp.y < minWY) minWY = tmp.y;
                     if (tmp.z < minWZ) minWZ = tmp.z;

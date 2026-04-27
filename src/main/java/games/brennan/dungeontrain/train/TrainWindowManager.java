@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.ship.KinematicDriver;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -11,9 +14,6 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.valkyrienskies.core.api.bodies.properties.BodyTransform;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,8 +70,8 @@ public final class TrainWindowManager {
         if (players.isEmpty()) return;
 
         Set<UUID> seenThisTick = new HashSet<>();
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
             updateWindow(level, ship, provider, players, seenThisTick);
         }
         clearDropouts(level, seenThisTick);
@@ -100,17 +100,17 @@ public final class TrainWindowManager {
 
     private static void updateWindow(
         ServerLevel level,
-        LoadedServerShip ship,
+        ManagedShip ship,
         TrainTransformProvider provider,
         List<ServerPlayer> players,
         Set<UUID> seenThisTick
     ) {
-        // First time we see this ship, snapshot its inertia so VS's mass-
-        // recalc-on-block-change can be reverted after each window mutation.
-        // See ShipInertiaLocker for the why; this is the "Path A" fix for
-        // the flatbed-adjacent train hop.
+        // First time we see this ship, snapshot its inertia so the physics
+        // mod's mass-recalc-on-block-change can be reverted after each
+        // window mutation. See ship.vs.VsInertiaLocker for the why; this is
+        // the "Path A" fix for the flatbed-adjacent train hop.
         if (provider.getLockedInertia() == null) {
-            provider.setLockedInertia(ShipInertiaLocker.capture(ship));
+            provider.setLockedInertia(ship.captureInertia());
         }
 
         int count = provider.getCount();
@@ -131,17 +131,17 @@ public final class TrainWindowManager {
         // is sourced from SavedData (cached by DataStorage, cheap).
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
 
-        Vector3dc shipWorldPos = ship.getTransform().getPosition();
+        Vector3dc shipWorldPos = ship.currentWorldPosition();
         double shipWx = shipWorldPos.x();
         double shipWy = shipWorldPos.y();
         double shipWz = shipWorldPos.z();
 
         // Jitter probe snapshot BEFORE any block mutation — used after the
-        // mutation to confirm whether VS re-centred the pivot synchronously
-        // with our setBlock calls (H1). See `.claude/plans/swirling-fluttering-squid.md`.
-        Vector3dc pivotPreMutate = new Vector3d(ship.getTransform().getPositionInModel());
+        // mutation to confirm whether the physics mod re-centred the pivot
+        // synchronously with our setBlock calls (H1).
+        Vector3dc pivotPreMutate = new Vector3d(ship.currentPositionInModel());
         Vector3dc shipWorldPosPreMutate = new Vector3d(shipWorldPos);
-        org.joml.primitives.AABBdc aabbPreMutate = new org.joml.primitives.AABBd(ship.getWorldAABB());
+        org.joml.primitives.AABBdc aabbPreMutate = new org.joml.primitives.AABBd(ship.worldAABB());
 
         Set<Integer> current = provider.getActiveIndices();
         Set<Integer> desired = new HashSet<>();
@@ -154,7 +154,7 @@ public final class TrainWindowManager {
             // long trains: the ship's origin point sits at one end of a
             // 180-block-long carriage set, so a player who's walked to the
             // far end can be 90+ blocks from the origin while still standing
-            // on the train. With the COM-pin fix (ShipInertiaLocker) the
+            // on the train. With the COM-pin fix (ship.vs.VsInertiaLocker) the
             // origin no longer drifts along with mutations, so the origin-
             // distance check was filtering out players before they reached
             // a carriage boundary — which stopped the rolling window from
@@ -168,7 +168,7 @@ public final class TrainWindowManager {
             if (cdx * cdx + cdy * cdy + cdz * cdz > NEAR_RADIUS_SQ) continue;
 
             Vector3d local = new Vector3d(px, py, pz);
-            ship.getTransform().getWorldToShip().transformPosition(local);
+            ship.worldToShip(local);
             double rawPIdxFloat = (local.x - originX) / (double) dims.length();
             int pIdx = (int) Math.floor(rawPIdxFloat);
 
@@ -208,7 +208,7 @@ public final class TrainWindowManager {
             }
 
             if (Math.abs(pIdx) >= STUCK_LOG_THRESHOLD) {
-                Vector3dc shipPos = ship.getTransform().getPosition();
+                Vector3dc shipPos = ship.currentWorldPosition();
                 net.minecraft.world.phys.Vec3 vel = player.getDeltaMovement();
                 JITTER_LOGGER.debug(
                     "[stuck.pIdx] tick={} player={} world=({}, {}, {}) delta=({}, {}, {}) onGround={} vehicle={} "
@@ -246,7 +246,7 @@ public final class TrainWindowManager {
             // erased this carriage earlier (and the player has now walked
             // back into its range), replay the saved state so block edits,
             // container contents, and armor-stand poses survive eviction.
-            if (CarriagePersistenceStore.restore(level, ship.getId(), i, carriageOrigin)) {
+            if (CarriagePersistenceStore.restore(level, ship.id(), i, carriageOrigin)) {
                 current.add(i);
                 mutated = true;
                 LOGGER.info("[DungeonTrain] Restored carriage idx={} from persistence at shipyard {}",
@@ -276,7 +276,7 @@ public final class TrainWindowManager {
             BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
             // Snapshot the current shipyard state before erasing so a
             // future re-entry restores exactly what the player left behind.
-            CarriagePersistenceStore.save(level, ship.getId(), i, carriageOrigin, dims);
+            CarriagePersistenceStore.save(level, ship.id(), i, carriageOrigin, dims);
             CarriageTemplate.eraseAt(level, carriageOrigin, dims);
             current.remove(i);
             mutated = true;
@@ -299,19 +299,19 @@ public final class TrainWindowManager {
             provider.setLastMutationTick(level.getGameTime());
             provider.setLastMutationNanos(System.nanoTime());
 
-            // Path A fix: VS's ShipInertiaDataImpl.onSetBlock has already
-            // shifted _centerOfMassInShip and _mass for every block we just
+            // Path A fix: the physics mod's onSetBlock has already shifted
+            // _centerOfMassInShip and _mass for every block we just
             // placed/erased. Revert those changes before the next physics
             // tick reads getCenterOfMass() — that's what was making
             // positionInModel drift by ~10 blocks per mutation, which our
             // compensation then translated into the visible hop.
-            ShipInertiaLocker.restore(ship, provider.getLockedInertia());
+            ship.restoreInertia(provider.getLockedInertia());
 
             logMutationProbe(level, ship, provider, pivotPreMutate, shipWorldPosPreMutate,
                 aabbPreMutate, players, shipWx, shipWy, shipWz, originX);
-            BodyTransform compensated = provider.computeCompensatedTransform(ship.getTransform());
+            KinematicDriver.TickOutput compensated = provider.computeCompensatedTransform(ship.currentTickInput());
             if (compensated != null) {
-                ship.unsafeSetTransform(compensated);
+                ship.applyTickOutput(compensated);
             }
         }
     }
@@ -327,7 +327,7 @@ public final class TrainWindowManager {
      */
     private static void logMutationProbe(
         ServerLevel level,
-        LoadedServerShip ship,
+        ManagedShip ship,
         TrainTransformProvider provider,
         Vector3dc pivotPreMutate,
         Vector3dc shipWorldPosPreMutate,
@@ -338,15 +338,15 @@ public final class TrainWindowManager {
     ) {
         if (!JITTER_LOGGER.isTraceEnabled()) return;
 
-        Vector3dc pivotPostMutate = new Vector3d(ship.getTransform().getPositionInModel());
-        Vector3dc shipWorldPosPostMutate = new Vector3d(ship.getTransform().getPosition());
-        org.joml.primitives.AABBdc aabbPostMutate = ship.getWorldAABB();
+        Vector3dc pivotPostMutate = new Vector3d(ship.currentPositionInModel());
+        Vector3dc shipWorldPosPostMutate = new Vector3d(ship.currentWorldPosition());
+        org.joml.primitives.AABBdc aabbPostMutate = ship.worldAABB();
         Vector3d pivotDelta = new Vector3d(pivotPostMutate).sub(pivotPreMutate);
         Vector3d shipPosDelta = new Vector3d(shipWorldPosPostMutate).sub(shipWorldPosPreMutate);
 
         JITTER_LOGGER.trace(
             "[windowManager] tick={} shipId={} pivotPre={} pivotPost={} pivotDelta={} shipPosPre={} shipPosPost={} shipPosDelta={} aabbPre=[{},{},{} → {},{},{}] aabbPost=[{},{},{} → {},{},{}]",
-            level.getGameTime(), ship.getId(),
+            level.getGameTime(), ship.id(),
             TrainTransformProvider.fmt(pivotPreMutate), TrainTransformProvider.fmt(pivotPostMutate), TrainTransformProvider.fmt(pivotDelta),
             TrainTransformProvider.fmt(shipWorldPosPreMutate), TrainTransformProvider.fmt(shipWorldPosPostMutate), TrainTransformProvider.fmt(shipPosDelta),
             String.format("%.3f", aabbPreMutate.minX()), String.format("%.3f", aabbPreMutate.minY()), String.format("%.3f", aabbPreMutate.minZ()),
@@ -361,7 +361,7 @@ public final class TrainWindowManager {
             if (dx * dx + dy * dy + dz * dz > NEAR_RADIUS_SQ) continue;
 
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
-            ship.getTransform().getWorldToShip().transformPosition(local);
+            ship.worldToShip(local);
             int pIdx = (int) Math.floor((local.x - originX) / (double) provider.dims().length());
             JITTER_LOGGER.trace(
                 "[pIdx] tick={} player={} worldPos=({}, {}, {}) shipLocalX={} pIdx={} committedPIdx={} lastShiftDir={} ticksSinceShift={}",

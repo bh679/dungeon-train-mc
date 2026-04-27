@@ -1,13 +1,13 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
 
 import java.util.List;
 
@@ -49,12 +49,12 @@ public final class TrainChainManager {
 
     public static void maybeSpawnSuccessors(
         ServerLevel level,
-        List<LoadedServerShip> trains,
+        List<ManagedShip> trains,
         List<ServerPlayer> players
     ) {
         if (trains.isEmpty() || players.isEmpty()) return;
-        for (LoadedServerShip ship : trains) {
-            if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+        for (ManagedShip ship : trains) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
             if (provider.isSuccessorSpawned()) continue;
             trySpawnSuccessor(level, ship, provider, players);
         }
@@ -62,7 +62,7 @@ public final class TrainChainManager {
 
     private static void trySpawnSuccessor(
         ServerLevel level,
-        LoadedServerShip predecessorShip,
+        ManagedShip predecessorShip,
         TrainTransformProvider predecessor,
         List<ServerPlayer> players
     ) {
@@ -75,7 +75,7 @@ public final class TrainChainManager {
         int maxPIdx = Integer.MIN_VALUE;
         for (ServerPlayer player : players) {
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
-            predecessorShip.getTransform().getWorldToShip().transformPosition(local);
+            predecessorShip.worldToShip(local);
             int p = (int) Math.floor((local.x - shipyardOrigin.getX()) / (double) length);
             if (p > maxPIdx) maxPIdx = p;
         }
@@ -99,7 +99,7 @@ public final class TrainChainManager {
             shipyardOrigin.getY(),
             shipyardOrigin.getZ());
         Vector3d seamWorld = new Vector3d(seamShipyard);
-        predecessorShip.getTransform().getShipToWorld().transformPosition(seamWorld);
+        predecessorShip.shipToWorld(seamWorld);
 
         BlockPos successorOrigin = new BlockPos(
             (int) Math.round(seamWorld.x),
@@ -120,12 +120,12 @@ public final class TrainChainManager {
 
         LOGGER.info("[DungeonTrain] Spawning successor train: predecessorShipId={} predecessorMaxPIdx={} "
                 + "predecessorForwardLimit={} successorOrigin={} successorGlobalBase={}",
-            predecessorShip.getId(), maxPIdx, predecessorForwardLimit, successorOrigin, successorGlobalBase);
+            predecessorShip.id(), maxPIdx, predecessorForwardLimit, successorOrigin, successorGlobalBase);
 
-        var successorShip = TrainAssembler.spawnSuccessor(
+        ManagedShip successorShip = TrainAssembler.spawnSuccessor(
             level, successorOrigin, velocity, count, spawnerOffset, dims, successorGlobalBase);
 
-        if (successorShip.getTransformProvider() instanceof TrainTransformProvider successorProvider) {
+        if (successorShip.getKinematicDriver() instanceof TrainTransformProvider successorProvider) {
             // Successor must not paint backwards into the predecessor's
             // forward extent — cap its window at pIdx=0 on the low side.
             successorProvider.setBackwardLimit(0);
@@ -136,7 +136,7 @@ public final class TrainChainManager {
         predecessor.setSuccessorSpawned(true);
 
         LOGGER.info("[DungeonTrain] Chain seam created — predecessor={} capped at pIdx={}, successor={} starts at pIdx=0, globalBase={}",
-            predecessorShip.getId(), predecessorForwardLimit,
-            successorShip.getId(), successorGlobalBase);
+            predecessorShip.id(), predecessorForwardLimit,
+            successorShip.id(), successorGlobalBase);
     }
 }

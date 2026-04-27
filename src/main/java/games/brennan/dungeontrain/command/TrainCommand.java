@@ -21,9 +21,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.ServerShip;
 
 import java.util.List;
 
@@ -95,12 +95,12 @@ public final class TrainCommand {
 
         try {
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            ServerShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
+            ManagedShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
             int lengthBlocks = count * dims.length();
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
-                ship.getId(), count, lengthBlocks);
+                ship.id(), count, lengthBlocks);
             source.sendSuccess(() -> Component.literal(
-                "Spawned " + count + "-carriage train (ship id " + ship.getId() + ", length "
+                "Spawned " + count + "-carriage train (ship id " + ship.id() + ", length "
                     + lengthBlocks + " blocks) at " + origin + ", velocity +X " + speed + " m/s"
             ), true);
             return 1;

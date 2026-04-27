@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -13,8 +15,6 @@ import net.minecraftforge.event.level.ChunkDataEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -69,8 +69,8 @@ public final class TunnelChunkEvents {
         int chunkMaxZ = chunkMinZ + 15;
         long chunkKey = ChunkPos.asLong(cx, cz);
 
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
             TrackGeometry g = provider.getTrackGeometry();
             if (g == null) continue;
             TunnelGeometry tg = TunnelGeometry.from(g);

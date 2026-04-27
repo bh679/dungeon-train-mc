@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.debug.CarriageDebug;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.ChatFormatting;
@@ -12,8 +14,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * {@code /dungeontrain debug scan} — walks every active carriage index of
@@ -36,8 +36,8 @@ public final class DebugCommand {
         int totalStrays = 0;
         int trainsScanned = 0;
 
-        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (!(loaded.getTransformProvider() instanceof TrainTransformProvider provider)) continue;
+        for (ManagedShip loaded : Shipyards.of(level).findAll()) {
+            if (!(loaded.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
             trainsScanned++;
 
             BlockPos origin = provider.getShipyardOrigin();
@@ -49,10 +49,10 @@ public final class DebugCommand {
             for (Integer i : provider.getActiveIndices()) {
                 BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
                 shipStrays += CarriageDebug.scanForStrays(level, carriageOrigin,
-                    "debug-cmd shipId=" + loaded.getId() + " idx=" + i, dims);
+                    "debug-cmd shipId=" + loaded.id() + " idx=" + i, dims);
             }
             final int fShipStrays = shipStrays;
-            final long fShipId = loaded.getId();
+            final long fShipId = loaded.id();
             source.sendSuccess(() -> Component.literal(
                 "Ship " + fShipId + " — " + fShipStrays + " stray(s) across "
                     + provider.getActiveIndices().size() + " active carriage(s)"

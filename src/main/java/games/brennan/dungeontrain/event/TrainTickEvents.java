@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageFootprint;
@@ -26,8 +29,6 @@ import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -113,15 +114,15 @@ public final class TrainTickEvents {
         VariantOverlayRenderer.onLevelTick(level);
         long tAfterOverlay = System.nanoTime();
 
-        List<LoadedServerShip> trains = findTrains(level);
+        List<ManagedShip> trains = findTrains(level);
         long tAfterFindTrains = System.nanoTime();
         if (trains.isEmpty()) {
             tickCounter++;
             return;
         }
 
-        for (LoadedServerShip ship : trains) {
-            if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
+        for (ManagedShip ship : trains) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
                 killEntitiesIn(level, ship, provider);
             }
         }
@@ -141,7 +142,7 @@ public final class TrainTickEvents {
         TrainChainManager.maybeSpawnSuccessors(level, trains, level.players());
 
         if (tickCounter % BLOCK_CLEAR_PERIOD_TICKS == 0) {
-            for (LoadedServerShip ship : trains) {
+            for (ManagedShip ship : trains) {
                 clearBlocksAhead(level, ship);
             }
         }
@@ -149,8 +150,8 @@ public final class TrainTickEvents {
 
         if (DungeonTrainConfig.getGenerateTracks()
             && Math.floorMod(tickCounter, TRACK_FILL_PERIOD_TICKS) == TRACK_FILL_PHASE_OFFSET) {
-            for (LoadedServerShip ship : trains) {
-                if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
+            for (ManagedShip ship : trains) {
+                if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
                     TrackGenerator.fillRenderDistance(level, ship, provider);
                 }
             }
@@ -159,8 +160,8 @@ public final class TrainTickEvents {
 
         if (DungeonTrainConfig.getGenerateTunnels()
             && Math.floorMod(tickCounter, TUNNEL_FILL_PERIOD_TICKS) == TUNNEL_FILL_PHASE_OFFSET) {
-            for (LoadedServerShip ship : trains) {
-                if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
+            for (ManagedShip ship : trains) {
+                if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
                     TunnelGenerator.fillRenderDistance(level, ship, provider);
                 }
             }
@@ -184,17 +185,17 @@ public final class TrainTickEvents {
         tickCounter++;
     }
 
-    private static List<LoadedServerShip> findTrains(ServerLevel level) {
-        List<LoadedServerShip> trains = new ArrayList<>();
-        for (LoadedServerShip loaded : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (loaded.getTransformProvider() instanceof TrainTransformProvider) {
-                trains.add(loaded);
+    private static List<ManagedShip> findTrains(ServerLevel level) {
+        List<ManagedShip> trains = new ArrayList<>();
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
+                trains.add(ship);
             }
         }
         return trains;
     }
 
-    private static void killEntitiesIn(ServerLevel level, LoadedServerShip ship, TrainTransformProvider provider) {
+    private static void killEntitiesIn(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
         AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
         if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
         // Once-per-~10s footprint snapshot so we can see whether our AABB is
@@ -220,9 +221,10 @@ public final class TrainTickEvents {
         }
     }
 
-    private static void clearBlocksAhead(ServerLevel level, LoadedServerShip ship) {
-        if (!(ship.getTransformProvider() instanceof TrainTransformProvider provider)) return;
+    private static void clearBlocksAhead(ServerLevel level, ManagedShip ship) {
+        if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) return;
         Vector3dc velocity = provider.getTargetVelocity();
+        Shipyard shipyard = Shipyards.of(level);
 
         AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
         if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
@@ -256,15 +258,15 @@ public final class TrainTickEvents {
                     cursor.set(x, y, z);
                     BlockState state = level.getBlockState(cursor);
                     if (state.isAir()) continue;
-                    // Never destroy ship-owned blocks — our own carriages or any other VS ship.
-                    if (VSGameUtilsKt.getShipObjectManagingPos(level, cursor) != null) continue;
+                    // Never destroy ship-owned blocks — our own carriages or any other ship.
+                    if (shipyard.isInShip(cursor)) continue;
                     SilentBlockOps.clearBlockSilent(level, cursor.immutable());
                     destroyed++;
                 }
             }
         }
         if (destroyed > 0) {
-            LOGGER.debug("[DungeonTrain] Train id={} cleared {} blocks ahead", ship.getId(), destroyed);
+            LOGGER.debug("[DungeonTrain] Train id={} cleared {} blocks ahead", ship.id(), destroyed);
         }
     }
 }

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.tunnel;
 
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.ship.ShipFilterProcessor;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -13,7 +15,6 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 import java.util.Optional;
 
@@ -139,10 +140,10 @@ public final class TunnelTemplate {
                                       StructureTemplate template, boolean mirrorX) {
         StructurePlaceSettings settings = new StructurePlaceSettings()
             .setIgnoreEntities(true)
-            // Skip positions owned by a VS ship so a tunnel stamp that
+            // Skip positions owned by a managed ship so a tunnel stamp that
             // lands in the chunk the train is currently in doesn't wipe
             // out carriage voxels with the template's interior-air cells.
-            .addProcessor(VSShipFilterProcessor.INSTANCE);
+            .addProcessor(ShipFilterProcessor.INSTANCE);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
     }
@@ -178,7 +179,7 @@ public final class TunnelTemplate {
             int wy = origin.getY() + ly;
             int wz = origin.getZ() + lz;
             BlockPos wpos = new BlockPos(wx, wy, wz);
-            if (VSGameUtilsKt.getShipObjectManagingPos(level, wpos) != null) continue;
+            if (Shipyards.of(level).isInShip(wpos)) continue;
             games.brennan.dungeontrain.editor.VariantState picked =
                 sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
             if (picked == null) continue;
