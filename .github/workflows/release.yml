@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v3
+
+      - name: Cache Forge Gradle artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches/forge_gradle
+          key: forge-gradle-${{ runner.os }}-${{ hashFiles('build.gradle', 'gradle.properties') }}
+          restore-keys: |
+            forge-gradle-${{ runner.os }}-
+
+      - name: Verify tag matches mod_version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          GRADLE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          if [ "$TAG" != "$GRADLE_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match mod_version=$GRADLE_VERSION in gradle.properties"
+            exit 1
+          fi
+
+      - run: ./gradlew build --no-daemon
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Dungeon Train ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: build/libs/dungeontrain-*.jar
+          fail_on_unmatched_files: true

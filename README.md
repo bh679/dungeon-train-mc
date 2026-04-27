@@ -1,5 +1,7 @@
 # Dungeon Train (Minecraft Mod)
 
+[![Build](https://github.com/bh679/dungeon-train-mc/actions/workflows/build.yml/badge.svg)](https://github.com/bh679/dungeon-train-mc/actions/workflows/build.yml)
+
 A Minecraft port of [Dungeon Train](https://brennanhatton.itch.io/dungeontrain) — a moving train that hosts procedurally generated dungeons. Powered by [Valkyrien Skies 2](https://valkyrienskies.org/).
 
 | | |
