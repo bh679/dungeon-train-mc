@@ -26,7 +26,7 @@ import java.util.Map;
  *
  * <p>Resolution at the player's position cascades through the same four
  * cases as {@link VariantOverlayRenderer#onLevelTick} so the menu's view
- * always matches the overlay particles the player sees:
+ * always matches the overlay HUD the player sees:
  * <ol>
  *   <li>{@link CarriageEditor#plotContaining} → carriage variant</li>
  *   <li>{@link CarriageContentsEditor#plotContaining} → contents</li>
@@ -84,6 +84,13 @@ public interface BlockVariantPlot {
      * by the lock-id all-faces overlay to enumerate which cells need labels.
      */
     Map<BlockPos, Integer> allLockIds();
+
+    /**
+     * Snapshot of every flagged {@code localPos} in this plot — the same set
+     * the per-cell candidate menu reads from. Used by the wireframe overlay
+     * to draw a 1×1×1 outline around every variant-flagged block.
+     */
+    java.util.Set<BlockPos> allFlaggedPositions();
 
     /**
      * Smallest positive integer not currently used by any cell in this
@@ -197,6 +204,7 @@ public interface BlockVariantPlot {
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
     }
 
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
@@ -235,6 +243,7 @@ public interface BlockVariantPlot {
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
     }
 
     /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
@@ -275,6 +284,7 @@ public interface BlockVariantPlot {
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
     }
 
     /** Wraps a {@link TrackVariantBlocks} sidecar. */
@@ -315,5 +325,19 @@ public interface BlockVariantPlot {
         @Override public java.util.Set<BlockPos> positionsWithLockId(int id) { return sidecar.positionsWithLockId(id); }
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
+        @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+    }
+
+    /**
+     * Helper used by all four wrapper classes — flatten a sidecar's
+     * {@code List<Entry>} into a set of localPos. Defensive copy; callers
+     * may iterate freely.
+     */
+    private static java.util.Set<BlockPos> collectPositions(List<CarriageVariantBlocks.Entry> entries) {
+        java.util.LinkedHashSet<BlockPos> out = new java.util.LinkedHashSet<>(entries.size());
+        for (CarriageVariantBlocks.Entry e : entries) {
+            out.add(e.localPos());
+        }
+        return out;
     }
 }

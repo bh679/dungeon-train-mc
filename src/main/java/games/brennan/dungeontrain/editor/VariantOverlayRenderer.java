@@ -24,7 +24,6 @@ import java.util.function.Predicate;
 
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -43,36 +42,19 @@ import java.util.UUID;
 /**
  * Server-driven visual overlay for the carriage editor. For every player
  * standing inside an editor plot whose overlay toggle is on (default on
- * {@link CarriageEditor#enter}), this renderer:
+ * {@link CarriageEditor#enter}), this renderer raycasts the player's eye
+ * every tick; if the target is a variant-flagged block it pushes a hover
+ * packet so the client HUD can render the candidate-block icons, and if
+ * the target is a part block it shows an action-bar string listing the
+ * part's candidate names.
  *
- * <ul>
- *   <li>Emits {@link ParticleTypes#END_ROD} particles at the 12 edge
- *       midpoints of every block flagged with random variants — a cheap
- *       highlight that reads as a glowing outline from the player's PoV.</li>
- *   <li>Raycasts the player's eye every tick; if the target is a flagged
- *       block, shows an action-bar string listing the number of variants
- *       and the current block's registry name.</li>
- * </ul>
- *
- * <p>No client-side code required — particles and action-bar messages
- * travel on the vanilla networking path. Everything is per-player, so a
- * dedicated server with multiple editors only bills each player for their
- * own plot.</p>
+ * <p>Everything is per-player, so a dedicated server with multiple editors
+ * only bills each player for their own plot.</p>
  */
 public final class VariantOverlayRenderer {
 
-    /** Tick cadence for particle emission — every 6 ticks ≈ 3.3 Hz. */
-    private static final int PARTICLE_PERIOD_TICKS = 6;
-
-    /** Range beyond which we skip particle emission even for plots a player is "in". */
-    private static final double PARTICLE_RANGE = 24.0;
-    private static final double PARTICLE_RANGE_SQ = PARTICLE_RANGE * PARTICLE_RANGE;
-
     /** Raycast distance for the hover action bar. */
     private static final double HOVER_REACH = 8.0;
-
-    /** Number of particles per edge of a flagged block. 2 = one near each corner for visibility. */
-    private static final int PARTICLES_PER_EDGE = 2;
 
     /** Players who have turned the overlay OFF. Default is "on when in an editor plot". */
     private static final Set<UUID> DISABLED = new HashSet<>();
@@ -106,6 +88,15 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the wireframe-outline snapshot push — encodes
+     * {@code plotKey + each localPos} sorted. {@code null} or absent means
+     * "last sent was empty (or none yet)", so a fresh non-empty plot always
+     * pushes on first tick. Independent of the lock-id snapshot key because
+     * unlocked cells appear here but not there.
+     */
+    private static final Map<UUID, String> LAST_OUTLINE_SNAPSHOT_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -137,6 +128,7 @@ public final class VariantOverlayRenderer {
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
         }
+        clearOutlineIfStale(player);
     }
 
     /**
@@ -146,7 +138,6 @@ public final class VariantOverlayRenderer {
      */
     public static void onLevelTick(ServerLevel level) {
         long tick = level.getGameTime();
-        boolean emitParticles = tick % PARTICLE_PERIOD_TICKS == 0;
 
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
@@ -160,8 +151,10 @@ public final class VariantOverlayRenderer {
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
                 clearPartHoverIfStale(player);
+                clearOutlineIfStale(player);
                 continue;
             }
+            pushOutlineSnapshot(player);
 
             BlockPos playerPos = player.blockPosition();
 
@@ -181,18 +174,15 @@ public final class VariantOverlayRenderer {
                     clearHoverIfStale(player);
                     continue;
                 }
-                if (emitParticles) {
-                    emitOutlineParticles(level, player, plotOrigin, sidecar.entries());
-                }
                 updateHoverPacket(player, plotOrigin,
                     pos -> inBounds(pos, dims),
                     sidecar::statesAt);
                 continue;
             }
 
-            // Contents plot — particles + icon HUD for the contents'
-            // own variant sidecar, anchored to the interior origin (one
-            // block in from each shell wall).
+            // Contents plot — icon HUD for the contents' own variant
+            // sidecar, anchored to the interior origin (one block in from
+            // each shell wall).
             CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(playerPos, dims);
             if (contentsPlot != null) {
                 clearPartHoverIfStale(player);
@@ -206,17 +196,14 @@ public final class VariantOverlayRenderer {
                     clearHoverIfStale(player);
                     continue;
                 }
-                if (emitParticles) {
-                    emitOutlineParticles(level, player, interiorOrigin, contentsSidecar.entries());
-                }
                 updateHoverPacket(player, interiorOrigin,
                     pos -> inBounds(pos, interiorSize),
                     contentsSidecar::statesAt);
                 continue;
             }
 
-            // Part plot next — particles + icon HUD for the part's own
-            // variant sidecar. Parts-list action bar doesn't apply here (the
+            // Part plot next — icon HUD for the part's own variant
+            // sidecar. Parts-list action bar doesn't apply here (the
             // player is editing one part, not inspecting an assignment).
             CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(playerPos, dims);
             if (partLoc != null) {
@@ -230,9 +217,6 @@ public final class VariantOverlayRenderer {
                     clearHoverIfStale(player);
                     continue;
                 }
-                if (emitParticles) {
-                    emitOutlineParticles(level, player, plotOrigin, partSidecar.entries());
-                }
                 updateHoverPacket(player, plotOrigin,
                     pos -> inBounds(pos, partSize),
                     partSidecar::statesAt);
@@ -240,11 +224,11 @@ public final class VariantOverlayRenderer {
             }
 
             // Track-side plot (track tile / pillar section / stairs adjunct
-            // / tunnel kind) — particles + icon HUD for the kind's own
-            // variants.json sidecar. {@code TrackVariantBlocks.entries()}
-            // returns the same {@link CarriageVariantBlocks.Entry} record
-            // the carriage-side renderer uses, so the existing particle +
-            // hover-packet helpers apply unchanged.
+            // / tunnel kind) — icon HUD for the kind's own variants.json
+            // sidecar. {@code TrackVariantBlocks.entries()} returns the same
+            // {@link CarriageVariantBlocks.Entry} record the carriage-side
+            // renderer uses, so the existing hover-packet helper applies
+            // unchanged.
             TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
             if (trackLoc != null) {
                 clearPartHoverIfStale(player);
@@ -254,9 +238,6 @@ public final class VariantOverlayRenderer {
                 if (trackSidecar.isEmpty()) {
                     clearHoverIfStale(player);
                     continue;
-                }
-                if (emitParticles) {
-                    emitOutlineParticles(level, player, trackLoc.origin(), trackSidecar.entries());
                 }
                 Vec3i footprint = trackLoc.footprint();
                 updateHoverPacket(player, trackLoc.origin(),
@@ -467,72 +448,63 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Emit end-rod outline particles around every entry in {@code entries},
-     * offset from {@code plotOrigin} into world space. Range-culled against
-     * the player so idle editors don't flood unnecessary packets.
+     * Push a {@link games.brennan.dungeontrain.net.BlockVariantOutlinePacket}
+     * to {@code player} reflecting every variant-flagged cell (locked or
+     * unlocked) in their current editor plot. Drives the client wireframe
+     * outline. Dedups against the last-sent snapshot via
+     * {@link #LAST_OUTLINE_SNAPSHOT_KEY} so steady-state generates zero
+     * packets after the first tick.
+     *
+     * <p>Only called when overlay is on (gated in {@link #onLevelTick}).
+     * When the player isn't in any plot, sends the empty sentinel only if
+     * the previous snapshot was non-empty.</p>
      */
-    private static void emitOutlineParticles(
-        ServerLevel level, ServerPlayer player, BlockPos plotOrigin, List<CarriageVariantBlocks.Entry> entries
-    ) {
-        double px = player.getX();
-        double py = player.getY();
-        double pz = player.getZ();
-        for (CarriageVariantBlocks.Entry e : entries) {
-            BlockPos world = plotOrigin.offset(e.localPos());
-            double cx = world.getX() + 0.5;
-            double cy = world.getY() + 0.5;
-            double cz = world.getZ() + 0.5;
-            double dx = cx - px;
-            double dy = cy - py;
-            double dz = cz - pz;
-            if (dx * dx + dy * dy + dz * dz > PARTICLE_RANGE_SQ) continue;
-            sendEdgeParticles(level, player, world);
+    private static void pushOutlineSnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        games.brennan.dungeontrain.train.CarriageDims dims =
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            clearOutlineIfStale(player);
+            return;
         }
-    }
+        java.util.Set<BlockPos> positions = plot.allFlaggedPositions();
+        java.util.List<BlockPos> sorted = new java.util.ArrayList<>(positions);
+        sorted.sort((a, b) -> {
+            int dx = Integer.compare(a.getX(), b.getX());
+            if (dx != 0) return dx;
+            int dy = Integer.compare(a.getY(), b.getY());
+            if (dy != 0) return dy;
+            return Integer.compare(a.getZ(), b.getZ());
+        });
 
-    /**
-     * 12 edges per cube, {@link #PARTICLES_PER_EDGE} particles per edge.
-     * Each {@code sendParticles} call is a single packet to the player,
-     * so batch count matters — 24 per block is plenty for a visible outline
-     * at 3 Hz without overwhelming the pipe.
-     */
-    private static void sendEdgeParticles(ServerLevel level, ServerPlayer player, BlockPos world) {
-        double x0 = world.getX();
-        double y0 = world.getY();
-        double z0 = world.getZ();
-        double x1 = x0 + 1.0;
-        double y1 = y0 + 1.0;
-        double z1 = z0 + 1.0;
-
-        for (int step = 0; step < PARTICLES_PER_EDGE; step++) {
-            double t = (step + 0.5) / PARTICLES_PER_EDGE;
-
-            // 4 edges along X
-            particle(level, player, lerp(x0, x1, t), y0, z0);
-            particle(level, player, lerp(x0, x1, t), y0, z1);
-            particle(level, player, lerp(x0, x1, t), y1, z0);
-            particle(level, player, lerp(x0, x1, t), y1, z1);
-
-            // 4 edges along Y
-            particle(level, player, x0, lerp(y0, y1, t), z0);
-            particle(level, player, x0, lerp(y0, y1, t), z1);
-            particle(level, player, x1, lerp(y0, y1, t), z0);
-            particle(level, player, x1, lerp(y0, y1, t), z1);
-
-            // 4 edges along Z
-            particle(level, player, x0, y0, lerp(z0, z1, t));
-            particle(level, player, x0, y1, lerp(z0, z1, t));
-            particle(level, player, x1, y0, lerp(z0, z1, t));
-            particle(level, player, x1, y1, lerp(z0, z1, t));
+        StringBuilder keyBuf = new StringBuilder(64);
+        keyBuf.append(plot.key()).append('|');
+        for (BlockPos p : sorted) {
+            keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ()).append(';');
         }
+        String snapshotKey = keyBuf.toString();
+        String prev = LAST_OUTLINE_SNAPSHOT_KEY.get(uuid);
+        if (snapshotKey.equals(prev)) return;
+
+        LAST_OUTLINE_SNAPSHOT_KEY.put(uuid, snapshotKey);
+        if (sorted.isEmpty()) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
+            return;
+        }
+        DungeonTrainNet.sendTo(player,
+            new games.brennan.dungeontrain.net.BlockVariantOutlinePacket(
+                plot.key(), plot.origin(), sorted));
     }
 
-    private static void particle(ServerLevel level, ServerPlayer player, double x, double y, double z) {
-        level.sendParticles(player, ParticleTypes.END_ROD, true, x, y, z, 1, 0.0, 0.0, 0.0, 0.0);
-    }
-
-    private static double lerp(double a, double b, double t) {
-        return a + (b - a) * t;
+    /** Send the empty outline packet if the player previously had a non-empty snapshot. */
+    private static void clearOutlineIfStale(ServerPlayer player) {
+        if (LAST_OUTLINE_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
+        }
     }
 
     /**
