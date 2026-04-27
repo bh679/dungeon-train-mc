@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "variants": {
     "2,1,0": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
     "0,1,0": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
@@ -27,6 +27,11 @@
     "2,0,1": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
     "4,1,4": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
     "5,1,4": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
-    "1,2,0": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}]
+    "1,2,0": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
+    "3,0,1": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
+    "3,0,3": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
+    "1,0,2": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
+    "3,0,2": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}],
+    "5,0,2": [{"state": "minecraft:barrel[facing=south,open=false]", "nbt": "{Items:[]}"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4}]
   }
 }
