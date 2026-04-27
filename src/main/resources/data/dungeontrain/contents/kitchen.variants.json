@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 5,
+  "variants": {
+    "2,0,0": [{"state": "minecraft:smoker[facing=south,lit=false]", "nbt": "{BurnTime:0,CookTime:0,CookTimeTotal:0,Items:[],RecipesUsed:{}}", "weight": 5, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}}, "minecraft:crafting_table"],
+    "4,0,0": [{"state": "minecraft:smoker[facing=south,lit=false]", "nbt": "{BurnTime:0,CookTime:0,CookTimeTotal:0,Items:[],RecipesUsed:{}}", "weight": 5, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}}, "minecraft:crafting_table"],
+    "3,0,0": [{"state": "minecraft:campfire[facing=north,lit=true,signal_fire=false,waterlogged=false]", "nbt": "{CookingTimes:[I;0,0,0,0],CookingTotalTimes:[I;0,0,0,0],Items:[]}", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:grindstone[face=wall,facing=north]", "rotation": {"mode": "lock", "dirs": ["south"]}}],
+    "5,0,4": ["minecraft:cauldron", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["down"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,4": ["minecraft:cauldron", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "options", "dirs": ["down", "up", "north", "south", "west", "east"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}

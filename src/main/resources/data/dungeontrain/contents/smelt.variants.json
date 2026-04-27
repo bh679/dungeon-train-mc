@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 5,
+  "variants": {
+    "3,1,4": ["minecraft:stone_bricks", {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,2": ["minecraft:smithing_table", "minecraft:damaged_anvil[facing=north]", "minecraft:crafting_table", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}]
+  }
+}
