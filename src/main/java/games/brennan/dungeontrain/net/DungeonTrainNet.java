@@ -89,6 +89,11 @@ public final class DungeonTrainNet {
             .decoder(BlockVariantLockIdsPacket::decode)
             .consumerMainThread(BlockVariantLockIdsPacket::handle)
             .add();
+        CHANNEL.messageBuilder(BlockVariantOutlinePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+            .encoder(BlockVariantOutlinePacket::encode)
+            .decoder(BlockVariantOutlinePacket::decode)
+            .consumerMainThread(BlockVariantOutlinePacket::handle)
+            .add();
     }
 
     /** Convenience: send a packet to the server (client → server). */
