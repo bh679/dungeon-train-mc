@@ -9,11 +9,14 @@ import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraftforge.event.level.ChunkDataEvent;
 import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.valkyrienskies.core.api.ships.LoadedServerShip;
 import org.valkyrienskies.mod.common.VSGameUtilsKt;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Mirror of {@link TrackChunkEvents} for tunnel fill. Enqueues newly-loaded
@@ -26,6 +29,28 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class TunnelChunkEvents {
+
+    /**
+     * How long after a chunk's most recent save event we treat the chunk as
+     * "save in flight" and skip tunnel paint mutations on it. 2.5s comfortably
+     * covers worst-case IOWorker serialise duration on slow disks while still
+     * letting paint resume promptly. See {@link #isSaveBusy}.
+     */
+    private static final long SAVE_BUSY_WINDOW_NANOS = 2_500_000_000L;
+
+    /**
+     * chunkKey → System.nanoTime() of the most recent ChunkDataEvent.Save.
+     * Populated on the IOWorker thread (event fires from chunk save path);
+     * read on the server thread before tunnel paint mutates a chunk.
+     * ConcurrentHashMap + nanoTime is the right pair for cross-thread reads
+     * without taking a server-thread-only gameTime read.
+     *
+     * Lazy-GC: stale entries are removed on the read that observes them
+     * (compareAndRemove via {@link java.util.Map#remove(Object, Object)}),
+     * so map size is bounded by chunks saved within the last
+     * {@link #SAVE_BUSY_WINDOW_NANOS}.
+     */
+    private static final ConcurrentHashMap<Long, Long> RECENT_SAVE_NANOS = new ConcurrentHashMap<>();
 
     private TunnelChunkEvents() {}
 
@@ -55,5 +80,37 @@ public final class TunnelChunkEvents {
             if (provider.getTunnelFilledChunks().contains(chunkKey)) continue;
             provider.getPendingTunnelChunks().add(chunkKey);
         }
+    }
+
+    /**
+     * Records the chunk's save timestamp so concurrent tunnel paint can
+     * back off while the IOWorker is iterating the chunk's NBT — see
+     * {@link #isSaveBusy}. Mitigates a sporadic
+     * ConcurrentModificationException inside CompoundTag.write on the
+     * IOWorker thread under heavy paint load.
+     */
+    @SubscribeEvent
+    public static void onChunkSave(ChunkDataEvent.Save event) {
+        if (!(event.getLevel() instanceof ServerLevel)) return;
+        ChunkPos pos = event.getChunk().getPos();
+        RECENT_SAVE_NANOS.put(ChunkPos.asLong(pos.x, pos.z), System.nanoTime());
+    }
+
+    /**
+     * True if a save event for this chunk fired within
+     * {@link #SAVE_BUSY_WINDOW_NANOS}. Callers on the server thread should
+     * defer block mutations on the chunk until this returns false — the
+     * upstream race is between server-thread mutation and IOWorker NBT
+     * iteration, and the busy window is sized to outlast the worst-case
+     * serialise duration.
+     */
+    public static boolean isSaveBusy(long chunkKey) {
+        Long last = RECENT_SAVE_NANOS.get(chunkKey);
+        if (last == null) return false;
+        if (System.nanoTime() - last > SAVE_BUSY_WINDOW_NANOS) {
+            RECENT_SAVE_NANOS.remove(chunkKey, last);
+            return false;
+        }
+        return true;
     }
 }
