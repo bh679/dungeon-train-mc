@@ -88,6 +88,15 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_LOCK_SNAPSHOT_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the wireframe-outline snapshot push — encodes
+     * {@code plotKey + each localPos} sorted. {@code null} or absent means
+     * "last sent was empty (or none yet)", so a fresh non-empty plot always
+     * pushes on first tick. Independent of the lock-id snapshot key because
+     * unlocked cells appear here but not there.
+     */
+    private static final Map<UUID, String> LAST_OUTLINE_SNAPSHOT_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -119,6 +128,7 @@ public final class VariantOverlayRenderer {
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
         }
+        clearOutlineIfStale(player);
     }
 
     /**
@@ -141,8 +151,10 @@ public final class VariantOverlayRenderer {
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
                 clearPartHoverIfStale(player);
+                clearOutlineIfStale(player);
                 continue;
             }
+            pushOutlineSnapshot(player);
 
             BlockPos playerPos = player.blockPosition();
 
@@ -433,6 +445,66 @@ public final class VariantOverlayRenderer {
         }
         DungeonTrainNet.sendTo(player,
             new BlockVariantLockIdsPacket(plot.key(), plot.origin(), entries));
+    }
+
+    /**
+     * Push a {@link games.brennan.dungeontrain.net.BlockVariantOutlinePacket}
+     * to {@code player} reflecting every variant-flagged cell (locked or
+     * unlocked) in their current editor plot. Drives the client wireframe
+     * outline. Dedups against the last-sent snapshot via
+     * {@link #LAST_OUTLINE_SNAPSHOT_KEY} so steady-state generates zero
+     * packets after the first tick.
+     *
+     * <p>Only called when overlay is on (gated in {@link #onLevelTick}).
+     * When the player isn't in any plot, sends the empty sentinel only if
+     * the previous snapshot was non-empty.</p>
+     */
+    private static void pushOutlineSnapshot(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        net.minecraft.server.level.ServerLevel level = player.serverLevel();
+        games.brennan.dungeontrain.train.CarriageDims dims =
+            games.brennan.dungeontrain.world.DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            clearOutlineIfStale(player);
+            return;
+        }
+        java.util.Set<BlockPos> positions = plot.allFlaggedPositions();
+        java.util.List<BlockPos> sorted = new java.util.ArrayList<>(positions);
+        sorted.sort((a, b) -> {
+            int dx = Integer.compare(a.getX(), b.getX());
+            if (dx != 0) return dx;
+            int dy = Integer.compare(a.getY(), b.getY());
+            if (dy != 0) return dy;
+            return Integer.compare(a.getZ(), b.getZ());
+        });
+
+        StringBuilder keyBuf = new StringBuilder(64);
+        keyBuf.append(plot.key()).append('|');
+        for (BlockPos p : sorted) {
+            keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ()).append(';');
+        }
+        String snapshotKey = keyBuf.toString();
+        String prev = LAST_OUTLINE_SNAPSHOT_KEY.get(uuid);
+        if (snapshotKey.equals(prev)) return;
+
+        LAST_OUTLINE_SNAPSHOT_KEY.put(uuid, snapshotKey);
+        if (sorted.isEmpty()) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
+            return;
+        }
+        DungeonTrainNet.sendTo(player,
+            new games.brennan.dungeontrain.net.BlockVariantOutlinePacket(
+                plot.key(), plot.origin(), sorted));
+    }
+
+    /** Send the empty outline packet if the player previously had a non-empty snapshot. */
+    private static void clearOutlineIfStale(ServerPlayer player) {
+        if (LAST_OUTLINE_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player,
+                games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
+        }
     }
 
     /**
