@@ -26,6 +26,8 @@ public record ContainerContentsSyncPacket(
     String plotKey,
     @Nullable BlockPos localPos,
     List<Entry> entries,
+    int fillCount,
+    int containerSize,
     Vec3 anchorPos,
     Vec3 anchorRight,
     Vec3 anchorUp
@@ -38,7 +40,7 @@ public record ContainerContentsSyncPacket(
 
     public static ContainerContentsSyncPacket empty() {
         return new ContainerContentsSyncPacket(
-            "", null, Collections.emptyList(),
+            "", null, Collections.emptyList(), -1, 0,
             Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
     }
 
@@ -52,6 +54,9 @@ public record ContainerContentsSyncPacket(
         buf.writeVarInt(localPos.getX());
         buf.writeVarInt(localPos.getY());
         buf.writeVarInt(localPos.getZ());
+        // Sentinel-allowing signed encoding so FILL_ALL (-1) round-trips.
+        buf.writeInt(fillCount);
+        buf.writeVarInt(containerSize);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -68,10 +73,12 @@ public record ContainerContentsSyncPacket(
         boolean active = buf.readBoolean();
         if (!active) {
             return new ContainerContentsSyncPacket(
-                key, null, Collections.emptyList(),
+                key, null, Collections.emptyList(), -1, 0,
                 Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
+        int fillCount = buf.readInt();
+        int containerSize = buf.readVarInt();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -83,7 +90,7 @@ public record ContainerContentsSyncPacket(
             int weight = buf.readVarInt();
             entries.add(new Entry(id, count, weight));
         }
-        return new ContainerContentsSyncPacket(key, local, entries, anchor, right, up);
+        return new ContainerContentsSyncPacket(key, local, entries, fillCount, containerSize, anchor, right, up);
     }
 
     public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {

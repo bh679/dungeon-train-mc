@@ -133,13 +133,15 @@ public final class ContainerContentsMenuController {
                                  Direction face, Vec3 up) {
         ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
         ContainerContentsPool pool = store.poolAt(localPos);
+        BlockState state = player.serverLevel().getBlockState(worldPos);
+        int containerSize = ContainerContentsRoller.slotsForContainer(state);
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, up, pool));
+            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize));
     }
 
     private static ContainerContentsSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
-        Direction face, Vec3 up, ContainerContentsPool pool
+        Direction face, Vec3 up, ContainerContentsPool pool, int containerSize
     ) {
         Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
         Vec3 faceCentre = new Vec3(
@@ -154,7 +156,8 @@ public final class ContainerContentsMenuController {
             entries.add(new ContainerContentsSyncPacket.Entry(
                 e.itemId().toString(), e.count(), e.weight()));
         }
-        return new ContainerContentsSyncPacket(plot.key(), localPos, entries, anchor, right, up);
+        return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
+            pool.fillCount(), containerSize, anchor, right, up);
     }
 
     public static void applyEdit(ServerPlayer player, ContainerContentsEditPacket packet) {
@@ -240,6 +243,21 @@ public final class ContainerContentsMenuController {
                 ContainerContentsEntry e = current.entries().get(idx);
                 int newCount = Math.max(1, Math.min(64, e.count() + packet.delta()));
                 next = current.replaced(idx, e.withCount(newCount));
+                dirty = true;
+            }
+            case BUMP_FILL_COUNT -> {
+                // Cycle: FILL_ALL → 0 → 1 → … → 64 → FILL_ALL
+                // Click = +1 step, shift-click = -1 step (delta carries the sign).
+                int cur = current.fillCount();
+                int newFill;
+                if (packet.delta() > 0) {
+                    newFill = cur == ContainerContentsPool.FILL_ALL ? 0 : cur + 1;
+                    if (newFill > 64) newFill = ContainerContentsPool.FILL_ALL;
+                } else {
+                    newFill = cur == ContainerContentsPool.FILL_ALL ? 64
+                        : (cur == 0 ? ContainerContentsPool.FILL_ALL : cur - 1);
+                }
+                next = current.withFillCount(newFill);
                 dirty = true;
             }
         }

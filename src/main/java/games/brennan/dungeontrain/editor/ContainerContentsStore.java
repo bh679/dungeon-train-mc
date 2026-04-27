@@ -43,10 +43,13 @@ import java.util.Map;
  * {
  *   "schemaVersion": 1,
  *   "pools": {
- *     "x,y,z": [
- *       { "id": "minecraft:diamond", "count": 3, "weight": 5 },
- *       { "id": "minecraft:air", "count": 1, "weight": 20 }
- *     ]
+ *     "x,y,z": {
+ *       "fillCount": 5,
+ *       "entries": [
+ *         { "id": "minecraft:diamond", "count": 3, "weight": 5 },
+ *         { "id": "minecraft:air", "count": 1, "weight": 20 }
+ *       ]
+ *     }
  *   }
  * }
  * }</pre></p>
@@ -99,7 +102,11 @@ public final class ContainerContentsStore {
     }
 
     public synchronized void putPool(BlockPos localPos, ContainerContentsPool pool) {
-        if (pool == null || pool.isEmpty()) {
+        // Drop only when truly default (no entries AND default fillCount) so
+        // a player who sets Fill before adding any items doesn't lose the
+        // fillCount setting between clicks.
+        if (pool == null
+            || (pool.isEmpty() && pool.fillCount() == ContainerContentsPool.FILL_ALL)) {
             pools.remove(localPos);
         } else {
             pools.put(localPos.immutable(), pool);
@@ -132,18 +139,24 @@ public final class ContainerContentsStore {
         boolean first = true;
         for (Map.Entry<BlockPos, ContainerContentsPool> e : pools.entrySet()) {
             if (!first) sb.append(",");
-            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": [");
+            ContainerContentsPool pool = e.getValue();
+            sb.append("\n    \"").append(formatPos(e.getKey())).append("\": {");
+            if (pool.fillCount() != ContainerContentsPool.FILL_ALL) {
+                sb.append("\n      \"fillCount\": ").append(pool.fillCount()).append(",");
+            }
+            sb.append("\n      \"entries\": [");
             boolean firstEntry = true;
-            for (ContainerContentsEntry ce : e.getValue().entries()) {
+            for (ContainerContentsEntry ce : pool.entries()) {
                 if (!firstEntry) sb.append(",");
-                sb.append("\n      {")
+                sb.append("\n        {")
                     .append(" \"id\": \"").append(ce.itemId().toString()).append("\",")
                     .append(" \"count\": ").append(ce.count()).append(",")
                     .append(" \"weight\": ").append(ce.weight())
                     .append(" }");
                 firstEntry = false;
             }
-            sb.append("\n    ]");
+            sb.append("\n      ]");
+            sb.append("\n    }");
             first = false;
         }
         sb.append("\n  }\n}\n");
@@ -172,8 +185,20 @@ public final class ContainerContentsStore {
                 for (Map.Entry<String, JsonElement> e : pools.entrySet()) {
                     BlockPos pos = parsePos(e.getKey());
                     if (pos == null) continue;
-                    if (!e.getValue().isJsonArray()) continue;
-                    JsonArray arr = e.getValue().getAsJsonArray();
+                    JsonElement value = e.getValue();
+                    JsonArray arr;
+                    int fillCount = ContainerContentsPool.FILL_ALL;
+                    if (value.isJsonArray()) {
+                        // Legacy form (no fillCount field).
+                        arr = value.getAsJsonArray();
+                    } else if (value.isJsonObject()) {
+                        JsonObject po = value.getAsJsonObject();
+                        if (po.has("fillCount")) fillCount = po.get("fillCount").getAsInt();
+                        if (!po.has("entries") || !po.get("entries").isJsonArray()) continue;
+                        arr = po.getAsJsonArray("entries");
+                    } else {
+                        continue;
+                    }
                     List<ContainerContentsEntry> entries = new ArrayList<>(arr.size());
                     for (JsonElement el : arr) {
                         if (!el.isJsonObject()) continue;
@@ -186,7 +211,7 @@ public final class ContainerContentsStore {
                         entries.add(new ContainerContentsEntry(id, count, weight));
                     }
                     if (!entries.isEmpty()) {
-                        out.put(pos.immutable(), new ContainerContentsPool(entries));
+                        out.put(pos.immutable(), new ContainerContentsPool(entries, fillCount));
                     }
                 }
             }
