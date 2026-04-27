@@ -13,6 +13,10 @@ A Minecraft port of [Dungeon Train](https://brennanhatton.itch.io/dungeontrain) 
 | **Key dependency** | Valkyrien Skies 2 (`2.4.11`) |
 | **Status** | Pre-alpha |
 
+## Download
+
+Get the latest jar from the [Downloads](https://github.com/bh679/dungeon-train-mc/wiki/Downloads) wiki page. New to the mod? See [Installation](https://github.com/bh679/dungeon-train-mc/wiki/Installation) for the full Forge + Valkyrien Skies setup.
+
 ## Build
 
 ```bash
