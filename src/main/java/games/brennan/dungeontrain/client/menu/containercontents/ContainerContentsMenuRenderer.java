@@ -156,10 +156,10 @@ public final class ContainerContentsMenuRenderer {
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
                 case ADD -> "Add";
-                case FILL_MIN -> "min " + fmin;
+                case FILL_MIN -> Integer.toString(fmin);
                 case FILL_MAX -> {
                     String shown = fmax < 0 ? "all" : Integer.toString(fmax);
-                    yield cs > 0 ? "max " + shown + "/" + cs : "max " + shown;
+                    yield cs > 0 ? shown + "/" + cs : shown;
                 }
                 case CLEAR -> "Clear";
                 case CLOSE -> "X";
