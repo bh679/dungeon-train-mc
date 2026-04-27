@@ -23,8 +23,11 @@ jobs:
           java-version: 17
 
       - uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-home-cache-cleanup: true
+        # Note: NOT setting gradle-home-cache-cleanup: true. The action's
+        # cleanup step uses Gradle 9.x APIs (removeUnusedEntriesOlderThan)
+        # which crash against our Gradle 8.4 wrapper. Without this flag the
+        # cleanup is skipped; the cache grows slightly over time but the
+        # build never fails on a transient cache-save outage.
 
       - name: Cache Forge Gradle artifacts
         uses: actions/cache@v4

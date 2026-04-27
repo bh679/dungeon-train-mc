@@ -3,14 +3,24 @@ name: Release
 on:
   push:
     tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v0.70.0). Must already exist in the repo."
+        required: true
+        type: string
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: actions/setup-java@v4
         with:
@@ -29,10 +39,10 @@ jobs:
 
       - name: Verify tag matches mod_version
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          TAG="${RELEASE_TAG#v}"
           GRADLE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
           if [ "$TAG" != "$GRADLE_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match mod_version=$GRADLE_VERSION in gradle.properties"
+            echo "::error::Tag $RELEASE_TAG does not match mod_version=$GRADLE_VERSION in gradle.properties"
             exit 1
           fi
 
@@ -41,8 +51,27 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: Dungeon Train ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name }}
+          name: Dungeon Train ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
           files: build/libs/dungeontrain-*.jar
           fail_on_unmatched_files: true
+
+      - name: Check wiki publish prerequisites
+        id: wiki_check
+        env:
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+        run: |
+          if [ -n "$WIKI_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::WIKI_TOKEN secret not set — skipping wiki publish."
+          fi
+
+      - name: Publish wiki Downloads pages
+        if: steps.wiki_check.outputs.ready == 'true'
+        env:
+          WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash scripts/publish-wiki.sh
