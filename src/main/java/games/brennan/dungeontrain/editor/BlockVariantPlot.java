@@ -26,7 +26,7 @@ import java.util.Map;
  *
  * <p>Resolution at the player's position cascades through the same four
  * cases as {@link VariantOverlayRenderer#onLevelTick} so the menu's view
- * always matches the overlay particles the player sees:
+ * always matches the overlay HUD the player sees:
  * <ol>
  *   <li>{@link CarriageEditor#plotContaining} → carriage variant</li>
  *   <li>{@link CarriageContentsEditor#plotContaining} → contents</li>

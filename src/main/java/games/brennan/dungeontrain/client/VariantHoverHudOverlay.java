@@ -26,9 +26,8 @@ import java.util.List;
  * render a small row of item icons just above the hotbar showing every
  * candidate block the position can roll into.
  *
- * <p>No font text, no coordinates — just the icons. The outline particles
- * already tell you *where* the variant is; the icons tell you *what* it
- * varies between.</p>
+ * <p>No font text, no coordinates — just the icons. The icons tell you
+ * *what* the flagged block varies between when your crosshair lands on it.</p>
  *
  * <p>The hover list is cached in a plain static field. Server updates fire
  * on {@code ctx.enqueueWork()} which lands on the client main thread, same

@@ -19,8 +19,8 @@ import java.util.List;
 
 /**
  * Removes block-variant sidecar entries when the underlying block is broken
- * inside an editor plot, so the {@link VariantOverlayRenderer} stops emitting
- * outline particles at empty positions.
+ * inside an editor plot, so {@link VariantOverlayRenderer} no longer flags
+ * the now-empty position when the player hovers it.
  *
  * <p>Symmetric counterpart to {@link VariantBlockInteractions#onRightClickBlock} —
  * the add path appends to the candidate list at a flagged position; this break
