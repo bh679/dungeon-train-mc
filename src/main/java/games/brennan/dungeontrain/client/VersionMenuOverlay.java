@@ -30,6 +30,10 @@ public final class VersionMenuOverlay {
         if (!(event.getScreen() instanceof TitleScreen)) {
             return;
         }
+        // Release builds run on `main`; the version/branch suffix is dev-only noise there.
+        if ("main".equals(VersionInfo.BRANCH)) {
+            return;
+        }
         Minecraft mc = Minecraft.getInstance();
         event.getGuiGraphics().drawString(mc.font, VersionInfo.DISPLAY, 4, 4, 0xFFFFFFFF, true);
     }
