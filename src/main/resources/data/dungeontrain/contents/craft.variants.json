@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 5,
+  "variants": {
+    "3,0,4": ["minecraft:crafting_table", "minecraft:cartography_table", "minecraft:fletching_table", "minecraft:smithing_table", {"state": "minecraft:grindstone[face=wall,facing=north]", "rotation": {"mode": "options", "dirs": ["west", "east"]}}],
+    "4,0,0": ["minecraft:stripped_oak_wood[axis=y]", "minecraft:crafting_table"],
+    "2,0,0": [{"state": "minecraft:stonecutter[facing=south]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:grindstone[face=wall,facing=north]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}
