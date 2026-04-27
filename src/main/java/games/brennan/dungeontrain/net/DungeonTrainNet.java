@@ -17,7 +17,7 @@ import net.minecraftforge.network.simple.SimpleChannel;
  */
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "6";
+    public static final String PROTOCOL_VERSION = "7";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
         .named(new ResourceLocation(DungeonTrain.MOD_ID, "main"))
@@ -93,6 +93,26 @@ public final class DungeonTrainNet {
             .encoder(BlockVariantOutlinePacket::encode)
             .decoder(BlockVariantOutlinePacket::decode)
             .consumerMainThread(BlockVariantOutlinePacket::handle)
+            .add();
+        CHANNEL.messageBuilder(ContainerHotkeyPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(ContainerHotkeyPacket::encode)
+            .decoder(ContainerHotkeyPacket::decode)
+            .consumerMainThread(ContainerHotkeyPacket::handle)
+            .add();
+        CHANNEL.messageBuilder(ContainerContentsMenuTogglePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(ContainerContentsMenuTogglePacket::encode)
+            .decoder(ContainerContentsMenuTogglePacket::decode)
+            .consumerMainThread(ContainerContentsMenuTogglePacket::handle)
+            .add();
+        CHANNEL.messageBuilder(ContainerContentsSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
+            .encoder(ContainerContentsSyncPacket::encode)
+            .decoder(ContainerContentsSyncPacket::decode)
+            .consumerMainThread(ContainerContentsSyncPacket::handle)
+            .add();
+        CHANNEL.messageBuilder(ContainerContentsEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
+            .encoder(ContainerContentsEditPacket::encode)
+            .decoder(ContainerContentsEditPacket::decode)
+            .consumerMainThread(ContainerContentsEditPacket::handle)
             .add();
     }
 
