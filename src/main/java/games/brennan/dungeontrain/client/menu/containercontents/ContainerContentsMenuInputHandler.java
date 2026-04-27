@@ -134,7 +134,11 @@ public final class ContainerContentsMenuInputHandler {
         if (local == null) return;
         String plotKey = ContainerContentsMenu.plotKey();
         switch (hit.kind()) {
-            case ADD -> ContainerContentsMenu.enterSearch();
+            case ADD -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                // Empty itemId signals "use main-hand item" — server captures
+                // the held stack's item + count. Mirrors the block-variant
+                // ADD behaviour: hold an item, click Add.
+                ContainerContentsEditPacket.Op.ADD, plotKey, local, -1, "", 0));
             case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.CLEAR, plotKey, local, -1, "", 0));
             case CLOSE -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsMenuTogglePacket(false));
