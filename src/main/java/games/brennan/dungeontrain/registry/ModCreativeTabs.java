@@ -2,29 +2,30 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
-import games.brennan.dungeontrain.item.BlockVariantPrefabItem;
-import games.brennan.dungeontrain.item.LootPrefabItem;
+import games.brennan.dungeontrain.event.PrefabUseHandler;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * Registers two custom {@link CreativeModeTab}s for prefab browsing —
- * {@link #PREFAB_VARIANTS} and {@link #PREFAB_LOOT}. The tabs are real
- * vanilla creative tabs: vanilla handles all rendering (items grid, title,
- * scrollbar, tooltips, scroll wheel) end-to-end. Side-tab buttons added by
- * the mixin call {@code selectTab} to switch into these.
- *
- * <p>Tab content is dynamic — populated from {@link PrefabTabState}, which
- * the {@link games.brennan.dungeontrain.net.PrefabRegistrySyncPacket}
- * updates on player login. The {@code displayItems} lambda runs at
- * {@code tryRebuildTabContents} time, so the sync handler must trigger a
- * rebuild after updating state.</p>
+ * Custom {@link CreativeModeTab}s for prefab browsing. Each tab is populated
+ * from {@link PrefabTabState} (synced on login) — entries are vanilla
+ * {@code BlockItem} stacks (oak_planks, chest, barrel, etc.) so the icon
+ * matches the source block exactly. A discriminator NBT tag
+ * ({@link PrefabUseHandler#NBT_BV_PREFAB_ID} or
+ * {@link PrefabUseHandler#NBT_LOOT_PREFAB_ID}) tells the use handler how to
+ * interpret the stack on right-click.
  */
 public final class ModCreativeTabs {
 
@@ -37,9 +38,11 @@ public final class ModCreativeTabs {
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
             .icon(() -> new ItemStack(Items.COMMAND_BLOCK))
             .displayItems((parameters, output) -> {
-                for (String id : PrefabTabState.variantIds()) {
-                    output.accept(BlockVariantPrefabItem.stackForPrefab(
-                        ModItems.BLOCK_VARIANT_PREFAB.get(), id));
+                for (PrefabRegistrySyncPacket.Entry entry : PrefabTabState.variantEntries()) {
+                    ItemStack stack = buildPrefabStack(
+                        entry.blockId(), Items.COMMAND_BLOCK,
+                        PrefabUseHandler.NBT_BV_PREFAB_ID, entry.id());
+                    output.accept(stack);
                 }
             })
             .build()
@@ -51,9 +54,11 @@ public final class ModCreativeTabs {
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot"))
             .icon(() -> new ItemStack(Items.CHEST))
             .displayItems((parameters, output) -> {
-                for (String id : PrefabTabState.contentsIds()) {
-                    output.accept(LootPrefabItem.stackForPrefab(
-                        ModItems.LOOT_PREFAB.get(), id));
+                for (PrefabRegistrySyncPacket.Entry entry : PrefabTabState.lootEntries()) {
+                    ItemStack stack = buildPrefabStack(
+                        entry.blockId(), Items.CHEST,
+                        PrefabUseHandler.NBT_LOOT_PREFAB_ID, entry.id());
+                    output.accept(stack);
                 }
             })
             .build()
@@ -61,8 +66,31 @@ public final class ModCreativeTabs {
 
     private ModCreativeTabs() {}
 
-    /** Call from the mod constructor to attach the registry to the mod-event bus. */
     public static void register(IEventBus modBus) {
         TABS.register(modBus);
+    }
+
+    /**
+     * Build a vanilla {@code BlockItem} stack for {@code blockIdString} with
+     * an NBT discriminator the use handler can read. Falls back to
+     * {@code fallbackItem} if the block id doesn't resolve to a real item
+     * (e.g. blocks with no item form).
+     */
+    private static ItemStack buildPrefabStack(String blockIdString, Item fallbackItem,
+                                              String nbtKey, String prefabId) {
+        ResourceLocation rl = ResourceLocation.tryParse(blockIdString);
+        Item item = fallbackItem;
+        if (rl != null) {
+            Block block = BuiltInRegistries.BLOCK.get(rl);
+            if (block != null) {
+                Item resolved = block.asItem();
+                if (resolved != Items.AIR) item = resolved;
+            }
+        }
+        ItemStack stack = new ItemStack(item);
+        CompoundTag tag = new CompoundTag();
+        tag.putString(nbtKey, prefabId);
+        stack.setTag(tag);
+        return stack;
     }
 }

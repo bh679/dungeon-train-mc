@@ -30,17 +30,16 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 /**
- * Named library of per-container loot-pool prefabs. Parallel to
- * {@link BlockVariantPrefabStore} for {@link ContainerContentsPool}.
+ * Named library of per-container loot-pool prefabs. Each prefab records both
+ * the pool AND the container block it was saved from so the creative tab can
+ * show the right block icon and right-click placement gives the matching
+ * vanilla container.
  *
- * <p>Files live at {@code config/dungeontrain/prefabs/loot/<id>.json}. The
- * shape mirrors {@link ContainerContentsStore}'s per-cell pool format so
- * the parser can be a simple translation from the existing JSON layout.</p>
- *
- * <p>Schema:
+ * <p>Files at {@code config/dungeontrain/prefabs/loot/<id>.json}. Schema:
  * <pre>
  * {
- *   "schemaVersion": 1,
+ *   "schemaVersion": 2,
+ *   "block": "minecraft:chest",
  *   "fillMin": 0,
  *   "fillMax": -1,
  *   "entries": [
@@ -48,7 +47,8 @@ import java.util.regex.Pattern;
  *   ]
  * }
  * </pre>
- * </p>
+ * Schema v1 (without {@code block}) is still readable — it falls back to
+ * {@code minecraft:chest} so old files don't break.</p>
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class LootPrefabStore {
@@ -57,13 +57,17 @@ public final class LootPrefabStore {
 
     private static final String SUBDIR = "dungeontrain/prefabs/loot";
     private static final String EXT = ".json";
-    public static final int CURRENT_SCHEMA_VERSION = 1;
+    public static final int CURRENT_SCHEMA_VERSION = 2;
+    private static final ResourceLocation FALLBACK_BLOCK = new ResourceLocation("minecraft", "chest");
 
     public static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,32}$");
 
     private static final TreeSet<String> IDS = new TreeSet<>();
 
     private LootPrefabStore() {}
+
+    /** A loaded prefab — pool plus the source container block so the creative tab can show the right icon. */
+    public record Data(String id, ResourceLocation sourceBlock, ContainerContentsPool pool) {}
 
     public static Path directory() {
         return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
@@ -85,7 +89,7 @@ public final class LootPrefabStore {
         return name != null && NAME_PATTERN.matcher(name).matches();
     }
 
-    public static synchronized Optional<ContainerContentsPool> load(String id) {
+    public static synchronized Optional<Data> load(String id) {
         String key = id.toLowerCase(Locale.ROOT);
         Path file = fileFor(key);
         if (!Files.isRegularFile(file)) return Optional.empty();
@@ -93,6 +97,11 @@ public final class LootPrefabStore {
             JsonElement root = JsonParser.parseReader(r);
             if (!root.isJsonObject()) return Optional.empty();
             JsonObject obj = root.getAsJsonObject();
+            ResourceLocation block = FALLBACK_BLOCK;
+            if (obj.has("block") && obj.get("block").isJsonPrimitive()) {
+                ResourceLocation parsed = ResourceLocation.tryParse(obj.get("block").getAsString());
+                if (parsed != null) block = parsed;
+            }
             int fillMin = obj.has("fillMin") && obj.get("fillMin").isJsonPrimitive()
                 ? obj.get("fillMin").getAsInt() : 0;
             int fillMax = obj.has("fillMax") && obj.get("fillMax").isJsonPrimitive()
@@ -114,29 +123,31 @@ public final class LootPrefabStore {
                     entries.add(new ContainerContentsEntry(rl, count, weight));
                 }
             }
-            return Optional.of(new ContainerContentsPool(entries, fillMin, fillMax));
+            return Optional.of(new Data(key, block, new ContainerContentsPool(entries, fillMin, fillMax)));
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read loot prefab '{}': {}", key, e.toString());
             return Optional.empty();
         }
     }
 
-    public static synchronized boolean save(String id, ContainerContentsPool pool) throws IOException {
+    public static synchronized boolean save(String id, ContainerContentsPool pool, ResourceLocation sourceBlock)
+        throws IOException {
         if (!isValidName(id)) {
             throw new IOException("Invalid prefab name '" + id + "' — must match " + NAME_PATTERN.pattern());
         }
         if (pool == null || pool.isEmpty()) {
             throw new IOException("Loot prefab needs at least one entry");
         }
+        if (sourceBlock == null) sourceBlock = FALLBACK_BLOCK;
         String key = id.toLowerCase(Locale.ROOT);
         Path file = fileFor(key);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(toJsonText(pool));
+            w.write(toJsonText(pool, sourceBlock));
         }
         boolean isNew = IDS.add(key);
-        LOGGER.info("[DungeonTrain] {} loot prefab '{}' ({} entries) at {}",
-            isNew ? "Saved new" : "Overwrote", key, pool.entries().size(), file);
+        LOGGER.info("[DungeonTrain] {} loot prefab '{}' (block={}, {} entries) at {}",
+            isNew ? "Saved new" : "Overwrote", key, sourceBlock, pool.entries().size(), file);
         return isNew;
     }
 
@@ -186,10 +197,11 @@ public final class LootPrefabStore {
         clear();
     }
 
-    private static String toJsonText(ContainerContentsPool pool) {
+    private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock) {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
+        sb.append("  \"block\": \"").append(sourceBlock).append("\",\n");
         if (pool.fillMin() != 0) {
             sb.append("  \"fillMin\": ").append(pool.fillMin()).append(",\n");
         }
@@ -209,12 +221,6 @@ public final class LootPrefabStore {
         }
         sb.append("\n  ]\n}\n");
         return sb.toString();
-    }
-
-    /** Test helper. */
-    public static synchronized void setIdsForTest(List<String> ids) {
-        IDS.clear();
-        for (String id : ids) IDS.add(id.toLowerCase(Locale.ROOT));
     }
 
     public static synchronized List<String> snapshotIds() {

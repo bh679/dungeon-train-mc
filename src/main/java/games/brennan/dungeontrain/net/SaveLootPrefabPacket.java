@@ -9,10 +9,13 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 import org.slf4j.Logger;
@@ -67,8 +70,15 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
                 actionBar(player, "No loot at this container", ChatFormatting.YELLOW);
                 return;
             }
+            // Capture the container block at this cell so the prefab can
+            // place the matching block (chest / barrel / dispenser) when
+            // selected from the creative tab. Falls back to chest if the
+            // block isn't a registered container.
+            BlockPos worldPos = plot.origin().offset(localPos);
+            BlockState targetState = level.getBlockState(worldPos);
+            ResourceLocation sourceBlock = BuiltInRegistries.BLOCK.getKey(targetState.getBlock());
             try {
-                boolean isNew = LootPrefabStore.save(name, pool);
+                boolean isNew = LootPrefabStore.save(name, pool, sourceBlock);
                 actionBar(player,
                     (isNew ? "Saved loot '" : "Overwrote loot '") + name + "'",
                     ChatFormatting.GREEN);

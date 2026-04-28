@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.world.flag.FeatureFlagSet;
@@ -14,55 +15,47 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Client singleton — holds the variant + contents id lists synced from the
- * server on login. The two custom {@link CreativeModeTabs}-style tabs
- * registered in {@code ModCreativeTabs} read from these lists in their
- * {@code displayItems} lambdas.
+ * Client singleton — holds the variant + loot prefab entries synced from
+ * the server on login. Each entry is {@code (id, blockId)} so the creative
+ * tab's {@code displayItems} lambda can build a vanilla {@code BlockItem}
+ * stack with the right icon.
  *
- * <p>When new ids arrive (sync packet), {@link #applyRegistry} forces a
- * tab-content rebuild so the tabs reflect the latest data immediately.</p>
+ * <p>Updates trigger {@link CreativeModeTabs#tryRebuildTabContents} so the
+ * tab reflects the latest data immediately.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class PrefabTabState {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static List<String> variantIds = Collections.emptyList();
-    private static List<String> contentsIds = Collections.emptyList();
+    private static List<PrefabRegistrySyncPacket.Entry> variantEntries = Collections.emptyList();
+    private static List<PrefabRegistrySyncPacket.Entry> lootEntries = Collections.emptyList();
 
     private PrefabTabState() {}
 
-    /**
-     * Replace the cached registry and force the creative tabs to rebuild
-     * their contents. Called from the sync packet handler.
-     */
-    public static void applyRegistry(List<String> variantIds, List<String> contentsIds) {
-        PrefabTabState.variantIds = List.copyOf(variantIds);
-        PrefabTabState.contentsIds = List.copyOf(contentsIds);
+    public static void applyRegistry(
+        List<PrefabRegistrySyncPacket.Entry> variants,
+        List<PrefabRegistrySyncPacket.Entry> loot
+    ) {
+        variantEntries = List.copyOf(variants);
+        lootEntries = List.copyOf(loot);
         rebuildTabsSafely();
     }
 
-    /** Clear all state — called when the player disconnects from the server. */
     public static void clear() {
-        variantIds = Collections.emptyList();
-        contentsIds = Collections.emptyList();
+        variantEntries = Collections.emptyList();
+        lootEntries = Collections.emptyList();
         rebuildTabsSafely();
     }
 
-    public static List<String> variantIds() {
-        return variantIds;
+    public static List<PrefabRegistrySyncPacket.Entry> variantEntries() {
+        return variantEntries;
     }
 
-    public static List<String> contentsIds() {
-        return contentsIds;
+    public static List<PrefabRegistrySyncPacket.Entry> lootEntries() {
+        return lootEntries;
     }
 
-    /**
-     * Trigger {@link CreativeModeTabs#tryRebuildTabContents} so each tab's
-     * {@code displayItems} lambda is re-invoked against the new state.
-     * Wrapped defensively because connection / level state may be partially
-     * unavailable in edge cases (e.g. during initial connect handshake).
-     */
     private static void rebuildTabsSafely() {
         Minecraft mc = Minecraft.getInstance();
         ClientPacketListener conn = mc.getConnection();
@@ -73,14 +66,11 @@ public final class PrefabTabState {
             CreativeModeTabs.tryRebuildTabContents(flags, hasOpTabs, conn.registryAccess());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Prefab tab rebuild skipped: {}", e.toString());
-            // Fallback to vanilla flags so we at least try a refresh once
-            // the registry data is in.
             try {
                 CreativeModeTabs.tryRebuildTabContents(
                     FeatureFlags.DEFAULT_FLAGS, false, conn.registryAccess());
             } catch (Exception ignored) {
-                // Best-effort; tabs will refresh next time vanilla itself
-                // calls tryRebuildTabContents (e.g. on world join).
+                // Best-effort — tabs will rebuild next time vanilla itself does.
             }
         }
     }
