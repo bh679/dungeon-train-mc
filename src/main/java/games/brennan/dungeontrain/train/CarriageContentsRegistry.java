@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -50,7 +51,7 @@ import java.util.TreeSet;
  * so the same world seed + carriage index always resolves to the same
  * contents across reloads.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CarriageContentsRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();

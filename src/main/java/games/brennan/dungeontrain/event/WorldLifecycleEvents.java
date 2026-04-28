@@ -15,6 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -43,7 +44,7 @@ import org.slf4j.Logger;
  * server. Dedicated servers fall through to the SavedData defaults sourced
  * from {@code DungeonTrainConfig}.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class WorldLifecycleEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();

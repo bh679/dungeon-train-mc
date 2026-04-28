@@ -7,6 +7,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiOverlaysEvent;
 import net.neoforged.neoforge.client.gui.overlay.IGuiOverlay;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -19,9 +20,8 @@ import org.slf4j.Logger;
  *
  * <p>The companion {@link VersionMenuOverlay} handles the main menu case.</p>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
         modid = DungeonTrain.MOD_ID,
-        bus = Mod.EventBusSubscriber.Bus.MOD,
         value = Dist.CLIENT
 )
 public final class VersionHudOverlay {

@@ -18,6 +18,7 @@ import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
@@ -41,9 +42,8 @@ import java.util.List;
  *       are open (matches part-menu behaviour).</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class BlockVariantMenuInputHandler {

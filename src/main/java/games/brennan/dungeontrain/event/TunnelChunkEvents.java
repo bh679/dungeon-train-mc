@@ -14,6 +14,7 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.neoforged.neoforge.event.level.ChunkDataEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Deferred paint avoids a repeat of the 17-second server-thread stall seen
  * when track fills ran synchronously on freshly-spawned ships.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TunnelChunkEvents {
 
     /**

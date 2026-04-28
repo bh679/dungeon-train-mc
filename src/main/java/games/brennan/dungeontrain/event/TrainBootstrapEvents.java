@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -35,7 +36,7 @@ import org.slf4j.Logger;
  * manager retargets on its first tick — one-shot adjustment is negligible
  * compared to the visual improvement of removing the spawn-time flash.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainBootstrapEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -27,6 +27,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,7 +70,7 @@ import java.util.List;
  * <p>Duplicates are allowed — appending the same state twice gives that state
  * 2× weight in the random pick.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantBlockInteractions {
 
     /** Soft cap — commands can write more, but the shift-place path stops here to keep feedback readable. */

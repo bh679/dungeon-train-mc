@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -49,7 +50,7 @@ import java.util.regex.Pattern;
  * different {@link games.brennan.dungeontrain.train.CarriageDims} cannot see
  * stale entries.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CarriagePartRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -6,6 +6,7 @@ import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
@@ -23,9 +24,8 @@ import org.lwjgl.glfw.GLFW;
  *   <li>When in typing mode, {@link InputEvent.Key} presses feed the buffer.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class CommandMenuInputHandler {

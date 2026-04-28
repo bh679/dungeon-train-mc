@@ -16,6 +16,7 @@ import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
@@ -36,9 +37,8 @@ import java.util.List;
  *       to it (it has its own handler), so this handler defers.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class PartPositionMenuInputHandler {

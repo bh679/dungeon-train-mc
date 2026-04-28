@@ -13,6 +13,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiOverlaysEvent;
 import net.neoforged.neoforge.client.gui.overlay.IGuiOverlay;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -33,9 +34,8 @@ import java.util.List;
  * on {@code ctx.enqueueWork()} which lands on the client main thread, same
  * thread the overlay runs on — no synchronisation needed.</p>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.MOD,
     value = Dist.CLIENT
 )
 public final class VariantHoverHudOverlay {

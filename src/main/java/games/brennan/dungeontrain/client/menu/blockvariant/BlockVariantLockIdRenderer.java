@@ -18,6 +18,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -42,9 +43,8 @@ import java.util.Map;
  * — vertical faces use world up, horizontal faces use world up — so the
  * digit reads upright from any of the 6 sides.</p>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class BlockVariantLockIdRenderer {

@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 
 /**
@@ -16,9 +17,8 @@ import net.neoforged.fml.common.Mod;
  * <p>Uses the FORGE event bus — {@link ScreenEvent.Render.Post} fires per frame
  * after the screen draws, so we can layer on top.</p>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
         modid = DungeonTrain.MOD_ID,
-        bus = Mod.EventBusSubscriber.Bus.FORGE,
         value = Dist.CLIENT
 )
 public final class VersionMenuOverlay {

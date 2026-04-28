@@ -25,6 +25,7 @@ import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ import java.util.List;
  * sound, no item drops, no container spill — via
  * {@link SilentBlockOps#clearBlockSilent} and {@code entity.discard()}.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainTickEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();

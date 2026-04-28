@@ -21,6 +21,7 @@ import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -47,7 +48,7 @@ import org.slf4j.Logger;
  * ({@link #isSafePlayerPos}); the last-resort fallback drops the player on
  * top of the train, which is always safe by construction.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerJoinEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();

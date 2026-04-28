@@ -4,13 +4,14 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.command.TrainCommand;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 
 /**
  * Forge event-bus subscriber: hooks command registration.
- * Registered automatically via {@link Mod.EventBusSubscriber}.
+ * Registered automatically via {@link EventBusSubscriber}.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CommandEvents {
 
     private CommandEvents() {}

@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ import java.util.TreeMap;
  * {@code /data/dungeontrain/<kind.subdir>/weights.json} on the classpath.
  * Both files optional; missing or empty = uniform pick.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrackVariantWeights {
 
     private static final Logger LOGGER = LogUtils.getLogger();

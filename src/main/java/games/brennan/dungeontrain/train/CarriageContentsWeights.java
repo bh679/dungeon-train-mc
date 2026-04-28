@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -46,7 +47,7 @@ import java.util.TreeMap;
  * resolve to {@link #DEFAULT} (= 1) which matches the pre-feature uniform
  * pick when every contents is at default weight.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public record CarriageContentsWeights(Map<String, Integer> byId) {
 
     private static final Logger LOGGER = LogUtils.getLogger();

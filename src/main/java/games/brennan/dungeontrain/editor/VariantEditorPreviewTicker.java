@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ import java.util.List;
  * carriage editor plot with ~100 variant cells = 100 cheap state
  * comparisons + the few that actually changed get a {@code setBlockSilent}.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantEditorPreviewTicker {
 
     /** Cycle rate — one tick of preview work per second. */
