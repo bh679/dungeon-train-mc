@@ -902,6 +902,7 @@ public final class TrackGenerator {
         Vec3i tileFootprint = TrackKind.TILE.dims(dims);
         Map<Long, TilePaint> tilePaints = new HashMap<>();
 
+        BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = chunkMinX; x <= chunkMaxX; x++) {
             long tileIndex = Math.floorDiv((long) x, (long) TrackTemplate.TILE_LENGTH);
@@ -921,17 +922,18 @@ public final class TrackGenerator {
             for (int z = zLo; z <= zHi; z++) {
                 int zOff = z - g.trackZMin();
 
-                // Bed row (template y=0).
+                // Bed row (template y=0). null cells = author-authored air —
+                // write air explicitly so terrain doesn't show through the gap.
                 BlockState bedState = paint.cells().isPresent()
                     ? paint.cells().get()[xMod][0][zOff]
                     : TrackPalette.BED;
                 bedState = paint.resolveSidecar(bedState, xMod, 0, zOff);
-                if (bedState != null) {
-                    pos.set(x, g.bedY(), z);
-                    level.setBlock(pos, bedState, Block.UPDATE_CLIENTS);
-                }
+                pos.set(x, g.bedY(), z);
+                level.setBlock(pos, bedState != null ? bedState : air, Block.UPDATE_CLIENTS);
 
-                // Rail row (template y=1).
+                // Rail row (template y=1). Same null=air rule. In the fallback
+                // (no template) only the two outer Z columns get a rail block;
+                // the rest of the corridor's rail row gets cleared to air.
                 BlockState railState;
                 if (paint.cells().isPresent()) {
                     railState = paint.cells().get()[xMod][1][zOff];
@@ -941,9 +943,30 @@ public final class TrackGenerator {
                     railState = null;
                 }
                 railState = paint.resolveSidecar(railState, xMod, 1, zOff);
-                if (railState != null && canPlaceRail) {
+                if (canPlaceRail) {
                     pos.set(x, g.railY(), z);
-                    level.setBlock(pos, railState, Block.UPDATE_CLIENTS);
+                    level.setBlock(pos, railState != null ? railState : air, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+
+        // Clear the carriage envelope above the rails so terrain never wedges
+        // the train at runtime. Bounds: [chunkMinX..chunkMaxX] × [zLo..zHi]
+        // × [trainY..trainY+height]. Height covers the carriage's own dims.height()
+        // rows (trainY..trainY+height-1) plus one block of headroom above the
+        // roof (trainY+height) — the carriage sits one block above the rails,
+        // so a "train+1" envelope is the smallest stable clearance.
+        int trainY = g.bedY() + 2;
+        int clearMinY = Math.max(minBuildHeight, trainY);
+        int clearMaxY = Math.min(maxBuildHeight - 1, trainY + dims.height());
+        if (clearMaxY >= clearMinY) {
+            for (int x = chunkMinX; x <= chunkMaxX; x++) {
+                for (int z = zLo; z <= zHi; z++) {
+                    for (int y = clearMinY; y <= clearMaxY; y++) {
+                        pos.set(x, y, z);
+                        if (level.getBlockState(pos).isAir()) continue;
+                        level.setBlock(pos, air, Block.UPDATE_CLIENTS);
+                    }
                 }
             }
         }

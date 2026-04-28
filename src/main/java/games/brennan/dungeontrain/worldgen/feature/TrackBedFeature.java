@@ -63,14 +63,10 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // strip there's no possible corridor, regardless of the
             // per-world CarriageDims width.
             if (chunkPos.z < 0 || chunkPos.z > MAX_CORRIDOR_CZ) return false;
-            // Train spawns at world X=0 and moves only +X (TRAIN_VELOCITY in
-            // TrainBootstrapEvents has Y=Z=0; TrainChainManager spawns
-            // successors AHEAD only). Skip negative-X chunks — the train
-            // never reaches them, and pre-feature the legacy painter never
-            // painted them either (it only ran around the live train).
-            // Halves the corridor work for any world where the player
-            // explores backward.
-            if (chunkPos.x < 0) return false;
+            // No X prefilter — the corridor extends in both directions on
+            // X. The train spawn is centered (carriages from -halfBack to
+            // +halfFront indices), and the player can look back along the
+            // tracks to see them disappearing into the distance.
 
             // Reach the ServerLevel for SavedData lookup. WorldGenRegion
             // (the standard WorldGenLevel impl) wraps the ServerLevel under
