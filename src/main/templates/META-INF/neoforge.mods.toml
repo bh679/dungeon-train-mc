@@ -10,34 +10,28 @@ displayName="${mod_name}"
 authors="${mod_authors}"
 description='''${mod_description}'''
 displayURL="https://github.com/bh679/dungeon-train-mc"
-credits="Original game by Brennan Hatton (brennanhatton.itch.io/dungeontrain). Powered by Valkyrien Skies 2."
+credits="Original game by Brennan Hatton (brennanhatton.itch.io/dungeontrain)."
 logoFile="logo.png"
 
+# VS dependency removed for Phase 1 of the 1.21.1 migration. Restore in Phase 2:
+# [[dependencies.${mod_id}]]
+#     modId="valkyrienskies"
+#     type="required"
+#     versionRange="[2.5.0,)"
+#     ordering="AFTER"
+#     side="BOTH"
+
 [[dependencies.${mod_id}]]
-    modId="forge"
-    mandatory=true
-    versionRange="${forge_version_range}"
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="minecraft"
-    mandatory=true
+    type="required"
     versionRange="${minecraft_version_range}"
-    ordering="NONE"
-    side="BOTH"
-
-[[dependencies.${mod_id}]]
-    modId="valkyrienskies"
-    mandatory=true
-    versionRange="[2.4.0,)"
-    ordering="AFTER"
-    side="BOTH"
-
-[[dependencies.${mod_id}]]
-    modId="kotlinforforge"
-    mandatory=true
-    versionRange="[4.11.0,)"
     ordering="NONE"
     side="BOTH"
 

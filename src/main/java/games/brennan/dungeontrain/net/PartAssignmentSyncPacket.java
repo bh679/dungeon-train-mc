@@ -6,8 +6,8 @@ import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import javax.annotation.Nullable;

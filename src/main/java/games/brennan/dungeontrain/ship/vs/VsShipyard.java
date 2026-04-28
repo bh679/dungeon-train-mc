@@ -5,26 +5,33 @@ import games.brennan.dungeontrain.ship.Shipyard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.core.api.ships.ServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
-import org.valkyrienskies.mod.common.assembly.ShipAssembler;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 /**
- * Valkyrien Skies adapter for {@link Shipyard}. The only place outside
- * {@code ship.vs.*} that should reference {@code org.valkyrienskies.*}
- * directly is the wiring in {@code Shipyards.of(...)}.
+ * STUB — Phase 1 of the 1.21.1 migration.
  *
- * <p>Lifetime is per-call (constructed in {@code Shipyards.of}); holds
- * only a {@link ServerLevel} reference. Single-impl façade — JIT inlines
- * port method calls trivially.</p>
+ * <p>Valkyrien Skies has no published 1.21.1 / NeoForge build yet (see
+ * {@link <a href="https://github.com/ValkyrienSkies/Valkyrien-Skies-2/issues/1126">VS issue #1126</a>}).
+ * This stub satisfies the {@link Shipyard} contract while the rest of the
+ * mod is migrated to the new stack. {@code findAll}/{@code findAt} return
+ * empty/null so the train code is harmlessly inert; {@code assemble} fails
+ * fast so any attempt to spawn a train surfaces the migration state instead
+ * of silently no-op'ing.</p>
+ *
+ * <p>Phase 2 will replace this with a real adapter wrapping VS once
+ * upstream ships, restoring the same surface area as the pre-migration
+ * implementation.</p>
  */
 public final class VsShipyard implements Shipyard {
 
+    private static final String STUB_MESSAGE =
+        "VS adapter not yet ported to 1.21.1 — see plans/ticklish-soaring-comet.md (Phase 2). "
+            + "Train spawn requires a working physics-mod adapter.";
+
+    @SuppressWarnings("unused")
     private final ServerLevel level;
 
     public VsShipyard(ServerLevel level) {
@@ -33,36 +40,22 @@ public final class VsShipyard implements Shipyard {
 
     @Override
     public ManagedShip assemble(Set<BlockPos> blocks, double density) {
-        ServerShip ship = ShipAssembler.assembleToShip(level, blocks, density);
-        return new VsManagedShip(level, ship);
+        throw new UnsupportedOperationException(STUB_MESSAGE);
     }
 
     @Override
     public void delete(ManagedShip ship) {
-        if (ship instanceof VsManagedShip vs) {
-            ShipAssembler.INSTANCE.deleteShip(level, vs.wrappedAsServerShip(), true, false);
-        }
+        // No-op — there are no managed ships to delete in stub mode.
     }
 
     @Override
     public List<ManagedShip> findAll() {
-        List<ManagedShip> result = new ArrayList<>();
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            result.add(new VsManagedShip(level, ship));
-        }
-        return result;
+        return Collections.emptyList();
     }
 
     @Override
     @Nullable
     public ManagedShip findAt(BlockPos pos) {
-        ServerShip ship = VSGameUtilsKt.getShipObjectManagingPos(level, pos);
-        if (ship instanceof LoadedServerShip loaded) {
-            return new VsManagedShip(level, loaded);
-        }
-        if (ship == null) {
-            return null;
-        }
-        return new VsManagedShip(level, ship);
+        return null;
     }
 }

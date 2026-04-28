@@ -1,16 +1,16 @@
-// Dungeon Train — Minecraft mod (Forge 1.20.1)
-// Powered by Valkyrien Skies 2
+// Dungeon Train — Minecraft mod (NeoForge 1.21.1)
+// MIGRATION PHASE 1: VS adapter is stubbed; ship/vs/* will be reactivated in Phase 2
+// once VS upstream releases a 1.21.1 / NeoForge build. See plans/ticklish-soaring-comet.md.
 
 plugins {
-    id 'eclipse'
-    id 'idea'
+    id 'java-library'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
-    // Mixin gradle plugin — wires Mixin's annotation processor and, critically for our
-    // case, passes the SRG↔mojmap refMap remap file to runClient's JVM args so VS's
-    // refmap entries (SRG method names like m_91277_) resolve to mojmap class members
-    // (startUseItem) at @WrapOperation validation time.
-    id 'org.spongepowered.mixin' version '0.7.+'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.141'
+}
+
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
 }
 
 version = mod_version
@@ -20,110 +20,87 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+// Mojang ships Java 21 to end users in 1.21.1, so mods target Java 21.
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-
-    copyIdeResources = true
-
-    runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-            property 'forge.enabledGameTestNamespaces', mod_id
-
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        client {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        server {
-            property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
-        }
-
-        gameTestServer {
-            property 'forge.enabledGameTestNamespaces', mod_id
-        }
-
-        data {
-            workingDirectory project.file('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-        }
-    }
-}
-
-sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-// Mixin plugin configuration
-// We register an (initially empty) mixin config for our own mod so the mixin
-// plugin activates the runtime refmap remap file for runClient/runServer.
-// This benefits VS too — VS's refmap becomes resolvable against mojmap class members.
-mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
-    config "${mod_id}.mixins.json"
+sourceSets.main.resources {
+    srcDir 'src/generated/resources'
+    exclude '**/*.bbmodel'
+    exclude 'src/generated/**/.cache'
 }
 
 repositories {
-    maven {
-        name = 'Minecraft Forge'
-        url = 'https://maven.minecraftforge.net/'
-    }
-    maven {
-        name = 'ParchmentMC'
-        url = 'https://maven.parchmentmc.org/'
-    }
-    maven {
-        name = 'Valkyrien Skies'
-        url = 'https://maven.valkyrienskies.org/'
-    }
-    maven {
-        name = 'Kotlin for Forge'
-        url = 'https://thedarkcolour.github.io/KotlinForForge/'
-    }
+    // Maven Central for general libs (joml-primitives, JUnit).
     mavenCentral()
+
+    // VS / KFF repos kept here (commented) so Phase 2 can re-enable in one diff:
+    // maven { name = 'Valkyrien Skies'; url = 'https://maven.valkyrienskies.org/' }
+    // maven { name = 'Kotlin for Forge'; url = 'https://thedarkcolour.github.io/KotlinForForge/' }
+}
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', project.mod_id, '--all',
+                '--output', file('src/generated/resources/').getAbsolutePath(),
+                '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+configurations {
+    runtimeClasspath.extendsFrom localRuntime
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
-    // Mixin annotation processor — pairs with the 'org.spongepowered.mixin' plugin.
-    // Required for the mixin plugin to generate a refmap for our own mod AND to wire
-    // up the runtime refMapRemappingFile JVM arg that lets VS's refmap resolve.
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-
-    // Kotlin for Forge — required by Valkyrien Skies
-    implementation "thedarkcolour:kotlinforforge:${kff_version}"
-
-    // Valkyrien Skies 2 — moving ship/train physics
-    implementation fg.deobf("org.valkyrienskies:valkyrienskies-120-forge:${vs_version}") {
-        exclude group: 'com.simibubi'
-        exclude group: 'dev.engine-room'
-        exclude group: 'com.jozufozu'
-    }
-
-    // VSCore — required runtime deps of Valkyrien Skies
-    implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
-    implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
-    implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
-
-    // Compile-only: joml-primitives supplies AABBdc used by Ship.getWorldAABB().
-    // VS ships this jar-in-jar at runtime (META-INF/jars/joml-primitives-1.10.0.jar),
-    // so we only need it for compilation.
+    // Compile-only: joml-primitives supplies AABBdc used by ManagedShip.worldAABB().
+    // Pre-migration this came in via VS jar-in-jar; we keep it explicit since VS is stubbed.
     compileOnly 'org.joml:joml-primitives:1.10.0'
+    runtimeOnly 'org.joml:joml-primitives:1.10.0'
 
-    // Unit tests — JUnit 5 Jupiter. Scope: pure-logic functions that do NOT need
-    // a live MC/Forge/VS runtime (e.g. CarriageTemplate.typeForIndex). Runtime-
-    // dependent code is covered by Forge GameTestServer integration tests,
-    // tracked separately on Project #16.
+    // VS dependencies — DISABLED for Phase 1, restore in Phase 2:
+    // implementation "org.valkyrienskies:valkyrienskies-121-neoforge:${vs_version}"
+    // implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
+    // implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
+    // implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
+    // implementation "thedarkcolour:kotlinforforge-neoforge:${kff_version}"
+
+    // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -137,8 +114,7 @@ tasks.named('test', Test).configure {
 }
 
 // Resolve the current git branch at configuration time so it can be baked into
-// the jar via processResources. Falls back to the short SHA on detached HEAD,
-// and to 'unknown' if git is unavailable (e.g. tarball CI builds).
+// the jar via processResources. Falls back to the short SHA on detached HEAD.
 def gitBranch = { ->
     try {
         def proc = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
@@ -159,12 +135,12 @@ def gitBranch = { ->
     }
 }()
 
-tasks.named('processResources', ProcessResources).configure {
+// Generate neoforge.mods.toml + dungeontrain_version.properties + pack.mcmeta from templates.
+tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
         minecraft_version       : minecraft_version,
         minecraft_version_range : minecraft_version_range,
-        forge_version           : forge_version,
-        forge_version_range     : forge_version_range,
+        neo_version             : neo_version,
         loader_version_range    : loader_version_range,
         mod_id                  : mod_id,
         mod_name                : mod_name,
@@ -175,11 +151,12 @@ tasks.named('processResources', ProcessResources).configure {
         git_branch              : gitBranch,
     ]
     inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta', 'dungeontrain_version.properties']) {
-        expand replaceProperties + [project: project]
-    }
+    expand replaceProperties
+    from 'src/main/templates'
+    into "${layout.buildDirectory.get()}/generated/sources/modMetadata"
 }
+sourceSets.main.resources.srcDir tasks.named('generateModMetadata')
+neoForge.ideSyncTask tasks.named('generateModMetadata')
 
 tasks.named('jar', Jar).configure {
     manifest {
@@ -192,13 +169,12 @@ tasks.named('jar', Jar).configure {
             'Implementation-Vendor'   : mod_authors,
         ])
     }
-    finalizedBy 'reobfJar'
 }
 
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            artifact jar
+            from components.java
         }
     }
     repositories {
@@ -208,4 +184,11 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
 }

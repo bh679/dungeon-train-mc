@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -41,17 +41,17 @@ public final class DungeonTrainConfig {
     public static final CarriageGenerationMode DEFAULT_GENERATION_MODE = CarriageGenerationMode.RANDOM_GROUPED;
     public static final int DEFAULT_GROUP_SIZE = CarriageGenerationConfig.DEFAULT_GROUP_SIZE;
 
-    public static final ForgeConfigSpec SPEC;
-    public static final ForgeConfigSpec.IntValue NUM_CARRIAGES;
-    public static final ForgeConfigSpec.DoubleValue SPEED;
-    public static final ForgeConfigSpec.IntValue TRAIN_Y;
-    public static final ForgeConfigSpec.BooleanValue GENERATE_TRACKS;
-    public static final ForgeConfigSpec.BooleanValue GENERATE_TUNNELS;
-    public static final ForgeConfigSpec.EnumValue<CarriageGenerationMode> GENERATION_MODE;
-    public static final ForgeConfigSpec.IntValue GROUP_SIZE;
+    public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.IntValue NUM_CARRIAGES;
+    public static final ModConfigSpec.DoubleValue SPEED;
+    public static final ModConfigSpec.IntValue TRAIN_Y;
+    public static final ModConfigSpec.BooleanValue GENERATE_TRACKS;
+    public static final ModConfigSpec.BooleanValue GENERATE_TUNNELS;
+    public static final ModConfigSpec.EnumValue<CarriageGenerationMode> GENERATION_MODE;
+    public static final ModConfigSpec.IntValue GROUP_SIZE;
 
     static {
-        Pair<Holder, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder()
+        Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(DungeonTrainConfig::build);
         SPEC = pair.getRight();
         NUM_CARRIAGES = pair.getLeft().numCarriages;
@@ -65,27 +65,27 @@ public final class DungeonTrainConfig {
 
     private DungeonTrainConfig() {}
 
-    private static Holder build(ForgeConfigSpec.Builder b) {
+    private static Holder build(ModConfigSpec.Builder b) {
         b.push("train");
-        ForgeConfigSpec.IntValue numCarriages = b
+        ModConfigSpec.IntValue numCarriages = b
                 .comment("Number of carriages visible in the rolling window around each player.")
                 .defineInRange("numCarriages", DEFAULT_CARRIAGES, MIN_CARRIAGES, MAX_CARRIAGES);
-        ForgeConfigSpec.DoubleValue speed = b
+        ModConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")
                 .defineInRange("speed", DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
-        ForgeConfigSpec.IntValue trainY = b
+        ModConfigSpec.IntValue trainY = b
                 .comment("World Y coordinate where new trains spawn. Applies to the next spawn only; existing trains keep their current Y.")
                 .defineInRange("trainY", DEFAULT_TRAIN_Y, MIN_TRAIN_Y, MAX_TRAIN_Y);
-        ForgeConfigSpec.BooleanValue generateTracks = b
+        ModConfigSpec.BooleanValue generateTracks = b
                 .comment("Auto-generate stone-brick tracks, rails, and bridge pillars under every active train.")
                 .define("generateTracks", DEFAULT_GENERATE_TRACKS);
-        ForgeConfigSpec.BooleanValue generateTunnels = b
+        ModConfigSpec.BooleanValue generateTunnels = b
                 .comment("Auto-generate stone-brick tunnels with stepped portal entrances where the train runs through thick underground rock.")
                 .define("generateTunnels", DEFAULT_GENERATE_TUNNELS);
-        ForgeConfigSpec.EnumValue<CarriageGenerationMode> generationMode = b
+        ModConfigSpec.EnumValue<CarriageGenerationMode> generationMode = b
                 .comment("How carriage variants are chosen. RANDOM = each index picks one of the four types at random (seeded per-world for determinism). RANDOM_GROUPED = groups of N random non-flatbed carriages separated by a flatbed. LOOPING = original 4-way cycle (STANDARD → WINDOWED → SOLID_ROOF → FLATBED).")
                 .defineEnum("generationMode", DEFAULT_GENERATION_MODE);
-        ForgeConfigSpec.IntValue groupSize = b
+        ModConfigSpec.IntValue groupSize = b
                 .comment("Non-flatbed run length for RANDOM_GROUPED: every Nth carriage becomes a flatbed separator. Ignored by RANDOM and LOOPING modes.")
                 .defineInRange("groupSize", DEFAULT_GROUP_SIZE,
                         CarriageGenerationConfig.MIN_GROUP_SIZE,
@@ -179,12 +179,12 @@ public final class DungeonTrainConfig {
     }
 
     private record Holder(
-            ForgeConfigSpec.IntValue numCarriages,
-            ForgeConfigSpec.DoubleValue speed,
-            ForgeConfigSpec.IntValue trainY,
-            ForgeConfigSpec.BooleanValue generateTracks,
-            ForgeConfigSpec.BooleanValue generateTunnels,
-            ForgeConfigSpec.EnumValue<CarriageGenerationMode> generationMode,
-            ForgeConfigSpec.IntValue groupSize
+            ModConfigSpec.IntValue numCarriages,
+            ModConfigSpec.DoubleValue speed,
+            ModConfigSpec.IntValue trainY,
+            ModConfigSpec.BooleanValue generateTracks,
+            ModConfigSpec.BooleanValue generateTunnels,
+            ModConfigSpec.EnumValue<CarriageGenerationMode> generationMode,
+            ModConfigSpec.IntValue groupSize
     ) {}
 }

@@ -16,7 +16,7 @@ import java.util.function.Supplier;
  *
  * <p>Sent only on the press / release transition (not per tick) to keep the
  * pipe quiet. Server cleans up on logout via the
- * {@link net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent}
+ * {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent}
  * listener inside {@link VariantHotkeyState}.</p>
  */
 public record VariantHotkeyPacket(boolean held) {
