@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.world;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -52,8 +53,10 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public static DungeonTrainWorldData get(ServerLevel overworld) {
         DungeonTrainWorldData data = overworld.getDataStorage().computeIfAbsent(
-            DungeonTrainWorldData::load,
-            DungeonTrainWorldData::createDefault,
+            new SavedData.Factory<>(
+                DungeonTrainWorldData::createDefault,
+                (tag, registries) -> load(tag)
+            ),
             NAME
         );
         // Legacy upgrade path: missing NBT tag loaded as seed=0. Replace with
@@ -98,7 +101,7 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putInt(TAG_TRAIN_Y, trainY);
         tag.putBoolean(TAG_STARTS_WITH_TRAIN, startsWithTrain);
         tag.putInt(TAG_CARRIAGE_LENGTH, dims.length());

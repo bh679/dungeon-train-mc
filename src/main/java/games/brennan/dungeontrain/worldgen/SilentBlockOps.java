@@ -66,7 +66,7 @@ public final class SilentBlockOps {
         positioned.putInt("x", pos.getX());
         positioned.putInt("y", pos.getY());
         positioned.putInt("z", pos.getZ());
-        be.load(positioned);
+        be.loadWithComponents(positioned, level.registryAccess());
         be.setChanged();
     }
 

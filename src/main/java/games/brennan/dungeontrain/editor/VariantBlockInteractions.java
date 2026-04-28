@@ -24,8 +24,8 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.bus.api.Event;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
@@ -338,12 +338,13 @@ public final class VariantBlockInteractions {
 
         CompoundTag beNbt = null;
         if (newState.hasBlockEntity()) {
-            beNbt = BlockItem.getBlockEntityData(held);
+            net.minecraft.world.item.component.CustomData heldData = held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+            beNbt = heldData == null ? null : heldData.copyTag();
             if (beNbt == null) {
                 BlockState clickedState = level.getBlockState(clicked);
                 if (clickedState.is(newState.getBlock())) {
                     BlockEntity be = level.getBlockEntity(clicked);
-                    if (be != null) beNbt = be.saveWithoutMetadata();
+                    if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
                 }
             }
         }
@@ -363,7 +364,7 @@ public final class VariantBlockInteractions {
         CompoundTag beNbt = null;
         if (baseState.hasBlockEntity()) {
             BlockEntity be = level.getBlockEntity(clicked);
-            if (be != null) beNbt = be.saveWithoutMetadata();
+            if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
         return new VariantState(baseState, beNbt);
     }
@@ -431,8 +432,8 @@ public final class VariantBlockInteractions {
      * event so later Forge subscribers don't try to place either.
      */
     private static void suppressVanillaPlace(PlayerInteractEvent.RightClickBlock event) {
-        event.setUseBlock(Event.Result.DENY);
-        event.setUseItem(Event.Result.DENY);
+        event.setUseBlock(TriState.FALSE);
+        event.setUseItem(TriState.FALSE);
         event.setCanceled(true);
         event.setCancellationResult(InteractionResult.SUCCESS);
     }
