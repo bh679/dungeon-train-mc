@@ -45,7 +45,7 @@ public abstract class CreateWorldScreenDefaultPresetMixin {
     private void dungeontrain$setDefaultPreset(CallbackInfo ci) {
         ResourceKey<WorldPreset> presetKey = ResourceKey.create(
             Registries.WORLD_PRESET,
-            new ResourceLocation(DungeonTrain.MOD_ID, "dungeon_train"));
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train"));
 
         WorldCreationUiState state = this.getUiState();
         state.getSettings().worldgenLoadContext()

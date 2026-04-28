@@ -76,12 +76,12 @@ public final class DungeonTrainOptionsScreen extends Screen {
             : DungeonTrainConfig.DEFAULT_GROUP_SIZE;
 
         // Row 1 — starts-with-train checkbox.
-        startsWithTrainBox = new Checkbox(
-            centerX - 100, topY,
-            200, FIELD_HEIGHT,
-            Component.translatable("gui.dungeontrain.options.starts_with_train"),
-            initialChecked
-        );
+        startsWithTrainBox = Checkbox.builder(
+                Component.translatable("gui.dungeontrain.options.starts_with_train"),
+                this.font)
+            .pos(centerX - 100, topY)
+            .selected(initialChecked)
+            .build();
         addRenderableWidget(startsWithTrainBox);
 
         // Row 2 — train Y.
@@ -151,7 +151,6 @@ public final class DungeonTrainOptionsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
 
         int centerX = this.width / 2;

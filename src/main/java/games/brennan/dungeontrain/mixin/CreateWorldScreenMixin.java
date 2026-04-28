@@ -61,7 +61,7 @@ public abstract class CreateWorldScreenMixin {
     @SuppressWarnings("removal")
     private static final ResourceKey<WorldPreset> DUNGEONTRAIN$DEFAULT_KEY = ResourceKey.create(
             Registries.WORLD_PRESET,
-            new ResourceLocation(DUNGEONTRAIN$NAMESPACE, DUNGEONTRAIN$DEFAULT_PATH));
+            ResourceLocation.fromNamespaceAndPath(DUNGEONTRAIN$NAMESPACE, DUNGEONTRAIN$DEFAULT_PATH));
 
     @Shadow
     @Final
@@ -141,7 +141,7 @@ public abstract class CreateWorldScreenMixin {
                     : DUNGEONTRAIN$Y_PATH_PREFIX + y;
             ResourceKey<WorldPreset> key = ResourceKey.create(
                     Registries.WORLD_PRESET,
-                    new ResourceLocation(DUNGEONTRAIN$NAMESPACE, path));
+                    ResourceLocation.fromNamespaceAndPath(DUNGEONTRAIN$NAMESPACE, path));
             Optional<Holder.Reference<WorldPreset>> holder = presetRegistry.getHolder(key);
             if (holder.isPresent()) {
                 map.put(y, holder.get());

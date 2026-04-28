@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.ship;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -34,7 +34,7 @@ public final class ShipFilterProcessor extends StructureProcessor {
      * {@link #INSTANCE} on decode and writes nothing on encode.
      */
     private static final StructureProcessorType<ShipFilterProcessor> TYPE =
-        () -> Codec.unit(INSTANCE);
+        () -> MapCodec.unit(INSTANCE);
 
     private ShipFilterProcessor() {}
 
