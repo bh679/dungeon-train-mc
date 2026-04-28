@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.DungeonTrainSettingsScreen;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
@@ -38,6 +39,12 @@ public class DungeonTrain {
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
         ModItems.register(modBus);
+
+        // Custom creative tabs for the left-side prefab browser. Items are
+        // populated dynamically from PrefabTabState on each tryRebuildTabContents
+        // — the login sync packet triggers a rebuild once the registry is
+        // populated.
+        ModCreativeTabs.register(modBus);
 
         ModLoadingContext.get().registerConfig(
                 ModConfig.Type.SERVER,

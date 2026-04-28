@@ -127,22 +127,23 @@ public final class ContainerContentsMenuRenderer {
             : "Container Contents @ " + local.getX() + "," + local.getY() + "," + local.getZ();
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFF99CCFF);
 
-        // Toolbar — 5 cells: Add | FillMin | FillMax | Clear | X
+        // Toolbar — 6 cells: Add | Save | FillMin | FillMax | Clear | X
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 5.0;
+        double cellW = panelW / 6.0;
         int fmin = ContainerContentsMenu.fillMin();
         int fmax = ContainerContentsMenu.fillMax();
         int cs = ContainerContentsMenu.containerSize();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
             ContainerContentsMenu.CellKind cellKind = switch (i) {
                 case 0 -> ContainerContentsMenu.CellKind.ADD;
-                case 1 -> ContainerContentsMenu.CellKind.FILL_MIN;
-                case 2 -> ContainerContentsMenu.CellKind.FILL_MAX;
-                case 3 -> ContainerContentsMenu.CellKind.CLEAR;
+                case 1 -> ContainerContentsMenu.CellKind.SAVE;
+                case 2 -> ContainerContentsMenu.CellKind.FILL_MIN;
+                case 3 -> ContainerContentsMenu.CellKind.FILL_MAX;
+                case 4 -> ContainerContentsMenu.CellKind.CLEAR;
                 default -> ContainerContentsMenu.CellKind.CLOSE;
             };
             boolean isHover = hovered.kind() == cellKind;
@@ -150,12 +151,14 @@ public final class ContainerContentsMenuRenderer {
                 case CLOSE -> isHover ? 0xC0FF8080 : 0x40FF6060;
                 case CLEAR -> isHover ? 0xC0FFAA66 : 0x40CC7733;
                 case FILL_MIN, FILL_MAX -> isHover ? 0xC0FFCC55 : 0x4099AA33;
+                case SAVE -> isHover ? 0xB033CCFF : 0x40337799;
                 default -> isHover ? 0xB066FF99 : 0x4033CC66;
             };
             drawQuad(ps, buffer, xL + 0.01, toolbarBottom + 0.005,
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
                 case ADD -> "Add";
+                case SAVE -> "Save";
                 case FILL_MIN -> Integer.toString(fmin);
                 case FILL_MAX -> {
                     String shown = fmax < 0 ? "all" : Integer.toString(fmax);

@@ -145,6 +145,15 @@ public final class BlockVariantMenuInputHandler {
         switch (hit.kind()) {
             case COPY -> DungeonTrainNet.CHANNEL.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.COPY, variantId, local, -1, "", 0));
+            case SAVE -> {
+                // Open the modal name screen — its Save button dispatches
+                // SaveBlockVariantPrefabPacket to the server, which reads
+                // the current cell's states and writes a new prefab file.
+                Minecraft.getInstance().setScreen(
+                    new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
+                        games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.VARIANT,
+                        local));
+            }
             case ADD -> DungeonTrainNet.CHANNEL.sendToServer(
                 // Server captures the player's main-hand BlockItem — empty
                 // stateString signals "use held item" rather than the legacy

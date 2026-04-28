@@ -27,6 +27,7 @@ public final class ContainerContentsMenu {
     public enum CellKind {
         NONE,
         ADD,
+        SAVE,
         FILL_MIN,
         FILL_MAX,
         CLEAR,

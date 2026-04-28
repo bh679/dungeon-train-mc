@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -66,6 +68,13 @@ public final class PlayerJoinEvents {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        // Send the prefab registry snapshot to the client so the left-side
+        // creative-tab content is populated before the player opens their
+        // inventory. Independent of train teleport — fires for every join,
+        // every dimension.
+        DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
+
         if (!(player.level() instanceof ServerLevel currentLevel)) return;
 
         // Resolve the configured starting dimension and look for the train

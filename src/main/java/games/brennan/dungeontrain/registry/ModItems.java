@@ -13,16 +13,18 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * Mod-side item registry. The first {@link DeferredRegister} in the
- * project — wires up custom items via the mod-event bus during
- * construction. Currently registers only {@link VariantClipboardItem}, the
- * command-block-skinned hotbar item produced by the block-variant menu's
- * Copy action.
+ * Mod-side item registry. Wires up custom items via the mod-event bus during
+ * construction.
  *
- * <p>Hooked into the Creative inventory's MISC tab via
- * {@link BuildCreativeModeTabContentsEvent} so authors can manually pull a
- * blank clipboard for testing without going through the menu's Copy
- * button.</p>
+ * <p>Currently registers only {@link VariantClipboardItem}, the per-cell
+ * variant snippet produced by the block-variant menu's Copy button. Prefab
+ * tab entries are vanilla {@code BlockItem} stacks with discriminator NBT
+ * (see {@link games.brennan.dungeontrain.event.PrefabUseHandler}) — no
+ * mod-side item needed for those.</p>
+ *
+ * <p>The variant clipboard is hooked into the Creative inventory's
+ * TOOLS_AND_UTILITIES tab via {@link BuildCreativeModeTabContentsEvent} so
+ * authors can grab a blank clipboard for testing.</p>
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModItems {
@@ -43,11 +45,9 @@ public final class ModItems {
     }
 
     /**
-     * Add the clipboard to the Creative inventory's MISC tab. Allows
+     * Add the variant clipboard to the Creative inventory's MISC tab. Allows
      * authors to spawn a blank one for testing without the menu's Copy
-     * action — a no-NBT clipboard placed in the world creates an empty
-     * variant cell at the target position (which the player can then add
-     * variants to via the menu's Add button).
+     * action.
      */
     @SubscribeEvent
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {

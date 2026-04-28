@@ -139,6 +139,10 @@ public final class ContainerContentsMenuInputHandler {
                 // the held stack's item + count. Mirrors the block-variant
                 // ADD behaviour: hold an item, click Add.
                 ContainerContentsEditPacket.Op.ADD, plotKey, local, -1, "", 0));
+            case SAVE -> net.minecraft.client.Minecraft.getInstance().setScreen(
+                new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
+                    games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.LOOT,
+                    local));
             case FILL_MIN -> {
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
