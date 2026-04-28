@@ -153,7 +153,7 @@ public final class CarriageTemplateStore {
         Files.createDirectories(dir);
         Path file = fileFor(variant);
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         CACHE.put(variant.id(), Optional.of(template));
         LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
@@ -170,7 +170,7 @@ public final class CarriageTemplateStore {
         Path file = sourceFileFor(type);
         Files.createDirectories(file.getParent());
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled template {} to {}", type, file);
     }
 
@@ -252,7 +252,7 @@ public final class CarriageTemplateStore {
         Path file = fileFor(variant);
         if (!Files.isRegularFile(file)) return Optional.empty();
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, variant.id(), dims, tag, "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read config template {} at {}: {}", variant.id(), file, e.toString());
@@ -264,7 +264,7 @@ public final class CarriageTemplateStore {
         String resource = RESOURCE_PREFIX + variant.id() + EXT;
         try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in);
+            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, variant.id(), dims, tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled template {} at {}: {}", variant.id(), resource, e.toString());

@@ -94,7 +94,7 @@ public final class CarriagePersistenceStore {
             // absence of one). ignoreBlock=null means "keep everything."
             template.fillFromWorld(level, shipyardOrigin, size, true, null);
             CompoundTag tag = template.save(new CompoundTag());
-            NbtIo.writeCompressed(tag, file.toFile());
+            NbtIo.writeCompressed(tag, file);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Failed to persist carriage idx={} to {}: {}",
                 carriageIdx, file, e.toString());
@@ -114,7 +114,7 @@ public final class CarriagePersistenceStore {
         Path file = fileFor(level, shipId, carriageIdx);
         if (!Files.isRegularFile(file)) return false;
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             StructureTemplate template = new StructureTemplate();
             HolderGetter<Block> blocks = level.holderLookup(Registries.BLOCK);
             template.load(blocks, tag);

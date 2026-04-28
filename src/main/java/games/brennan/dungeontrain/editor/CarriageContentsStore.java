@@ -148,7 +148,7 @@ public final class CarriageContentsStore {
         Files.createDirectories(dir);
         Path file = fileFor(contents);
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         CACHE.put(contents.id(), Optional.of(template));
         LOGGER.info("[DungeonTrain] Saved contents template {} to {}", contents.id(), file);
     }
@@ -165,7 +165,7 @@ public final class CarriageContentsStore {
         Path file = sourceFileFor(contents);
         Files.createDirectories(file.getParent());
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled contents template {} to {}", contents.id(), file);
     }
 
@@ -225,7 +225,7 @@ public final class CarriageContentsStore {
         Path file = fileFor(contents);
         if (!Files.isRegularFile(file)) return Optional.empty();
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, contents.id(), interiorSize, tag, "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read config contents template {} at {}: {}", contents.id(), file, e.toString());
@@ -237,7 +237,7 @@ public final class CarriageContentsStore {
         String resource = RESOURCE_PREFIX + contents.id() + EXT;
         try (InputStream in = CarriageContentsStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in);
+            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, contents.id(), interiorSize, tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled contents template {} at {}: {}", contents.id(), resource, e.toString());

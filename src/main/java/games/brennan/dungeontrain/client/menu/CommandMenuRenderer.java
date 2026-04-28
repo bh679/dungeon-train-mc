@@ -377,9 +377,9 @@ public final class CommandMenuRenderer {
         int b = argb & 0xFF;
         VertexConsumer vc = buffer.getBuffer(PANEL_QUAD);
         Matrix4f mat = poseStack.last().pose();
-        vc.vertex(mat, x1, y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, x2, y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, x2, y2, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, x1, y2, 0).color(r, g, b, a).endVertex();
+        vc.addVertex(mat, x1, y1, 0f).setColor(r, g, b, a);
+        vc.addVertex(mat, x2, y1, 0f).setColor(r, g, b, a);
+        vc.addVertex(mat, x2, y2, 0f).setColor(r, g, b, a);
+        vc.addVertex(mat, x1, y2, 0f).setColor(r, g, b, a);
     }
 }

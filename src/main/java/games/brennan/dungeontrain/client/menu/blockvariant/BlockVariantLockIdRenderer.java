@@ -174,9 +174,9 @@ public final class BlockVariantLockIdRenderer {
         int b = argb & 0xFF;
         VertexConsumer vc = buffer.getBuffer(PANEL_QUAD);
         Matrix4f mat = ps.last().pose();
-        vc.vertex(mat, (float) x1, (float) y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, (float) x2, (float) y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, (float) x2, (float) y2, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, (float) x1, (float) y2, 0).color(r, g, b, a).endVertex();
+        vc.addVertex(mat, (float) x1, (float) y1, (float) 0).setColor(r, g, b, a);
+        vc.addVertex(mat, (float) x2, (float) y1, (float) 0).setColor(r, g, b, a);
+        vc.addVertex(mat, (float) x2, (float) y2, (float) 0).setColor(r, g, b, a);
+        vc.addVertex(mat, (float) x1, (float) y2, (float) 0).setColor(r, g, b, a);
     }
 }
