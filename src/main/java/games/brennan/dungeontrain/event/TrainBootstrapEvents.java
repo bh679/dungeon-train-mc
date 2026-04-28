@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.event.server.ServerStartedEvent;
@@ -47,6 +48,9 @@ public final class TrainBootstrapEvents {
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onServerStarted(ServerStartedEvent event) {
+        // SavedData lives on the overworld's data store regardless of which
+        // dimension the train spawns in — a single source of truth for all
+        // per-world DT choices.
         ServerLevel overworld = event.getServer().overworld();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
@@ -54,8 +58,18 @@ public final class TrainBootstrapEvents {
             LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping bootstrap auto-spawn");
             return;
         }
-        if (findTrain(overworld) != null) {
-            LOGGER.debug("[DungeonTrain] Train already present — bootstrap skipped");
+
+        StartingDimension startingDim = data.startingDimension();
+        ServerLevel target = event.getServer().getLevel(startingDim.levelKey());
+        if (target == null) {
+            // Defensive: e.g. a datapack disabled the chosen dimension. Fall
+            // back to overworld so the player still gets a train somewhere.
+            LOGGER.warn("[DungeonTrain] Configured starting dimension {} not loaded — falling back to overworld", startingDim);
+            target = overworld;
+        }
+
+        if (findTrain(target) != null) {
+            LOGGER.debug("[DungeonTrain] Train already present in {} — bootstrap skipped", target.dimension().location());
             return;
         }
 
@@ -64,10 +78,10 @@ public final class TrainBootstrapEvents {
         CarriageDims dims = data.dims();
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
-        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning {} carriages at {} dims={}x{}x{}",
-            DEFAULT_CARRIAGE_COUNT, trainOrigin, dims.length(), dims.width(), dims.height());
+        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning {} carriages at {} in {} dims={}x{}x{}",
+            DEFAULT_CARRIAGE_COUNT, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height());
         try {
-            TrainAssembler.spawnTrain(overworld, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos, dims);
+            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos, dims);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }
