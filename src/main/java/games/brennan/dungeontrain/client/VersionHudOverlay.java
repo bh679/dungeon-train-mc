@@ -3,12 +3,12 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.LayeredDraw;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.RegisterGuiOverlaysEvent;
-import net.neoforged.neoforge.client.gui.overlay.IGuiOverlay;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
 /**
@@ -47,8 +47,8 @@ public final class VersionHudOverlay {
     }
 
     @SubscribeEvent
-    public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
-        IGuiOverlay overlay = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui) {
                 return;
@@ -68,7 +68,7 @@ public final class VersionHudOverlay {
             graphics.drawString(mc.font, text, 4, 4, 0xFFFFFFFF, true);
         };
 
-        event.registerAboveAll("version_hud", overlay);
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "version_hud"), overlay);
         LOGGER.info("Version HUD registered: {}", VersionInfo.DISPLAY);
     }
 

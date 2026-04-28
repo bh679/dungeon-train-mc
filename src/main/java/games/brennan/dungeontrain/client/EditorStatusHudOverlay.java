@@ -5,13 +5,13 @@ import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.client.event.RegisterGuiOverlaysEvent;
-import net.neoforged.neoforge.client.gui.overlay.IGuiOverlay;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
 /**
@@ -128,8 +128,8 @@ public final class EditorStatusHudOverlay {
     }
 
     @SubscribeEvent
-    public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
-        IGuiOverlay overlay = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui) return;
             String c = category;
@@ -137,9 +137,9 @@ public final class EditorStatusHudOverlay {
             boolean d = devmode;
             int w = weight;
             if (c.isEmpty() && m.isEmpty()) return;
-            drawBar(graphics, mc.font, c, m, d, w, screenWidth);
+            drawBar(graphics, mc.font, c, m, d, w, graphics.guiWidth());
         };
-        event.registerAboveAll("editor_status", overlay);
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"), overlay);
         LOGGER.info("Editor status HUD overlay registered");
     }
 
