@@ -1,15 +1,16 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Server → client snapshot of every variant-flagged cell (locked or unlocked)
@@ -31,7 +32,16 @@ public record BlockVariantOutlinePacket(
     String plotKey,
     BlockPos plotOriginWorldPos,
     List<BlockPos> positions
-) {
+) implements CustomPacketPayload {
+
+    public static final Type<BlockVariantOutlinePacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_outline"));
+
+    public static final StreamCodec<FriendlyByteBuf, BlockVariantOutlinePacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            BlockVariantOutlinePacket::decode
+        );
 
     public static BlockVariantOutlinePacket empty() {
         return new BlockVariantOutlinePacket("", BlockPos.ZERO, Collections.emptyList());
@@ -70,11 +80,13 @@ public record BlockVariantOutlinePacket(
         return new BlockVariantOutlinePacket(key, origin, out);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () ->
-                games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantWireframeRenderer.applySnapshot(this)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(BlockVariantOutlinePacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() ->
+            games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantWireframeRenderer.applySnapshot(packet));
     }
 }

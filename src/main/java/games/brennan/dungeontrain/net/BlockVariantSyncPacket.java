@@ -1,17 +1,18 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Server → client: the block-variant world-space menu's current state for
@@ -39,7 +40,7 @@ public record BlockVariantSyncPacket(
     Vec3 anchorPos,
     Vec3 anchorRight,
     Vec3 anchorUp
-) {
+) implements CustomPacketPayload {
 
     /**
      * Single per-cell candidate, mirrored on the wire. Lock semantics live
@@ -56,6 +57,15 @@ public record BlockVariantSyncPacket(
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask) {}
+
+    public static final Type<BlockVariantSyncPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_sync"));
+
+    public static final StreamCodec<FriendlyByteBuf, BlockVariantSyncPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            BlockVariantSyncPacket::decode
+        );
 
     public static BlockVariantSyncPacket empty() {
         return new BlockVariantSyncPacket(
@@ -116,12 +126,14 @@ public record BlockVariantSyncPacket(
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () ->
-                games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu.applySync(this)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(BlockVariantSyncPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() ->
+            games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu.applySync(packet));
     }
 
     private static void writeVec3(FriendlyByteBuf buf, Vec3 v) {

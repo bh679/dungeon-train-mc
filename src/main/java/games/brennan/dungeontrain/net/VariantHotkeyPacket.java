@@ -1,11 +1,14 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.VariantHotkeyState;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Client → server: report the press / release state of the "variant place"
@@ -19,7 +22,16 @@ import java.util.function.Supplier;
  * {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent}
  * listener inside {@link VariantHotkeyState}.</p>
  */
-public record VariantHotkeyPacket(boolean held) {
+public record VariantHotkeyPacket(boolean held) implements CustomPacketPayload {
+
+    public static final Type<VariantHotkeyPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hotkey"));
+
+    public static final StreamCodec<FriendlyByteBuf, VariantHotkeyPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            VariantHotkeyPacket::decode
+        );
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeBoolean(held);
@@ -29,13 +41,17 @@ public record VariantHotkeyPacket(boolean held) {
         return new VariantHotkeyPacket(buf.readBoolean());
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(VariantHotkeyPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayer sender = ctx.getSender();
-            if (sender == null) return;
-            VariantHotkeyState.setHeld(sender, held);
+            Player p = ctx.player();
+            if (p instanceof ServerPlayer sender) {
+                VariantHotkeyState.setHeld(sender, packet.held);
+            }
         });
-        ctx.setPacketHandled(true);
     }
 }

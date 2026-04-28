@@ -1,108 +1,58 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.simple.SimpleChannel;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
- * Central network channel for Dungeon Train's client/server messages.
+ * Central network registrar for Dungeon Train's client/server payloads.
  *
- * <p>Versioning: protocol version is a literal string. A client with a
- * different version will be rejected by Forge's handshake — bump
+ * <p>Versioning: protocol version is a literal string. NeoForge's payload
+ * handshake uses this to reject mismatched clients — bump
  * {@link #PROTOCOL_VERSION} any time packet layouts change.</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "6";
-
-    public static final SimpleChannel CHANNEL = NetworkRegistry.ChannelBuilder
-        .named(new ResourceLocation(DungeonTrain.MOD_ID, "main"))
-        .networkProtocolVersion(() -> PROTOCOL_VERSION)
-        .clientAcceptedVersions(PROTOCOL_VERSION::equals)
-        .serverAcceptedVersions(PROTOCOL_VERSION::equals)
-        .simpleChannel();
+    public static final String PROTOCOL_VERSION = "7";
 
     private DungeonTrainNet() {}
 
     /**
-     * Register all packet types. Call once during {@code FMLCommonSetupEvent}.
-     * IDs are stable across versions — don't renumber, only append.
+     * Register all payload types. Triggered by NeoForge's mod-bus
+     * {@link RegisterPayloadHandlersEvent}. IDs are stable across versions —
+     * don't rename payload types, only append new ones.
      */
-    public static void register() {
-        int id = 0;
-        CHANNEL.messageBuilder(VariantHoverPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(VariantHoverPacket::encode)
-            .decoder(VariantHoverPacket::decode)
-            .consumerMainThread(VariantHoverPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(CarriageIndexPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(CarriageIndexPacket::encode)
-            .decoder(CarriageIndexPacket::decode)
-            .consumerMainThread(CarriageIndexPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(EditorStatusPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(EditorStatusPacket::encode)
-            .decoder(EditorStatusPacket::decode)
-            .consumerMainThread(EditorStatusPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(VariantHotkeyPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(VariantHotkeyPacket::encode)
-            .decoder(VariantHotkeyPacket::decode)
-            .consumerMainThread(VariantHotkeyPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(PartAssignmentSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(PartAssignmentSyncPacket::encode)
-            .decoder(PartAssignmentSyncPacket::decode)
-            .consumerMainThread(PartAssignmentSyncPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(PartAssignmentEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(PartAssignmentEditPacket::encode)
-            .decoder(PartAssignmentEditPacket::decode)
-            .consumerMainThread(PartAssignmentEditPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(PartMenuTogglePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(PartMenuTogglePacket::encode)
-            .decoder(PartMenuTogglePacket::decode)
-            .consumerMainThread(PartMenuTogglePacket::handle)
-            .add();
-        CHANNEL.messageBuilder(BlockVariantSyncPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(BlockVariantSyncPacket::encode)
-            .decoder(BlockVariantSyncPacket::decode)
-            .consumerMainThread(BlockVariantSyncPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(BlockVariantEditPacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(BlockVariantEditPacket::encode)
-            .decoder(BlockVariantEditPacket::decode)
-            .consumerMainThread(BlockVariantEditPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(BlockVariantMenuTogglePacket.class, id++, NetworkDirection.PLAY_TO_SERVER)
-            .encoder(BlockVariantMenuTogglePacket::encode)
-            .decoder(BlockVariantMenuTogglePacket::decode)
-            .consumerMainThread(BlockVariantMenuTogglePacket::handle)
-            .add();
-        CHANNEL.messageBuilder(BlockVariantLockIdsPacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(BlockVariantLockIdsPacket::encode)
-            .decoder(BlockVariantLockIdsPacket::decode)
-            .consumerMainThread(BlockVariantLockIdsPacket::handle)
-            .add();
-        CHANNEL.messageBuilder(BlockVariantOutlinePacket.class, id++, NetworkDirection.PLAY_TO_CLIENT)
-            .encoder(BlockVariantOutlinePacket::encode)
-            .decoder(BlockVariantOutlinePacket::decode)
-            .consumerMainThread(BlockVariantOutlinePacket::handle)
-            .add();
+    @SubscribeEvent
+    public static void register(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(DungeonTrain.MOD_ID).versioned(PROTOCOL_VERSION);
+
+        registrar.playToClient(VariantHoverPacket.TYPE, VariantHoverPacket.STREAM_CODEC, VariantHoverPacket::handle);
+        registrar.playToClient(CarriageIndexPacket.TYPE, CarriageIndexPacket.STREAM_CODEC, CarriageIndexPacket::handle);
+        registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
+        registrar.playToServer(VariantHotkeyPacket.TYPE, VariantHotkeyPacket.STREAM_CODEC, VariantHotkeyPacket::handle);
+        registrar.playToClient(PartAssignmentSyncPacket.TYPE, PartAssignmentSyncPacket.STREAM_CODEC, PartAssignmentSyncPacket::handle);
+        registrar.playToServer(PartAssignmentEditPacket.TYPE, PartAssignmentEditPacket.STREAM_CODEC, PartAssignmentEditPacket::handle);
+        registrar.playToServer(PartMenuTogglePacket.TYPE, PartMenuTogglePacket.STREAM_CODEC, PartMenuTogglePacket::handle);
+        registrar.playToClient(BlockVariantSyncPacket.TYPE, BlockVariantSyncPacket.STREAM_CODEC, BlockVariantSyncPacket::handle);
+        registrar.playToServer(BlockVariantEditPacket.TYPE, BlockVariantEditPacket.STREAM_CODEC, BlockVariantEditPacket::handle);
+        registrar.playToServer(BlockVariantMenuTogglePacket.TYPE, BlockVariantMenuTogglePacket.STREAM_CODEC, BlockVariantMenuTogglePacket::handle);
+        registrar.playToClient(BlockVariantLockIdsPacket.TYPE, BlockVariantLockIdsPacket.STREAM_CODEC, BlockVariantLockIdsPacket::handle);
+        registrar.playToClient(BlockVariantOutlinePacket.TYPE, BlockVariantOutlinePacket.STREAM_CODEC, BlockVariantOutlinePacket::handle);
     }
 
-    /** Convenience: send a packet to the server (client → server). */
-    public static void sendToServer(Object packet) {
-        CHANNEL.sendToServer(packet);
+    /** Convenience: send a payload to the server (client → server). */
+    public static void sendToServer(CustomPacketPayload payload) {
+        PacketDistributor.sendToServer(payload);
     }
 
-    /** Convenience: send a packet to a single player. */
-    public static void sendTo(ServerPlayer player, Object packet) {
-        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    /** Convenience: send a payload to a single player. */
+    public static void sendTo(ServerPlayer player, CustomPacketPayload payload) {
+        PacketDistributor.sendToPlayer(player, payload);
     }
 }

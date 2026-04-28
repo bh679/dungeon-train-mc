@@ -143,33 +143,33 @@ public final class BlockVariantMenuInputHandler {
         if (local == null) return;
         String variantId = BlockVariantMenu.variantId();
         switch (hit.kind()) {
-            case COPY -> DungeonTrainNet.CHANNEL.sendToServer(
+            case COPY -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.COPY, variantId, local, -1, "", 0));
-            case ADD -> DungeonTrainNet.CHANNEL.sendToServer(
+            case ADD -> DungeonTrainNet.sendToServer(
                 // Server captures the player's main-hand BlockItem — empty
                 // stateString signals "use held item" rather than the legacy
                 // search-screen path.
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.ADD, variantId, local, -1, "", 0));
-            case LOCK -> DungeonTrainNet.CHANNEL.sendToServer(
+            case LOCK -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CYCLE_LOCK_ID, variantId, local, -1, "", 0));
             case REMOVE -> BlockVariantMenu.toggleRemoveMode();
-            case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(
+            case CLEAR -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CLEAR, variantId, local, -1, "", 0));
-            case CLOSE -> DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantMenuTogglePacket(false));
+            case CLOSE -> DungeonTrainNet.sendToServer(new BlockVariantMenuTogglePacket(false));
             case ENTRY_WEIGHT -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.BUMP_WEIGHT, variantId, local, hit.index(), "", delta));
             }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.REMOVE, variantId, local, hit.index(), "", 0));
             }
             case ENTRY_NAME -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.PREVIEW_ENTRY, variantId, local, hit.index(), "", 0));
             }
             case ENTRY_ROT_MODE -> {
@@ -178,7 +178,7 @@ public final class BlockVariantMenuInputHandler {
                 int currentOrd = e.rotMode() & 0xFF;
                 if (currentOrd >= VariantRotation.Mode.values().length) currentOrd = VariantRotation.Mode.RANDOM.ordinal();
                 int nextOrd = (currentOrd + 1) % VariantRotation.Mode.values().length;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ROTATION_MODE, variantId, local, hit.index(), "", nextOrd));
                 BlockVariantMenu.closeRotPopup();
             }
@@ -193,7 +193,7 @@ public final class BlockVariantMenuInputHandler {
                 if (mode == VariantRotation.Mode.LOCK) {
                     int nextMask = nextLockBit(currentMask, validMask);
                     if (nextMask == 0) return;
-                    DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                    DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                         BlockVariantEditPacket.Op.SET_ROTATION_DIRS, variantId, local, hit.index(), "", nextMask));
                 } else if (mode == VariantRotation.Mode.OPTIONS) {
                     BlockVariantMenu.openRotPopup(hit.index());
@@ -222,7 +222,7 @@ public final class BlockVariantMenuInputHandler {
                 if ((validMask & bit) == 0) return; // invalid for this block — no-op
                 int currentMask = e.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
                 int newMask = currentMask ^ bit;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ROTATION_DIRS, variantId, local, row, "", newMask));
             }
             default -> {
@@ -267,7 +267,7 @@ public final class BlockVariantMenuInputHandler {
             case SEARCH_RESULT -> {
                 List<String> filtered = BlockVariantMenu.filteredBlockIds();
                 if (hit.index() < 0 || hit.index() >= filtered.size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new BlockVariantEditPacket(
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.ADD, variantId, local, -1, filtered.get(hit.index()), 0));
                 BlockVariantMenu.backToRoot();
             }
