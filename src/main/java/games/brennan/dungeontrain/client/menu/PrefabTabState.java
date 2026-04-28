@@ -13,12 +13,13 @@ import org.slf4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Client singleton — holds the variant + loot prefab entries synced from
- * the server on login. Each entry is {@code (id, blockId)} so the creative
- * tab's {@code displayItems} lambda can build a vanilla {@code BlockItem}
- * stack with the right icon.
+ * the server on login. Each entry carries both the icon block (for the
+ * creative tab grid item) and the full constituent list (for the icon-grid
+ * tooltip preview).
  *
  * <p>Updates trigger {@link CreativeModeTabs#tryRebuildTabContents} so the
  * tab reflects the latest data immediately.</p>
@@ -28,14 +29,14 @@ public final class PrefabTabState {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static List<PrefabRegistrySyncPacket.Entry> variantEntries = Collections.emptyList();
-    private static List<PrefabRegistrySyncPacket.Entry> lootEntries = Collections.emptyList();
+    private static List<PrefabRegistrySyncPacket.VariantEntry> variantEntries = Collections.emptyList();
+    private static List<PrefabRegistrySyncPacket.LootEntry> lootEntries = Collections.emptyList();
 
     private PrefabTabState() {}
 
     public static void applyRegistry(
-        List<PrefabRegistrySyncPacket.Entry> variants,
-        List<PrefabRegistrySyncPacket.Entry> loot
+        List<PrefabRegistrySyncPacket.VariantEntry> variants,
+        List<PrefabRegistrySyncPacket.LootEntry> loot
     ) {
         variantEntries = List.copyOf(variants);
         lootEntries = List.copyOf(loot);
@@ -48,12 +49,30 @@ public final class PrefabTabState {
         rebuildTabsSafely();
     }
 
-    public static List<PrefabRegistrySyncPacket.Entry> variantEntries() {
+    public static List<PrefabRegistrySyncPacket.VariantEntry> variantEntries() {
         return variantEntries;
     }
 
-    public static List<PrefabRegistrySyncPacket.Entry> lootEntries() {
+    public static List<PrefabRegistrySyncPacket.LootEntry> lootEntries() {
         return lootEntries;
+    }
+
+    /** Lookup: full block-id list for a variant prefab — used by the tooltip layer. */
+    public static Optional<List<String>> findVariantBlocks(String prefabId) {
+        if (prefabId == null) return Optional.empty();
+        for (PrefabRegistrySyncPacket.VariantEntry e : variantEntries) {
+            if (e.id().equals(prefabId)) return Optional.of(e.blockIds());
+        }
+        return Optional.empty();
+    }
+
+    /** Lookup: full item list for a loot prefab — used by the tooltip layer. */
+    public static Optional<List<PrefabRegistrySyncPacket.LootItem>> findLootItems(String prefabId) {
+        if (prefabId == null) return Optional.empty();
+        for (PrefabRegistrySyncPacket.LootEntry e : lootEntries) {
+            if (e.id().equals(prefabId)) return Optional.of(e.items());
+        }
+        return Optional.empty();
     }
 
     private static void rebuildTabsSafely() {

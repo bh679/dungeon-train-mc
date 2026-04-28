@@ -38,9 +38,9 @@ public final class ModCreativeTabs {
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
             .icon(() -> new ItemStack(Items.COMMAND_BLOCK))
             .displayItems((parameters, output) -> {
-                for (PrefabRegistrySyncPacket.Entry entry : PrefabTabState.variantEntries()) {
+                for (PrefabRegistrySyncPacket.VariantEntry entry : PrefabTabState.variantEntries()) {
                     ItemStack stack = buildPrefabStack(
-                        entry.blockId(), Items.COMMAND_BLOCK,
+                        entry.iconBlockId(), Items.COMMAND_BLOCK,
                         PrefabUseHandler.NBT_BV_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }
@@ -54,9 +54,9 @@ public final class ModCreativeTabs {
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot"))
             .icon(() -> new ItemStack(Items.CHEST))
             .displayItems((parameters, output) -> {
-                for (PrefabRegistrySyncPacket.Entry entry : PrefabTabState.lootEntries()) {
+                for (PrefabRegistrySyncPacket.LootEntry entry : PrefabTabState.lootEntries()) {
                     ItemStack stack = buildPrefabStack(
-                        entry.blockId(), Items.CHEST,
+                        entry.iconBlockId(), Items.CHEST,
                         PrefabUseHandler.NBT_LOOT_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }
