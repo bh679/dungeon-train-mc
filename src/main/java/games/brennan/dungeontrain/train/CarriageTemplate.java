@@ -230,7 +230,9 @@ public final class CarriageTemplate {
                     picked.state(), picked.rotation(),
                     e.localPos(), config.seed(), carriageIndex,
                     sidecar.lockIdAt(e.localPos()));
-                SilentBlockOps.setBlockSilent(level, world, rotated, picked.blockEntityNbt());
+                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                    level, world, rotated, picked.blockEntityNbt(),
+                    "carriage:" + variant.id(), e.localPos(), config.seed(), carriageIndex);
             }
         }
     }
