@@ -12,6 +12,8 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
@@ -63,6 +65,7 @@ public final class ContainerContentsStore {
 
     private static final String SUBDIR = "dungeontrain/containers";
     private static final String EXT = ".contents.json";
+    private static final String RESOURCE_PREFIX = "/data/dungeontrain/containers/";
 
     /** Session cache keyed by plot key. */
     private static final Map<String, ContainerContentsStore> CACHE = new HashMap<>();
@@ -168,19 +171,39 @@ public final class ContainerContentsStore {
 
     private static ContainerContentsStore loadFromDisk(String plotKey) {
         Path file = configPathFor(plotKey);
-        if (!Files.isRegularFile(file)) {
+        if (Files.isRegularFile(file)) {
+            try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                return parseFromReader(r, plotKey, file.toString());
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Failed to read container contents store {}: {}", file, e.toString());
+                return new ContainerContentsStore(plotKey, new LinkedHashMap<>());
+            }
+        }
+        // Fallback to bundled resource so authored pools ship with the mod.
+        // Mirrors CarriageContentsVariantBlocks's two-tier load path.
+        String resource = RESOURCE_PREFIX + safeFilename(plotKey) + EXT;
+        try (InputStream in = ContainerContentsStore.class.getResourceAsStream(resource)) {
+            if (in == null) return new ContainerContentsStore(plotKey, new LinkedHashMap<>());
+            try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                return parseFromReader(r, plotKey, "bundled " + resource);
+            }
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read bundled container contents store {}: {}", resource, e.toString());
             return new ContainerContentsStore(plotKey, new LinkedHashMap<>());
         }
-        try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+    }
+
+    private static ContainerContentsStore parseFromReader(Reader r, String plotKey, String origin) {
+        try {
             JsonElement root = JsonParser.parseReader(r);
             if (!root.isJsonObject()) {
-                LOGGER.warn("[DungeonTrain] Container contents store {} not a JSON object — ignoring.", file);
+                LOGGER.warn("[DungeonTrain] Container contents store {} not a JSON object — ignoring.", origin);
                 return new ContainerContentsStore(plotKey, new LinkedHashMap<>());
             }
             JsonObject obj = root.getAsJsonObject();
             if (obj.has("schemaVersion") && obj.get("schemaVersion").getAsInt() > CURRENT_SCHEMA_VERSION) {
                 LOGGER.warn("[DungeonTrain] Container contents store {} schemaVersion {} > {} — best-effort.",
-                    file, obj.get("schemaVersion").getAsInt(), CURRENT_SCHEMA_VERSION);
+                    origin, obj.get("schemaVersion").getAsInt(), CURRENT_SCHEMA_VERSION);
             }
             Map<BlockPos, ContainerContentsPool> out = new LinkedHashMap<>();
             if (obj.has("pools") && obj.get("pools").isJsonObject()) {
@@ -228,17 +251,20 @@ public final class ContainerContentsStore {
                 }
             }
             LOGGER.info("[DungeonTrain] Loaded container contents store {} ({} cells) from {}",
-                plotKey, out.size(), file);
+                plotKey, out.size(), origin);
             return new ContainerContentsStore(plotKey, out);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read container contents store {}: {}", file, e.toString());
+        } catch (Exception e) {
+            LOGGER.error("[DungeonTrain] Failed to parse container contents store {}: {}", origin, e.toString());
             return new ContainerContentsStore(plotKey, new LinkedHashMap<>());
         }
     }
 
+    private static String safeFilename(String plotKey) {
+        return plotKey.replace(':', '_').replace('/', '_').toLowerCase(Locale.ROOT);
+    }
+
     private static Path configPathFor(String plotKey) {
-        String safe = plotKey.replace(':', '_').replace('/', '_').toLowerCase(Locale.ROOT);
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(safe + EXT);
+        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(safeFilename(plotKey) + EXT);
     }
 
     @Nullable
