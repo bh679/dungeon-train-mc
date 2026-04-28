@@ -1,5 +1,7 @@
 {
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",
+  "generator.dungeontrain.dungeon_train_end": "Dungeon Train (End)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y-48": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y-32": "Dungeon Train",

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -14,7 +15,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkStatus;
@@ -75,21 +75,36 @@ public final class PlayerJoinEvents {
         // every dimension.
         DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
 
-        if (!(player.level() instanceof ServerLevel level)) return;
-        if (level.dimension() != Level.OVERWORLD) return;
+        if (!(player.level() instanceof ServerLevel currentLevel)) return;
 
-        LoadedServerShip trainShip = findTrain(level);
+        // Resolve the configured starting dimension and look for the train
+        // there — the train was spawned by TrainBootstrapEvents into the
+        // dimension recorded on per-world SavedData. SavedData always lives on
+        // the overworld store regardless of where the train sits.
+        ServerLevel overworld = currentLevel.getServer().overworld();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        StartingDimension startingDim = data.startingDimension();
+        ServerLevel trainLevel = currentLevel.getServer().getLevel(startingDim.levelKey());
+        if (trainLevel == null) {
+            // The configured dimension isn't loaded (e.g. datapack removed it
+            // since world creation). Don't teleport — let the player keep
+            // whatever vanilla spawn they got.
+            LOGGER.warn("[DungeonTrain] Starting dimension {} not loaded on login — skipping teleport for {}",
+                startingDim, player.getName().getString());
+            return;
+        }
+
+        LoadedServerShip trainShip = findTrain(trainLevel);
         if (trainShip == null) {
-            LOGGER.info("[DungeonTrain] No train present on login — skipping teleport for {}",
-                player.getName().getString());
+            LOGGER.info("[DungeonTrain] No train present in {} on login — skipping teleport for {}",
+                trainLevel.dimension().location(), player.getName().getString());
             return;
         }
 
         Vector3dc trainPos = trainShip.getTransform().getPosition();
         Vector3d trainCenter = new Vector3d(trainPos.x(), trainPos.y(), trainPos.z());
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level.getServer().overworld());
-        PlayerTarget target = pickPlayerTarget(level, trainCenter, data);
-        teleportAndLookAt(level, player, trainShip, target);
+        PlayerTarget target = pickPlayerTarget(trainLevel, trainCenter, data);
+        teleportAndLookAt(trainLevel, player, trainShip, target);
     }
 
     private static LoadedServerShip findTrain(ServerLevel level) {

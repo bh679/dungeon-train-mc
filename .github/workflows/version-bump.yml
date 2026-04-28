@@ -14,6 +14,7 @@ name: Auto-bump mod_version after Gate 3 merge
 on:
   push:
     branches: [main]
+  workflow_dispatch:        # Manual re-fire after fixing a malformed gradle.properties
 
 permissions:
   contents: write
@@ -32,9 +33,41 @@ jobs:
           # Full history so the bump push isn't a non-fast-forward.
           fetch-depth: 0
 
+      # Catches the failure mode that broke main on 2026-04-28: PR #103
+      # squash-merged with unresolved git conflict markers in
+      # gradle.properties, then this workflow's earlier (#102) version
+      # silently corrupted state by trying to bump a multi-line/empty
+      # version. Fail loudly with file=line annotations so the next
+      # maintainer sees what's wrong instead of double-broken state.
+      - name: Validate gradle.properties is well-formed
+        run: |
+          set -euo pipefail
+
+          if grep -qE '^(<{7}|={7}|>{7})' gradle.properties; then
+            echo "::error file=gradle.properties::gradle.properties contains git conflict markers — refusing to auto-bump"
+            grep -nE '^(<{7}|={7}|>{7})' gradle.properties
+            exit 1
+          fi
+
+          VERSION_LINES=$(grep -cE '^mod_version=' gradle.properties || true)
+          if [ "$VERSION_LINES" -ne 1 ]; then
+            echo "::error file=gradle.properties::Expected exactly 1 mod_version= line, found $VERSION_LINES"
+            grep -nE '^mod_version=' gradle.properties || true
+            exit 1
+          fi
+
+          CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          if ! echo "$CURRENT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error file=gradle.properties::mod_version='$CURRENT' is not a strict X.Y.Z numeric version"
+            exit 1
+          fi
+
+          echo "✓ gradle.properties valid (mod_version=$CURRENT)"
+
       - name: Compute and apply MINOR bump
         id: bump
         run: |
+          set -euo pipefail
           CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
           MAJOR=$(echo "$CURRENT" | cut -d. -f1)
           MINOR=$(echo "$CURRENT" | cut -d. -f2)
