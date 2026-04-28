@@ -91,6 +91,33 @@ neoForge {
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+
+    // Sable bundles its `sable-companion` library as a jar-in-jar inside the
+    // mod jar (META-INF/jarjar/sable-companion-common-*.jar). At runtime
+    // NeoForge unpacks and loads it; at compile time we have to extract it
+    // ourselves so the companion's math types (Pose3d, BoundingBox3d) are
+    // visible to javac.
+    sableJar
+}
+
+dependencies {
+    sableJar "maven.modrinth:sable:${sable_version}"
+}
+
+tasks.register('extractSableCompanion', Copy) {
+    def sableJar = configurations.sableJar
+    inputs.files(sableJar)
+    from {
+        sableJar.collect { zipTree(it).matching {
+            include 'META-INF/jarjar/sable-companion-common-*.jar'
+        } }
+    }
+    into layout.buildDirectory.dir('extracted/sable-companion')
+    eachFile { details ->
+        // Strip the META-INF/jarjar/ prefix so files() can pick the jar up directly.
+        details.path = details.sourceName
+    }
+    includeEmptyDirs = false
 }
 
 dependencies {
@@ -111,9 +138,18 @@ dependencies {
     // Sable — physics dependency (replaces VS in Phase 2). Modrinth-hosted.
     // End users must install Sable separately at runtime; it is NOT embedded
     // in our jar (PolyForm Shield 1.0.0 — Sable's licence — does not allow
-    // bundling, and we declare it as a hard `mandatory` mod-dep in
+    // bundling), and we declare it as a hard `mandatory` mod-dep in
     // neoforge.mods.toml so the loader prompts the user.
     implementation "maven.modrinth:sable:${sable_version}"
+
+    // Compile against the companion math types extracted from Sable's
+    // jar-in-jar bundle. compileOnly because at runtime the companion is
+    // loaded by NeoForge from Sable's own jarJar — we don't ship it.
+    // fileTree (not files-of-task) so javac sees the .jar inside the
+    // directory; builtBy wires the extraction so it runs before compile.
+    compileOnly fileTree(dir: layout.buildDirectory.dir('extracted/sable-companion'),
+                         include: '*.jar',
+                         builtBy: ['extractSableCompanion'])
 
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')

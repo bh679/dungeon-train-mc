@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.ship;
 
-import games.brennan.dungeontrain.ship.vs.VsShipyard;
+import games.brennan.dungeontrain.ship.sable.SableShipyard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelReader;
@@ -8,9 +8,13 @@ import net.minecraft.world.level.LevelReader;
 /**
  * Static accessor for the active {@link Shipyard} implementation.
  *
- * <p>Wired to {@link VsShipyard} today. Swapping ship-physics mods means
- * changing the wiring in this one file — every caller across the rest of
- * the codebase keeps working unchanged.</p>
+ * <p>Wired to {@link SableShipyard} (Phase 2 of the 1.21.1 migration).
+ * Previously wrapped Valkyrien Skies' {@code LoadedServerShip}; VS upstream
+ * has not shipped a 1.21.1/NeoForge build, so we pivoted to Sable
+ * (https://github.com/ryanhcode/sable, PolyForm Shield 1.0.0).</p>
+ *
+ * <p>Swapping ship-physics mods is one file change — every caller across
+ * the rest of the codebase keeps working unchanged.</p>
  */
 public final class Shipyards {
 
@@ -18,7 +22,7 @@ public final class Shipyards {
 
     /** Get the {@link Shipyard} for {@code level}. Server-side only. */
     public static Shipyard of(ServerLevel level) {
-        return new VsShipyard(level);
+        return new SableShipyard(level);
     }
 
     /**
