@@ -5,6 +5,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -31,6 +33,19 @@ public final class ContainerContentsRoller {
     private static final long MIX_S = 0xC6BC279692B5C323L;
     private static final long MIX_C = 0xCAFEBABE12345678L;
 
+    /**
+     * BE NBT key on {@code decorated_pot}. Holds the rolled {@link ItemStack} that
+     * the vase-break handler ({@code VasePotLootDrop}) materialises into a world
+     * drop. Decorated pots in 1.20.1 have no native inventory slot, so the
+     * roller writes here instead of the vanilla {@code Items} list.
+     *
+     * <p>If a future Minecraft version gives {@code DecoratedPotBlockEntity} a
+     * real {@link Container} interface, {@link #containerSlotsFor} starts
+     * returning the native size and the roller stops writing this key — the
+     * vanilla loot mechanism takes over.
+     */
+    public static final String NBT_POT_LOOT = "dt_pot_loot";
+
     private ContainerContentsRoller() {}
 
     /**
@@ -48,10 +63,19 @@ public final class ContainerContentsRoller {
                                    @Nullable CompoundTag baseNbt) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
-        int slots = containerSlotsFor(state);
-        if (slots <= 0) return baseNbt;
         int totalWeight = pool.totalWeight();
         if (totalWeight <= 0) return baseNbt;
+
+        // Native Container path takes priority. If a future Minecraft version
+        // makes DecoratedPotBlockEntity implement Container, this branch picks
+        // it up automatically and the dt_pot_loot fallback becomes dormant.
+        int slots = nativeContainerSlots(state);
+        if (slots <= 0) {
+            if (isDecoratedPot(state)) {
+                return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, baseNbt);
+            }
+            return baseNbt;
+        }
 
         // Roll K = uniform random in [fillMin, effectiveMax] (inclusive).
         int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
@@ -164,8 +188,23 @@ public final class ContainerContentsRoller {
     /**
      * Slot count for a container BE. Looks up the BE type's default instance,
      * casts to {@link Container}. Returns 0 for non-container BEs.
+     *
+     * <p>Decorated pots in 1.20.1 have no native {@link Container} BE — they
+     * fall through to a virtual single-slot count (delivered via the
+     * {@code VasePotLootDrop} break handler). If a future Minecraft version
+     * gives the pot a real {@code Container} (1.20.5+ does this with
+     * {@code ContainerSingleItem}), the native check fires first and the
+     * fallback is skipped.
      */
     private static int containerSlotsFor(BlockState state) {
+        int native_ = nativeContainerSlots(state);
+        if (native_ > 0) return native_;
+        if (isDecoratedPot(state)) return 1;
+        return 0;
+    }
+
+    /** Native vanilla {@link Container} slot count, or 0 if the BE doesn't implement it. */
+    private static int nativeContainerSlots(BlockState state) {
         BlockEntityType<?> beType = beTypeFor(state);
         if (beType == null) return 0;
         try {
@@ -175,6 +214,43 @@ public final class ContainerContentsRoller {
             // Some BEs throw on null Level access during construction — bail.
         }
         return 0;
+    }
+
+    public static boolean isDecoratedPot(BlockState state) {
+        return state.is(Blocks.DECORATED_POT);
+    }
+
+    /**
+     * Decorated-pot roll path — picks a single weighted entry and writes it as
+     * an {@link ItemStack} CompoundTag at {@link #NBT_POT_LOOT}. The {@code
+     * fillMin}/{@code fillMax} pool semantics are preserved for vases too:
+     * with {@code effectiveMax = min(fillMax, 1)} the K-roll either picks "1"
+     * (an item drops) or "0" (no item this carriage), giving the same rarity
+     * dial the chest path uses.
+     */
+    private static CompoundTag rollDecoratedPot(ContainerContentsPool pool, int totalWeight,
+                                                BlockPos localPos, long worldSeed, int carriageIndex,
+                                                @Nullable CompoundTag baseNbt) {
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? 1 : Math.min(pool.fillMax(), 1);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
+
+        CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
+        out.remove(NBT_POT_LOOT);
+        if (k <= 0) return out;
+
+        ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);
+        if (picked == null || picked.isAir()) return out;
+        Item item = resolveItem(picked.itemId());
+        if (item == null) return out;
+
+        int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
+        ItemStack stack = new ItemStack(item, Math.max(1, Math.min(item.getMaxStackSize(), rolledCount)));
+        CompoundTag stackTag = new CompoundTag();
+        stack.save(stackTag);
+        out.put(NBT_POT_LOOT, stackTag);
+        return out;
     }
 
     @Nullable
