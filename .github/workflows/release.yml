@@ -46,6 +46,21 @@ jobs:
             exit 1
           fi
 
+      - name: Compute release type from tag
+        id: release_type
+        run: |
+          TAG_NUMERIC="${RELEASE_TAG#v}"
+          MAJOR="${TAG_NUMERIC%%.*}"
+          if [ "$MAJOR" -gt 0 ] 2>/dev/null; then
+            echo "type=release" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "Release type: release (tag $RELEASE_TAG, MAJOR=$MAJOR > 0)"
+          else
+            echo "type=beta" >> "$GITHUB_OUTPUT"
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "Release type: beta (tag $RELEASE_TAG, MAJOR=$MAJOR — pre-1.0)"
+          fi
+
       - run: ./gradlew build --no-daemon
 
       - name: Create GitHub Release
@@ -56,6 +71,7 @@ jobs:
           generate_release_notes: true
           files: build/libs/dungeontrain-*.jar
           fail_on_unmatched_files: true
+          prerelease: ${{ steps.release_type.outputs.prerelease == 'true' }}
 
       - name: Check wiki publish prerequisites
         id: wiki_check
@@ -110,7 +126,7 @@ jobs:
           files: build/libs/dungeontrain-*.jar
           name: Dungeon Train ${{ env.RELEASE_TAG }}
           version: ${{ env.RELEASE_TAG }}
-          version-type: release
+          version-type: ${{ steps.release_type.outputs.type }}
           loaders: forge
           game-versions: 1.20.1
           dependencies: |
