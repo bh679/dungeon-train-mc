@@ -452,11 +452,18 @@ public final class TrackGenerator {
         // Probe each Z column in the track span; take the minimum (deepest)
         // as the slice anchor. probeGroundY returns bedY as a sentinel for
         // "ship intercepts / no pillar needed" — skip those columns so a ship
-        // above one edge doesn't force the whole slice to zero-height.
+        // above one edge doesn't force the whole slice to zero-height. It
+        // returns voidSentinel ({@code minBuildHeight + 1}) when no ground was
+        // found anywhere in the column — also skip those so a slice over pure
+        // void (e.g. The End) doesn't generate a tall pillar hanging in
+        // mid-air. If every column resolves to a sentinel, deepestGroundY
+        // stays at bedY and the {@code h <= 0} check below skips the slice.
+        int voidSentinel = level.getMinBuildHeight() + 1;
         int deepestGroundY = bedY;
         for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
             int ground = probeGroundY(level, worldX, z, bedY);
             if (ground >= bedY) continue;
+            if (ground == voidSentinel) continue;
             if (ground < deepestGroundY) deepestGroundY = ground;
         }
         int h = topInclusive - deepestGroundY + 1;
@@ -713,11 +720,17 @@ public final class TrackGenerator {
         int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
 
         // Probe ground across the 3×3 stair footprint; anchor to the deepest.
+        // Skip ship-sentinel and void-sentinel returns (the latter so stairs
+        // over pure void — e.g. The End — don't anchor at world floor and
+        // hang in mid-air). When every footprint cell is a sentinel,
+        // deepestGroundY stays at bedY and the existing check below skips.
+        int voidSentinel = level.getMinBuildHeight() + 1;
         int deepestGroundY = g.bedY(); // sentinel "no ground found"
         for (int dx = 0; dx < STAIRS_X; dx++) {
             for (int dz = 0; dz < STAIRS_Z; dz++) {
                 int ground = probeGroundY(level, originX + dx, originZ + dz, g.bedY());
                 if (ground >= g.bedY()) continue;
+                if (ground == voidSentinel) continue;
                 if (ground < deepestGroundY) deepestGroundY = ground;
             }
         }
