@@ -1,9 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.menu.PrefabSideTabButton;
-import games.brennan.dungeontrain.client.menu.PrefabTabPanel;
-import games.brennan.dungeontrain.client.menu.PrefabTabState;
-import net.minecraft.client.gui.GuiGraphics;
+import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.network.chat.Component;
@@ -13,37 +11,24 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Adds two LEFT-side tab buttons to the creative inventory and overpaints
- * the items grid with a custom prefab panel when one of those tabs is
- * active.
+ * Adds two LEFT-side tab buttons to the creative inventory. Each button is
+ * a shortcut: clicking calls vanilla's private {@code selectTab} via
+ * {@link CreativeModeInventoryScreenAccessor}, switching the inventory
+ * into one of our registered {@link net.minecraft.world.item.CreativeModeTab}s
+ * ({@link ModCreativeTabs#PREFAB_VARIANTS} / {@link ModCreativeTabs#PREFAB_LOOT}).
  *
- * <p>Vanilla creative tabs live on top/bottom rows. Forge does not natively
- * support left-side tabs, so we render our buttons as standalone widgets
- * anchored to the inventory's {@code leftPos}. When a side tab is active
- * the panel ({@link PrefabTabPanel}) overpaints vanilla's items grid; when
- * inactive the inventory looks and behaves exactly as vanilla.</p>
+ * <p>Vanilla then owns all rendering (items grid, title, scrollbar, tooltips,
+ * scroll wheel) — no custom panel overlay, no Z-order fights, no stale
+ * "previous tab" content bleeding through.</p>
  *
- * <p>Inject points:
- * <ul>
- *   <li>{@code init() TAIL} — spawn the two side tab buttons.</li>
- *   <li>{@code render() TAIL} — paint the active panel + tooltip on top of
- *       vanilla's items grid.</li>
- *   <li>{@code mouseClicked() HEAD cancellable} — consume clicks inside the
- *       active panel before vanilla dispatches them as slot clicks.</li>
- *   <li>{@code mouseScrolled() HEAD cancellable} — consume scroll inside the
- *       active panel.</li>
- *   <li>{@code selectTab() HEAD} — auto-deactivate the side panel when the
- *       user picks a vanilla tab so the panel doesn't blanket the new
- *       items grid.</li>
- * </ul></p>
+ * <p>The buttons are anchored to {@code leftPos - 28}, stacked vertically,
+ * one per registered prefab tab.</p>
  */
 @Mixin(CreativeModeInventoryScreen.class)
 public abstract class CreativeModeInventoryScreenPrefabMixin extends AbstractContainerScreen<CreativeModeInventoryScreen.ItemPickerMenu> {
 
-    // Constructor required by mixin compiler — never called at runtime.
     private CreativeModeInventoryScreenPrefabMixin() {
         super(null, null, null);
     }
@@ -58,39 +43,10 @@ public abstract class CreativeModeInventoryScreenPrefabMixin extends AbstractCon
         ItemStack lootIcon = new ItemStack(Items.CHEST);
 
         this.addRenderableWidget(new PrefabSideTabButton(
-            x, yTop, PrefabTabState.Tab.VARIANTS, variantIcon,
+            x, yTop, ModCreativeTabs.PREFAB_VARIANTS.get(), variantIcon,
             Component.translatable("gui.dungeontrain.prefab_tab.variants")));
         this.addRenderableWidget(new PrefabSideTabButton(
-            x, yBottom, PrefabTabState.Tab.LOOT, lootIcon,
+            x, yBottom, ModCreativeTabs.PREFAB_LOOT.get(), lootIcon,
             Component.translatable("gui.dungeontrain.prefab_tab.loot")));
-    }
-
-    @Inject(method = "render", at = @At("TAIL"))
-    private void dungeontrain$renderPanel(GuiGraphics g, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        if (PrefabTabState.activeTab() == PrefabTabState.Tab.NONE) return;
-        PrefabTabPanel.render(g, this.font, this.leftPos, this.topPos, mouseX, mouseY);
-    }
-
-    @Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$mouseClicked(double mouseX, double mouseY, int button, CallbackInfoReturnable<Boolean> cir) {
-        if (PrefabTabState.activeTab() == PrefabTabState.Tab.NONE) return;
-        if (PrefabTabPanel.handleClick(this.leftPos, this.topPos, mouseX, mouseY, button)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$mouseScrolled(double mouseX, double mouseY, double delta, CallbackInfoReturnable<Boolean> cir) {
-        if (PrefabTabState.activeTab() == PrefabTabState.Tab.NONE) return;
-        if (PrefabTabPanel.handleScroll(this.leftPos, this.topPos, mouseX, mouseY, delta)) {
-            cir.setReturnValue(true);
-        }
-    }
-
-    @Inject(method = "selectTab", at = @At("HEAD"))
-    private void dungeontrain$onSelectTab(net.minecraft.world.item.CreativeModeTab tab, CallbackInfo ci) {
-        // User clicked a vanilla top/bottom tab — close our side panel so
-        // they see the newly-selected vanilla items.
-        PrefabTabState.deactivate();
     }
 }

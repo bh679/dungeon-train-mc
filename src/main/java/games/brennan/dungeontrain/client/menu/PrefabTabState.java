@@ -1,107 +1,52 @@
 package games.brennan.dungeontrain.client.menu;
 
-import games.brennan.dungeontrain.item.ContentsPrefabItem;
-import games.brennan.dungeontrain.item.VariantPrefabItem;
-import games.brennan.dungeontrain.registry.ModItems;
-import net.minecraft.world.item.ItemStack;
+import com.mojang.logging.LogUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.world.flag.FeatureFlagSet;
+import net.minecraft.world.flag.FeatureFlags;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import org.slf4j.Logger;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Client singleton — the state of the left-side prefab tabs in the creative
- * inventory.
+ * Client singleton — holds the variant + contents id lists synced from the
+ * server on login. The two custom {@link CreativeModeTabs}-style tabs
+ * registered in {@code ModCreativeTabs} read from these lists in their
+ * {@code displayItems} lambdas.
  *
- * <p>Lifecycle: populated by {@link games.brennan.dungeontrain.net.PrefabRegistrySyncPacket}
- * on login, cleared on logout (see
- * {@link games.brennan.dungeontrain.client.menu.PrefabClientLifecycleEvents}).
- * Active-tab + scroll state is per-session and resets to {@link Tab#NONE}
- * any time the inventory closes.</p>
- *
- * <p>Side-tab UI is mod-private — there is no server-side equivalent. All
- * state mutation happens on the client thread; reads from the mixin during
- * render are also on the client thread.</p>
+ * <p>When new ids arrive (sync packet), {@link #applyRegistry} forces a
+ * tab-content rebuild so the tabs reflect the latest data immediately.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class PrefabTabState {
 
-    public enum Tab {
-        NONE,
-        VARIANTS,
-        LOOT
-    }
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static List<String> variantIds = Collections.emptyList();
     private static List<String> contentsIds = Collections.emptyList();
-    private static Tab activeTab = Tab.NONE;
-    private static int scrollOffset = 0;
 
     private PrefabTabState() {}
 
-    /** Replace the cached registry — called from the sync packet handler. */
+    /**
+     * Replace the cached registry and force the creative tabs to rebuild
+     * their contents. Called from the sync packet handler.
+     */
     public static void applyRegistry(List<String> variantIds, List<String> contentsIds) {
         PrefabTabState.variantIds = List.copyOf(variantIds);
         PrefabTabState.contentsIds = List.copyOf(contentsIds);
+        rebuildTabsSafely();
     }
 
     /** Clear all state — called when the player disconnects from the server. */
     public static void clear() {
         variantIds = Collections.emptyList();
         contentsIds = Collections.emptyList();
-        activeTab = Tab.NONE;
-        scrollOffset = 0;
-    }
-
-    public static Tab activeTab() {
-        return activeTab;
-    }
-
-    /**
-     * Toggle a side tab. Clicking the active tab deactivates; clicking a
-     * different tab switches to it (and resets scroll). Idempotent.
-     */
-    public static void toggle(Tab tab) {
-        if (tab == Tab.NONE) {
-            activeTab = Tab.NONE;
-            scrollOffset = 0;
-            return;
-        }
-        if (activeTab == tab) {
-            activeTab = Tab.NONE;
-        } else {
-            activeTab = tab;
-        }
-        scrollOffset = 0;
-    }
-
-    /** Force the active tab to NONE — used when a vanilla creative tab is selected. */
-    public static void deactivate() {
-        activeTab = Tab.NONE;
-        scrollOffset = 0;
-    }
-
-    public static int scrollOffset() {
-        return scrollOffset;
-    }
-
-    /** Adjust scroll offset by the given delta, clamped to {@code [0, max]}. */
-    public static void scrollBy(int delta, int max) {
-        int next = scrollOffset + delta;
-        if (next < 0) next = 0;
-        if (next > max) next = max;
-        scrollOffset = next;
-    }
-
-    /** Ids for the currently active tab; empty list when no tab is active. */
-    public static List<String> activeIds() {
-        return switch (activeTab) {
-            case VARIANTS -> variantIds;
-            case LOOT -> contentsIds;
-            case NONE -> Collections.emptyList();
-        };
+        rebuildTabsSafely();
     }
 
     public static List<String> variantIds() {
@@ -113,39 +58,30 @@ public final class PrefabTabState {
     }
 
     /**
-     * Build the ItemStack to put in the player's cursor when an entry is
-     * clicked. The kind is derived from the active tab; the id from the
-     * grid index. Returns {@link ItemStack#EMPTY} if the tab is NONE or the
-     * index is out of bounds.
+     * Trigger {@link CreativeModeTabs#tryRebuildTabContents} so each tab's
+     * {@code displayItems} lambda is re-invoked against the new state.
+     * Wrapped defensively because connection / level state may be partially
+     * unavailable in edge cases (e.g. during initial connect handshake).
      */
-    public static ItemStack stackFor(Tab tab, int index) {
-        return switch (tab) {
-            case VARIANTS -> {
-                if (index < 0 || index >= variantIds.size()) yield ItemStack.EMPTY;
-                yield VariantPrefabItem.stackForPrefab(
-                    ModItems.VARIANT_PREFAB.get(), variantIds.get(index));
+    private static void rebuildTabsSafely() {
+        Minecraft mc = Minecraft.getInstance();
+        ClientPacketListener conn = mc.getConnection();
+        if (conn == null) return;
+        try {
+            FeatureFlagSet flags = conn.enabledFeatures();
+            boolean hasOpTabs = mc.player != null && mc.player.canUseGameMasterBlocks();
+            CreativeModeTabs.tryRebuildTabContents(flags, hasOpTabs, conn.registryAccess());
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Prefab tab rebuild skipped: {}", e.toString());
+            // Fallback to vanilla flags so we at least try a refresh once
+            // the registry data is in.
+            try {
+                CreativeModeTabs.tryRebuildTabContents(
+                    FeatureFlags.DEFAULT_FLAGS, false, conn.registryAccess());
+            } catch (Exception ignored) {
+                // Best-effort; tabs will refresh next time vanilla itself
+                // calls tryRebuildTabContents (e.g. on world join).
             }
-            case LOOT -> {
-                if (index < 0 || index >= contentsIds.size()) yield ItemStack.EMPTY;
-                yield ContentsPrefabItem.stackForPrefab(
-                    ModItems.CONTENTS_PREFAB.get(), contentsIds.get(index));
-            }
-            case NONE -> ItemStack.EMPTY;
-        };
-    }
-
-    /** Convenience for tests / debug — total entry count across both tabs. */
-    public static int totalEntries() {
-        return variantIds.size() + contentsIds.size();
-    }
-
-    /** Pre-seed builtins for offline (no-server) creative testing. Visible for the side tab init. */
-    public static void seedBuiltinsIfEmpty() {
-        if (variantIds.isEmpty()) {
-            variantIds = new ArrayList<>(List.of("standard", "flatbed", "windowed", "solid_roof"));
-        }
-        if (contentsIds.isEmpty()) {
-            contentsIds = new ArrayList<>(List.of("default"));
         }
     }
 }

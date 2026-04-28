@@ -1,10 +1,8 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
-import games.brennan.dungeontrain.train.CarriageContents;
-import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.CarriageVariant;
-import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
+import games.brennan.dungeontrain.editor.LootPrefabStore;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
@@ -30,15 +28,9 @@ import java.util.function.Supplier;
 public record PrefabRegistrySyncPacket(List<String> variantIds, List<String> contentsIds) {
 
     public static PrefabRegistrySyncPacket fromRegistries() {
-        List<String> variants = new ArrayList<>();
-        for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
-            variants.add(v.id());
-        }
-        List<String> contents = new ArrayList<>();
-        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
-            contents.add(c.id());
-        }
-        return new PrefabRegistrySyncPacket(variants, contents);
+        List<String> variants = new ArrayList<>(BlockVariantPrefabStore.allIds());
+        List<String> loot = new ArrayList<>(LootPrefabStore.allIds());
+        return new PrefabRegistrySyncPacket(variants, loot);
     }
 
     public void encode(FriendlyByteBuf buf) {
