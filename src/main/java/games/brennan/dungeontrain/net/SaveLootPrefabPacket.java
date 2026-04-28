@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
+import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -79,8 +80,9 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
             ResourceLocation sourceBlock = BuiltInRegistries.BLOCK.getKey(targetState.getBlock());
             try {
                 boolean isNew = LootPrefabStore.save(name, pool, sourceBlock);
+                String suffix = writeToSourceTreeIfDevMode(name, pool, sourceBlock);
                 actionBar(player,
-                    (isNew ? "Saved loot '" : "Overwrote loot '") + name + "'",
+                    (isNew ? "Saved loot '" : "Overwrote loot '") + name + "'" + suffix,
                     ChatFormatting.GREEN);
                 broadcastSync();
             } catch (IOException e) {
@@ -90,6 +92,24 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
             }
         });
         ctx.setPacketHandled(true);
+    }
+
+    /**
+     * If dev mode is on and the source tree is reachable, also write the
+     * prefab JSON into {@code src/main/resources/data/dungeontrain/prefabs/loot}
+     * so the next git commit picks it up. Source-write failures are logged but
+     * never escalated — the config-dir save already succeeded.
+     */
+    private static String writeToSourceTreeIfDevMode(String name, ContainerContentsPool pool, ResourceLocation sourceBlock) {
+        if (!EditorDevMode.isEnabled()) return "";
+        if (!LootPrefabStore.sourceTreeAvailable()) return " (no src tree)";
+        try {
+            LootPrefabStore.saveToSource(name, pool, sourceBlock);
+            return " (→ src)";
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] SaveLootPrefab source write failed: {}", e.toString());
+            return " (src write failed)";
+        }
     }
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {

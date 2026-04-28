@@ -41,7 +41,7 @@ public final class ModCreativeTabs {
                 for (PrefabRegistrySyncPacket.Entry entry : PrefabTabState.variantEntries()) {
                     ItemStack stack = buildPrefabStack(
                         entry.blockId(), Items.COMMAND_BLOCK,
-                        PrefabUseHandler.NBT_BV_PREFAB_ID, entry.id());
+                        PrefabUseHandler.NBT_BV_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }
             })
@@ -57,7 +57,7 @@ public final class ModCreativeTabs {
                 for (PrefabRegistrySyncPacket.Entry entry : PrefabTabState.lootEntries()) {
                     ItemStack stack = buildPrefabStack(
                         entry.blockId(), Items.CHEST,
-                        PrefabUseHandler.NBT_LOOT_PREFAB_ID, entry.id());
+                        PrefabUseHandler.NBT_LOOT_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }
             })
@@ -74,10 +74,13 @@ public final class ModCreativeTabs {
      * Build a vanilla {@code BlockItem} stack for {@code blockIdString} with
      * an NBT discriminator the use handler can read. Falls back to
      * {@code fallbackItem} if the block id doesn't resolve to a real item
-     * (e.g. blocks with no item form).
+     * (e.g. blocks with no item form). When {@code committed} is false the
+     * stack also gets {@link PrefabUseHandler#NBT_PREFAB_UNCOMMITTED} so the
+     * slot mixin renders a tinted background — visual cue that the prefab
+     * exists only in user config and hasn't been promoted to the source tree.
      */
     private static ItemStack buildPrefabStack(String blockIdString, Item fallbackItem,
-                                              String nbtKey, String prefabId) {
+                                              String nbtKey, String prefabId, boolean committed) {
         ResourceLocation rl = ResourceLocation.tryParse(blockIdString);
         Item item = fallbackItem;
         if (rl != null) {
@@ -90,6 +93,7 @@ public final class ModCreativeTabs {
         ItemStack stack = new ItemStack(item);
         CompoundTag tag = new CompoundTag();
         tag.putString(nbtKey, prefabId);
+        if (!committed) tag.putBoolean(PrefabUseHandler.NBT_PREFAB_UNCOMMITTED, true);
         stack.setTag(tag);
         return stack;
     }

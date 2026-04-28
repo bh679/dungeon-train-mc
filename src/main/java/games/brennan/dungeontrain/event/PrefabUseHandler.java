@@ -60,6 +60,8 @@ public final class PrefabUseHandler {
 
     public static final String NBT_BV_PREFAB_ID = "dt_bv_prefab_id";
     public static final String NBT_LOOT_PREFAB_ID = "dt_loot_prefab_id";
+    /** Set on creative-tab stacks for prefabs that exist only in user config — drives the slot tint mixin. */
+    public static final String NBT_PREFAB_UNCOMMITTED = "dt_prefab_uncommitted";
 
     private PrefabUseHandler() {}
 
