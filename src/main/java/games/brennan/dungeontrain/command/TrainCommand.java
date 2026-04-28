@@ -33,6 +33,9 @@ import java.util.List;
  *     speed with {@code count} carriages (default from config).
  *   - {@code /dungeontrain speed <value>} — sets train speed in blocks/second,
  *     persists to config, and updates any active train live.
+ *   - {@code /dungeontrain carriages <count>} — sets the default carriage
+ *     count, persists to config, and resizes any active train live (rolling
+ *     window grows or shrinks on the next tick).
  */
 public final class TrainCommand {
 
@@ -53,6 +56,10 @@ public final class TrainCommand {
                 .then(Commands.argument("value",
                         DoubleArgumentType.doubleArg(DungeonTrainConfig.MIN_SPEED, DungeonTrainConfig.MAX_SPEED))
                     .executes(ctx -> runSpeed(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "value")))))
+            .then(Commands.literal("carriages")
+                .then(Commands.argument("count",
+                        IntegerArgumentType.integer(DungeonTrainConfig.MIN_CARRIAGES, DungeonTrainConfig.MAX_CARRIAGES))
+                    .executes(ctx -> runCarriages(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
             .then(Commands.literal("tracks")
                 .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
@@ -131,6 +138,28 @@ public final class TrainCommand {
         source.sendSuccess(() -> Component.literal(
             "Train speed set to " + value + " m/s (" + count + " active train"
                 + (count == 1 ? "" : "s") + " updated)"
+        ), true);
+        return 1;
+    }
+
+    private static int runCarriages(CommandSourceStack source, int count) {
+        DungeonTrainConfig.setNumCarriages(count);
+
+        MinecraftServer server = source.getServer();
+        int updated = 0;
+        for (ServerLevel level : server.getAllLevels()) {
+            List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
+            for (TrainTransformProvider p : providers) {
+                p.setCount(count);
+                updated++;
+            }
+        }
+
+        final int activeUpdated = updated;
+        LOGGER.info("[DungeonTrain] /dungeontrain carriages {} — updated {} active trains", count, activeUpdated);
+        source.sendSuccess(() -> Component.literal(
+            "Default carriages set to " + count + " (" + activeUpdated + " active train"
+                + (activeUpdated == 1 ? "" : "s") + " updated)"
         ), true);
         return 1;
     }
