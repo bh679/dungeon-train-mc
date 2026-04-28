@@ -34,13 +34,22 @@ import java.util.List;
 
 /**
  * Per-tick server logic that lets Dungeon Trains carve straight through the
- * world: every tick we kill non-player entities inside each train's world AABB,
- * and every {@link #BLOCK_CLEAR_PERIOD_TICKS} ticks we destroy non-ship blocks
- * in a forward look-ahead slab. Clearing blocks ahead keeps the VS collider
- * moving over empty space — it achieves "train cannot be stopped" without
- * touching VS collision internals (no public API for that in 2.4.x).
+ * world: every tick we kill non-player entities in the forward look-ahead
+ * slab AHEAD of each train (so mobs and items in the runway get wiped before
+ * the train arrives), and every {@link #BLOCK_CLEAR_PERIOD_TICKS} ticks we
+ * destroy non-ship blocks in the same forward slab. Clearing blocks ahead
+ * keeps the VS collider moving over empty space — it achieves "train cannot
+ * be stopped" without touching VS collision internals (no public API for
+ * that in 2.4.x).
  *
- * Blocks and entities are removed silently — no break particles, no break
+ * <p>Crucially, entities INSIDE the train's current AABB (e.g. dropped items
+ * inside a carriage interior, like the rolled vase loot from
+ * {@code VasePotLootDrop}) are NOT wiped — only the runway in front is
+ * touched. The interior is wiped exactly once at carriage-stamp time via
+ * {@code CarriageContentsTemplate.discardEntitiesAt}, so train contents stay
+ * stable after setup.
+ *
+ * <p>Blocks and entities are removed silently — no break particles, no break
  * sound, no item drops, no container spill — via
  * {@link SilentBlockOps#clearBlockSilent} and {@code entity.discard()}.
  */
@@ -122,7 +131,7 @@ public final class TrainTickEvents {
 
         for (LoadedServerShip ship : trains) {
             if (ship.getTransformProvider() instanceof TrainTransformProvider provider) {
-                killEntitiesIn(level, ship, provider);
+                killEntitiesAhead(level, ship, provider);
             }
         }
         long tAfterKill = System.nanoTime();
@@ -194,7 +203,15 @@ public final class TrainTickEvents {
         return trains;
     }
 
-    private static void killEntitiesIn(ServerLevel level, LoadedServerShip ship, TrainTransformProvider provider) {
+    /**
+     * Wipe non-player entities in the forward look-ahead slab — the runway
+     * the train is about to enter. Entities INSIDE the train's current AABB
+     * are spared so dropped items in carriage interiors (e.g. vase loot)
+     * survive. The slab geometry mirrors {@link #clearBlocksAhead}: original
+     * train AABB extended by {@link #LOOKAHEAD_BLOCKS} along each axis whose
+     * velocity component is non-zero.
+     */
+    private static void killEntitiesAhead(ServerLevel level, LoadedServerShip ship, TrainTransformProvider provider) {
         AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
         if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
         // Once-per-~10s footprint snapshot so we can see whether our AABB is
@@ -211,9 +228,30 @@ public final class TrainTickEvents {
                 String.format("%.2f", aabb.getYsize()),
                 String.format("%.2f", aabb.getZsize()));
         }
+
+        Vector3dc velocity = provider.getTargetVelocity();
+        double signX = Math.signum(velocity.x());
+        double signY = Math.signum(velocity.y());
+        double signZ = Math.signum(velocity.z());
+        if (signX == 0 && signY == 0 && signZ == 0) return; // idle train: no runway to clear
+
+        double expX = signX * LOOKAHEAD_BLOCKS;
+        double expY = signY * LOOKAHEAD_BLOCKS;
+        double expZ = signZ * LOOKAHEAD_BLOCKS;
+        AABB expanded = new AABB(
+            Math.min(aabb.minX, aabb.minX + expX),
+            Math.min(aabb.minY, aabb.minY + expY),
+            Math.min(aabb.minZ, aabb.minZ + expZ),
+            Math.max(aabb.maxX, aabb.maxX + expX),
+            Math.max(aabb.maxY, aabb.maxY + expY),
+            Math.max(aabb.maxZ, aabb.maxZ + expZ)
+        );
+
+        final AABB train = aabb;
         List<Entity> victims = level.getEntitiesOfClass(
-            Entity.class, aabb,
+            Entity.class, expanded,
             e -> !(e instanceof Player) && e.isAlive()
+                && !train.contains(e.getX(), e.getY(), e.getZ())
         );
         for (Entity e : victims) {
             e.discard();
