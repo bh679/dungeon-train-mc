@@ -145,7 +145,9 @@ public final class CarriageContentsTemplate {
                         picked.state(), picked.rotation(),
                         entry.localPos(), seed, carriageIndex,
                         sidecar.lockIdAt(entry.localPos()));
-                SilentBlockOps.setBlockSilent(level, world, rotated, picked.blockEntityNbt());
+                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                    level, world, rotated, picked.blockEntityNbt(),
+                    "contents:" + contents.id(), entry.localPos(), seed, carriageIndex);
             }
         }
     }
