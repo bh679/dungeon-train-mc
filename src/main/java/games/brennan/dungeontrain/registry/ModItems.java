@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.item.ContentsPrefabItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
+import games.brennan.dungeontrain.item.VariantPrefabItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -13,16 +15,23 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * Mod-side item registry. The first {@link DeferredRegister} in the
- * project — wires up custom items via the mod-event bus during
- * construction. Currently registers only {@link VariantClipboardItem}, the
- * command-block-skinned hotbar item produced by the block-variant menu's
- * Copy action.
+ * Mod-side item registry. Wires up custom items via the mod-event bus during
+ * construction.
  *
- * <p>Hooked into the Creative inventory's MISC tab via
- * {@link BuildCreativeModeTabContentsEvent} so authors can manually pull a
- * blank clipboard for testing without going through the menu's Copy
- * button.</p>
+ * <ul>
+ *   <li>{@link VariantClipboardItem} — per-cell variant snippet produced by
+ *       the block-variant menu's Copy button.</li>
+ *   <li>{@link VariantPrefabItem} — whole-carriage variant template stamp,
+ *       sourced via the left-side prefab tab in the creative menu.</li>
+ *   <li>{@link ContentsPrefabItem} — whole-interior contents template stamp,
+ *       sourced via the same prefab tab.</li>
+ * </ul>
+ *
+ * <p>The variant clipboard is hooked into the Creative inventory's
+ * TOOLS_AND_UTILITIES tab via {@link BuildCreativeModeTabContentsEvent} so
+ * authors can grab a blank clipboard for testing. The prefab items appear in
+ * the custom left-side prefab tabs only — they require an id-tagged stack
+ * to do anything useful.</p>
  */
 @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public final class ModItems {
@@ -35,6 +44,16 @@ public final class ModItems {
         () -> new VariantClipboardItem(new Item.Properties().stacksTo(1))
     );
 
+    public static final RegistryObject<Item> VARIANT_PREFAB = ITEMS.register(
+        "variant_prefab",
+        () -> new VariantPrefabItem(new Item.Properties().stacksTo(1))
+    );
+
+    public static final RegistryObject<Item> CONTENTS_PREFAB = ITEMS.register(
+        "contents_prefab",
+        () -> new ContentsPrefabItem(new Item.Properties().stacksTo(1))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
@@ -43,11 +62,9 @@ public final class ModItems {
     }
 
     /**
-     * Add the clipboard to the Creative inventory's MISC tab. Allows
+     * Add the variant clipboard to the Creative inventory's MISC tab. Allows
      * authors to spawn a blank one for testing without the menu's Copy
-     * action — a no-NBT clipboard placed in the world creates an empty
-     * variant cell at the target position (which the player can then add
-     * variants to via the menu's Add button).
+     * action.
      */
     @SubscribeEvent
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {

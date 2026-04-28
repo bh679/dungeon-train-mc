@@ -10,7 +10,8 @@
     "CreateWorldScreenMixin",
     "CreateWorldScreenWorldTabMixin",
     "client.CreateWorldScreenMixin",
-    "client.CreateWorldScreenDefaultPresetMixin"
+    "client.CreateWorldScreenDefaultPresetMixin",
+    "client.CreativeModeInventoryScreenPrefabMixin"
   ],
   "server": [],
   "injectors": {

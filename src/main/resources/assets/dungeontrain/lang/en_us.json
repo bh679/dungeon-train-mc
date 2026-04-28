@@ -25,5 +25,10 @@
   "key.dungeontrain.command_menu": "Toggle Command Menu",
   "key.dungeontrain.variant_place": "Place Block Variant (hold + right-click; tap to open menu)",
   "key.categories.dungeontrain": "Dungeon Train",
-  "item.dungeontrain.variant_clipboard": "Block Variant Clipboard"
+  "item.dungeontrain.variant_clipboard": "Block Variant Clipboard",
+  "item.dungeontrain.variant_prefab": "Variant Prefab",
+  "item.dungeontrain.contents_prefab": "Loot Prefab",
+  "gui.dungeontrain.prefab_tab.variants": "Block Variants",
+  "gui.dungeontrain.prefab_tab.loot": "Containers / Loot",
+  "gui.dungeontrain.prefab_tab.empty": "No prefabs available"
 }
