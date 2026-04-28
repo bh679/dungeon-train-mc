@@ -2,16 +2,15 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
-import net.neoforged.neoforge.registries.RegistryObject;
 
 /**
  * Mod-side item registry. The first {@link DeferredRegister} in the
@@ -28,10 +27,9 @@ import net.neoforged.neoforge.registries.RegistryObject;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ModItems {
 
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(
-        ForgeRegistries.ITEMS, DungeonTrain.MOD_ID);
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DungeonTrain.MOD_ID);
 
-    public static final RegistryObject<Item> VARIANT_CLIPBOARD = ITEMS.register(
+    public static final DeferredItem<Item> VARIANT_CLIPBOARD = ITEMS.register(
         "variant_clipboard",
         () -> new VariantClipboardItem(new Item.Properties().stacksTo(1))
     );
