@@ -116,6 +116,7 @@ jobs:
           echo "curseforge=$CURSEFORGE_READY" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Modrinth + CurseForge
+        id: mcpublish
         if: steps.publish_check.outputs.modrinth == 'true' || steps.publish_check.outputs.curseforge == 'true'
         uses: Kir-Antipov/mc-publish@v3.3
         with:
@@ -136,3 +137,29 @@ jobs:
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn
+
+      - name: Check Discord webhook prerequisites
+        id: discord_check
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::DISCORD_WEBHOOK_URL secret not set — skipping Discord notification."
+          fi
+
+      # always() so partial-failure releases still notify (with ⚠️ markers
+      # on the platforms that didn't get the upload). RELEASE_TAG guard
+      # suppresses notify if the workflow exploded before tag verification.
+      - name: Notify Discord
+        if: ${{ always() && steps.discord_check.outputs.ready == 'true' && env.RELEASE_TAG != '' }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          REPO: ${{ github.repository }}
+          PRERELEASE: ${{ steps.release_type.outputs.prerelease }}
+          MODRINTH_VERSION: ${{ steps.mcpublish.outputs.modrinth-version }}
+          CURSEFORGE_VERSION: ${{ steps.mcpublish.outputs.curseforge-version }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/notify-discord.sh
