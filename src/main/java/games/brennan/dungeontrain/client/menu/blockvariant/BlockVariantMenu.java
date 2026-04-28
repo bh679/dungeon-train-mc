@@ -50,6 +50,7 @@ public final class BlockVariantMenu {
     public enum CellKind {
         NONE,
         COPY,
+        SAVE,
         ADD,
         REMOVE,
         CLEAR,

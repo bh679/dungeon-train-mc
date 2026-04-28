@@ -1,5 +1,7 @@
 {
   "generator.dungeontrain.dungeon_train": "Dungeon Train",
+  "generator.dungeontrain.dungeon_train_nether": "Dungeon Train (Nether)",
+  "generator.dungeontrain.dungeon_train_end": "Dungeon Train (End)",
   "generator.dungeontrain.dungeon_train_y-64": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y-48": "Dungeon Train",
   "generator.dungeontrain.dungeon_train_y-32": "Dungeon Train",
@@ -25,5 +27,13 @@
   "key.dungeontrain.command_menu": "Toggle Command Menu",
   "key.dungeontrain.variant_place": "Place Block Variant (hold + right-click; tap to open menu)",
   "key.categories.dungeontrain": "Dungeon Train",
-  "item.dungeontrain.variant_clipboard": "Block Variant Clipboard"
+  "item.dungeontrain.variant_clipboard": "Block Variant Clipboard",
+  "gui.dungeontrain.prefab_tab.variants": "Block Variants",
+  "gui.dungeontrain.prefab_tab.loot": "Containers / Loot",
+  "gui.dungeontrain.prefab_tab.empty": "No prefabs available",
+  "gui.dungeontrain.prefab_save.title.variant": "Save Block Variant Prefab",
+  "gui.dungeontrain.prefab_save.title.loot": "Save Loot Prefab",
+  "gui.dungeontrain.prefab_save.name_label": "Name (a-z, 0-9, _)",
+  "gui.dungeontrain.prefab_save.save": "Save",
+  "gui.dungeontrain.prefab_save.cancel": "Cancel"
 }

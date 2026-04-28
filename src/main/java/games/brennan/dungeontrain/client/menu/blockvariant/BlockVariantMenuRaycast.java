@@ -109,18 +109,19 @@ public final class BlockVariantMenuRaycast {
 
         if (hitY > headerBottom) return BlockVariantMenu.Hit.NONE;
 
-        // Toolbar — 6 cells: Copy | Add | Lock | Remove | Clear | X.
+        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
         if (hitY > toolbarBottom) {
-            double cellW = panelW / 6.0;
+            double cellW = panelW / 7.0;
             int idx = (int) Math.floor((hitX + halfW) / cellW);
             if (idx < 0) idx = 0;
-            if (idx > 5) idx = 5;
+            if (idx > 6) idx = 6;
             BlockVariantMenu.CellKind kind = switch (idx) {
                 case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.ADD;
-                case 2 -> BlockVariantMenu.CellKind.LOCK;
-                case 3 -> BlockVariantMenu.CellKind.REMOVE;
-                case 4 -> BlockVariantMenu.CellKind.CLEAR;
+                case 1 -> BlockVariantMenu.CellKind.SAVE;
+                case 2 -> BlockVariantMenu.CellKind.ADD;
+                case 3 -> BlockVariantMenu.CellKind.LOCK;
+                case 4 -> BlockVariantMenu.CellKind.REMOVE;
+                case 5 -> BlockVariantMenu.CellKind.CLEAR;
                 default -> BlockVariantMenu.CellKind.CLOSE;
             };
             return new BlockVariantMenu.Hit(kind, -1);

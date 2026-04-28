@@ -19,6 +19,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
@@ -455,11 +457,18 @@ public final class TrackGenerator {
         // Probe each Z column in the track span; take the minimum (deepest)
         // as the slice anchor. probeGroundY returns bedY as a sentinel for
         // "ship intercepts / no pillar needed" — skip those columns so a ship
-        // above one edge doesn't force the whole slice to zero-height.
+        // above one edge doesn't force the whole slice to zero-height. It
+        // returns voidSentinel ({@code minBuildHeight + 1}) when no ground was
+        // found anywhere in the column — also skip those so a slice over pure
+        // void (e.g. The End) doesn't generate a tall pillar hanging in
+        // mid-air. If every column resolves to a sentinel, deepestGroundY
+        // stays at bedY and the {@code h <= 0} check below skips the slice.
+        int voidSentinel = level.getMinBuildHeight() + 1;
         int deepestGroundY = bedY;
         for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
             int ground = probeGroundY(level, worldX, z, bedY);
             if (ground >= bedY) continue;
+            if (ground == voidSentinel) continue;
             if (ground < deepestGroundY) deepestGroundY = ground;
         }
         int h = topInclusive - deepestGroundY + 1;
@@ -716,11 +725,17 @@ public final class TrackGenerator {
         int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
 
         // Probe ground across the 3×3 stair footprint; anchor to the deepest.
+        // Skip ship-sentinel and void-sentinel returns (the latter so stairs
+        // over pure void — e.g. The End — don't anchor at world floor and
+        // hang in mid-air). When every footprint cell is a sentinel,
+        // deepestGroundY stays at bedY and the existing check below skips.
+        int voidSentinel = level.getMinBuildHeight() + 1;
         int deepestGroundY = g.bedY(); // sentinel "no ground found"
         for (int dx = 0; dx < STAIRS_X; dx++) {
             for (int dz = 0; dz < STAIRS_Z; dz++) {
                 int ground = probeGroundY(level, originX + dx, originZ + dz, g.bedY());
                 if (ground >= g.bedY()) continue;
+                if (ground == voidSentinel) continue;
                 if (ground < deepestGroundY) deepestGroundY = ground;
             }
         }
@@ -820,6 +835,167 @@ public final class TrackGenerator {
     }
 
     /**
+     * Worldgen-safe placement of bed + rails for one chunk. Uses the same
+     * NBT-template + sidecar pipeline as the legacy live path: per X tile
+     * picks a registry-weighted variant by {@code worldSeed + tileIndex}
+     * via {@link TrackVariantRegistry#pickName}, unpacks its NBT cells via
+     * {@link TrackTemplateStore#getCellsFor}, and resolves per-block
+     * {@link TrackVariantBlocks} sidecars deterministically. When a tile
+     * has no template, falls back to {@link TrackPalette#BED} +
+     * {@link TrackPalette#RAIL}.
+     *
+     * <p>Called from the {@code TrackBedFeature} during chunk generation
+     * — writes through {@link WorldGenLevel#setBlock} so neighbour updates
+     * stay inside the chunk-gen sandbox.</p>
+     *
+     * <p>Contract: caller has already filtered for the active dimension and
+     * guarded against shipyard chunks. This method does the corridor
+     * intersection check itself (so it's safe to invoke on any chunk in the
+     * train's dimension) and clamps to the level's build height — features
+     * placed outside the build range are silently skipped.</p>
+     *
+     * <p>Pillars are deliberately NOT placed here; they read terrain
+     * heightmap from up to ±{@link #PILLAR_SCAN_MARGIN} blocks on X, which
+     * is unreliable during chunk gen because neighbour chunks may not have
+     * generated yet. The legacy post-load drain
+     * ({@link #ensureTracksForChunk}) handles them once a train ship is
+     * loaded.</p>
+     *
+     * @param serverLevel the underlying {@code ServerLevel} for the
+     *     dimension being generated (from {@link WorldGenLevel#getLevel}).
+     *     Required because {@link TrackTemplateStore#getCellsFor} resolves
+     *     templates relative to the world's per-install datapack
+     *     overrides.
+     * @param dims per-world {@link CarriageDims}; templates are keyed by
+     *     {@code dims.width()} (the cells array shape varies with width).
+     */
+    public static void placeTracksForChunk(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        CarriageDims dims,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g
+    ) {
+        if (isShipyardChunk(chunkX, chunkZ)) return;
+
+        int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = chunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
+
+        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return;
+
+        int minBuildHeight = level.getMinBuildHeight();
+        int maxBuildHeight = level.getMaxBuildHeight();
+        if (g.bedY() < minBuildHeight || g.bedY() >= maxBuildHeight) return;
+        boolean canPlaceRail = g.railY() >= minBuildHeight && g.railY() < maxBuildHeight;
+
+        int zLo = Math.max(g.trackZMin(), chunkMinZ);
+        int zHi = Math.min(g.trackZMax(), chunkMaxZ);
+        int railZA = g.trackZMin() + 1;
+        int railZB = g.trackZMax() - 1;
+
+        // Per-tile paint cache. At most ⌈16 / TILE_LENGTH⌉ + 1 tiles touch any
+        // single 16-wide chunk, so this map stays tiny. Keyed by tileIndex.
+        long worldSeed = level.getSeed();
+        Vec3i tileFootprint = TrackKind.TILE.dims(dims);
+        Map<Long, TilePaint> tilePaints = new HashMap<>();
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int x = chunkMinX; x <= chunkMaxX; x++) {
+            long tileIndex = Math.floorDiv((long) x, (long) TrackTemplate.TILE_LENGTH);
+            int xMod = Math.floorMod(x, TrackTemplate.TILE_LENGTH);
+            TilePaint paint = tilePaints.computeIfAbsent(
+                tileIndex,
+                idx -> {
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx);
+                    Optional<BlockState[][][]> cells =
+                        TrackTemplateStore.getCellsFor(serverLevel, dims, name);
+                    TrackVariantBlocks sidecar =
+                        TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
+                    return new TilePaint(cells, sidecar, worldSeed, idx);
+                }
+            );
+
+            for (int z = zLo; z <= zHi; z++) {
+                int zOff = z - g.trackZMin();
+
+                // Bed row (template y=0).
+                BlockState bedState = paint.cells().isPresent()
+                    ? paint.cells().get()[xMod][0][zOff]
+                    : TrackPalette.BED;
+                bedState = paint.resolveSidecar(bedState, xMod, 0, zOff);
+                if (bedState != null) {
+                    pos.set(x, g.bedY(), z);
+                    level.setBlock(pos, bedState, Block.UPDATE_CLIENTS);
+                }
+
+                // Rail row (template y=1).
+                BlockState railState;
+                if (paint.cells().isPresent()) {
+                    railState = paint.cells().get()[xMod][1][zOff];
+                } else if (z == railZA || z == railZB) {
+                    railState = TrackPalette.RAIL;
+                } else {
+                    railState = null;
+                }
+                railState = paint.resolveSidecar(railState, xMod, 1, zOff);
+                if (railState != null && canPlaceRail) {
+                    pos.set(x, g.railY(), z);
+                    level.setBlock(pos, railState, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+    }
+
+    /**
+     * Place pillars + stair-adjuncts for one chunk using the existing
+     * terrain-aware logic. Caller is responsible for ensuring all 8
+     * neighbour chunks are at {@code ChunkStatus.FULL} so heightmap reads
+     * within ±{@link #PILLAR_SCAN_MARGIN} are reliable, and for stamping
+     * the chunk in {@code PillarPaintedChunks} after this returns to keep
+     * the deferred pass from re-running.
+     *
+     * <p>Idempotent: re-running on an already-pillared chunk is a no-op
+     * (pillar slice / stairs only write into passable blocks).</p>
+     */
+    public static void placePillarsForChunk(
+        ServerLevel level,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g,
+        CarriageDims dims
+    ) {
+        if (isShipyardChunk(chunkX, chunkZ)) return;
+
+        int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = chunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
+
+        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return;
+
+        NavigableMap<Integer, PillarSpec> pillars = computePillarPositions(
+            level,
+            chunkMinX - PILLAR_SCAN_MARGIN,
+            chunkMaxX + PILLAR_SCAN_MARGIN,
+            g
+        );
+
+        for (int localX = 0; localX < 16; localX++) {
+            int worldX = chunkMinX + localX;
+            PillarSpec containingPillar = findPillarContaining(pillars, worldX);
+            if (containingPillar == null) continue;
+
+            placePillarSlice(level, worldX, g, dims);
+            if (worldX == containingPillar.centerX()) {
+                placeStairsBesidePillar(level, containingPillar, pillars, g);
+            }
+        }
+    }
+
+    /**
      * One-time bootstrap called from {@code TrainAssembler.spawnTrain} after
      * {@link TrackGeometry} is attached. Walks every currently-loaded chunk
      * in the train's Z corridor within view-distance of the spawn point and
@@ -845,18 +1021,48 @@ public final class TrackGenerator {
         Deque<Long> pending = provider.getPendingChunks();
         Set<Long> filled = provider.getFilledChunks();
         int queued = 0;
+        int skippedFeaturePainted = 0;
+        // Probe Y/Z computed once — bedY and trackCenterZ are stable for the
+        // train's lifetime, so the cost is one BlockPos + one getBlockState
+        // per loaded chunk.
+        int probeY = g.bedY();
+        int probeZ = g.trackCenterZ();
         for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN; cz++) {
             for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance; cx++) {
                 if (isShipyardChunk(cx, cz)) continue;
                 if (!level.getChunkSource().hasChunk(cx, cz)) continue;
                 long key = ChunkPos.asLong(cx, cz);
                 if (filled.contains(key)) continue;
+
+                // Skip chunks the worldgen TrackBedFeature already painted
+                // (bed + rails are part of the chunk save). Without this,
+                // every spawn re-runs the heavy pillar+stairs precompute on
+                // 100+ chunks for chunks that already have bed in place,
+                // wedging "Joining World" behind a ~13 s drain.
+                //
+                // Probe is bounded to the corridor: trackCenterZ lives in
+                // exactly one chunk on Z (cz=0 with default origin), so
+                // off-corridor chunks fall through the chunkMinZ/chunkMaxZ
+                // gate below and we only test the relevant one. We mark
+                // skipped chunks in `filled` so the periodic view-distance
+                // sweep doesn't re-discover them either.
+                int chunkMinZ = cz << 4;
+                int chunkMaxZ = chunkMinZ + 15;
+                if (probeZ >= chunkMinZ && probeZ <= chunkMaxZ) {
+                    BlockPos probePos = new BlockPos((cx << 4) + 8, probeY, probeZ);
+                    if (level.getBlockState(probePos).is(TrackPalette.BED.getBlock())) {
+                        filled.add(key);
+                        skippedFeaturePainted++;
+                        continue;
+                    }
+                }
+
                 pending.offer(key);
                 queued++;
             }
         }
-        LOGGER.info("[DungeonTrain] Track bootstrap for ship {}: enqueued {} already-loaded chunks (centerCx={}, viewDistance={})",
-            ship.id(), queued, centerCx, viewDistance);
+        LOGGER.info("[DungeonTrain] Track bootstrap for ship {}: enqueued {} already-loaded chunks ({} skipped as feature-painted, centerCx={}, viewDistance={})",
+            ship.id(), queued, skippedFeaturePainted, centerCx, viewDistance);
     }
 
     /**

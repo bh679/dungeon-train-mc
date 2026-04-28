@@ -19,7 +19,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -144,6 +143,12 @@ public final class BlockVariantMenuInputHandler {
         switch (hit.kind()) {
             case COPY -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.COPY, variantId, local, -1, "", 0));
+            case SAVE -> {
+                Minecraft.getInstance().setScreen(
+                    new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
+                        games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.VARIANT,
+                        local));
+            }
             case ADD -> DungeonTrainNet.sendToServer(
                 // Server captures the player's main-hand BlockItem — empty
                 // stateString signals "use held item" rather than the legacy

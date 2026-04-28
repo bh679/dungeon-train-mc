@@ -136,7 +136,9 @@ public final class CarriagePartTemplate {
                 // does the same. Asymmetric BE content (sign text,
                 // banner patterns) reads forward on both sides.
                 BlockState toPlace = rotated.mirror(p.mirror());
-                SilentBlockOps.setBlockSilent(level, world, toPlace, picked.blockEntityNbt());
+                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                    level, world, toPlace, picked.blockEntityNbt(),
+                    "part:" + kind.id() + ":" + name, entry.localPos(), seed, carriageIndex);
             }
         }
     }

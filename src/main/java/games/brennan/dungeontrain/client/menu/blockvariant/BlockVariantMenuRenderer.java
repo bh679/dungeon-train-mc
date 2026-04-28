@@ -144,20 +144,21 @@ public final class BlockVariantMenuRenderer {
             : "Block Variants @ " + local.getX() + "," + local.getY() + "," + local.getZ() + lockLabel;
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFFFFEEBB);
 
-        // Toolbar — 6 cells: Copy | Add | Lock | Remove | Clear | X (close).
+        // Toolbar — 7 cells: Copy | Save | Add | Lock | Remove | Clear | X.
         double toolbarTop = halfH - HEADER_HEIGHT;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
-        double cellW = panelW / 6.0;
-        for (int i = 0; i < 6; i++) {
+        double cellW = panelW / 7.0;
+        for (int i = 0; i < 7; i++) {
             double xL = -halfW + i * cellW;
             double xR = xL + cellW;
             BlockVariantMenu.CellKind cellKind = switch (i) {
                 case 0 -> BlockVariantMenu.CellKind.COPY;
-                case 1 -> BlockVariantMenu.CellKind.ADD;
-                case 2 -> BlockVariantMenu.CellKind.LOCK;
-                case 3 -> BlockVariantMenu.CellKind.REMOVE;
-                case 4 -> BlockVariantMenu.CellKind.CLEAR;
+                case 1 -> BlockVariantMenu.CellKind.SAVE;
+                case 2 -> BlockVariantMenu.CellKind.ADD;
+                case 3 -> BlockVariantMenu.CellKind.LOCK;
+                case 4 -> BlockVariantMenu.CellKind.REMOVE;
+                case 5 -> BlockVariantMenu.CellKind.CLEAR;
                 default -> BlockVariantMenu.CellKind.CLOSE;
             };
             boolean isHover = hovered.kind() == cellKind;
@@ -168,6 +169,8 @@ public final class BlockVariantMenuRenderer {
                 tint = isHover ? 0xC0FF8080 : 0x40FF6060;
             } else if (cellKind == BlockVariantMenu.CellKind.COPY) {
                 tint = isHover ? 0xB033FFCC : 0x40339999;
+            } else if (cellKind == BlockVariantMenu.CellKind.SAVE) {
+                tint = isHover ? 0xB033CCFF : 0x40337799;
             } else if (cellKind == BlockVariantMenu.CellKind.LOCK) {
                 if (cellLockId > 0) {
                     // Locked cell — warm orange to make active state obvious.
@@ -182,6 +185,7 @@ public final class BlockVariantMenuRenderer {
                 xR - 0.01, toolbarTop - 0.005, tint);
             String label = switch (cellKind) {
                 case COPY -> "Copy";
+                case SAVE -> "Save";
                 case ADD -> "Add";
                 // Lock label shows current cell lock-id: "-" unlocked, or
                 // the digit (e.g. "2") when locked. Cycles to next free
