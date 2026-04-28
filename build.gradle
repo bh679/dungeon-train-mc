@@ -88,10 +88,19 @@ configurations {
 }
 
 dependencies {
-    // Compile-only: joml-primitives supplies AABBdc used by ManagedShip.worldAABB().
-    // Pre-migration this came in via VS jar-in-jar; we keep it explicit since VS is stubbed.
+    // joml-primitives supplies AABBdc used by ManagedShip.worldAABB().
+    // Pre-migration this came in transitively via VS jar-in-jar; with VS
+    // stubbed we add it ourselves. `additionalRuntimeClasspath` is needed in
+    // addition to compile/runtime so it lands on the moddev launch classpath
+    // (runClient / runServer); plain `runtimeOnly` is not enough there.
+    // `jarJar` embeds it in the shipped mod jar for end-user production builds.
     compileOnly 'org.joml:joml-primitives:1.10.0'
-    runtimeOnly 'org.joml:joml-primitives:1.10.0'
+    additionalRuntimeClasspath 'org.joml:joml-primitives:1.10.0'
+    jarJar(group: 'org.joml', name: 'joml-primitives', version: '[1.10.0,2.0)') {
+        version {
+            prefer '1.10.0'
+        }
+    }
 
     // VS dependencies — DISABLED for Phase 1, restore in Phase 2:
     // implementation "org.valkyrienskies:valkyrienskies-121-neoforge:${vs_version}"
