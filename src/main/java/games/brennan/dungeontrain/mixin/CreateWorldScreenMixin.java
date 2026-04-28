@@ -79,10 +79,13 @@ public abstract class CreateWorldScreenMixin {
         dungeontrain$syncVisibilityAndPreset();
     }
 
-    @Inject(method = "tick", at = @At("HEAD"))
-    private void dungeontrain$tickSync(CallbackInfo ci) {
-        dungeontrain$syncVisibilityAndPreset();
-    }
+    // NeoForge 1.21.1 migration: the per-tick visibility sync that previously
+    // hooked CreateWorldScreen.tick() is dropped — CreateWorldScreen inherits
+    // tick() from Screen and the mixin processor refuses to inject into a
+    // non-overridden inherited method. The Floor-Y button visibility now
+    // settles once at init-TAIL; cycling presets without leaving and re-opening
+    // the screen won't refresh button visibility live until this is wired up
+    // to ScreenEvent.Render.Pre or a similar NeoForge event in a follow-up.
 
     @Unique
     private void dungeontrain$syncVisibilityAndPreset() {

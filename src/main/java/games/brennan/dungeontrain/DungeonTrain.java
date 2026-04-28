@@ -8,7 +8,6 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.common.NeoForge;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
@@ -34,7 +33,11 @@ public class DungeonTrain {
                 DungeonTrainConfig.SPEC,
                 "dungeontrain-server.toml");
 
-        NeoForge.EVENT_BUS.register(this);
+        // No NeoForge.EVENT_BUS.register(this) — every game-bus listener in
+        // this mod lives in its own @EventBusSubscriber class (event/*.java,
+        // editor/*.java, etc.) which the loader auto-registers. NeoForge
+        // 1.21.1 rejects register(this) on classes with no @SubscribeEvent
+        // methods, so calling it here would crash mod construction.
 
         // Keeps the `games.brennan.dungeontrain.jitter` namespace at DEBUG
         // so the [baseline] capture line (spawn), [tripwire] WARN (large
