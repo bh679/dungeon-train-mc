@@ -55,8 +55,15 @@ public final class ContainerHotkeyClient {
 
     public static boolean isKeyDown() { return KEY.isDown(); }
 
+    /**
+     * Inner class name MUST NOT clash with {@link VariantHotkeyClient.TickWatcher}.
+     * Forge's @Mod.EventBusSubscriber registration appears to silently dedupe
+     * inner static classes by simple name within a mod, so two classes both
+     * named {@code TickWatcher} (even in different outer classes) cause one
+     * of them to never receive events. Keep this class named distinctly.
+     */
     @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
-    public static final class TickWatcher {
+    public static final class ContainerTickWatcher {
         private static long tick;
 
         @SubscribeEvent
