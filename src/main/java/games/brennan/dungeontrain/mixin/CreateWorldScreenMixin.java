@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.mixin;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.worldgen.FloorYState;
+import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
+import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
@@ -58,6 +60,12 @@ public abstract class CreateWorldScreenMixin {
     private static final String DUNGEONTRAIN$Y_PATH_PREFIX = "dungeon_train_y";
 
     @Unique
+    private static final String DUNGEONTRAIN$NETHER_PATH = "dungeon_train_nether";
+
+    @Unique
+    private static final String DUNGEONTRAIN$END_PATH = "dungeon_train_end";
+
+    @Unique
     @SuppressWarnings("removal")
     private static final ResourceKey<WorldPreset> DUNGEONTRAIN$DEFAULT_KEY = ResourceKey.create(
             Registries.WORLD_PRESET,
@@ -94,18 +102,31 @@ public abstract class CreateWorldScreenMixin {
         Optional<ResourceKey<WorldPreset>> currentKey = presetHolder.unwrapKey();
         ResourceKey<WorldPreset> curr = currentKey.orElse(null);
 
-        boolean isDT = curr != null && dungeontrain$isDungeonTrainKey(curr);
-        button.visible = isDT;
+        // Floor-Y dropdown is only meaningful for the overworld DT variants —
+        // Nether/End DT presets keep the button hidden, vanilla presets keep it
+        // hidden, only the overworld family shows it.
+        boolean isOverworldDT = curr != null && dungeontrain$isOverworldDungeonTrainKey(curr);
+        button.visible = isOverworldDT;
+
+        // Publish starting dimension every tick so the most recent World Type
+        // cycle is what gets committed at server start. Default OVERWORLD for
+        // any non-DT or overworld-DT preset.
+        String currPath = curr == null ? "" : curr.location().getPath();
+        boolean currIsDTNamespace = curr != null && DUNGEONTRAIN$NAMESPACE.equals(curr.location().getNamespace());
+        StartingDimension dim = currIsDTNamespace
+                ? StartingDimension.fromPresetPath(currPath)
+                : StartingDimension.OVERWORLD;
+        PendingStartingDimension.set(dim);
 
         // Only re-apply a non-default Y when the user has just TRANSITIONED onto the
         // plain dungeon_train preset from some other preset. This keeps the preset cycle
         // button usable: cycling forward out of a Y-variant falls back to dungeon_train,
         // and the next tick leaves it alone so the next forward-cycle reaches Default.
-        if (isDT && DUNGEONTRAIN$DEFAULT_KEY.equals(curr)
+        if (isOverworldDT && DUNGEONTRAIN$DEFAULT_KEY.equals(curr)
                 && FloorYState.presets != null
                 && FloorYState.get() != FloorYState.DEFAULT) {
             boolean cameFromOutside = this.dungeontrain$prevPresetKey == null
-                    || !dungeontrain$isDungeonTrainKey(this.dungeontrain$prevPresetKey);
+                    || !dungeontrain$isOverworldDungeonTrainKey(this.dungeontrain$prevPresetKey);
             if (cameFromOutside) {
                 Holder<WorldPreset> target = FloorYState.presets.get(FloorYState.get());
                 if (target != null) {
@@ -118,7 +139,7 @@ public abstract class CreateWorldScreenMixin {
     }
 
     @Unique
-    private static boolean dungeontrain$isDungeonTrainKey(ResourceKey<WorldPreset> key) {
+    private static boolean dungeontrain$isOverworldDungeonTrainKey(ResourceKey<WorldPreset> key) {
         if (!DUNGEONTRAIN$NAMESPACE.equals(key.location().getNamespace())) {
             return false;
         }
