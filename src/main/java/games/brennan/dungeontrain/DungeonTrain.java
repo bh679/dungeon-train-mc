@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModItems;
+import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
@@ -45,6 +46,13 @@ public class DungeonTrain {
         // — the login sync packet triggers a rebuild once the registry is
         // populated.
         ModCreativeTabs.register(modBus);
+
+        // Worldgen-feature DeferredRegister: TrackBedFeature paints bed +
+        // rails into chunks at generation time so tracks become a property
+        // of the chunk save (zero post-load cost). Datapack JSONs in
+        // data/dungeontrain/{worldgen,forge} wire it through three biome
+        // modifiers (overworld / nether / end).
+        ModFeatures.register(modBus);
 
         ModLoadingContext.get().registerConfig(
                 ModConfig.Type.SERVER,
