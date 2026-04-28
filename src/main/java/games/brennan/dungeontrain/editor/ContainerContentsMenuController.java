@@ -241,17 +241,31 @@ public final class ContainerContentsMenuController {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;
                 ContainerContentsEntry e = current.entries().get(idx);
-                int newCount = Math.max(1, Math.min(64, e.count() + packet.delta()));
+                int newCount;
+                if (packet.delta() < 0 && e.count() <= 1) {
+                    newCount = 64;
+                } else if (packet.delta() > 0 && e.count() >= 64) {
+                    newCount = 1;
+                } else {
+                    newCount = Math.max(1, Math.min(64, e.count() + packet.delta()));
+                }
                 next = current.replaced(idx, e.withCount(newCount));
                 dirty = true;
             }
             case BUMP_FILL_MIN -> {
-                // Linear bump in [0, MAX_FILL_BOUND]. Clamped to ≤ fillMax
-                // (treating FILL_ALL as +∞).
+                // Wrap in [0, upperBound] where upperBound is fillMax (or
+                // MAX_FILL_BOUND when fillMax == FILL_ALL).
                 int cur = current.fillMin();
-                int next0 = Math.max(0, Math.min(ContainerContentsPool.MAX_FILL_BOUND, cur + packet.delta()));
-                if (current.fillMax() != ContainerContentsPool.FILL_ALL && next0 > current.fillMax()) {
-                    next0 = current.fillMax();
+                int upperBound = current.fillMax() == ContainerContentsPool.FILL_ALL
+                    ? ContainerContentsPool.MAX_FILL_BOUND
+                    : current.fillMax();
+                int next0;
+                if (packet.delta() < 0 && cur <= 0) {
+                    next0 = upperBound;
+                } else if (packet.delta() > 0 && cur >= upperBound) {
+                    next0 = 0;
+                } else {
+                    next0 = Math.max(0, Math.min(upperBound, cur + packet.delta()));
                 }
                 next = current.withFillMin(next0);
                 dirty = true;

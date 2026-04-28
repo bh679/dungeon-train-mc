@@ -52,7 +52,10 @@ public final class TrackChunkEvents {
             if (g == null) continue;
             // Fast Z-corridor prefilter — skip chunks clearly outside this train's strip.
             if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) continue;
-            // Don't re-queue chunks we've already painted.
+            // Don't re-queue chunks we've already painted. (Bootstrap
+            // marks feature-painted chunks as filled at spawn time, so the
+            // bed-already-painted shortcut is handled there once-per-train
+            // rather than every chunk-load tick.)
             if (provider.getFilledChunks().contains(chunkKey)) continue;
             // offer() appends to the tail — drain pops from head, so order
             // matches load order ≈ spatial proximity to the player.
