@@ -1,6 +1,6 @@
-// Dungeon Train — Minecraft mod (NeoForge 1.21.1)
-// MIGRATION PHASE 1: VS adapter is stubbed; ship/vs/* will be reactivated in Phase 2
-// once VS upstream releases a 1.21.1 / NeoForge build. See plans/ticklish-soaring-comet.md.
+// Dungeon Train — Minecraft mod (NeoForge 1.21.1).
+// MIGRATION PHASE 2: physics dependency is Sable (PolyForm Shield 1.0.0).
+// See plans/modular-scribbling-thunder.md for the Phase 2 migration plan.
 
 plugins {
     id 'java-library'
@@ -33,9 +33,15 @@ repositories {
     // Maven Central for general libs (joml-primitives, JUnit).
     mavenCentral()
 
-    // VS / KFF repos kept here (commented) so Phase 2 can re-enable in one diff:
-    // maven { name = 'Valkyrien Skies'; url = 'https://maven.valkyrienskies.org/' }
-    // maven { name = 'Kotlin for Forge'; url = 'https://thedarkcolour.github.io/KotlinForForge/' }
+    // Modrinth — hosts Sable's mod jars. Sable does not publish to a dedicated
+    // Maven, so we pull via Modrinth's Maven proxy (api.modrinth.com/maven).
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content {
+            includeGroup 'maven.modrinth'
+        }
+    }
 }
 
 neoForge {
@@ -102,12 +108,12 @@ dependencies {
         }
     }
 
-    // VS dependencies — DISABLED for Phase 1, restore in Phase 2:
-    // implementation "org.valkyrienskies:valkyrienskies-121-neoforge:${vs_version}"
-    // implementation("org.valkyrienskies.core:api:${vs_core_version}")      { exclude group: 'org.joml' }
-    // implementation("org.valkyrienskies.core:internal:${vs_core_version}") { exclude group: 'org.joml' }
-    // implementation("org.valkyrienskies.core:util:${vs_core_version}")     { exclude group: 'org.joml' }
-    // implementation "thedarkcolour:kotlinforforge-neoforge:${kff_version}"
+    // Sable — physics dependency (replaces VS in Phase 2). Modrinth-hosted.
+    // End users must install Sable separately at runtime; it is NOT embedded
+    // in our jar (PolyForm Shield 1.0.0 — Sable's licence — does not allow
+    // bundling, and we declare it as a hard `mandatory` mod-dep in
+    // neoforge.mods.toml so the loader prompts the user.
+    implementation "maven.modrinth:sable:${sable_version}"
 
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')

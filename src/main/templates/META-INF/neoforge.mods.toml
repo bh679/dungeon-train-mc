@@ -13,13 +13,12 @@ displayURL="https://github.com/bh679/dungeon-train-mc"
 credits="Original game by Brennan Hatton (brennanhatton.itch.io/dungeontrain)."
 logoFile="logo.png"
 
-# VS dependency removed for Phase 1 of the 1.21.1 migration. Restore in Phase 2:
-# [[dependencies.${mod_id}]]
-#     modId="valkyrienskies"
-#     type="required"
-#     versionRange="[2.5.0,)"
-#     ordering="AFTER"
-#     side="BOTH"
+[[dependencies.${mod_id}]]
+    modId="sable"
+    type="required"
+    versionRange="[1.2.1,)"
+    ordering="AFTER"
+    side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="neoforge"
