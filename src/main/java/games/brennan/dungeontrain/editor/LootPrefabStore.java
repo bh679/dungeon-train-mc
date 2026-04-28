@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
@@ -15,17 +16,21 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -35,7 +40,18 @@ import java.util.regex.Pattern;
  * show the right block icon and right-click placement gives the matching
  * vanilla container.
  *
- * <p>Files at {@code config/dungeontrain/prefabs/loot/<id>.json}. Schema:
+ * <p>Three storage tiers — mirrors
+ * {@link games.brennan.dungeontrain.track.variant.TrackVariantStore}:
+ *
+ * <ol>
+ *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/prefabs/loot/<id>.json}
+ *       on the classpath. Shipped with the mod jar.</li>
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/prefabs/loot/<id>.json}.
+ *       Per-install override; written by {@link #save}.</li>
+ *   <li><b>Empty</b> — caller falls back silently.</li>
+ * </ol>
+ *
+ * <p>Schema:
  * <pre>
  * {
  *   "schemaVersion": 2,
@@ -60,6 +76,9 @@ public final class LootPrefabStore {
     public static final int CURRENT_SCHEMA_VERSION = 2;
     private static final ResourceLocation FALLBACK_BLOCK = new ResourceLocation("minecraft", "chest");
 
+    static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/prefabs/loot/";
+    static final String SOURCE_RELATIVE_PATH = "src/main/resources/data/dungeontrain/prefabs/loot";
+
     public static final Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,32}$");
 
     private static final TreeSet<String> IDS = new TreeSet<>();
@@ -77,6 +96,19 @@ public final class LootPrefabStore {
         return directory().resolve(id + EXT);
     }
 
+    public static String bundledResourceFor(String id) {
+        return BUNDLED_RESOURCE_PREFIX + id + EXT;
+    }
+
+    public static Path sourceFileFor(String id) {
+        return sourceDirectory().resolve(id + EXT);
+    }
+
+    public static boolean sourceTreeAvailable() {
+        Path resources = resourcesRootOrNull();
+        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+    }
+
     public static synchronized List<String> allIds() {
         return new ArrayList<>(IDS);
     }
@@ -91,43 +123,9 @@ public final class LootPrefabStore {
 
     public static synchronized Optional<Data> load(String id) {
         String key = id.toLowerCase(Locale.ROOT);
-        Path file = fileFor(key);
-        if (!Files.isRegularFile(file)) return Optional.empty();
-        try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-            JsonElement root = JsonParser.parseReader(r);
-            if (!root.isJsonObject()) return Optional.empty();
-            JsonObject obj = root.getAsJsonObject();
-            ResourceLocation block = FALLBACK_BLOCK;
-            if (obj.has("block") && obj.get("block").isJsonPrimitive()) {
-                ResourceLocation parsed = ResourceLocation.tryParse(obj.get("block").getAsString());
-                if (parsed != null) block = parsed;
-            }
-            int fillMin = obj.has("fillMin") && obj.get("fillMin").isJsonPrimitive()
-                ? obj.get("fillMin").getAsInt() : 0;
-            int fillMax = obj.has("fillMax") && obj.get("fillMax").isJsonPrimitive()
-                ? obj.get("fillMax").getAsInt() : ContainerContentsPool.FILL_ALL;
-            List<ContainerContentsEntry> entries = new ArrayList<>();
-            if (obj.has("entries") && obj.get("entries").isJsonArray()) {
-                JsonArray arr = obj.getAsJsonArray("entries");
-                for (JsonElement el : arr) {
-                    if (!el.isJsonObject()) continue;
-                    JsonObject e = el.getAsJsonObject();
-                    if (!e.has("id") || !e.get("id").isJsonPrimitive()) continue;
-                    String idStr = e.get("id").getAsString();
-                    ResourceLocation rl = ResourceLocation.tryParse(idStr);
-                    if (rl == null) continue;
-                    int count = e.has("count") && e.get("count").isJsonPrimitive()
-                        ? e.get("count").getAsInt() : 1;
-                    int weight = e.has("weight") && e.get("weight").isJsonPrimitive()
-                        ? e.get("weight").getAsInt() : 1;
-                    entries.add(new ContainerContentsEntry(rl, count, weight));
-                }
-            }
-            return Optional.of(new Data(key, block, new ContainerContentsPool(entries, fillMin, fillMax)));
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to read loot prefab '{}': {}", key, e.toString());
-            return Optional.empty();
-        }
+        Optional<Data> fromConfig = loadFromConfig(key);
+        if (fromConfig.isPresent()) return fromConfig;
+        return loadFromResource(key);
     }
 
     public static synchronized boolean save(String id, ContainerContentsPool pool, ResourceLocation sourceBlock)
@@ -151,36 +149,120 @@ public final class LootPrefabStore {
         return isNew;
     }
 
+    /**
+     * Write the prefab directly into the source tree at
+     * {@link #SOURCE_RELATIVE_PATH} so the JSON file is committed via git and
+     * shipped on the next mod build. Throws if the source tree isn't writable.
+     */
+    public static synchronized void saveToSource(String id, ContainerContentsPool pool, ResourceLocation sourceBlock)
+        throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        if (!isValidName(id)) {
+            throw new IOException("Invalid prefab name '" + id + "' — must match " + NAME_PATTERN.pattern());
+        }
+        if (pool == null || pool.isEmpty()) {
+            throw new IOException("Loot prefab needs at least one entry");
+        }
+        if (sourceBlock == null) sourceBlock = FALLBACK_BLOCK;
+        String key = id.toLowerCase(Locale.ROOT);
+        Path file = sourceFileFor(key);
+        Files.createDirectories(file.getParent());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(toJsonText(pool, sourceBlock));
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled loot prefab '{}' (block={}) to {}", key, sourceBlock, file);
+    }
+
+    /**
+     * Copy a previously-saved config-dir prefab into the source tree. Throws
+     * if no config copy exists or the source tree isn't writable.
+     */
+    public static synchronized void promote(String id) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        Path src = fileFor(key);
+        if (!Files.isRegularFile(src)) {
+            throw new IOException("No saved loot prefab '" + key + "' in config dir " + src);
+        }
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path dst = sourceFileFor(key);
+        Files.createDirectories(dst.getParent());
+        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        LOGGER.info("[DungeonTrain] Promoted loot prefab '{}' from {} to {}", key, src, dst);
+    }
+
     public static synchronized boolean delete(String id) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         Path file = fileFor(key);
         boolean fileExisted = Files.deleteIfExists(file);
-        IDS.remove(key);
+        if (!hasBundled(key)) {
+            IDS.remove(key);
+        }
         if (fileExisted) {
-            LOGGER.info("[DungeonTrain] Deleted loot prefab '{}'", key);
+            LOGGER.info("[DungeonTrain] Deleted loot prefab '{}' (bundled retained: {})",
+                key, hasBundled(key));
         }
         return fileExisted;
     }
 
+    public static boolean hasBundled(String id) {
+        try (InputStream in = LootPrefabStore.class.getResourceAsStream(bundledResourceFor(id))) {
+            return in != null;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Whether a loot prefab id is "committed to repo" — either source-tree
+     * JSON exists or the bundled jar already ships it. Mirrors
+     * {@link BlockVariantPrefabStore#isCommitted}.
+     */
+    public static boolean isCommitted(String id) {
+        String key = id.toLowerCase(Locale.ROOT);
+        if (hasBundled(key)) return true;
+        try {
+            return sourceTreeAvailable() && Files.exists(sourceFileFor(key));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static synchronized void reload() {
         IDS.clear();
-        Path dir = directory();
-        if (!Files.isDirectory(dir)) return;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
-            for (Path file : stream) {
-                String name = file.getFileName().toString();
-                if (!name.endsWith(EXT)) continue;
-                String basename = name.substring(0, name.length() - EXT.length()).toLowerCase(Locale.ROOT);
-                if (!isValidName(basename)) {
-                    LOGGER.warn("[DungeonTrain] Ignoring loot prefab file with invalid name: {}", file);
-                    continue;
-                }
-                IDS.add(basename);
+        // Bundled (classpath) tier
+        Set<String> bundled = BundledNbtScanner.scanBasenames(
+            LootPrefabStore.class, BUNDLED_RESOURCE_PREFIX, LOGGER, EXT);
+        for (String name : bundled) {
+            if (!isValidName(name)) {
+                LOGGER.warn("[DungeonTrain] Ignoring bundled loot prefab with invalid name: {}", name);
+                continue;
             }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to scan loot prefab dir {}: {}", dir, e.toString());
+            IDS.add(name);
         }
-        LOGGER.info("[DungeonTrain] Loot prefab registry loaded — {} prefab(s)", IDS.size());
+        // Config-dir tier
+        Path dir = directory();
+        if (Files.isDirectory(dir)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
+                for (Path file : stream) {
+                    String name = file.getFileName().toString();
+                    if (!name.endsWith(EXT)) continue;
+                    String basename = name.substring(0, name.length() - EXT.length()).toLowerCase(Locale.ROOT);
+                    if (!isValidName(basename)) {
+                        LOGGER.warn("[DungeonTrain] Ignoring loot prefab file with invalid name: {}", file);
+                        continue;
+                    }
+                    IDS.add(basename);
+                }
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Failed to scan loot prefab dir {}: {}", dir, e.toString());
+            }
+        }
+        LOGGER.info("[DungeonTrain] Loot prefab registry loaded — {} prefab(s) ({} bundled)",
+            IDS.size(), bundled.size());
     }
 
     public static synchronized void clear() {
@@ -195,6 +277,63 @@ public final class LootPrefabStore {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         clear();
+    }
+
+    private static Optional<Data> loadFromConfig(String key) {
+        Path file = fileFor(key);
+        if (!Files.isRegularFile(file)) return Optional.empty();
+        try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+            return parseData(r, key);
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read loot prefab '{}' from config: {}", key, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<Data> loadFromResource(String key) {
+        String resource = bundledResourceFor(key);
+        try (InputStream in = LootPrefabStore.class.getResourceAsStream(resource)) {
+            if (in == null) return Optional.empty();
+            try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+                return parseData(r, key);
+            }
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to read bundled loot prefab '{}': {}", key, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<Data> parseData(Reader reader, String key) {
+        JsonElement root = JsonParser.parseReader(reader);
+        if (!root.isJsonObject()) return Optional.empty();
+        JsonObject obj = root.getAsJsonObject();
+        ResourceLocation block = FALLBACK_BLOCK;
+        if (obj.has("block") && obj.get("block").isJsonPrimitive()) {
+            ResourceLocation parsed = ResourceLocation.tryParse(obj.get("block").getAsString());
+            if (parsed != null) block = parsed;
+        }
+        int fillMin = obj.has("fillMin") && obj.get("fillMin").isJsonPrimitive()
+            ? obj.get("fillMin").getAsInt() : 0;
+        int fillMax = obj.has("fillMax") && obj.get("fillMax").isJsonPrimitive()
+            ? obj.get("fillMax").getAsInt() : ContainerContentsPool.FILL_ALL;
+        List<ContainerContentsEntry> entries = new ArrayList<>();
+        if (obj.has("entries") && obj.get("entries").isJsonArray()) {
+            JsonArray arr = obj.getAsJsonArray("entries");
+            for (JsonElement el : arr) {
+                if (!el.isJsonObject()) continue;
+                JsonObject e = el.getAsJsonObject();
+                if (!e.has("id") || !e.get("id").isJsonPrimitive()) continue;
+                String idStr = e.get("id").getAsString();
+                ResourceLocation rl = ResourceLocation.tryParse(idStr);
+                if (rl == null) continue;
+                int count = e.has("count") && e.get("count").isJsonPrimitive()
+                    ? e.get("count").getAsInt() : 1;
+                int weight = e.has("weight") && e.get("weight").isJsonPrimitive()
+                    ? e.get("weight").getAsInt() : 1;
+                entries.add(new ContainerContentsEntry(rl, count, weight));
+            }
+        }
+        return Optional.of(new Data(key, block, new ContainerContentsPool(entries, fillMin, fillMax)));
     }
 
     private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock) {
@@ -221,6 +360,27 @@ public final class LootPrefabStore {
         }
         sb.append("\n  ]\n}\n");
         return sb.toString();
+    }
+
+    private static Path sourceDirectory() {
+        Path projectRoot = projectRootOrNull();
+        if (projectRoot == null) {
+            throw new IllegalStateException(
+                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
+            );
+        }
+        return projectRoot.resolve(SOURCE_RELATIVE_PATH);
+    }
+
+    private static Path resourcesRootOrNull() {
+        Path projectRoot = projectRootOrNull();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve("src/main/resources");
+    }
+
+    private static Path projectRootOrNull() {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        return gameDir.getParent();
     }
 
     public static synchronized List<String> snapshotIds() {

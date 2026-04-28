@@ -19,18 +19,23 @@ import java.util.function.Supplier;
 
 /**
  * Server → client: snapshot of the named prefab libraries at login time.
- * Each entry is {@code (id, blockId)} so the client can build a vanilla
- * {@code BlockItem} stack with the right icon for the creative tab without
- * needing to load each prefab's full data over the wire.
+ * Each entry is {@code (id, blockId, committed)} so the client can build a
+ * vanilla {@code BlockItem} stack with the right icon for the creative tab,
+ * and visually mark "uncommitted" entries (saved without dev mode → only in
+ * user config dir, not yet in the source tree / mod jar).
  *
  * <p>Sent on {@code PlayerLoggedInEvent} and re-broadcast after any
  * {@link SaveBlockVariantPrefabPacket}/{@link SaveLootPrefabPacket} so
- * connected players see new entries immediately.</p>
+ * connected players see new entries (and updated commit status) immediately.</p>
  */
 public record PrefabRegistrySyncPacket(List<Entry> variants, List<Entry> loot) {
 
-    /** Single tab entry — {@code id} is the prefab name, {@code blockId} the source block to render. */
-    public record Entry(String id, String blockId) {}
+    /**
+     * Single tab entry — {@code id} is the prefab name, {@code blockId} the
+     * source block to render, {@code committed} whether the prefab exists in
+     * the source tree or the bundled jar (vs. config-dir only).
+     */
+    public record Entry(String id, String blockId, boolean committed) {}
 
     /**
      * Build the payload from the live server-side stores. Each prefab is
@@ -44,13 +49,13 @@ public record PrefabRegistrySyncPacket(List<Entry> variants, List<Entry> loot) {
             if (loaded.isEmpty() || loaded.get().isEmpty()) continue;
             Block firstBlock = loaded.get().get(0).state().getBlock();
             ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(firstBlock);
-            variants.add(new Entry(id, blockId.toString()));
+            variants.add(new Entry(id, blockId.toString(), BlockVariantPrefabStore.isCommitted(id)));
         }
         List<Entry> loot = new ArrayList<>();
         for (String id : LootPrefabStore.allIds()) {
             Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(id);
             if (loaded.isEmpty()) continue;
-            loot.add(new Entry(id, loaded.get().sourceBlock().toString()));
+            loot.add(new Entry(id, loaded.get().sourceBlock().toString(), LootPrefabStore.isCommitted(id)));
         }
         return new PrefabRegistrySyncPacket(variants, loot);
     }
@@ -60,11 +65,13 @@ public record PrefabRegistrySyncPacket(List<Entry> variants, List<Entry> loot) {
         for (Entry e : variants) {
             buf.writeUtf(e.id(), 64);
             buf.writeUtf(e.blockId(), 128);
+            buf.writeBoolean(e.committed());
         }
         buf.writeVarInt(loot.size());
         for (Entry e : loot) {
             buf.writeUtf(e.id(), 64);
             buf.writeUtf(e.blockId(), 128);
+            buf.writeBoolean(e.committed());
         }
     }
 
@@ -74,14 +81,16 @@ public record PrefabRegistrySyncPacket(List<Entry> variants, List<Entry> loot) {
         for (int i = 0; i < vCount; i++) {
             String id = buf.readUtf(64);
             String blockId = buf.readUtf(128);
-            variants.add(new Entry(id, blockId));
+            boolean committed = buf.readBoolean();
+            variants.add(new Entry(id, blockId, committed));
         }
         int lCount = buf.readVarInt();
         List<Entry> loot = new ArrayList<>(lCount);
         for (int i = 0; i < lCount; i++) {
             String id = buf.readUtf(64);
             String blockId = buf.readUtf(128);
-            loot.add(new Entry(id, blockId));
+            boolean committed = buf.readBoolean();
+            loot.add(new Entry(id, blockId, committed));
         }
         return new PrefabRegistrySyncPacket(variants, loot);
     }

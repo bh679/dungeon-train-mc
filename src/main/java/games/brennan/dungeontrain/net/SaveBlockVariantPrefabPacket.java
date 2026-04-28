@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
+import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -79,8 +80,9 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
             }
             try {
                 boolean isNew = BlockVariantPrefabStore.save(name, states);
+                String suffix = writeToSourceTreeIfDevMode(name, states);
                 actionBar(player,
-                    (isNew ? "Saved prefab '" : "Overwrote prefab '") + name + "'",
+                    (isNew ? "Saved prefab '" : "Overwrote prefab '") + name + "'" + suffix,
                     ChatFormatting.GREEN);
                 broadcastSync();
             } catch (IOException e) {
@@ -90,6 +92,26 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
             }
         });
         ctx.setPacketHandled(true);
+    }
+
+    /**
+     * If dev mode is on and the source tree is reachable, also write the
+     * prefab JSON into {@code src/main/resources/data/dungeontrain/prefabs/...}
+     * so the next git commit picks it up. Returns a short suffix to append to
+     * the action-bar feedback so the saver knows which tiers were written.
+     * Source-write failures are logged but never escalated — the config-dir
+     * save already succeeded.
+     */
+    private static String writeToSourceTreeIfDevMode(String name, List<VariantState> states) {
+        if (!EditorDevMode.isEnabled()) return "";
+        if (!BlockVariantPrefabStore.sourceTreeAvailable()) return " (no src tree)";
+        try {
+            BlockVariantPrefabStore.saveToSource(name, states);
+            return " (→ src)";
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] SaveBlockVariantPrefab source write failed: {}", e.toString());
+            return " (src write failed)";
+        }
     }
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
