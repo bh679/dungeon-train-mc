@@ -476,6 +476,15 @@ public final class TunnelGenerator {
         int pendingSizeAtStart = pending.size();
 
         if (!pending.isEmpty()) {
+            // Save-busy chunks must be re-queued for a later sweep, but
+            // re-adding to the pending Deque DURING iteration triggers a
+            // weakly-consistent iterator's see-your-own-writes behaviour
+            // — the iterator picks the just-re-added key, finds it still
+            // save-busy, re-adds again, and loops millions of times in a
+            // single tick (observed: 16M hasChunk calls, 1.8s spike).
+            // Stage re-queue to a side list and write back once after the
+            // drain loop exits.
+            java.util.List<Long> deferredKeys = null;
             Iterator<Long> it = pending.iterator();
             while (budget > 0 && it.hasNext()) {
                 long key = it.next();
@@ -486,17 +495,16 @@ public final class TunnelGenerator {
                 if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
                 pendingHasChunkChecks++;
                 if (!level.getChunkSource().hasChunk(cx, cz)) continue;
-                // Defer paint while the chunk's autosave is in flight — the
-                // upstream race between server-thread mutation and IOWorker
-                // NBT iteration causes a sporadic CME otherwise.
                 if (TunnelChunkEvents.isSaveBusy(key)) {
-                    pending.add(key);
+                    if (deferredKeys == null) deferredKeys = new java.util.ArrayList<>();
+                    deferredKeys.add(key);
                     continue;
                 }
                 ensureTunnelForChunk(level, cx, cz, g, filled);
                 budget--;
                 drainedFromPending++;
             }
+            if (deferredKeys != null) pending.addAll(deferredKeys);
         }
 
         long tAfterPending = System.nanoTime();
