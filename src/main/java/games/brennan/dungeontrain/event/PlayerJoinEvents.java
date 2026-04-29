@@ -125,14 +125,21 @@ public final class PlayerJoinEvents {
     private static final Map<UUID, Integer> PENDING = new ConcurrentHashMap<>();
 
     /**
-     * Pre-computed placement from {@code TrainBootstrapEvents}. Used for
-     * first-time-like logins (player has just spawned at the level's default
-     * spawn point, which {@code TrainBootstrapEvents} set to this exact
-     * placement). Reusing the cached placement means {@code teleportTo} is a
-     * no-op for position — only rotation updates — so the player sees zero
-     * visual position jump on a fresh-world login.
+     * Pre-computed placement from {@code TrainBootstrapEvents}. Read by
+     * {@code PlayerFudgeSpawnMixin} to override vanilla's
+     * {@code fudgeSpawnLocation} for first-time players, and read again here
+     * at first-tick {@link #tryPlace} to confirm via a no-op teleport. The
+     * latter is needed because the rolling-window manager and other systems
+     * may have moved the train slightly between server-start and login —
+     * {@link #tryPlace}'s buffered-X recompute could otherwise drift off the
+     * cached placement and cause a visible jump.
      */
     private static volatile SpawnPlacement bootstrapPlacement;
+
+    /** Read accessor for {@code PlayerFudgeSpawnMixin}. */
+    public static SpawnPlacement getBootstrapPlacement() {
+        return bootstrapPlacement;
+    }
 
     /**
      * Cached spawn placement: position, look angles, and the {@link BlockPos}
@@ -219,6 +226,10 @@ public final class PlayerJoinEvents {
         // only rotation updates — so no visual position jump. This is what
         // makes "TP happens before the user sees anything" actually true on a
         // fresh-world login.
+        // First-time login: PlayerFudgeSpawnMixin has already moved the
+        // player to the cached placement before the JOIN packet was sent.
+        // Confirm via a no-op teleport (same pos + yaw + pitch) so any
+        // server-side state syncs cleanly with the client.
         SpawnPlacement boot = bootstrapPlacement;
         if (boot != null && trainLevel == player.level()) {
             double cdx = player.getX() - boot.x();
