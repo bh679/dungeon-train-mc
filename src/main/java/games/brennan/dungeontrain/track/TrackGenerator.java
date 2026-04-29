@@ -898,18 +898,8 @@ public final class TrackGenerator {
         int zLo = Math.max(g.trackZMin(), chunkMinZ);
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
 
-        // Precompute pillar map over [chunkMinX - margin, chunkMaxX + margin]
-        // so that thick pillars anchored just outside this chunk still fill
-        // their footprint into this chunk.
-        NavigableMap<Integer, PillarSpec> pillars = computePillarPositions(
-            level,
-            chunkMinX - PILLAR_SCAN_MARGIN,
-            chunkMaxX + PILLAR_SCAN_MARGIN,
-            g
-        );
-
-        // Fetch per-world dims once; the pillar- and track-template stores
-        // validate against this, and the call is cheap (SavedData lookup).
+        // Fetch per-world dims once; the track-template store validates
+        // against this, and the call is cheap (SavedData lookup).
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
 
         // Per-tile paint cache (≤ 5 tiles touch any single 16-wide chunk so
@@ -919,6 +909,15 @@ public final class TrackGenerator {
         Vec3i tileFootprint = TrackKind.TILE.dims(dims);
         Map<Long, TilePaint> tilePaints = new HashMap<>();
 
+        // Pillar placement is worldgen-only now (see TrackBedFeature →
+        // placePillarsAtWorldgen). Runtime ensureTracksForChunk runs only
+        // for chunks that loaded without TrackBedFeature having fired
+        // (legacy worlds, or chunks generated before our biome modifier
+        // was attached). Those chunks get tracks but no pillars — visual
+        // regression accepted in exchange for eliminating the fluid-update
+        // cascade that fired when runtime pillar slices replaced water
+        // blocks under the corridor. Side stairs go away with the pillars
+        // for the same reason; reintroduce both at worldgen time if needed.
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
             long tileIndex = Math.floorDiv((long) worldX, (long) TrackTemplate.TILE_LENGTH);
@@ -933,17 +932,8 @@ public final class TrackGenerator {
                 }
             );
 
-            PillarSpec containingPillar = findPillarContaining(pillars, worldX);
-
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
                 placeTrackColumn(level, worldX, worldZ, g, paint);
-            }
-
-            if (containingPillar != null) {
-                placePillarSlice(level, worldX, g, dims);
-                if (worldX == containingPillar.centerX()) {
-                    placeStairsBesidePillar(level, containingPillar, pillars, g);
-                }
             }
         }
 
