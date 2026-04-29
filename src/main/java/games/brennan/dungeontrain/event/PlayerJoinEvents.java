@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
@@ -123,6 +124,25 @@ public final class PlayerJoinEvents {
     /** Player UUID → tick count of pending retry. Cleared on success/timeout/logout. */
     private static final Map<UUID, Integer> PENDING = new ConcurrentHashMap<>();
 
+    /**
+     * Pre-computed placement from {@code TrainBootstrapEvents}. Used for
+     * first-time-like logins (player has just spawned at the level's default
+     * spawn point, which {@code TrainBootstrapEvents} set to this exact
+     * placement). Reusing the cached placement means {@code teleportTo} is a
+     * no-op for position — only rotation updates — so the player sees zero
+     * visual position jump on a fresh-world login.
+     */
+    private static volatile SpawnPlacement bootstrapPlacement;
+
+    /**
+     * Cached spawn placement: position, look angles, and the {@link BlockPos}
+     * passed to {@link ServerLevel#setDefaultSpawnPos(BlockPos, float)}.
+     * The {@code blockPos} is what the level's spawn point reflects;
+     * {@code x}/{@code z} are the precise sub-block coordinates aligned to
+     * {@code blockPos + 0.5} so a re-teleport doesn't shift the player.
+     */
+    public record SpawnPlacement(double x, int y, double z, float yaw, float pitch, BlockPos blockPos) {}
+
     private PlayerJoinEvents() {}
 
     @SubscribeEvent
@@ -191,6 +211,26 @@ public final class PlayerJoinEvents {
             LOGGER.warn("[DungeonTrain] Starting dimension {} not loaded — skipping teleport for {}",
                 startingDim, player.getName().getString());
             return true;
+        }
+
+        // First-time-like login: if the bootstrap placement is cached AND the
+        // player is at (or very near) the level's default spawn = the cached
+        // placement, reuse it. teleportTo to the same position is a no-op —
+        // only rotation updates — so no visual position jump. This is what
+        // makes "TP happens before the user sees anything" actually true on a
+        // fresh-world login.
+        SpawnPlacement boot = bootstrapPlacement;
+        if (boot != null && trainLevel == player.level()) {
+            double cdx = player.getX() - boot.x();
+            double cdz = player.getZ() - boot.z();
+            if (cdx * cdx + cdz * cdz < 4.0) {
+                player.teleportTo(trainLevel, boot.x(), boot.y(), boot.z(), boot.yaw(), boot.pitch());
+                LOGGER.info("[DungeonTrain] Login spawn (cached bootstrap placement) for {}: pos=({}, {}, {}) yaw={} pitch={}",
+                    player.getName().getString(),
+                    String.format("%.1f", boot.x()), boot.y(), String.format("%.1f", boot.z()),
+                    String.format("%.1f", boot.yaw()), String.format("%.1f", boot.pitch()));
+                return true;
+            }
         }
 
         ManagedShip trainShip = findTrain(trainLevel);
@@ -276,6 +316,11 @@ public final class PlayerJoinEvents {
      * of {@code 2 * X_BUFFER + 1} non-tunnel columns. Returns the middle of
      * the first qualifying run, or {@link Integer#MIN_VALUE} if no run
      * exists in {@link #MAX_ABOVEGROUND_SCAN} blocks.
+     *
+     * <p>Force-loads each column's chunk before checking — without this,
+     * unloaded chunks (common at bootstrap time when only spawn chunks are
+     * loaded) get treated as non-tunnel by {@code isColumnUnderground}'s
+     * {@code hasChunkAt} early exit, which corrupts the scan.</p>
      */
     private static int scanBufferedDir(
         ServerLevel level, int originX, TunnelGeometry tg, int dir
@@ -286,6 +331,7 @@ public final class PlayerJoinEvents {
         int dxStart = (dir > 0) ? 0 : 1;
         for (int dx = dxStart; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
             int x = originX + dir * dx;
+            level.getChunk(x >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
             if (!TunnelGenerator.isColumnUnderground(level, x, tg)) {
                 if (consecutive == 0) runStart = x;
                 consecutive++;
@@ -308,13 +354,16 @@ public final class PlayerJoinEvents {
     private static int findAboveGroundReferenceX(
         ServerLevel level, int originX, TunnelGeometry tg
     ) {
+        level.getChunk(originX >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
         if (!TunnelGenerator.isColumnUnderground(level, originX, tg)) return originX;
         for (int dx = 1; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
             int forward = originX + dx;
+            level.getChunk(forward >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
             if (!TunnelGenerator.isColumnUnderground(level, forward, tg)) return forward;
         }
         for (int dx = 1; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
             int backward = originX - dx;
+            level.getChunk(backward >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
             if (!TunnelGenerator.isColumnUnderground(level, backward, tg)) return backward;
         }
         return originX;
@@ -348,17 +397,16 @@ public final class PlayerJoinEvents {
             double perpDist = PERP_MIN + rand.nextDouble() * (PERP_MAX - PERP_MIN);
             double zOffset = sideSign * perpDist;
 
-            double px = anchorX + 0.5 + xOffset;
-            double pz = centerZ + zOffset;
-
-            int bx = Mth.floor(px);
-            int bz = Mth.floor(pz);
+            int bx = Mth.floor(anchorX + 0.5 + xOffset);
+            int bz = Mth.floor(centerZ + zOffset);
             level.getChunk(bx >> 4, bz >> 4, ChunkStatus.FULL, true);
 
             int groundY = findGroundY(level, bx, bz);
             int playerY = groundY + 1;
             if (isSafePlayerPos(level, bx, playerY, bz)) {
-                return new PlayerTarget(px, playerY, pz);
+                // Align target to bx + 0.5 / bz + 0.5 so a BlockPos round-trip
+                // (via setDefaultSpawnPos) lands the player at the same spot.
+                return new PlayerTarget(bx + 0.5, playerY, bz + 0.5);
             }
         }
 
@@ -367,15 +415,14 @@ public final class PlayerJoinEvents {
         // first dry surface on either side. Never accept a wet/void column.
         for (int perpDist = (int) PERP_MIN; perpDist <= MAX_FALLBACK_PERP; perpDist++) {
             for (int sign : new int[] {+1, -1}) {
-                double pz = centerZ + sign * perpDist;
-                int bz = Mth.floor(pz);
+                int bz = Mth.floor(centerZ + sign * perpDist);
                 level.getChunk(anchorX >> 4, bz >> 4, ChunkStatus.FULL, true);
                 int gy = findGroundY(level, anchorX, bz);
                 int py = gy + 1;
                 if (isSafePlayerPos(level, anchorX, py, bz)) {
                     LOGGER.info("[DungeonTrain] pickPlayerTarget random search exhausted; widened perp walk found dry ground at Z={} Y={}",
-                        String.format("%.1f", pz), py);
-                    return new PlayerTarget(anchorX + 0.5, py, pz);
+                        bz + 0.5, py);
+                    return new PlayerTarget(anchorX + 0.5, py, bz + 0.5);
                 }
             }
         }
@@ -383,13 +430,59 @@ public final class PlayerJoinEvents {
         // Tiny-island corner case: no dry land within ±MAX_FALLBACK_PERP.
         // Spawn on top of the train so the player neither drowns nor lands
         // on the rails. Y = trainCenter.y + 8 clears the carriage roof.
-        double tx = trainCenter.x;
+        int tx = Mth.floor(trainCenter.x);
         int ty = (int) Math.ceil(trainCenter.y) + 8;
-        double tz = trainCenter.z;
+        int tz = Mth.floor(trainCenter.z);
         LOGGER.warn("[DungeonTrain] pickPlayerTarget found no dry land within ±{} perp — last-resort spawn above train at ({}, {}, {})",
-            MAX_FALLBACK_PERP,
-            String.format("%.1f", tx), ty, String.format("%.1f", tz));
-        return new PlayerTarget(tx, ty, tz);
+            MAX_FALLBACK_PERP, tx, ty, tz);
+        return new PlayerTarget(tx + 0.5, ty, tz + 0.5);
+    }
+
+    /**
+     * Compute and cache the spawn placement that {@code TrainBootstrapEvents}
+     * will pin the level's default spawn point to. Uses {@code trainOrigin}
+     * (= {@code (0, trainY, trackCenterZ)}) as the trainCenter — the train is
+     * freshly spawned at this point and hasn't had a chance to move. The
+     * cached placement is reused at the player's first {@code tryPlace}
+     * attempt so the resulting teleport is a no-op for position.
+     *
+     * <p>Returns {@code null} if the placement falls back to the on-train
+     * last-resort branch — in that case there's no useful sharedSpawnPos
+     * to set (the player would spawn on the train roof, which the retry
+     * teleport at first login can handle just as well).</p>
+     */
+    public static SpawnPlacement computeAndCacheBootstrapPlacement(
+        ServerLevel trainLevel, CarriageDims dims, int trainY
+    ) {
+        TrackGeometry g = TrackGeometry.from(dims, trainY);
+        TunnelGeometry tg = TunnelGeometry.from(g);
+        Vector3d trainCenter = new Vector3d(0.0, trainY, g.trackCenterZ() + 0.5);
+        int trainX = 0;
+
+        int bufferedX = findBufferedReferenceX(trainLevel, trainX, tg);
+        boolean haveBuffered = bufferedX != Integer.MIN_VALUE;
+        int anchorX = haveBuffered ? bufferedX : trainX;
+        int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
+
+        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, trainCenter);
+        Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
+
+        double dx = referencePoint.x - pt.px;
+        double dy = referencePoint.y - (pt.py + EYE_HEIGHT);
+        double dz = referencePoint.z - pt.pz;
+        double horizontal = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float pitch = (float) Math.toDegrees(-Math.atan2(dy, horizontal));
+
+        BlockPos blockPos = new BlockPos(Mth.floor(pt.px), pt.py, Mth.floor(pt.pz));
+        SpawnPlacement placement = new SpawnPlacement(pt.px, pt.py, pt.pz, yaw, pitch, blockPos);
+        bootstrapPlacement = placement;
+
+        LOGGER.info("[DungeonTrain] Bootstrap placement cached: pos=({}, {}, {}) yaw={} pitch={} bufferedX={} lookX={}",
+            String.format("%.1f", pt.px), pt.py, String.format("%.1f", pt.pz),
+            String.format("%.1f", yaw), String.format("%.1f", pitch),
+            haveBuffered ? bufferedX : "fallback", lookX);
+        return placement;
     }
 
     /**

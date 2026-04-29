@@ -97,22 +97,30 @@ public final class TrainBootstrapEvents {
     }
 
     /**
-     * Override the level's default spawn point so first-time players appear
-     * near the corridor visually rather than at MC's biome-picked vanilla
-     * spawn (typically near 0, ~64, 0). Without this, the player flashes the
-     * vanilla position for 1–2 ticks before {@code PlayerJoinEvents}'
-     * deferred retry teleport refines them to the precise target — long
-     * enough at 60 FPS to be a noticeable visual jump.
+     * Set the level's default spawn point to the precise placement that
+     * {@code PlayerJoinEvents} would otherwise compute via its retry queue
+     * at first login. By making the level's default spawn = the eventual
+     * teleport target, the post-login {@code teleportTo} becomes a no-op
+     * for position (only rotation updates), and the player sees no visual
+     * position jump.
      *
-     * <p>The yaw is set to 180° (facing −Z) so the player is initially
-     * looking toward the corridor at smaller Z. The retry teleport will
-     * still refine pitch and may shift position, but both are now small
-     * adjustments from a corridor-adjacent anchor instead of cross-world
-     * teleports.</p>
+     * <p>Falls back to a coarse near-corridor spawn if placement caching
+     * fails — the retry teleport will still cover that case, just with a
+     * visible jump.</p>
      */
     private static void anchorWorldSpawnNearCorridor(
         ServerLevel target, CarriageDims dims, int trainY
     ) {
+        PlayerJoinEvents.SpawnPlacement placement =
+            PlayerJoinEvents.computeAndCacheBootstrapPlacement(target, dims, trainY);
+        if (placement != null) {
+            target.setDefaultSpawnPos(placement.blockPos(), placement.yaw());
+            LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw={} (cached bootstrap placement)",
+                placement.blockPos(), placement.yaw());
+            return;
+        }
+
+        // Fallback (cache compute returned null): coarse near-corridor spawn.
         TrackGeometry g = TrackGeometry.from(dims, trainY);
         int spawnX = 0;
         int spawnZ = g.trackCenterZ() + SHARED_SPAWN_PERP;
@@ -120,7 +128,7 @@ public final class TrainBootstrapEvents {
         int surfaceY = target.getHeight(Heightmap.Types.MOTION_BLOCKING, spawnX, spawnZ);
         BlockPos spawnPos = new BlockPos(spawnX, surfaceY, spawnZ);
         target.setDefaultSpawnPos(spawnPos, 180.0F);
-        LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw=180 (corridor +{} Z)",
+        LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw=180 (coarse fallback, corridor +{} Z)",
             spawnPos, SHARED_SPAWN_PERP);
     }
 
