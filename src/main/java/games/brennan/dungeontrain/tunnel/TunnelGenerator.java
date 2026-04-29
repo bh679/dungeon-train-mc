@@ -430,10 +430,20 @@ public final class TunnelGenerator {
         int chunkMaxZ = chunkMinZ + 15;
 
         // Fast Z-corridor prefilter — only chunks containing the corridor
-        // center can qualify columns (the underground samples land at
-        // trackZMin/centerZ/trackZMax). Off-corridor chunks have nothing to
-        // qualify and skip cleanly.
+        // center can qualify columns. Off-corridor chunks skip cleanly.
         if (chunkMaxZ < tg.trackZMin() || chunkMinZ > tg.trackZMax()) return;
+
+        // Probe-and-confirm — same pattern as the runtime variant. One
+        // read at the chunk centre column; if it's not natural underground
+        // material the chunk's corridor has open sky / water above and
+        // there's no tunnel work to do. Replaces the previous 16 × 6 = 96
+        // reads per chunk with 1 read in the common case (ocean / flat
+        // terrain dominates worldgen during flight).
+        BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
+        probePos.set(chunkMinX + 8, tg.ceilingY() + 5, tg.centerZ());
+        if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos))) {
+            return;
+        }
 
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             if (!isColumnUndergroundWorldgen(level, worldX, tg)) continue;
@@ -444,21 +454,17 @@ public final class TunnelGenerator {
     /**
      * Worldgen-friendly variant of {@link #isColumnUnderground}. Reads
      * through {@link WorldGenLevel} and skips the {@code level.hasChunkAt}
-     * gate (worldgen guarantees the current chunk is loaded; we only sample
-     * Z values inside the corridor, all in this chunk's Z range).
+     * gate (worldgen guarantees the current chunk is loaded). Single
+     * sample at {@code (worldX, ceilingY+5, centerZ)} matches the runtime
+     * variant — the corridor's full Z width is not validated here because
+     * any chunk reaching this code already passed the centre probe in
+     * {@link #placeTunnelSpaceAtWorldgen}, and the per-column skip below
+     * picks off any column whose centre isn't itself underground.
      */
     static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
-        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
-        for (int y : ys) {
-            for (int z : zs) {
-                pos.set(worldX, y, z);
-                BlockState state = level.getBlockState(pos);
-                if (!TunnelPalette.isUndergroundMaterial(state)) return false;
-            }
-        }
-        return true;
+        pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
+        return TunnelPalette.isUndergroundMaterial(level.getBlockState(pos));
     }
 
     /**
