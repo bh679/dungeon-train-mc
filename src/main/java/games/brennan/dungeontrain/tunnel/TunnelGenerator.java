@@ -27,8 +27,9 @@ import java.util.Set;
  * back to {@link LegacyTunnelPaint} when no template has been saved.
  *
  * <p><b>Run-based stamping.</b> A tunnel <i>run</i> is a contiguous block
- * of qualified X columns. For each run visible in the 16+2×APPROACH_MARGIN
- * qualified window we:</p>
+ * of qualified X columns. For each run visible in the chunk's 16-column
+ * window (with single-column peeks into the immediate neighbours to set
+ * cross-chunk extension flags correctly) we:</p>
  *
  * <ol>
  *   <li>Stamp {@code tunnel_portal} unmirrored at {@code runStart} (the
@@ -66,9 +67,6 @@ public final class TunnelGenerator {
     /** Max previously-unprocessed chunks to fill per periodic scan — same budget as track fill. */
     private static final int CHUNKS_PER_SCAN_BUDGET = 1;
 
-    /** Clearing radius around each tunnel region — 20 blocks before and after each portal. */
-    private static final int APPROACH_MARGIN = 20;
-
     /** Minimum qualified-column run length that uses a portal stamp at all. */
     private static final int MIN_PORTAL_RUN = 10;
 
@@ -85,6 +83,14 @@ public final class TunnelGenerator {
     /**
      * Ensure tunnel blocks exist in the given chunk for the given track geometry.
      * Caches the chunk key on completion so subsequent calls exit in O(1).
+     *
+     * <p><b>Two-phase detection.</b> First a single-block probe at the chunk
+     * centre column above the cleared corridor; if the probe sees open sky
+     * (or water / leaves / any non-underground material) we mark the chunk
+     * processed and bail — the common case in flat / ocean terrain. Only
+     * when the probe hits underground material do we scan the chunk's 16
+     * columns, validate roof material at run boundaries, and stamp the
+     * tunnel. See {@code plans/peaceful-sprouting-sonnet.md}.</p>
      */
     public static void ensureTunnelForChunk(
         ServerLevel level, int chunkX, int chunkZ,
@@ -108,44 +114,86 @@ public final class TunnelGenerator {
             return;
         }
 
-        // Precompute qualification for the chunk's 16 columns plus
-        // APPROACH_MARGIN on each side — approach detection needs to see
-        // 20 X past the chunk's boundary. Each column runs one 6-sample
-        // underground check; total ~350 block reads per chunk.
-        int baseX = chunkMinX - APPROACH_MARGIN;
-        int size = 16 + 2 * APPROACH_MARGIN;
-        boolean[] qualified = new boolean[size];
-        for (int i = 0; i < size; i++) {
-            qualified[i] = isColumnUnderground(level, baseX + i, tg);
+        // PHASE 1 — Cheap probe at the chunk's centre column, above the
+        // carved corridor. One block read. If this is air / water / leaves /
+        // anything that isn't natural underground material, the chunk has
+        // open sky over the corridor and there's no tunnel work to do.
+        // This is the fast path that ALL ocean chunks and most flat-terrain
+        // overworld chunks take. Replaces the previous 56-column ×
+        // 6-sample = 336-read scan.
+        int probeX = chunkMinX + 8;
+        BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
+        probePos.set(probeX, tg.ceilingY() + 5, tg.centerZ());
+        if (!level.hasChunkAt(probePos)) {
+            // Chunk not yet loaded — leave unmarked so a later sweep retries.
+            return;
+        }
+        if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos))) {
+            tunnelFilledChunks.add(chunkKey);
+            return;
         }
 
-        // Detect runs in the qualified window and stamp portals/sections.
-        // covered[i] tracks which of this chunk's 16 columns are under a
-        // stamp (so they should NOT get procedural paint afterwards).
+        // PHASE 2 — Probe hit underground material. Scan the chunk's 16 X
+        // columns with the same one-sample test, plus a single peek into
+        // each neighbouring chunk to set extendsLeft/Right correctly on
+        // runs that touch a chunk seam. Roof verification at non-extending
+        // run ends drops thin rocky outcrops where the centre passed but
+        // the corridor sides are open.
+        boolean[] qualified = new boolean[16];
+        for (int dx = 0; dx < 16; dx++) {
+            qualified[dx] = isColumnUndergroundProbe(level, chunkMinX + dx, tg);
+        }
+        boolean prevEdgeQualified = qualified[0]
+            && isColumnUndergroundProbe(level, chunkMinX - 1, tg);
+        boolean nextEdgeQualified = qualified[15]
+            && isColumnUndergroundProbe(level, chunkMaxX + 1, tg);
+
+        // Reuse the existing run detector — it indexes into the qualified[]
+        // array, so passing baseX = chunkMinX puts run.start / run.end in
+        // world coordinates already. r.extendsLeft / r.extendsRight reflect
+        // whether the run touches the qualified window's edge (= the chunk's
+        // edge, since we no longer have APPROACH_MARGIN); we override them
+        // with the cross-chunk peek to know whether the run actually extends
+        // beyond this chunk.
+        List<Run> rawRuns = detectRuns(qualified, chunkMinX);
+        List<Run> runs = new ArrayList<>(rawRuns.size());
+        for (Run r : rawRuns) {
+            boolean extL = r.extendsLeft && prevEdgeQualified;
+            boolean extR = r.extendsRight && nextEdgeQualified;
+            // Roof verification at TRUE run ends only (where a portal would
+            // land). Cross-chunk-extending ends are validated by whichever
+            // chunk owns the actual end column.
+            if (!extL && !verifyTunnelRoof(level, r.start, tg)) continue;
+            if (!extR && !verifyTunnelRoof(level, r.end, tg)) continue;
+            runs.add(new Run(r.start, r.end, extL, extR));
+        }
+
+        // Stamp portals + sections. covered[i] tracks which of this chunk's
+        // 16 columns are under a stamp (so they don't get procedural paint).
         boolean[] covered = new boolean[16];
-        List<Run> runs = detectRuns(qualified, baseX);
         for (Run r : runs) {
             stampRun(level, r, tg, chunkMinX, chunkMaxX, covered);
         }
 
-        // Fill remaining columns procedurally — either plain tunnel,
-        // short-run pyramid, or approach trench.
+        // Fill remaining qualified columns procedurally. Approach trenches
+        // (the previous "near a tunnel but not in it" branch) are dropped
+        // here — TrackBedFeature already carves the corridor at chunkgen,
+        // so the train still has clean runway. The visual ramp-into-tunnel
+        // can be re-introduced as a per-tunnel-end pass if missed.
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             if (covered[worldX - chunkMinX]) continue;
-            int idx = worldX - baseX;
+            int idx = worldX - chunkMinX;
             if (qualified[idx]) {
                 LegacyTunnelPaint.paintTunnelColumn(level, worldX, tg);
                 // Procedural pyramid only for runs too short to get a
                 // portal stamp (< MIN_PORTAL_RUN columns). Longer runs
                 // have their edges covered by portal stamps above so this
                 // branch is skipped naturally.
-                boolean prev = idx > 0 && qualified[idx - 1];
-                boolean next = idx + 1 < qualified.length && qualified[idx + 1];
+                boolean prev = idx > 0 ? qualified[idx - 1] : prevEdgeQualified;
+                boolean next = idx + 1 < 16 ? qualified[idx + 1] : nextEdgeQualified;
                 if (!prev || !next) {
                     LegacyTunnelPaint.placePortalPyramid(level, worldX, tg);
                 }
-            } else if (isNearTunnel(qualified, idx)) {
-                LegacyTunnelPaint.paintApproachColumn(level, worldX, tg);
             }
         }
 
@@ -291,58 +339,50 @@ public final class TunnelGenerator {
     }
 
     /**
-     * Six-sample underground check: at y = ceilingY+5 and ceilingY+6, for
-     * three Z positions spanning the track corridor (min, center, max), every
-     * sampled block must be a natural underground material. Any air, water,
-     * plant, or wood disqualifies the column.
+     * Single-sample probe: one block read at
+     * {@code (worldX, ceilingY + 5, centerZ)}. Returns {@code true} when the
+     * sampled block is natural underground material AND the chunk holding it
+     * is loaded.
      *
-     * <p>The samples sit <b>two rows above the tunnel's arched apex</b>
-     * ({@code ceilingY + ARCH_TIERS + 1 = ceilingY + 4}) for two reasons:</p>
-     * <ul>
-     *   <li>The train's {@code clearBlocksAhead} forward-slab clear in
-     *       {@code TrainTickEvents} sweeps up to {@code aabb.maxY}. For the
-     *       default 7-tall carriage that's {@code bedY + 9 = ceilingY};
-     *       larger carriages reach {@code ceilingY + (HEIGHT - 7)}. Sampling
-     *       at {@code ceilingY + 5/6} keeps qualification correct for
-     *       carriages up to HEIGHT ≈ 12 — the previous {@code +1/+2} samples
-     *       would be cleared to air for anything taller than 7, falsely
-     *       disqualifying the column.</li>
-     *   <li>A 3-block-thick mountain roof used to qualify but the tunnel's
-     *       arch profile (apex at {@code ceilingY + 4}) would poke out the
-     *       top. Requiring rock at {@code ceilingY + 5/6} guarantees the
-     *       entire arched silhouette is buried.</li>
-     * </ul>
+     * <p>This is the lightweight per-column qualification used by both Phase 1
+     * (the chunk-centre probe in {@link #ensureTunnelForChunk}) and Phase 2
+     * (the 16-column scan inside the chunk plus single-column peeks into
+     * neighbours). Run boundaries get extra rigor via
+     * {@link #verifyTunnelRoof}, which samples the corridor's full Z width.</p>
      *
-     * <p>Returns {@code false} if the chunk holding these samples isn't
-     * loaded — avoids the force-load cost of {@code getBlockState} on an
-     * unloaded chunk. The chunk will re-enqueue itself on load via
-     * {@code TunnelChunkEvents} and pick up this column's status then.</p>
+     * <p>The y of {@code ceilingY + 5} sits two rows above the tunnel's arched
+     * apex (apex at {@code ceilingY + 4}), so a column qualifies only when the
+     * full arched silhouette is buried — a 3-block-thick mountain roof
+     * disqualifies because the arch would poke out the top.</p>
      */
-    static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
+    static boolean isColumnUndergroundProbe(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(pos)) return false;
-        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
-        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
-        for (int y : ys) {
-            for (int z : zs) {
-                pos.set(worldX, y, z);
-                BlockState state = level.getBlockState(pos);
-                if (!TunnelPalette.isUndergroundMaterial(state)) return false;
-            }
-        }
-        return true;
+        return TunnelPalette.isUndergroundMaterial(level.getBlockState(pos));
     }
 
-    /** True if any column within {@link #APPROACH_MARGIN} of {@code idx} is tunnel-qualified. */
-    private static boolean isNearTunnel(boolean[] qualified, int idx) {
-        for (int dx = 1; dx <= APPROACH_MARGIN; dx++) {
-            int left = idx - dx;
-            int right = idx + dx;
-            if (left >= 0 && qualified[left]) return true;
-            if (right < qualified.length && qualified[right]) return true;
+    /**
+     * Roof verification at a tunnel-end column. Confirms underground material
+     * at three Z positions ({@code trackZMin / centerZ / trackZMax}) along the
+     * ceiling row at {@code ceilingY + 5}. Catches the case where the
+     * single-column probe passes (because the centre column happens to be
+     * solid) but the corridor's side columns are open — i.e. a thin rocky
+     * outcrop that shouldn't get a portal stamp.
+     *
+     * <p>Three reads. Called once per non-cross-chunk-extending run boundary,
+     * so at most twice per chunk-with-tunnel.</p>
+     */
+    static boolean verifyTunnelRoof(ServerLevel level, int worldX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int y = tg.ceilingY() + 5;
+        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
+        for (int z : zs) {
+            pos.set(worldX, y, z);
+            if (!level.hasChunkAt(pos)) return false;
+            if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return false;
         }
-        return false;
+        return true;
     }
 
     /**
