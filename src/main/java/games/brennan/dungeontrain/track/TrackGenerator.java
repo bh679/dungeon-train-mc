@@ -240,6 +240,101 @@ public final class TrackGenerator {
     }
 
     /**
+     * Cascading-step-down probe that finds the deepest groundY across a
+     * footprint of Z columns at one X. Replaces N independent
+     * {@link #probeGroundY} calls (one per column) with a shared-depth
+     * search: scan one anchor column down to find ground, then check the
+     * remaining columns at the anchor's ground-block level. Columns whose
+     * block at that level is non-passable are resolved without further
+     * reads (their terrain matches or is shallower than the anchor's).
+     * Columns showing passable have terrain BELOW the anchor's level —
+     * one of them becomes the next anchor and we resume scanning from one
+     * row below the prior ground. Repeat until every column is resolved.
+     *
+     * <p>For uniform-terrain footprints (the common case in flat / ocean
+     * biomes) this collapses {@code N × probeGroundY} from {@code 7 × ~depth}
+     * reads to {@code depth + 6} reads. Terrain with cliff edges in the
+     * corridor pays the additional descent only for the deepest columns,
+     * not all 7.</p>
+     *
+     * <p>Output equivalence: returns {@code min(probeGroundY) across columns}
+     * — exactly what {@link #placePillarSlice} uses as the slice anchor.
+     * Ship-intercepted and void columns are excluded from the minimum,
+     * matching the existing per-column skip.</p>
+     */
+    private static int probeDeepestGroundY(
+        ServerLevel level, int worldX, int zMin, int zMax, int bedY
+    ) {
+        Shipyard shipyard = Shipyards.of(level);
+        int N = zMax - zMin + 1;
+        boolean[] resolved = new boolean[N];
+        int unresolved = N;
+        int deepest = bedY;                            // bedSentinel = "no useful ground"
+        int currentIdx = N / 2;                        // anchor = centre column
+        int currentY = bedY - 1;
+        int minY = level.getMinBuildHeight() + 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        while (unresolved > 0) {
+            if (resolved[currentIdx]) {
+                int next = -1;
+                for (int i = 0; i < N; i++) {
+                    if (!resolved[i]) { next = i; break; }
+                }
+                if (next < 0) break;
+                currentIdx = next;
+                currentY = bedY - 1;
+            }
+            int currentZ = zMin + currentIdx;
+
+            int groundBlockY = -1;
+            boolean shipAbort = false;
+            for (int y = currentY; y >= minY; y--) {
+                pos.set(worldX, y, currentZ);
+                if (shipyard.isInShip(pos)) { shipAbort = true; break; }
+                if (!isPassable(level.getBlockState(pos))) { groundBlockY = y; break; }
+            }
+            resolved[currentIdx] = true;
+            unresolved--;
+
+            if (shipAbort || groundBlockY < 0) {
+                // Ship intercept or void — column doesn't contribute. Pick the
+                // next unresolved column from full bedY-1; can't reuse currentY
+                // because it was scoped to a different (now-skipped) column.
+                currentY = bedY - 1;
+                continue;
+            }
+
+            int groundY = groundBlockY + 1;
+            if (groundY < deepest) deepest = groundY;
+
+            // Side-check unresolved columns at the just-found ground BLOCK level.
+            int nextIdx = -1;
+            for (int i = 0; i < N; i++) {
+                if (resolved[i]) continue;
+                pos.set(worldX, groundBlockY, zMin + i);
+                if (shipyard.isInShip(pos)) {
+                    resolved[i] = true; unresolved--;
+                    continue;
+                }
+                if (!isPassable(level.getBlockState(pos))) {
+                    // Column's terrain extends to or above this y → not deeper
+                    // than the current anchor. Resolved without contribution.
+                    resolved[i] = true; unresolved--;
+                } else if (nextIdx < 0) {
+                    // First passable side-check becomes the next anchor.
+                    nextIdx = i;
+                }
+            }
+            if (nextIdx >= 0) {
+                currentIdx = nextIdx;
+                currentY = groundBlockY - 1;            // resume strictly below prior ground
+            }
+        }
+        return deepest;
+    }
+
+    /**
      * Place bed + rail cells for one column. When {@code tile} is present,
      * the cell at {@code [worldX mod TILE_LENGTH][y][worldZ - trackZMin]} is
      * stamped for each row; {@code null} entries (captured air in the template)
@@ -454,23 +549,14 @@ public final class TrackGenerator {
         int bedY = g.bedY();
         int topInclusive = bedY - 1;
 
-        // Probe each Z column in the track span; take the minimum (deepest)
-        // as the slice anchor. probeGroundY returns bedY as a sentinel for
-        // "ship intercepts / no pillar needed" — skip those columns so a ship
-        // above one edge doesn't force the whole slice to zero-height. It
-        // returns voidSentinel ({@code minBuildHeight + 1}) when no ground was
-        // found anywhere in the column — also skip those so a slice over pure
-        // void (e.g. The End) doesn't generate a tall pillar hanging in
-        // mid-air. If every column resolves to a sentinel, deepestGroundY
-        // stays at bedY and the {@code h <= 0} check below skips the slice.
-        int voidSentinel = level.getMinBuildHeight() + 1;
-        int deepestGroundY = bedY;
-        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
-            int ground = probeGroundY(level, worldX, z, bedY);
-            if (ground >= bedY) continue;
-            if (ground == voidSentinel) continue;
-            if (ground < deepestGroundY) deepestGroundY = ground;
-        }
+        // Probe the slice anchor (= deepest groundY across the corridor's
+        // Z columns) via the cascading-step-down probe. Equivalent to the
+        // previous loop of {@code probeGroundY} per column, but typically
+        // ~10× fewer block reads on uniform terrain. Ship-intercepted and
+        // void columns are excluded internally — if every column hits one,
+        // the helper returns {@code bedY} (sentinel for "no useful ground")
+        // and the {@code h <= 0} guard below skips the slice.
+        int deepestGroundY = probeDeepestGroundY(level, worldX, g.trackZMin(), g.trackZMax(), bedY);
         int h = topInclusive - deepestGroundY + 1;
         if (h <= 0) return;
 
@@ -568,6 +654,70 @@ public final class TrackGenerator {
     }
 
     /**
+     * Worldgen variant of {@link #probeDeepestGroundY}: same cascading
+     * algorithm but reads {@link WorldGenLevel} directly and skips the
+     * ship-intercept check (no ships exist during chunkgen). See the runtime
+     * helper for the full algorithm explanation and equivalence argument.
+     */
+    private static int probeDeepestGroundYWorldgen(
+        WorldGenLevel level, int worldX, int zMin, int zMax, int bedY
+    ) {
+        int N = zMax - zMin + 1;
+        boolean[] resolved = new boolean[N];
+        int unresolved = N;
+        int deepest = bedY;
+        int currentIdx = N / 2;
+        int currentY = bedY - 1;
+        int minY = level.getMinBuildHeight() + 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        while (unresolved > 0) {
+            if (resolved[currentIdx]) {
+                int next = -1;
+                for (int i = 0; i < N; i++) {
+                    if (!resolved[i]) { next = i; break; }
+                }
+                if (next < 0) break;
+                currentIdx = next;
+                currentY = bedY - 1;
+            }
+            int currentZ = zMin + currentIdx;
+
+            int groundBlockY = -1;
+            for (int y = currentY; y >= minY; y--) {
+                pos.set(worldX, y, currentZ);
+                if (!isPassable(level.getBlockState(pos))) { groundBlockY = y; break; }
+            }
+            resolved[currentIdx] = true;
+            unresolved--;
+
+            if (groundBlockY < 0) {
+                currentY = bedY - 1;
+                continue;
+            }
+
+            int groundY = groundBlockY + 1;
+            if (groundY < deepest) deepest = groundY;
+
+            int nextIdx = -1;
+            for (int i = 0; i < N; i++) {
+                if (resolved[i]) continue;
+                pos.set(worldX, groundBlockY, zMin + i);
+                if (!isPassable(level.getBlockState(pos))) {
+                    resolved[i] = true; unresolved--;
+                } else if (nextIdx < 0) {
+                    nextIdx = i;
+                }
+            }
+            if (nextIdx >= 0) {
+                currentIdx = nextIdx;
+                currentY = groundBlockY - 1;
+            }
+        }
+        return deepest;
+    }
+
+    /**
      * Worldgen-time pillar placement. Each chunk plants the pillars whose
      * center X lies inside its X bounds; the slice (≤ {@code thickness}
      * blocks wide on X, {@code dims.width()} on Z, {@code H} tall) overflows
@@ -640,14 +790,10 @@ public final class TrackGenerator {
         int bedY = g.bedY();
         int topInclusive = bedY - 1;
 
-        int voidSentinel = level.getMinBuildHeight() + 1;
-        int deepestGroundY = bedY;
-        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
-            int ground = probeGroundYWorldgen(level, worldX, z, bedY);
-            if (ground >= bedY) continue;
-            if (ground == voidSentinel) continue;
-            if (ground < deepestGroundY) deepestGroundY = ground;
-        }
+        // See runtime probeDeepestGroundY for algorithm rationale — same
+        // cascading-step-down probe, no ship checks since chunkgen runs
+        // before any ship exists.
+        int deepestGroundY = probeDeepestGroundYWorldgen(level, worldX, g.trackZMin(), g.trackZMax(), bedY);
         int h = topInclusive - deepestGroundY + 1;
         if (h <= 0) return;
 
