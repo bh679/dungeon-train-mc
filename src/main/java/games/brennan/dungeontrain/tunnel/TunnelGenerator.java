@@ -117,16 +117,20 @@ public final class TunnelGenerator {
         long t0 = System.nanoTime();
 
         // PHASE 1 — Cheap probe at the chunk's centre column, above the
-        // carved corridor. One block read. If this is air / water / leaves /
-        // anything that isn't natural underground material, the chunk has
-        // open sky over the corridor and there's no tunnel work to do.
-        int probeX = chunkMinX + 8;
+        // carved corridor. One block read against the chunk we're
+        // processing. We use {@code getChunkNow} + {@code chunk.getBlockState}
+        // instead of {@code level.getBlockState} because the latter triggers
+        // a synchronous chunk load when the chunk is "loaded" at the holder
+        // level but not yet at FULL ChunkStatus — observed as a single
+        // 200ms+ probe call during fly-over chunk streaming. With
+        // getChunkNow, a not-yet-FULL chunk returns null and we bail
+        // (the next sweep will retry once the chunk reaches FULL).
+        net.minecraft.world.level.chunk.LevelChunk chunk =
+            level.getChunkSource().getChunkNow(chunkX, chunkZ);
+        if (chunk == null) return;
         BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
-        probePos.set(probeX, tg.ceilingY() + 5, tg.centerZ());
-        if (!level.hasChunkAt(probePos)) {
-            return;
-        }
-        boolean probeHit = TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos));
+        probePos.set(chunkMinX + 8, tg.ceilingY() + 5, tg.centerZ());
+        boolean probeHit = TunnelPalette.isUndergroundMaterial(chunk.getBlockState(probePos));
         long tAfterProbe = System.nanoTime();
         if (!probeHit) {
             tunnelFilledChunks.add(chunkKey);
