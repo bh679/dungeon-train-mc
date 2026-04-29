@@ -122,7 +122,7 @@ public final class TrackGenerator {
      * flat terrain lands on a multiple of this value (otherwise stairs never
      * appear). 40 blocks ≈ 5 flat-terrain pillar slots.
      */
-    private static final int MIN_STAIRS_SPACING = 60;
+    private static final int MIN_STAIRS_SPACING = 100;
 
     private TrackGenerator() {}
 
