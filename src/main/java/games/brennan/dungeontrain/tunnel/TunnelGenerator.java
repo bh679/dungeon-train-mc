@@ -318,7 +318,7 @@ public final class TunnelGenerator {
      * unloaded chunk. The chunk will re-enqueue itself on load via
      * {@code TunnelChunkEvents} and pick up this column's status then.</p>
      */
-    static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
+    public static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(pos)) return false;

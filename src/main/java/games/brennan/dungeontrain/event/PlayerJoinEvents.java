@@ -6,8 +6,10 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
-import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.tunnel.TunnelGenerator;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -29,38 +31,53 @@ import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
 /**
- * Teleports joining players to a random position alongside the current
- * Dungeon Train, camera aimed at the ship centre.
+ * Teleports joining players to natural ground beside the corridor near
+ * the train, looking at the nearest above-ground stretch of track.
  *
- * <p>Train assembly itself lives in
- * {@link TrainBootstrapEvents#onServerStarted} — by the time
- * {@link PlayerEvent.PlayerLoggedInEvent} fires the train is already in the
- * world, so this handler only has to pick a safe ground position and run a
- * single teleport. If the bootstrap skipped (startsWithTrain=false or
- * assembly failed) no train exists and this handler is a no-op.</p>
+ * <p>Spawn target:</p>
+ * <ol>
+ *   <li>Resolve the train's world center via the kinematic driver's
+ *       {@code canonicalPos} (Sable's {@code currentWorldPosition()} can
+ *       return shipyard-translation coordinates rather than world-space
+ *       pivot, which historically sent the perpendicular-offset search
+ *       hunting for ground at +20M block coords).</li>
+ *   <li>Walk +X (away from origin) along the corridor center until a
+ *       column is non-tunnel-qualified — the "reference point" of the
+ *       nearest above-ground track. Falls back to scanning −X if the +X
+ *       direction stays buried for {@link #MAX_ABOVEGROUND_SCAN} blocks.</li>
+ *   <li>From that reference point, pick a random perpendicular Z offset of
+ *       {@link #PERP_MIN}..{@link #PERP_MAX} on a random side, and a small
+ *       ±X jitter so multiple players don't stack.</li>
+ *   <li>Walk down through air / fluid / leaves / vines to find the surface,
+ *       and validate the candidate isn't void / against the ceiling / in
+ *       a fluid column. Re-roll up to {@link #MAX_ATTEMPTS} times if
+ *       invalid.</li>
+ *   <li>If every attempt fails (e.g. corner case ocean-only biome),
+ *       fall back to the reference point's surface column directly.</li>
+ * </ol>
  *
- * <p>Placement: ±{@link #X_OFFSET_MAX} along the train's travel axis,
- * {@link #PERP_MIN}..{@link #PERP_MAX} on a random side. The Y coordinate is
- * found by a custom ground probe ({@link #findGroundY}) that skips air,
- * water/lava, leaves, and vines — the same passability shape used by
- * {@code TrackGenerator} — so players never land inside ocean water, on top
- * of a tree canopy, or below the world floor. Candidates are re-rolled up to
- * {@link #MAX_ATTEMPTS} times if the spot fails validation
- * ({@link #isSafePlayerPos}); the last-resort fallback drops the player on
- * top of the train, which is always safe by construction.</p>
+ * <p>The look-at target is the reference point (above-ground track
+ * surface), so the player faces the corridor whether or not the train
+ * itself is currently in a tunnel.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerJoinEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final double X_OFFSET_MAX = 200.0;
+    /** Max ±X jitter around the reference point on each spawn attempt. */
+    private static final double X_JITTER_MAX = 30.0;
+
+    /** Perpendicular distance from the corridor centerline. */
     private static final double PERP_MIN = 10.0;
     private static final double PERP_MAX = 40.0;
 
     private static final int MAX_ATTEMPTS = 20;
     private static final int VOID_CLEARANCE = 5;
     private static final int CEILING_CLEARANCE = 10;
+
+    /** Max blocks to scan looking for an above-ground (non-tunnel) column. */
+    private static final int MAX_ABOVEGROUND_SCAN = 512;
 
     private PlayerJoinEvents() {}
 
@@ -89,10 +106,76 @@ public final class PlayerJoinEvents {
             return;
         }
 
-        Vector3dc trainPos = trainShip.currentWorldPosition();
-        Vector3d trainCenter = new Vector3d(trainPos.x(), trainPos.y(), trainPos.z());
-        PlayerTarget target = pickPlayerTarget(trainLevel, trainCenter, data);
-        teleportAndLookAt(trainLevel, player, trainShip, target);
+        TrainTransformProvider provider =
+            (TrainTransformProvider) trainShip.getKinematicDriver();
+        Vector3d trainCenter = resolveTrainCenter(provider, data);
+
+        TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
+        TunnelGeometry tg = TunnelGeometry.from(g);
+
+        // Reference point: the nearest above-ground column starting from the
+        // train's current X. Scans +X first (away from origin in the train's
+        // travel direction) and falls back to −X if +X stays buried.
+        int trainX = (int) Math.floor(trainCenter.x);
+        int referenceX = findAboveGroundReferenceX(trainLevel, trainX, tg);
+
+        Vec3 referencePoint = new Vec3(referenceX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
+
+        PlayerTarget target = pickPlayerTarget(trainLevel, referenceX, g);
+        LOGGER.info("[DungeonTrain] Login spawn for {}: pos=({}, {}, {}) lookAt=({}, {}, {}) trainCenter=({}, {}, {}) refX={}",
+            player.getName().getString(),
+            String.format("%.1f", target.px), target.py, String.format("%.1f", target.pz),
+            String.format("%.1f", referencePoint.x), String.format("%.1f", referencePoint.y), String.format("%.1f", referencePoint.z),
+            String.format("%.1f", trainCenter.x), String.format("%.1f", trainCenter.y), String.format("%.1f", trainCenter.z),
+            referenceX);
+
+        player.teleportTo(trainLevel, target.px, target.py, target.pz, 0f, 0f);
+        player.lookAt(EntityAnchorArgument.Anchor.EYES, referencePoint);
+    }
+
+    /**
+     * Resolve the train's world-space center from the kinematic driver's
+     * {@code canonicalPos}, falling back to the spawn anchor if the driver
+     * hasn't ticked yet.
+     */
+    private static Vector3d resolveTrainCenter(
+        TrainTransformProvider provider, DungeonTrainWorldData data
+    ) {
+        if (provider != null) {
+            Vector3dc canonical = provider.getCanonicalPos();
+            if (canonical != null) {
+                return new Vector3d(canonical.x(), canonical.y(), canonical.z());
+            }
+        }
+        TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
+        return new Vector3d(0.0, data.getTrainY(), g.trackCenterZ());
+    }
+
+    /**
+     * Walk +X (away from origin) along the corridor center looking for the
+     * nearest non-tunnel-qualified column. Falls back to −X if the +X
+     * direction stays buried for {@link #MAX_ABOVEGROUND_SCAN} blocks.
+     * Returns {@code originX} unchanged if it's already above-ground.
+     * Returns {@code originX} as a last resort if both directions are
+     * tunnel-qualified for the entire scan range.
+     */
+    private static int findAboveGroundReferenceX(
+        ServerLevel level, int originX, TunnelGeometry tg
+    ) {
+        if (!TunnelGenerator.isColumnUnderground(level, originX, tg)) {
+            return originX;
+        }
+        // +X first ("away from 0" in the train's travel direction).
+        for (int dx = 1; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
+            int forward = originX + dx;
+            if (!TunnelGenerator.isColumnUnderground(level, forward, tg)) return forward;
+        }
+        // −X fallback.
+        for (int dx = 1; dx <= MAX_ABOVEGROUND_SCAN; dx++) {
+            int backward = originX - dx;
+            if (!TunnelGenerator.isColumnUnderground(level, backward, tg)) return backward;
+        }
+        return originX;
     }
 
     private static ManagedShip findTrain(ServerLevel level) {
@@ -105,22 +188,22 @@ public final class PlayerJoinEvents {
     }
 
     /**
-     * Random offset around {@code trainCenter}, with the Y resolved to a
-     * safe ground position. Retries with fresh offsets up to
+     * Random offset around the reference point. Re-rolls up to
      * {@link #MAX_ATTEMPTS} times if the candidate is in water or otherwise
-     * invalid. Falls back to standing on top of the train if every attempt
-     * fails (e.g. player lands in a full-ocean biome).
+     * invalid. Falls back to the reference column's surface if every attempt
+     * fails (e.g. player happens to be in a deep-ocean biome).
      */
-    private static PlayerTarget pickPlayerTarget(ServerLevel level, Vector3dc trainCenter, DungeonTrainWorldData data) {
+    private static PlayerTarget pickPlayerTarget(ServerLevel level, int referenceX, TrackGeometry g) {
         RandomSource rand = level.getRandom();
+        double centerZ = g.trackCenterZ() + 0.5;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            double xOffset = (rand.nextDouble() * 2.0 - 1.0) * X_OFFSET_MAX;
+            double xOffset = (rand.nextDouble() * 2.0 - 1.0) * X_JITTER_MAX;
             double sideSign = rand.nextBoolean() ? 1.0 : -1.0;
             double perpDist = PERP_MIN + rand.nextDouble() * (PERP_MAX - PERP_MIN);
             double zOffset = sideSign * perpDist;
 
-            double px = trainCenter.x() + xOffset;
-            double pz = trainCenter.z() + zOffset;
+            double px = referenceX + 0.5 + xOffset;
+            double pz = centerZ + zOffset;
 
             int bx = Mth.floor(px);
             int bz = Mth.floor(pz);
@@ -133,11 +216,16 @@ public final class PlayerJoinEvents {
             }
         }
 
-        CarriageDims dims = data.dims();
-        int fallbackY = data.getTrainY() + dims.height() + 2;
-        LOGGER.warn("[DungeonTrain] pickPlayerTarget exhausted {} attempts — falling back to top of train (Y={})",
+        // Fallback: drop the player on the reference column's surface.
+        // Force-load that column's chunk too.
+        level.getChunk(referenceX >> 4, g.trackCenterZ() >> 4, ChunkStatus.FULL, true);
+        int fallbackGroundY = findGroundY(level, referenceX, g.trackCenterZ());
+        int fallbackY = fallbackGroundY > level.getMinBuildHeight()
+            ? fallbackGroundY + 1
+            : g.bedY() + 1;
+        LOGGER.warn("[DungeonTrain] pickPlayerTarget exhausted {} attempts — falling back to reference column at Y={}",
             MAX_ATTEMPTS, fallbackY);
-        return new PlayerTarget(trainCenter.x(), fallbackY, trainCenter.z());
+        return new PlayerTarget(referenceX + 0.5, fallbackY, centerZ);
     }
 
     /**
@@ -184,30 +272,11 @@ public final class PlayerJoinEvents {
         if (y > level.getMaxBuildHeight() - CEILING_CLEARANCE) return false;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        // Body and head must be fluid-free — don't drop the player into an ocean column.
         pos.set(x, y, z);
         if (!level.getBlockState(pos).getFluidState().isEmpty()) return false;
         pos.set(x, y + 1, z);
         if (!level.getBlockState(pos).getFluidState().isEmpty()) return false;
         return true;
-    }
-
-    private static void teleportAndLookAt(
-        ServerLevel level,
-        ServerPlayer player,
-        ManagedShip ship,
-        PlayerTarget target
-    ) {
-        Vector3dc trainPos = ship.currentWorldPosition();
-
-        player.teleportTo(level, target.px, target.py, target.pz, 0f, 0f);
-        Vec3 lookTarget = new Vec3(trainPos.x(), trainPos.y() + 1.5, trainPos.z());
-        player.lookAt(EntityAnchorArgument.Anchor.EYES, lookTarget);
-
-        LOGGER.info("[DungeonTrain] Placed {} at ({},{},{}) looking at train centre ({},{},{})",
-            player.getName().getString(),
-            String.format("%.1f", target.px), target.py, String.format("%.1f", target.pz),
-            String.format("%.1f", trainPos.x()), String.format("%.1f", trainPos.y()), String.format("%.1f", trainPos.z()));
     }
 
     private record PlayerTarget(double px, int py, double pz) {}
