@@ -773,35 +773,15 @@ public final class TrackGenerator {
         long worldSeed = level.getSeed();
         int voidSentinel = minBuildHeight + 1;
 
-        // Pre-compute pillar positions in [chunkMinX - MIN_STAIRS_SPACING,
-        // chunkMaxX + MIN_STAIRS_SPACING]. The map is keyed by world-X with
-        // value = the centerZ groundY (= pillar base Y). Used to (a) decide
-        // which X's get a pillar in this chunk, and (b) apply a stateless
-        // first-pillar-in-MIN_STAIRS_SPACING-window rule for stairs eligibility
-        // — every chunk that touches a window's first pillar reaches the same
-        // verdict because the precompute extends one full window each side.
-        // Cost: ~96 probes per chunk; each probe is a near-surface descent
-        // (~12 reads typical), so ~1200 reads per chunk for pillar planning.
-        java.util.NavigableMap<Integer, Integer> nearbyPillars = new java.util.TreeMap<>();
-        int scanMinX = chunkMinX - MIN_STAIRS_SPACING;
-        int scanMaxX = chunkMaxX + MIN_STAIRS_SPACING;
-        for (int x = scanMinX; x <= scanMaxX; x++) {
-            int gy = probeGroundYWorldgen(level, x, probeZ, g.bedY());
-            if (gy >= g.bedY()) continue;
-            if (gy == voidSentinel) continue;
-            int h = g.bedY() - 1 - gy;
-            if (h < 0) continue;
-            int sp = computeSpacing(h);
-            if (Math.floorMod(x, sp) != 0) continue;
-            nearbyPillars.put(x, gy);
-        }
-
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
-            Integer baseY = nearbyPillars.get(worldX);
-            if (baseY == null) continue;                  // no pillar at this X
-            int groundY = baseY;
+            int groundY = probeGroundYWorldgen(level, worldX, probeZ, g.bedY());
+            if (groundY >= g.bedY()) continue;          // already at/above bed: no pillar
+            if (groundY == voidSentinel) continue;       // void column
             int height = g.bedY() - 1 - groundY;
+            if (height < 0) continue;
             int spacing = computeSpacing(height);
+            if (Math.floorMod(worldX, spacing) != 0) continue;
+
             int thickness = computeThickness(spacing);
             int minDx = -((thickness - 1) / 2);
             int maxDx = thickness / 2;
@@ -809,29 +789,24 @@ public final class TrackGenerator {
                 placePillarSliceWorldgen(level, serverLevel, worldX + dx, g, dims, worldSeed, worldX);
             }
 
-            // Stairs eligibility — stateless "first pillar in this
-            // MIN_STAIRS_SPACING-aligned window" rule. The precomputed
-            // nearbyPillars map covers ±MIN_STAIRS_SPACING X each side of
-            // the chunk so the check is the same regardless of which
-            // chunk's worldgen pass actually evaluates this pillar.
-            int windowStart = Math.floorDiv(worldX, MIN_STAIRS_SPACING) * MIN_STAIRS_SPACING;
-            Integer prevPillarX = nearbyPillars.lowerKey(worldX);
-            if (prevPillarX != null && prevPillarX >= windowStart) continue;
-
-            // Boundary protection — the previous window's first pillar
-            // may sit just inside its window's right edge (e.g. X=39).
-            // If our pillar is at windowStart=40 we'd have only 1 X gap.
-            // Reject if the previous window's first pillar is closer than
-            // MIN_STAIRS_SPACING.
-            int prevWindowStart = windowStart - MIN_STAIRS_SPACING;
-            Integer prevWindowFirst = nearbyPillars.ceilingKey(prevWindowStart);
-            if (prevWindowFirst != null
-                && prevWindowFirst < windowStart
-                && worldX - prevWindowFirst < MIN_STAIRS_SPACING) {
-                continue;
+            // Stairs eligibility — strict slot rule: only at pillars where
+            // centerX is exactly a multiple of MIN_STAIRS_SPACING. Two
+            // guarantees fall out of this:
+            //   • Always alternate sides — placeStairsBesidePillarWorldgen
+            //     uses {@code floorMod(centerX / MIN_STAIRS_SPACING, 2)}
+            //     for the side, so consecutive slots (X=0, X=40, X=80, …)
+            //     are guaranteed opposite.
+            //   • Never on neighbouring pillars — minimum gap between
+            //     consecutive stairs is exactly MIN_STAIRS_SPACING (= 40),
+            //     well beyond any plausible pillar spacing (~5-20), so
+            //     consecutive stairs are always many pillars apart.
+            // Trade-off: pillars whose spacing doesn't divide
+            // MIN_STAIRS_SPACING (e.g. spacing 7) never land on a 40-
+            // multiple and therefore skip stairs in that terrain.
+            // Acceptable in exchange for predictable alternation.
+            if (Math.floorMod(worldX, MIN_STAIRS_SPACING) == 0) {
+                placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
             }
-
-            placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
         }
     }
 
