@@ -27,8 +27,9 @@ import java.util.Set;
  * back to {@link LegacyTunnelPaint} when no template has been saved.
  *
  * <p><b>Run-based stamping.</b> A tunnel <i>run</i> is a contiguous block
- * of qualified X columns. For each run visible in the 16+2×APPROACH_MARGIN
- * qualified window we:</p>
+ * of qualified X columns. For each run visible in the chunk's 16-column
+ * window (with single-column peeks into the immediate neighbours to set
+ * cross-chunk extension flags correctly) we:</p>
  *
  * <ol>
  *   <li>Stamp {@code tunnel_portal} unmirrored at {@code runStart} (the
@@ -66,9 +67,6 @@ public final class TunnelGenerator {
     /** Max previously-unprocessed chunks to fill per periodic scan — same budget as track fill. */
     private static final int CHUNKS_PER_SCAN_BUDGET = 1;
 
-    /** Clearing radius around each tunnel region — 20 blocks before and after each portal. */
-    private static final int APPROACH_MARGIN = 20;
-
     /** Minimum qualified-column run length that uses a portal stamp at all. */
     private static final int MIN_PORTAL_RUN = 10;
 
@@ -85,6 +83,14 @@ public final class TunnelGenerator {
     /**
      * Ensure tunnel blocks exist in the given chunk for the given track geometry.
      * Caches the chunk key on completion so subsequent calls exit in O(1).
+     *
+     * <p><b>Two-phase detection.</b> First a single-block probe at the chunk
+     * centre column above the cleared corridor; if the probe sees open sky
+     * (or water / leaves / any non-underground material) we mark the chunk
+     * processed and bail — the common case in flat / ocean terrain. Only
+     * when the probe hits underground material do we scan the chunk's 16
+     * columns, validate roof material at run boundaries, and stamp the
+     * tunnel. See {@code plans/peaceful-sprouting-sonnet.md}.</p>
      */
     public static void ensureTunnelForChunk(
         ServerLevel level, int chunkX, int chunkZ,
@@ -108,48 +114,105 @@ public final class TunnelGenerator {
             return;
         }
 
-        // Precompute qualification for the chunk's 16 columns plus
-        // APPROACH_MARGIN on each side — approach detection needs to see
-        // 20 X past the chunk's boundary. Each column runs one 6-sample
-        // underground check; total ~350 block reads per chunk.
-        int baseX = chunkMinX - APPROACH_MARGIN;
-        int size = 16 + 2 * APPROACH_MARGIN;
-        boolean[] qualified = new boolean[size];
-        for (int i = 0; i < size; i++) {
-            qualified[i] = isColumnUnderground(level, baseX + i, tg);
+        long t0 = System.nanoTime();
+
+        // PHASE 1 — Cheap probe at the chunk's centre column, above the
+        // carved corridor. One block read against the chunk we're
+        // processing. We use {@code getChunkNow} + {@code chunk.getBlockState}
+        // instead of {@code level.getBlockState} because the latter triggers
+        // a synchronous chunk load when the chunk is "loaded" at the holder
+        // level but not yet at FULL ChunkStatus — observed as a single
+        // 200ms+ probe call during fly-over chunk streaming. With
+        // getChunkNow, a not-yet-FULL chunk returns null and we bail
+        // (the next sweep will retry once the chunk reaches FULL).
+        net.minecraft.world.level.chunk.LevelChunk chunk =
+            level.getChunkSource().getChunkNow(chunkX, chunkZ);
+        if (chunk == null) return;
+        BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
+        probePos.set(chunkMinX + 8, tg.ceilingY() + 5, tg.centerZ());
+        boolean probeHit = TunnelPalette.isUndergroundMaterial(chunk.getBlockState(probePos));
+        long tAfterProbe = System.nanoTime();
+        if (!probeHit) {
+            tunnelFilledChunks.add(chunkKey);
+            long dtProbeMs = (tAfterProbe - t0) / 1_000_000;
+            if (dtProbeMs > 5) {
+                LOGGER.debug("[DungeonTrain] tunnel.probe slow: chunk=({},{}) probe={}ms (miss)",
+                    chunkX, chunkZ, dtProbeMs);
+            }
+            return;
         }
 
-        // Detect runs in the qualified window and stamp portals/sections.
-        // covered[i] tracks which of this chunk's 16 columns are under a
-        // stamp (so they should NOT get procedural paint afterwards).
+        // PHASE 2 — Probe hit underground material. Scan the chunk's 16 X
+        // columns + cross-chunk peeks. Run ends get full roof verification.
+        boolean[] qualified = new boolean[16];
+        for (int dx = 0; dx < 16; dx++) {
+            qualified[dx] = isColumnUnderground(level, chunkMinX + dx, tg);
+        }
+        boolean prevEdgeQualified = qualified[0]
+            && isColumnUnderground(level, chunkMinX - 1, tg);
+        boolean nextEdgeQualified = qualified[15]
+            && isColumnUnderground(level, chunkMaxX + 1, tg);
+        long tAfterScan = System.nanoTime();
+
+        List<Run> rawRuns = detectRuns(qualified, chunkMinX);
+        List<Run> runs = new ArrayList<>(rawRuns.size());
+        for (Run r : rawRuns) {
+            boolean extL = r.extendsLeft && prevEdgeQualified;
+            boolean extR = r.extendsRight && nextEdgeQualified;
+            if (!extL && !verifyTunnelRoof(level, r.start, tg)) continue;
+            if (!extR && !verifyTunnelRoof(level, r.end, tg)) continue;
+            runs.add(new Run(r.start, r.end, extL, extR));
+        }
+        long tAfterDetect = System.nanoTime();
+
+        // Stamp portals + sections.
         boolean[] covered = new boolean[16];
-        List<Run> runs = detectRuns(qualified, baseX);
+        int stampsPlaced = 0;
         for (Run r : runs) {
             stampRun(level, r, tg, chunkMinX, chunkMaxX, covered);
+            stampsPlaced++;
         }
+        long tAfterStamp = System.nanoTime();
 
-        // Fill remaining columns procedurally — either plain tunnel,
-        // short-run pyramid, or approach trench.
+        // Procedural fallback for non-covered qualified columns.
+        int proceduralCols = 0;
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             if (covered[worldX - chunkMinX]) continue;
-            int idx = worldX - baseX;
+            int idx = worldX - chunkMinX;
             if (qualified[idx]) {
                 LegacyTunnelPaint.paintTunnelColumn(level, worldX, tg);
-                // Procedural pyramid only for runs too short to get a
-                // portal stamp (< MIN_PORTAL_RUN columns). Longer runs
-                // have their edges covered by portal stamps above so this
-                // branch is skipped naturally.
-                boolean prev = idx > 0 && qualified[idx - 1];
-                boolean next = idx + 1 < qualified.length && qualified[idx + 1];
+                proceduralCols++;
+                boolean prev = idx > 0 ? qualified[idx - 1] : prevEdgeQualified;
+                boolean next = idx + 1 < 16 ? qualified[idx + 1] : nextEdgeQualified;
                 if (!prev || !next) {
                     LegacyTunnelPaint.placePortalPyramid(level, worldX, tg);
                 }
-            } else if (isNearTunnel(qualified, idx)) {
-                LegacyTunnelPaint.paintApproachColumn(level, worldX, tg);
             }
         }
+        long tAfterPaint = System.nanoTime();
 
         tunnelFilledChunks.add(chunkKey);
+
+        // Diagnostic — prints sub-phase ms for chunks that took > 50ms total,
+        // so we can attribute the spike (probe vs scan vs detect vs stamp vs paint).
+        long totalMs = (tAfterPaint - t0) / 1_000_000;
+        if (totalMs > 50) {
+            LOGGER.debug("[DungeonTrain] tunnel.slow chunk=({},{}) total={}ms probe={}ms scan={}ms detect={}ms stamp={}ms paint={}ms runs={} stamps={} procCols={} qualifiedCount={}",
+                chunkX, chunkZ, totalMs,
+                (tAfterProbe - t0) / 1_000_000,
+                (tAfterScan - tAfterProbe) / 1_000_000,
+                (tAfterDetect - tAfterScan) / 1_000_000,
+                (tAfterStamp - tAfterDetect) / 1_000_000,
+                (tAfterPaint - tAfterStamp) / 1_000_000,
+                runs.size(), stampsPlaced, proceduralCols,
+                countTrue(qualified));
+        }
+    }
+
+    private static int countTrue(boolean[] a) {
+        int c = 0;
+        for (boolean b : a) if (b) c++;
+        return c;
     }
 
     /**
@@ -291,58 +354,50 @@ public final class TunnelGenerator {
     }
 
     /**
-     * Six-sample underground check: at y = ceilingY+5 and ceilingY+6, for
-     * three Z positions spanning the track corridor (min, center, max), every
-     * sampled block must be a natural underground material. Any air, water,
-     * plant, or wood disqualifies the column.
+     * Single-sample probe: one block read at
+     * {@code (worldX, ceilingY + 5, centerZ)}. Returns {@code true} when the
+     * sampled block is natural underground material AND the chunk holding it
+     * is loaded.
      *
-     * <p>The samples sit <b>two rows above the tunnel's arched apex</b>
-     * ({@code ceilingY + ARCH_TIERS + 1 = ceilingY + 4}) for two reasons:</p>
-     * <ul>
-     *   <li>The train's {@code clearBlocksAhead} forward-slab clear in
-     *       {@code TrainTickEvents} sweeps up to {@code aabb.maxY}. For the
-     *       default 7-tall carriage that's {@code bedY + 9 = ceilingY};
-     *       larger carriages reach {@code ceilingY + (HEIGHT - 7)}. Sampling
-     *       at {@code ceilingY + 5/6} keeps qualification correct for
-     *       carriages up to HEIGHT ≈ 12 — the previous {@code +1/+2} samples
-     *       would be cleared to air for anything taller than 7, falsely
-     *       disqualifying the column.</li>
-     *   <li>A 3-block-thick mountain roof used to qualify but the tunnel's
-     *       arch profile (apex at {@code ceilingY + 4}) would poke out the
-     *       top. Requiring rock at {@code ceilingY + 5/6} guarantees the
-     *       entire arched silhouette is buried.</li>
-     * </ul>
+     * <p>This is the lightweight per-column qualification used by both Phase 1
+     * (the chunk-centre probe in {@link #ensureTunnelForChunk}) and Phase 2
+     * (the 16-column scan inside the chunk plus single-column peeks into
+     * neighbours). Run boundaries get extra rigor via
+     * {@link #verifyTunnelRoof}, which samples the corridor's full Z width.</p>
      *
-     * <p>Returns {@code false} if the chunk holding these samples isn't
-     * loaded — avoids the force-load cost of {@code getBlockState} on an
-     * unloaded chunk. The chunk will re-enqueue itself on load via
-     * {@code TunnelChunkEvents} and pick up this column's status then.</p>
+     * <p>The y of {@code ceilingY + 5} sits two rows above the tunnel's arched
+     * apex (apex at {@code ceilingY + 4}), so a column qualifies only when the
+     * full arched silhouette is buried — a 3-block-thick mountain roof
+     * disqualifies because the arch would poke out the top.</p>
      */
     public static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(pos)) return false;
-        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
-        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
-        for (int y : ys) {
-            for (int z : zs) {
-                pos.set(worldX, y, z);
-                BlockState state = level.getBlockState(pos);
-                if (!TunnelPalette.isUndergroundMaterial(state)) return false;
-            }
-        }
-        return true;
+        return TunnelPalette.isUndergroundMaterial(level.getBlockState(pos));
     }
 
-    /** True if any column within {@link #APPROACH_MARGIN} of {@code idx} is tunnel-qualified. */
-    private static boolean isNearTunnel(boolean[] qualified, int idx) {
-        for (int dx = 1; dx <= APPROACH_MARGIN; dx++) {
-            int left = idx - dx;
-            int right = idx + dx;
-            if (left >= 0 && qualified[left]) return true;
-            if (right < qualified.length && qualified[right]) return true;
+    /**
+     * Roof verification at a tunnel-end column. Confirms underground material
+     * at three Z positions ({@code trackZMin / centerZ / trackZMax}) along the
+     * ceiling row at {@code ceilingY + 5}. Catches the case where the
+     * single-column probe passes (because the centre column happens to be
+     * solid) but the corridor's side columns are open — i.e. a thin rocky
+     * outcrop that shouldn't get a portal stamp.
+     *
+     * <p>Three reads. Called once per non-cross-chunk-extending run boundary,
+     * so at most twice per chunk-with-tunnel.</p>
+     */
+    static boolean verifyTunnelRoof(ServerLevel level, int worldX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int y = tg.ceilingY() + 5;
+        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
+        for (int z : zs) {
+            pos.set(worldX, y, z);
+            if (!level.hasChunkAt(pos)) return false;
+            if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return false;
         }
-        return false;
+        return true;
     }
 
     /**
@@ -375,10 +430,20 @@ public final class TunnelGenerator {
         int chunkMaxZ = chunkMinZ + 15;
 
         // Fast Z-corridor prefilter — only chunks containing the corridor
-        // center can qualify columns (the underground samples land at
-        // trackZMin/centerZ/trackZMax). Off-corridor chunks have nothing to
-        // qualify and skip cleanly.
+        // center can qualify columns. Off-corridor chunks skip cleanly.
         if (chunkMaxZ < tg.trackZMin() || chunkMinZ > tg.trackZMax()) return;
+
+        // Probe-and-confirm — same pattern as the runtime variant. One
+        // read at the chunk centre column; if it's not natural underground
+        // material the chunk's corridor has open sky / water above and
+        // there's no tunnel work to do. Replaces the previous 16 × 6 = 96
+        // reads per chunk with 1 read in the common case (ocean / flat
+        // terrain dominates worldgen during flight).
+        BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
+        probePos.set(chunkMinX + 8, tg.ceilingY() + 5, tg.centerZ());
+        if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos))) {
+            return;
+        }
 
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             if (!isColumnUndergroundWorldgen(level, worldX, tg)) continue;
@@ -389,21 +454,17 @@ public final class TunnelGenerator {
     /**
      * Worldgen-friendly variant of {@link #isColumnUnderground}. Reads
      * through {@link WorldGenLevel} and skips the {@code level.hasChunkAt}
-     * gate (worldgen guarantees the current chunk is loaded; we only sample
-     * Z values inside the corridor, all in this chunk's Z range).
+     * gate (worldgen guarantees the current chunk is loaded). Single
+     * sample at {@code (worldX, ceilingY+5, centerZ)} matches the runtime
+     * variant — the corridor's full Z width is not validated here because
+     * any chunk reaching this code already passed the centre probe in
+     * {@link #placeTunnelSpaceAtWorldgen}, and the per-column skip below
+     * picks off any column whose centre isn't itself underground.
      */
     static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
-        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
-        for (int y : ys) {
-            for (int z : zs) {
-                pos.set(worldX, y, z);
-                BlockState state = level.getBlockState(pos);
-                if (!TunnelPalette.isUndergroundMaterial(state)) return false;
-            }
-        }
-        return true;
+        pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
+        return TunnelPalette.isUndergroundMaterial(level.getBlockState(pos));
     }
 
     /**
@@ -415,12 +476,25 @@ public final class TunnelGenerator {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
+        long t0 = System.nanoTime();
+
         Set<Long> filled = provider.getTunnelFilledChunks();
         Set<Long> pending = provider.getPendingTunnelChunks();
         int budget = CHUNKS_PER_SCAN_BUDGET;
         int drainedFromPending = 0;
+        int pendingHasChunkChecks = 0;
+        int pendingSizeAtStart = pending.size();
 
         if (!pending.isEmpty()) {
+            // Save-busy chunks must be re-queued for a later sweep, but
+            // re-adding to the pending Deque DURING iteration triggers a
+            // weakly-consistent iterator's see-your-own-writes behaviour
+            // — the iterator picks the just-re-added key, finds it still
+            // save-busy, re-adds again, and loops millions of times in a
+            // single tick (observed: 16M hasChunk calls, 1.8s spike).
+            // Stage re-queue to a side list and write back once after the
+            // drain loop exits.
+            java.util.List<Long> deferredKeys = null;
             Iterator<Long> it = pending.iterator();
             while (budget > 0 && it.hasNext()) {
                 long key = it.next();
@@ -429,21 +503,25 @@ public final class TunnelGenerator {
                 int cz = ChunkPos.getZ(key);
                 if (filled.contains(key)) continue;
                 if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
+                pendingHasChunkChecks++;
                 if (!level.getChunkSource().hasChunk(cx, cz)) continue;
-                // Defer paint while the chunk's autosave is in flight — the
-                // upstream race between server-thread mutation and IOWorker
-                // NBT iteration causes a sporadic CME otherwise.
                 if (TunnelChunkEvents.isSaveBusy(key)) {
-                    pending.add(key);
+                    if (deferredKeys == null) deferredKeys = new java.util.ArrayList<>();
+                    deferredKeys.add(key);
                     continue;
                 }
                 ensureTunnelForChunk(level, cx, cz, g, filled);
                 budget--;
                 drainedFromPending++;
             }
+            if (deferredKeys != null) pending.addAll(deferredKeys);
         }
 
+        long tAfterPending = System.nanoTime();
+
         int scanned = 0;
+        int scanHasChunkChecks = 0;
+        int scanCells = 0;
         if (budget > 0) {
             int viewDistance = level.getServer().getPlayerList().getViewDistance();
             if (viewDistance <= 0) viewDistance = 10;
@@ -454,9 +532,11 @@ public final class TunnelGenerator {
 
             for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
                 for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance && budget > 0; cx++) {
+                    scanCells++;
                     if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
                     long key = ChunkPos.asLong(cx, cz);
                     if (filled.contains(key)) continue;
+                    scanHasChunkChecks++;
                     if (!level.getChunkSource().hasChunk(cx, cz)) continue;
                     // Same save-busy guard as the pending-drain path above —
                     // sweep will revisit the chunk on a later tick once
@@ -467,6 +547,17 @@ public final class TunnelGenerator {
                     scanned++;
                 }
             }
+        }
+
+        long tEnd = System.nanoTime();
+        long totalMs = (tEnd - t0) / 1_000_000;
+        if (totalMs > 50) {
+            LOGGER.info("[tunnel.fill.slow] total={}ms pending={}ms scan={}ms pendingSize={} pendingHasChunk={} drained={} scanCells={} scanHasChunk={} scanned={} filled.size={}",
+                totalMs,
+                (tAfterPending - t0) / 1_000_000,
+                (tEnd - tAfterPending) / 1_000_000,
+                pendingSizeAtStart, pendingHasChunkChecks, drainedFromPending,
+                scanCells, scanHasChunkChecks, scanned, filled.size());
         }
 
         if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {

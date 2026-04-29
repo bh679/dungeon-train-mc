@@ -98,7 +98,11 @@ public final class TrainTickEvents {
         // Rolling-window manager runs every tick regardless of whether we're also
         // carving terrain — it only adds/removes carriages when a player crosses
         // a carriage boundary, so the cost is negligible on idle ticks.
-        TrainWindowManager.onLevelTick(level);
+        // TODO(train-physics-v2): rolling-window manager temporarily disconnected
+        // while we redesign train motion. The static carriage set placed by
+        // TrainAssembler.spawnTrain is what we want to observe in isolation —
+        // re-enable by uncommenting once the new motion model is settled.
+        // TrainWindowManager.onLevelTick(level);
         long tAfterWindow = System.nanoTime();
 
         // Editor overlay — cheap when nobody is in an editor plot (short-circuits

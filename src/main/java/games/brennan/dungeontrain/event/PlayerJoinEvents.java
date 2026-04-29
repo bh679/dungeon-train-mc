@@ -522,14 +522,17 @@ public final class PlayerJoinEvents {
 
     /**
      * Mirrors {@code TrackGenerator.isPassable}: the player ground probe
-     * treats air, fluids (water/lava), leaves, and vines as "keep descending"
-     * — any other block counts as ground.
+     * treats air, fluids (water/lava), leaves, vines, the ice family,
+     * and replaceable surface adornments (snow layers, tall grass, flowers,
+     * etc.) as "keep descending" — any other block counts as ground.
      */
     private static boolean isPassable(BlockState state) {
         return state.isAir()
             || !state.getFluidState().isEmpty()
             || state.is(BlockTags.LEAVES)
-            || state.is(Blocks.VINE);
+            || state.is(Blocks.VINE)
+            || state.is(BlockTags.ICE)
+            || state.is(BlockTags.REPLACEABLE);
     }
 
     /**
