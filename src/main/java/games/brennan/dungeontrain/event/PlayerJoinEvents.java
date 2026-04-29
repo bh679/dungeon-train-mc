@@ -258,12 +258,13 @@ public final class PlayerJoinEvents {
 
         // Try to find an X with X_BUFFER non-tunnel columns on each side.
         // If found, use it as BOTH the spawn anchor and the look target so
-        // the player is spawned well past any tunnel mouth.
+        // the player is spawned well past any tunnel mouth. If not found,
+        // fall back to the first non-tunnel X (so the player spawns near a
+        // visible stretch of track rather than on top of the buried train).
         int bufferedX = findBufferedReferenceX(trainLevel, trainX, tg);
         boolean haveBuffered = bufferedX != Integer.MIN_VALUE;
-
-        int anchorX = haveBuffered ? bufferedX : trainX;
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
+        int anchorX = haveBuffered ? bufferedX : lookX;
 
         PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g, trainCenter);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
@@ -472,8 +473,8 @@ public final class PlayerJoinEvents {
 
         int bufferedX = findBufferedReferenceX(trainLevel, trainX, tg);
         boolean haveBuffered = bufferedX != Integer.MIN_VALUE;
-        int anchorX = haveBuffered ? bufferedX : trainX;
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
+        int anchorX = haveBuffered ? bufferedX : lookX;
 
         PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, trainCenter);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
