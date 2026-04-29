@@ -114,31 +114,32 @@ public final class TunnelGenerator {
             return;
         }
 
+        long t0 = System.nanoTime();
+
         // PHASE 1 — Cheap probe at the chunk's centre column, above the
         // carved corridor. One block read. If this is air / water / leaves /
         // anything that isn't natural underground material, the chunk has
         // open sky over the corridor and there's no tunnel work to do.
-        // This is the fast path that ALL ocean chunks and most flat-terrain
-        // overworld chunks take. Replaces the previous 56-column ×
-        // 6-sample = 336-read scan.
         int probeX = chunkMinX + 8;
         BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
         probePos.set(probeX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(probePos)) {
-            // Chunk not yet loaded — leave unmarked so a later sweep retries.
             return;
         }
-        if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos))) {
+        boolean probeHit = TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos));
+        long tAfterProbe = System.nanoTime();
+        if (!probeHit) {
             tunnelFilledChunks.add(chunkKey);
+            long dtProbeMs = (tAfterProbe - t0) / 1_000_000;
+            if (dtProbeMs > 5) {
+                LOGGER.debug("[DungeonTrain] tunnel.probe slow: chunk=({},{}) probe={}ms (miss)",
+                    chunkX, chunkZ, dtProbeMs);
+            }
             return;
         }
 
         // PHASE 2 — Probe hit underground material. Scan the chunk's 16 X
-        // columns with the same one-sample test, plus a single peek into
-        // each neighbouring chunk to set extendsLeft/Right correctly on
-        // runs that touch a chunk seam. Roof verification at non-extending
-        // run ends drops thin rocky outcrops where the centre passed but
-        // the corridor sides are open.
+        // columns + cross-chunk peeks. Run ends get full roof verification.
         boolean[] qualified = new boolean[16];
         for (int dx = 0; dx < 16; dx++) {
             qualified[dx] = isColumnUndergroundProbe(level, chunkMinX + dx, tg);
@@ -147,48 +148,36 @@ public final class TunnelGenerator {
             && isColumnUndergroundProbe(level, chunkMinX - 1, tg);
         boolean nextEdgeQualified = qualified[15]
             && isColumnUndergroundProbe(level, chunkMaxX + 1, tg);
+        long tAfterScan = System.nanoTime();
 
-        // Reuse the existing run detector — it indexes into the qualified[]
-        // array, so passing baseX = chunkMinX puts run.start / run.end in
-        // world coordinates already. r.extendsLeft / r.extendsRight reflect
-        // whether the run touches the qualified window's edge (= the chunk's
-        // edge, since we no longer have APPROACH_MARGIN); we override them
-        // with the cross-chunk peek to know whether the run actually extends
-        // beyond this chunk.
         List<Run> rawRuns = detectRuns(qualified, chunkMinX);
         List<Run> runs = new ArrayList<>(rawRuns.size());
         for (Run r : rawRuns) {
             boolean extL = r.extendsLeft && prevEdgeQualified;
             boolean extR = r.extendsRight && nextEdgeQualified;
-            // Roof verification at TRUE run ends only (where a portal would
-            // land). Cross-chunk-extending ends are validated by whichever
-            // chunk owns the actual end column.
             if (!extL && !verifyTunnelRoof(level, r.start, tg)) continue;
             if (!extR && !verifyTunnelRoof(level, r.end, tg)) continue;
             runs.add(new Run(r.start, r.end, extL, extR));
         }
+        long tAfterDetect = System.nanoTime();
 
-        // Stamp portals + sections. covered[i] tracks which of this chunk's
-        // 16 columns are under a stamp (so they don't get procedural paint).
+        // Stamp portals + sections.
         boolean[] covered = new boolean[16];
+        int stampsPlaced = 0;
         for (Run r : runs) {
             stampRun(level, r, tg, chunkMinX, chunkMaxX, covered);
+            stampsPlaced++;
         }
+        long tAfterStamp = System.nanoTime();
 
-        // Fill remaining qualified columns procedurally. Approach trenches
-        // (the previous "near a tunnel but not in it" branch) are dropped
-        // here — TrackBedFeature already carves the corridor at chunkgen,
-        // so the train still has clean runway. The visual ramp-into-tunnel
-        // can be re-introduced as a per-tunnel-end pass if missed.
+        // Procedural fallback for non-covered qualified columns.
+        int proceduralCols = 0;
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             if (covered[worldX - chunkMinX]) continue;
             int idx = worldX - chunkMinX;
             if (qualified[idx]) {
                 LegacyTunnelPaint.paintTunnelColumn(level, worldX, tg);
-                // Procedural pyramid only for runs too short to get a
-                // portal stamp (< MIN_PORTAL_RUN columns). Longer runs
-                // have their edges covered by portal stamps above so this
-                // branch is skipped naturally.
+                proceduralCols++;
                 boolean prev = idx > 0 ? qualified[idx - 1] : prevEdgeQualified;
                 boolean next = idx + 1 < 16 ? qualified[idx + 1] : nextEdgeQualified;
                 if (!prev || !next) {
@@ -196,8 +185,30 @@ public final class TunnelGenerator {
                 }
             }
         }
+        long tAfterPaint = System.nanoTime();
 
         tunnelFilledChunks.add(chunkKey);
+
+        // Diagnostic — prints sub-phase ms for chunks that took > 50ms total,
+        // so we can attribute the spike (probe vs scan vs detect vs stamp vs paint).
+        long totalMs = (tAfterPaint - t0) / 1_000_000;
+        if (totalMs > 50) {
+            LOGGER.debug("[DungeonTrain] tunnel.slow chunk=({},{}) total={}ms probe={}ms scan={}ms detect={}ms stamp={}ms paint={}ms runs={} stamps={} procCols={} qualifiedCount={}",
+                chunkX, chunkZ, totalMs,
+                (tAfterProbe - t0) / 1_000_000,
+                (tAfterScan - tAfterProbe) / 1_000_000,
+                (tAfterDetect - tAfterScan) / 1_000_000,
+                (tAfterStamp - tAfterDetect) / 1_000_000,
+                (tAfterPaint - tAfterStamp) / 1_000_000,
+                runs.size(), stampsPlaced, proceduralCols,
+                countTrue(qualified));
+        }
+    }
+
+    private static int countTrue(boolean[] a) {
+        int c = 0;
+        for (boolean b : a) if (b) c++;
+        return c;
     }
 
     /**
