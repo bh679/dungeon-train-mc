@@ -2,11 +2,14 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -14,7 +17,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
@@ -22,7 +24,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
@@ -66,21 +67,32 @@ public final class PlayerJoinEvents {
     @SubscribeEvent
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!(player.level() instanceof ServerLevel level)) return;
-        if (level.dimension() != Level.OVERWORLD) return;
 
-        ManagedShip trainShip = findTrain(level);
+        DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
+
+        if (!(player.level() instanceof ServerLevel currentLevel)) return;
+
+        ServerLevel overworld = currentLevel.getServer().overworld();
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+        StartingDimension startingDim = data.startingDimension();
+        ServerLevel trainLevel = currentLevel.getServer().getLevel(startingDim.levelKey());
+        if (trainLevel == null) {
+            LOGGER.warn("[DungeonTrain] Starting dimension {} not loaded on login — skipping teleport for {}",
+                startingDim, player.getName().getString());
+            return;
+        }
+
+        ManagedShip trainShip = findTrain(trainLevel);
         if (trainShip == null) {
-            LOGGER.info("[DungeonTrain] No train present on login — skipping teleport for {}",
-                player.getName().getString());
+            LOGGER.info("[DungeonTrain] No train present in {} on login — skipping teleport for {}",
+                trainLevel.dimension().location(), player.getName().getString());
             return;
         }
 
         Vector3dc trainPos = trainShip.currentWorldPosition();
         Vector3d trainCenter = new Vector3d(trainPos.x(), trainPos.y(), trainPos.z());
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(level.getServer().overworld());
-        PlayerTarget target = pickPlayerTarget(level, trainCenter, data);
-        teleportAndLookAt(level, player, trainShip, target);
+        PlayerTarget target = pickPlayerTarget(trainLevel, trainCenter, data);
+        teleportAndLookAt(trainLevel, player, trainShip, target);
     }
 
     private static ManagedShip findTrain(ServerLevel level) {

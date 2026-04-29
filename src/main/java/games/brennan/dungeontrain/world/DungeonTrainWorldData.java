@@ -38,17 +38,20 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
+    private static final String TAG_STARTING_DIMENSION = "startingDimension";
 
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
     private long generationSeed;
+    private StartingDimension startingDimension;
 
-    private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed) {
+    private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
         this.startsWithTrain = startsWithTrain;
         this.dims = dims;
         this.generationSeed = generationSeed;
+        this.startingDimension = startingDimension;
     }
 
     public static DungeonTrainWorldData get(ServerLevel overworld) {
@@ -75,7 +78,8 @@ public final class DungeonTrainWorldData extends SavedData {
                 DungeonTrainConfig.getTrainY(),
                 true,
                 CarriageDims.DEFAULT,
-                0L
+                0L,
+                StartingDimension.OVERWORLD
         );
     }
 
@@ -97,7 +101,10 @@ public final class DungeonTrainWorldData extends SavedData {
                         tag.getInt(TAG_CARRIAGE_HEIGHT))
                 : CarriageDims.DEFAULT;
         long seed = tag.contains(TAG_GENERATION_SEED) ? tag.getLong(TAG_GENERATION_SEED) : 0L;
-        return new DungeonTrainWorldData(y, s, d, seed);
+        StartingDimension sd = tag.contains(TAG_STARTING_DIMENSION)
+                ? StartingDimension.fromNbt(tag.getString(TAG_STARTING_DIMENSION))
+                : StartingDimension.OVERWORLD;
+        return new DungeonTrainWorldData(y, s, d, seed, sd);
     }
 
     @Override
@@ -108,6 +115,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_WIDTH, dims.width());
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
+        tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
         return tag;
     }
 
@@ -125,6 +133,16 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public long getGenerationSeed() {
         return generationSeed;
+    }
+
+    public StartingDimension startingDimension() {
+        return startingDimension;
+    }
+
+    public void setStartingDimension(StartingDimension d) {
+        if (d == null || this.startingDimension == d) return;
+        this.startingDimension = d;
+        setDirty();
     }
 
     /**

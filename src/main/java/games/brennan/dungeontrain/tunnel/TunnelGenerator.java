@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
@@ -342,6 +343,67 @@ public final class TunnelGenerator {
             if (right < qualified.length && qualified[right]) return true;
         }
         return false;
+    }
+
+    /**
+     * Worldgen-time tunnel space placement. For each X column in this chunk,
+     * qualify against natural underground material at {@code ceilingY+5/6}
+     * (single-X read; no neighbour-chunk dependency) and, if qualified, paint
+     * the procedural tunnel column (floor, rails, airspace clearance, walls,
+     * lamps, arched roof) via {@link LegacyTunnelPaint#paintTunnelColumnWorldgen}.
+     *
+     * <p>Run detection, portal/section template stamps, and approach trenches
+     * are NOT done here — those need a ±20-column window that exceeds the
+     * single-chunk worldgen scope and stay on the runtime drain (
+     * {@link #fillRenderDistance}) until item 6.</p>
+     *
+     * <p>Cross-chunk Z writes (walls at trackZMin-4 and trackZMax+4, plus arch
+     * tier overflow) stay inside the immediate Z-neighbour chunk, within
+     * NeoForge's standard 3×3 decoration window.</p>
+     */
+    public static void placeTunnelSpaceAtWorldgen(
+        WorldGenLevel level, ServerLevel serverLevel,
+        int chunkX, int chunkZ, TrackGeometry g
+    ) {
+        if (TrackGenerator.isShipyardChunk(chunkX, chunkZ)) return;
+
+        TunnelGeometry tg = TunnelGeometry.from(g);
+
+        int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = chunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
+
+        // Fast Z-corridor prefilter — only chunks containing the corridor
+        // center can qualify columns (the underground samples land at
+        // trackZMin/centerZ/trackZMax). Off-corridor chunks have nothing to
+        // qualify and skip cleanly.
+        if (chunkMaxZ < tg.trackZMin() || chunkMinZ > tg.trackZMax()) return;
+
+        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
+            if (!isColumnUndergroundWorldgen(level, worldX, tg)) continue;
+            LegacyTunnelPaint.paintTunnelColumnWorldgen(level, worldX, tg);
+        }
+    }
+
+    /**
+     * Worldgen-friendly variant of {@link #isColumnUnderground}. Reads
+     * through {@link WorldGenLevel} and skips the {@code level.hasChunkAt}
+     * gate (worldgen guarantees the current chunk is loaded; we only sample
+     * Z values inside the corridor, all in this chunk's Z range).
+     */
+    static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int[] ys = { tg.ceilingY() + 5, tg.ceilingY() + 6 };
+        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
+        for (int y : ys) {
+            for (int z : zs) {
+                pos.set(worldX, y, z);
+                BlockState state = level.getBlockState(pos);
+                if (!TunnelPalette.isUndergroundMaterial(state)) return false;
+            }
+        }
+        return true;
     }
 
     /**

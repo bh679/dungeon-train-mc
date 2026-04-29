@@ -4,13 +4,18 @@
   "package": "games.brennan.dungeontrain.mixin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
-  "mixins": [],
+  "mixins": [
+    "DecoratedPotBlockEntityPotLootMixin"
+  ],
   "client": [
     "CreateWorldScreenAccessor",
     "CreateWorldScreenMixin",
     "CreateWorldScreenWorldTabMixin",
     "client.CreateWorldScreenMixin",
-    "client.CreateWorldScreenDefaultPresetMixin"
+    "client.CreateWorldScreenDefaultPresetMixin",
+    "client.CreativeModeInventoryScreenPrefabMixin",
+    "client.CreativeModeInventoryScreenAccessor",
+    "client.AbstractContainerScreenPrefabTintMixin"
   ],
   "server": [],
   "injectors": {

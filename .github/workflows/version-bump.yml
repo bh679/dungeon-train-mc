@@ -1,0 +1,101 @@
+name: Auto-bump mod_version after Gate 3 merge
+
+# Mirrors the long-standing manual pattern (`chore(version): bump to X.Y.0
+# (MINOR — Gate 3 merge)` directly on main). Fires once after every
+# squash-merge to main, computes the next MINOR version, commits and
+# pushes to main using GITHUB_TOKEN.
+#
+# Why direct push (vs PR + auto-merge): matches the existing 13+ manual
+# bump commits in main's history. If branch protection is added later
+# requiring "no direct pushes", convert this to open + auto-merge a PR
+# instead. The `gh pr` flow needs `pull-requests: write` on top of
+# `contents: write`.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # Manual re-fire after fixing a malformed gradle.properties
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    # Defense in depth: don't fire on our own commit. GITHUB_TOKEN-authored
+    # pushes already don't trigger workflow runs (built-in GH Actions
+    # safety), but this guard catches the case where someone reconfigures
+    # the workflow to use a PAT later.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(version): bump to') }}"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so the bump push isn't a non-fast-forward.
+          fetch-depth: 0
+
+      # Catches the failure mode that broke main on 2026-04-28: PR #103
+      # squash-merged with unresolved git conflict markers in
+      # gradle.properties, then this workflow's earlier (#102) version
+      # silently corrupted state by trying to bump a multi-line/empty
+      # version. Fail loudly with file=line annotations so the next
+      # maintainer sees what's wrong instead of double-broken state.
+      - name: Validate gradle.properties is well-formed
+        run: |
+          set -euo pipefail
+
+          if grep -qE '^(<{7}|={7}|>{7})' gradle.properties; then
+            echo "::error file=gradle.properties::gradle.properties contains git conflict markers — refusing to auto-bump"
+            grep -nE '^(<{7}|={7}|>{7})' gradle.properties
+            exit 1
+          fi
+
+          VERSION_LINES=$(grep -cE '^mod_version=' gradle.properties || true)
+          if [ "$VERSION_LINES" -ne 1 ]; then
+            echo "::error file=gradle.properties::Expected exactly 1 mod_version= line, found $VERSION_LINES"
+            grep -nE '^mod_version=' gradle.properties || true
+            exit 1
+          fi
+
+          CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          if ! echo "$CURRENT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error file=gradle.properties::mod_version='$CURRENT' is not a strict X.Y.Z numeric version"
+            exit 1
+          fi
+
+          echo "✓ gradle.properties valid (mod_version=$CURRENT)"
+
+      - name: Compute and apply MINOR bump
+        id: bump
+        run: |
+          set -euo pipefail
+          CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
+
+          if [ "$PATCH" = "0" ]; then
+            echo "PATCH is already 0 — version $CURRENT is already MINOR-aligned."
+            echo "Likely a manual MAJOR/MINOR bump or a fresh release. Skipping."
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
+          echo "Bumping mod_version: $CURRENT -> $NEW_VERSION"
+          sed -i "s/^mod_version=.*/mod_version=$NEW_VERSION/" gradle.properties
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.bump.outputs.skipped != 'true'
+        env:
+          NEW_VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gradle.properties
+          # [skip ci] avoids triggering build.yml on a 1-line gradle.properties
+          # change. The bump can't break the build; running CI on it is waste.
+          # version-bump.yml itself is gated by the message-prefix check above
+          # so [skip ci] doesn't cause us to miss a real merge.
+          git commit -m "chore(version): bump to $NEW_VERSION (MINOR — Gate 3 merge) [skip ci]"
+          git push
