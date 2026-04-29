@@ -1137,6 +1137,16 @@ public final class TrackGenerator {
             return;
         }
 
+        // Bail if the chunk isn't yet at FULL ChunkStatus — same root
+        // cause as the tunnel probe fix (commit 9b39b52). hasChunk in
+        // fillRenderDistance returns true for chunks at any holder
+        // level, but level.getBlockState inside placeTrackColumn would
+        // sync-load a not-yet-FULL chunk. Observed: 500ms tracks=
+        // spikes when flying over freshly-streaming chunks. Returning
+        // here keeps the chunk in pending; the next 10-tick sweep
+        // retries once it's FULL.
+        if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) return;
+
         int zLo = Math.max(g.trackZMin(), chunkMinZ);
         int zHi = Math.min(g.trackZMax(), chunkMaxZ);
 
