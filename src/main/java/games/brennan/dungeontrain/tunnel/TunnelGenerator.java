@@ -466,10 +466,14 @@ public final class TunnelGenerator {
         TrackGeometry g = provider.getTrackGeometry();
         if (g == null) return;
 
+        long t0 = System.nanoTime();
+
         Set<Long> filled = provider.getTunnelFilledChunks();
         Set<Long> pending = provider.getPendingTunnelChunks();
         int budget = CHUNKS_PER_SCAN_BUDGET;
         int drainedFromPending = 0;
+        int pendingHasChunkChecks = 0;
+        int pendingSizeAtStart = pending.size();
 
         if (!pending.isEmpty()) {
             Iterator<Long> it = pending.iterator();
@@ -480,6 +484,7 @@ public final class TunnelGenerator {
                 int cz = ChunkPos.getZ(key);
                 if (filled.contains(key)) continue;
                 if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
+                pendingHasChunkChecks++;
                 if (!level.getChunkSource().hasChunk(cx, cz)) continue;
                 // Defer paint while the chunk's autosave is in flight — the
                 // upstream race between server-thread mutation and IOWorker
@@ -494,7 +499,11 @@ public final class TunnelGenerator {
             }
         }
 
+        long tAfterPending = System.nanoTime();
+
         int scanned = 0;
+        int scanHasChunkChecks = 0;
+        int scanCells = 0;
         if (budget > 0) {
             int viewDistance = level.getServer().getPlayerList().getViewDistance();
             if (viewDistance <= 0) viewDistance = 10;
@@ -505,9 +514,11 @@ public final class TunnelGenerator {
 
             for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
                 for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance && budget > 0; cx++) {
+                    scanCells++;
                     if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
                     long key = ChunkPos.asLong(cx, cz);
                     if (filled.contains(key)) continue;
+                    scanHasChunkChecks++;
                     if (!level.getChunkSource().hasChunk(cx, cz)) continue;
                     // Same save-busy guard as the pending-drain path above —
                     // sweep will revisit the chunk on a later tick once
@@ -518,6 +529,17 @@ public final class TunnelGenerator {
                     scanned++;
                 }
             }
+        }
+
+        long tEnd = System.nanoTime();
+        long totalMs = (tEnd - t0) / 1_000_000;
+        if (totalMs > 50) {
+            LOGGER.info("[tunnel.fill.slow] total={}ms pending={}ms scan={}ms pendingSize={} pendingHasChunk={} drained={} scanCells={} scanHasChunk={} scanned={} filled.size={}",
+                totalMs,
+                (tAfterPending - t0) / 1_000_000,
+                (tEnd - tAfterPending) / 1_000_000,
+                pendingSizeAtStart, pendingHasChunkChecks, drainedFromPending,
+                scanCells, scanHasChunkChecks, scanned, filled.size());
         }
 
         if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {
