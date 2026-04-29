@@ -142,12 +142,12 @@ public final class TunnelGenerator {
         // columns + cross-chunk peeks. Run ends get full roof verification.
         boolean[] qualified = new boolean[16];
         for (int dx = 0; dx < 16; dx++) {
-            qualified[dx] = isColumnUndergroundProbe(level, chunkMinX + dx, tg);
+            qualified[dx] = isColumnUnderground(level, chunkMinX + dx, tg);
         }
         boolean prevEdgeQualified = qualified[0]
-            && isColumnUndergroundProbe(level, chunkMinX - 1, tg);
+            && isColumnUnderground(level, chunkMinX - 1, tg);
         boolean nextEdgeQualified = qualified[15]
-            && isColumnUndergroundProbe(level, chunkMaxX + 1, tg);
+            && isColumnUnderground(level, chunkMaxX + 1, tg);
         long tAfterScan = System.nanoTime();
 
         List<Run> rawRuns = detectRuns(qualified, chunkMinX);
@@ -366,7 +366,7 @@ public final class TunnelGenerator {
      * full arched silhouette is buried — a 3-block-thick mountain roof
      * disqualifies because the arch would poke out the top.</p>
      */
-    static boolean isColumnUndergroundProbe(ServerLevel level, int worldX, TunnelGeometry tg) {
+    public static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
         if (!level.hasChunkAt(pos)) return false;
