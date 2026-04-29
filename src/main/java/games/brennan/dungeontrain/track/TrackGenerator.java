@@ -773,6 +773,16 @@ public final class TrackGenerator {
         long worldSeed = level.getSeed();
         int voidSentinel = minBuildHeight + 1;
 
+        // Stairs candidate tracker — placed at the first pillar of each
+        // {@link #MIN_STAIRS_SPACING}-X window encountered during this chunk's
+        // pillar walk. Initialising to {@code chunkMinX - MIN_STAIRS_SPACING}
+        // means the very first pillar in this chunk is immediately eligible.
+        // Cross-chunk: each chunk maintains its own tracker, so a pillar at
+        // the very edge of two chunks could end up with stairs in both — the
+        // window-parity rule below puts them on opposite sides, keeping the
+        // visual interesting and not catastrophic.
+        int lastStairsX = chunkMinX - MIN_STAIRS_SPACING;
+
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
             int groundY = probeGroundYWorldgen(level, worldX, probeZ, g.bedY());
             if (groundY >= g.bedY()) continue;          // already at/above bed: no pillar
@@ -787,6 +797,19 @@ public final class TrackGenerator {
             int maxDx = thickness / 2;
             for (int dx = minDx; dx <= maxDx; dx++) {
                 placePillarSliceWorldgen(level, serverLevel, worldX + dx, g, dims, worldSeed, worldX);
+            }
+
+            // Stairs check — every Nth pillar where N is implicit in the
+            // distance rule. Run the rigorous footprint probe only when this
+            // pillar is far enough from the previous stairs in this chunk.
+            // The probe inside placeStairsBesidePillarWorldgen short-circuits
+            // if the 3×3 footprint can't be anchored, so a "no pillar at all"
+            // outcome is correctly modelled as "stairs not placed, lastStairsX
+            // unchanged".
+            if (worldX - lastStairsX >= MIN_STAIRS_SPACING) {
+                if (placeStairsBesidePillarWorldgen(level, serverLevel, worldX, g, worldSeed)) {
+                    lastStairsX = worldX;
+                }
             }
         }
     }
@@ -865,6 +888,121 @@ public final class TrackGenerator {
         state = paint.resolveSidecar(state, row, zIdx);
         if (state == null) return;
         level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Worldgen-time stairs placement beside a pillar at {@code centerX}.
+     * Mirrors {@link #placeStairsBesidePillar} (the runtime variant, now
+     * dead) but adapts for {@link WorldGenLevel}: skips ship checks (no
+     * ships exist during chunkgen), uses {@code level.setBlock} +
+     * {@link Block#UPDATE_CLIENTS} for sidecar writes, and uses
+     * {@link #probeGroundYWorldgen} for the 3×3 footprint probe.
+     *
+     * <p>The window-parity rule for left/right alternation is unchanged
+     * from the runtime version: even windows put stairs on +Z side, odd
+     * windows on -Z. This is stateless w.r.t. neighbouring chunks so the
+     * alternation pattern is consistent across chunk boundaries.</p>
+     *
+     * <p>Returns {@code true} if the stamp actually landed (footprint
+     * probe found ground within reach), so the caller can update its
+     * {@code lastStairsX} tracker only when stairs were really placed.</p>
+     */
+    private static boolean placeStairsBesidePillarWorldgen(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        int centerX,
+        TrackGeometry g,
+        long worldSeed
+    ) {
+        int windowIndex = Math.floorDiv(centerX, MIN_STAIRS_SPACING);
+        boolean flipped = Math.floorMod(windowIndex, 2) == 1;
+
+        String stairsName = TrackVariantRegistry.pickName(
+            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
+        Optional<StructureTemplate> templateOpt =
+            PillarTemplateStore.getAdjunctFor(serverLevel,
+                games.brennan.dungeontrain.track.PillarAdjunct.STAIRS, stairsName);
+        if (templateOpt.isEmpty()) return false;
+        StructureTemplate template = templateOpt.get();
+        TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
+            TrackKind.ADJUNCT_STAIRS, stairsName,
+            new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
+
+        int topInclusive = g.bedY() + 2;          // 3 rows above pillar top
+        int originX = centerX - 1;                 // centred 3-wide on centerX
+        int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
+
+        // Probe 3×3 footprint; anchor to the deepest-but-reachable ground.
+        int voidSentinel = level.getMinBuildHeight() + 1;
+        int deepestGroundY = g.bedY();
+        for (int dx = 0; dx < STAIRS_X; dx++) {
+            for (int dz = 0; dz < STAIRS_Z; dz++) {
+                int ground = probeGroundYWorldgen(level, originX + dx, originZ + dz, g.bedY());
+                if (ground >= g.bedY()) continue;
+                if (ground == voidSentinel) continue;
+                if (ground < deepestGroundY) deepestGroundY = ground;
+            }
+        }
+        if (deepestGroundY >= g.bedY()) return false;
+        if (deepestGroundY > topInclusive) return false;
+
+        // Mirror.LEFT_RIGHT negates local Z around stamp origin; shifting
+        // origin by +(STAIRS_Z - 1) keeps the mirrored footprint at
+        // [originZ .. originZ + STAIRS_Z - 1]. Same trick as the runtime
+        // variant and as TunnelTemplate's portal mirror.
+        int stampOriginZ = !flipped ? originZ + STAIRS_Z - 1 : originZ;
+
+        int currentTop = topInclusive;
+        while (currentTop >= deepestGroundY) {
+            int remaining = currentTop - deepestGroundY + 1;
+            int copyHeight = Math.min(STAIRS_Y, remaining);
+            int bottomY = currentTop - copyHeight + 1;
+
+            BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), stampOriginZ);
+
+            BoundingBox clip = new BoundingBox(
+                originX, bottomY, originZ,
+                originX + STAIRS_X - 1, currentTop, originZ + STAIRS_Z - 1
+            );
+
+            StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setIgnoreEntities(true)
+                .setBoundingBox(clip);
+            // No ShipFilterProcessor — no ships at chunkgen.
+            if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+
+            template.placeInWorld(level, copyOrigin, copyOrigin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+
+            // Sidecar pass — overwrite flagged template-local positions
+            // with the deterministic per-block pick. Mirror semantics
+            // mirror the runtime variant. Block-entity NBT stamping is
+            // skipped at worldgen (vanilla stairs/sign templates rarely
+            // need it, and BE wiring through WorldGenLevel is awkward).
+            if (!stairsSidecar.isEmpty()) {
+                int templateBaseY = currentTop - (STAIRS_Y - 1);
+                for (var entry : stairsSidecar.entries()) {
+                    int lx = entry.localPos().getX();
+                    int ly = entry.localPos().getY();
+                    int lz = entry.localPos().getZ();
+                    int wy = templateBaseY + ly;
+                    if (wy < bottomY || wy > currentTop) continue;
+                    int wx = originX + lx;
+                    int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
+                    BlockPos wpos = new BlockPos(wx, wy, wz);
+                    games.brennan.dungeontrain.editor.VariantState picked =
+                        stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
+                    if (picked == null) continue;
+                    BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        picked.state(), picked.rotation(),
+                        entry.localPos(), worldSeed, centerX,
+                        stairsSidecar.lockIdAt(entry.localPos()));
+                    level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
+                }
+            }
+
+            currentTop -= STAIRS_Y;
+        }
+        return true;
     }
 
     /**
