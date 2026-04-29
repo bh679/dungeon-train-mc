@@ -104,6 +104,13 @@ public final class PlayerJoinEvents {
     /** Max blocks to scan looking for a buffered above-ground window. */
     private static final int MAX_ABOVEGROUND_SCAN = 128;
 
+    /**
+     * Max perpendicular distance to walk searching for dry ground when the
+     * random retry loop has exhausted its attempts (e.g. corridor crosses
+     * a deep ocean). Hard cap so we don't pin the server thread.
+     */
+    private static final int MAX_FALLBACK_PERP = 256;
+
     /** Standing eye height (blocks above feet) — used for pitch math. */
     private static final double EYE_HEIGHT = 1.62;
 
@@ -207,7 +214,7 @@ public final class PlayerJoinEvents {
         int anchorX = haveBuffered ? bufferedX : trainX;
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
 
-        PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g);
+        PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g, trainCenter);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
 
         // Compute yaw/pitch explicitly from (target → referencePoint) and
@@ -325,10 +332,14 @@ public final class PlayerJoinEvents {
     /**
      * Random perpendicular offset around the X anchor. Re-rolls up to
      * {@link #MAX_ATTEMPTS} times if the candidate is in water or otherwise
-     * invalid. Falls back to a fixed perpendicular offset (never the
-     * corridor centerline — the player must not land on the tracks).
+     * invalid. If the random search fails (e.g. all probes hit deep ocean),
+     * walks perpendicular outward looking for the first dry surface. As a
+     * last resort, spawns on top of the train so the player never lands on
+     * tracks AND never lands in water.
      */
-    private static PlayerTarget pickPlayerTarget(ServerLevel level, int anchorX, TrackGeometry g) {
+    private static PlayerTarget pickPlayerTarget(
+        ServerLevel level, int anchorX, TrackGeometry g, Vector3d trainCenter
+    ) {
         RandomSource rand = level.getRandom();
         double centerZ = g.trackCenterZ() + 0.5;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -351,21 +362,34 @@ public final class PlayerJoinEvents {
             }
         }
 
-        // Fallback: fixed perpendicular offset of PERP_MIN (random side).
-        // The corridor centerline is OFF-LIMITS — landing there puts the
-        // player on the rails, which is the issue this fallback exists to
-        // avoid in the first place.
-        double sideSign = rand.nextBoolean() ? 1.0 : -1.0;
-        double pz = centerZ + sideSign * PERP_MIN;
-        int bz = Mth.floor(pz);
-        level.getChunk(anchorX >> 4, bz >> 4, ChunkStatus.FULL, true);
-        int fallbackGroundY = findGroundY(level, anchorX, bz);
-        int fallbackY = fallbackGroundY > level.getMinBuildHeight()
-            ? fallbackGroundY + 1
-            : g.bedY() + 3; // a few blocks above rail Y so we don't sit on them
-        LOGGER.warn("[DungeonTrain] pickPlayerTarget exhausted {} attempts — fallback at perpendicular Z={} Y={}",
-            MAX_ATTEMPTS, String.format("%.1f", pz), fallbackY);
-        return new PlayerTarget(anchorX + 0.5, fallbackY, pz);
+        // Random retry exhausted — corridor crosses deep ocean or other
+        // hostile perpendicular. Walk perpendicular outward looking for the
+        // first dry surface on either side. Never accept a wet/void column.
+        for (int perpDist = (int) PERP_MIN; perpDist <= MAX_FALLBACK_PERP; perpDist++) {
+            for (int sign : new int[] {+1, -1}) {
+                double pz = centerZ + sign * perpDist;
+                int bz = Mth.floor(pz);
+                level.getChunk(anchorX >> 4, bz >> 4, ChunkStatus.FULL, true);
+                int gy = findGroundY(level, anchorX, bz);
+                int py = gy + 1;
+                if (isSafePlayerPos(level, anchorX, py, bz)) {
+                    LOGGER.info("[DungeonTrain] pickPlayerTarget random search exhausted; widened perp walk found dry ground at Z={} Y={}",
+                        String.format("%.1f", pz), py);
+                    return new PlayerTarget(anchorX + 0.5, py, pz);
+                }
+            }
+        }
+
+        // Tiny-island corner case: no dry land within ±MAX_FALLBACK_PERP.
+        // Spawn on top of the train so the player neither drowns nor lands
+        // on the rails. Y = trainCenter.y + 8 clears the carriage roof.
+        double tx = trainCenter.x;
+        int ty = (int) Math.ceil(trainCenter.y) + 8;
+        double tz = trainCenter.z;
+        LOGGER.warn("[DungeonTrain] pickPlayerTarget found no dry land within ±{} perp — last-resort spawn above train at ({}, {}, {})",
+            MAX_FALLBACK_PERP,
+            String.format("%.1f", tx), ty, String.format("%.1f", tz));
+        return new PlayerTarget(tx, ty, tz);
     }
 
     /**
