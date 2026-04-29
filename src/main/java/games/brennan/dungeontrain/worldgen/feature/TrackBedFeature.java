@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.core.BlockPos;
@@ -97,6 +98,11 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // runs. Order matters.
             TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
             TrackGenerator.placeTracksForChunk(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
+            // Tunnel space last — the underground qualification reads at
+            // ceilingY+5/6, well above the bed/rails, so order vs. tracks
+            // doesn't matter for the probe. Templates and approach trenches
+            // remain on the runtime drain.
+            TunnelGenerator.placeTunnelSpaceAtWorldgen(level, serverLevel, chunkPos.x, chunkPos.z, g);
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] TrackBedFeature.place failed at chunk {}", ctx.origin(), t);

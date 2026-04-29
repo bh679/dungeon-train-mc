@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -331,5 +333,106 @@ public final class LegacyTunnelPaint {
         BlockState existing = level.getBlockState(pos);
         if (!existing.isAir()) return;
         SilentBlockOps.setBlockSilent(level, pos.immutable(), Blocks.STRUCTURE_VOID.defaultBlockState());
+    }
+
+    // ─── Worldgen-variant helpers ──────────────────────────────────────
+    //
+    // Mirror the runtime helpers above but write through WorldGenLevel and
+    // skip the Shipyards.isInShip guard (no ships exist at chunk gen).
+    // Cross-chunk Z writes (walls / ceiling tiers reaching ±4 blocks past
+    // the corridor) stay inside the immediate Z-neighbour, within the
+    // standard 3×3 decoration window WorldGenLevel.setBlock allows.
+
+    /**
+     * Worldgen variant of {@link #paintTunnelColumn}. Block-for-block port:
+     * 11-wide stone-brick floor, idempotent rails, airspace clearance,
+     * full-height stone-brick walls with sea-lantern lamps every
+     * {@link #LAMP_SPACING}, and the arched roof rising above the wall tops.
+     */
+    public static void paintTunnelColumnWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int z = tg.airMinZ(); z <= tg.airMaxZ(); z++) {
+            setIfNeededWorldgen(level, pos, worldX, tg.floorY(), z, TunnelPalette.FLOOR);
+        }
+
+        placeRailWorldgen(level, pos, worldX, tg.railY(), tg.railZMin());
+        placeRailWorldgen(level, pos, worldX, tg.railY(), tg.railZMax());
+
+        int airYMin = tg.railY();
+        int airYMax = tg.ceilingY();
+        for (int y = airYMin; y <= airYMax; y++) {
+            for (int z = tg.airMinZ(); z <= tg.airMaxZ(); z++) {
+                if (y == tg.railY() && (z == tg.railZMin() || z == tg.railZMax())) continue;
+                setAirIfNeededWorldgen(level, pos, worldX, y, z);
+            }
+        }
+
+        int lampY = tg.railY() + 2;
+        boolean isLampColumn = Math.floorMod(worldX, LAMP_SPACING) == 0;
+        for (int y = tg.floorY(); y <= tg.ceilingY(); y++) {
+            BlockState sideBlock = (isLampColumn && y == lampY) ? TunnelPalette.SEA_LANTERN : TunnelPalette.WALL;
+            setIfNeededWorldgen(level, pos, worldX, y, tg.wallMinZ(), sideBlock);
+            setIfNeededWorldgen(level, pos, worldX, y, tg.wallMaxZ(), sideBlock);
+        }
+
+        paintArchedRoofWorldgen(level, worldX, tg);
+    }
+
+    /** Worldgen variant of {@link #paintArchedRoof}. Stepped arch + apex cap. */
+    public static void paintArchedRoofWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int tier = 1; tier <= ARCH_TIERS; tier++) {
+            int y = tg.ceilingY() + tier;
+            int stoneZLo = tg.wallMinZ() + tier;
+            int stoneZHi = tg.wallMaxZ() - tier;
+            setIfNeededWorldgen(level, pos, worldX, y, stoneZLo, TunnelPalette.WALL);
+            setIfNeededWorldgen(level, pos, worldX, y, stoneZHi, TunnelPalette.WALL);
+            placeStairWorldgen(level, pos, worldX, y, stoneZLo - 1, Direction.SOUTH);
+            placeStairWorldgen(level, pos, worldX, y, stoneZHi + 1, Direction.NORTH);
+            for (int z = stoneZLo + 1; z <= stoneZHi - 1; z++) {
+                setAirIfNeededWorldgen(level, pos, worldX, y, z);
+            }
+        }
+        int apexY = tg.ceilingY() + ARCH_TIERS + 1;
+        int apexZLo = tg.wallMinZ() + ARCH_TIERS + 1;
+        int apexZHi = tg.wallMaxZ() - ARCH_TIERS - 1;
+        for (int z = apexZLo; z <= apexZHi; z++) {
+            setIfNeededWorldgen(level, pos, worldX, apexY, z, TunnelPalette.CEILING);
+        }
+    }
+
+    static void setIfNeededWorldgen(WorldGenLevel level, BlockPos.MutableBlockPos pos,
+                                    int x, int y, int z, BlockState state) {
+        pos.set(x, y, z);
+        BlockState existing = level.getBlockState(pos);
+        if (existing.is(state.getBlock())) return;
+        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+    }
+
+    static void setAirIfNeededWorldgen(WorldGenLevel level, BlockPos.MutableBlockPos pos,
+                                       int x, int y, int z) {
+        pos.set(x, y, z);
+        BlockState existing = level.getBlockState(pos);
+        if (existing.isAir()) return;
+        level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+    }
+
+    static void placeStairWorldgen(WorldGenLevel level, BlockPos.MutableBlockPos pos,
+                                   int x, int y, int z, Direction facing) {
+        pos.set(x, y, z);
+        BlockState existing = level.getBlockState(pos);
+        if (existing.is(TunnelPalette.STAIRS)) return;
+        BlockState state = TunnelPalette.STAIRS.defaultBlockState()
+            .setValue(StairBlock.FACING, facing);
+        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+    }
+
+    static void placeRailWorldgen(WorldGenLevel level, BlockPos.MutableBlockPos pos,
+                                  int x, int y, int z) {
+        pos.set(x, y, z);
+        BlockState existing = level.getBlockState(pos);
+        if (existing.is(TrackPalette.RAIL.getBlock())) return;
+        level.setBlock(pos, TrackPalette.RAIL, Block.UPDATE_CLIENTS);
     }
 }
