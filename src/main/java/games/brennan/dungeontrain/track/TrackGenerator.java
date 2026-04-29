@@ -548,6 +548,167 @@ public final class TrackGenerator {
     }
 
     /**
+     * Worldgen ground probe — mirrors {@link #probeGroundY} but reads
+     * {@link WorldGenLevel} directly and skips the ship check (no ships
+     * exist during chunk gen). Walks down from {@code bedY-1} until a
+     * non-passable block is hit; returns that block's Y + 1, or
+     * {@code minBuildHeight + 1} (void sentinel) if none is found.
+     */
+    private static int probeGroundYWorldgen(WorldGenLevel level, int x, int z, int bedY) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int minY = level.getMinBuildHeight() + 1;
+        for (int py = bedY - 1; py >= minY; py--) {
+            pos.set(x, py, z);
+            BlockState state = level.getBlockState(pos);
+            if (!isPassable(state)) {
+                return py + 1;
+            }
+        }
+        return minY;
+    }
+
+    /**
+     * Worldgen-time pillar placement. Each chunk plants the pillars whose
+     * center X lies inside its X bounds; the slice (≤ {@code thickness}
+     * blocks wide on X, {@code dims.width()} on Z, {@code H} tall) overflows
+     * up to ⌊thickness/2⌋ blocks into the immediate neighbour, which is
+     * within NeoForge's 3×3 decoration window so {@link WorldGenLevel#setBlock}
+     * accepts it. Pillars centered in neighbour chunks place themselves when
+     * those chunks generate — no edge gaps.
+     *
+     * <p>Must be called BEFORE {@link #placeTracksForChunk} during the same
+     * Feature.place() invocation so the ground probe sees raw terrain
+     * instead of the bed/rail rows.</p>
+     */
+    public static void placePillarsAtWorldgen(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        CarriageDims dims,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g
+    ) {
+        if (isShipyardChunk(chunkX, chunkZ)) return;
+
+        int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = chunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
+
+        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return;
+
+        int minBuildHeight = level.getMinBuildHeight();
+        int maxBuildHeight = level.getMaxBuildHeight();
+        if (g.bedY() < minBuildHeight || g.bedY() >= maxBuildHeight) return;
+
+        int probeZ = g.trackCenterZ();
+        // Probe Z must be inside our chunk for a single-chunk-only probe.
+        // If the corridor center isn't in this chunk's Z range, we can't probe
+        // at all — return and let the chunk that contains probeZ do the work.
+        if (probeZ < chunkMinZ || probeZ > chunkMaxZ) return;
+
+        long worldSeed = level.getSeed();
+        int voidSentinel = minBuildHeight + 1;
+
+        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
+            int groundY = probeGroundYWorldgen(level, worldX, probeZ, g.bedY());
+            if (groundY >= g.bedY()) continue;          // already at/above bed: no pillar
+            if (groundY == voidSentinel) continue;       // void column
+            int height = g.bedY() - 1 - groundY;
+            if (height < 0) continue;
+            int spacing = computeSpacing(height);
+            if (Math.floorMod(worldX, spacing) != 0) continue;
+
+            int thickness = computeThickness(spacing);
+            int minDx = -((thickness - 1) / 2);
+            int maxDx = thickness / 2;
+            for (int dx = minDx; dx <= maxDx; dx++) {
+                placePillarSliceWorldgen(level, serverLevel, worldX + dx, g, dims, worldSeed, worldX);
+            }
+        }
+    }
+
+    private static void placePillarSliceWorldgen(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        int worldX,
+        TrackGeometry g,
+        CarriageDims dims,
+        long worldSeed,
+        int pillarCenterX
+    ) {
+        int bedY = g.bedY();
+        int topInclusive = bedY - 1;
+
+        int voidSentinel = level.getMinBuildHeight() + 1;
+        int deepestGroundY = bedY;
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int ground = probeGroundYWorldgen(level, worldX, z, bedY);
+            if (ground >= bedY) continue;
+            if (ground == voidSentinel) continue;
+            if (ground < deepestGroundY) deepestGroundY = ground;
+        }
+        int h = topInclusive - deepestGroundY + 1;
+        if (h <= 0) return;
+
+        // Use pillarCenterX as the deterministic seed for paint selection so
+        // every column in the same pillar slice picks the same template.
+        PillarPaint top = loadPillarPaint(serverLevel, PillarSection.TOP, dims, worldSeed, pillarCenterX);
+        PillarPaint mid = loadPillarPaint(serverLevel, PillarSection.MIDDLE, dims, worldSeed, pillarCenterX);
+        PillarPaint bot = loadPillarPaint(serverLevel, PillarSection.BOTTOM, dims, worldSeed, pillarCenterX);
+
+        int topH = PillarSection.TOP.height();
+        int botH = PillarSection.BOTTOM.height();
+        int placeBotH = Math.min(botH, h);
+        int placeTopH = Math.min(topH, h - placeBotH);
+        int placeMidH = h - placeBotH - placeTopH;
+
+        int zMin = g.trackZMin();
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int zIdx = z - zMin;
+            for (int i = 0; i < placeBotH; i++) {
+                stampSliceCellWorldgen(level, worldX, deepestGroundY + i, z, bot, i, zIdx);
+            }
+            for (int i = 0; i < placeMidH; i++) {
+                stampSliceCellWorldgen(level, worldX, deepestGroundY + placeBotH + i, z, mid, 0, zIdx);
+            }
+            for (int i = 0; i < placeTopH; i++) {
+                int y = topInclusive - placeTopH + 1 + i;
+                int row = (topH - placeTopH) + i;
+                stampSliceCellWorldgen(level, worldX, y, z, top, row, zIdx);
+            }
+        }
+    }
+
+    private static void stampSliceCellWorldgen(
+        WorldGenLevel level,
+        int x, int y, int z,
+        PillarPaint paint,
+        int row,
+        int zIdx
+    ) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        pos.set(x, y, z);
+        BlockState existing = level.getBlockState(pos);
+        if (!isPassable(existing)) return;
+
+        Optional<BlockState[][]> column = paint.column();
+        BlockState state;
+        if (column.isPresent()
+            && row >= 0 && row < column.get().length
+            && zIdx >= 0 && zIdx < column.get()[row].length) {
+            BlockState fromTemplate = column.get()[row][zIdx];
+            if (fromTemplate == null) return;
+            state = fromTemplate;
+        } else {
+            state = TrackPalette.PILLAR;
+        }
+        state = paint.resolveSidecar(state, row, zIdx);
+        if (state == null) return;
+        level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+    }
+
+    /**
      * Ensure tracks exist in the given chunk for {@code g}. Hit the provider's
      * cache first — chunks already processed exit in O(1). On miss, precompute
      * pillar positions in the chunk ± {@link #PILLAR_SCAN_MARGIN} and walk
