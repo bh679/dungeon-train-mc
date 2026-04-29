@@ -773,25 +773,35 @@ public final class TrackGenerator {
         long worldSeed = level.getSeed();
         int voidSentinel = minBuildHeight + 1;
 
-        // Stairs candidate tracker — placed at the first pillar of each
-        // {@link #MIN_STAIRS_SPACING}-X window encountered during this chunk's
-        // pillar walk. Initialising to {@code chunkMinX - MIN_STAIRS_SPACING}
-        // means the very first pillar in this chunk is immediately eligible.
-        // Cross-chunk: each chunk maintains its own tracker, so a pillar at
-        // the very edge of two chunks could end up with stairs in both — the
-        // window-parity rule below puts them on opposite sides, keeping the
-        // visual interesting and not catastrophic.
-        int lastStairsX = chunkMinX - MIN_STAIRS_SPACING;
+        // Pre-compute pillar positions in [chunkMinX - MIN_STAIRS_SPACING,
+        // chunkMaxX + MIN_STAIRS_SPACING]. The map is keyed by world-X with
+        // value = the centerZ groundY (= pillar base Y). Used to (a) decide
+        // which X's get a pillar in this chunk, and (b) apply a stateless
+        // first-pillar-in-MIN_STAIRS_SPACING-window rule for stairs eligibility
+        // — every chunk that touches a window's first pillar reaches the same
+        // verdict because the precompute extends one full window each side.
+        // Cost: ~96 probes per chunk; each probe is a near-surface descent
+        // (~12 reads typical), so ~1200 reads per chunk for pillar planning.
+        java.util.NavigableMap<Integer, Integer> nearbyPillars = new java.util.TreeMap<>();
+        int scanMinX = chunkMinX - MIN_STAIRS_SPACING;
+        int scanMaxX = chunkMaxX + MIN_STAIRS_SPACING;
+        for (int x = scanMinX; x <= scanMaxX; x++) {
+            int gy = probeGroundYWorldgen(level, x, probeZ, g.bedY());
+            if (gy >= g.bedY()) continue;
+            if (gy == voidSentinel) continue;
+            int h = g.bedY() - 1 - gy;
+            if (h < 0) continue;
+            int sp = computeSpacing(h);
+            if (Math.floorMod(x, sp) != 0) continue;
+            nearbyPillars.put(x, gy);
+        }
 
         for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
-            int groundY = probeGroundYWorldgen(level, worldX, probeZ, g.bedY());
-            if (groundY >= g.bedY()) continue;          // already at/above bed: no pillar
-            if (groundY == voidSentinel) continue;       // void column
+            Integer baseY = nearbyPillars.get(worldX);
+            if (baseY == null) continue;                  // no pillar at this X
+            int groundY = baseY;
             int height = g.bedY() - 1 - groundY;
-            if (height < 0) continue;
             int spacing = computeSpacing(height);
-            if (Math.floorMod(worldX, spacing) != 0) continue;
-
             int thickness = computeThickness(spacing);
             int minDx = -((thickness - 1) / 2);
             int maxDx = thickness / 2;
@@ -799,18 +809,29 @@ public final class TrackGenerator {
                 placePillarSliceWorldgen(level, serverLevel, worldX + dx, g, dims, worldSeed, worldX);
             }
 
-            // Stairs check — every Nth pillar where N is implicit in the
-            // distance rule. Run the rigorous footprint probe only when this
-            // pillar is far enough from the previous stairs in this chunk.
-            // The probe inside placeStairsBesidePillarWorldgen short-circuits
-            // if the 3×3 footprint can't be anchored, so a "no pillar at all"
-            // outcome is correctly modelled as "stairs not placed, lastStairsX
-            // unchanged".
-            if (worldX - lastStairsX >= MIN_STAIRS_SPACING) {
-                if (placeStairsBesidePillarWorldgen(level, serverLevel, worldX, g, worldSeed)) {
-                    lastStairsX = worldX;
-                }
+            // Stairs eligibility — stateless "first pillar in this
+            // MIN_STAIRS_SPACING-aligned window" rule. The precomputed
+            // nearbyPillars map covers ±MIN_STAIRS_SPACING X each side of
+            // the chunk so the check is the same regardless of which
+            // chunk's worldgen pass actually evaluates this pillar.
+            int windowStart = Math.floorDiv(worldX, MIN_STAIRS_SPACING) * MIN_STAIRS_SPACING;
+            Integer prevPillarX = nearbyPillars.lowerKey(worldX);
+            if (prevPillarX != null && prevPillarX >= windowStart) continue;
+
+            // Boundary protection — the previous window's first pillar
+            // may sit just inside its window's right edge (e.g. X=39).
+            // If our pillar is at windowStart=40 we'd have only 1 X gap.
+            // Reject if the previous window's first pillar is closer than
+            // MIN_STAIRS_SPACING.
+            int prevWindowStart = windowStart - MIN_STAIRS_SPACING;
+            Integer prevWindowFirst = nearbyPillars.ceilingKey(prevWindowStart);
+            if (prevWindowFirst != null
+                && prevWindowFirst < windowStart
+                && worldX - prevWindowFirst < MIN_STAIRS_SPACING) {
+                continue;
             }
+
+            placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
         }
     }
 
@@ -895,22 +916,28 @@ public final class TrackGenerator {
      * Mirrors {@link #placeStairsBesidePillar} (the runtime variant, now
      * dead) but adapts for {@link WorldGenLevel}: skips ship checks (no
      * ships exist during chunkgen), uses {@code level.setBlock} +
-     * {@link Block#UPDATE_CLIENTS} for sidecar writes, and uses
-     * {@link #probeGroundYWorldgen} for the 3×3 footprint probe.
+     * {@link Block#UPDATE_CLIENTS} for sidecar writes.
+     *
+     * <p><b>Depth probe:</b> single-column probe at the stairs center
+     * XZ, starting at {@code pillarBaseY} (= the pillar's lowest block).
+     * If that block is solid → terrain extends at or above the pillar
+     * base; scan UP for the first air row (hill rising past the pillar).
+     * If passable → terrain is below; scan DOWN for the first solid
+     * (cliff edge / down-slope). Anchor Y for stairs is one above the
+     * found surface block. This replaces the previous 3×3 footprint
+     * probe — the structure template's natural placement still skips
+     * solid cells via the existing isPassable guard, so a single
+     * representative probe at the center is sufficient.</p>
      *
      * <p>The window-parity rule for left/right alternation is unchanged
      * from the runtime version: even windows put stairs on +Z side, odd
-     * windows on -Z. This is stateless w.r.t. neighbouring chunks so the
-     * alternation pattern is consistent across chunk boundaries.</p>
-     *
-     * <p>Returns {@code true} if the stamp actually landed (footprint
-     * probe found ground within reach), so the caller can update its
-     * {@code lastStairsX} tracker only when stairs were really placed.</p>
+     * windows on -Z. Stateless across chunk boundaries.</p>
      */
-    private static boolean placeStairsBesidePillarWorldgen(
+    private static void placeStairsBesidePillarWorldgen(
         WorldGenLevel level,
         ServerLevel serverLevel,
         int centerX,
+        int pillarBaseY,
         TrackGeometry g,
         long worldSeed
     ) {
@@ -922,7 +949,7 @@ public final class TrackGenerator {
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunctFor(serverLevel,
                 games.brennan.dungeontrain.track.PillarAdjunct.STAIRS, stairsName);
-        if (templateOpt.isEmpty()) return false;
+        if (templateOpt.isEmpty()) return;
         StructureTemplate template = templateOpt.get();
         TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
             TrackKind.ADJUNCT_STAIRS, stairsName,
@@ -932,19 +959,38 @@ public final class TrackGenerator {
         int originX = centerX - 1;                 // centred 3-wide on centerX
         int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
 
-        // Probe 3×3 footprint; anchor to the deepest-but-reachable ground.
-        int voidSentinel = level.getMinBuildHeight() + 1;
-        int deepestGroundY = g.bedY();
-        for (int dx = 0; dx < STAIRS_X; dx++) {
-            for (int dz = 0; dz < STAIRS_Z; dz++) {
-                int ground = probeGroundYWorldgen(level, originX + dx, originZ + dz, g.bedY());
-                if (ground >= g.bedY()) continue;
-                if (ground == voidSentinel) continue;
-                if (ground < deepestGroundY) deepestGroundY = ground;
+        // Single-column probe at stairs center XZ, anchored at pillar base Y.
+        // Walk up if terrain is solid at that level (hill rising past the
+        // pillar) or down if air (cliff edge / down-slope).
+        int centerStairsZ = originZ + (STAIRS_Z - 1) / 2;
+        int minY = level.getMinBuildHeight() + 1;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        int deepestGroundY;
+        pos.set(centerX, pillarBaseY, centerStairsZ);
+        if (isPassable(level.getBlockState(pos))) {
+            // Air at pillar base level — terrain is below. Walk down to
+            // find the first non-passable block; anchor stairs one above.
+            int found = -1;
+            for (int y = pillarBaseY - 1; y >= minY; y--) {
+                pos.set(centerX, y, centerStairsZ);
+                if (!isPassable(level.getBlockState(pos))) { found = y; break; }
             }
+            if (found < 0) return;                  // void column under stairs
+            deepestGroundY = found + 1;
+        } else {
+            // Solid at pillar base level — terrain extends at or above.
+            // Walk up until we find air; anchor stairs at that air block
+            // (= one above the highest non-passable).
+            int found = -1;
+            for (int y = pillarBaseY + 1; y <= topInclusive + STAIRS_Y; y++) {
+                pos.set(centerX, y, centerStairsZ);
+                if (isPassable(level.getBlockState(pos))) { found = y; break; }
+            }
+            if (found < 0) return;                  // terrain reaches above stair cap
+            deepestGroundY = found;
         }
-        if (deepestGroundY >= g.bedY()) return false;
-        if (deepestGroundY > topInclusive) return false;
+        if (deepestGroundY >= g.bedY()) return;
+        if (deepestGroundY > topInclusive) return;
 
         // Mirror.LEFT_RIGHT negates local Z around stamp origin; shifting
         // origin by +(STAIRS_Z - 1) keeps the mirrored footprint at
@@ -1002,7 +1048,6 @@ public final class TrackGenerator {
 
             currentTop -= STAIRS_Y;
         }
-        return true;
     }
 
     /**
