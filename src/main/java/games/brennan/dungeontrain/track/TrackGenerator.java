@@ -122,7 +122,7 @@ public final class TrackGenerator {
      * flat terrain lands on a multiple of this value (otherwise stairs never
      * appear). 40 blocks ≈ 5 flat-terrain pillar slots.
      */
-    private static final int MIN_STAIRS_SPACING = 40;
+    private static final int MIN_STAIRS_SPACING = 60;
 
     private TrackGenerator() {}
 
@@ -773,15 +773,33 @@ public final class TrackGenerator {
         long worldSeed = level.getSeed();
         int voidSentinel = minBuildHeight + 1;
 
-        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
-            int groundY = probeGroundYWorldgen(level, worldX, probeZ, g.bedY());
-            if (groundY >= g.bedY()) continue;          // already at/above bed: no pillar
-            if (groundY == voidSentinel) continue;       // void column
-            int height = g.bedY() - 1 - groundY;
-            if (height < 0) continue;
-            int spacing = computeSpacing(height);
-            if (Math.floorMod(worldX, spacing) != 0) continue;
+        // Pre-compute pillar positions + heights in [chunkMinX - MIN_STAIRS_SPACING,
+        // chunkMaxX + MIN_STAIRS_SPACING]. Used to apply the cross-chunk
+        // stairs rules: (a) first pillar in MIN_STAIRS_SPACING-aligned slot,
+        // (b) ≥ MIN_STAIRS_SPACING away from any prior short pillar
+        // (height < SHORT_PILLAR_THRESHOLD). Each chunk reaches the same
+        // verdict for any pillar in the chunk because the precompute extends
+        // one full slot each side.
+        java.util.NavigableMap<Integer, PillarInfo> nearbyPillars = new java.util.TreeMap<>();
+        int scanMinX = chunkMinX - MIN_STAIRS_SPACING;
+        int scanMaxX = chunkMaxX + MIN_STAIRS_SPACING;
+        for (int x = scanMinX; x <= scanMaxX; x++) {
+            int gy = probeGroundYWorldgen(level, x, probeZ, g.bedY());
+            if (gy >= g.bedY()) continue;
+            if (gy == voidSentinel) continue;
+            int h = g.bedY() - 1 - gy;
+            if (h < 0) continue;
+            int sp = computeSpacing(h);
+            if (Math.floorMod(x, sp) != 0) continue;
+            nearbyPillars.put(x, new PillarInfo(gy, h));
+        }
 
+        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
+            PillarInfo info = nearbyPillars.get(worldX);
+            if (info == null) continue;
+            int groundY = info.groundY();
+            int height = info.height();
+            int spacing = computeSpacing(height);
             int thickness = computeThickness(spacing);
             int minDx = -((thickness - 1) / 2);
             int maxDx = thickness / 2;
@@ -789,26 +807,60 @@ public final class TrackGenerator {
                 placePillarSliceWorldgen(level, serverLevel, worldX + dx, g, dims, worldSeed, worldX);
             }
 
-            // Stairs eligibility — strict slot rule: only at pillars where
-            // centerX is exactly a multiple of MIN_STAIRS_SPACING. Two
-            // guarantees fall out of this:
-            //   • Always alternate sides — placeStairsBesidePillarWorldgen
-            //     uses {@code floorMod(centerX / MIN_STAIRS_SPACING, 2)}
-            //     for the side, so consecutive slots (X=0, X=40, X=80, …)
-            //     are guaranteed opposite.
-            //   • Never on neighbouring pillars — minimum gap between
-            //     consecutive stairs is exactly MIN_STAIRS_SPACING (= 40),
-            //     well beyond any plausible pillar spacing (~5-20), so
-            //     consecutive stairs are always many pillars apart.
-            // Trade-off: pillars whose spacing doesn't divide
-            // MIN_STAIRS_SPACING (e.g. spacing 7) never land on a 40-
-            // multiple and therefore skip stairs in that terrain.
-            // Acceptable in exchange for predictable alternation.
-            if (Math.floorMod(worldX, MIN_STAIRS_SPACING) == 0) {
-                placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
+            // Stairs eligibility — three independent gates, all must pass:
+            //   (1) Don't put stairs on a short pillar itself — they'd sit
+            //       barely above ground and look pointless.
+            //   (2) First pillar in this MIN_STAIRS_SPACING-aligned slot.
+            //       The lowerKey check + the boundary check together ensure
+            //       no two stairs are placed within MIN_STAIRS_SPACING of
+            //       each other (matches "never closer than 60").
+            //   (3) ≥ MIN_STAIRS_SPACING away from the nearest prior short
+            //       pillar (height < SHORT_PILLAR_THRESHOLD). Stops stairs
+            //       from being plopped right next to a 1-2 block stub.
+            if (height < SHORT_PILLAR_THRESHOLD) continue;
+
+            int slotStart = Math.floorDiv(worldX, MIN_STAIRS_SPACING) * MIN_STAIRS_SPACING;
+            Integer prevPillarX = nearbyPillars.lowerKey(worldX);
+            if (prevPillarX != null && prevPillarX >= slotStart) continue;
+
+            int prevSlotStart = slotStart - MIN_STAIRS_SPACING;
+            Integer prevSlotFirst = nearbyPillars.ceilingKey(prevSlotStart);
+            if (prevSlotFirst != null
+                && prevSlotFirst < slotStart
+                && worldX - prevSlotFirst < MIN_STAIRS_SPACING) {
+                continue;
             }
+
+            // (3) — walk back through the precomputed map to find any
+            // short pillar within MIN_STAIRS_SPACING X. NavigableMap.subMap
+            // (with the inclusive/exclusive overload) returns a
+            // NavigableMap so descendingMap is available; the SortedMap-
+            // returning subMap(from, to) overload doesn't have it.
+            boolean shortNearby = false;
+            for (java.util.Map.Entry<Integer, PillarInfo> e :
+                    nearbyPillars.subMap(worldX - MIN_STAIRS_SPACING + 1, true, worldX, false)
+                                 .descendingMap().entrySet()) {
+                if (e.getValue().height() < SHORT_PILLAR_THRESHOLD) {
+                    shortNearby = true;
+                    break;
+                }
+            }
+            if (shortNearby) continue;
+
+            placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
         }
     }
+
+    /**
+     * Pillars shorter than this height (in blocks) suppress nearby stairs
+     * placement. A 1-2 block pillar is barely above ground and stairs
+     * landing next to it would look out of place — better to skip stairs
+     * in that stretch and let them land on a more substantial pillar.
+     */
+    private static final int SHORT_PILLAR_THRESHOLD = 3;
+
+    /** Pillar position metadata cached during the worldgen scan. */
+    private record PillarInfo(int groundY, int height) {}
 
     private static void placePillarSliceWorldgen(
         WorldGenLevel level,
