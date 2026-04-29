@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -11,6 +12,8 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -44,6 +47,9 @@ public final class TrainBootstrapEvents {
 
     static final int DEFAULT_CARRIAGE_COUNT = 10;
     static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
+
+    /** Perpendicular Z offset of the world spawn from corridor centerline. */
+    private static final int SHARED_SPAWN_PERP = 25;
 
     private TrainBootstrapEvents() {}
 
@@ -86,6 +92,36 @@ public final class TrainBootstrapEvents {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }
+
+        anchorWorldSpawnNearCorridor(target, dims, trainY);
+    }
+
+    /**
+     * Override the level's default spawn point so first-time players appear
+     * near the corridor visually rather than at MC's biome-picked vanilla
+     * spawn (typically near 0, ~64, 0). Without this, the player flashes the
+     * vanilla position for 1–2 ticks before {@code PlayerJoinEvents}'
+     * deferred retry teleport refines them to the precise target — long
+     * enough at 60 FPS to be a noticeable visual jump.
+     *
+     * <p>The yaw is set to 180° (facing −Z) so the player is initially
+     * looking toward the corridor at smaller Z. The retry teleport will
+     * still refine pitch and may shift position, but both are now small
+     * adjustments from a corridor-adjacent anchor instead of cross-world
+     * teleports.</p>
+     */
+    private static void anchorWorldSpawnNearCorridor(
+        ServerLevel target, CarriageDims dims, int trainY
+    ) {
+        TrackGeometry g = TrackGeometry.from(dims, trainY);
+        int spawnX = 0;
+        int spawnZ = g.trackCenterZ() + SHARED_SPAWN_PERP;
+        target.getChunk(spawnX >> 4, spawnZ >> 4, ChunkStatus.FULL, true);
+        int surfaceY = target.getHeight(Heightmap.Types.MOTION_BLOCKING, spawnX, spawnZ);
+        BlockPos spawnPos = new BlockPos(spawnX, surfaceY, spawnZ);
+        target.setDefaultSpawnPos(spawnPos, 180.0F);
+        LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw=180 (corridor +{} Z)",
+            spawnPos, SHARED_SPAWN_PERP);
     }
 
     private static ManagedShip findTrain(ServerLevel level) {

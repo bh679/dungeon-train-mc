@@ -427,9 +427,10 @@ public final class PlayerJoinEvents {
 
     /**
      * Validates a candidate player position. Rejects positions in the void,
-     * against the ceiling, or with water/lava at body/head level (so the
-     * player never spawns submerged even if the ground probe found a solid
-     * seabed under a deep ocean column).
+     * against the ceiling, with water/lava at body/head level (no submerged
+     * spawns), or with leaves at body/head level (the ground probe walks
+     * through leaves to reach the trunk top, which can leave the player's
+     * body inside the canopy).
      */
     private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z) {
         if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
@@ -437,9 +438,13 @@ public final class PlayerJoinEvents {
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(x, y, z);
-        if (!level.getBlockState(pos).getFluidState().isEmpty()) return false;
+        BlockState body = level.getBlockState(pos);
+        if (!body.getFluidState().isEmpty()) return false;
+        if (body.is(BlockTags.LEAVES)) return false;
         pos.set(x, y + 1, z);
-        if (!level.getBlockState(pos).getFluidState().isEmpty()) return false;
+        BlockState head = level.getBlockState(pos);
+        if (!head.getFluidState().isEmpty()) return false;
+        if (head.is(BlockTags.LEAVES)) return false;
         return true;
     }
 
