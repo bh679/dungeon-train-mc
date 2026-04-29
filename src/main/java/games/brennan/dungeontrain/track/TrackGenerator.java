@@ -1042,11 +1042,12 @@ public final class TrackGenerator {
             }
             deepestGroundY = found;
         }
-        if (deepestGroundY >= g.bedY()) {
-            LOGGER.info("[stairs] centerX={} reject=ground_at_or_above_bed deepest={} bedY={}",
-                centerX, deepestGroundY, g.bedY());
-            return;
-        }
+        // Only reject if the anchor is ABOVE the stair cap — placement
+        // can't go anywhere useful from there. Anchor at bedY itself
+        // (= terrain reaches up to train-bed level) is fine: stairs
+        // occupy a thin [bedY, topInclusive] = 3-row band, the placement
+        // loop's BoundingBox clips the template's top 3 rows, the
+        // staircase visual sits above the local ground correctly.
         if (deepestGroundY > topInclusive) {
             LOGGER.info("[stairs] centerX={} reject=ground_above_stair_top deepest={} topInclusive={}",
                 centerX, deepestGroundY, topInclusive);
