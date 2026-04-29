@@ -43,9 +43,13 @@ public final class TrainTransformProvider implements KinematicDriver {
     // Remove or demote to TRACE once the root cause is confirmed.
     private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
 
-    // VS physics thread runs at 60 Hz; each call to provideNextTransformAndVelocity
-    // represents one physics step.
-    private static final double PHYSICS_DT = 1.0 / 60.0;
+    // SableKinematicTicker fires nextTransform every server tick (20 Hz),
+    // so each call represents 1/20 s of game time. canonicalPos must advance
+    // by velocity * 1/20 per call so its motion matches what the rendered
+    // body shows over a server-tick interval. (The original VS-era constant
+    // here was 1/60 because the VS physics thread called us at physics rate;
+    // Sable's pattern is server-tick driven.)
+    private static final double PHYSICS_DT = 1.0 / 20.0;
     private static final Vector3dc ZERO_OMEGA = new Vector3d();
     // Squared block-units threshold for logging a pivot drift event — anything
     // smaller is floating-point noise that isn't worth a log line.
@@ -440,35 +444,19 @@ public final class TrainTransformProvider implements KinematicDriver {
     }
 
     /**
-     * Compute the compensated tick output for a given observed ship state.
-     *
-     * Shared between the physics-thread driver callback (normal path) and the
-     * rolling-window manager (called on the server thread right after block
-     * mutations) so the voxel change and transform update land in the same
-     * server tick — otherwise the client may render the new voxels against the
-     * stale transform for one frame, producing a visible teleport.
-     *
-     * Returns {@code null} if the baseline hasn't been captured yet (no
-     * physics tick has run); callers should leave the transform alone in that
-     * case.
+     * Pure-kinematic tick output. The train is prescribed to be at
+     * {@link #canonicalPos} with {@link #lockedRotation} and the spawn-time
+     * model-space pivot — no COM-drift compensation. Mass changes (carriages
+     * added or removed by the rolling window) cannot move the train, tip it,
+     * or otherwise leak through this transform. Returns {@code null} until
+     * the spawn baseline has been captured on the first physics tick.
      */
     public TickOutput computeCompensatedTransform(TickInput current) {
         if (lockedRotation == null) return null;
-
-        Vector3d effectivePos = computeEffectivePosition(
-            canonicalPos, current.currentPositionInModel(), lockedPositionInModel, lockedRotation);
-
-        double rawComDeltaX = current.currentPositionInModel().x() - lockedPositionInModel.x();
-        if (rawComDeltaX * rawComDeltaX > COM_DRIFT_LOG_THRESHOLD_SQ
-            && Math.abs(rawComDeltaX - lastLoggedDriftX) > 0.5) {
-            LOGGER.debug("[DungeonTrain] Pivot drift: rawComDeltaX={} — compensating", rawComDeltaX);
-            lastLoggedDriftX = rawComDeltaX;
-        }
-
         return new TickOutput(
-            effectivePos,
+            canonicalPos,
             lockedRotation,
-            current.currentPositionInModel(),
+            lockedPositionInModel,
             targetVelocity,
             ZERO_OMEGA);
     }
@@ -496,15 +484,16 @@ public final class TrainTransformProvider implements KinematicDriver {
     @Override
     public TickOutput nextTransform(TickInput input) {
         if (lockedRotation == null) {
-            lockedRotation = new Quaterniond(input.currentRotation());
+            // Force identity rotation — the train must always be axis-aligned.
+            // Capturing input.currentRotation() here would freeze in whatever
+            // rotation Sable's physics produced between assembly and the first
+            // kinematic tick (gravity, mass-driven torque), which is exactly
+            // the "tipping" we're trying to prevent.
+            lockedRotation = new Quaterniond();
             canonicalPos = new Vector3d(input.currentPosition());
             lockedPositionInModel = new Vector3d(input.currentPositionInModel());
-            // Stage 2b P4 — sanity-log the captured baseline. Non-identity
-            // rotation would change the sign convention of the compensation
-            // math and matter a lot for diagnosis; print it once.
             JITTER_LOGGER.info(
-                "[baseline] captured lockedRotation=({}, {}, {}, {}) canonicalPos={} lockedPositionInModel={}",
-                lockedRotation.x(), lockedRotation.y(), lockedRotation.z(), lockedRotation.w(),
+                "[baseline] forced identity lockedRotation; canonicalPos={} lockedPositionInModel={}",
                 fmt(canonicalPos), fmt(lockedPositionInModel));
         }
 
@@ -537,14 +526,11 @@ public final class TrainTransformProvider implements KinematicDriver {
             canonicalPos.set(prevCanonX, prevCanonY, prevCanonZ);
         }
 
-        // The rolling-window manager mutates voxel blocks every server tick;
-        // VS may re-center the ship's model-space pivot (positionInModel) on
-        // the new COM regardless of setStatic(true). Setting the output's
-        // positionInModel to our locked baseline is not enough — VS appears
-        // to ignore or re-derive it. So we COMPENSATE the world-space
-        // position by the observed pivot drift, which keeps the voxel-to-
-        // world mapping anchored to the original pivot no matter which pivot
-        // VS actually uses for rendering.
+        // Pure kinematic output: position = canonicalPos (advanced by
+        // velocity * dt above), rotation = lockedRotation (spawn-time),
+        // pivot = lockedPositionInModel (spawn-time). Mass changes don't
+        // touch any of these so the train stays straight and level under
+        // any rolling-window mutation.
         TickOutput next = computeCompensatedTransform(input);
         logPhysicsProbe(input, next);
         return next;
