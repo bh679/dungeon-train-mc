@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StairsRegistryData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
@@ -817,51 +818,31 @@ public final class TrackGenerator {
             //   (3) ≥ MIN_STAIRS_SPACING away from the nearest prior short
             //       pillar (height < SHORT_PILLAR_THRESHOLD). Stops stairs
             //       from being plopped right next to a 1-2 block stub.
+            // Stairs eligibility — Option C: cross-chunk registry. The
+            // SavedData-backed StairsRegistryData persists pillar-side
+            // stairs and short-pillar markers, so chunks beyond the ±1
+            // chunk worldgen read window still see each other's commits.
+            // tryReserveStairs is atomic: a parallel-thread chunk that
+            // wants the same slot will lose the race and skip.
+            ServerLevel ow = serverLevel.getServer().overworld();
+            StairsRegistryData registry = StairsRegistryData.get(ow);
+
             if (height < SHORT_PILLAR_THRESHOLD) {
-                LOGGER.debug("[stairs.elig] worldX={} reject=self_short height={}", worldX, height);
+                // Record the short pillar so future stairs candidates honour
+                // the MIN_STAIRS_SPACING exclusion against it across chunks.
+                registry.recordShortPillar(worldX);
                 continue;
             }
 
-            int slotStart = Math.floorDiv(worldX, MIN_STAIRS_SPACING) * MIN_STAIRS_SPACING;
-            Integer prevPillarX = nearbyPillars.lowerKey(worldX);
-            if (prevPillarX != null && prevPillarX >= slotStart) {
-                LOGGER.debug("[stairs.elig] worldX={} reject=not_first_in_slot prevPillarX={} slotStart={}",
-                    worldX, prevPillarX, slotStart);
+            Boolean reservedSide = registry.tryReserveStairs(worldX, MIN_STAIRS_SPACING);
+            if (reservedSide == null) {
+                LOGGER.debug("[stairs.elig] worldX={} reject=registry_conflict", worldX);
                 continue;
             }
 
-            int prevSlotStart = slotStart - MIN_STAIRS_SPACING;
-            Integer prevSlotFirst = nearbyPillars.ceilingKey(prevSlotStart);
-            if (prevSlotFirst != null
-                && prevSlotFirst < slotStart
-                && worldX - prevSlotFirst < MIN_STAIRS_SPACING) {
-                LOGGER.debug("[stairs.elig] worldX={} reject=prev_slot_too_close prevSlotFirst={} gap={}",
-                    worldX, prevSlotFirst, worldX - prevSlotFirst);
-                continue;
-            }
-
-            // (3) — walk back through the precomputed map to find any
-            // short pillar within MIN_STAIRS_SPACING X.
-            boolean shortNearby = false;
-            int shortNearbyX = -1;
-            for (java.util.Map.Entry<Integer, PillarInfo> e :
-                    nearbyPillars.subMap(worldX - MIN_STAIRS_SPACING + 1, true, worldX, false)
-                                 .descendingMap().entrySet()) {
-                if (e.getValue().height() < SHORT_PILLAR_THRESHOLD) {
-                    shortNearby = true;
-                    shortNearbyX = e.getKey();
-                    break;
-                }
-            }
-            if (shortNearby) {
-                LOGGER.debug("[stairs.elig] worldX={} reject=short_pillar_nearby shortAt={}",
-                    worldX, shortNearbyX);
-                continue;
-            }
-
-            LOGGER.info("[stairs.elig] worldX={} chunk=({},{}) PASS height={} slotStart={} → calling placeStairs",
-                worldX, chunkX, chunkZ, height, slotStart);
-            placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
+            LOGGER.info("[stairs.elig] worldX={} chunk=({},{}) PASS height={} side={} → calling placeStairs",
+                worldX, chunkX, chunkZ, height, reservedSide ? "-Z" : "+Z");
+            placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed, reservedSide);
         }
     }
 
@@ -980,11 +961,9 @@ public final class TrackGenerator {
         int centerX,
         int pillarBaseY,
         TrackGeometry g,
-        long worldSeed
+        long worldSeed,
+        boolean flipped
     ) {
-        int windowIndex = Math.floorDiv(centerX, MIN_STAIRS_SPACING);
-        boolean flipped = Math.floorMod(windowIndex, 2) == 1;
-
         String stairsName = TrackVariantRegistry.pickName(
             TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
         Optional<StructureTemplate> templateOpt =
