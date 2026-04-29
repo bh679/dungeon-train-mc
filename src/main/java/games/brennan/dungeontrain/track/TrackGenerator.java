@@ -205,7 +205,20 @@ public final class TrackGenerator {
         return state.isAir()
             || !state.getFluidState().isEmpty()
             || state.is(BlockTags.LEAVES)
-            || state.is(Blocks.VINE);
+            || state.is(Blocks.VINE)
+            // Ice family treated as water — pillars sink through to the
+            // seabed below an iced-over ocean / lake instead of resting
+            // on the ice surface (which would leave the pillar floating
+            // a few blocks above true ground).
+            || state.is(BlockTags.ICE)
+            // Snow layers, tall grass, flowers, ferns, dead bush, kelp,
+            // seagrass, and other replaceable surface adornments occupy
+            // a full Y coordinate but render with reduced height — without
+            // this guard, a snow layer on top of dirt makes the pillar
+            // sit one block above the visible surface. BlockTags.REPLACEABLE
+            // is vanilla's "things worldgen can paint over", which is
+            // exactly the right superset.
+            || state.is(BlockTags.REPLACEABLE);
     }
 
     /**
