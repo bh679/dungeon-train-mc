@@ -817,36 +817,50 @@ public final class TrackGenerator {
             //   (3) ≥ MIN_STAIRS_SPACING away from the nearest prior short
             //       pillar (height < SHORT_PILLAR_THRESHOLD). Stops stairs
             //       from being plopped right next to a 1-2 block stub.
-            if (height < SHORT_PILLAR_THRESHOLD) continue;
+            if (height < SHORT_PILLAR_THRESHOLD) {
+                LOGGER.debug("[stairs.elig] worldX={} reject=self_short height={}", worldX, height);
+                continue;
+            }
 
             int slotStart = Math.floorDiv(worldX, MIN_STAIRS_SPACING) * MIN_STAIRS_SPACING;
             Integer prevPillarX = nearbyPillars.lowerKey(worldX);
-            if (prevPillarX != null && prevPillarX >= slotStart) continue;
+            if (prevPillarX != null && prevPillarX >= slotStart) {
+                LOGGER.debug("[stairs.elig] worldX={} reject=not_first_in_slot prevPillarX={} slotStart={}",
+                    worldX, prevPillarX, slotStart);
+                continue;
+            }
 
             int prevSlotStart = slotStart - MIN_STAIRS_SPACING;
             Integer prevSlotFirst = nearbyPillars.ceilingKey(prevSlotStart);
             if (prevSlotFirst != null
                 && prevSlotFirst < slotStart
                 && worldX - prevSlotFirst < MIN_STAIRS_SPACING) {
+                LOGGER.debug("[stairs.elig] worldX={} reject=prev_slot_too_close prevSlotFirst={} gap={}",
+                    worldX, prevSlotFirst, worldX - prevSlotFirst);
                 continue;
             }
 
             // (3) — walk back through the precomputed map to find any
-            // short pillar within MIN_STAIRS_SPACING X. NavigableMap.subMap
-            // (with the inclusive/exclusive overload) returns a
-            // NavigableMap so descendingMap is available; the SortedMap-
-            // returning subMap(from, to) overload doesn't have it.
+            // short pillar within MIN_STAIRS_SPACING X.
             boolean shortNearby = false;
+            int shortNearbyX = -1;
             for (java.util.Map.Entry<Integer, PillarInfo> e :
                     nearbyPillars.subMap(worldX - MIN_STAIRS_SPACING + 1, true, worldX, false)
                                  .descendingMap().entrySet()) {
                 if (e.getValue().height() < SHORT_PILLAR_THRESHOLD) {
                     shortNearby = true;
+                    shortNearbyX = e.getKey();
                     break;
                 }
             }
-            if (shortNearby) continue;
+            if (shortNearby) {
+                LOGGER.debug("[stairs.elig] worldX={} reject=short_pillar_nearby shortAt={}",
+                    worldX, shortNearbyX);
+                continue;
+            }
 
+            LOGGER.info("[stairs.elig] worldX={} chunk=({},{}) PASS height={} slotStart={} → calling placeStairs",
+                worldX, chunkX, chunkZ, height, slotStart);
             placeStairsBesidePillarWorldgen(level, serverLevel, worldX, groundY, g, worldSeed);
         }
     }
@@ -940,10 +954,10 @@ public final class TrackGenerator {
 
     /**
      * Worldgen-time stairs placement beside a pillar at {@code centerX}.
-     * Mirrors {@link #placeStairsBesidePillar} (the runtime variant, now
-     * dead) but adapts for {@link WorldGenLevel}: skips ship checks (no
-     * ships exist during chunkgen), uses {@code level.setBlock} +
-     * {@link Block#UPDATE_CLIENTS} for sidecar writes.
+     * Stairs are exclusively a chunkgen feature — no runtime placement
+     * exists. Skips ship checks (no ships exist during chunkgen), uses
+     * {@code level.setBlock} + {@link Block#UPDATE_CLIENTS} for sidecar
+     * writes.
      *
      * <p><b>Depth probe:</b> single-column probe at the stairs center
      * XZ, starting at {@code pillarBaseY} (= the pillar's lowest block).
@@ -976,7 +990,12 @@ public final class TrackGenerator {
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunctFor(serverLevel,
                 games.brennan.dungeontrain.track.PillarAdjunct.STAIRS, stairsName);
-        if (templateOpt.isEmpty()) return;
+        if (templateOpt.isEmpty()) {
+            LOGGER.info("[stairs] candidate centerX={} reject=template_missing name={}", centerX, stairsName);
+            return;
+        }
+        LOGGER.info("[stairs] candidate centerX={} pillarBaseY={} flipped={} template={}",
+            centerX, pillarBaseY, flipped, stairsName);
         StructureTemplate template = templateOpt.get();
         TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
             TrackKind.ADJUNCT_STAIRS, stairsName,
@@ -1002,7 +1021,10 @@ public final class TrackGenerator {
                 pos.set(centerX, y, centerStairsZ);
                 if (!isPassable(level.getBlockState(pos))) { found = y; break; }
             }
-            if (found < 0) return;                  // void column under stairs
+            if (found < 0) {
+                LOGGER.info("[stairs] centerX={} reject=void_below probeStart={}", centerX, pillarBaseY);
+                return;
+            }
             deepestGroundY = found + 1;
         } else {
             // Solid at pillar base level — terrain extends at or above.
@@ -1013,11 +1035,25 @@ public final class TrackGenerator {
                 pos.set(centerX, y, centerStairsZ);
                 if (isPassable(level.getBlockState(pos))) { found = y; break; }
             }
-            if (found < 0) return;                  // terrain reaches above stair cap
+            if (found < 0) {
+                LOGGER.info("[stairs] centerX={} reject=terrain_above_cap probeStart={} topInclusive={}",
+                    centerX, pillarBaseY, topInclusive);
+                return;
+            }
             deepestGroundY = found;
         }
-        if (deepestGroundY >= g.bedY()) return;
-        if (deepestGroundY > topInclusive) return;
+        if (deepestGroundY >= g.bedY()) {
+            LOGGER.info("[stairs] centerX={} reject=ground_at_or_above_bed deepest={} bedY={}",
+                centerX, deepestGroundY, g.bedY());
+            return;
+        }
+        if (deepestGroundY > topInclusive) {
+            LOGGER.info("[stairs] centerX={} reject=ground_above_stair_top deepest={} topInclusive={}",
+                centerX, deepestGroundY, topInclusive);
+            return;
+        }
+        LOGGER.info("[stairs] PLACED centerX={} deepestGroundY={} flipped={} side={}",
+            centerX, deepestGroundY, flipped, flipped ? "-Z" : "+Z");
 
         // Mirror.LEFT_RIGHT negates local Z around stamp origin; shifting
         // origin by +(STAIRS_Z - 1) keeps the mirrored footprint at
@@ -1148,191 +1184,6 @@ public final class TrackGenerator {
         }
 
         filledChunks.add(chunkKey);
-    }
-
-    /**
-     * Place the {@link PillarAdjunct#STAIRS} template alongside {@code pillar}
-     * if the selection rule fires for it. Only called once per pillar (at
-     * {@code worldX == pillar.centerX()}) so a thick pillar's N columns don't
-     * trigger N placements.
-     *
-     * <p>Selection rule: partition world-X into {@link #MIN_STAIRS_SPACING}-
-     * wide windows and place stairs on the <em>first</em> pillar in each
-     * window, <em>but only if</em> the previous window's first pillar is at
-     * least {@code MIN_STAIRS_SPACING} away — otherwise a pillar just inside
-     * the boundary (e.g. centerX=40) could land a step away from one just
-     * outside it (e.g. centerX=39). This conservatively skips such close-
-     * neighbour placements; the next window's candidate will try again from
-     * there. Guarantees minimum 40-block spacing between adjacent stairs,
-     * at the cost of an occasional skipped window. The precomputed pillar
-     * map already covers ±{@code PILLAR_SCAN_MARGIN}=40 around each chunk,
-     * which is exactly enough to resolve both the "first in window" and the
-     * "previous window first" lookups. The alternating side is picked off
-     * the window index so placement is stable across chunk-load order.</p>
-     *
-     * <p>Geometry: 3×8×3 template anchored with its top row at
-     * {@code g.bedY() + 2} (3 blocks above the track bed, so the top of the
-     * staircase sits just above the rail). 3 wide along X centred on
-     * {@code centerX}. On the +Z side (non-flipped) the 3 outward Z columns
-     * sit at {@code [trackZMax+1 .. trackZMax+3]}; on the -Z side (flipped)
-     * at {@code [trackZMin-3 .. trackZMin-1]}. The template is saved in its
-     * {@code -Z}-side orientation, so the +Z side gets
-     * {@link Mirror#LEFT_RIGHT} applied when stamped. Because that mirror
-     * negates local-z, the stamp origin is shifted by {@code +(STAIRS_Z-1)}
-     * on the mirrored side so the footprint still lands at the intended
-     * {@code [trackZMax+1 .. trackZMax+3]} — same trick {@code TunnelTemplate}
-     * uses for its {@code FRONT_BACK}-mirrored portal.</p>
-     *
-     * <p>If the pillar column is taller than 8, a fresh copy of the template
-     * is placed every 8 rows downward until the deepest ground is reached.
-     * The bottommost copy is clipped via a {@link BoundingBox} so its lower
-     * rows are discarded — the top rows of the template remain aligned with
-     * the top of that copy, preserving the "top always on top" invariant.</p>
-     */
-    private static void placeStairsBesidePillar(
-        ServerLevel level,
-        PillarSpec pillar,
-        NavigableMap<Integer, PillarSpec> pillars,
-        TrackGeometry g
-    ) {
-        int centerX = pillar.centerX();
-        int windowIndex = Math.floorDiv(centerX, MIN_STAIRS_SPACING);
-        int windowStart = windowIndex * MIN_STAIRS_SPACING;
-
-        // "First pillar in this MIN_STAIRS_SPACING window?" — if there's any
-        // pillar with a lower centerX that still falls inside [windowStart,
-        // centerX), we're not the first. lowerEntry is O(log n) on the
-        // TreeMap. PILLAR_SCAN_MARGIN ≥ MIN_STAIRS_SPACING ensures the
-        // relevant prior pillar is always in the map.
-        Map.Entry<Integer, PillarSpec> prior = pillars.lowerEntry(centerX);
-        if (prior != null && prior.getKey() >= windowStart) return;
-
-        // Distance check: the previous window's first pillar — if any —
-        // must be at least MIN_STAIRS_SPACING away. Catches the boundary
-        // case where a pillar at windowStart - 1 (first in prev window)
-        // and our pillar at windowStart would both qualify as "first in
-        // window" but only be 1 apart. Skipping ≥2-window gaps is safe
-        // because consecutive windows span ≥80 blocks, exceeding
-        // MIN_STAIRS_SPACING, so we only need to check one window back.
-        int prevWindowStart = windowStart - MIN_STAIRS_SPACING;
-        Map.Entry<Integer, PillarSpec> prevWindowFirst = pillars.ceilingEntry(prevWindowStart);
-        if (prevWindowFirst != null
-            && prevWindowFirst.getKey() < windowStart
-            && centerX - prevWindowFirst.getKey() < MIN_STAIRS_SPACING) {
-            return;
-        }
-
-        boolean flipped = Math.floorMod(windowIndex, 2) == 1;
-
-        // Pick a registry-weighted variant for this stair instance.
-        // tileIndex = centerX so re-walking the same chunk picks the same
-        // variant deterministically.
-        long worldSeed = level.getSeed();
-        String stairsName = TrackVariantRegistry.pickName(
-            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
-        Optional<StructureTemplate> templateOpt =
-            PillarTemplateStore.getAdjunctFor(level,
-                games.brennan.dungeontrain.track.PillarAdjunct.STAIRS, stairsName);
-        if (templateOpt.isEmpty()) return;
-        StructureTemplate template = templateOpt.get();
-        TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
-            TrackKind.ADJUNCT_STAIRS, stairsName,
-            new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
-
-        int topInclusive = g.bedY() + 2; // 3 rows above the pillar top so the
-                                          // staircase's cap sits above the rail
-        int originX = centerX - 1; // centred 3-wide on centerX
-        int originZ = flipped ? g.trackZMin() - STAIRS_Z : g.trackZMax() + 1;
-
-        // Probe ground across the 3×3 stair footprint; anchor to the deepest.
-        // Skip ship-sentinel and void-sentinel returns (the latter so stairs
-        // over pure void — e.g. The End — don't anchor at world floor and
-        // hang in mid-air). When every footprint cell is a sentinel,
-        // deepestGroundY stays at bedY and the existing check below skips.
-        int voidSentinel = level.getMinBuildHeight() + 1;
-        int deepestGroundY = g.bedY(); // sentinel "no ground found"
-        for (int dx = 0; dx < STAIRS_X; dx++) {
-            for (int dz = 0; dz < STAIRS_Z; dz++) {
-                int ground = probeGroundY(level, originX + dx, originZ + dz, g.bedY());
-                if (ground >= g.bedY()) continue;
-                if (ground == voidSentinel) continue;
-                if (ground < deepestGroundY) deepestGroundY = ground;
-            }
-        }
-        if (deepestGroundY >= g.bedY()) return;
-        if (deepestGroundY > topInclusive) return;
-
-        // When Mirror.LEFT_RIGHT is applied, the template's local Z gets
-        // negated around the stamp origin — so the mirrored template
-        // extends in -Z from originZ. Shifting the stamp origin by
-        // +(STAIRS_Z - 1) makes the final mirrored footprint land at
-        // [originZ .. originZ + STAIRS_Z - 1] again. Same pattern
-        // TunnelTemplate uses for its FRONT_BACK-mirrored portal.
-        int stampOriginZ = !flipped ? originZ + STAIRS_Z - 1 : originZ;
-
-        int currentTop = topInclusive;
-        while (currentTop >= deepestGroundY) {
-            int remaining = currentTop - deepestGroundY + 1;
-            int copyHeight = Math.min(STAIRS_Y, remaining);
-            int bottomY = currentTop - copyHeight + 1;
-
-            // placeInWorld uses `origin` for the template's (0,0,0) corner
-            // (before mirror/rotation). We always want template Y=STAIRS_Y-1
-            // to land at currentTop, so origin Y = currentTop - (STAIRS_Y - 1).
-            // The BoundingBox clipping below then discards cells whose world
-            // Y is outside [bottomY, currentTop] — exactly the bottom rows on
-            // a partial copy.
-            BlockPos copyOrigin = new BlockPos(originX, currentTop - (STAIRS_Y - 1), stampOriginZ);
-
-            BoundingBox clip = new BoundingBox(
-                originX, bottomY, originZ,
-                originX + STAIRS_X - 1, currentTop, originZ + STAIRS_Z - 1
-            );
-
-            StructurePlaceSettings settings = new StructurePlaceSettings()
-                .setIgnoreEntities(true)
-                .setBoundingBox(clip)
-                .addProcessor(ShipFilterProcessor.INSTANCE);
-            // Mirror applies to the non-flipped (+Z) side. The saved template
-            // is designed to read correctly on the flipped (-Z) side, so we
-            // mirror it when stamping on the opposite side to match.
-            if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
-
-            template.placeInWorld(level, copyOrigin, copyOrigin, settings, level.getRandom(), 3);
-
-            // Sidecar pass — overwrite flagged template-local positions with
-            // the deterministic per-block pick. Mirror semantics: on the
-            // mirrored (+Z) side template-local Z=k lands at world
-            // {@code originZ + STAIRS_Z - 1 - k}; on the flipped (-Z) side
-            // it lands at {@code originZ + k}. Cells whose template-local Y
-            // would land outside [bottomY, currentTop] are skipped (the
-            // BoundingBox above already kept those out of placeInWorld).
-            if (!stairsSidecar.isEmpty()) {
-                Shipyard shipyard = Shipyards.of(level);
-                int templateBaseY = currentTop - (STAIRS_Y - 1);
-                for (var entry : stairsSidecar.entries()) {
-                    int lx = entry.localPos().getX();
-                    int ly = entry.localPos().getY();
-                    int lz = entry.localPos().getZ();
-                    int wy = templateBaseY + ly;
-                    if (wy < bottomY || wy > currentTop) continue;
-                    int wx = originX + lx;
-                    int wz = flipped ? (originZ + lz) : (originZ + STAIRS_Z - 1 - lz);
-                    BlockPos wpos = new BlockPos(wx, wy, wz);
-                    if (shipyard.isInShip(wpos)) continue;
-                    games.brennan.dungeontrain.editor.VariantState picked =
-                        stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
-                    if (picked == null) continue;
-                    BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(),
-                        entry.localPos(), worldSeed, centerX,
-                        stairsSidecar.lockIdAt(entry.localPos()));
-                    SilentBlockOps.setBlockSilent(level, wpos, rotated, picked.blockEntityNbt());
-                }
-            }
-
-            currentTop -= STAIRS_Y;
-        }
     }
 
     /**
@@ -1492,51 +1343,6 @@ public final class TrackGenerator {
         }
     }
 
-    /**
-     * Place pillars + stair-adjuncts for one chunk using the existing
-     * terrain-aware logic. Caller is responsible for ensuring all 8
-     * neighbour chunks are at {@code ChunkStatus.FULL} so heightmap reads
-     * within ±{@link #PILLAR_SCAN_MARGIN} are reliable, and for stamping
-     * the chunk in {@code PillarPaintedChunks} after this returns to keep
-     * the deferred pass from re-running.
-     *
-     * <p>Idempotent: re-running on an already-pillared chunk is a no-op
-     * (pillar slice / stairs only write into passable blocks).</p>
-     */
-    public static void placePillarsForChunk(
-        ServerLevel level,
-        int chunkX,
-        int chunkZ,
-        TrackGeometry g,
-        CarriageDims dims
-    ) {
-        if (isShipyardChunk(chunkX, chunkZ)) return;
-
-        int chunkMinX = chunkX << 4;
-        int chunkMaxX = chunkMinX + 15;
-        int chunkMinZ = chunkZ << 4;
-        int chunkMaxZ = chunkMinZ + 15;
-
-        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return;
-
-        NavigableMap<Integer, PillarSpec> pillars = computePillarPositions(
-            level,
-            chunkMinX - PILLAR_SCAN_MARGIN,
-            chunkMaxX + PILLAR_SCAN_MARGIN,
-            g
-        );
-
-        for (int localX = 0; localX < 16; localX++) {
-            int worldX = chunkMinX + localX;
-            PillarSpec containingPillar = findPillarContaining(pillars, worldX);
-            if (containingPillar == null) continue;
-
-            placePillarSlice(level, worldX, g, dims);
-            if (worldX == containingPillar.centerX()) {
-                placeStairsBesidePillar(level, containingPillar, pillars, g);
-            }
-        }
-    }
 
     /**
      * One-time bootstrap called from {@code TrainAssembler.spawnTrain} after
