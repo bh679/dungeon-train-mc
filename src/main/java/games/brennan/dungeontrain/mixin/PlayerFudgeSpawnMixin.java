@@ -4,16 +4,15 @@ import games.brennan.dungeontrain.event.PlayerJoinEvents;
 import games.brennan.dungeontrain.event.PlayerJoinEvents.SpawnPlacement;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Replaces vanilla's {@link Player#fudgeSpawnLocation(ServerLevel)} for
- * first-time players with our pre-computed bootstrap placement. Vanilla
- * fudge searches a {@code spawnRadius=10}-block square around
+ * Replaces vanilla's {@link ServerPlayer#fudgeSpawnLocation(ServerLevel)}
+ * for first-time players with our pre-computed bootstrap placement.
+ * Vanilla fudge searches a {@code spawnRadius=10}-block square around
  * {@code sharedSpawnPos} for a {@code MOTION_BLOCKING}-valid surface — a
  * heuristic that disagrees with our {@code findGroundY} (which descends
  * through leaves to find the trunk top, rejected by
@@ -27,15 +26,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * carries the cache's position and rotation, so the client renders the
  * final spawn from the very first frame.</p>
  */
-@Mixin(Player.class)
+@Mixin(ServerPlayer.class)
 public abstract class PlayerFudgeSpawnMixin {
 
     @Inject(method = "fudgeSpawnLocation", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$useCachedPlacement(ServerLevel level, CallbackInfo ci) {
-        if (!((Object) this instanceof ServerPlayer player)) return;
         SpawnPlacement placement = PlayerJoinEvents.getBootstrapPlacement();
         if (placement == null) return;
 
+        ServerPlayer player = (ServerPlayer) (Object) this;
         // moveTo sets position + rotation; the subsequent ClientboundLoginPacket
         // serialises these values directly so the client never sees an
         // intermediate vanilla-fudged position.
