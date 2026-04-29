@@ -1021,6 +1021,22 @@ public final class TrackGenerator {
             }
             deepestGroundY = found;
         }
+        // Cap the descent at 2 blocks below sea level. Stairs in deep
+        // water (e.g. ocean trench seafloor at y=30) would otherwise
+        // place 30+ rows of template downward through the water column;
+        // each row's water-block replacement is cheap on its own (worldgen
+        // setBlock bypasses neighbor updates) but the stamp count adds up.
+        // Capping at seaLevel-2 leaves stairs visibly anchored just under
+        // the water surface and bounds the placement work to ~2 stamps
+        // (16 rows) regardless of terrain depth.
+        int seaLevel = level.getSeaLevel();
+        int seaFloorCap = seaLevel - 2;
+        if (deepestGroundY < seaFloorCap) {
+            LOGGER.debug("[stairs] centerX={} clamping deepest {} → seaFloorCap {} (seaLevel={})",
+                centerX, deepestGroundY, seaFloorCap, seaLevel);
+            deepestGroundY = seaFloorCap;
+        }
+
         // Only reject if the anchor is ABOVE the stair cap — placement
         // can't go anywhere useful from there. Anchor at bedY itself
         // (= terrain reaches up to train-bed level) is fine: stairs
