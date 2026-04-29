@@ -108,9 +108,11 @@ public final class PlayerJoinEvents {
     /**
      * Max perpendicular distance to walk searching for dry ground when the
      * random retry loop has exhausted its attempts (e.g. corridor crosses
-     * a deep ocean). Hard cap so we don't pin the server thread.
+     * a deep ocean). Tight cap so the player ends up near the tracks even
+     * in extreme biomes — beyond this we prefer the on-train fallback over
+     * spawning the player half a chunk away.
      */
-    private static final int MAX_FALLBACK_PERP = 256;
+    private static final int MAX_FALLBACK_PERP = 60;
 
     /** Standing eye height (blocks above feet) — used for pitch math. */
     private static final double EYE_HEIGHT = 1.62;
