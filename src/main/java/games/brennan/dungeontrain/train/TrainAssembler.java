@@ -87,7 +87,10 @@ public final class TrainAssembler {
         }
 
         // At spawn time, worldToShip is undefined for sub-levels that don't
-        // exist yet, so initialPIdx is computed in plain world space.
+        // exist yet, so initialPIdx is computed in plain world space. The
+        // pIdx-to-world convention: origin.x is the world X of pIdx 0's
+        // ENCLOSED CARRIAGE start (NOT the sub-level's back pad — the
+        // back pad sits at origin.x − halfPadLen).
         int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) dims.length());
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;
@@ -98,25 +101,32 @@ public final class TrainAssembler {
         // CarriageGenerationConfig.groupSize affect future spawnTrain
         // calls only; this train keeps its size for life.
         //
-        // The physics group size is config.groupSize() + 2 — each sub-level
-        // is wrapped with a HALF_FLATBED_BACK at slot 0 and a
-        // HALF_FLATBED_FRONT at the last slot, sandwiching config.groupSize
-        // enclosed carriages in between. The two half-flatbeds each have
-        // their floor on the side facing the inter-sub-level seam, so when
-        // adjacent sub-levels are placed, their half-flatbeds combine
-        // across the seam to form one continuous carriage-bed visually.
-        // The player crosses sub-level boundaries while standing on flat
-        // floor (a 9-block-long bed straddling the seam), eliminating any
-        // visible gap between groups.
+        // Each Sable sub-level packs `groupSize` enclosed carriages PLUS
+        // a half-flatbed pad on each side, sitting OUTSIDE the integer
+        // carriage-slot grid:
+        //
+        //   [BACK pad | groupSize × enclosed | FRONT pad]
+        //   ←halfPadLen→ ← groupSize × length → ←halfPadLen→
+        //
+        // Both pads use a SINGLE half-sized NBT derived once from
+        // FLATBED — BACK stamps it as-is, FRONT stamps it mirrored
+        // (Mirror.FRONT_BACK). Adjacent groups' BACK + FRONT pads at
+        // every seam combine to 2×halfPadLen blocks of contiguous floor
+        // (10 for length=9), eliminating any visible gap and keeping
+        // each pad mechanically attached to its own sub-level (no air
+        // gap to confuse Sable's FloatingBlockController).
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
-        int physicsGroupSize = genCfg.groupSize() + 2;
+        int groupSize = genCfg.groupSize();
+        int length = dims.length();
+        int halfPadLen = CarriageTemplate.halfPadLen(dims);
+        int subLevelStride = groupSize * length + 2 * halfPadLen;
 
-        // Snap the requested pIdx range outward to group anchors so every
-        // group spawned spans exactly physicsGroupSize consecutive pIdx
-        // values. Math.floorDiv handles negative pIdx correctly
-        // (e.g. floorDiv(-4, 4) = -1).
-        int firstAnchor = Math.floorDiv(firstPIdx, physicsGroupSize) * physicsGroupSize;
-        int lastAnchor = Math.floorDiv(lastPIdx, physicsGroupSize) * physicsGroupSize;
+        // Snap the requested pIdx range outward to group anchors. Anchors
+        // step by groupSize (NOT groupSize + 2 — pads aren't pIdx-counted).
+        // Math.floorDiv handles negative pIdx correctly
+        // (e.g. floorDiv(-4, 3) = -2).
+        int firstAnchor = Math.floorDiv(firstPIdx, groupSize) * groupSize;
+        int lastAnchor = Math.floorDiv(lastPIdx, groupSize) * groupSize;
 
         UUID trainId = UUID.randomUUID();
 
@@ -126,16 +136,20 @@ public final class TrainAssembler {
             origin.getZ(),
             origin.getZ() + dims.width() - 1);
 
-        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] physicsGroupSize={} (config.groupSize={} + 2 half-flatbeds at ends) dims={}x{}x{} velocity={} origin={}",
+        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] groupSize={} (enclosed; ±halfPadLen={} pads each side) dims={}x{}x{} velocity={} origin={}",
             trainId, firstPIdx, lastPIdx, count,
-            firstAnchor, lastAnchor, physicsGroupSize, genCfg.groupSize(),
-            dims.length(), dims.height(), dims.width(),
+            firstAnchor, lastAnchor, groupSize, halfPadLen,
+            length, dims.height(), dims.width(),
             velocity, origin);
 
         List<ManagedShip> ships = new ArrayList<>();
-        for (int anchor = firstAnchor; anchor <= lastAnchor; anchor += physicsGroupSize) {
-            BlockPos groupOrigin = origin.offset(anchor * dims.length(), 0, 0);
-            ManagedShip ship = spawnGroup(level, groupOrigin, velocity, anchor, physicsGroupSize, dims, trainId);
+        for (int anchor = firstAnchor; anchor <= lastAnchor; anchor += groupSize) {
+            // groupOrigin = sub-level's back pad start = world X of pIdx
+            // anchor's enclosed carriage minus halfPadLen.
+            int groupIdx = Math.floorDiv(anchor, groupSize);
+            int groupOriginX = origin.getX() + groupIdx * subLevelStride - halfPadLen;
+            BlockPos groupOrigin = new BlockPos(groupOriginX, origin.getY(), origin.getZ());
+            ManagedShip ship = spawnGroup(level, groupOrigin, velocity, anchor, groupSize, dims, trainId);
             if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
                 provider.setTrackGeometry(geometry);
             }
@@ -154,21 +168,40 @@ public final class TrainAssembler {
     }
 
     /**
-     * Assemble a single GROUP of {@code groupSize} consecutive carriages
-     * into one Sable sub-level. Used both by {@link #spawnTrain}'s initial
-     * loop and by {@link TrainCarriageAppender} when a player advances past
-     * the train's current pIdx range.
+     * Assemble a single GROUP of {@code groupSize} enclosed carriages,
+     * wrapped on each end by a half-flatbed pad (when groupSize > 1),
+     * into one Sable sub-level. Used both by {@link #spawnTrain}'s
+     * initial loop and by {@link TrainCarriageAppender} when a player
+     * advances past the train's current pIdx range.
      *
-     * <p>All carriages in the group share one rigid body — their relative
-     * position within the group is fixed by their integer block coords in
-     * shipyard space. Variant selection is per-carriage via
-     * {@link CarriageTemplate#variantForIndex(int, CarriageGenerationConfig)},
-     * deterministic on absolute pIdx.</p>
+     * <p>Sub-level world layout (groupSize > 1):
+     * <pre>
+     *   [BACK pad | enclosed₀ | enclosed₁ | … | enclosed_{n-1} | FRONT pad]
+     *   ←halfPadLen→ ← groupSize × dims.length() blocks → ←halfPadLen→
+     * </pre>
+     * Sub-level total span: {@code groupSize × length + 2 × halfPadLen}
+     * blocks (37 for length=9, groupSize=3). Both pads use the same
+     * half-sized NBT extracted from FLATBED — BACK stamps as-is, FRONT
+     * stamps with {@link Mirror#FRONT_BACK}.</p>
      *
-     * @param origin       group's world-space minimum corner = the
-     *                     anchor (lowest-pIdx) carriage's lowest-X corner
-     * @param anchorPIdx   absolute pIdx of the LOWEST carriage in this group
-     * @param groupSize    number of carriages in this group (≥ 1)
+     * <p>Variant selection for enclosed slots is per-carriage via
+     * {@link CarriageTemplate#enclosedVariantForIndex(int, CarriageGenerationConfig)},
+     * deterministic on absolute pIdx — never produces a flatbed-like
+     * variant (the pads already provide bed continuity at every seam).</p>
+     *
+     * <p>Edge case: when {@code groupSize == 1} (e.g. {@code /dt debug pair}
+     * probe), the sub-level holds a single enclosed carriage at
+     * {@code origin} with NO pads — pads only make sense when there
+     * are enclosed carriages to flank.</p>
+     *
+     * @param origin       sub-level's world-space minimum corner. For
+     *                     groupSize > 1: the BACK pad's lowest-X corner
+     *                     (= anchor enclosed carriage's lowest-X minus
+     *                     halfPadLen). For groupSize == 1: the lone
+     *                     enclosed carriage's lowest-X corner.
+     * @param anchorPIdx   absolute pIdx of the LOWEST enclosed carriage
+     *                     in this group
+     * @param groupSize    number of enclosed carriages (≥ 1)
      * @param trainId      UUID shared by every group in the same train
      */
     public static ManagedShip spawnGroup(ServerLevel level, BlockPos origin, Vector3dc velocity, int anchorPIdx, int groupSize, CarriageDims dims, UUID trainId) {
@@ -176,57 +209,62 @@ public final class TrainAssembler {
             throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
         }
 
-        int cleared = clearGroupVolume(level, origin, groupSize, dims);
+        int length = dims.length();
+        int halfPadLen = CarriageTemplate.halfPadLen(dims);
+        boolean wrapWithPads = groupSize > 1;
+        int subLevelLength = wrapWithPads ? (groupSize * length + 2 * halfPadLen) : length;
+        int enclosedStartOffset = wrapWithPads ? halfPadLen : 0;
+
+        int cleared = clearSubLevelVolume(level, origin, subLevelLength, dims);
         if (cleared > 0) {
-            LOGGER.debug("[DungeonTrain] Cleared {} world blocks in group footprint anchorPIdx={} groupSize={} at {}",
-                cleared, anchorPIdx, groupSize, origin);
+            LOGGER.debug("[DungeonTrain] Cleared {} world blocks in sub-level footprint anchorPIdx={} groupSize={} subLevelLength={} at {}",
+                cleared, anchorPIdx, groupSize, subLevelLength, origin);
         }
 
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
 
-        // Place every carriage in the group at world coords. Slot 0 is a
-        // HALF_FLATBED_BACK and the last slot is a HALF_FLATBED_FRONT; the
-        // inner slots get whatever CarriageTemplate.variantForIndex picks
-        // — but if it picks any flatbed-like variant (because RANDOM_GROUPED's
-        // cycle no longer aligns with our physicsGroupSize), we replace it
-        // with a non-flatbed variant. The ends already provide the seam-
-        // aligned bed; an extra mid-group flatbed would just waste a slot.
-        //
-        // Edge case: groupSize == 1 (e.g. /dt debug pair probe) places a
-        // single enclosed carriage with no half-flatbed wrapping — half-
-        // flatbeds only make sense when there are inner slots to wrap.
+        // Place every enclosed carriage in the group at world coords.
+        // For groupSize > 1, the enclosed run starts at
+        // origin + halfPadLen; pad placement runs separately afterwards.
+        // For groupSize == 1, the lone enclosed carriage sits at origin
+        // and there are no pads.
         Set<BlockPos> blocks = new HashSet<>();
-        CarriageVariant[] variantBySlot = new CarriageVariant[groupSize];
+        CarriageVariant[] enclosedBySlot = new CarriageVariant[groupSize];
+
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
-            BlockPos carriageOrigin = origin.offset(slot * dims.length(), 0, 0);
-            CarriageVariant variant;
-            if (groupSize == 1) {
-                variant = CarriageTemplate.enclosedVariantForIndex(carriagePIdx, genCfg);
-            } else if (slot == 0) {
-                variant = CarriageTemplate.HALF_FLATBED_BACK_VARIANT;
-            } else if (slot == groupSize - 1) {
-                variant = CarriageTemplate.HALF_FLATBED_FRONT_VARIANT;
-            } else {
-                variant = CarriageTemplate.enclosedVariantForIndex(carriagePIdx, genCfg);
-            }
-            variantBySlot[slot] = variant;
+            BlockPos carriageOrigin = origin.offset(enclosedStartOffset + slot * length, 0, 0);
+            CarriageVariant variant = CarriageTemplate.enclosedVariantForIndex(carriagePIdx, genCfg);
+            enclosedBySlot[slot] = variant;
 
             // applyContents=false: defer until after assembly so entities
             // land in shipyard space, not world space.
             Set<BlockPos> carriageBlocks = CarriageTemplate.placeAt(
                 level, carriageOrigin, variant, dims, genCfg, carriagePIdx, false);
             if (carriageBlocks.isEmpty()) {
-                LOGGER.warn("[DungeonTrain] spawnGroup produced empty block set anchorPIdx={} slot={} carriagePIdx={} variant={} at {}",
+                LOGGER.warn("[DungeonTrain] spawnGroup produced empty enclosed block set anchorPIdx={} slot={} carriagePIdx={} variant={} at {}",
                     anchorPIdx, slot, carriagePIdx, variant.id(), carriageOrigin);
             }
             blocks.addAll(carriageBlocks);
         }
 
+        // Place the half-flatbed pads at sub-level boundaries.
+        if (wrapWithPads) {
+            BlockPos backPadOrigin = origin;
+            BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length, 0, 0);
+            blocks.addAll(CarriageTemplate.placeHalfFlatbedPad(
+                level, backPadOrigin, CarriageTemplate.HalfPadSide.BACK, dims));
+            blocks.addAll(CarriageTemplate.placeHalfFlatbedPad(
+                level, frontPadOrigin, CarriageTemplate.HalfPadSide.FRONT, dims));
+        }
+
         ManagedShip ship = Shipyards.of(level).assemble(blocks, 1.0);
 
-        // Resolve the sub-level's shipyard origin (the anchor carriage's
-        // lowest-X corner in shipyard coords).
+        // Resolve the sub-level's shipyard origin = the back pad's
+        // lowest-X corner in shipyard coords (or, for groupSize == 1,
+        // the anchor carriage's lowest-X corner — same thing since
+        // origin == anchor in that case). Contents placement and the
+        // appender's pIdx-from-player calc both shift by enclosedStartOffset.
         Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
         ship.worldToShip(shipyardOriginVec);
         BlockPos shipyardOrigin = new BlockPos(
@@ -234,11 +272,11 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
 
-        // Contents pass at shipyard coords for each carriage in the group.
+        // Contents pass at shipyard coords for each enclosed carriage.
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
-            BlockPos carriageShipyardOrigin = shipyardOrigin.offset(slot * dims.length(), 0, 0);
-            CarriageTemplate.applyContentsAt(level, carriageShipyardOrigin, variantBySlot[slot], dims, genCfg, carriagePIdx);
+            BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
+            CarriageTemplate.applyContentsAt(level, carriageShipyardOrigin, enclosedBySlot[slot], dims, genCfg, carriagePIdx);
         }
 
         TrainTransformProvider provider = new TrainTransformProvider(
@@ -246,8 +284,10 @@ public final class TrainAssembler {
         ship.setKinematicDriver(provider);
         ship.setStatic(true);
 
-        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} variants=[{}] trainId={} ship id={} shipyardOrigin={} blocks={}",
-            anchorPIdx, groupSize, summariseVariants(variantBySlot), trainId, ship.id(), shipyardOrigin, blocks.size());
+        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={}",
+            anchorPIdx, groupSize, summariseVariants(enclosedBySlot),
+            wrapWithPads ? "back+front" : "none",
+            trainId, ship.id(), shipyardOrigin, blocks.size());
 
         return ship;
     }
@@ -305,13 +345,14 @@ public final class TrainAssembler {
     }
 
     /**
-     * Clear every world block inside the group's axis-aligned footprint
-     * (the union of all groupSize carriage volumes).
+     * Clear every world block inside the sub-level's axis-aligned
+     * footprint — the union of {@code subLevelLength × height × width}
+     * blocks at {@code origin}, covering the BACK pad, all enclosed
+     * carriage slots, and the FRONT pad in one pass.
      */
-    private static int clearGroupVolume(ServerLevel level, BlockPos origin, int groupSize, CarriageDims dims) {
+    private static int clearSubLevelVolume(ServerLevel level, BlockPos origin, int subLevelLength, CarriageDims dims) {
         int cleared = 0;
-        int totalLength = groupSize * dims.length();
-        for (int dx = 0; dx < totalLength; dx++) {
+        for (int dx = 0; dx < subLevelLength; dx++) {
             for (int dy = 0; dy < dims.height(); dy++) {
                 for (int dz = 0; dz < dims.width(); dz++) {
                     BlockPos pos = origin.offset(dx, dy, dz);

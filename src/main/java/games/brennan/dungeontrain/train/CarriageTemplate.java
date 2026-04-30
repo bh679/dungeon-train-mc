@@ -8,9 +8,17 @@ import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderGetter;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -19,9 +27,11 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Carriage blueprint — a hollow box whose dimensions are captured per-world
@@ -46,37 +56,42 @@ public final class CarriageTemplate {
         STANDARD,
         WINDOWED,
         SOLID_ROOF,
-        FLATBED,
-        /**
-         * Half-flatbed at the BACK of a sub-level group (slot 0). Floor
-         * occupies the FRONT half of its slot
-         * ({@code dx ∈ [length/2, length-1]}), butted against slot 1's
-         * enclosed carriage so the half-flatbed is mechanically attached
-         * to the rest of its sub-level (avoids Sable's
-         * {@code FloatingBlockController} splitting the sub-level at a
-         * floor-level air gap).
-         *
-         * <p>Adjacent sub-levels' half-flatbeds do NOT combine across the
-         * inter-sub-level seam — they leave a visible ~8-block empty zone
-         * at floor level at every seam. Tradeoff accepted to keep each
-         * half-flatbed attached to its own sub-level.</p>
-         */
-        HALF_FLATBED_BACK,
-        /**
-         * Half-flatbed at the FRONT of a sub-level group (last slot).
-         * Floor occupies the BACK half of its slot
-         * ({@code dx ∈ [0, length/2]}), butted against slot N-2's
-         * enclosed carriage. Mate to {@link #HALF_FLATBED_BACK}; same
-         * inner-attached rationale.
-         */
-        HALF_FLATBED_FRONT
+        FLATBED
     }
+
+    /**
+     * Which end of a sub-level a half-flatbed pad sits on. Both sides
+     * stamp the SAME {@code halfPadLen × height × width} half-template
+     * derived from {@link CarriageType#FLATBED}'s NBT — {@link #BACK}
+     * places it as-is; {@link #FRONT} places it with
+     * {@link Mirror#FRONT_BACK} (X-axis mirror) so the two pads visually
+     * mirror each other across the sub-level interior, and the seam
+     * between two adjacent sub-levels reads as one continuous bed.
+     *
+     * <p>See {@link TrainAssembler#spawnGroup} for the world layout:
+     * {@code [BACK pad | groupSize × enclosed | FRONT pad]} where each
+     * pad occupies {@code halfPadLen} blocks (= {@code (length+1)/2}).</p>
+     */
+    public enum HalfPadSide { BACK, FRONT }
 
     /** Cached immutable handle to the flatbed built-in — used as the Random-Grouped separator. */
     private static final CarriageVariant FLATBED_VARIANT = CarriageVariant.of(CarriageType.FLATBED);
-    /** Cached half-flatbed handles. Used by {@link TrainAssembler#spawnGroup} to wrap each group. */
-    public static final CarriageVariant HALF_FLATBED_BACK_VARIANT = CarriageVariant.of(CarriageType.HALF_FLATBED_BACK);
-    public static final CarriageVariant HALF_FLATBED_FRONT_VARIANT = CarriageVariant.of(CarriageType.HALF_FLATBED_FRONT);
+
+    /**
+     * In-memory cache of half-sized flatbed templates derived once per
+     * {@link CarriageDims} from the full {@link CarriageType#FLATBED}'s
+     * stored NBT. Keyed on {@code CarriageDims} (record-based equality).
+     * Cleared on {@link net.neoforged.neoforge.event.server.ServerStoppedEvent}
+     * via {@link #clearHalfFlatbedCache()} so a hot-reload between worlds
+     * with different dims doesn't reuse a stale half-template.
+     *
+     * <p>{@code Optional.empty()} entries are negative-cache markers —
+     * they record "tried to extract for these dims and the FLATBED has
+     * no NBT," so subsequent spawns short-circuit straight to the
+     * hardcoded floor fallback without re-attempting the extraction.</p>
+     */
+    private static final Map<CarriageDims, Optional<StructureTemplate>> HALF_FLATBED_CACHE
+        = new ConcurrentHashMap<>();
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
@@ -221,10 +236,7 @@ public final class CarriageTemplate {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        if (variant instanceof CarriageVariant.Builtin b
-            && (b.type() == CarriageType.FLATBED
-                || b.type() == CarriageType.HALF_FLATBED_BACK
-                || b.type() == CarriageType.HALF_FLATBED_FRONT)) {
+        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return;
         }
         try {
@@ -273,17 +285,12 @@ public final class CarriageTemplate {
      * tag for logging, or {@code null} when nothing was stamped (custom
      * variants without any NBT on disk).
      *
-     * <p>Half-flatbeds are a special case: they re-use the FLATBED's
-     * stored NBT template, then erase one half of the placed blocks so
-     * adjacent sub-levels' half-flatbeds combine into one full bed across
-     * the seam. If the FLATBED has no NBT on disk, falls back to the
-     * legacy half-floor placement in {@link #stateAt}.</p>
+     * <p>Half-flatbed pads are NOT placed via this method — they're
+     * placed directly by {@link TrainAssembler#spawnGroup} via
+     * {@link #placeHalfFlatbedPad}, OUTSIDE the integer carriage-slot
+     * grid.</p>
      */
     private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
-        if (variant instanceof CarriageVariant.Builtin b
-            && (b.type() == CarriageType.HALF_FLATBED_BACK || b.type() == CarriageType.HALF_FLATBED_FRONT)) {
-            return stampHalfFlatbed(level, origin, b.type(), dims);
-        }
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
@@ -296,57 +303,151 @@ public final class CarriageTemplate {
         return null;
     }
 
+    // ─── Half-flatbed pad placement ─────────────────────────────────────
+    // Half-flatbed pads sit OUTSIDE the integer carriage-slot grid at
+    // each end of a sub-level: [BACK pad | groupSize × enclosed | FRONT pad].
+    // Both pads use a single half-sized template derived once from the
+    // FLATBED's stored NBT — BACK stamps it as-is, FRONT stamps it with
+    // Mirror.FRONT_BACK so the two pads are visual mirror images.
+    // Adjacent sub-levels' BACK + FRONT pads at every seam combine to
+    // 2 × halfPadLen blocks of contiguous floor — for length=9 (the
+    // default), halfPadLen=5 → 10 contiguous floor blocks straddling
+    // each seam.
+    // ────────────────────────────────────────────────────────────────────
+
     /**
-     * Stamp a half-flatbed by placing the FLATBED's NBT template (so
-     * authored bed designs are preserved) and erasing one half of the
-     * footprint. The half retained faces inward — i.e. butts against
-     * the adjacent enclosed slot in the same sub-level. See
-     * {@link CarriageType#HALF_FLATBED_BACK} for the rationale.
+     * Width (in blocks along the carriage's X axis) of one half-flatbed
+     * pad. Defined as {@code (length + 1) / 2} so a SINGLE half-sized
+     * NBT works for both pads at any length, and adjacent groups'
+     * BACK + FRONT pads at every seam combine to {@code 2 × halfPadLen}
+     * blocks of contiguous floor (= {@code length + 1} for odd lengths,
+     * exact {@code length} for even).
+     *
+     * <p>For length=9, halfPadLen=5 → 5+5=10 contiguous floor at every
+     * seam (1 block of overshoot vs a single carriage's floor —
+     * invisible visually). For length=8, halfPadLen=4 → 4+4=8, exact.</p>
      */
-    private static String stampHalfFlatbed(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
-        Optional<StructureTemplate> flatbedTemplate = CarriageTemplateStore.get(level, FLATBED_VARIANT, dims);
-        if (flatbedTemplate.isPresent()) {
-            stampTemplate(level, origin, flatbedTemplate.get());
-            eraseHalfFlatbedRemainder(level, origin, type, dims);
-            return "flatbed-cropped";
-        }
-        // No NBT for FLATBED — fall back to the legacy half-floor placement.
-        legacyPlaceAt(level, origin, type, dims);
-        return "legacy";
+    public static int halfPadLen(CarriageDims dims) {
+        return (dims.length() + 1) / 2;
+    }
+
+    /** Invalidate the half-flatbed template cache. Wired to {@code ServerStoppedEvent}. */
+    public static void clearHalfFlatbedCache() {
+        HALF_FLATBED_CACHE.clear();
     }
 
     /**
-     * Erase the half of the carriage footprint that should be EMPTY for
-     * the given half-flatbed type — i.e. the seam-facing side, the side
-     * facing AWAY from the adjacent enclosed slot in this sub-level.
-     * For HALF_FLATBED_BACK (slot 0), the FRONT half (dx ≥ length/2) is
-     * retained (butting against slot 1); the BACK half (dx &lt; length/2)
-     * is erased. Symmetric for HALF_FLATBED_FRONT (last slot): retain
-     * BACK half, erase FRONT half.
+     * Resolve the half-sized flatbed template for {@code dims}, deriving
+     * it from the full FLATBED's stored NBT on first call and caching
+     * the result. {@code Optional.empty()} marks "FLATBED has no NBT
+     * for these dims" so subsequent spawns short-circuit straight to
+     * {@link #legacyHalfFlatbedFloor} without re-attempting extraction.
      */
-    private static void eraseHalfFlatbedRemainder(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
-        int mid = dims.length() / 2;
-        int dxFrom, dxTo;
-        if (type == CarriageType.HALF_FLATBED_BACK) {
-            // Retain dx ≥ mid (front half, inner-attached to slot 1);
-            // erase dx < mid (back / seam-facing half).
-            dxFrom = 0;
-            dxTo = mid - 1;
-        } else {
-            // HALF_FLATBED_FRONT: retain dx ≤ mid (back half, inner-attached
-            // to slot N-2); erase dx > mid (front / seam-facing half).
-            dxFrom = mid + 1;
-            dxTo = dims.length() - 1;
+    private static Optional<StructureTemplate> getOrBuildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims) {
+        Optional<StructureTemplate> cached = HALF_FLATBED_CACHE.get(dims);
+        if (cached != null) return cached;
+        Optional<StructureTemplate> built = buildHalfFlatbedTemplate(level, dims);
+        HALF_FLATBED_CACHE.put(dims, built);
+        return built;
+    }
+
+    /**
+     * Build a {@code halfPadLen × height × width} sub-template from
+     * FLATBED's stored NBT by saving the full template's CompoundTag,
+     * shrinking the {@code "size"} field's X dimension to halfPadLen,
+     * filtering the {@code "blocks"} list to keep only entries with
+     * {@code pos[0] < halfPadLen}, and reloading the trimmed tag into a
+     * fresh {@link StructureTemplate}. The {@code "palette"} and
+     * {@code "entities"} lists carry over unchanged — orphaned palette
+     * entries don't hurt placement.
+     */
+    private static Optional<StructureTemplate> buildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims) {
+        Optional<StructureTemplate> source = CarriageTemplateStore.get(level, FLATBED_VARIANT, dims);
+        if (source.isEmpty()) {
+            LOGGER.debug("[DungeonTrain] No FLATBED NBT for dims {}x{}x{} — half-flatbed pads will use hardcoded floor fallback.",
+                dims.length(), dims.height(), dims.width());
+            return Optional.empty();
         }
-        if (dxFrom > dxTo) return; // dims.length()=1 edge case
-        BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = dxFrom; dx <= dxTo; dx++) {
+
+        int padLen = halfPadLen(dims);
+        CompoundTag fullTag = source.get().save(new CompoundTag());
+
+        ListTag sizeList = fullTag.getList("size", Tag.TAG_INT);
+        if (sizeList.size() != 3) {
+            LOGGER.warn("[DungeonTrain] FLATBED template size list malformed (size={}); skipping half-flatbed extraction.",
+                sizeList.size());
+            return Optional.empty();
+        }
+        sizeList.set(0, IntTag.valueOf(padLen));
+
+        ListTag fullBlocks = fullTag.getList("blocks", Tag.TAG_COMPOUND);
+        ListTag filtered = new ListTag();
+        for (int i = 0; i < fullBlocks.size(); i++) {
+            CompoundTag blockTag = fullBlocks.getCompound(i);
+            ListTag posList = blockTag.getList("pos", Tag.TAG_INT);
+            if (posList.size() != 3) continue;
+            if (posList.getInt(0) < padLen) filtered.add(blockTag);
+        }
+        fullTag.put("blocks", filtered);
+
+        HolderGetter<Block> blockHolders = level.holderLookup(Registries.BLOCK);
+        StructureTemplate half = new StructureTemplate();
+        half.load(blockHolders, fullTag);
+
+        LOGGER.info("[DungeonTrain] Built half-flatbed template for dims {}x{}x{} — halfPadLen={}, kept {}/{} blocks.",
+            dims.length(), dims.height(), dims.width(), padLen, filtered.size(), fullBlocks.size());
+        return Optional.of(half);
+    }
+
+    /**
+     * Place a half-flatbed pad at world {@code origin}, occupying
+     * {@code halfPadLen × dims.height() × dims.width()} blocks.
+     * {@link HalfPadSide#BACK} stamps the half-template as-is;
+     * {@link HalfPadSide#FRONT} stamps it with {@link Mirror#FRONT_BACK}
+     * (X-axis mirror) so the two pads are visual mirrors of each other
+     * across each sub-level's interior.
+     *
+     * <p>If FLATBED has no NBT, falls back to a hardcoded stone-bricks
+     * floor over the pad footprint via {@link #legacyHalfFlatbedFloor}.</p>
+     *
+     * @return the set of block positions filled — pass directly to
+     *     {@code Shipyards.assemble()} alongside the enclosed carriages.
+     */
+    public static Set<BlockPos> placeHalfFlatbedPad(ServerLevel level, BlockPos origin, HalfPadSide side, CarriageDims dims) {
+        int padLen = halfPadLen(dims);
+        Optional<StructureTemplate> halfTemplate = getOrBuildHalfFlatbedTemplate(level, dims);
+        if (halfTemplate.isPresent()) {
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+            if (side == HalfPadSide.FRONT) settings.setMirror(Mirror.FRONT_BACK);
+            halfTemplate.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        } else {
+            legacyHalfFlatbedFloor(level, origin, padLen, dims);
+        }
+        return collectHalfPadFootprint(level, origin, padLen, dims);
+    }
+
+    private static void legacyHalfFlatbedFloor(ServerLevel level, BlockPos origin, int padLen, CarriageDims dims) {
+        BlockState floor = BlockStates.FLOOR;
+        for (int dx = 0; dx < padLen; dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                level.setBlock(origin.offset(dx, 0, dz), floor, 3);
+            }
+        }
+    }
+
+    private static Set<BlockPos> collectHalfPadFootprint(ServerLevel level, BlockPos origin, int padLen, CarriageDims dims) {
+        Set<BlockPos> placed = new HashSet<>();
+        for (int dx = 0; dx < padLen; dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
                 for (int dy = 0; dy < dims.height(); dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                    BlockPos pos = origin.offset(dx, dy, dz);
+                    if (!level.getBlockState(pos).isAir()) {
+                        placed.add(pos.immutable());
+                    }
                 }
             }
         }
+        return placed;
     }
 
     /**
@@ -504,16 +605,15 @@ public final class CarriageTemplate {
     }
 
     /**
-     * True for the full flatbed and both half-flatbed variants — anything
-     * that's purely a floor-only separator and should never appear in the
-     * random "enclosed carriage" pool.
+     * True for the full flatbed — the only floor-only carriage variant
+     * after the Gate B.2 pad refactor (half-flatbeds are no longer
+     * carriage variants; they're placed directly as sub-level boundary
+     * pads via {@link #placeHalfFlatbedPad}). Kept as
+     * {@code isAnyFlatbed} for caller-API stability.
      */
     static boolean isAnyFlatbed(CarriageVariant v) {
         if (!(v instanceof CarriageVariant.Builtin b)) return false;
-        CarriageType t = b.type();
-        return t == CarriageType.FLATBED
-            || t == CarriageType.HALF_FLATBED_BACK
-            || t == CarriageType.HALF_FLATBED_FRONT;
+        return b.type() == CarriageType.FLATBED;
     }
 
     /**
@@ -650,23 +750,6 @@ public final class CarriageTemplate {
     static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type, CarriageDims dims) {
         if (type == CarriageType.FLATBED) {
             if (dy == 0) return BlockStates.FLOOR;
-            return null;
-        }
-        // Half-flatbeds: floor on the INNER-ATTACHED side of the carriage's
-        // X range, air on the seam-facing side. The split point is
-        // dims.length() / 2 (integer division). For length=9 this gives
-        // BACK = dx ∈ [4, 8] (retained = front half, butted against slot
-        // 1) and FRONT = dx ∈ [0, 4] (retained = back half, butted against
-        // slot N-2). Adjacent sub-levels' half-flatbeds do NOT combine
-        // across the seam — the seam shows a visible ~8-block empty zone
-        // at floor level. Mirrors the erase semantics in
-        // eraseHalfFlatbedRemainder; both paths must stay in sync.
-        if (type == CarriageType.HALF_FLATBED_BACK) {
-            if (dy == 0 && dx >= dims.length() / 2) return BlockStates.FLOOR;
-            return null;
-        }
-        if (type == CarriageType.HALF_FLATBED_FRONT) {
-            if (dy == 0 && dx <= dims.length() / 2) return BlockStates.FLOOR;
             return null;
         }
 

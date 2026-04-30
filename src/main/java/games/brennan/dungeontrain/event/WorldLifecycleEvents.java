@@ -101,10 +101,11 @@ public final class WorldLifecycleEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         CarriageTemplateStore.clearCache();
+        games.brennan.dungeontrain.train.CarriageTemplate.clearHalfFlatbedCache();
         PillarTemplateStore.clearCache();
         TrackTemplateStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
-        LOGGER.debug("[DungeonTrain] Cleared carriage-, pillar-, and track-template caches on server stop.");
+        LOGGER.debug("[DungeonTrain] Cleared carriage-, half-flatbed-, pillar-, and track-template caches on server stop.");
     }
 }

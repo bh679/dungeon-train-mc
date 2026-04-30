@@ -134,14 +134,21 @@ public final class TrainCarriageAppender {
             if (!near) continue;
 
             // Player's absolute carriage pIdx via the lead group's frame.
-            // The lead group's anchor sits at lead.shipyardOrigin in
-            // shipyard coords; offset from there in length-units gives the
-            // pIdx delta from the anchor, plus leadAnchorPIdx for the
-            // absolute carriage index. Works for any carriage in the train
-            // since all groups advance in lockstep.
+            // The lead group's shipyardOrigin sits at the BACK PAD's
+            // lowest-X corner (groupSize > 1) or at the anchor carriage's
+            // lowest-X corner (groupSize == 1). The anchor enclosed
+            // carriage starts at shipyardOrigin + enclosedStartOffset,
+            // where enclosedStartOffset = halfPadLen for groupSize > 1
+            // and 0 for groupSize == 1. Subtract this offset before
+            // dividing by length so pIdx 0's enclosed carriage maps to
+            // (local.x − shipyardOrigin − enclosedStartOffset) ∈ [0, length).
+            int halfPadLen = CarriageTemplate.halfPadLen(dims);
+            int enclosedStartOffset = (groupSize > 1) ? halfPadLen : 0;
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
             leadShip.worldToShip(local);
-            int pIdx = (int) Math.floor((local.x - leadShipyardOrigin.getX()) / (double) length) + leadAnchorPIdx;
+            int pIdx = (int) Math.floor(
+                (local.x - leadShipyardOrigin.getX() - enclosedStartOffset) / (double) length
+            ) + leadAnchorPIdx;
 
             UUID uuid = player.getUUID();
             seenThisTick.add(uuid);
@@ -257,18 +264,29 @@ public final class TrainCarriageAppender {
         BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
         int refAnchor = reference.provider().getPIdx();
         int length = dims.length();
+        int halfPadLen = CarriageTemplate.halfPadLen(dims);
 
-        // Reference group's current world origin (the anchor carriage's
-        // lowest-X corner, after velocity drift since spawn).
+        // World stride between adjacent sub-levels (the world delta one
+        // appender step should add). For groupSize > 1, the stride is
+        // groupSize × length + 2 × halfPadLen (two pads per sub-level).
+        // For groupSize == 1 there are no pads, stride is just length.
+        int subLevelStride = (groupSize > 1) ? (groupSize * length + 2 * halfPadLen) : length;
+
+        // Reference sub-level's current world origin (= back pad's
+        // lowest-X corner for groupSize > 1, or anchor carriage's
+        // lowest-X corner for groupSize == 1, after velocity drift since
+        // spawn).
         Vector3d refWorldOriginVec = new Vector3d(
             refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
         reference.ship().shipToWorld(refWorldOriginVec);
 
-        // New group's ideal world origin = ref + (newAnchor − refAnchor) × length
-        // since both anchors are measured in carriage units and length is
-        // blocks-per-carriage. This naturally steps by groupSize × length
-        // when newAnchor differs from refAnchor by groupSize.
-        double idealX = refWorldOriginVec.x + (newAnchor - refAnchor) * (double) length;
+        // New sub-level's ideal world origin = ref + (anchor delta in
+        // groups) × subLevelStride. Anchors are always group-aligned by
+        // construction, so the integer division is exact even for
+        // negative deltas.
+        int anchorDelta = newAnchor - refAnchor;
+        int subLevelDelta = anchorDelta / groupSize;
+        double idealX = refWorldOriginVec.x + subLevelDelta * (double) subLevelStride;
         double idealY = refWorldOriginVec.y;
         double idealZ = refWorldOriginVec.z;
 
@@ -284,11 +302,12 @@ public final class TrainCarriageAppender {
         ManagedShip newShip = TrainAssembler.spawnGroup(
             level, newGroupOrigin, velocity, newAnchor, groupSize, dims, trainId);
 
-        LOGGER.info("[DungeonTrain] Appender added group anchorPIdx={} groupSize={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={})",
+        LOGGER.info("[DungeonTrain] Appender added group anchorPIdx={} groupSize={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={}, subLevelStride={})",
             newAnchor, groupSize, trainId, newShip.id(), newGroupOrigin,
             String.format("%.4f", idealX),
             forward ? "forward" : "backward",
-            String.format("%.4f", gap));
+            String.format("%.4f", gap),
+            subLevelStride);
     }
 
     /**
