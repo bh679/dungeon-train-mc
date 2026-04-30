@@ -45,44 +45,51 @@ public final class DebugCommand {
     private static int runScan(CommandSourceStack source) {
         ServerLevel level = source.getLevel();
         int totalStrays = 0;
-        int trainsScanned = 0;
+        int carriagesScanned = 0;
 
-        for (ManagedShip loaded : Shipyards.of(level).findAll()) {
-            if (!(loaded.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
-            trainsScanned++;
+        // Per-carriage architecture: each carriage is its own sub-level
+        // with its own shipyardOrigin. Scan each one individually for
+        // sliver candidates outside its canonical footprint.
+        java.util.Map<java.util.UUID, java.util.List<games.brennan.dungeontrain.train.Trains.Carriage>> trainsById =
+            games.brennan.dungeontrain.train.Trains.byTrainId(level);
 
-            BlockPos origin = provider.getShipyardOrigin();
-            int originX = origin.getX();
-            int originY = origin.getY();
-            int originZ = origin.getZ();
-            CarriageDims dims = provider.dims();
-            int shipStrays = 0;
-            for (Integer i : provider.getActiveIndices()) {
-                BlockPos carriageOrigin = new BlockPos(originX + i * dims.length(), originY, originZ);
-                shipStrays += CarriageDebug.scanForStrays(level, carriageOrigin,
-                    "debug-cmd shipId=" + loaded.id() + " idx=" + i, dims);
+        for (java.util.Map.Entry<java.util.UUID, java.util.List<games.brennan.dungeontrain.train.Trains.Carriage>> entry : trainsById.entrySet()) {
+            java.util.UUID trainId = entry.getKey();
+            java.util.List<games.brennan.dungeontrain.train.Trains.Carriage> train = entry.getValue();
+            int trainStrays = 0;
+            for (games.brennan.dungeontrain.train.Trains.Carriage c : train) {
+                CarriageDims dims = c.provider().dims();
+                BlockPos carriageOrigin = c.provider().getShipyardOrigin();
+                int strays = CarriageDebug.scanForStrays(level, carriageOrigin,
+                    "debug-cmd shipId=" + c.ship().id() + " trainId=" + trainId + " pIdx=" + c.provider().getPIdx(),
+                    dims);
+                trainStrays += strays;
+                carriagesScanned++;
             }
-            final int fShipStrays = shipStrays;
-            final long fShipId = loaded.id();
+            final int fTrainStrays = trainStrays;
+            final java.util.UUID fTrainId = trainId;
+            final int fCarriageCount = train.size();
             source.sendSuccess(() -> Component.literal(
-                "Ship " + fShipId + " — " + fShipStrays + " stray(s) across "
-                    + provider.getActiveIndices().size() + " active carriage(s)"
+                "Train " + fTrainId + " — " + fTrainStrays + " stray(s) across "
+                    + fCarriageCount + " carriage(s)"
             ), false);
-            totalStrays += shipStrays;
+            totalStrays += trainStrays;
         }
 
-        if (trainsScanned == 0) {
-            source.sendFailure(Component.literal("No Dungeon Train ships loaded in this level."));
+        if (carriagesScanned == 0) {
+            source.sendFailure(Component.literal("No Dungeon Train carriages loaded in this level."));
             return 0;
         }
         final int fTotal = totalStrays;
-        final int fTrains = trainsScanned;
+        final int fTrains = trainsById.size();
+        final int fCarriages = carriagesScanned;
         source.sendSuccess(() -> Component.literal(
-            "Debug scan complete: " + fTotal + " total stray(s) across " + fTrains + " train(s). "
+            "Debug scan complete: " + fTotal + " total stray(s) across "
+                + fCarriages + " carriage(s) in " + fTrains + " train(s). "
                 + "See server log for offsets."
         ).withStyle(fTotal == 0 ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
-        LOGGER.info("[DungeonTrain][DEBUG] /dungeontrain debug scan: {} strays across {} train(s)",
-            totalStrays, trainsScanned);
+        LOGGER.info("[DungeonTrain][DEBUG] /dungeontrain debug scan: {} strays across {} carriage(s) in {} train(s)",
+            totalStrays, carriagesScanned, trainsById.size());
         return 1;
     }
 

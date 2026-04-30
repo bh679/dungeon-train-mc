@@ -1,15 +1,15 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.ship.Shipyards;
-import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
@@ -23,23 +23,21 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Per-tick append-only carriage spawner. For each train ship, advances the
- * provider's {@code highestSpawnedIdx} / {@code lowestSpawnedIdx} watermarks
- * to cover the union of every near player's {@code [pIdx − halfBack,
- * pIdx + halfFront]} window, spawning new carriages at any index between the
- * old and new watermarks.
+ * Per-tick append-only carriage spawner. For each train (group of
+ * single-carriage sub-levels sharing a {@link TrainTransformProvider#getTrainId() trainId}),
+ * extends the train's pIdx range by spawning new sub-levels at the
+ * appropriate world position when a player's needed window
+ * {@code [pIdx − halfBack, pIdx + halfFront]} extends beyond the train's
+ * current min/max pIdx.
  *
- * <p>Replaces {@link TrainWindowManager}'s rolling-window pattern, which was
- * designed around Valkyrien Skies' COM-recalc-on-mutation, 128-chunk shipyard
- * wall, and physics-thread / server-thread split. None of those constraints
- * apply on Sable — its mass tracker is read-only, the kinematic ticker pushes
- * every server tick, and there's no shipyard wall — so the simpler "never
- * erase, only append" model is sufficient and avoids Sable's
- * {@code FloatingBlockController} sub-level split risk (a ship can be split
- * when block deletions disconnect the chain; we never delete).</p>
+ * <p>Each new carriage is its own Sable sub-level — see
+ * {@link TrainAssembler#spawnCarriage(ServerLevel, BlockPos, Vector3dc, int, CarriageDims, UUID)}.
+ * This eliminates the COM-drift jitter the previous "one big sub-level"
+ * model suffered from on every block add.</p>
  *
- * <p>HUD push (per-player {@link CarriageIndexPacket}) is preserved verbatim
- * from {@code TrainWindowManager} — the carriage HUD is unchanged.</p>
+ * <p>Append-only: never erases. Walking back over a previously-spawned
+ * carriage shows it intact (its blocks were stamped once at spawn and never
+ * modified after).</p>
  */
 public final class TrainCarriageAppender {
 
@@ -62,60 +60,74 @@ public final class TrainCarriageAppender {
         if (players.isEmpty()) return;
 
         Set<UUID> seenThisTick = new HashSet<>();
-        // [spacing] — if Sable's FloatingBlockController has split the train
-        // (block disconnection from variant-block AIR placement, etc.), we'll
-        // see more than one ManagedShip with a TrainTransformProvider. Both
-        // ships share a provider via the DRIVERS_BY_UUID origin walk, so
-        // appending to both means the seam math runs twice against the same
-        // shipyardOrigin — a likely cause of erratic carriage positions.
-        int trainCount = 0;
-        for (ManagedShip ship : Shipyards.of(level).findAll()) {
-            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
-            trainCount++;
-            updateTrain(level, ship, provider, players, seenThisTick);
-        }
-        if (trainCount > 1) {
-            // Throttle to avoid log spam — fire only at the moment the count
-            // changes via a static flag would need state; for now, the WARN
-            // every tick is the fastest way to spot when a split happened.
-            LOGGER.warn("[DungeonTrain] [spacing] split detected — {} ManagedShip handles share a TrainTransformProvider this tick",
-                trainCount);
+        Map<UUID, List<Trains.Carriage>> trainsById = Trains.byTrainId(level);
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            updateTrain(level, train, players, seenThisTick);
         }
         clearDropouts(level, seenThisTick);
     }
 
     private static void updateTrain(
         ServerLevel level,
-        ManagedShip ship,
-        TrainTransformProvider provider,
+        List<Trains.Carriage> train,
         List<ServerPlayer> players,
         Set<UUID> seenThisTick
     ) {
-        // Probe / debug trains opt out of carriage growth — see
-        // TrainTransformProvider.appenderDisabled.
-        if (provider.isAppenderDisabled()) return;
-        int count = provider.getCount();
-        int halfBack = (count - 1) / 2;
-        int halfFront = count - halfBack - 1;
-        BlockPos shipyardOrigin = provider.getShipyardOrigin();
-        int originX = shipyardOrigin.getX();
-        CarriageDims dims = provider.dims();
+        if (train.isEmpty()) return;
+        // Any carriage of the train can opt the whole train out (debug probes).
+        for (Trains.Carriage c : train) {
+            if (c.provider().isAppenderDisabled()) return;
+        }
 
-        AABBdc aabb = ship.worldAABB();
+        Trains.Carriage lead = Trains.lead(train);
+        Trains.Carriage tail = Trains.tail(train);
+        TrainTransformProvider leadProvider = lead.provider();
+        ManagedShip leadShip = lead.ship();
+        UUID trainId = leadProvider.getTrainId();
+        CarriageDims dims = leadProvider.dims();
+        Vector3dc velocity = leadProvider.getTargetVelocity();
+        BlockPos leadShipyardOrigin = leadProvider.getShipyardOrigin();
+        int leadPIdx = leadProvider.getPIdx();
+        int length = dims.length();
+
+        // Target carriage count from config — drives halfBack / halfFront so
+        // /dt carriages adjusts how aggressively the appender extends.
+        int targetCount = DungeonTrainConfig.getNumCarriages();
+        int halfBack = (targetCount - 1) / 2;
+        int halfFront = targetCount - halfBack - 1;
 
         List<Integer> nearPlayerPIdxs = new ArrayList<>();
         for (ServerPlayer player : players) {
-            double px = player.getX();
-            double py = player.getY();
-            double pz = player.getZ();
-            double cdx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
-            double cdy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
-            double cdz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
-            if (cdx * cdx + cdy * cdy + cdz * cdz > NEAR_RADIUS_SQ) continue;
+            // Player is "near" the train if within NEAR_RADIUS of any of the
+            // train's carriage AABBs. Each carriage has its own world AABB
+            // since each is a separate sub-level.
+            boolean near = false;
+            for (Trains.Carriage c : train) {
+                AABBdc aabb = c.ship().worldAABB();
+                double px = player.getX();
+                double py = player.getY();
+                double pz = player.getZ();
+                double cdx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
+                double cdy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
+                double cdz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
+                if (cdx * cdx + cdy * cdy + cdz * cdz <= NEAR_RADIUS_SQ) {
+                    near = true;
+                    break;
+                }
+            }
+            if (!near) continue;
 
-            Vector3d local = new Vector3d(px, py, pz);
-            ship.worldToShip(local);
-            int pIdx = (int) Math.floor((local.x - originX) / (double) dims.length());
+            // Compute pIdx using the lead carriage as a reference frame.
+            // worldToShip(playerWorld) maps the player into lead's shipyard
+            // coordinates; offset from lead.shipyardOrigin in length-units
+            // gives the pIdx delta from lead, plus lead.pIdx for the
+            // absolute carriage index. This works regardless of which
+            // carriage the player is physically standing on, because all
+            // carriages of a train advance in lockstep (same velocity, same
+            // tick cadence).
+            Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
+            leadShip.worldToShip(local);
+            int pIdx = (int) Math.floor((local.x - leadShipyardOrigin.getX()) / (double) length) + leadPIdx;
 
             UUID uuid = player.getUUID();
             seenThisTick.add(uuid);
@@ -127,45 +139,35 @@ public final class TrainCarriageAppender {
 
             nearPlayerPIdxs.add(pIdx);
         }
-
         if (nearPlayerPIdxs.isEmpty()) return;
 
+        int trainMaxPIdx = leadPIdx;
+        int trainMinPIdx = tail.provider().getPIdx();
         List<Integer> toSpawn = computeIndicesToSpawn(
-            provider.getHighestSpawnedIdx(),
-            provider.getLowestSpawnedIdx(),
-            halfBack, halfFront,
-            nearPlayerPIdxs);
+            trainMaxPIdx, trainMinPIdx, halfBack, halfFront, nearPlayerPIdxs);
         if (toSpawn.isEmpty()) return;
 
-        // Generation config is read fresh each call so runtime-edits in the
-        // settings screen pick up for new placements without a respawn.
-        CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
-
-        for (int idx : toSpawn) {
-            spawnCarriage(level, provider, idx, shipyardOrigin, dims, genCfg);
-            // Advance the matching watermark. computeIndicesToSpawn emits
-            // forward indices ascending then backward indices descending,
-            // so each index sits at exactly one frontier.
-            if (idx > provider.getHighestSpawnedIdx()) {
-                provider.setHighestSpawnedIdx(idx);
-            } else if (idx < provider.getLowestSpawnedIdx()) {
-                provider.setLowestSpawnedIdx(idx);
-            }
+        for (int pIdx : toSpawn) {
+            // Forward indices use the lead as the world-position reference;
+            // backward indices use the tail. Both references compute the
+            // new carriage's world origin by adding (newPIdx - refPIdx) *
+            // length to the reference's current world origin.
+            Trains.Carriage reference = (pIdx > trainMaxPIdx) ? lead : tail;
+            spawnNewCarriage(level, reference, pIdx, dims, velocity, trainId);
         }
     }
 
     /**
-     * Pure decision helper — exposed as package-private for unit tests.
-     * Given the train's current watermarks, the count-derived half-back /
-     * half-front, and a list of near-player pIdx values, return the indices
-     * to spawn this tick in spawn order: forward frontier indices ascending,
-     * then backward frontier indices descending. Indices already inside
-     * {@code [currentLow, currentHigh]} are never re-emitted (watermark
-     * monotonicity).
+     * Pure decision helper — exposed package-private for unit tests.
+     * Given the train's current min/max pIdx and a list of near-player pIdx
+     * values, return the indices to spawn this tick in spawn order:
+     * forward indices ascending, then backward indices descending. Indices
+     * already inside {@code [trainMinPIdx, trainMaxPIdx]} are never
+     * re-emitted (append-only monotonicity).
      */
     static List<Integer> computeIndicesToSpawn(
-        int currentHigh,
-        int currentLow,
+        int trainMaxPIdx,
+        int trainMinPIdx,
         int halfBack,
         int halfFront,
         List<Integer> playerPIdxs
@@ -180,43 +182,57 @@ public final class TrainCarriageAppender {
             if (l < minNeededLow) minNeededLow = l;
         }
         List<Integer> out = new ArrayList<>();
-        for (int i = currentHigh + 1; i <= maxNeededHigh; i++) out.add(i);
-        for (int i = currentLow - 1; i >= minNeededLow; i--) out.add(i);
+        for (int i = trainMaxPIdx + 1; i <= maxNeededHigh; i++) out.add(i);
+        for (int i = trainMinPIdx - 1; i >= minNeededLow; i--) out.add(i);
         return out;
     }
 
-    private static void spawnCarriage(
+    /**
+     * Place a new single-carriage sub-level at the world position
+     * extrapolated from {@code reference}'s current world origin. World
+     * coords are rounded to the nearest integer for the {@link BlockPos}
+     * placement; sub-block misalignment versus the existing train's drift
+     * may produce a small visible gap or overlap at the seam between the
+     * pre-existing and new carriages. This is a known B.1 limitation;
+     * follow-up work can pre-populate the new carriage's
+     * {@code canonicalPos} to the exact fractional position to remove the
+     * rounding error.
+     */
+    private static void spawnNewCarriage(
         ServerLevel level,
-        TrainTransformProvider provider,
-        int idx,
-        BlockPos shipyardOrigin,
+        Trains.Carriage reference,
+        int newPIdx,
         CarriageDims dims,
-        CarriageGenerationConfig genCfg
+        Vector3dc velocity,
+        UUID trainId
     ) {
-        BlockPos carriageOrigin = new BlockPos(
-            shipyardOrigin.getX() + idx * dims.length(),
-            shipyardOrigin.getY(),
-            shipyardOrigin.getZ());
-        int sMinX = carriageOrigin.getX();
-        int sMaxX = sMinX + dims.length() - 1;
-        // [spacing] — neighbour edge lookups so a diff against the previously
-        // spawned carriage on this side is one log line, not a hunt through
-        // the timeline.
-        int prevIdx = idx > 0 ? idx - 1 : idx + 1;
-        int prevMinX = shipyardOrigin.getX() + prevIdx * dims.length();
-        int prevMaxX = prevMinX + dims.length() - 1;
-        int seamGap = idx > 0 ? sMinX - (prevMaxX + 1) : prevMinX - (sMaxX + 1);
+        BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
+        int refPIdx = reference.provider().getPIdx();
+        int length = dims.length();
 
-        CarriageVariant variant = CarriageTemplate.variantForIndex(idx, genCfg);
-        Set<BlockPos> placed = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, idx);
-        provider.getActiveIndices().add(idx);
-        if (placed.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] Appender placed empty carriage idx={} variant={} at {}",
-                idx, variant.id(), carriageOrigin);
-        } else {
-            LOGGER.info("[DungeonTrain] Appender added carriage idx={} variant={} at shipyard {} blocks={} x=[{}, {}] seamGapVsIdx{}={}",
-                idx, variant.id(), carriageOrigin, placed.size(), sMinX, sMaxX, prevIdx, seamGap);
-        }
+        // Reference carriage's current world origin = shipToWorld of its
+        // shipyard origin. Includes velocity drift since spawn.
+        Vector3d refWorldOriginVec = new Vector3d(
+            refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
+        reference.ship().shipToWorld(refWorldOriginVec);
+
+        // New carriage's ideal world origin: ref + (Δ pIdx) * length in +X
+        // for a 1D train. Generalizes via velocity unit vector for axis-
+        // aligned variations later.
+        double idealX = refWorldOriginVec.x + (newPIdx - refPIdx) * (double) length;
+        double idealY = refWorldOriginVec.y;
+        double idealZ = refWorldOriginVec.z;
+
+        BlockPos newCarriageOrigin = new BlockPos(
+            (int) Math.round(idealX),
+            (int) Math.round(idealY),
+            (int) Math.round(idealZ));
+
+        ManagedShip newShip = TrainAssembler.spawnCarriage(
+            level, newCarriageOrigin, velocity, newPIdx, dims, trainId);
+
+        LOGGER.info("[DungeonTrain] Appender added carriage pIdx={} trainId={} ship id={} world={} (idealX={})",
+            newPIdx, trainId, newShip.id(), newCarriageOrigin, String.format("%.4f", idealX));
     }
 
     /**

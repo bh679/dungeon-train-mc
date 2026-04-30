@@ -181,16 +181,21 @@ public final class DungeonTrainSettingsScreen extends Screen {
 
         Vector3d velocity = new Vector3d(speed, 0.0, 0.0);
         server.execute(() -> {
+            // Per-carriage architecture: each carriage is its own sub-level
+            // with its own provider. Velocity propagates to every carriage
+            // in every train. Carriage count is now a config knob the
+            // appender reads — setting via DungeonTrainConfig already
+            // happened on the calling side; nothing to do per-provider for
+            // count.
             int updated = 0;
             for (ServerLevel level : server.getAllLevels()) {
                 List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
                 for (TrainTransformProvider p : providers) {
-                    p.setCount(carriages);
                     p.setTargetVelocity(velocity);
                     updated++;
                 }
             }
-            LOGGER.info("[DungeonTrain] Live update applied to {} train(s)", updated);
+            LOGGER.info("[DungeonTrain] Live update applied to {} carriage(s) (config carriages={})", updated, carriages);
         });
     }
 

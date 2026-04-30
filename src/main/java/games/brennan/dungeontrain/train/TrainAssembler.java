@@ -19,15 +19,21 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * Spawns a carriage-shaped managed ship and drives it at constant velocity
- * via a {@link TrainTransformProvider} (kinematic drive — bypasses the
- * force-based mass threshold that froze 20-carriage trains).
+ * Assembles a train as N independent Sable sub-levels — one per carriage —
+ * all sharing a {@link TrainTransformProvider#getTrainId() trainId}.
+ *
+ * <p>Each carriage is its own kinematic body. Because each sub-level's blocks
+ * are placed once at assembly and never modified after, the per-sub-level
+ * MassTracker / rotationPoint stays constant — eliminating the COM-drift
+ * jitter we hit with the previous "one big sub-level for the whole train"
+ * model. Trains are reassembled into logical groups via {@link Trains}.</p>
  *
  * <p>All ship-physics interaction goes through the {@link Shipyard} port,
- * so a future swap to a different physics mod (Sable) only changes the
- * {@code ship.vs.*} adapter package.</p>
+ * so a future swap to a different physics mod only changes the
+ * {@code ship.sable.*} adapter package.</p>
  */
 public final class TrainAssembler {
 
@@ -37,114 +43,148 @@ public final class TrainAssembler {
     private TrainAssembler() {}
 
     /**
-     * Spawn an N-carriage train as a single managed ship moving at
-     * {@code velocity}. All carriages share one rigid body and one kinematic
-     * transform driver.
+     * Spawn a fresh N-carriage train as N single-carriage Sable sub-levels.
+     * Deletes any previously-loaded Dungeon Train sub-levels first, so the
+     * world starts with exactly this one new train.
      *
-     * {@code origin} anchors carriage index 0 in world space. The physical
-     * placement is shifted so the initial carriages cover indices
-     * {@code [initialPIdx − halfBack, initialPIdx + halfFront]} — centered on
-     * {@code spawnerWorldPos} — which lets the rolling-window manager start
-     * with zero churn on its first tick.
-     *
-     * Before assembly: deletes any pre-existing Dungeon Train ships in the level
-     * and clears world blocks inside the new train's bounding volume so trapped
-     * terrain does not wedge the ship against the world.
+     * @return the lead carriage's {@link ManagedShip} — the one with the
+     *     highest pIdx, useful for callers that just want a representative
+     *     handle (the bootstrap log, the {@code /dt spawn} command output,
+     *     etc.). The full train is reachable via
+     *     {@link Trains#findById(ServerLevel, UUID)}.
      */
     public static ManagedShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
-            LOGGER.info("[DungeonTrain] Deleted {} existing train(s) before spawn", deleted);
+            LOGGER.info("[DungeonTrain] Deleted {} existing carriage(s) before spawn", deleted);
         }
-        return spawnTrainCore(level, origin, velocity, count, spawnerWorldPos, dims, 0);
+        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims);
     }
 
     /**
-     * Spawn a successor train ahead of an existing one — does NOT delete
-     * existing trains or wipe persistence, so two trains coexist and the
-     * player can walk from one onto the next. {@code globalPIdxBase} keeps
-     * the HUD's "carriage number" continuous across the chain. See
-     * {@link games.brennan.dungeontrain.train.TrainChainManager} and
-     * {@code plans/floofy-floating-dahl.md} for the chain architecture.
+     * Spawn an additional N-carriage train without deleting any existing
+     * trains in {@code level}. Each invocation creates a new {@link UUID}
+     * trainId; carriages from this call do NOT join any pre-existing train.
      *
-     * @param origin carriage-index-0 anchor in world for the new train
-     * @param spawnerWorldPos world position that seeds {@code initialPIdx}
-     *     (typically the same as origin for a successor — its first
-     *     carriage lives at origin and the window extends forward).
+     * <p>Used by {@code /dt debug pair} to place two independent
+     * single-carriage trains side by side. The legacy {@code globalPIdxBase}
+     * parameter is preserved for ABI compatibility but ignored in the
+     * per-carriage architecture.</p>
      */
-    public static ManagedShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
-        return spawnTrainCore(level, origin, velocity, count, spawnerWorldPos, dims, globalPIdxBase);
+    @SuppressWarnings("unused")
+    public static ManagedShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int legacyGlobalPIdxBase) {
+        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims);
     }
 
-    private static ManagedShip spawnTrainCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int globalPIdxBase) {
-        // At spawn time the ship's worldToShip is a pure translation, so the
-        // player's shipyard-space X offset from shipyardOrigin equals their
-        // world X offset from origin — we can compute pIdx without the ship.
+    private static ManagedShip spawnCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("Cannot spawn a train with count <= 0 (got " + count + ")");
+        }
+
+        // At spawn time, worldToShip is undefined for sub-levels that don't
+        // exist yet, so initialPIdx is computed in plain world space — the
+        // player's X offset from origin equals their pIdx * length.
         int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) dims.length());
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;
         int firstIdx = initialPIdx - halfBack;
         int lastIdx = initialPIdx + halfFront;
 
-        int cleared = clearBoundingBox(level, origin, firstIdx, lastIdx, dims);
-        LOGGER.info("[DungeonTrain] Cleared {} world blocks in train footprint (indices {} to {})", cleared, firstIdx, lastIdx);
+        UUID trainId = UUID.randomUUID();
 
-        // Pull mode + groupSize from config and seed from per-world SavedData
-        // so the variants selected here match what TrainWindowManager picks
-        // when the rolling window replaces the same carriages later.
-        CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
+        // World-space track corridor (Y/Z bounds) — same for every carriage
+        // in this train. Compute once and reuse.
+        TrackGeometry geometry = new TrackGeometry(
+            origin.getY() - 2,
+            origin.getY() - 1,
+            origin.getZ(),
+            origin.getZ() + dims.width() - 1);
 
-        Set<BlockPos> blocks = new HashSet<>();
-        int emptyCarriages = 0;
-        // Stash the variant per index so the post-assembly contents pass
-        // doesn't re-pick and risk desyncing with what was placed here.
-        CarriageVariant[] variantByIdx = new CarriageVariant[lastIdx - firstIdx + 1];
+        LOGGER.info("[DungeonTrain] Spawning train trainId={} pIdx range [{}, {}] count={} dims={}x{}x{} velocity={} origin={}",
+            trainId, firstIdx, lastIdx, count,
+            dims.length(), dims.height(), dims.width(),
+            velocity, origin);
+
+        List<ManagedShip> ships = new ArrayList<>(count);
         for (int i = firstIdx; i <= lastIdx; i++) {
             BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
-            CarriageVariant variant = CarriageTemplate.variantForIndex(i, genCfg);
-            variantByIdx[i - firstIdx] = variant;
-            // applyContents=false: contents (which may spawn entities) are
-            // deferred until AFTER ShipAssembler.assembleToShip because that
-            // call only moves blocks into shipyard space. Entities spawned in
-            // world space here would stay in world space, visible at the
-            // train's original spawn point rather than riding the ship.
-            Set<BlockPos> carriageBlocks = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, i, false);
-            if (carriageBlocks.isEmpty()) {
-                emptyCarriages++;
-                LOGGER.warn("[DungeonTrain] Spawn produced empty carriage idx={} variant={} at {}",
-                    i, variant.id(), carriageOrigin);
+            ManagedShip ship = spawnCarriage(level, carriageOrigin, velocity, i, dims, trainId);
+            // Attach the shared track geometry so per-carriage code that
+            // needs the corridor (debug, future bed checks) can read it
+            // directly off any ship in the train.
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
+                provider.setTrackGeometry(geometry);
             }
-            blocks.addAll(carriageBlocks);
-        }
-        // [spacing] — log the WORLD-space x-extent of every initial carriage
-        // so we can correlate against the post-assembly shipyard extents and
-        // the appender's later spawns. These are the integer ranges we asked
-        // Sable to assemble; any mismatch with what the ship actually
-        // contains afterwards is a Sable rounding / anchor issue.
-        for (int i = firstIdx; i <= lastIdx; i++) {
-            int worldMinX = origin.getX() + i * dims.length();
-            int worldMaxX = worldMinX + dims.length() - 1;
-            LOGGER.info("[DungeonTrain] [spacing] init idx={} world x=[{}, {}] (length={})",
-                i, worldMinX, worldMaxX, dims.length());
+            ships.add(ship);
         }
 
-        LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, {} empty, initialPIdx={}, dims={}x{}x{}), assembling...",
-            blocks.size(), count, emptyCarriages, initialPIdx, dims.length(), dims.width(), dims.height());
+        // Bootstrap track-gen pending chunks on the tail (lowest pIdx).
+        // The tail rarely changes once the train is moving forward — it
+        // only changes if the appender extends the train backward — so the
+        // queue stays put across most of the train's lifetime. When the
+        // tail does change (player walks behind initial spawn), the new
+        // tail starts with empty queues and re-discovers chunks; painting
+        // is idempotent.
+        ManagedShip tail = ships.get(0); // first iteration was firstIdx == lowest
+        if (tail.getKinematicDriver() instanceof TrainTransformProvider tailProvider) {
+            TrackGenerator.bootstrapPendingChunks(level, tail, tailProvider);
+        }
+
+        // Return lead (last iteration was lastIdx == highest). Callers that
+        // need the full train iterate via Trains.findById(level, trainId).
+        return ships.get(ships.size() - 1);
+    }
+
+    /**
+     * Assemble a single Dungeon Train carriage into its own Sable sub-level.
+     * Used both by {@link #spawnTrain}'s initial loop and by
+     * {@link TrainCarriageAppender} when a player advances past the train's
+     * current pIdx range.
+     *
+     * <p>Steps:</p>
+     * <ol>
+     *   <li>Clear the carriage's world-space footprint so trapped terrain
+     *       doesn't wedge the new sub-level on assembly.</li>
+     *   <li>Stamp the carriage's shell blocks at world coords (variant +
+     *       parts overlay; contents deferred).</li>
+     *   <li>Assemble the block set into a Sable sub-level via the
+     *       {@link Shipyard} port.</li>
+     *   <li>Resolve the sub-level's shipyard origin and stamp contents in
+     *       shipyard coords (so block-entities and any spawned entities
+     *       ride the carriage rather than stay in world space).</li>
+     *   <li>Attach a {@link TrainTransformProvider} keyed on
+     *       {@code (pIdx, trainId)}. Mark the body static (no-op on Sable
+     *       but keeps the API consistent).</li>
+     * </ol>
+     *
+     * @param origin  carriage's world-space minimum corner (the floor's
+     *                ground-level block)
+     * @param pIdx    this carriage's index along the train's velocity axis
+     * @param trainId UUID shared by every carriage in the same train
+     */
+    public static ManagedShip spawnCarriage(ServerLevel level, BlockPos origin, Vector3dc velocity, int pIdx, CarriageDims dims, UUID trainId) {
+        int cleared = clearCarriageVolume(level, origin, dims);
+        if (cleared > 0) {
+            LOGGER.debug("[DungeonTrain] Cleared {} world blocks in carriage footprint pIdx={} at {}", cleared, pIdx, origin);
+        }
+
+        CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
+        CarriageVariant variant = CarriageTemplate.variantForIndex(pIdx, genCfg);
+
+        // applyContents=false: contents (which may spawn entities) are
+        // deferred until AFTER assembly so they land in shipyard space.
+        Set<BlockPos> blocks = new HashSet<>(
+            CarriageTemplate.placeAt(level, origin, variant, dims, genCfg, pIdx, false));
+        if (blocks.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] spawnCarriage produced empty block set pIdx={} variant={} at {}",
+                pIdx, variant.id(), origin);
+        }
 
         ManagedShip ship = Shipyards.of(level).assemble(blocks, 1.0);
 
-        // shipyardOrigin anchors carriage index 0. Even though we didn't place a
-        // carriage at `origin` when firstIdx != 0, worldToShip is still a pure
-        // translation at this moment, so the shipyard position of index 0 is
-        // the shipyard translation of `origin`.
-        //
-        // Round-to-nearest (NOT floor via BlockPos.containing) so we match
-        // VS's own block placement. When worldToShip lands `origin` at e.g.
-        // z = 12290044.9999669 (micro-fraction below the next integer), VS
-        // stores the initial block at shipyard z = 12290045 while a floored
-        // origin would give 12290044 — and the rolling-window erase loop
-        // `[originZ, originZ + width)` would miss the +Z face of every
-        // initial carriage, leaving a 1-block sliver.
+        // Resolve the sub-level's shipyard origin. Round-to-nearest matches
+        // Sable's own block-placement coordinate, so the +Z face of the
+        // carriage isn't lost to a 1-block sliver.
         Vector3d shipyardOriginVec = new Vector3d(origin.getX(), origin.getY(), origin.getZ());
         ship.worldToShip(shipyardOriginVec);
         BlockPos shipyardOrigin = new BlockPos(
@@ -152,87 +192,27 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
 
-        // [spacing] — log raw worldToShip output so we can see the
-        // sub-block fraction that's being rounded away. A persistent
-        // ~0.5 fraction would indicate Sable's anchor lands the train at
-        // half-block coords; rounding the wrong direction would skew the
-        // appender's idx*length math against where the initial blocks
-        // actually live.
-        LOGGER.info("[DungeonTrain] [spacing] worldOrigin={} shipyardOriginRaw=({}, {}, {}) shipyardOriginRounded={} fracX={} fracY={} fracZ={}",
-            origin,
-            String.format("%.6f", shipyardOriginVec.x),
-            String.format("%.6f", shipyardOriginVec.y),
-            String.format("%.6f", shipyardOriginVec.z),
-            shipyardOrigin,
-            String.format("%.6f", shipyardOriginVec.x - Math.round(shipyardOriginVec.x)),
-            String.format("%.6f", shipyardOriginVec.y - Math.round(shipyardOriginVec.y)),
-            String.format("%.6f", shipyardOriginVec.z - Math.round(shipyardOriginVec.z)));
+        // Contents pass at shipyard coords so block-entities and any
+        // spawned entities are placed inside the sub-level.
+        CarriageTemplate.applyContentsAt(level, shipyardOrigin, variant, dims, genCfg, pIdx);
 
-        // [spacing] — what the appender will assume for the initial range,
-        // and the ship's actual measured bounds. If these disagree, the
-        // appender's idx*length math will produce gaps or overlaps at the
-        // seam between the initial set and the first appended carriage.
-        org.joml.primitives.AABBdc actualBounds = ship.worldAABB();
-        LOGGER.info("[DungeonTrain] [spacing] expectedShipyardX=[{}, {}) actualWorldAABB=[{}, {}, {}] -> [{}, {}, {}]",
-            shipyardOrigin.getX() + firstIdx * dims.length(),
-            shipyardOrigin.getX() + (lastIdx + 1) * dims.length(),
-            String.format("%.3f", actualBounds.minX()),
-            String.format("%.3f", actualBounds.minY()),
-            String.format("%.3f", actualBounds.minZ()),
-            String.format("%.3f", actualBounds.maxX()),
-            String.format("%.3f", actualBounds.maxY()),
-            String.format("%.3f", actualBounds.maxZ()));
-
-        for (int i = firstIdx; i <= lastIdx; i++) {
-            int sMinX = shipyardOrigin.getX() + i * dims.length();
-            int sMaxX = sMinX + dims.length() - 1;
-            LOGGER.info("[DungeonTrain] [spacing] init idx={} expected shipyard x=[{}, {}]",
-                i, sMinX, sMaxX);
-        }
-
-        // Second pass: apply contents at SHIPYARD coordinates now that the
-        // ship has absorbed our world-space blocks. Entity placement in
-        // shipyard chunks routes through VS's shipyard-entity mixin so
-        // armor stands, paintings, and item frames ride the ship.
-        for (int i = firstIdx; i <= lastIdx; i++) {
-            CarriageVariant variant = variantByIdx[i - firstIdx];
-            BlockPos carriageShipyardOrigin = shipyardOrigin.offset(i * dims.length(), 0, 0);
-            CarriageTemplate.applyContentsAt(level, carriageShipyardOrigin, variant, dims, genCfg, i);
-        }
-
-        TrainTransformProvider provider = new TrainTransformProvider(velocity, shipyardOrigin, count, level.dimension(), initialPIdx, dims, globalPIdxBase);
+        TrainTransformProvider provider = new TrainTransformProvider(
+            velocity, shipyardOrigin, level.dimension(), pIdx, dims, trainId);
         ship.setKinematicDriver(provider);
-        // Skip dynamics pipeline (COM/inertia recompute, Bullet integration) — rolling-window
-        // block add/erase otherwise shifts the ship's COM every tick and causes visible jitter.
         ship.setStatic(true);
 
-        // Capture world-space track geometry before any ship motion so the
-        // values stay anchored to the spawn point. Bed sits 2 below the
-        // carriage floor (origin.y); rails one above the bed (= one below
-        // the floor). Z spans the full carriage width.
-        TrackGeometry geometry = new TrackGeometry(
-            origin.getY() - 2,
-            origin.getY() - 1,
-            origin.getZ(),
-            origin.getZ() + dims.width() - 1);
-        provider.setTrackGeometry(geometry);
-
-        LOGGER.info("[DungeonTrain] Assembly returned ship id={} — attached kinematic transform driver, marked static (shipyardOrigin={}, count={}, initialPIdx={}, globalPIdxBase={}, track={})",
-            ship.id(), shipyardOrigin, count, initialPIdx, globalPIdxBase, geometry);
-
-        // Bootstrap: enqueue every chunk already loaded in the Z corridor.
-        // These chunks fired ChunkEvent.Load before this train existed and
-        // so were skipped by TrackChunkEvents — without explicit enqueue
-        // they'd stay permanently unpainted as gaps in the bed.
-        TrackGenerator.bootstrapPendingChunks(level, ship, provider);
+        LOGGER.info("[DungeonTrain] Spawned carriage pIdx={} variant={} trainId={} ship id={} shipyardOrigin={} blocks={}",
+            pIdx, variant.id(), trainId, ship.id(), shipyardOrigin, blocks.size());
 
         return ship;
     }
 
     /**
-     * Return the {@link TrainTransformProvider} for every loaded Dungeon Train
-     * ship in {@code level}. Used by commands and the settings screen to apply
-     * speed/count changes to live trains.
+     * Return every loaded {@link TrainTransformProvider} carriage in
+     * {@code level}, ungrouped. Drop-in usage for legacy callers (e.g.
+     * {@code /dt speed}, {@code /dt carriages}) that iterate providers and
+     * mutate them. Per-train operations should prefer
+     * {@link Trains#byTrainId(ServerLevel)}.
      */
     public static List<TrainTransformProvider> getActiveTrainProviders(ServerLevel level) {
         List<TrainTransformProvider> providers = new ArrayList<>();
@@ -245,9 +225,9 @@ public final class TrainAssembler {
     }
 
     /**
-     * Delete every loaded ship in {@code level} whose kinematic driver is a
-     * {@link TrainTransformProvider} — i.e. every Dungeon Train we've previously
-     * spawned. Returns the number of ships deleted.
+     * Delete every loaded carriage sub-level in {@code level} (any sub-level
+     * whose driver is a {@link TrainTransformProvider}). Returns the number
+     * of carriages deleted across all trains.
      */
     private static int deleteExistingTrains(ServerLevel level) {
         Shipyard shipyard = Shipyards.of(level);
@@ -260,27 +240,21 @@ public final class TrainAssembler {
         for (ManagedShip ship : trains) {
             shipyard.delete(ship);
         }
-        // Wipe per-carriage persistence snapshots from the previous train —
-        // a fresh spawn should never restore stale state keyed on the old
-        // train's carriage indices. See CarriagePersistenceStore.
+        // Persistence store from the rolling-window era still holds keys for
+        // any prior trains; clear so new trainIds can't collide with stale
+        // saved state.
         CarriagePersistenceStore.clear(level);
         return trains.size();
     }
 
     /**
-     * Replace every world block inside the new train's axis-aligned bounding
-     * box with air. Runs before block placement so the hollow interior does
-     * not trap existing terrain inside the assembled ship.
-     *
-     * Clears the X range {@code [firstIdx * length, (lastIdx + 1) * length)}
-     * relative to {@code origin} — matching the shifted carriage placement
-     * anchored on index 0.
+     * Replace every world block inside a single carriage's axis-aligned
+     * footprint with air. Runs before block placement so trapped terrain
+     * doesn't wedge the new sub-level on assembly.
      */
-    private static int clearBoundingBox(ServerLevel level, BlockPos origin, int firstIdx, int lastIdx, CarriageDims dims) {
-        int startDx = firstIdx * dims.length();
-        int endDx = (lastIdx + 1) * dims.length();
+    private static int clearCarriageVolume(ServerLevel level, BlockPos origin, CarriageDims dims) {
         int cleared = 0;
-        for (int dx = startDx; dx < endDx; dx++) {
+        for (int dx = 0; dx < dims.length(); dx++) {
             for (int dy = 0; dy < dims.height(); dy++) {
                 for (int dz = 0; dz < dims.width(); dz++) {
                     BlockPos pos = origin.offset(dx, dy, dz);

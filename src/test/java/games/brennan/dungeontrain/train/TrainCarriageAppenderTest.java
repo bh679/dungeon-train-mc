@@ -14,10 +14,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * materialize this tick. The helper is JOML- / Forge-free so tests run
  * without a Minecraft bootstrap.
  *
+ * <p>With the per-carriage architecture, the appender's "current high /
+ * current low" are the train's max / min pIdx aggregated across its
+ * carriage sub-levels (via {@link Trains#maxPIdx(java.util.List)} /
+ * {@link Trains#minPIdx(java.util.List)}). The pure helper takes those
+ * aggregated values directly, so the test covers the same decision
+ * surface as before.</p>
+ *
  * <p>Default fixture: {@code count = 10} → {@code halfBack = 4}, {@code halfFront = 5}.
- * Initial spawn at {@code pIdx = 0} produces watermarks
- * {@code highestSpawnedIdx = 5}, {@code lowestSpawnedIdx = -4} — the same
- * range {@code TrainAssembler.spawnTrain} places blocks for.</p>
+ * Initial spawn at {@code pIdx = 0} produces a train whose
+ * {@code (maxPIdx, minPIdx)} = (5, -4) — the same range
+ * {@code TrainAssembler.spawnTrain} places carriages for.</p>
  */
 final class TrainCarriageAppenderTest {
 
