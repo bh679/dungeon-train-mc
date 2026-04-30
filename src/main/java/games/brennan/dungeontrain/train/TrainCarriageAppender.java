@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.ship.Shipyards;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -148,6 +147,15 @@ public final class TrainCarriageAppender {
             trainMaxPIdx, trainMinPIdx, halfBack, halfFront, nearPlayerPIdxs);
         if (toSpawn.isEmpty()) return;
 
+        // Safety cap — if pIdx computation goes wildly wrong (e.g. due to
+        // pose corruption), don't spawn 1000+ sub-levels in one tick. Log
+        // loudly so the underlying bug is visible.
+        if (toSpawn.size() > MAX_SPAWNS_PER_TICK) {
+            LOGGER.warn("[DungeonTrain] Appender wanted to spawn {} carriages this tick (trainMin={} max={} players={}); clamping to {}",
+                toSpawn.size(), trainMinPIdx, trainMaxPIdx, nearPlayerPIdxs, MAX_SPAWNS_PER_TICK);
+            toSpawn = toSpawn.subList(0, MAX_SPAWNS_PER_TICK);
+        }
+
         for (int pIdx : toSpawn) {
             // Forward indices use the lead as the world-position reference;
             // backward indices use the tail. Both references compute the
@@ -192,11 +200,20 @@ public final class TrainCarriageAppender {
      * Minimum visible gap (in blocks) between the new carriage and the
      * reference. Sable's collision broad-phase appears to consider very
      * narrow gaps as contact, so we add a small bias before rounding to
-     * keep the gap at least this large. Combined with the chain
-     * constraint ({@link Shipyard#lockAdjacentYZRotation}), this
-     * eliminates the impulse-driven jitter on append.
+     * keep the gap at least this large.
      */
     private static final double MIN_GAP_BLOCKS = 0.1;
+
+    /**
+     * Hard upper bound on how many carriages the appender will spawn in
+     * a single server tick. A normal player crosses at most a handful of
+     * carriage boundaries per tick; this cap prevents a runaway loop if
+     * a player's pIdx computation goes wildly off (e.g. because of an
+     * upstream pose corruption) — without it, the appender can spawn
+     * 1000+ sub-levels in a single tick before the server catches up,
+     * which then makes the world impossible to save.
+     */
+    private static final int MAX_SPAWNS_PER_TICK = 32;
 
     /**
      * Place a new single-carriage sub-level at the world position
@@ -249,12 +266,6 @@ public final class TrainCarriageAppender {
 
         ManagedShip newShip = TrainAssembler.spawnCarriage(
             level, newCarriageOrigin, velocity, newPIdx, dims, trainId);
-
-        // Link the new carriage to the reference (lead for forward, tail
-        // for backward) so the physics solver pulls them into the same
-        // Y/Z/rotation each tick. Free LINEAR_X lets each kinematic driver
-        // advance independently.
-        Shipyards.of(level).lockAdjacentYZRotation(reference.ship(), newShip);
 
         LOGGER.info("[DungeonTrain] Appender added carriage pIdx={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={})",
             newPIdx, trainId, newShip.id(), newCarriageOrigin,

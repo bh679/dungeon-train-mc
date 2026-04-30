@@ -3,26 +3,19 @@ package games.brennan.dungeontrain.ship.sable;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
-import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
-import dev.ryanhcode.sable.api.physics.constraint.ConstraintJointAxis;
-import dev.ryanhcode.sable.api.physics.constraint.generic.GenericConstraintConfiguration;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
-import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Quaterniond;
-import org.joml.Vector3d;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -123,57 +116,6 @@ public final class SableShipyard implements Shipyard {
             return null;
         }
         return wrappers.computeIfAbsent(server, SableManagedShip::new);
-    }
-
-    /**
-     * Axes locked between adjacent carriage sub-levels. {@code LINEAR_X}
-     * is intentionally omitted so each carriage's kinematic driver can
-     * advance it independently along the train's velocity direction.
-     */
-    private static final Set<ConstraintJointAxis> LOCKED_AXES = EnumSet.of(
-        ConstraintJointAxis.LINEAR_Y,
-        ConstraintJointAxis.LINEAR_Z,
-        ConstraintJointAxis.ANGULAR_X,
-        ConstraintJointAxis.ANGULAR_Y,
-        ConstraintJointAxis.ANGULAR_Z);
-
-    @Override
-    public void lockAdjacentYZRotation(ManagedShip a, ManagedShip b) {
-        if (!(a instanceof SableManagedShip sa) || !(b instanceof SableManagedShip sb)) {
-            LOGGER.warn("[Sable] lockAdjacentYZRotation called with non-Sable ships: a={} b={}", a, b);
-            return;
-        }
-        SubLevelPhysicsSystem physics = SubLevelPhysicsSystem.get(level);
-        if (physics == null) {
-            LOGGER.warn("[Sable] lockAdjacentYZRotation: no physics system for level {}", level.dimension().location());
-            return;
-        }
-        PhysicsPipeline pipeline = physics.getPipeline();
-        if (pipeline == null) {
-            LOGGER.warn("[Sable] lockAdjacentYZRotation: physics system has no pipeline yet");
-            return;
-        }
-
-        // Anchor points at each sub-level's pose origin (model-space (0,0,0))
-        // with identity orientation. With LINEAR_Y/Z locked, the constraint
-        // forces each body's pose.position.y/z to match the other; with
-        // ANGULAR_X/Y/Z locked, both bodies' rotations stay equal. The free
-        // LINEAR_X axis lets each body's canonicalPos advance independently.
-        GenericConstraintConfiguration config = new GenericConstraintConfiguration(
-            new Vector3d(0, 0, 0),
-            new Vector3d(0, 0, 0),
-            new Quaterniond(),
-            new Quaterniond(),
-            LOCKED_AXES);
-
-        try {
-            pipeline.addConstraint(sa.subLevel(), sb.subLevel(), config);
-            LOGGER.debug("[Sable] Locked Y/Z/rotation between sub-levels {} and {}",
-                sa.id(), sb.id());
-        } catch (Throwable t) {
-            LOGGER.warn("[Sable] addConstraint failed between {} and {}: {}",
-                sa.id(), sb.id(), t.toString());
-        }
     }
 
     /** Centre of the block set's integer AABB, rounded down to a {@link BlockPos}. */
