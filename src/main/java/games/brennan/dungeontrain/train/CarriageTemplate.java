@@ -325,39 +325,66 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Erase one half of a half-flatbed's full-length FLATBED stamp so
-     * only the kept zone remains. BACK pad keeps the HIGH-dx end of the
-     * template (the visual END of a flatbed, including any
-     * authored back-edge details); FRONT pad keeps the LOW-dx end (the
-     * visual START of a flatbed). Adjacent groups' FRONT (start) + next
-     * BACK (end) thus tile to one full flatbed straddling the seam.
+     * Crop the full-length FLATBED stamp down to a pure-floor pad. Two
+     * passes:
+     *
+     * <ol>
+     *   <li><b>Erase</b> the entire discarded half (every dy). BACK
+     *     discards the LOW-dx half; FRONT discards the HIGH-dx half.</li>
+     *   <li><b>Strip non-floor</b> in the kept half (any dy > 0). Without
+     *     this, walls / roof / decorations authored into the FLATBED NBT
+     *     leak into the pad's kept zone and visually clash with the
+     *     adjacent enclosed carriage's wall — producing a "carriage
+     *     inside another carriage" effect at every BACK/FRONT pad seam.
+     *     The pad is intentionally a flat floor strip; if a user wants
+     *     pad-specific decoration, they'd author dedicated
+     *     {@code half_flatbed_back} / {@code half_flatbed_front} NBTs
+     *     instead of inheriting from FLATBED.</li>
+     * </ol>
      *
      * <p>Pad lengths are asymmetric for odd carriage lengths:
      * {@code back_pad = dims.length() / 2} (integer floor),
      * {@code front_pad = dims.length() - back_pad} (integer ceil). For
      * length=9: back keeps last 4 blocks, front keeps first 5 blocks;
-     * 4 + 5 = 9 = length.</p>
+     * 4 + 5 = 9 = length, tiling to a full flatbed at every seam.</p>
      */
     private static void eraseHalfFlatbedRemainder(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
-        int dxFrom, dxTo;
+        int frontPad = dims.length() - dims.length() / 2;
+        int eraseFrom, eraseTo;
+        int keepFrom, keepTo;
         if (type == CarriageType.HALF_FLATBED_BACK) {
             // Keep high dx (last back_pad blocks); erase low dx (first front_pad blocks).
-            int frontPad = dims.length() - dims.length() / 2;
-            dxFrom = 0;
-            dxTo = frontPad - 1;
+            eraseFrom = 0;
+            eraseTo = frontPad - 1;
+            keepFrom = frontPad;
+            keepTo = dims.length() - 1;
         } else {
             // HALF_FLATBED_FRONT: keep low dx (first front_pad blocks);
             // erase high dx (last back_pad blocks).
-            int frontPad = dims.length() - dims.length() / 2;
-            dxFrom = frontPad;
-            dxTo = dims.length() - 1;
+            eraseFrom = frontPad;
+            eraseTo = dims.length() - 1;
+            keepFrom = 0;
+            keepTo = frontPad - 1;
         }
-        if (dxFrom > dxTo) return; // dims.length()=1 edge case (pad covers entire slot)
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = dxFrom; dx <= dxTo; dx++) {
-            for (int dz = 0; dz < dims.width(); dz++) {
-                for (int dy = 0; dy < dims.height(); dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+        // Pass 1: erase the discarded half entirely.
+        if (eraseFrom <= eraseTo) {
+            for (int dx = eraseFrom; dx <= eraseTo; dx++) {
+                for (int dz = 0; dz < dims.width(); dz++) {
+                    for (int dy = 0; dy < dims.height(); dy++) {
+                        level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                    }
+                }
+            }
+        }
+        // Pass 2: strip non-floor (dy > 0) from the kept half. Leaves
+        // only floor at dy=0, regardless of authored FLATBED content.
+        if (keepFrom <= keepTo) {
+            for (int dx = keepFrom; dx <= keepTo; dx++) {
+                for (int dz = 0; dz < dims.width(); dz++) {
+                    for (int dy = 1; dy < dims.height(); dy++) {
+                        level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                    }
                 }
             }
         }
