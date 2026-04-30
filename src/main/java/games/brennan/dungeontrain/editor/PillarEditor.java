@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -197,6 +198,13 @@ public final class PillarEditor {
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
             TrackVariantStore.saveToSource(kind, name, template);
+            try {
+                Vec3i footprint = kind.dims(dims);
+                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource(kind, name);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Pillar editor save: variant sidecar source write failed for {}: {}",
+                    section.id(), e.toString());
+            }
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Pillar editor save: source write failed for {}: {}",
@@ -330,6 +338,13 @@ public final class PillarEditor {
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
             TrackVariantStore.saveToSource(kind, name, template);
+            try {
+                Vec3i footprint = kind.dims(dims);
+                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource(kind, name);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: variant sidecar source write failed for {}: {}",
+                    adjunct.id(), e.toString());
+            }
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: source write failed for {}: {}",
