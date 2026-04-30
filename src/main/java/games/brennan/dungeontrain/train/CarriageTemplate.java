@@ -46,11 +46,29 @@ public final class CarriageTemplate {
         STANDARD,
         WINDOWED,
         SOLID_ROOF,
-        FLATBED
+        FLATBED,
+        /**
+         * Half-flatbed at the BACK of a sub-level group — floor occupies
+         * the rear half of its slot ({@code dx ∈ [0, length/2]}), the front
+         * half is empty. When placed at slot 0 of a group, its back half
+         * combines with the previous sub-level's {@link #HALF_FLATBED_FRONT}
+         * (across the inter-sub-level seam) to form one continuous
+         * carriage-bed straddling the seam.
+         */
+        HALF_FLATBED_BACK,
+        /**
+         * Half-flatbed at the FRONT of a sub-level group — floor occupies
+         * the front half of its slot ({@code dx ∈ [length/2, length-1]}),
+         * the rear half is empty. Mate to {@link #HALF_FLATBED_BACK}.
+         */
+        HALF_FLATBED_FRONT
     }
 
     /** Cached immutable handle to the flatbed built-in — used as the Random-Grouped separator. */
     private static final CarriageVariant FLATBED_VARIANT = CarriageVariant.of(CarriageType.FLATBED);
+    /** Cached half-flatbed handles. Used by {@link TrainAssembler#spawnGroup} to wrap each group. */
+    public static final CarriageVariant HALF_FLATBED_BACK_VARIANT = CarriageVariant.of(CarriageType.HALF_FLATBED_BACK);
+    public static final CarriageVariant HALF_FLATBED_FRONT_VARIANT = CarriageVariant.of(CarriageType.HALF_FLATBED_FRONT);
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
@@ -195,7 +213,10 @@ public final class CarriageTemplate {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+        if (variant instanceof CarriageVariant.Builtin b
+            && (b.type() == CarriageType.FLATBED
+                || b.type() == CarriageType.HALF_FLATBED_BACK
+                || b.type() == CarriageType.HALF_FLATBED_FRONT)) {
             return;
         }
         try {
@@ -337,6 +358,25 @@ public final class CarriageTemplate {
     }
 
     /**
+     * Like {@link #variantForIndex(int, CarriageGenerationConfig)} but
+     * guaranteed to return a non-flatbed (enclosed) variant — used by
+     * {@link TrainAssembler#spawnGroup} for the inner slots of a group
+     * (where the half-flatbeds at the ends already provide the bed at
+     * sub-level seams; a mid-group flatbed would be a wasted slot).
+     *
+     * <p>If {@code variantForIndex} returns a flatbed-like variant
+     * (full flatbed or half-flatbed), this falls back to a weighted seeded
+     * pick from the non-flatbed pool.</p>
+     */
+    public static CarriageVariant enclosedVariantForIndex(int i, CarriageGenerationConfig config) {
+        CarriageVariant v = variantForIndex(i, config);
+        if (!isAnyFlatbed(v)) return v;
+        List<CarriageVariant> pool = filterOutFlatbed(CarriageVariantRegistry.allVariants());
+        if (pool.isEmpty()) return v; // fallback to whatever variantForIndex gave
+        return weightedSeededPick(config.seed(), i, pool, CarriageWeights.current());
+    }
+
+    /**
      * Weighted deterministic variant selector for carriage index {@code i},
      * dispatched on {@link CarriageGenerationMode}:
      *
@@ -386,10 +426,23 @@ public final class CarriageTemplate {
     private static List<CarriageVariant> filterOutFlatbed(List<CarriageVariant> variants) {
         List<CarriageVariant> out = new ArrayList<>(variants.size());
         for (CarriageVariant v : variants) {
-            if (v instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) continue;
+            if (isAnyFlatbed(v)) continue;
             out.add(v);
         }
         return out;
+    }
+
+    /**
+     * True for the full flatbed and both half-flatbed variants — anything
+     * that's purely a floor-only separator and should never appear in the
+     * random "enclosed carriage" pool.
+     */
+    static boolean isAnyFlatbed(CarriageVariant v) {
+        if (!(v instanceof CarriageVariant.Builtin b)) return false;
+        CarriageType t = b.type();
+        return t == CarriageType.FLATBED
+            || t == CarriageType.HALF_FLATBED_BACK
+            || t == CarriageType.HALF_FLATBED_FRONT;
     }
 
     /**
@@ -526,6 +579,22 @@ public final class CarriageTemplate {
     static BlockState stateAt(int dx, int dy, int dz, int doorZ, CarriageType type, CarriageDims dims) {
         if (type == CarriageType.FLATBED) {
             if (dy == 0) return BlockStates.FLOOR;
+            return null;
+        }
+        // Half-flatbeds: floor on one side of the carriage's X range, air
+        // on the other. The split point is dims.length() / 2 (integer
+        // division). For length=9 this gives BACK = dx ∈ [0, 4] (5 blocks)
+        // and FRONT = dx ∈ [4, 8] (5 blocks); they share dx=4 — but each
+        // is in its OWN carriage slot (different absolute world X), so
+        // there is no overlap in world space. The middle block creates a
+        // 1-block "step" of continuous floor at the centre when adjacent
+        // half-flatbeds combine.
+        if (type == CarriageType.HALF_FLATBED_BACK) {
+            if (dy == 0 && dx <= dims.length() / 2) return BlockStates.FLOOR;
+            return null;
+        }
+        if (type == CarriageType.HALF_FLATBED_FRONT) {
+            if (dy == 0 && dx >= dims.length() / 2) return BlockStates.FLOOR;
             return null;
         }
 

@@ -98,17 +98,18 @@ public final class TrainAssembler {
         // CarriageGenerationConfig.groupSize affect future spawnTrain
         // calls only; this train keeps its size for life.
         //
-        // The physics group size is config.groupSize() + 1 because the
-        // RANDOM_GROUPED variant cycle places a flatbed every (groupSize+1)
-        // carriages — see CarriageTemplate.variantForIndex. By making each
-        // sub-level hold the full cycle (groupSize enclosed + 1 flatbed),
-        // sub-level seams align with the flatbed positions, so the player
-        // crosses sub-level boundaries on a flatbed floor rather than
-        // mid-room. For LOOPING / RANDOM modes there's no flatbed cycle,
-        // but the +1 is still applied — the seam just lands at an arbitrary
-        // carriage in those modes.
+        // The physics group size is config.groupSize() + 2 — each sub-level
+        // is wrapped with a HALF_FLATBED_BACK at slot 0 and a
+        // HALF_FLATBED_FRONT at the last slot, sandwiching config.groupSize
+        // enclosed carriages in between. The two half-flatbeds each have
+        // their floor on the side facing the inter-sub-level seam, so when
+        // adjacent sub-levels are placed, their half-flatbeds combine
+        // across the seam to form one continuous carriage-bed visually.
+        // The player crosses sub-level boundaries while standing on flat
+        // floor (a 9-block-long bed straddling the seam), eliminating any
+        // visible gap between groups.
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
-        int physicsGroupSize = genCfg.groupSize() + 1;
+        int physicsGroupSize = genCfg.groupSize() + 2;
 
         // Snap the requested pIdx range outward to group anchors so every
         // group spawned spans exactly physicsGroupSize consecutive pIdx
@@ -125,7 +126,7 @@ public final class TrainAssembler {
             origin.getZ(),
             origin.getZ() + dims.width() - 1);
 
-        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] physicsGroupSize={} (config.groupSize={} + 1 flatbed) dims={}x{}x{} velocity={} origin={}",
+        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] physicsGroupSize={} (config.groupSize={} + 2 half-flatbeds at ends) dims={}x{}x{} velocity={} origin={}",
             trainId, firstPIdx, lastPIdx, count,
             firstAnchor, lastAnchor, physicsGroupSize, genCfg.groupSize(),
             dims.length(), dims.height(), dims.width(),
@@ -183,15 +184,32 @@ public final class TrainAssembler {
 
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
 
-        // Place every carriage in the group at world coords. Stash the
-        // resolved variant per slot so the post-assembly contents pass
-        // can re-use the same picks (no re-roll, deterministic per pIdx).
+        // Place every carriage in the group at world coords. Slot 0 is a
+        // HALF_FLATBED_BACK and the last slot is a HALF_FLATBED_FRONT; the
+        // inner slots get whatever CarriageTemplate.variantForIndex picks
+        // — but if it picks any flatbed-like variant (because RANDOM_GROUPED's
+        // cycle no longer aligns with our physicsGroupSize), we replace it
+        // with a non-flatbed variant. The ends already provide the seam-
+        // aligned bed; an extra mid-group flatbed would just waste a slot.
+        //
+        // Edge case: groupSize == 1 (e.g. /dt debug pair probe) places a
+        // single enclosed carriage with no half-flatbed wrapping — half-
+        // flatbeds only make sense when there are inner slots to wrap.
         Set<BlockPos> blocks = new HashSet<>();
         CarriageVariant[] variantBySlot = new CarriageVariant[groupSize];
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageOrigin = origin.offset(slot * dims.length(), 0, 0);
-            CarriageVariant variant = CarriageTemplate.variantForIndex(carriagePIdx, genCfg);
+            CarriageVariant variant;
+            if (groupSize == 1) {
+                variant = CarriageTemplate.enclosedVariantForIndex(carriagePIdx, genCfg);
+            } else if (slot == 0) {
+                variant = CarriageTemplate.HALF_FLATBED_BACK_VARIANT;
+            } else if (slot == groupSize - 1) {
+                variant = CarriageTemplate.HALF_FLATBED_FRONT_VARIANT;
+            } else {
+                variant = CarriageTemplate.enclosedVariantForIndex(carriagePIdx, genCfg);
+            }
             variantBySlot[slot] = variant;
 
             // applyContents=false: defer until after assembly so entities
