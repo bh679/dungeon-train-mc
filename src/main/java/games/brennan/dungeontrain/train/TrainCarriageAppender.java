@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -188,31 +189,34 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Minimum visible gap (in blocks) between the new carriage and the
+     * reference. Sable's collision broad-phase appears to consider very
+     * narrow gaps as contact, so we add a small bias before rounding to
+     * keep the gap at least this large. Combined with the chain
+     * constraint ({@link Shipyard#lockAdjacentYZRotation}), this
+     * eliminates the impulse-driven jitter on append.
+     */
+    private static final double MIN_GAP_BLOCKS = 0.1;
+
+    /**
      * Place a new single-carriage sub-level at the world position
      * extrapolated from {@code reference}'s current world origin, with a
      * deliberate gap that guarantees no Sable rigid-body collision.
      *
      * <p><b>Why a gap.</b> Sable's collision response pushes intersecting
-     * (or even face-touching) bodies apart, which manifests as visible
-     * "jumping" of the train. Plain {@code Math.ceil} / {@code Math.floor}
-     * gives gap in {@code [0, 1)} which still touches at integer-drift
-     * moments (every 10 ticks at v=2, since 0.1*10 = 1.0). We use
-     * {@code floor+1 / ceil-1} instead: gap is always in {@code (0, 1]},
-     * never zero, never overlapping.</p>
+     * (or even very-near-touching) bodies apart, which manifests as
+     * visible "jumping" of the train. We bias the rounding by
+     * {@link #MIN_GAP_BLOCKS} so the gap always falls in
+     * {@code [MIN_GAP_BLOCKS, 1 + MIN_GAP_BLOCKS]} blocks — strictly
+     * positive, never overlapping, never touching.</p>
      * <ul>
-     *   <li>Forward (newPIdx &gt; refPIdx) → {@code (int) floor(idealX) + 1} —
-     *       strictly &gt; {@code idealX}, gap to reference's highest-X face
-     *       is always positive.</li>
-     *   <li>Backward (newPIdx &lt; refPIdx) → {@code (int) ceil(idealX) - 1} —
-     *       strictly &lt; {@code idealX}, gap to reference's lowest-X face
-     *       is always positive.</li>
+     *   <li>Forward (newPIdx &gt; refPIdx) →
+     *       {@code (int) Math.ceil(idealX + MIN_GAP_BLOCKS)} —
+     *       new carriage's lowest-X face is strictly &gt; idealX + 0.1.</li>
+     *   <li>Backward (newPIdx &lt; refPIdx) →
+     *       {@code (int) Math.floor(idealX - MIN_GAP_BLOCKS)} —
+     *       new carriage's lowest-X face is strictly &lt; idealX - 0.1.</li>
      * </ul>
-     *
-     * <p>Gap size still varies in {@code (0, 1]} because the existing train
-     * has drifted by a fractional amount when each new carriage spawns.
-     * Reducing that variance further would require fractional pose
-     * adjustment (which we tried via post-spawn teleport — it caused MORE
-     * Sable physics jumping than overlap did).</p>
      */
     private static void spawnNewCarriage(
         ServerLevel level,
@@ -236,8 +240,8 @@ public final class TrainCarriageAppender {
 
         boolean forward = newPIdx > refPIdx;
         int placeX = forward
-            ? (int) Math.floor(idealX) + 1
-            : (int) Math.ceil(idealX) - 1;
+            ? (int) Math.ceil(idealX + MIN_GAP_BLOCKS)
+            : (int) Math.floor(idealX - MIN_GAP_BLOCKS);
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
         BlockPos newCarriageOrigin = new BlockPos(placeX, placeY, placeZ);
@@ -245,6 +249,12 @@ public final class TrainCarriageAppender {
 
         ManagedShip newShip = TrainAssembler.spawnCarriage(
             level, newCarriageOrigin, velocity, newPIdx, dims, trainId);
+
+        // Link the new carriage to the reference (lead for forward, tail
+        // for backward) so the physics solver pulls them into the same
+        // Y/Z/rotation each tick. Free LINEAR_X lets each kinematic driver
+        // advance independently.
+        Shipyards.of(level).lockAdjacentYZRotation(reference.ship(), newShip);
 
         LOGGER.info("[DungeonTrain] Appender added carriage pIdx={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={})",
             newPIdx, trainId, newShip.id(), newCarriageOrigin,

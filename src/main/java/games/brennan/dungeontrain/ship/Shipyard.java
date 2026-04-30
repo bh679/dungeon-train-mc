@@ -38,4 +38,20 @@ public interface Shipyard {
     default boolean isInShip(BlockPos pos) {
         return findAt(pos) != null;
     }
+
+    /**
+     * Constrain two adjacent carriage sub-levels so their Y, Z, and
+     * rotation axes stay aligned in world space — physics-engine-enforced
+     * each tick. The X axis (= train velocity direction) is left free so
+     * each carriage's kinematic driver can advance it independently.
+     *
+     * <p>Used to suppress per-carriage jitter caused by collision impulses
+     * pushing one body's Y/Z/rotation slightly off between server-tick
+     * teleports. With the constraint in place, the physics solver pulls
+     * the bodies back into alignment every physics tick.</p>
+     *
+     * <p>Default implementation is a no-op for physics mods without a
+     * constraint API.</p>
+     */
+    default void lockAdjacentYZRotation(ManagedShip a, ManagedShip b) {}
 }

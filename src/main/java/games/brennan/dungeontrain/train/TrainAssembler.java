@@ -105,6 +105,7 @@ public final class TrainAssembler {
             dims.length(), dims.height(), dims.width(),
             velocity, origin);
 
+        Shipyard shipyard = Shipyards.of(level);
         List<ManagedShip> ships = new ArrayList<>(count);
         for (int i = firstIdx; i <= lastIdx; i++) {
             BlockPos carriageOrigin = origin.offset(i * dims.length(), 0, 0);
@@ -114,6 +115,13 @@ public final class TrainAssembler {
             // directly off any ship in the train.
             if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
                 provider.setTrackGeometry(geometry);
+            }
+            // Chain-link this carriage to the previous one so the physics
+            // solver enforces shared Y/Z/rotation each tick. The free
+            // LINEAR_X axis lets each carriage's kinematic driver advance
+            // independently along the velocity direction.
+            if (!ships.isEmpty()) {
+                shipyard.lockAdjacentYZRotation(ships.get(ships.size() - 1), ship);
             }
             ships.add(ship);
         }
