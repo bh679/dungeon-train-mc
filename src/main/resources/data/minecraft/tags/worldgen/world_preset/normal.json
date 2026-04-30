@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "dungeontrain:dungeon_train"
+    "dungeontrain:dungeon_train",
+    "dungeontrain:dungeon_train_nether",
+    "dungeontrain:dungeon_train_end"
   ]
 }

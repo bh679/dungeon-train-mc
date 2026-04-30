@@ -2,7 +2,9 @@ package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModItems;
+import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -27,6 +29,9 @@ public class DungeonTrain {
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
         ModItems.register(modBus);
+
+        ModCreativeTabs.register(modBus);
+        ModFeatures.register(modBus);
 
         modContainer.registerConfig(
                 ModConfig.Type.SERVER,

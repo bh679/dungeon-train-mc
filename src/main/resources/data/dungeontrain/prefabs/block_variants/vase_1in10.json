@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "nbt": "{sherds:[\"minecraft:brick\",\"minecraft:brick\",\"minecraft:brick\",\"minecraft:brick\"]}"},
+    {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}
+  ]
+}

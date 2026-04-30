@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackPalette;
 import games.brennan.dungeontrain.track.TrackTemplate;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -167,6 +168,12 @@ public final class TrackEditor {
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
             TrackVariantStore.saveToSource(TrackKind.TILE, name, template);
+            try {
+                Vec3i footprint = TrackKind.TILE.dims(dims);
+                TrackVariantBlocks.loadFor(TrackKind.TILE, name, footprint).saveToSource(TrackKind.TILE, name);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Track editor save: variant sidecar source write failed: {}", e.toString());
+            }
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Track editor save: source write failed: {}", e.toString());

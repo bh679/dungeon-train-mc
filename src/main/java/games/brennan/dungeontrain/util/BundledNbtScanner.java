@@ -84,6 +84,15 @@ public final class BundledNbtScanner {
      *                       the registry's prefix rather than this utility's
      */
     public static Set<String> scanBasenames(Class<?> anchor, String resourcePrefix, Logger logger) {
+        return scanBasenames(anchor, resourcePrefix, logger, NBT_EXT);
+    }
+
+    /**
+     * Extension-parameterised variant — same scan strategy, but matches an
+     * arbitrary suffix (e.g. {@code ".json"}). Used by the JSON-backed prefab
+     * stores; the {@code .nbt} overload preserves the original call sites.
+     */
+    public static Set<String> scanBasenames(Class<?> anchor, String resourcePrefix, Logger logger, String extension) {
         URL url = anchor.getResource(resourcePrefix);
         if (url == null) return Collections.emptySet();
 
@@ -101,10 +110,10 @@ public final class BundledNbtScanner {
         // requires an explicit FileSystems.newFileSystem call before
         // Paths.get(uri) succeeds; we handle that as a fallback.
         try {
-            return scanFileSystemDir(Paths.get(uri), resourcePrefix, logger);
+            return scanFileSystemDir(Paths.get(uri), resourcePrefix, logger, extension);
         } catch (FileSystemNotFoundException directMiss) {
             if ("jar".equals(uri.getScheme())) {
-                return scanJarDir(uri, resourcePrefix, logger);
+                return scanJarDir(uri, resourcePrefix, logger, extension);
             }
             logger.warn("[DungeonTrain] Bundled scan: no FileSystem provider for scheme '{}' at {} — degrading to no bundled variants",
                 uri.getScheme(), resourcePrefix);
@@ -176,7 +185,7 @@ public final class BundledNbtScanner {
         }
     }
 
-    private static Set<String> scanFileSystemDir(Path dir, String resourcePrefix, Logger logger) {
+    private static Set<String> scanFileSystemDir(Path dir, String resourcePrefix, Logger logger, String extension) {
         if (!Files.isDirectory(dir)) return Collections.emptySet();
         TreeSet<String> out = new TreeSet<>();
         // No-glob form: Forge's UnionFileSystem (used when the mod ships in
@@ -187,8 +196,8 @@ public final class BundledNbtScanner {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path file : stream) {
                 String fn = file.getFileName().toString();
-                if (!fn.endsWith(NBT_EXT)) continue;
-                out.add(stripExt(fn).toLowerCase(Locale.ROOT));
+                if (!fn.endsWith(extension)) continue;
+                out.add(stripExt(fn, extension).toLowerCase(Locale.ROOT));
             }
         } catch (IOException e) {
             logger.error("[DungeonTrain] Bundled scan IO error at {}: {}", resourcePrefix, e.toString());
@@ -196,7 +205,7 @@ public final class BundledNbtScanner {
         return out;
     }
 
-    private static Set<String> scanJarDir(URI jarUri, String resourcePrefix, Logger logger) {
+    private static Set<String> scanJarDir(URI jarUri, String resourcePrefix, Logger logger, String extension) {
         // Try-with-resources closes the FileSystem so subsequent scans on the
         // same jar URI succeed. Re-opening a closed jar FileSystem is fine;
         // re-opening one that's still open throws FileSystemAlreadyExistsException.
@@ -207,8 +216,8 @@ public final class BundledNbtScanner {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
                 for (Path file : stream) {
                     String fn = file.getFileName().toString();
-                    if (!fn.endsWith(NBT_EXT)) continue;
-                    out.add(stripExt(fn).toLowerCase(Locale.ROOT));
+                    if (!fn.endsWith(extension)) continue;
+                    out.add(stripExt(fn, extension).toLowerCase(Locale.ROOT));
                 }
             }
             return out;
@@ -218,8 +227,8 @@ public final class BundledNbtScanner {
         }
     }
 
-    private static String stripExt(String filename) {
-        return filename.substring(0, filename.length() - NBT_EXT.length());
+    private static String stripExt(String filename, String extension) {
+        return filename.substring(0, filename.length() - extension.length());
     }
 
     /**

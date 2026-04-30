@@ -1,32 +1,25 @@
 package games.brennan.dungeontrain.event;
 
-import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
-import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.ShipyardShifter;
 import games.brennan.dungeontrain.train.TrainChainManager;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.TrainWindowManager;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
-import games.brennan.dungeontrain.worldgen.SilentBlockOps;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,21 +28,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Per-tick server logic that lets Dungeon Trains carve straight through the
- * world: every tick we kill non-player entities inside each train's world AABB,
- * and every {@link #BLOCK_CLEAR_PERIOD_TICKS} ticks we destroy non-ship blocks
- * in a forward look-ahead slab. Clearing blocks ahead keeps the VS collider
- * moving over empty space — it achieves "train cannot be stopped" without
- * touching VS collision internals (no public API for that in 2.4.x).
+ * Per-tick server logic that wipes mobs in the forward look-ahead slab so
+ * the train's runway stays entity-free. Block clearance is handled at
+ * worldgen time (see {@code TrackGenerator.placeTracksForChunk}) — by the
+ * time a chunk loads its corridor envelope is already air, so the train
+ * never has to carve through terrain at runtime.
  *
- * Blocks and entities are removed silently — no break particles, no break
- * sound, no item drops, no container spill — via
- * {@link SilentBlockOps#clearBlockSilent} and {@code entity.discard()}.
+ * <p>Entities INSIDE the train's current AABB (e.g. dropped items inside a
+ * carriage interior, like the rolled vase loot from {@code VasePotLootDrop})
+ * are spared — only the runway in front is wiped. The interior is wiped
+ * exactly once at carriage-stamp time via
+ * {@code CarriageContentsTemplate.discardEntitiesAt}, so train contents
+ * stay stable after setup.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainTickEvents {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     // Diagnostic logger (DEBUG-elevated in DungeonTrain ctor). Feeds the
     // [stuck.timing] per-tick budget breakdown for the stuck-at-228
     // investigation (see plans/linear-marinating-yao.md).
@@ -60,11 +54,9 @@ public final class TrainTickEvents {
     // real risk of cascading lag.
     private static final long STUCK_TIMING_THRESHOLD_MS = 5;
 
-    // Train moves 2 m/s ≈ 0.1 block/tick (MVP velocity in TrainCommand). A 10-tick
-    // period clears blocks twice per second; an 8-block look-ahead leaves 7+ blocks
-    // of runway between clears. If velocity is raised later, scale LOOKAHEAD_BLOCKS
-    // to at least velocity * period / 20 * safety_margin.
-    private static final int BLOCK_CLEAR_PERIOD_TICKS = 10;
+    // Distance ahead of the train (along velocity) that {@link #killEntitiesAhead}
+    // sweeps each tick. 8 blocks at the MVP train speed (2 m/s ≈ 0.1 block/tick)
+    // gives ~80 ticks (4 s) of advance notice to evict mobs from the runway.
     private static final int LOOKAHEAD_BLOCKS = 8;
     // ~2 Hz at 20 TPS — picks up chunks that were loaded at spawn time (and so
     // never re-fire ChunkEvent.Load) plus any that moved into range since the
@@ -106,7 +98,11 @@ public final class TrainTickEvents {
         // Rolling-window manager runs every tick regardless of whether we're also
         // carving terrain — it only adds/removes carriages when a player crosses
         // a carriage boundary, so the cost is negligible on idle ticks.
-        TrainWindowManager.onLevelTick(level);
+        // TODO(train-physics-v2): rolling-window manager temporarily disconnected
+        // while we redesign train motion. The static carriage set placed by
+        // TrainAssembler.spawnTrain is what we want to observe in isolation —
+        // re-enable by uncommenting once the new motion model is settled.
+        // TrainWindowManager.onLevelTick(level);
         long tAfterWindow = System.nanoTime();
 
         // Editor overlay — cheap when nobody is in an editor plot (short-circuits
@@ -123,7 +119,7 @@ public final class TrainTickEvents {
 
         for (ManagedShip ship : trains) {
             if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
-                killEntitiesIn(level, ship, provider);
+                killEntitiesAhead(level, ship, provider);
             }
         }
         long tAfterKill = System.nanoTime();
@@ -141,12 +137,7 @@ public final class TrainTickEvents {
         // runs out. See TrainChainManager + plans/floofy-floating-dahl.md.
         TrainChainManager.maybeSpawnSuccessors(level, trains, level.players());
 
-        if (tickCounter % BLOCK_CLEAR_PERIOD_TICKS == 0) {
-            for (ManagedShip ship : trains) {
-                clearBlocksAhead(level, ship);
-            }
-        }
-        long tAfterClear = System.nanoTime();
+        long tAfterClear = tAfterKill;
 
         if (DungeonTrainConfig.getGenerateTracks()
             && Math.floorMod(tickCounter, TRACK_FILL_PERIOD_TICKS) == TRACK_FILL_PHASE_OFFSET) {
@@ -195,7 +186,15 @@ public final class TrainTickEvents {
         return trains;
     }
 
-    private static void killEntitiesIn(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
+    /**
+     * Wipe non-player entities in the forward look-ahead slab — the runway
+     * the train is about to enter. Entities INSIDE the train's current AABB
+     * are spared so dropped items in carriage interiors (e.g. vase loot)
+     * survive. The slab geometry mirrors {@link #clearBlocksAhead}: original
+     * train AABB extended by {@link #LOOKAHEAD_BLOCKS} along each axis whose
+     * velocity component is non-zero.
+     */
+    private static void killEntitiesAhead(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
         AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
         if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
         // Once-per-~10s footprint snapshot so we can see whether our AABB is
@@ -212,61 +211,34 @@ public final class TrainTickEvents {
                 String.format("%.2f", aabb.getYsize()),
                 String.format("%.2f", aabb.getZsize()));
         }
+
+        Vector3dc velocity = provider.getTargetVelocity();
+        double signX = Math.signum(velocity.x());
+        double signY = Math.signum(velocity.y());
+        double signZ = Math.signum(velocity.z());
+        if (signX == 0 && signY == 0 && signZ == 0) return; // idle train: no runway to clear
+
+        double expX = signX * LOOKAHEAD_BLOCKS;
+        double expY = signY * LOOKAHEAD_BLOCKS;
+        double expZ = signZ * LOOKAHEAD_BLOCKS;
+        AABB expanded = new AABB(
+            Math.min(aabb.minX, aabb.minX + expX),
+            Math.min(aabb.minY, aabb.minY + expY),
+            Math.min(aabb.minZ, aabb.minZ + expZ),
+            Math.max(aabb.maxX, aabb.maxX + expX),
+            Math.max(aabb.maxY, aabb.maxY + expY),
+            Math.max(aabb.maxZ, aabb.maxZ + expZ)
+        );
+
+        final AABB train = aabb;
         List<Entity> victims = level.getEntitiesOfClass(
-            Entity.class, aabb,
+            Entity.class, expanded,
             e -> !(e instanceof Player) && e.isAlive()
+                && !train.contains(e.getX(), e.getY(), e.getZ())
         );
         for (Entity e : victims) {
             e.discard();
         }
     }
 
-    private static void clearBlocksAhead(ServerLevel level, ManagedShip ship) {
-        if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) return;
-        Vector3dc velocity = provider.getTargetVelocity();
-        Shipyard shipyard = Shipyards.of(level);
-
-        AABB aabb = CarriageFootprint.activeWorldAABB(ship, provider);
-        if (aabb.getXsize() <= 0 || aabb.getYsize() <= 0 || aabb.getZsize() <= 0) return;
-        double expX = Math.signum(velocity.x()) * LOOKAHEAD_BLOCKS;
-        double expY = Math.signum(velocity.y()) * LOOKAHEAD_BLOCKS;
-        double expZ = Math.signum(velocity.z()) * LOOKAHEAD_BLOCKS;
-
-        int minX = (int) Math.floor(Math.min(aabb.minX, aabb.minX + expX));
-        int minY = (int) Math.floor(Math.min(aabb.minY, aabb.minY + expY));
-        int minZ = (int) Math.floor(Math.min(aabb.minZ, aabb.minZ + expZ));
-        int maxX = (int) Math.floor(Math.max(aabb.maxX, aabb.maxX + expX));
-        int maxY = (int) Math.floor(Math.max(aabb.maxY, aabb.maxY + expY));
-        int maxZ = (int) Math.floor(Math.max(aabb.maxZ, aabb.maxZ + expZ));
-
-        // Clamp lower Y to the carriage floor so the sweep never dips into
-        // the bed or rail rows (bedY = origin.y − 2, railY = origin.y − 1).
-        // VS's worldAABB can report minY one sub-pixel below origin.y due to
-        // transform precision, which would otherwise floor down to railY and
-        // destroy the authored rail layer 8 blocks ahead of the train.
-        TrackGeometry geometry = provider.getTrackGeometry();
-        if (geometry != null) {
-            int carriageFloorY = geometry.bedY() + 2;
-            if (minY < carriageFloorY) minY = carriageFloorY;
-        }
-
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        int destroyed = 0;
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                for (int z = minZ; z <= maxZ; z++) {
-                    cursor.set(x, y, z);
-                    BlockState state = level.getBlockState(cursor);
-                    if (state.isAir()) continue;
-                    // Never destroy ship-owned blocks — our own carriages or any other ship.
-                    if (shipyard.isInShip(cursor)) continue;
-                    SilentBlockOps.clearBlockSilent(level, cursor.immutable());
-                    destroyed++;
-                }
-            }
-        }
-        if (destroyed > 0) {
-            LOGGER.debug("[DungeonTrain] Train id={} cleared {} blocks ahead", ship.id(), destroyed);
-        }
-    }
 }

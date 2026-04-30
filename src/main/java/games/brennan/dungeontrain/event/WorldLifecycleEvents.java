@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.PendingWorldChoices;
+import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
@@ -10,13 +11,14 @@ import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.neoforge.event.server.ServerStartedEvent;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 
 /**
@@ -51,35 +53,49 @@ public final class WorldLifecycleEvents {
 
     private WorldLifecycleEvents() {}
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onServerStarted(ServerStartedEvent event) {
-        if (!PendingWorldChoices.isPresent()) return;
-
         ServerLevel overworld = event.getServer().overworld();
-        int trainY = PendingWorldChoices.trainY();
-        boolean startsWithTrain = PendingWorldChoices.startsWithTrain();
-        CarriageDims dims = PendingWorldChoices.dims();
-        CarriageGenerationMode generationMode = PendingWorldChoices.generationMode();
-        int groupSize = PendingWorldChoices.groupSize();
-
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
-        data.apply(trainY, startsWithTrain, dims);
-        // Seed is generated from the overworld's random at world creation and
-        // stays fixed for the world's lifetime so random-mode carriages are
-        // reproducible across reloads.
-        data.setGenerationSeed(overworld.random.nextLong());
+
+        // Starting dimension is published unconditionally by the World-Type
+        // mixin (defaults to OVERWORLD), so it must be committed even when the
+        // user did not open the Dungeon Train Options sub-screen — otherwise a
+        // user who picks "Dungeon Train (Nether)" without opening the sub-
+        // screen would still spawn in the overworld.
+        StartingDimension startingDimension = PendingStartingDimension.get();
+        data.setStartingDimension(startingDimension);
+        PendingStartingDimension.clear();
+
+        boolean hasSubScreenChoices = PendingWorldChoices.isPresent();
+        if (hasSubScreenChoices) {
+            int trainY = PendingWorldChoices.trainY();
+            boolean startsWithTrain = PendingWorldChoices.startsWithTrain();
+            CarriageDims dims = PendingWorldChoices.dims();
+            CarriageGenerationMode generationMode = PendingWorldChoices.generationMode();
+            int groupSize = PendingWorldChoices.groupSize();
+
+            data.apply(trainY, startsWithTrain, dims);
+            // Seed is generated from the overworld's random at world creation
+            // and stays fixed for the world's lifetime so random-mode
+            // carriages are reproducible across reloads.
+            data.setGenerationSeed(overworld.random.nextLong());
+
+            // Mode + groupSize are runtime-editable via the settings screen,
+            // so they live in the per-save Forge TOML rather than SavedData.
+            DungeonTrainConfig.setGenerationMode(generationMode);
+            DungeonTrainConfig.setGroupSize(groupSize);
+
+            PendingWorldChoices.clear();
+
+            LOGGER.info(
+                "[DungeonTrain] Committed world-creation choices: trainY={} startsWithTrain={} dims={}x{}x{} mode={} groupSize={} startingDimension={}",
+                trainY, startsWithTrain, dims.length(), dims.width(), dims.height(), generationMode, groupSize, startingDimension);
+        } else {
+            LOGGER.info("[DungeonTrain] Committed startingDimension={} (sub-screen not opened)", startingDimension);
+        }
+
         overworld.getDataStorage().save();
-
-        // Mode + groupSize are runtime-editable via the settings screen, so
-        // they live in the per-save Forge TOML rather than SavedData.
-        DungeonTrainConfig.setGenerationMode(generationMode);
-        DungeonTrainConfig.setGroupSize(groupSize);
-
-        PendingWorldChoices.clear();
-
-        LOGGER.info(
-            "[DungeonTrain] Committed world-creation choices: trainY={} startsWithTrain={} dims={}x{}x{} mode={} groupSize={}",
-            trainY, startsWithTrain, dims.length(), dims.width(), dims.height(), generationMode, groupSize);
     }
 
     @SubscribeEvent

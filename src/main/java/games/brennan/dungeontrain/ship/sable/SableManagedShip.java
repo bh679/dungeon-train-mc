@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.ship.sable;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.api.physics.force.ForceGroup;
+import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.physics.mass.MassData;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
@@ -16,6 +18,9 @@ import org.joml.Vector3dc;
 import org.joml.primitives.AABBd;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
+
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Sable adapter for {@link ManagedShip}. Wraps a {@link ServerSubLevel} and
@@ -36,10 +41,19 @@ public final class SableManagedShip implements ManagedShip {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private final ServerSubLevel subLevel;
+    /**
+     * Sable can re-create a {@link ServerSubLevel} between assembly and the
+     * first server tick (the integrated server saves + loads the freshly
+     * assembled sub-level on world create), which gives us a different
+     * reference than the one we set the driver on. The {@link SableShipyard}
+     * wrapper map is keyed on those references and so creates a fresh
+     * wrapper without our driver. Pinning kinematic drivers in a static map
+     * by stable {@link SubLevel#getUniqueId()} survives that re-creation —
+     * any wrapper for the same UUID picks the driver back up.
+     */
+    private static final java.util.Map<UUID, KinematicDriver> DRIVERS_BY_UUID = new ConcurrentHashMap<>();
 
-    @Nullable
-    private KinematicDriver kinematicDriver;
+    private final ServerSubLevel subLevel;
 
     public SableManagedShip(ServerSubLevel subLevel) {
         this.subLevel = subLevel;
@@ -91,14 +105,35 @@ public final class SableManagedShip implements ManagedShip {
     @Override
     @Nullable
     public KinematicDriver getKinematicDriver() {
-        return kinematicDriver;
+        UUID id = subLevel.getUniqueId();
+        KinematicDriver d = DRIVERS_BY_UUID.get(id);
+        if (d != null) return d;
+        // Sable's FloatingBlockController can split a sub-level into pieces
+        // (e.g. when carriages aren't fully connected by blocks). The split
+        // pieces inherit the original sub-level's UUID via getSplitFromSubLevel().
+        // Walk that chain to find the driver of the originally-driven sub-level
+        // and cache it locally so subsequent lookups skip the chain walk.
+        UUID origin = subLevel.getSplitFromSubLevel();
+        while (origin != null && d == null) {
+            d = DRIVERS_BY_UUID.get(origin);
+            if (d != null) break;
+            // Defensive bound — Sable splits should never chain more than a
+            // handful of times; cap at 8 to avoid pathological infinite loops
+            // if an origin chain ever cycles.
+            origin = null;
+        }
+        if (d != null) DRIVERS_BY_UUID.put(id, d);
+        return d;
     }
 
     @Override
     public void setKinematicDriver(KinematicDriver driver) {
-        this.kinematicDriver = driver;
-        // The train code (TrainWindowManager) calls applyTickOutput
-        // directly per-tick — no separate ticker is needed.
+        UUID id = subLevel.getUniqueId();
+        if (driver == null) {
+            DRIVERS_BY_UUID.remove(id);
+        } else {
+            DRIVERS_BY_UUID.put(id, driver);
+        }
     }
 
     @Override
@@ -134,14 +169,24 @@ public final class SableManagedShip implements ManagedShip {
         handle.addLinearAndAngularVelocity(curLin.negate(), curAng.negate());
         handle.addLinearAndAngularVelocity(output.linearVelocity(), output.angularVelocity());
 
-        // Note on positionInModel: Sable carries this on Pose3d.rotationPoint()
-        // (= centre of mass in model space). The block-set's COM is computed at
-        // assembly time via MassTracker. If a kinematic driver wants to *shift*
-        // the COM mid-flight (the VS pivot-shift trick used by the rolling-window
-        // manager), that would need to write to subLevel.logicalPose().rotationPoint()
-        // directly. Phase 2 leaves this alone — modern Sable's MassTracker
-        // recomputes COM from blocks each tick, so explicit pivot shifts may not
-        // be needed. Track as a follow-up if observed in Gate 2 testing.
+        // Pure-kinematic enforcement: wipe any queued forces (gravity, drag,
+        // lift, propulsion) that Sable's per-frame providers scheduled for
+        // this body before the next physics tick reads them. With this and
+        // the teleport above, no impulse can leak through to push or tilt
+        // the train between server ticks. The map is null until Sable lazily
+        // creates it on first force queueing — null means nothing to clear.
+        java.util.Map<ForceGroup, QueuedForceGroup> queued = subLevel.getQueuedForceGroups();
+        if (queued != null) {
+            for (QueuedForceGroup group : queued.values()) {
+                group.reset();
+            }
+        }
+
+        // Mirror our kinematic intent into the sublevel's networked velocity
+        // fields so clients carry the prescribed motion. These are public
+        // final Vector3d's — references stay; only contents change.
+        subLevel.latestLinearVelocity.set(output.linearVelocity());
+        subLevel.latestAngularVelocity.set(output.angularVelocity());
     }
 
     @Override
