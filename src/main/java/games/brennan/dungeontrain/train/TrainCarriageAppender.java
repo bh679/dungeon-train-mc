@@ -91,6 +91,9 @@ public final class TrainCarriageAppender {
         List<ServerPlayer> players,
         Set<UUID> seenThisTick
     ) {
+        // Probe / debug trains opt out of carriage growth — see
+        // TrainTransformProvider.appenderDisabled.
+        if (provider.isAppenderDisabled()) return;
         int count = provider.getCount();
         int halfBack = (count - 1) / 2;
         int halfFront = count - halfBack - 1;

@@ -113,6 +113,12 @@ public final class TrainTransformProvider implements KinematicDriver {
     private volatile int highestSpawnedIdx;
     private volatile int lowestSpawnedIdx;
 
+    // When true, {@link TrainCarriageAppender} skips this train entirely —
+    // no carriage adds regardless of player pIdx. Set by debug probes (see
+    // {@code /dt debug pair}) so a fixed test fixture stays exactly the
+    // size it was assembled at; production trains leave this false.
+    private volatile boolean appenderDisabled = false;
+
     // Jitter-probe state (Stage 1 + 2b, see `.claude/plans/swirling-fluttering-squid.md`).
     // Physics thread ownership — no volatile needed; never read from another thread.
     private long physicsTickCounter;
@@ -299,6 +305,14 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public void setLowestSpawnedIdx(int idx) {
         this.lowestSpawnedIdx = idx;
+    }
+
+    public boolean isAppenderDisabled() {
+        return appenderDisabled;
+    }
+
+    public void setAppenderDisabled(boolean disabled) {
+        this.appenderDisabled = disabled;
     }
 
     public long getLastMutationTick() {
