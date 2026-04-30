@@ -48,26 +48,32 @@ public final class CarriageTemplate {
         SOLID_ROOF,
         FLATBED,
         /**
-         * Half-flatbed at the BACK of a sub-level group (slot 0). Floor
-         * occupies the FRONT half of its slot
-         * ({@code dx ∈ [length/2, length-1]}), butted against slot 1's
-         * enclosed carriage so the half-flatbed is mechanically attached
-         * to the rest of its sub-level (avoids Sable's
-         * {@code FloatingBlockController} splitting the sub-level at a
-         * floor-level air gap).
+         * Back-edge half-flatbed pad — a {@code back_pad}-block floor
+         * strip at the LOW-X end of a sub-level (where
+         * {@code back_pad = dims.length() / 2}, integer floor). Stamped
+         * from the FLATBED NBT and cropped to keep the HIGH-{@code dx}
+         * portion of the template (the visual END of a flatbed,
+         * including any authored back-edge details). The stamp is
+         * positioned so the kept high-dx half lands at the BACK pad's
+         * intended world zone — see {@link TrainAssembler#spawnGroup}
+         * for the offset placement.
          *
-         * <p>Adjacent sub-levels' half-flatbeds do NOT combine across the
-         * inter-sub-level seam — they leave a visible ~8-block empty zone
-         * at floor level at every seam. Tradeoff accepted to keep each
-         * half-flatbed attached to its own sub-level.</p>
+         * <p>Combines with the previous sub-level's
+         * {@link #HALF_FLATBED_FRONT} pad across the seam to form one
+         * full FLATBED template visually (front start + back end =
+         * complete bed).</p>
          */
         HALF_FLATBED_BACK,
         /**
-         * Half-flatbed at the FRONT of a sub-level group (last slot).
-         * Floor occupies the BACK half of its slot
-         * ({@code dx ∈ [0, length/2]}), butted against slot N-2's
-         * enclosed carriage. Mate to {@link #HALF_FLATBED_BACK}; same
-         * inner-attached rationale.
+         * Front-edge half-flatbed pad — a {@code front_pad}-block floor
+         * strip at the HIGH-X end of a sub-level (where
+         * {@code front_pad = length - back_pad}, integer ceil for odd
+         * lengths). Stamped from the FLATBED NBT and cropped to keep the
+         * LOW-{@code dx} portion of the template (the visual START of a
+         * flatbed). For length=9: {@code back_pad=4}, {@code front_pad=5}
+         * — adjacent groups' front (start) + back (end) tile to exactly
+         * 9 visible floor blocks across each seam (with a 1-block air
+         * gap in the middle for physics separation).
          */
         HALF_FLATBED_FRONT
     }
@@ -297,11 +303,14 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Stamp a half-flatbed by placing the FLATBED's NBT template (so
-     * authored bed designs are preserved) and erasing one half of the
-     * footprint. The half retained faces inward — i.e. butts against
-     * the adjacent enclosed slot in the same sub-level. See
-     * {@link CarriageType#HALF_FLATBED_BACK} for the rationale.
+     * Stamp a half-flatbed by placing the FLATBED's NBT template at the
+     * pad's slot origin (full {@code length}-block stamp, so authored bed
+     * designs are preserved) and erasing the high-{@code dx} half so only
+     * the pad's keep-zone (the LOW-{@code dx} portion) remains. The
+     * caller positions the slot so the keep-zone lands at the desired pad
+     * location within the sub-level — see {@link TrainAssembler#spawnGroup}.
+     * Same crop direction for both BACK and FRONT pads, but with
+     * different keep-lengths ({@code back_pad} vs {@code front_pad}).
      */
     private static String stampHalfFlatbed(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
         Optional<StructureTemplate> flatbedTemplate = CarriageTemplateStore.get(level, FLATBED_VARIANT, dims);
@@ -316,29 +325,34 @@ public final class CarriageTemplate {
     }
 
     /**
-     * Erase the half of the carriage footprint that should be EMPTY for
-     * the given half-flatbed type — i.e. the seam-facing side, the side
-     * facing AWAY from the adjacent enclosed slot in this sub-level.
-     * For HALF_FLATBED_BACK (slot 0), the FRONT half (dx ≥ length/2) is
-     * retained (butting against slot 1); the BACK half (dx &lt; length/2)
-     * is erased. Symmetric for HALF_FLATBED_FRONT (last slot): retain
-     * BACK half, erase FRONT half.
+     * Erase one half of a half-flatbed's full-length FLATBED stamp so
+     * only the kept zone remains. BACK pad keeps the HIGH-dx end of the
+     * template (the visual END of a flatbed, including any
+     * authored back-edge details); FRONT pad keeps the LOW-dx end (the
+     * visual START of a flatbed). Adjacent groups' FRONT (start) + next
+     * BACK (end) thus tile to one full flatbed straddling the seam.
+     *
+     * <p>Pad lengths are asymmetric for odd carriage lengths:
+     * {@code back_pad = dims.length() / 2} (integer floor),
+     * {@code front_pad = dims.length() - back_pad} (integer ceil). For
+     * length=9: back keeps last 4 blocks, front keeps first 5 blocks;
+     * 4 + 5 = 9 = length.</p>
      */
     private static void eraseHalfFlatbedRemainder(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
-        int mid = dims.length() / 2;
         int dxFrom, dxTo;
         if (type == CarriageType.HALF_FLATBED_BACK) {
-            // Retain dx ≥ mid (front half, inner-attached to slot 1);
-            // erase dx < mid (back / seam-facing half).
+            // Keep high dx (last back_pad blocks); erase low dx (first front_pad blocks).
+            int frontPad = dims.length() - dims.length() / 2;
             dxFrom = 0;
-            dxTo = mid - 1;
+            dxTo = frontPad - 1;
         } else {
-            // HALF_FLATBED_FRONT: retain dx ≤ mid (back half, inner-attached
-            // to slot N-2); erase dx > mid (front / seam-facing half).
-            dxFrom = mid + 1;
+            // HALF_FLATBED_FRONT: keep low dx (first front_pad blocks);
+            // erase high dx (last back_pad blocks).
+            int frontPad = dims.length() - dims.length() / 2;
+            dxFrom = frontPad;
             dxTo = dims.length() - 1;
         }
-        if (dxFrom > dxTo) return; // dims.length()=1 edge case
+        if (dxFrom > dxTo) return; // dims.length()=1 edge case (pad covers entire slot)
         BlockState air = Blocks.AIR.defaultBlockState();
         for (int dx = dxFrom; dx <= dxTo; dx++) {
             for (int dz = 0; dz < dims.width(); dz++) {
@@ -347,6 +361,20 @@ public final class CarriageTemplate {
                 }
             }
         }
+    }
+
+    /**
+     * Pad length (in blocks along the carriage's X axis) for a
+     * half-flatbed type. {@link CarriageType#HALF_FLATBED_BACK} uses
+     * {@code length / 2} (integer floor — the HIGH-dx end of the
+     * template, "end of flatbed");
+     * {@link CarriageType#HALF_FLATBED_FRONT} uses {@code length - back_pad}
+     * (integer ceil for odd lengths — the LOW-dx end, "start of flatbed").
+     * Adjacent pads sum to exactly {@code length}.
+     */
+    static int halfFlatbedPadLength(CarriageType type, CarriageDims dims) {
+        int backPad = dims.length() / 2;
+        return (type == CarriageType.HALF_FLATBED_BACK) ? backPad : dims.length() - backPad;
     }
 
     /**
@@ -652,21 +680,22 @@ public final class CarriageTemplate {
             if (dy == 0) return BlockStates.FLOOR;
             return null;
         }
-        // Half-flatbeds: floor on the INNER-ATTACHED side of the carriage's
-        // X range, air on the seam-facing side. The split point is
-        // dims.length() / 2 (integer division). For length=9 this gives
-        // BACK = dx ∈ [4, 8] (retained = front half, butted against slot
-        // 1) and FRONT = dx ∈ [0, 4] (retained = back half, butted against
-        // slot N-2). Adjacent sub-levels' half-flatbeds do NOT combine
-        // across the seam — the seam shows a visible ~8-block empty zone
-        // at floor level. Mirrors the erase semantics in
+        // Half-flatbed pads: BACK keeps the HIGH-dx end of its slot
+        // (last back_pad blocks — the visual END of a flatbed); FRONT
+        // keeps the LOW-dx end (first front_pad blocks — visual START).
+        // Asymmetric for odd lengths, sum = length so adjacent groups'
+        // FRONT (start) + next BACK (end) tile to one full flatbed
+        // straddling the seam. For length=9: back has 4 floor blocks at
+        // dx ∈ [5, 8]; front has 5 floor blocks at dx ∈ [0, 4]. Mirrors
         // eraseHalfFlatbedRemainder; both paths must stay in sync.
         if (type == CarriageType.HALF_FLATBED_BACK) {
-            if (dy == 0 && dx >= dims.length() / 2) return BlockStates.FLOOR;
+            int frontPad = dims.length() - dims.length() / 2;
+            if (dy == 0 && dx >= frontPad) return BlockStates.FLOOR;
             return null;
         }
         if (type == CarriageType.HALF_FLATBED_FRONT) {
-            if (dy == 0 && dx <= dims.length() / 2) return BlockStates.FLOOR;
+            int frontPad = dims.length() - dims.length() / 2;
+            if (dy == 0 && dx < frontPad) return BlockStates.FLOOR;
             return null;
         }
 

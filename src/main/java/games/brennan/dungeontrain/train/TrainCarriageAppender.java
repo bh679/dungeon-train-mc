@@ -134,14 +134,20 @@ public final class TrainCarriageAppender {
             if (!near) continue;
 
             // Player's absolute carriage pIdx via the lead group's frame.
-            // The lead group's anchor sits at lead.shipyardOrigin in
-            // shipyard coords; offset from there in length-units gives the
-            // pIdx delta from the anchor, plus leadAnchorPIdx for the
-            // absolute carriage index. Works for any carriage in the train
-            // since all groups advance in lockstep.
+            // The lead group's shipyardOrigin is the back pad's start;
+            // the first enclosed carriage (pIdx = leadAnchorPIdx) sits at
+            // shipyardOrigin + back_pad. Subtracting back_pad before
+            // dividing by length maps shipyard X to enclosed-carriage
+            // index. Players standing in the back pad zone (local.x in
+            // [origin, origin + back_pad)) report pIdx = leadAnchorPIdx - 1
+            // — the previous group's last enclosed carriage, which is
+            // visually correct (the back pad is the seam between groups).
+            // For groupSize == 1 (no half-flatbed wrap) the back pad
+            // offset is 0.
+            int backPadOffset = (groupSize > 1) ? length / 2 : 0;
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
             leadShip.worldToShip(local);
-            int pIdx = (int) Math.floor((local.x - leadShipyardOrigin.getX()) / (double) length) + leadAnchorPIdx;
+            int pIdx = (int) Math.floor((local.x - leadShipyardOrigin.getX() - backPadOffset) / (double) length) + leadAnchorPIdx;
 
             UUID uuid = player.getUUID();
             seenThisTick.add(uuid);
@@ -256,19 +262,27 @@ public final class TrainCarriageAppender {
     ) {
         BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
         int refAnchor = reference.provider().getPIdx();
+        int refGroupSize = reference.provider().getGroupSize();
         int length = dims.length();
 
-        // Reference group's current world origin (the anchor carriage's
-        // lowest-X corner, after velocity drift since spawn).
+        // Reference group's current world origin (the sub-level's
+        // lowest-X corner = back pad's start, after velocity drift since
+        // spawn).
         Vector3d refWorldOriginVec = new Vector3d(
             refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
         reference.ship().shipToWorld(refWorldOriginVec);
 
-        // New group's ideal world origin = ref + (newAnchor − refAnchor) × length
-        // since both anchors are measured in carriage units and length is
-        // blocks-per-carriage. This naturally steps by groupSize × length
-        // when newAnchor differs from refAnchor by groupSize.
-        double idealX = refWorldOriginVec.x + (newAnchor - refAnchor) * (double) length;
+        // New group's ideal world origin: each anchor step (= refGroupSize
+        // pIdx) maps to (refGroupSize + 1) × length blocks in world (the
+        // groupSize enclosed carriages plus one carriage's worth of
+        // half-flatbed padding). (newAnchor - refAnchor) is always a
+        // multiple of refGroupSize because all anchors are snapped to the
+        // group stride. Edge case: for refGroupSize == 1 the world stride
+        // collapses to length (no padding) — matches B.1 single-carriage
+        // semantics.
+        int worldStridePerGroup = (refGroupSize == 1) ? length : (refGroupSize + 1) * length;
+        int groupsApart = (newAnchor - refAnchor) / refGroupSize;
+        double idealX = refWorldOriginVec.x + groupsApart * (double) worldStridePerGroup;
         double idealY = refWorldOriginVec.y;
         double idealZ = refWorldOriginVec.z;
 
