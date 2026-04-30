@@ -189,29 +189,30 @@ public final class TrainCarriageAppender {
 
     /**
      * Place a new single-carriage sub-level at the world position
-     * extrapolated from {@code reference}'s current world origin.
+     * extrapolated from {@code reference}'s current world origin, with a
+     * deliberate gap that guarantees no Sable rigid-body collision.
      *
-     * <p><b>Direction-aware rounding to guarantee gaps over overlaps.</b>
-     * Sable's rigid-body collision response pushes intersecting bodies
-     * apart, manifesting as visible "jumping" of the train. To avoid
-     * that, we deliberately round the new carriage's world origin AWAY
-     * from the existing train so the seam always shows a small gap
-     * rather than ever showing an overlap:</p>
+     * <p><b>Why a gap.</b> Sable's collision response pushes intersecting
+     * (or even face-touching) bodies apart, which manifests as visible
+     * "jumping" of the train. Plain {@code Math.ceil} / {@code Math.floor}
+     * gives gap in {@code [0, 1)} which still touches at integer-drift
+     * moments (every 10 ticks at v=2, since 0.1*10 = 1.0). We use
+     * {@code floor+1 / ceil-1} instead: gap is always in {@code (0, 1]},
+     * never zero, never overlapping.</p>
      * <ul>
-     *   <li>Forward append (newPIdx &gt; refPIdx) → {@code Math.ceil} —
-     *       the new carriage's lowest-X corner sits at or just past
-     *       {@code idealX}, leaving a 0..1 block gap to the reference's
-     *       highest-X face.</li>
-     *   <li>Backward append (newPIdx &lt; refPIdx) → {@code Math.floor} —
-     *       the new carriage's lowest-X corner sits at or just before
-     *       {@code idealX}, leaving a 0..1 block gap to the reference's
-     *       lowest-X face.</li>
+     *   <li>Forward (newPIdx &gt; refPIdx) → {@code (int) floor(idealX) + 1} —
+     *       strictly &gt; {@code idealX}, gap to reference's highest-X face
+     *       is always positive.</li>
+     *   <li>Backward (newPIdx &lt; refPIdx) → {@code (int) ceil(idealX) - 1} —
+     *       strictly &lt; {@code idealX}, gap to reference's lowest-X face
+     *       is always positive.</li>
      * </ul>
      *
-     * <p>The previous "round to nearest then teleport by the fractional
-     * error" approach was correct mathematically but in practice triggered
-     * MORE Sable collision responses (the post-spawn teleport seemed to
-     * disturb physics state), so we accept a visible gap instead.</p>
+     * <p>Gap size still varies in {@code (0, 1]} because the existing train
+     * has drifted by a fractional amount when each new carriage spawns.
+     * Reducing that variance further would require fractional pose
+     * adjustment (which we tried via post-spawn teleport — it caused MORE
+     * Sable physics jumping than overlap did).</p>
      */
     private static void spawnNewCarriage(
         ServerLevel level,
@@ -225,22 +226,18 @@ public final class TrainCarriageAppender {
         int refPIdx = reference.provider().getPIdx();
         int length = dims.length();
 
-        // Reference carriage's current world origin = shipToWorld of its
-        // shipyard origin. Includes velocity drift since spawn.
         Vector3d refWorldOriginVec = new Vector3d(
             refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
         reference.ship().shipToWorld(refWorldOriginVec);
 
-        // New carriage's ideal world origin: ref + (Δ pIdx) * length in +X
-        // for a 1D train. Fractional because the existing train has drifted
-        // by velocity*dt for some number of ticks.
         double idealX = refWorldOriginVec.x + (newPIdx - refPIdx) * (double) length;
         double idealY = refWorldOriginVec.y;
         double idealZ = refWorldOriginVec.z;
 
-        // Direction-aware rounding for gap-not-overlap. See javadoc.
         boolean forward = newPIdx > refPIdx;
-        int placeX = forward ? (int) Math.ceil(idealX) : (int) Math.floor(idealX);
+        int placeX = forward
+            ? (int) Math.floor(idealX) + 1
+            : (int) Math.ceil(idealX) - 1;
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
         BlockPos newCarriageOrigin = new BlockPos(placeX, placeY, placeZ);
