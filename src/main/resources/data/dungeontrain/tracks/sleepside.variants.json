@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 5,
+  "variants": {
+    "0,0,1": { "lockId": 1, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "1,0,1": { "lockId": 1, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "2,0,1": { "lockId": 1, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "3,0,1": { "lockId": 1, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "3,0,5": { "lockId": 2, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "2,0,5": { "lockId": 2, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "1,0,5": { "lockId": 2, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] },
+    "0,0,5": { "lockId": 2, "states": [{"state": "minecraft:dark_oak_log[axis=x]", "rotation": {"mode": "lock", "dirs": ["east"]}}, "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"] }
+  }
+}
