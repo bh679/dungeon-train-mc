@@ -60,30 +60,17 @@ public final class CarriagePartEditor {
     /** First X slot on any kind row. */
     private static final int FIRST_PLOT_X = 0;
 
-    /**
-     * Y baseline for the parts grid — separated from every other editor
-     * region (carriages / contents / tracks all share {@code Y=250}) so
-     * that {@link #plotContaining} queries can never claim a position that
-     * also falls inside a non-parts plot footprint, and so contents-interior
-     * blocks at {@code Y>=251} from a prior CONTENTS-category visit can't
-     * bleed into the FLOOR plot's air column.
-     *
-     * <p>Chosen as {@code 400} — well past the highest Y any other editor
-     * stack reaches (TUNNEL_PORTAL tops out near {@code Y=283}; pillar
-     * stacks at {@code Y~281}) with a generous buffer for future stack
-     * growth.</p>
-     */
-    private static final int PLOT_Y = 400;
+    private static final int PLOT_Y = 250;
 
     /**
-     * First Z row. Held at {@code Z=40} so the parts grid sits adjacent to
-     * the carriage / contents / tracks layout in plan view — only
-     * {@link #PLOT_Y} separates the regions, not Z. The contents-row Z
-     * overlap that produced the original visual-bleed bug is neutralised
-     * by the Y separation: contents stamps live at {@code Y=250..256} and
-     * never touch the parts air column at {@code Y=400+}.
+     * First Z row — sourced from {@link EditorLayout#PARTS_FIRST_Z}.
+     * Sits inside the CARRIAGES view's Z range, right after the carriage
+     * row, with the contents and tracks views shifted to disjoint Z
+     * regions past {@link EditorLayout#CARRIAGES_VIEW_MAX_Z} so no other
+     * editor's {@code plotContaining} can ever claim a position inside a
+     * parts plot.
      */
-    private static final int FIRST_PLOT_Z = 40;
+    private static final int FIRST_PLOT_Z = EditorLayout.PARTS_FIRST_Z;
 
     /**
      * Block gap between consecutive plot footprints on both X (name slots

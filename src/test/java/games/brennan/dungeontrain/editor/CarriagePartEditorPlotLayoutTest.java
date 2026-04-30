@@ -14,21 +14,18 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Regression guard for the parts/contents plot overlap that produced the
- * {@code dev/parts-content-bleed-fix} bug — content blocks (barrels,
- * 2ndlevel platforms) appearing inside the FLOOR parts editor's air column.
+ * Regression guard for the view-overlap bug that produced
+ * {@code dev/parts-content-bleed-fix} — content blocks (barrels, 2ndlevel
+ * platforms) appearing inside the FLOOR parts editor's air column when the
+ * parts FLOOR row at {@code Z=40..44} overlapped the contents row at
+ * {@code Z=37..43} in plan view.
  *
- * <p>Original bug: parts shared {@code Y=250} with carriages, contents,
- * and tracks. {@code CarriagePartTemplate.eraseAt} only clears the kind's
- * exact footprint Y range (FLOOR = {@code Y=250} only), so content
- * interior blocks at {@code Y>=251} survived a parts-editor enter and
- * were visible inside the FLOOR plot's air column.</p>
- *
- * <p>Fix: parts moved to {@code Y=400}. The Y separation makes overlap
- * with any other editor plot (all at {@code Y~250..283}) impossible. This
- * test asserts the AABB-disjointness invariant at min/default/max dims so
- * any future change that brings parts back down into the 250-range will
- * fail the test before it reaches a player.</p>
+ * <p>Fix: every editor view (CARRIAGES — including the parts grid,
+ * CONTENTS, TRACKS) is now anchored at a Z range past the previous view's
+ * max extent (see {@link EditorLayout}). This test asserts the AABB
+ * disjointness invariant between the parts grid and the contents row at
+ * min/default/max dims, so any future change that brings the views back
+ * into Z overlap fails the test before it reaches a player.</p>
  */
 final class CarriagePartEditorPlotLayoutTest {
 
