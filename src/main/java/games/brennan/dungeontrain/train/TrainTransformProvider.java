@@ -104,6 +104,15 @@ public final class TrainTransformProvider implements KinematicDriver {
     private int lastShiftDirection;
     private long lastShiftTick;
 
+    // Append-only watermarks for {@link TrainCarriageAppender}: the highest
+    // and lowest pIdx ever materialized for this train. Initialized to the
+    // top/bottom of the spawn-time range and advanced (never retracted) when
+    // a player's needed window extends beyond them. Volatile so the appender
+    // (server thread) and any future reader can see consistent values; in
+    // practice all touchpoints are server-thread.
+    private volatile int highestSpawnedIdx;
+    private volatile int lowestSpawnedIdx;
+
     // Jitter-probe state (Stage 1 + 2b, see `.claude/plans/swirling-fluttering-squid.md`).
     // Physics thread ownership — no volatile needed; never read from another thread.
     private long physicsTickCounter;
@@ -172,6 +181,8 @@ public final class TrainTransformProvider implements KinematicDriver {
         this.committedPIdx = initialPIdx;
         this.lastShiftDirection = 0;
         this.lastShiftTick = 0L;
+        this.highestSpawnedIdx = initialPIdx + halfFront;
+        this.lowestSpawnedIdx = initialPIdx - halfBack;
     }
 
     public int getForwardLimit() {
@@ -272,6 +283,22 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public void setLastShiftTick(long lastShiftTick) {
         this.lastShiftTick = lastShiftTick;
+    }
+
+    public int getHighestSpawnedIdx() {
+        return highestSpawnedIdx;
+    }
+
+    public void setHighestSpawnedIdx(int idx) {
+        this.highestSpawnedIdx = idx;
+    }
+
+    public int getLowestSpawnedIdx() {
+        return lowestSpawnedIdx;
+    }
+
+    public void setLowestSpawnedIdx(int idx) {
+        this.lowestSpawnedIdx = idx;
     }
 
     public long getLastMutationTick() {

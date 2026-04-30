@@ -8,9 +8,8 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.ShipyardShifter;
-import games.brennan.dungeontrain.train.TrainChainManager;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
-import games.brennan.dungeontrain.train.TrainWindowManager;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -95,14 +94,11 @@ public final class TrainTickEvents {
 
         long t0 = System.nanoTime();
 
-        // Rolling-window manager runs every tick regardless of whether we're also
-        // carving terrain — it only adds/removes carriages when a player crosses
-        // a carriage boundary, so the cost is negligible on idle ticks.
-        // TODO(train-physics-v2): rolling-window manager temporarily disconnected
-        // while we redesign train motion. The static carriage set placed by
-        // TrainAssembler.spawnTrain is what we want to observe in isolation —
-        // re-enable by uncommenting once the new motion model is settled.
-        // TrainWindowManager.onLevelTick(level);
+        // Append-only carriage spawner — adds carriages ahead of (or behind)
+        // the player as they move, never erases. Replaces the VS-era rolling-
+        // window manager (TrainWindowManager) which has been retired for the
+        // Sable port. See plans/wild-leaping-taco.md for the design rationale.
+        TrainCarriageAppender.onLevelTick(level);
         long tAfterWindow = System.nanoTime();
 
         // Editor overlay — cheap when nobody is in an editor plot (short-circuits
@@ -131,11 +127,12 @@ public final class TrainTickEvents {
         // (~every 1000 blocks of forward travel). See ShipyardShifter.
         ShipyardShifter.shiftIfNeeded(level, trains, level.players());
 
-        // Chain-manager pass: once the player crosses the per-train
-        // trigger pIdx, spawn a successor train ahead so they have a
-        // fresh shipyard allocation to walk onto before the predecessor
-        // runs out. See TrainChainManager + plans/floofy-floating-dahl.md.
-        TrainChainManager.maybeSpawnSuccessors(level, trains, level.players());
+        // Chain-manager pass intentionally disabled on the Sable port: the
+        // chain only existed to work around VS 2.4.11's 128-chunk shipyard
+        // wall, which Sable doesn't have. With the append-only appender, a
+        // single train can extend indefinitely on its own. See
+        // plans/wild-leaping-taco.md.
+        // TrainChainManager.maybeSpawnSuccessors(level, trains, level.players());
 
         long tAfterClear = tAfterKill;
 
