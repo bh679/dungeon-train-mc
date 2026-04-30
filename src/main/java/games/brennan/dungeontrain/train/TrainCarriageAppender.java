@@ -62,9 +62,24 @@ public final class TrainCarriageAppender {
         if (players.isEmpty()) return;
 
         Set<UUID> seenThisTick = new HashSet<>();
+        // [spacing] — if Sable's FloatingBlockController has split the train
+        // (block disconnection from variant-block AIR placement, etc.), we'll
+        // see more than one ManagedShip with a TrainTransformProvider. Both
+        // ships share a provider via the DRIVERS_BY_UUID origin walk, so
+        // appending to both means the seam math runs twice against the same
+        // shipyardOrigin — a likely cause of erratic carriage positions.
+        int trainCount = 0;
         for (ManagedShip ship : Shipyards.of(level).findAll()) {
             if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
+            trainCount++;
             updateTrain(level, ship, provider, players, seenThisTick);
+        }
+        if (trainCount > 1) {
+            // Throttle to avoid log spam — fire only at the moment the count
+            // changes via a static flag would need state; for now, the WARN
+            // every tick is the fastest way to spot when a split happened.
+            LOGGER.warn("[DungeonTrain] [spacing] split detected — {} ManagedShip handles share a TrainTransformProvider this tick",
+                trainCount);
         }
         clearDropouts(level, seenThisTick);
     }
@@ -179,6 +194,16 @@ public final class TrainCarriageAppender {
             shipyardOrigin.getX() + idx * dims.length(),
             shipyardOrigin.getY(),
             shipyardOrigin.getZ());
+        int sMinX = carriageOrigin.getX();
+        int sMaxX = sMinX + dims.length() - 1;
+        // [spacing] — neighbour edge lookups so a diff against the previously
+        // spawned carriage on this side is one log line, not a hunt through
+        // the timeline.
+        int prevIdx = idx > 0 ? idx - 1 : idx + 1;
+        int prevMinX = shipyardOrigin.getX() + prevIdx * dims.length();
+        int prevMaxX = prevMinX + dims.length() - 1;
+        int seamGap = idx > 0 ? sMinX - (prevMaxX + 1) : prevMinX - (sMaxX + 1);
+
         CarriageVariant variant = CarriageTemplate.variantForIndex(idx, genCfg);
         Set<BlockPos> placed = CarriageTemplate.placeAt(level, carriageOrigin, variant, dims, genCfg, idx);
         provider.getActiveIndices().add(idx);
@@ -186,8 +211,8 @@ public final class TrainCarriageAppender {
             LOGGER.warn("[DungeonTrain] Appender placed empty carriage idx={} variant={} at {}",
                 idx, variant.id(), carriageOrigin);
         } else {
-            LOGGER.info("[DungeonTrain] Appender added carriage idx={} variant={} at shipyard {} blocks={}",
-                idx, variant.id(), carriageOrigin, placed.size());
+            LOGGER.info("[DungeonTrain] Appender added carriage idx={} variant={} at shipyard {} blocks={} x=[{}, {}] seamGapVsIdx{}={}",
+                idx, variant.id(), carriageOrigin, placed.size(), sMinX, sMaxX, prevIdx, seamGap);
         }
     }
 

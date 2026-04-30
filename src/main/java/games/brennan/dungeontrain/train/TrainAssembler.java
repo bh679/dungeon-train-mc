@@ -116,6 +116,18 @@ public final class TrainAssembler {
             }
             blocks.addAll(carriageBlocks);
         }
+        // [spacing] — log the WORLD-space x-extent of every initial carriage
+        // so we can correlate against the post-assembly shipyard extents and
+        // the appender's later spawns. These are the integer ranges we asked
+        // Sable to assemble; any mismatch with what the ship actually
+        // contains afterwards is a Sable rounding / anchor issue.
+        for (int i = firstIdx; i <= lastIdx; i++) {
+            int worldMinX = origin.getX() + i * dims.length();
+            int worldMaxX = worldMinX + dims.length() - 1;
+            LOGGER.info("[DungeonTrain] [spacing] init idx={} world x=[{}, {}] (length={})",
+                i, worldMinX, worldMaxX, dims.length());
+        }
+
         LOGGER.info("[DungeonTrain] Placed {} blocks ({} carriages, {} empty, initialPIdx={}, dims={}x{}x{}), assembling...",
             blocks.size(), count, emptyCarriages, initialPIdx, dims.length(), dims.width(), dims.height());
 
@@ -139,6 +151,44 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.x),
             (int) Math.round(shipyardOriginVec.y),
             (int) Math.round(shipyardOriginVec.z));
+
+        // [spacing] — log raw worldToShip output so we can see the
+        // sub-block fraction that's being rounded away. A persistent
+        // ~0.5 fraction would indicate Sable's anchor lands the train at
+        // half-block coords; rounding the wrong direction would skew the
+        // appender's idx*length math against where the initial blocks
+        // actually live.
+        LOGGER.info("[DungeonTrain] [spacing] worldOrigin={} shipyardOriginRaw=({}, {}, {}) shipyardOriginRounded={} fracX={} fracY={} fracZ={}",
+            origin,
+            String.format("%.6f", shipyardOriginVec.x),
+            String.format("%.6f", shipyardOriginVec.y),
+            String.format("%.6f", shipyardOriginVec.z),
+            shipyardOrigin,
+            String.format("%.6f", shipyardOriginVec.x - Math.round(shipyardOriginVec.x)),
+            String.format("%.6f", shipyardOriginVec.y - Math.round(shipyardOriginVec.y)),
+            String.format("%.6f", shipyardOriginVec.z - Math.round(shipyardOriginVec.z)));
+
+        // [spacing] — what the appender will assume for the initial range,
+        // and the ship's actual measured bounds. If these disagree, the
+        // appender's idx*length math will produce gaps or overlaps at the
+        // seam between the initial set and the first appended carriage.
+        org.joml.primitives.AABBdc actualBounds = ship.worldAABB();
+        LOGGER.info("[DungeonTrain] [spacing] expectedShipyardX=[{}, {}) actualWorldAABB=[{}, {}, {}] -> [{}, {}, {}]",
+            shipyardOrigin.getX() + firstIdx * dims.length(),
+            shipyardOrigin.getX() + (lastIdx + 1) * dims.length(),
+            String.format("%.3f", actualBounds.minX()),
+            String.format("%.3f", actualBounds.minY()),
+            String.format("%.3f", actualBounds.minZ()),
+            String.format("%.3f", actualBounds.maxX()),
+            String.format("%.3f", actualBounds.maxY()),
+            String.format("%.3f", actualBounds.maxZ()));
+
+        for (int i = firstIdx; i <= lastIdx; i++) {
+            int sMinX = shipyardOrigin.getX() + i * dims.length();
+            int sMaxX = sMinX + dims.length() - 1;
+            LOGGER.info("[DungeonTrain] [spacing] init idx={} expected shipyard x=[{}, {}]",
+                i, sMinX, sMaxX);
+        }
 
         // Second pass: apply contents at SHIPYARD coordinates now that the
         // ship has absorbed our world-space blocks. Entity placement in
