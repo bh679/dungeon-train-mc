@@ -94,17 +94,28 @@ public final class TrainAssembler {
         int firstPIdx = initialPIdx - halfBack;
         int lastPIdx = initialPIdx + halfFront;
 
-        // Capture groupSize per-train at spawn-time. Subsequent runtime
-        // changes to CarriageGenerationConfig.groupSize affect future
-        // spawnTrain calls only; this train keeps its size for life.
+        // Capture per-train at spawn-time. Subsequent runtime changes to
+        // CarriageGenerationConfig.groupSize affect future spawnTrain
+        // calls only; this train keeps its size for life.
+        //
+        // The physics group size is config.groupSize() + 1 because the
+        // RANDOM_GROUPED variant cycle places a flatbed every (groupSize+1)
+        // carriages — see CarriageTemplate.variantForIndex. By making each
+        // sub-level hold the full cycle (groupSize enclosed + 1 flatbed),
+        // sub-level seams align with the flatbed positions, so the player
+        // crosses sub-level boundaries on a flatbed floor rather than
+        // mid-room. For LOOPING / RANDOM modes there's no flatbed cycle,
+        // but the +1 is still applied — the seam just lands at an arbitrary
+        // carriage in those modes.
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
-        int groupSize = genCfg.groupSize();
+        int physicsGroupSize = genCfg.groupSize() + 1;
 
         // Snap the requested pIdx range outward to group anchors so every
-        // group spawned spans exactly groupSize consecutive pIdx values.
-        // Math.floorDiv handles negative pIdx correctly (e.g. floorDiv(-4, 3) = -2).
-        int firstAnchor = Math.floorDiv(firstPIdx, groupSize) * groupSize;
-        int lastAnchor = Math.floorDiv(lastPIdx, groupSize) * groupSize;
+        // group spawned spans exactly physicsGroupSize consecutive pIdx
+        // values. Math.floorDiv handles negative pIdx correctly
+        // (e.g. floorDiv(-4, 4) = -1).
+        int firstAnchor = Math.floorDiv(firstPIdx, physicsGroupSize) * physicsGroupSize;
+        int lastAnchor = Math.floorDiv(lastPIdx, physicsGroupSize) * physicsGroupSize;
 
         UUID trainId = UUID.randomUUID();
 
@@ -114,16 +125,16 @@ public final class TrainAssembler {
             origin.getZ(),
             origin.getZ() + dims.width() - 1);
 
-        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] step={} dims={}x{}x{} velocity={} origin={}",
+        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] physicsGroupSize={} (config.groupSize={} + 1 flatbed) dims={}x{}x{} velocity={} origin={}",
             trainId, firstPIdx, lastPIdx, count,
-            firstAnchor, lastAnchor, groupSize,
+            firstAnchor, lastAnchor, physicsGroupSize, genCfg.groupSize(),
             dims.length(), dims.height(), dims.width(),
             velocity, origin);
 
         List<ManagedShip> ships = new ArrayList<>();
-        for (int anchor = firstAnchor; anchor <= lastAnchor; anchor += groupSize) {
+        for (int anchor = firstAnchor; anchor <= lastAnchor; anchor += physicsGroupSize) {
             BlockPos groupOrigin = origin.offset(anchor * dims.length(), 0, 0);
-            ManagedShip ship = spawnGroup(level, groupOrigin, velocity, anchor, groupSize, dims, trainId);
+            ManagedShip ship = spawnGroup(level, groupOrigin, velocity, anchor, physicsGroupSize, dims, trainId);
             if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
                 provider.setTrackGeometry(geometry);
             }
