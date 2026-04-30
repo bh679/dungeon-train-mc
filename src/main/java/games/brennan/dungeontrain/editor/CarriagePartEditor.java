@@ -63,13 +63,14 @@ public final class CarriagePartEditor {
     private static final int PLOT_Y = 250;
 
     /**
-     * First Z row — puts the FLOOR grid at the same Z the TRACKS-category
-     * pillar row uses ({@code Z=40}). Categories clear each other's plots on
-     * switch, so there's no coexistence conflict; the closer placement keeps
-     * the parts grid inside the author's field of view when they enter
-     * CARRIAGES.
+     * First Z row — sourced from {@link EditorLayout#PARTS_FIRST_Z}.
+     * Sits inside the CARRIAGES view's Z range, right after the carriage
+     * row, with the contents and tracks views shifted to disjoint Z
+     * regions past {@link EditorLayout#CARRIAGES_VIEW_MAX_Z} so no other
+     * editor's {@code plotContaining} can ever claim a position inside a
+     * parts plot.
      */
-    private static final int FIRST_PLOT_Z = 40;
+    private static final int FIRST_PLOT_Z = EditorLayout.PARTS_FIRST_Z;
 
     /**
      * Block gap between consecutive plot footprints on both X (name slots

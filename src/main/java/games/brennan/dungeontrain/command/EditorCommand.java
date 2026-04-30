@@ -1430,9 +1430,12 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos pos = player.blockPosition();
 
-        // Parts plots sit at Z=40+, disjoint from carriage/contents plots —
-        // check first so a part name resolution beats the (unrelated) carriage
-        // plot lookup if the player wandered between rows.
+        // Parts plots live inside the CARRIAGES view's Z range, while
+        // CONTENTS and TRACKS views sit past the parts grid (see
+        // EditorLayout) — so a part name resolution can't be confused for
+        // a contents or tracks plot. Check first anyway so a part name
+        // resolution beats the (unrelated) carriage plot lookup if the
+        // player wandered between rows.
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
         if (partLoc != null) {
             try {
