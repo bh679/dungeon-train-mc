@@ -4,13 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
-import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import org.joml.Quaterniond;
-import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
@@ -194,24 +191,27 @@ public final class TrainCarriageAppender {
      * Place a new single-carriage sub-level at the world position
      * extrapolated from {@code reference}'s current world origin.
      *
-     * <p>World coords are rounded to the nearest integer for the
-     * {@link BlockPos} placement (Sable's setBlock takes an integer
-     * BlockPos), then the new sub-level is immediately teleported by the
-     * fractional rounding error so its rendered blocks land at the exact
-     * ideal fractional position — aligning with the existing train's
-     * velocity drift. Without this teleport step, each new carriage would
-     * have up to 0.5 blocks of visible misalignment with its neighbours
-     * (gap on one side, overlap on the other), which causes Sable's
-     * rigid-body collision to push the train around.</p>
+     * <p><b>Direction-aware rounding to guarantee gaps over overlaps.</b>
+     * Sable's rigid-body collision response pushes intersecting bodies
+     * apart, manifesting as visible "jumping" of the train. To avoid
+     * that, we deliberately round the new carriage's world origin AWAY
+     * from the existing train so the seam always shows a small gap
+     * rather than ever showing an overlap:</p>
+     * <ul>
+     *   <li>Forward append (newPIdx &gt; refPIdx) → {@code Math.ceil} —
+     *       the new carriage's lowest-X corner sits at or just past
+     *       {@code idealX}, leaving a 0..1 block gap to the reference's
+     *       highest-X face.</li>
+     *   <li>Backward append (newPIdx &lt; refPIdx) → {@code Math.floor} —
+     *       the new carriage's lowest-X corner sits at or just before
+     *       {@code idealX}, leaving a 0..1 block gap to the reference's
+     *       lowest-X face.</li>
+     * </ul>
      *
-     * <p>The teleport happens via {@link ManagedShip#applyTickOutput} so
-     * the rotationPoint pin in
-     * {@link games.brennan.dungeontrain.ship.sable.SableManagedShip}
-     * applies on the same call. The next
-     * {@link TrainTransformProvider#nextTransform} captures the
-     * teleported pose as the carriage's
-     * {@link TrainTransformProvider#getCanonicalPos() canonical position},
-     * and from there it advances in lockstep with the rest of the train.</p>
+     * <p>The previous "round to nearest then teleport by the fractional
+     * error" approach was correct mathematically but in practice triggered
+     * MORE Sable collision responses (the post-spawn teleport seemed to
+     * disturb physics state), so we accept a visible gap instead.</p>
      */
     private static void spawnNewCarriage(
         ServerLevel level,
@@ -238,40 +238,22 @@ public final class TrainCarriageAppender {
         double idealY = refWorldOriginVec.y;
         double idealZ = refWorldOriginVec.z;
 
-        // Round to integer for block placement. The error is in [-0.5, 0.5].
-        BlockPos newCarriageOrigin = new BlockPos(
-            (int) Math.round(idealX),
-            (int) Math.round(idealY),
-            (int) Math.round(idealZ));
+        // Direction-aware rounding for gap-not-overlap. See javadoc.
+        boolean forward = newPIdx > refPIdx;
+        int placeX = forward ? (int) Math.ceil(idealX) : (int) Math.floor(idealX);
+        int placeY = (int) Math.round(idealY);
+        int placeZ = (int) Math.round(idealZ);
+        BlockPos newCarriageOrigin = new BlockPos(placeX, placeY, placeZ);
+        double gap = forward ? (placeX - idealX) : (idealX - placeX);
 
         ManagedShip newShip = TrainAssembler.spawnCarriage(
             level, newCarriageOrigin, velocity, newPIdx, dims, trainId);
 
-        // Sub-block alignment: shift the new sub-level's pose by the fractional
-        // rounding error so its rendered blocks land at the exact ideal X.
-        // After spawnCarriage, pose.position is at the integer-anchored value;
-        // the carriage's blocks render at integer world coords. Adding
-        // (idealX − round(idealX)) to pose.position translates every voxel by
-        // the same amount, putting the lowest-X block at world idealX exactly.
-        double fracX = idealX - newCarriageOrigin.getX();
-        double fracY = idealY - newCarriageOrigin.getY();
-        double fracZ = idealZ - newCarriageOrigin.getZ();
-        Vector3dc currentPos = newShip.currentWorldPosition();
-        Vector3dc currentPivot = newShip.currentPositionInModel();
-        Vector3d alignedPos = new Vector3d(
-            currentPos.x() + fracX,
-            currentPos.y() + fracY,
-            currentPos.z() + fracZ);
-        Quaterniondc identityRot = new Quaterniond();
-        KinematicDriver.TickOutput alignedOutput = new KinematicDriver.TickOutput(
-            alignedPos, identityRot, currentPivot, velocity, new Vector3d());
-        newShip.applyTickOutput(alignedOutput);
-
-        LOGGER.info("[DungeonTrain] Appender added carriage pIdx={} trainId={} ship id={} placedAt={} (idealX={}, fracX={}, alignedX={})",
+        LOGGER.info("[DungeonTrain] Appender added carriage pIdx={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={})",
             newPIdx, trainId, newShip.id(), newCarriageOrigin,
             String.format("%.4f", idealX),
-            String.format("%.4f", fracX),
-            String.format("%.4f", alignedPos.x));
+            forward ? "forward" : "backward",
+            String.format("%.4f", gap));
     }
 
     /**
