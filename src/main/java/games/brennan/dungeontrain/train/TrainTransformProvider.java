@@ -74,11 +74,20 @@ public final class TrainTransformProvider implements KinematicDriver {
     private final CarriageDims dims;
 
     /**
-     * This carriage's index along the train's velocity axis. Stable for the
-     * sub-level's lifetime. Variant selection (deterministic per-index),
-     * world placement offset, and HUD readout all key off this.
+     * Anchor (lowest-index) carriage's pIdx in this sub-level's group.
+     * The group spans pIdx range {@code [pIdx, pIdx + groupSize - 1]}.
+     * Stable for the sub-level's lifetime. Variant selection
+     * (deterministic per-index) iterates through the range.
      */
     private final int pIdx;
+
+    /**
+     * Number of carriages bundled into this sub-level. Captured at spawn
+     * time from {@link CarriageGenerationConfig#groupSize()} (default 3,
+     * range 1-16). Constant for this sub-level's lifetime; runtime config
+     * changes only affect freshly-spawned trains.
+     */
+    private final int groupSize;
 
     /**
      * UUID shared by every carriage sub-level belonging to the same train.
@@ -156,19 +165,40 @@ public final class TrainTransformProvider implements KinematicDriver {
         BlockPos shipyardOrigin,
         ResourceKey<Level> dimensionKey,
         int pIdx,
+        int groupSize,
         CarriageDims dims,
         UUID trainId
     ) {
+        if (groupSize < 1) {
+            throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
+        }
         this.targetVelocity = new Vector3d(targetVelocity);
         this.shipyardOrigin = shipyardOrigin.immutable();
         this.dimensionKey = dimensionKey;
         this.dims = dims;
         this.pIdx = pIdx;
+        this.groupSize = groupSize;
         this.trainId = trainId;
     }
 
+    /** Anchor (lowest) carriage pIdx of this group. */
     public int getPIdx() {
         return pIdx;
+    }
+
+    /** Number of carriages in this group / sub-level (≥ 1). */
+    public int getGroupSize() {
+        return groupSize;
+    }
+
+    /** Highest carriage pIdx of this group: {@code pIdx + groupSize - 1}. */
+    public int getGroupHighestPIdx() {
+        return pIdx + groupSize - 1;
+    }
+
+    /** True iff {@code carriagePIdx} is one of this group's carriages. */
+    public boolean containsPIdx(int carriagePIdx) {
+        return carriagePIdx >= pIdx && carriagePIdx <= getGroupHighestPIdx();
     }
 
     public UUID getTrainId() {
@@ -336,8 +366,8 @@ public final class TrainTransformProvider implements KinematicDriver {
             canonicalPos = new Vector3d(input.currentPosition());
             lockedPositionInModel = new Vector3d(input.currentPositionInModel());
             JITTER_LOGGER.info(
-                "[baseline] pIdx={} trainId={} forced identity lockedRotation; canonicalPos={} lockedPositionInModel={}",
-                pIdx, trainId, fmt(canonicalPos), fmt(lockedPositionInModel));
+                "[baseline] pIdx={} groupSize={} trainId={} forced identity lockedRotation; canonicalPos={} lockedPositionInModel={}",
+                pIdx, groupSize, trainId, fmt(canonicalPos), fmt(lockedPositionInModel));
         }
 
         // Snapshot prior canonical so we can roll back NaN propagation.

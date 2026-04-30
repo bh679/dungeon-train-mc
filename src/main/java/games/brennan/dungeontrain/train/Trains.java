@@ -90,17 +90,28 @@ public final class Trains {
         return best;
     }
 
-    /** Highest pIdx in the train, or {@link Integer#MIN_VALUE} on empty. */
+    /**
+     * Highest CARRIAGE pIdx in the train (the very front carriage of the
+     * lead group), or {@link Integer#MIN_VALUE} on empty.
+     *
+     * <p>For groups of size > 1 this is the lead group's anchor pIdx +
+     * (groupSize − 1) — the group's last carriage. For groupSize=1 it
+     * matches the lead's anchor pIdx exactly.</p>
+     */
     public static int maxPIdx(List<Carriage> train) {
         int best = Integer.MIN_VALUE;
         for (Carriage c : train) {
-            int p = c.provider().getPIdx();
-            if (p > best) best = p;
+            int hi = c.provider().getGroupHighestPIdx();
+            if (hi > best) best = hi;
         }
         return best;
     }
 
-    /** Lowest pIdx in the train, or {@link Integer#MAX_VALUE} on empty. */
+    /**
+     * Lowest CARRIAGE pIdx in the train (the very rear carriage of the
+     * tail group, which is the tail group's anchor), or
+     * {@link Integer#MAX_VALUE} on empty.
+     */
     public static int minPIdx(List<Carriage> train) {
         int best = Integer.MAX_VALUE;
         for (Carriage c : train) {

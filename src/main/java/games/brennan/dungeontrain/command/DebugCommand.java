@@ -127,17 +127,21 @@ public final class DebugCommand {
         BlockPos shipBOrigin = shipAOrigin.offset(dims.length(), 0, 0);
 
         Vector3d vel = new Vector3d(velocity, 0.0, 0.0);
-        Vector3d spawnerA = new Vector3d(shipAOrigin.getX(), shipAOrigin.getY(), shipAOrigin.getZ());
-        Vector3d spawnerB = new Vector3d(shipBOrigin.getX(), shipBOrigin.getY(), shipBOrigin.getZ());
 
         LOGGER.info("[DungeonTrain][probe] /dt debug pair velocity={} dims={}x{}x{} player={} → shipA origin={} shipB origin={}",
             velocity, dims.length(), dims.height(), dims.width(), pp, shipAOrigin, shipBOrigin);
 
         try {
-            // spawnTrain wipes any pre-existing trains for a clean slate;
-            // spawnSuccessor adds B without touching A. Both single-carriage.
-            ManagedShip shipA = TrainAssembler.spawnTrain(level, shipAOrigin, vel, 1, spawnerA, dims);
-            ManagedShip shipB = TrainAssembler.spawnSuccessor(level, shipBOrigin, vel, 1, spawnerB, dims, 1);
+            // The probe spawns 2 separate single-carriage sub-levels — bypass
+            // the production spawnTrain path (which would create a single
+            // train with groupSize-many carriages) and call spawnGroup
+            // directly with groupSize=1. Each ship gets its own trainId so
+            // they're truly independent for the handoff test.
+            TrainAssembler.deleteAllTrains(level);
+            java.util.UUID trainIdA = java.util.UUID.randomUUID();
+            java.util.UUID trainIdB = java.util.UUID.randomUUID();
+            ManagedShip shipA = TrainAssembler.spawnGroup(level, shipAOrigin, vel, 0, 1, dims, trainIdA);
+            ManagedShip shipB = TrainAssembler.spawnGroup(level, shipBOrigin, vel, 0, 1, dims, trainIdB);
 
             // Disable appender on both — the probe must stay exactly 1+1
             // carriages so the seam geometry remains observable.

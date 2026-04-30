@@ -23,21 +23,21 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Per-tick append-only carriage spawner. For each train (group of
- * single-carriage sub-levels sharing a {@link TrainTransformProvider#getTrainId() trainId}),
- * extends the train's pIdx range by spawning new sub-levels at the
- * appropriate world position when a player's needed window
+ * Per-tick append-only group spawner. For each train (collection of
+ * groups sharing a {@link TrainTransformProvider#getTrainId() trainId}),
+ * extends the train by spawning new groups at the appropriate world
+ * position when a player's needed pIdx window
  * {@code [pIdx − halfBack, pIdx + halfFront]} extends beyond the train's
  * current min/max pIdx.
  *
- * <p>Each new carriage is its own Sable sub-level — see
- * {@link TrainAssembler#spawnCarriage(ServerLevel, BlockPos, Vector3dc, int, CarriageDims, UUID)}.
- * This eliminates the COM-drift jitter the previous "one big sub-level"
- * model suffered from on every block add.</p>
+ * <p>Each spawned group is its own Sable sub-level holding {@code groupSize}
+ * adjacent carriages — see
+ * {@link TrainAssembler#spawnGroup(ServerLevel, BlockPos, Vector3dc, int, int, CarriageDims, UUID)}.
+ * The group's blocks are placed once at assembly and never modified after,
+ * so the per-sub-level MassTracker / rotationPoint stays constant.</p>
  *
  * <p>Append-only: never erases. Walking back over a previously-spawned
- * carriage shows it intact (its blocks were stamped once at spawn and never
- * modified after).</p>
+ * group shows it intact.</p>
  */
 public final class TrainCarriageAppender {
 
@@ -47,11 +47,27 @@ public final class TrainCarriageAppender {
 
     /**
      * Per-player last carriage index pushed to the client via
-     * {@link CarriageIndexPacket}. Server-thread only. Entry absence means
-     * we haven't sent a value yet (or have cleared it). Used to skip
-     * duplicate packets and to detect dropouts in {@link #clearDropouts}.
+     * {@link CarriageIndexPacket}. Server-thread only.
      */
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
+
+    /**
+     * Minimum visible gap (in blocks) between a freshly-spawned group and
+     * its reference. Sable's collision broad-phase appears to consider
+     * very narrow gaps as contact, so we add this bias before rounding to
+     * keep the gap at least this large.
+     */
+    private static final double MIN_GAP_BLOCKS = 0.1;
+
+    /**
+     * Hard upper bound on how many GROUPS the appender will spawn in a
+     * single server tick. With groupSize=3 this caps carriages per tick at
+     * {@code 32 * 3 = 96} — plenty of headroom for normal player movement
+     * (a player crosses at most a handful of group boundaries per tick at
+     * any sane speed). Prevents runaway spawning if pIdx computation goes
+     * wildly wrong (e.g. pose corruption).
+     */
+    private static final int MAX_SPAWNS_PER_TICK = 32;
 
     private TrainCarriageAppender() {}
 
@@ -74,7 +90,7 @@ public final class TrainCarriageAppender {
         Set<UUID> seenThisTick
     ) {
         if (train.isEmpty()) return;
-        // Any carriage of the train can opt the whole train out (debug probes).
+        // Any group of the train can opt the whole train out (debug probes).
         for (Trains.Carriage c : train) {
             if (c.provider().isAppenderDisabled()) return;
         }
@@ -87,7 +103,8 @@ public final class TrainCarriageAppender {
         CarriageDims dims = leadProvider.dims();
         Vector3dc velocity = leadProvider.getTargetVelocity();
         BlockPos leadShipyardOrigin = leadProvider.getShipyardOrigin();
-        int leadPIdx = leadProvider.getPIdx();
+        int leadAnchorPIdx = leadProvider.getPIdx();
+        int groupSize = leadProvider.getGroupSize();
         int length = dims.length();
 
         // Target carriage count from config — drives halfBack / halfFront so
@@ -98,9 +115,8 @@ public final class TrainCarriageAppender {
 
         List<Integer> nearPlayerPIdxs = new ArrayList<>();
         for (ServerPlayer player : players) {
-            // Player is "near" the train if within NEAR_RADIUS of any of the
-            // train's carriage AABBs. Each carriage has its own world AABB
-            // since each is a separate sub-level.
+            // Player is "near" the train if within NEAR_RADIUS of any group's
+            // world AABB.
             boolean near = false;
             for (Trains.Carriage c : train) {
                 AABBdc aabb = c.ship().worldAABB();
@@ -117,17 +133,15 @@ public final class TrainCarriageAppender {
             }
             if (!near) continue;
 
-            // Compute pIdx using the lead carriage as a reference frame.
-            // worldToShip(playerWorld) maps the player into lead's shipyard
-            // coordinates; offset from lead.shipyardOrigin in length-units
-            // gives the pIdx delta from lead, plus lead.pIdx for the
-            // absolute carriage index. This works regardless of which
-            // carriage the player is physically standing on, because all
-            // carriages of a train advance in lockstep (same velocity, same
-            // tick cadence).
+            // Player's absolute carriage pIdx via the lead group's frame.
+            // The lead group's anchor sits at lead.shipyardOrigin in
+            // shipyard coords; offset from there in length-units gives the
+            // pIdx delta from the anchor, plus leadAnchorPIdx for the
+            // absolute carriage index. Works for any carriage in the train
+            // since all groups advance in lockstep.
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
             leadShip.worldToShip(local);
-            int pIdx = (int) Math.floor((local.x - leadShipyardOrigin.getX()) / (double) length) + leadPIdx;
+            int pIdx = (int) Math.floor((local.x - leadShipyardOrigin.getX()) / (double) length) + leadAnchorPIdx;
 
             UUID uuid = player.getUUID();
             seenThisTick.add(uuid);
@@ -141,134 +155,137 @@ public final class TrainCarriageAppender {
         }
         if (nearPlayerPIdxs.isEmpty()) return;
 
-        int trainMaxPIdx = leadPIdx;
-        int trainMinPIdx = tail.provider().getPIdx();
-        List<Integer> toSpawn = computeIndicesToSpawn(
-            trainMaxPIdx, trainMinPIdx, halfBack, halfFront, nearPlayerPIdxs);
-        if (toSpawn.isEmpty()) return;
+        // Train's current carriage-pIdx range and group-anchor range.
+        int trainMaxPIdx = leadAnchorPIdx + groupSize - 1; // = Trains.maxPIdx(train)
+        int trainMinPIdx = tail.provider().getPIdx();      // = Trains.minPIdx(train)
+        int trainMaxAnchor = leadAnchorPIdx;
+        int trainMinAnchor = tail.provider().getPIdx();
 
-        // Safety cap — if pIdx computation goes wildly wrong (e.g. due to
-        // pose corruption), don't spawn 1000+ sub-levels in one tick. Log
-        // loudly so the underlying bug is visible.
-        if (toSpawn.size() > MAX_SPAWNS_PER_TICK) {
-            LOGGER.warn("[DungeonTrain] Appender wanted to spawn {} carriages this tick (trainMin={} max={} players={}); clamping to {}",
-                toSpawn.size(), trainMinPIdx, trainMaxPIdx, nearPlayerPIdxs, MAX_SPAWNS_PER_TICK);
-            toSpawn = toSpawn.subList(0, MAX_SPAWNS_PER_TICK);
+        List<Integer> anchorsToSpawn = computeGroupAnchorsToSpawn(
+            trainMaxAnchor, trainMinAnchor, halfBack, halfFront, groupSize, nearPlayerPIdxs);
+        if (anchorsToSpawn.isEmpty()) return;
+
+        // Safety cap.
+        if (anchorsToSpawn.size() > MAX_SPAWNS_PER_TICK) {
+            LOGGER.warn("[DungeonTrain] Appender wanted to spawn {} groups this tick (trainAnchor=[{}, {}] groupSize={} players={}); clamping to {}",
+                anchorsToSpawn.size(), trainMinAnchor, trainMaxAnchor, groupSize, nearPlayerPIdxs, MAX_SPAWNS_PER_TICK);
+            anchorsToSpawn = anchorsToSpawn.subList(0, MAX_SPAWNS_PER_TICK);
         }
 
-        for (int pIdx : toSpawn) {
-            // Forward indices use the lead as the world-position reference;
-            // backward indices use the tail. Both references compute the
-            // new carriage's world origin by adding (newPIdx - refPIdx) *
-            // length to the reference's current world origin.
-            Trains.Carriage reference = (pIdx > trainMaxPIdx) ? lead : tail;
-            spawnNewCarriage(level, reference, pIdx, dims, velocity, trainId);
+        for (int newAnchor : anchorsToSpawn) {
+            // Forward groups use the lead as the world-position reference;
+            // backward groups use the tail. The reference's shipyardOrigin
+            // is its own anchor's world position; we extrapolate to the
+            // new group's anchor by adding (newAnchor - refAnchor) * length.
+            Trains.Carriage reference = (newAnchor > trainMaxAnchor) ? lead : tail;
+            spawnNewGroup(level, reference, newAnchor, groupSize, dims, velocity, trainId);
         }
     }
 
     /**
      * Pure decision helper — exposed package-private for unit tests.
-     * Given the train's current min/max pIdx and a list of near-player pIdx
-     * values, return the indices to spawn this tick in spawn order:
-     * forward indices ascending, then backward indices descending. Indices
-     * already inside {@code [trainMinPIdx, trainMaxPIdx]} are never
-     * re-emitted (append-only monotonicity).
+     * Given the train's current min/max group anchors and a list of
+     * near-player pIdx values, return the list of new group anchors to
+     * spawn this tick in spawn order: forward anchors ascending, then
+     * backward anchors descending. Anchors already inside
+     * {@code [trainMinAnchor, trainMaxAnchor]} are never re-emitted.
+     *
+     * @param trainMaxAnchor current lead anchor pIdx
+     * @param trainMinAnchor current tail anchor pIdx
+     * @param halfBack       per-player look-behind in carriage units
+     * @param halfFront      per-player look-ahead in carriage units
+     * @param groupSize      carriages per group (≥ 1)
+     * @param playerPIdxs    near-player absolute pIdx values
      */
-    static List<Integer> computeIndicesToSpawn(
-        int trainMaxPIdx,
-        int trainMinPIdx,
+    static List<Integer> computeGroupAnchorsToSpawn(
+        int trainMaxAnchor,
+        int trainMinAnchor,
         int halfBack,
         int halfFront,
+        int groupSize,
         List<Integer> playerPIdxs
     ) {
         if (playerPIdxs.isEmpty()) return List.of();
-        int maxNeededHigh = Integer.MIN_VALUE;
-        int minNeededLow = Integer.MAX_VALUE;
+        if (groupSize < 1) {
+            throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
+        }
+
+        int maxNeededPIdx = Integer.MIN_VALUE;
+        int minNeededPIdx = Integer.MAX_VALUE;
         for (int p : playerPIdxs) {
             int h = p + halfFront;
             int l = p - halfBack;
-            if (h > maxNeededHigh) maxNeededHigh = h;
-            if (l < minNeededLow) minNeededLow = l;
+            if (h > maxNeededPIdx) maxNeededPIdx = h;
+            if (l < minNeededPIdx) minNeededPIdx = l;
         }
+        // Snap needed pIdx range outward to group anchors. Math.floorDiv
+        // handles negative pIdx correctly.
+        int maxNeededAnchor = Math.floorDiv(maxNeededPIdx, groupSize) * groupSize;
+        int minNeededAnchor = Math.floorDiv(minNeededPIdx, groupSize) * groupSize;
+
         List<Integer> out = new ArrayList<>();
-        for (int i = trainMaxPIdx + 1; i <= maxNeededHigh; i++) out.add(i);
-        for (int i = trainMinPIdx - 1; i >= minNeededLow; i--) out.add(i);
+        for (int a = trainMaxAnchor + groupSize; a <= maxNeededAnchor; a += groupSize) {
+            out.add(a);
+        }
+        for (int a = trainMinAnchor - groupSize; a >= minNeededAnchor; a -= groupSize) {
+            out.add(a);
+        }
         return out;
     }
 
     /**
-     * Minimum visible gap (in blocks) between the new carriage and the
-     * reference. Sable's collision broad-phase appears to consider very
-     * narrow gaps as contact, so we add a small bias before rounding to
-     * keep the gap at least this large.
-     */
-    private static final double MIN_GAP_BLOCKS = 0.1;
-
-    /**
-     * Hard upper bound on how many carriages the appender will spawn in
-     * a single server tick. A normal player crosses at most a handful of
-     * carriage boundaries per tick; this cap prevents a runaway loop if
-     * a player's pIdx computation goes wildly off (e.g. because of an
-     * upstream pose corruption) — without it, the appender can spawn
-     * 1000+ sub-levels in a single tick before the server catches up,
-     * which then makes the world impossible to save.
-     */
-    private static final int MAX_SPAWNS_PER_TICK = 32;
-
-    /**
-     * Place a new single-carriage sub-level at the world position
+     * Place a new {@code groupSize}-carriage sub-level at the world position
      * extrapolated from {@code reference}'s current world origin, with a
      * deliberate gap that guarantees no Sable rigid-body collision.
      *
      * <p><b>Why a gap.</b> Sable's collision response pushes intersecting
-     * (or even very-near-touching) bodies apart, which manifests as
-     * visible "jumping" of the train. We bias the rounding by
-     * {@link #MIN_GAP_BLOCKS} so the gap always falls in
-     * {@code [MIN_GAP_BLOCKS, 1 + MIN_GAP_BLOCKS]} blocks — strictly
-     * positive, never overlapping, never touching.</p>
-     * <ul>
-     *   <li>Forward (newPIdx &gt; refPIdx) →
-     *       {@code (int) Math.ceil(idealX + MIN_GAP_BLOCKS)} —
-     *       new carriage's lowest-X face is strictly &gt; idealX + 0.1.</li>
-     *   <li>Backward (newPIdx &lt; refPIdx) →
-     *       {@code (int) Math.floor(idealX - MIN_GAP_BLOCKS)} —
-     *       new carriage's lowest-X face is strictly &lt; idealX - 0.1.</li>
-     * </ul>
+     * (or even very-near-touching) bodies apart, manifesting as visible
+     * "jumping" of the train. We bias the rounding by
+     * {@link #MIN_GAP_BLOCKS} so the visible gap between the new group's
+     * lowest-X face and the reference's nearest face is always strictly
+     * positive (range {@code [MIN_GAP_BLOCKS, 1 + MIN_GAP_BLOCKS]} blocks).</p>
      */
-    private static void spawnNewCarriage(
+    private static void spawnNewGroup(
         ServerLevel level,
         Trains.Carriage reference,
-        int newPIdx,
+        int newAnchor,
+        int groupSize,
         CarriageDims dims,
         Vector3dc velocity,
         UUID trainId
     ) {
         BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
-        int refPIdx = reference.provider().getPIdx();
+        int refAnchor = reference.provider().getPIdx();
         int length = dims.length();
 
+        // Reference group's current world origin (the anchor carriage's
+        // lowest-X corner, after velocity drift since spawn).
         Vector3d refWorldOriginVec = new Vector3d(
             refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
         reference.ship().shipToWorld(refWorldOriginVec);
 
-        double idealX = refWorldOriginVec.x + (newPIdx - refPIdx) * (double) length;
+        // New group's ideal world origin = ref + (newAnchor − refAnchor) × length
+        // since both anchors are measured in carriage units and length is
+        // blocks-per-carriage. This naturally steps by groupSize × length
+        // when newAnchor differs from refAnchor by groupSize.
+        double idealX = refWorldOriginVec.x + (newAnchor - refAnchor) * (double) length;
         double idealY = refWorldOriginVec.y;
         double idealZ = refWorldOriginVec.z;
 
-        boolean forward = newPIdx > refPIdx;
+        boolean forward = newAnchor > refAnchor;
         int placeX = forward
             ? (int) Math.ceil(idealX + MIN_GAP_BLOCKS)
             : (int) Math.floor(idealX - MIN_GAP_BLOCKS);
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
-        BlockPos newCarriageOrigin = new BlockPos(placeX, placeY, placeZ);
+        BlockPos newGroupOrigin = new BlockPos(placeX, placeY, placeZ);
         double gap = forward ? (placeX - idealX) : (idealX - placeX);
 
-        ManagedShip newShip = TrainAssembler.spawnCarriage(
-            level, newCarriageOrigin, velocity, newPIdx, dims, trainId);
+        ManagedShip newShip = TrainAssembler.spawnGroup(
+            level, newGroupOrigin, velocity, newAnchor, groupSize, dims, trainId);
 
-        LOGGER.info("[DungeonTrain] Appender added carriage pIdx={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={})",
-            newPIdx, trainId, newShip.id(), newCarriageOrigin,
+        LOGGER.info("[DungeonTrain] Appender added group anchorPIdx={} groupSize={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={})",
+            newAnchor, groupSize, trainId, newShip.id(), newGroupOrigin,
             String.format("%.4f", idealX),
             forward ? "forward" : "backward",
             String.format("%.4f", gap));
@@ -276,9 +293,7 @@ public final class TrainCarriageAppender {
 
     /**
      * Clear the HUD for any player who had a pIdx last tick but wasn't
-     * reached by any train this tick — they walked outside
-     * {@link #NEAR_RADIUS}. Also drops offline UUIDs so the tracking map
-     * doesn't grow without bound.
+     * reached by any train this tick — they walked outside {@link #NEAR_RADIUS}.
      */
     private static void clearDropouts(ServerLevel level, Set<UUID> seenThisTick) {
         if (LAST_SENT_PIDX.isEmpty()) return;
