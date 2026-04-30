@@ -264,8 +264,18 @@ public final class CarriageTemplate {
      * → tier-3 legacy hardcoded generator (built-ins only). Returns a source
      * tag for logging, or {@code null} when nothing was stamped (custom
      * variants without any NBT on disk).
+     *
+     * <p>Half-flatbeds are a special case: they re-use the FLATBED's
+     * stored NBT template, then erase one half of the placed blocks so
+     * adjacent sub-levels' half-flatbeds combine into one full bed across
+     * the seam. If the FLATBED has no NBT on disk, falls back to the
+     * legacy half-floor placement in {@link #stateAt}.</p>
      */
     private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
+        if (variant instanceof CarriageVariant.Builtin b
+            && (b.type() == CarriageType.HALF_FLATBED_BACK || b.type() == CarriageType.HALF_FLATBED_FRONT)) {
+            return stampHalfFlatbed(level, origin, b.type(), dims);
+        }
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
             stampTemplate(level, origin, stored.get());
@@ -276,6 +286,53 @@ public final class CarriageTemplate {
             return "legacy";
         }
         return null;
+    }
+
+    /**
+     * Stamp a half-flatbed by placing the FLATBED's NBT template (so
+     * authored bed designs are preserved) and erasing one half of the
+     * footprint. The half retained faces the inter-sub-level seam.
+     */
+    private static String stampHalfFlatbed(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
+        Optional<StructureTemplate> flatbedTemplate = CarriageTemplateStore.get(level, FLATBED_VARIANT, dims);
+        if (flatbedTemplate.isPresent()) {
+            stampTemplate(level, origin, flatbedTemplate.get());
+            eraseHalfFlatbedRemainder(level, origin, type, dims);
+            return "flatbed-cropped";
+        }
+        // No NBT for FLATBED — fall back to the legacy half-floor placement.
+        legacyPlaceAt(level, origin, type, dims);
+        return "legacy";
+    }
+
+    /**
+     * Erase the half of the carriage footprint that should be EMPTY for
+     * the given half-flatbed type — i.e. the side facing AWAY from the
+     * inter-sub-level seam. For HALF_FLATBED_BACK, the back half (low dx)
+     * faces the seam and is retained; the FRONT half (dx > length/2) is
+     * erased. Symmetric for HALF_FLATBED_FRONT.
+     */
+    private static void eraseHalfFlatbedRemainder(ServerLevel level, BlockPos origin, CarriageType type, CarriageDims dims) {
+        int mid = dims.length() / 2;
+        int dxFrom, dxTo;
+        if (type == CarriageType.HALF_FLATBED_BACK) {
+            // Retain dx ≤ mid (back half + middle); erase dx > mid (front half).
+            dxFrom = mid + 1;
+            dxTo = dims.length() - 1;
+        } else {
+            // HALF_FLATBED_FRONT: retain dx ≥ mid; erase dx < mid (back half).
+            dxFrom = 0;
+            dxTo = mid - 1;
+        }
+        if (dxFrom > dxTo) return; // dims.length()=1 edge case
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = dxFrom; dx <= dxTo; dx++) {
+            for (int dz = 0; dz < dims.width(); dz++) {
+                for (int dy = 0; dy < dims.height(); dy++) {
+                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                }
+            }
+        }
     }
 
     /**
