@@ -1430,10 +1430,10 @@ public final class EditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BlockPos pos = player.blockPosition();
 
-        // Parts plots sit past the contents row's max-width footprint
-        // (Z = 2*MAX_WIDTH + 2*GAP, same baseline as TrackSidePlots) —
-        // check first so a part name resolution beats the (unrelated)
-        // carriage plot lookup if the player wandered between rows.
+        // Parts plots sit at Y=400 — separated from every other editor
+        // region (Y=250) so plot queries can't cross-claim. Check first
+        // so a part name resolution beats the (unrelated) carriage plot
+        // lookup if the player wandered between rows.
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
         if (partLoc != null) {
             try {

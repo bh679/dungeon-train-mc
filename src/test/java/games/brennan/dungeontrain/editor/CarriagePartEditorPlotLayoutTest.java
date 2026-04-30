@@ -18,14 +18,17 @@ import static org.junit.jupiter.api.Assertions.fail;
  * {@code dev/parts-content-bleed-fix} bug — content blocks (barrels,
  * 2ndlevel platforms) appearing inside the FLOOR parts editor's air column.
  *
- * <p>Both editors paint at {@code Y=250} but only parts {@code eraseAt}
- * clears the kind's exact footprint Y range; for FLOOR that is
- * {@code Y=250} only. If a contents plot AABB intersects a parts plot
- * AABB anywhere, content interior blocks at {@code Y>=251} survive a parts
- * editor enter and are visible to the author.</p>
+ * <p>Original bug: parts shared {@code Y=250} with carriages, contents,
+ * and tracks. {@code CarriagePartTemplate.eraseAt} only clears the kind's
+ * exact footprint Y range (FLOOR = {@code Y=250} only), so content
+ * interior blocks at {@code Y>=251} survived a parts-editor enter and
+ * were visible inside the FLOOR plot's air column.</p>
  *
- * <p>This test asserts no intersection at default and max dims, with a
- * representative set of registered parts and contents.</p>
+ * <p>Fix: parts moved to {@code Y=400}. The Y separation makes overlap
+ * with any other editor plot (all at {@code Y~250..283}) impossible. This
+ * test asserts the AABB-disjointness invariant at min/default/max dims so
+ * any future change that brings parts back down into the 250-range will
+ * fail the test before it reaches a player.</p>
  */
 final class CarriagePartEditorPlotLayoutTest {
 
