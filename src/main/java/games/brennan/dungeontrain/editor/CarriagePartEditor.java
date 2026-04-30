@@ -63,13 +63,20 @@ public final class CarriagePartEditor {
     private static final int PLOT_Y = 250;
 
     /**
-     * First Z row — puts the FLOOR grid at the same Z the TRACKS-category
-     * pillar row uses ({@code Z=40}). Categories clear each other's plots on
-     * switch, so there's no coexistence conflict; the closer placement keeps
-     * the parts grid inside the author's field of view when they enter
-     * CARRIAGES.
+     * First Z row — placed past the contents row's max-width footprint plus
+     * a {@link EditorLayout#GAP}-block buffer. Without this clearance the
+     * FLOOR row would overlap the contents row at {@code Z=37+}: entering
+     * a FLOOR plot via {@code /dt editor part enter floor <name>} only
+     * erases the FLOOR's {@code Y=250} layer, so contents-interior blocks
+     * at {@code Y>=251} from a prior CONTENTS-category visit remain visible
+     * above the floor (e.g. barrels appearing on top of {@code floor:wood}).
+     *
+     * <p>Same formula as {@link TrackSidePlots#Z_BASELINE} — categories
+     * clear each other's plots on switch, so parts and tracks/pillars
+     * sharing this baseline never coexist in the world.</p>
      */
-    private static final int FIRST_PLOT_Z = 40;
+    private static final int FIRST_PLOT_Z =
+        2 * CarriageDims.MAX_WIDTH + 2 * EditorLayout.GAP;
 
     /**
      * Block gap between consecutive plot footprints on both X (name slots
