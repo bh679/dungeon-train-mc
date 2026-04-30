@@ -401,11 +401,21 @@ public final class CarriageTemplate {
 
     /**
      * Place a half-flatbed pad at world {@code origin}, occupying
-     * {@code halfPadLen × dims.height() × dims.width()} blocks.
+     * {@code halfPadLen × dims.height() × dims.width()} blocks at world
+     * X range {@code [origin.x, origin.x + halfPadLen - 1]}.
      * {@link HalfPadSide#BACK} stamps the half-template as-is;
      * {@link HalfPadSide#FRONT} stamps it with {@link Mirror#FRONT_BACK}
      * (X-axis mirror) so the two pads are visual mirrors of each other
      * across each sub-level's interior.
+     *
+     * <p>{@code Mirror.FRONT_BACK} negates template-local X relative to
+     * the stamp pivot, so a naive {@code placeInWorld(origin, origin, …)}
+     * with mirror would land blocks at world X ∈ {@code [origin.x − padLen + 1, origin.x]}
+     * (extending BACKWARDS from origin, overlapping the previous enclosed
+     * carriage). To keep the FRONT pad's footprint at
+     * {@code [origin.x, origin.x + padLen - 1]}, the stamp position is
+     * pre-shifted by {@code padLen − 1} on X (same trick as
+     * {@link games.brennan.dungeontrain.tunnel.TunnelTemplate#placePortalNamed}).</p>
      *
      * <p>If FLATBED has no NBT, falls back to a hardcoded stone-bricks
      * floor over the pad footprint via {@link #legacyHalfFlatbedFloor}.</p>
@@ -418,12 +428,28 @@ public final class CarriageTemplate {
         Optional<StructureTemplate> halfTemplate = getOrBuildHalfFlatbedTemplate(level, dims);
         if (halfTemplate.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            if (side == HalfPadSide.FRONT) settings.setMirror(Mirror.FRONT_BACK);
-            halfTemplate.get().placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+            BlockPos stampOrigin;
+            if (side == HalfPadSide.FRONT) {
+                settings.setMirror(Mirror.FRONT_BACK);
+                // Shift the stamp pivot to origin + padLen - 1 so that
+                // Mirror.FRONT_BACK's negation of local-x lands the
+                // template's blocks at world X ∈ [origin.x, origin.x + padLen - 1]
+                // instead of [origin.x - padLen + 1, origin.x].
+                stampOrigin = origin.offset(padLen - 1, 0, 0);
+            } else {
+                stampOrigin = origin;
+            }
+            halfTemplate.get().placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), 3);
         } else {
             legacyHalfFlatbedFloor(level, origin, padLen, dims);
         }
-        return collectHalfPadFootprint(level, origin, padLen, dims);
+        Set<BlockPos> placed = collectHalfPadFootprint(level, origin, padLen, dims);
+        LOGGER.debug("[DungeonTrain] Placed half-flatbed pad side={} origin={} padLen={} expectedExtent=[{}, {}]x[y,y+{}]x[z,z+{}] blocks={}",
+            side, origin, padLen,
+            origin.getX(), origin.getX() + padLen - 1,
+            dims.height() - 1, dims.width() - 1,
+            placed.size());
+        return placed;
     }
 
     private static void legacyHalfFlatbedFloor(ServerLevel level, BlockPos origin, int padLen, CarriageDims dims) {
