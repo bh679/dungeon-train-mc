@@ -2,9 +2,10 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 
 import java.util.Set;
 import java.util.UUID;
@@ -22,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link PlayerEvent.PlayerLoggedOutEvent} hook below — otherwise a stuck-down
  * key on disconnect would leave the player flagged forever.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantHotkeyState {
 
     private static final Set<UUID> HELD = ConcurrentHashMap.newKeySet();

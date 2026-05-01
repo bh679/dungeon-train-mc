@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server → client: update the editor status HUD bar with the player's current
@@ -44,10 +44,19 @@ import java.util.function.Supplier;
  * to {@code true} for the empty clear packet so a stale HUD never shows
  * "menu disabled" out-of-context.</p>
  */
-public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode, int weight, boolean partMenuEnabled) {
+public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode, int weight, boolean partMenuEnabled) implements CustomPacketPayload {
 
     /** Sentinel for "weight is not applicable to this model". */
     public static final int NO_WEIGHT = -1;
+
+    public static final Type<EditorStatusPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"));
+
+    public static final StreamCodec<FriendlyByteBuf, EditorStatusPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            EditorStatusPacket::decode
+        );
 
     public static EditorStatusPacket empty() {
         return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT, true);
@@ -74,10 +83,14 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         return new EditorStatusPacket(c, m, id, name, d, w, pme);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () -> EditorStatusHudOverlay.setStatus(category, model, modelId, modelName, devmode, weight, partMenuEnabled)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(EditorStatusPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() -> EditorStatusHudOverlay.setStatus(
+            packet.category, packet.model, packet.modelId, packet.modelName,
+            packet.devmode, packet.weight, packet.partMenuEnabled));
     }
 }

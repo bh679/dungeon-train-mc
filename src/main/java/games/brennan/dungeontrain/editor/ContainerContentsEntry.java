@@ -20,7 +20,7 @@ import net.minecraft.world.item.Items;
  */
 public record ContainerContentsEntry(ResourceLocation itemId, int count, int weight) {
 
-    public static final ResourceLocation AIR_ID = new ResourceLocation("minecraft", "air");
+    public static final ResourceLocation AIR_ID = ResourceLocation.fromNamespaceAndPath("minecraft", "air");
 
     public ContainerContentsEntry {
         if (itemId == null) throw new IllegalArgumentException("itemId");

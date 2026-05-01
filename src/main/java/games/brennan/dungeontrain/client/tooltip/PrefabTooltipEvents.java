@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -12,12 +13,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
-import net.minecraftforge.client.event.RenderTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +48,8 @@ public final class PrefabTooltipEvents {
 
     private PrefabTooltipEvents() {}
 
-    @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID,
-        bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = DungeonTrain.MOD_ID,
+        bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static final class ModBus {
 
         private ModBus() {}
@@ -58,8 +60,8 @@ public final class PrefabTooltipEvents {
         }
     }
 
-    @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID,
-        bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = DungeonTrain.MOD_ID,
+        value = Dist.CLIENT)
     public static final class ForgeBus {
 
         private ForgeBus() {}
@@ -68,8 +70,9 @@ public final class PrefabTooltipEvents {
         public static void onGatherComponents(RenderTooltipEvent.GatherComponents event) {
             ItemStack stack = event.getItemStack();
             if (stack.isEmpty()) return;
-            CompoundTag tag = stack.getTag();
-            if (tag == null) return;
+            CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+            if (cd == null) return;
+            CompoundTag tag = cd.copyTag();
 
             PrefabIconsTooltipData data = null;
             if (tag.contains(PrefabUseHandler.NBT_BV_PREFAB_ID, Tag.TAG_STRING)) {
@@ -141,7 +144,7 @@ public final class PrefabTooltipEvents {
         Item item = BuiltInRegistries.ITEM.get(rl);
         if (item == null || item == Items.AIR) return ItemStack.EMPTY;
         ItemStack stack = new ItemStack(item);
-        stack.setCount(Math.max(1, Math.min(count, item.getMaxStackSize())));
+        stack.setCount(Math.max(1, Math.min(count, stack.getMaxStackSize())));
         return stack;
     }
 }

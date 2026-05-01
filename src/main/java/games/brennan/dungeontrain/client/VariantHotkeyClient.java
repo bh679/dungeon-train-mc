@@ -8,12 +8,13 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.VariantHotkeyPacket;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 
 /**
  * Client-side keymap + tick watcher for the "variant place" key (default
@@ -34,7 +35,7 @@ import net.minecraftforge.fml.common.Mod;
  * the press. Disambiguates "I tapped Z to open the menu" from "I held Z
  * and right-clicked to add a block."</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VariantHotkeyClient {
 
     public static final String CATEGORY = "key.categories." + DungeonTrain.MOD_ID;
@@ -72,13 +73,12 @@ public final class VariantHotkeyClient {
      * Forge bus listener — subscribed via the FORGE bus separately so it ticks
      * during the client game loop (not just during mod init).
      */
-    @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class TickWatcher {
         private static long tick;
 
         @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase != TickEvent.Phase.END) return;
+        public static void onClientTick(ClientTickEvent.Post event) {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
                     || !EditorStatusHudOverlay.isActive()) {

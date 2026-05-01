@@ -4,16 +4,16 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
-import net.minecraftforge.client.gui.overlay.IGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -33,9 +33,8 @@ import java.util.List;
  * on {@code ctx.enqueueWork()} which lands on the client main thread, same
  * thread the overlay runs on — no synchronisation needed.</p>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.MOD,
     value = Dist.CLIENT
 )
 public final class VariantHoverHudOverlay {
@@ -83,15 +82,15 @@ public final class VariantHoverHudOverlay {
     }
 
     @SubscribeEvent
-    public static void onRegisterGuiOverlays(RegisterGuiOverlaysEvent event) {
-        IGuiOverlay overlay = (gui, graphics, partialTick, screenWidth, screenHeight) -> {
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.options.hideGui) return;
             List<ItemStack> stacks = hoverStacks;
             if (stacks.isEmpty()) return;
-            drawIconRow(graphics, stacks, screenWidth, screenHeight);
+            drawIconRow(graphics, stacks, graphics.guiWidth(), graphics.guiHeight());
         };
-        event.registerAboveAll("variant_hover", overlay);
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "variant_hover"), overlay);
         LOGGER.info("Variant hover HUD overlay registered");
     }
 

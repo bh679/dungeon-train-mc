@@ -2,15 +2,15 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * Mod-side item registry. Wires up custom items via the mod-event bus during
@@ -26,13 +26,12 @@ import net.minecraftforge.registries.RegistryObject;
  * TOOLS_AND_UTILITIES tab via {@link BuildCreativeModeTabContentsEvent} so
  * authors can grab a blank clipboard for testing.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class ModItems {
 
-    public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(
-        ForgeRegistries.ITEMS, DungeonTrain.MOD_ID);
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(DungeonTrain.MOD_ID);
 
-    public static final RegistryObject<Item> VARIANT_CLIPBOARD = ITEMS.register(
+    public static final DeferredItem<Item> VARIANT_CLIPBOARD = ITEMS.register(
         "variant_clipboard",
         () -> new VariantClipboardItem(new Item.Properties().stacksTo(1))
     );

@@ -11,7 +11,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -99,7 +99,7 @@ public final class CarriagePartTemplateStore {
         Files.createDirectories(dir);
         Path file = fileFor(kind, name);
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         CACHE.put(key(kind, name), Optional.of(template));
         LOGGER.info("[DungeonTrain] Saved part template {}:{} to {}", kind.id(), name, file);
     }
@@ -111,7 +111,7 @@ public final class CarriagePartTemplateStore {
         Path file = sourceFileFor(kind, name);
         Files.createDirectories(file.getParent());
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled part template {}:{} to {}", kind.id(), name, file);
     }
 
@@ -156,7 +156,7 @@ public final class CarriagePartTemplateStore {
         Path file = fileFor(kind, name);
         if (!Files.isRegularFile(file)) return Optional.empty();
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read config part template {}:{} at {}: {}",
@@ -171,7 +171,7 @@ public final class CarriagePartTemplateStore {
         String resource = RESOURCE_PREFIX + kind.id() + "/" + name + EXT;
         try (InputStream in = CarriagePartTemplateStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in);
+            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled part template {}: {}",

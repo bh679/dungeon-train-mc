@@ -4,19 +4,21 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * Custom {@link CreativeModeTab}s for prefab browsing. Each tab is populated
@@ -32,7 +34,7 @@ public final class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(
         Registries.CREATIVE_MODE_TAB, DungeonTrain.MOD_ID);
 
-    public static final RegistryObject<CreativeModeTab> PREFAB_VARIANTS = TABS.register(
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_VARIANTS = TABS.register(
         "prefab_variants",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.variants"))
@@ -48,7 +50,7 @@ public final class ModCreativeTabs {
             .build()
     );
 
-    public static final RegistryObject<CreativeModeTab> PREFAB_LOOT = TABS.register(
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_LOOT = TABS.register(
         "prefab_loot",
         () -> CreativeModeTab.builder()
             .title(Component.translatable("gui.dungeontrain.prefab_tab.loot"))
@@ -94,7 +96,7 @@ public final class ModCreativeTabs {
         CompoundTag tag = new CompoundTag();
         tag.putString(nbtKey, prefabId);
         if (!committed) tag.putBoolean(PrefabUseHandler.NBT_PREFAB_UNCOMMITTED, true);
-        stack.setTag(tag);
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         return stack;
     }
 }

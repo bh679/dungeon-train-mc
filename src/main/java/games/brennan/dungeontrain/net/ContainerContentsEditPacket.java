@@ -1,12 +1,15 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Client → server: mutate the container-contents pool at
@@ -25,9 +28,18 @@ import java.util.function.Supplier;
  * <p>Server validates OP + plot membership before mutating.</p>
  */
 public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
-                                          int entryIndex, String itemId, int delta) {
+                                          int entryIndex, String itemId, int delta) implements CustomPacketPayload {
 
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX }
+
+    public static final Type<ContainerContentsEditPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "container_contents_edit"));
+
+    public static final StreamCodec<FriendlyByteBuf, ContainerContentsEditPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            ContainerContentsEditPacket::decode
+        );
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeByte(op.ordinal());
@@ -51,13 +63,17 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         return new ContainerContentsEditPacket(op, key, local, idx, itemId, delta);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(ContainerContentsEditPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayer sender = ctx.getSender();
-            if (sender == null) return;
-            ContainerContentsMenuController.applyEdit(sender, this);
+            Player p = ctx.player();
+            if (p instanceof ServerPlayer sender) {
+                ContainerContentsMenuController.applyEdit(sender, packet);
+            }
         });
-        ctx.setPacketHandled(true);
     }
 }

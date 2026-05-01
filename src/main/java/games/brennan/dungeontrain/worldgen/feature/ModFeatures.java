@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * Mod-side worldgen-feature registry. Mirrors the
@@ -26,9 +26,9 @@ import net.minecraftforge.registries.RegistryObject;
 public final class ModFeatures {
 
     public static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(
-        ForgeRegistries.FEATURES, DungeonTrain.MOD_ID);
+        Registries.FEATURE, DungeonTrain.MOD_ID);
 
-    public static final RegistryObject<Feature<NoneFeatureConfiguration>> TRACK_BED = FEATURES.register(
+    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> TRACK_BED = FEATURES.register(
         "track_bed",
         TrackBedFeature::new
     );

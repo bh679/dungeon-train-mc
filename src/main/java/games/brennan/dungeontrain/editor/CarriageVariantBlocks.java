@@ -171,7 +171,7 @@ public final class CarriageVariantBlocks {
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
     public static Path configPathFor(CarriageVariant variant) {
-        return net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(variant.id() + EXT);
+        return net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(variant.id() + EXT);
     }
 
     /** Classpath resource for the bundled sidecar matching {@code variant} (only exists for shipped variants). */
@@ -181,7 +181,7 @@ public final class CarriageVariantBlocks {
 
     /** Source-tree path for the bundled sidecar — only writable in a {@code ./gradlew runClient} dev checkout. */
     public static Path sourcePathFor(CarriageType type) {
-        Path gameDir = net.minecraftforge.fml.loading.FMLPaths.GAMEDIR.get();
+        Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
         Path projectRoot = gameDir.getParent();
         if (projectRoot == null) {
             throw new IllegalStateException("Cannot resolve source directory — FMLPaths.GAMEDIR has no parent.");
@@ -669,9 +669,9 @@ public final class CarriageVariantBlocks {
 
     /** Rename the config-dir sidecar from {@code sourceId} to {@code targetId}. No-op if source missing. */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
-        Path src = net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get()
+        Path src = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get()
             .resolve(SUBDIR).resolve(sourceId + EXT);
-        Path dst = net.minecraftforge.fml.loading.FMLPaths.CONFIGDIR.get()
+        Path dst = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get()
             .resolve(SUBDIR).resolve(targetId + EXT);
         if (!Files.isRegularFile(src)) return false;
         Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);

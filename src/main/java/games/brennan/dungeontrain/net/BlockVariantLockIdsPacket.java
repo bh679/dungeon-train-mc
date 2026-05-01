@@ -1,15 +1,16 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Server → client snapshot of every locked cell ({@code lockId > 0}) in the
@@ -31,10 +32,19 @@ public record BlockVariantLockIdsPacket(
     String plotKey,
     BlockPos plotOriginWorldPos,
     List<Entry> entries
-) {
+) implements CustomPacketPayload {
 
     /** A single locked cell — local position plus the lock-id digit to render. */
     public record Entry(BlockPos localPos, int lockId) {}
+
+    public static final Type<BlockVariantLockIdsPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_lock_ids"));
+
+    public static final StreamCodec<FriendlyByteBuf, BlockVariantLockIdsPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            BlockVariantLockIdsPacket::decode
+        );
 
     public static BlockVariantLockIdsPacket empty() {
         return new BlockVariantLockIdsPacket("", BlockPos.ZERO, Collections.emptyList());
@@ -76,11 +86,13 @@ public record BlockVariantLockIdsPacket(
         return new BlockVariantLockIdsPacket(key, origin, out);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () ->
-                games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantLockIdRenderer.applySnapshot(this)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(BlockVariantLockIdsPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() ->
+            games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantLockIdRenderer.applySnapshot(packet));
     }
 }

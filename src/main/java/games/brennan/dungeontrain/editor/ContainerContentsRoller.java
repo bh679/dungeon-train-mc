@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.Container;
@@ -60,7 +61,8 @@ public final class ContainerContentsRoller {
     @Nullable
     public static CompoundTag roll(ContainerContentsPool pool, BlockState state,
                                    BlockPos localPos, long worldSeed, int carriageIndex,
-                                   @Nullable CompoundTag baseNbt) {
+                                   @Nullable CompoundTag baseNbt,
+                                   HolderLookup.Provider registries) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
         int totalWeight = pool.totalWeight();
@@ -72,7 +74,7 @@ public final class ContainerContentsRoller {
         int slots = nativeContainerSlots(state);
         if (slots <= 0) {
             if (isDecoratedPot(state)) {
-                return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, baseNbt);
+                return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, baseNbt, registries);
             }
             return baseNbt;
         }
@@ -230,7 +232,8 @@ public final class ContainerContentsRoller {
      */
     private static CompoundTag rollDecoratedPot(ContainerContentsPool pool, int totalWeight,
                                                 BlockPos localPos, long worldSeed, int carriageIndex,
-                                                @Nullable CompoundTag baseNbt) {
+                                                @Nullable CompoundTag baseNbt,
+                                                HolderLookup.Provider registries) {
         int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
             ? 1 : Math.min(pool.fillMax(), 1);
         int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
@@ -246,12 +249,13 @@ public final class ContainerContentsRoller {
         if (item == null) return out;
 
         int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
-        ItemStack stack = new ItemStack(item, Math.max(1, Math.min(item.getMaxStackSize(), rolledCount)));
-        CompoundTag stackTag = new CompoundTag();
-        stack.save(stackTag);
+        ItemStack stack = new ItemStack(item, Math.max(1, Math.min(stack0(item).getMaxStackSize(), rolledCount)));
+        CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         out.put(NBT_POT_LOOT, stackTag);
         return out;
     }
+
+    private static ItemStack stack0(Item item) { return new ItemStack(item); }
 
     @Nullable
     private static BlockEntityType<?> beTypeFor(BlockState state) {

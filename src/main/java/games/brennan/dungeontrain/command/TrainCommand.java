@@ -21,11 +21,14 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.ServerShip;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Registers OP-only (permission level 2) commands:
@@ -102,12 +105,12 @@ public final class TrainCommand {
 
         try {
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            ServerShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
+            ManagedShip ship = TrainAssembler.spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims);
             int lengthBlocks = count * dims.length();
             LOGGER.info("[DungeonTrain] Spawned train ship id={} carriages={} length={} blocks",
-                ship.getId(), count, lengthBlocks);
+                ship.id(), count, lengthBlocks);
             source.sendSuccess(() -> Component.literal(
-                "Spawned " + count + "-carriage train (ship id " + ship.getId() + ", length "
+                "Spawned " + count + "-carriage train (ship id " + ship.id() + ", length "
                     + lengthBlocks + " blocks) at " + origin + ", velocity +X " + speed + " m/s"
             ), true);
             return 1;
@@ -124,42 +127,36 @@ public final class TrainCommand {
         DungeonTrainConfig.setSpeed(value);
 
         MinecraftServer server = source.getServer();
-        int updated = 0;
+        Set<UUID> updatedTrainIds = new HashSet<>();
         for (ServerLevel level : server.getAllLevels()) {
             List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
             for (TrainTransformProvider p : providers) {
                 p.setTargetVelocity(new Vector3d(value, 0.0, 0.0));
-                updated++;
+                updatedTrainIds.add(p.getTrainId());
             }
         }
 
-        final int count = updated;
-        LOGGER.info("[DungeonTrain] /dungeontrain speed {} — updated {} active trains", value, count);
+        final int trainCount = updatedTrainIds.size();
+        LOGGER.info("[DungeonTrain] /dungeontrain speed {} — updated {} active train(s)", value, trainCount);
         source.sendSuccess(() -> Component.literal(
-            "Train speed set to " + value + " m/s (" + count + " active train"
-                + (count == 1 ? "" : "s") + " updated)"
+            "Train speed set to " + value + " m/s (" + trainCount + " active train"
+                + (trainCount == 1 ? "" : "s") + " updated)"
         ), true);
         return 1;
     }
 
     private static int runCarriages(CommandSourceStack source, int count) {
+        // Per-carriage architecture: count is a config-only knob that
+        // controls the appender's halfBack / halfFront window. New
+        // carriages spawn on demand as the player advances; existing
+        // carriages keep their pIdx and stay in place.
         DungeonTrainConfig.setNumCarriages(count);
 
-        MinecraftServer server = source.getServer();
-        int updated = 0;
-        for (ServerLevel level : server.getAllLevels()) {
-            List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
-            for (TrainTransformProvider p : providers) {
-                p.setCount(count);
-                updated++;
-            }
-        }
-
-        final int activeUpdated = updated;
-        LOGGER.info("[DungeonTrain] /dungeontrain carriages {} — updated {} active trains", count, activeUpdated);
+        LOGGER.info("[DungeonTrain] /dungeontrain carriages {} — updated config; appender will respect new window on next tick", count);
         source.sendSuccess(() -> Component.literal(
-            "Default carriages set to " + count + " (" + activeUpdated + " active train"
-                + (activeUpdated == 1 ? "" : "s") + " updated)"
+            "Default carriages set to " + count
+                + ". The appender will extend or trim its needed window on the next tick "
+                + "as the player crosses pIdx boundaries."
         ), true);
         return 1;
     }

@@ -12,10 +12,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.arguments.blocks.BlockStateParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -108,7 +110,7 @@ public final class VariantClipboardItem extends Item {
         }
 
         ItemStack stack = ctx.getItemInHand();
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = readClipboardTag(stack);
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
@@ -137,7 +139,7 @@ public final class VariantClipboardItem extends Item {
                 merged.putInt("x", placePos.getX());
                 merged.putInt("y", placePos.getY());
                 merged.putInt("z", placePos.getZ());
-                be.load(merged);
+                be.loadWithComponents(merged, serverLevel.registryAccess());
                 be.setChanged();
             }
         }
@@ -240,6 +242,22 @@ public final class VariantClipboardItem extends Item {
         return out;
     }
 
+    /**
+     * Read the clipboard tag from {@link DataComponents#CUSTOM_DATA}. Returns
+     * {@code null} for stacks without our component (fresh creative-tab pulls)
+     * so the existing decode helpers preserve their "absent → empty list"
+     * contract.
+     */
+    public static @Nullable CompoundTag readClipboardTag(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        return (data == null || data.isEmpty()) ? null : data.copyTag();
+    }
+
+    /** Write the clipboard tag into {@link DataComponents#CUSTOM_DATA}. */
+    public static void writeClipboardTag(ItemStack stack, CompoundTag tag) {
+        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    }
+
     /** Decode the cell lock-id from an ItemStack's NBT. Returns 0 when absent. */
     public static int decodeLockId(@Nullable CompoundTag tag) {
         if (tag == null || !tag.contains(NBT_LOCK_ID, Tag.TAG_INT)) return 0;
@@ -255,8 +273,9 @@ public final class VariantClipboardItem extends Item {
 
     @Override
     public Component getName(ItemStack stack) {
-        List<VariantState> states = decodeStates(stack.getTag());
-        int lockId = decodeLockId(stack.getTag());
+        CompoundTag tag = readClipboardTag(stack);
+        List<VariantState> states = decodeStates(tag);
+        int lockId = decodeLockId(tag);
         if (states.isEmpty()) return super.getName(stack);
         String suffix = lockId > 0
             ? " (" + states.size() + ", lock " + lockId + ")"

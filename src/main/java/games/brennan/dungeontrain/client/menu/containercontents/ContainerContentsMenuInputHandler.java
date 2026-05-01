@@ -8,13 +8,13 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -33,9 +33,8 @@ import java.util.List;
  *   <li>Click X (close) — close menu.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class ContainerContentsMenuInputHandler {
@@ -96,8 +95,7 @@ public final class ContainerContentsMenuInputHandler {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof ContainerContentsSearchScreen
             && (!ContainerContentsMenu.isActive()
@@ -134,7 +132,7 @@ public final class ContainerContentsMenuInputHandler {
         if (local == null) return;
         String plotKey = ContainerContentsMenu.plotKey();
         switch (hit.kind()) {
-            case ADD -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+            case ADD -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 // Empty itemId signals "use main-hand item" — server captures
                 // the held stack's item + count. Mirrors the block-variant
                 // ADD behaviour: hold an item, click Add.
@@ -145,32 +143,32 @@ public final class ContainerContentsMenuInputHandler {
                     local));
             case FILL_MIN -> {
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_FILL_MIN, plotKey, local, -1, "", delta));
             }
             case FILL_MAX -> {
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_FILL_MAX, plotKey, local, -1, "", delta));
             }
-            case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+            case CLEAR -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.CLEAR, plotKey, local, -1, "", 0));
-            case CLOSE -> DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsMenuTogglePacket(false));
+            case CLOSE -> DungeonTrainNet.sendToServer(new ContainerContentsMenuTogglePacket(false));
             case ENTRY_COUNT_PLUS -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_COUNT, plotKey, local, hit.index(), "", delta));
             }
             case ENTRY_WEIGHT_PLUS -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_WEIGHT, plotKey, local, hit.index(), "", delta));
             }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.REMOVE, plotKey, local, hit.index(), "", 0));
             }
             default -> {}
@@ -187,7 +185,7 @@ public final class ContainerContentsMenuInputHandler {
             case SEARCH_RESULT -> {
                 List<String> filtered = ContainerContentsMenu.filteredItemIds();
                 if (hit.index() < 0 || hit.index() >= filtered.size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new ContainerContentsEditPacket(
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.ADD, plotKey, local, -1, filtered.get(hit.index()), 0));
                 ContainerContentsMenu.backToRoot();
             }

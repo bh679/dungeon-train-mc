@@ -1,6 +1,6 @@
 {
-  "type": "forge:add_features",
-  "biomes": "#minecraft:is_nether",
+  "type": "neoforge:add_features",
+  "biomes": "#minecraft:is_overworld",
   "features": "dungeontrain:track_bed",
   "step": "top_layer_modification"
 }

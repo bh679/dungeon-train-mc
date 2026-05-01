@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
@@ -13,25 +14,36 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 /**
  * C→S: save the loot pool at {@code localPos} in the player's current
  * editor plot as a named loot prefab. Counterpart to
  * {@link SaveBlockVariantPrefabPacket} for the C-key menu's Save button.
  */
-public record SaveLootPrefabPacket(BlockPos localPos, String name) {
+public record SaveLootPrefabPacket(BlockPos localPos, String name) implements CustomPacketPayload {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    public static final Type<SaveLootPrefabPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "save_loot_prefab"));
+
+    public static final StreamCodec<FriendlyByteBuf, SaveLootPrefabPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            SaveLootPrefabPacket::decode
+        );
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeBlockPos(localPos);
@@ -44,17 +56,21 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
         return new SaveLootPrefabPacket(pos, n);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(SaveLootPrefabPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayer player = ctx.getSender();
-            if (player == null) return;
+            Player p = ctx.player();
+            if (!(p instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(2)) {
                 actionBar(player, "Save requires OP", ChatFormatting.RED);
                 return;
             }
-            if (!LootPrefabStore.isValidName(name)) {
-                actionBar(player, "Invalid name '" + name + "' (a-z, 0-9, _, 1-32 chars)",
+            if (!LootPrefabStore.isValidName(packet.name())) {
+                actionBar(player, "Invalid name '" + packet.name() + "' (a-z, 0-9, _, 1-32 chars)",
                     ChatFormatting.RED);
                 return;
             }
@@ -66,23 +82,19 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
                 return;
             }
             ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
-            ContainerContentsPool pool = store.poolAt(localPos);
+            ContainerContentsPool pool = store.poolAt(packet.localPos());
             if (pool.isEmpty()) {
                 actionBar(player, "No loot at this container", ChatFormatting.YELLOW);
                 return;
             }
-            // Capture the container block at this cell so the prefab can
-            // place the matching block (chest / barrel / dispenser) when
-            // selected from the creative tab. Falls back to chest if the
-            // block isn't a registered container.
-            BlockPos worldPos = plot.origin().offset(localPos);
+            BlockPos worldPos = plot.origin().offset(packet.localPos());
             BlockState targetState = level.getBlockState(worldPos);
             ResourceLocation sourceBlock = BuiltInRegistries.BLOCK.getKey(targetState.getBlock());
             try {
-                boolean isNew = LootPrefabStore.save(name, pool, sourceBlock);
-                String suffix = writeToSourceTreeIfDevMode(name, pool, sourceBlock);
+                boolean isNew = LootPrefabStore.save(packet.name(), pool, sourceBlock);
+                String suffix = writeToSourceTreeIfDevMode(packet.name(), pool, sourceBlock);
                 actionBar(player,
-                    (isNew ? "Saved loot '" : "Overwrote loot '") + name + "'" + suffix,
+                    (isNew ? "Saved loot '" : "Overwrote loot '") + packet.name() + "'" + suffix,
                     ChatFormatting.GREEN);
                 broadcastSync();
             } catch (IOException e) {
@@ -91,15 +103,8 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
                     ChatFormatting.RED);
             }
         });
-        ctx.setPacketHandled(true);
     }
 
-    /**
-     * If dev mode is on and the source tree is reachable, also write the
-     * prefab JSON into {@code src/main/resources/data/dungeontrain/prefabs/loot}
-     * so the next git commit picks it up. Source-write failures are logged but
-     * never escalated — the config-dir save already succeeded.
-     */
     private static String writeToSourceTreeIfDevMode(String name, ContainerContentsPool pool, ResourceLocation sourceBlock) {
         if (!EditorDevMode.isEnabled()) return "";
         if (!LootPrefabStore.sourceTreeAvailable()) return " (no src tree)";
@@ -117,7 +122,6 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) {
     }
 
     private static void broadcastSync() {
-        PrefabRegistrySyncPacket pkt = PrefabRegistrySyncPacket.fromRegistries();
-        DungeonTrainNet.CHANNEL.send(PacketDistributor.ALL.noArg(), pkt);
+        PacketDistributor.sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
     }
 }

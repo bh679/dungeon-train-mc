@@ -250,7 +250,8 @@ public final class BlockVariantMenuController {
                     return;
                 } else {
                     capturedState = blockItem.getBlock().defaultBlockState();
-                    itemBeNbt = BlockItem.getBlockEntityData(held);
+                    net.minecraft.world.item.component.CustomData heldData = held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+                    itemBeNbt = heldData == null ? null : heldData.copyTag();
                 }
                 VariantState newVariant = new VariantState(capturedState, itemBeNbt, 1);
 
@@ -478,7 +479,7 @@ public final class BlockVariantMenuController {
         int lockId = plot.lockIdAt(localPos);
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
         CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId);
-        stack.setTag(tag);
+        VariantClipboardItem.writeClipboardTag(stack, tag);
         boolean placed = player.getInventory().add(stack);
         if (!placed) player.drop(stack, false);
         String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
@@ -494,7 +495,7 @@ public final class BlockVariantMenuController {
         CompoundTag beNbt = null;
         if (baseState.hasBlockEntity()) {
             BlockEntity be = level.getBlockEntity(clicked);
-            if (be != null) beNbt = be.saveWithoutMetadata();
+            if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
         return new VariantState(baseState, beNbt);
     }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
@@ -7,16 +8,15 @@ import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 /**
  * Server → client: snapshot of the named prefab libraries at login time.
@@ -41,7 +41,7 @@ import java.util.function.Supplier;
  * connected players see new entries (and updated icon-grid contents)
  * immediately.</p>
  */
-public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEntry> loot) {
+public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEntry> loot) implements CustomPacketPayload {
 
     /** Variant prefab tab entry — full block list used by the icon-grid tooltip. */
     public record VariantEntry(String id, String iconBlockId, boolean committed, List<String> blockIds) {
@@ -59,6 +59,15 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
 
     /** One entry in a loot prefab — flattened to (itemId, count) for wire stability. */
     public record LootItem(String itemId, int count) {}
+
+    public static final Type<PrefabRegistrySyncPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "prefab_registry_sync"));
+
+    public static final StreamCodec<FriendlyByteBuf, PrefabRegistrySyncPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            PrefabRegistrySyncPacket::decode
+        );
 
     /**
      * Build the payload from the live server-side stores. Each prefab is
@@ -151,10 +160,12 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
         return new PrefabRegistrySyncPacket(variants, loot);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () -> PrefabTabState.applyRegistry(variants, loot)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(PrefabRegistrySyncPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() -> PrefabTabState.applyRegistry(packet.variants(), packet.loot()));
     }
 }

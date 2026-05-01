@@ -1,20 +1,20 @@
 package games.brennan.dungeontrain.net;
 
-import games.brennan.dungeontrain.train.CarriagePartAssignment;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * Server → client: the part-position world-space menu's current state.
@@ -40,7 +40,16 @@ public record PartAssignmentSyncPacket(
     Vec3 anchorRight,
     Vec3 anchorUp,
     List<String> registeredNames
-) {
+) implements CustomPacketPayload {
+
+    public static final Type<PartAssignmentSyncPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_assignment_sync"));
+
+    public static final StreamCodec<FriendlyByteBuf, PartAssignmentSyncPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            PartAssignmentSyncPacket::decode
+        );
 
     public static PartAssignmentSyncPacket empty() {
         return new PartAssignmentSyncPacket(
@@ -102,12 +111,14 @@ public record PartAssignmentSyncPacket(
         return new PartAssignmentSyncPacket(id, kind, entries, anchor, right, up, regs);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () ->
-                games.brennan.dungeontrain.client.menu.parts.PartPositionMenu.applySync(this)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(PartAssignmentSyncPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() ->
+            games.brennan.dungeontrain.client.menu.parts.PartPositionMenu.applySync(packet));
     }
 
     private static void writeVec3(FriendlyByteBuf buf, Vec3 v) {

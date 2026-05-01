@@ -6,10 +6,11 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -53,7 +54,7 @@ import java.util.TreeSet;
  * <p>Wired to {@link ServerStartingEvent} for the scan and
  * {@link ServerStoppedEvent} to release state between worlds.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CarriageVariantRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -61,7 +62,13 @@ public final class CarriageVariantRegistry {
     private static final List<CarriageVariant> BUILTINS;
     static {
         List<CarriageVariant> list = new ArrayList<>();
-        for (CarriageType t : CarriageType.values()) list.add(CarriageVariant.of(t));
+        // Half-flatbeds are no longer carriage variants — they're
+        // sub-level boundary pads placed directly by TrainAssembler via
+        // CarriageTemplate.placeHalfFlatbedPad (Gate B.2 pad refactor).
+        // Every CarriageType enum value is a valid mid-train carriage.
+        for (CarriageType t : CarriageType.values()) {
+            list.add(CarriageVariant.of(t));
+        }
         BUILTINS = List.copyOf(list);
     }
 

@@ -10,13 +10,14 @@ import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -36,9 +37,8 @@ import java.util.List;
  *       to it (it has its own handler), so this handler defers.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class PartPositionMenuInputHandler {
@@ -112,8 +112,7 @@ public final class PartPositionMenuInputHandler {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) return;
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         // Auto-dismiss the search typing screen if the underlying menu
         // is no longer on the ADD_SEARCH sub-screen — happens when the
@@ -163,37 +162,37 @@ public final class PartPositionMenuInputHandler {
                 // Keeps the click-release contract consistent: every action
                 // (typing focus included) requires its own deliberate click.
             case REMOVE -> PartPositionMenu.toggleRemoveMode();
-            case CLEAR -> DungeonTrainNet.CHANNEL.sendToServer(
+            case CLEAR -> DungeonTrainNet.sendToServer(
                 new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.CLEAR, variantId, kind, "", 0));
-            case CLOSE -> DungeonTrainNet.CHANNEL.sendToServer(new PartMenuTogglePacket(false));
+            case CLOSE -> DungeonTrainNet.sendToServer(new PartMenuTogglePacket(false));
             case ENTRY_WEIGHT -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
                 String name = entries.get(hit.index()).name();
                 int delta = shift ? -1 : 1;
-                DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.BUMP_WEIGHT, variantId, kind, name, delta));
             }
             case ENTRY_REMOVE_X -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
                 String name = entries.get(hit.index()).name();
-                DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.REMOVE, variantId, kind, name, 0));
             }
             case ENTRY_SIDE_MODE -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
                 String name = entries.get(hit.index()).name();
-                DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.CYCLE_SIDE_MODE, variantId, kind, name, 0));
             }
             case ENTRY_NAME -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
                 String name = entries.get(hit.index()).name();
-                DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.PREVIEW_ENTRY, variantId, kind, name, 0));
             }
             default -> {}
@@ -210,7 +209,7 @@ public final class PartPositionMenuInputHandler {
             case SEARCH_RESULT -> {
                 List<String> filtered = PartPositionMenu.filteredRegisteredNames();
                 if (hit.index() < 0 || hit.index() >= filtered.size()) return;
-                DungeonTrainNet.CHANNEL.sendToServer(new PartAssignmentEditPacket(
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.ADD, variantId, kind, filtered.get(hit.index()), 0));
                 PartPositionMenu.backToRoot();
             }

@@ -3,9 +3,11 @@ package games.brennan.dungeontrain.mixin.client;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,8 +43,9 @@ public abstract class AbstractContainerScreenPrefabTintMixin {
     private void dungeontrain$tintUncommittedPrefab(GuiGraphics g, Slot slot, CallbackInfo ci) {
         ItemStack stack = slot.getItem();
         if (stack.isEmpty()) return;
-        CompoundTag tag = stack.getTag();
-        if (tag == null) return;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null) return;
+        CompoundTag tag = cd.copyTag();
         if (!tag.getBoolean(PrefabUseHandler.NBT_PREFAB_UNCOMMITTED)) return;
         // Translucent yellow — visible behind the item icon without drowning it.
         g.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, 0x80FFC800);

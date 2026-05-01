@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.entity.DecoratedPotBlockEntity;
@@ -31,8 +32,8 @@ public abstract class DecoratedPotBlockEntityPotLootMixin {
     @Nullable
     private CompoundTag dungeontrain$potLoot;
 
-    @Inject(method = "load", at = @At("TAIL"))
-    private void dungeontrain$loadPotLoot(CompoundTag tag, CallbackInfo ci) {
+    @Inject(method = "loadAdditional", at = @At("TAIL"))
+    private void dungeontrain$loadPotLoot(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
         if (tag.contains(ContainerContentsRoller.NBT_POT_LOOT, Tag.TAG_COMPOUND)) {
             this.dungeontrain$potLoot = tag.getCompound(ContainerContentsRoller.NBT_POT_LOOT).copy();
         } else {
@@ -41,7 +42,7 @@ public abstract class DecoratedPotBlockEntityPotLootMixin {
     }
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
-    private void dungeontrain$savePotLoot(CompoundTag tag, CallbackInfo ci) {
+    private void dungeontrain$savePotLoot(CompoundTag tag, HolderLookup.Provider registries, CallbackInfo ci) {
         if (this.dungeontrain$potLoot != null && !this.dungeontrain$potLoot.isEmpty()) {
             tag.put(ContainerContentsRoller.NBT_POT_LOOT, this.dungeontrain$potLoot.copy());
         }

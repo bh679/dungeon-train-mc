@@ -13,10 +13,11 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -44,9 +45,8 @@ import java.util.List;
  *       the hovered sub-button.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class CommandMenuRenderer {
@@ -377,9 +377,9 @@ public final class CommandMenuRenderer {
         int b = argb & 0xFF;
         VertexConsumer vc = buffer.getBuffer(PANEL_QUAD);
         Matrix4f mat = poseStack.last().pose();
-        vc.vertex(mat, x1, y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, x2, y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, x2, y2, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, x1, y2, 0).color(r, g, b, a).endVertex();
+        vc.addVertex(mat, x1, y1, 0f).setColor(r, g, b, a);
+        vc.addVertex(mat, x2, y1, 0f).setColor(r, g, b, a);
+        vc.addVertex(mat, x2, y2, 0f).setColor(r, g, b, a);
+        vc.addVertex(mat, x1, y2, 0f).setColor(r, g, b, a);
     }
 }

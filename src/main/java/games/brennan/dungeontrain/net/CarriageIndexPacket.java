@@ -1,12 +1,12 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server → client: the closest train carriage index for the receiving player.
@@ -15,7 +15,16 @@ import java.util.function.Supplier;
  * positive forward, negative back). Sent only when the value changes so the
  * pipe stays quiet.
  */
-public record CarriageIndexPacket(boolean present, int pIdx) {
+public record CarriageIndexPacket(boolean present, int pIdx) implements CustomPacketPayload {
+
+    public static final Type<CarriageIndexPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "carriage_index"));
+
+    public static final StreamCodec<FriendlyByteBuf, CarriageIndexPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            CarriageIndexPacket::decode
+        );
 
     public static CarriageIndexPacket absent() {
         return new CarriageIndexPacket(false, 0);
@@ -34,10 +43,12 @@ public record CarriageIndexPacket(boolean present, int pIdx) {
         return new CarriageIndexPacket(present, pIdx);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
-            Dist.CLIENT, () -> () -> VersionHudOverlay.setCarriageIndex(present, pIdx)));
-        ctx.setPacketHandled(true);
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(CarriageIndexPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() -> VersionHudOverlay.setCarriageIndex(packet.present, packet.pIdx));
     }
 }

@@ -9,10 +9,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
 
 /**
@@ -30,7 +30,7 @@ import org.slf4j.Logger;
  * {@code dt_pot_loot} and this handler becomes a no-op (it only fires when
  * the field is present).
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VasePotLootDrop {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -47,10 +47,11 @@ public final class VasePotLootDrop {
 
         BlockEntity be = level.getBlockEntity(pos);
         if (be == null) return;
-        CompoundTag beTag = be.saveWithoutMetadata();
+        CompoundTag beTag = be.saveWithoutMetadata(level.registryAccess());
         if (!beTag.contains(ContainerContentsRoller.NBT_POT_LOOT, Tag.TAG_COMPOUND)) return;
 
-        ItemStack stack = ItemStack.of(beTag.getCompound(ContainerContentsRoller.NBT_POT_LOOT));
+        ItemStack stack = ItemStack.parseOptional(level.registryAccess(),
+            beTag.getCompound(ContainerContentsRoller.NBT_POT_LOOT));
         if (stack.isEmpty()) return;
 
         if (LOGGER.isDebugEnabled()) {

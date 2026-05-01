@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.core.BlockPos;
@@ -16,21 +17,24 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
 import org.slf4j.Logger;
 
 /**
- * Worldgen feature that paints the train's bed + rails into a chunk during
- * generation. Replaces the post-load painting path that {@code TrackChunkEvents}
- * used to drive — newly generated chunks now have tracks as part of the
+ * Worldgen feature that paints the train's bed + rails AND the pillars
+ * supporting them into a chunk during generation. Newly generated chunks
+ * thus have the full corridor (track, clearance, pillars) as part of the
  * chunk save itself, with zero ongoing tick cost.
  *
- * <p>Pillars are deliberately left for a deferred pass ({@code
- * PillarDeferredEvents}) because they read terrain heightmap from up to
- * ±40 blocks on X — neighbouring chunks aren't reliably generated yet
- * during the per-chunk Feature call.</p>
+ * <p>Pillars are placed first (before bed/rails) so the ground probe sees
+ * raw terrain instead of the bed/rail rows. Each chunk plants the pillars
+ * whose center X lies inside its bounds; pillar slices overflow up to
+ * ⌊thickness/2⌋ blocks into the immediate neighbour (within the standard
+ * 3×3 decoration window). Stairs are deferred to a later iteration —
+ * minimum-spacing rules require ±40-block X data that exceeds single-chunk
+ * scope.</p>
  *
  * <p>Wired by datapack: {@code data/dungeontrain/worldgen/configured_feature/track_bed.json}
  * → {@code .../placed_feature/track_bed.json} → three {@code
- * forge/biome_modifier/} JSONs (overworld / nether / end). Only the modifier
- * matching the world's chosen starting dimension ever runs because chunks
- * only generate against their dimension's biome registry.</p>
+ * neoforge/biome_modifier/} JSONs (overworld / nether / end). Only the
+ * modifier matching the world's chosen starting dimension ever runs because
+ * chunks only generate against their dimension's biome registry.</p>
  */
 public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -63,14 +67,10 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // strip there's no possible corridor, regardless of the
             // per-world CarriageDims width.
             if (chunkPos.z < 0 || chunkPos.z > MAX_CORRIDOR_CZ) return false;
-            // Train spawns at world X=0 and moves only +X (TRAIN_VELOCITY in
-            // TrainBootstrapEvents has Y=Z=0; TrainChainManager spawns
-            // successors AHEAD only). Skip negative-X chunks — the train
-            // never reaches them, and pre-feature the legacy painter never
-            // painted them either (it only ran around the live train).
-            // Halves the corridor work for any world where the player
-            // explores backward.
-            if (chunkPos.x < 0) return false;
+            // No X prefilter — the corridor extends in both directions on
+            // X. The train spawn is centered (carriages from -halfBack to
+            // +halfFront indices), and the player can look back along the
+            // tracks to see them disappearing into the distance.
 
             // Reach the ServerLevel for SavedData lookup. WorldGenRegion
             // (the standard WorldGenLevel impl) wraps the ServerLevel under
@@ -93,7 +93,16 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
 
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
+            // Pillars first — the ground probe reads raw terrain at probeZ,
+            // which becomes opaque (bed/rail) as soon as placeTracksForChunk
+            // runs. Order matters.
+            TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
             TrackGenerator.placeTracksForChunk(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
+            // Tunnel space last — the underground qualification reads at
+            // ceilingY+5/6, well above the bed/rails, so order vs. tracks
+            // doesn't matter for the probe. Templates and approach trenches
+            // remain on the runtime drain.
+            TunnelGenerator.placeTunnelSpaceAtWorldgen(level, serverLevel, chunkPos.x, chunkPos.z, g);
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] TrackBedFeature.place failed at chunk {}", ctx.origin(), t);

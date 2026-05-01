@@ -8,12 +8,12 @@ import games.brennan.dungeontrain.net.ContainerHotkeyPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 
 /**
  * Client-side keymap for the "container contents" key (default {@code C};
@@ -27,7 +27,7 @@ import net.minecraftforge.fml.common.Mod;
  * with the Z key — currently unused but keeps the door open for future
  * "hold C and click" flows.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ContainerHotkeyClient {
 
     public static final String CATEGORY = VariantHotkeyClient.CATEGORY;
@@ -57,18 +57,17 @@ public final class ContainerHotkeyClient {
 
     /**
      * Inner class name MUST NOT clash with {@link VariantHotkeyClient.TickWatcher}.
-     * Forge's @Mod.EventBusSubscriber registration appears to silently dedupe
+     * Forge's @EventBusSubscriber registration appears to silently dedupe
      * inner static classes by simple name within a mod, so two classes both
      * named {@code TickWatcher} (even in different outer classes) cause one
      * of them to never receive events. Keep this class named distinctly.
      */
-    @Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
     public static final class ContainerTickWatcher {
         private static long tick;
 
         @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase != TickEvent.Phase.END) return;
+        public static void onClientTick(ClientTickEvent.Post event) {
             tick++;
             if (Minecraft.getInstance().getConnection() == null
                     || !EditorStatusHudOverlay.isActive()) {

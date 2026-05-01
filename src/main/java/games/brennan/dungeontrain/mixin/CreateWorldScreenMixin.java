@@ -69,7 +69,7 @@ public abstract class CreateWorldScreenMixin {
     @SuppressWarnings("removal")
     private static final ResourceKey<WorldPreset> DUNGEONTRAIN$DEFAULT_KEY = ResourceKey.create(
             Registries.WORLD_PRESET,
-            new ResourceLocation(DUNGEONTRAIN$NAMESPACE, DUNGEONTRAIN$DEFAULT_PATH));
+            ResourceLocation.fromNamespaceAndPath(DUNGEONTRAIN$NAMESPACE, DUNGEONTRAIN$DEFAULT_PATH));
 
     @Shadow
     @Final
@@ -87,10 +87,13 @@ public abstract class CreateWorldScreenMixin {
         dungeontrain$syncVisibilityAndPreset();
     }
 
-    @Inject(method = "tick", at = @At("HEAD"))
-    private void dungeontrain$tickSync(CallbackInfo ci) {
-        dungeontrain$syncVisibilityAndPreset();
-    }
+    // NeoForge 1.21.1 migration: the per-tick visibility sync that previously
+    // hooked CreateWorldScreen.tick() is dropped — CreateWorldScreen inherits
+    // tick() from Screen and the mixin processor refuses to inject into a
+    // non-overridden inherited method. The Floor-Y button visibility now
+    // settles once at init-TAIL; cycling presets without leaving and re-opening
+    // the screen won't refresh button visibility live until this is wired up
+    // to ScreenEvent.Render.Pre or a similar NeoForge event in a follow-up.
 
     @Unique
     private void dungeontrain$syncVisibilityAndPreset() {
@@ -162,7 +165,7 @@ public abstract class CreateWorldScreenMixin {
                     : DUNGEONTRAIN$Y_PATH_PREFIX + y;
             ResourceKey<WorldPreset> key = ResourceKey.create(
                     Registries.WORLD_PRESET,
-                    new ResourceLocation(DUNGEONTRAIN$NAMESPACE, path));
+                    ResourceLocation.fromNamespaceAndPath(DUNGEONTRAIN$NAMESPACE, path));
             Optional<Holder.Reference<WorldPreset>> holder = presetRegistry.getHolder(key);
             if (holder.isPresent()) {
                 map.put(y, holder.get());

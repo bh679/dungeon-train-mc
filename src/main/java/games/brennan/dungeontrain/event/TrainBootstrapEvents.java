@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -9,15 +12,16 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraftforge.event.server.ServerStartedEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
-import org.valkyrienskies.core.api.ships.LoadedServerShip;
-import org.valkyrienskies.mod.common.VSGameUtilsKt;
 
 /**
  * Assembles the starter train at {@link ServerStartedEvent} — before any
@@ -36,13 +40,16 @@ import org.valkyrienskies.mod.common.VSGameUtilsKt;
  * manager retargets on its first tick — one-shot adjustment is negligible
  * compared to the visual improvement of removing the spawn-time flash.
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TrainBootstrapEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
     static final int DEFAULT_CARRIAGE_COUNT = 10;
     static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
+
+    /** Perpendicular Z offset of the world spawn from corridor centerline. */
+    private static final int SHARED_SPAWN_PERP = 25;
 
     private TrainBootstrapEvents() {}
 
@@ -85,11 +92,49 @@ public final class TrainBootstrapEvents {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }
+
+        anchorWorldSpawnNearCorridor(target, dims, trainY);
     }
 
-    private static LoadedServerShip findTrain(ServerLevel level) {
-        for (LoadedServerShip ship : VSGameUtilsKt.getShipObjectWorld(level).getLoadedShips()) {
-            if (ship.getTransformProvider() instanceof TrainTransformProvider) {
+    /**
+     * Set the level's default spawn point to the precise placement that
+     * {@code PlayerJoinEvents} would otherwise compute via its retry queue
+     * at first login. By making the level's default spawn = the eventual
+     * teleport target, the post-login {@code teleportTo} becomes a no-op
+     * for position (only rotation updates), and the player sees no visual
+     * position jump.
+     *
+     * <p>Falls back to a coarse near-corridor spawn if placement caching
+     * fails — the retry teleport will still cover that case, just with a
+     * visible jump.</p>
+     */
+    private static void anchorWorldSpawnNearCorridor(
+        ServerLevel target, CarriageDims dims, int trainY
+    ) {
+        PlayerJoinEvents.SpawnPlacement placement =
+            PlayerJoinEvents.computeAndCacheBootstrapPlacement(target, dims, trainY);
+        if (placement != null) {
+            target.setDefaultSpawnPos(placement.blockPos(), placement.yaw());
+            LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw={} (cached bootstrap placement)",
+                placement.blockPos(), placement.yaw());
+            return;
+        }
+
+        // Fallback (cache compute returned null): coarse near-corridor spawn.
+        TrackGeometry g = TrackGeometry.from(dims, trainY);
+        int spawnX = 0;
+        int spawnZ = g.trackCenterZ() + SHARED_SPAWN_PERP;
+        target.getChunk(spawnX >> 4, spawnZ >> 4, ChunkStatus.FULL, true);
+        int surfaceY = target.getHeight(Heightmap.Types.MOTION_BLOCKING, spawnX, spawnZ);
+        BlockPos spawnPos = new BlockPos(spawnX, surfaceY, spawnZ);
+        target.setDefaultSpawnPos(spawnPos, 180.0F);
+        LOGGER.info("[DungeonTrain] World spawn anchored at {} yaw=180 (coarse fallback, corridor +{} Z)",
+            spawnPos, SHARED_SPAWN_PERP);
+    }
+
+    private static ManagedShip findTrain(ServerLevel level) {
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
                 return ship;
             }
         }

@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -20,16 +21,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -53,7 +55,7 @@ import java.util.Optional;
  * <p>Tooltips on prefab stacks are decorated with the prefab id so the user
  * can tell two stacks of the same source block apart.</p>
  */
-@Mod.EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PrefabUseHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -65,6 +67,11 @@ public final class PrefabUseHandler {
 
     private PrefabUseHandler() {}
 
+    private static CompoundTag customDataTag(ItemStack stack) {
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        return cd == null ? null : cd.copyTag();
+    }
+
     /**
      * Block-variant prefab paste — cancel vanilla placement and apply the
      * snippet to the targeted plot cell. Cancels on both sides so the
@@ -74,7 +81,7 @@ public final class PrefabUseHandler {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         ItemStack stack = event.getItemStack();
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = customDataTag(stack);
         if (tag == null) return;
 
         if (tag.contains(NBT_BV_PREFAB_ID, Tag.TAG_STRING)) {
@@ -147,7 +154,7 @@ public final class PrefabUseHandler {
                 merged.putInt("x", placePos.getX());
                 merged.putInt("y", placePos.getY());
                 merged.putInt("z", placePos.getZ());
-                be.load(merged);
+                be.loadCustomOnly(merged, level.registryAccess());
                 be.setChanged();
             }
         }
@@ -185,7 +192,7 @@ public final class PrefabUseHandler {
 
         ItemStack stack = stackWithLootPrefab(player);
         if (stack.isEmpty()) return;
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = customDataTag(stack);
         if (tag == null || !tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING)) return;
 
         String prefabId = tag.getString(NBT_LOOT_PREFAB_ID);
@@ -208,11 +215,11 @@ public final class PrefabUseHandler {
 
         // Roll the pool deterministically off the world seed + cell pos.
         long worldSeed = serverLevel.getSeed();
-        CompoundTag baseNbt = be.saveWithFullMetadata();
+        CompoundTag baseNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
         CompoundTag rolled = ContainerContentsRoller.roll(
-            loaded.get().pool(), placedState, pos, worldSeed, /* carriageIndex */ 0, baseNbt);
+            loaded.get().pool(), placedState, pos, worldSeed, /* carriageIndex */ 0, baseNbt, serverLevel.registryAccess());
         if (rolled == null) return;
-        be.load(rolled);
+        be.loadCustomOnly(rolled, serverLevel.registryAccess());
         be.setChanged();
 
         if (player instanceof ServerPlayer sp) {
@@ -234,9 +241,10 @@ public final class PrefabUseHandler {
 
     private static boolean hasLootPrefabTag(ItemStack stack) {
         if (stack.isEmpty()) return false;
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = customDataTag(stack);
         return tag != null && tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING);
     }
+
 
     /**
      * Decorate prefab stacks with their id in the tooltip so the user can
@@ -246,7 +254,7 @@ public final class PrefabUseHandler {
     @SubscribeEvent
     public static void onTooltip(ItemTooltipEvent event) {
         ItemStack stack = event.getItemStack();
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = customDataTag(stack);
         if (tag == null) return;
         if (tag.contains(NBT_BV_PREFAB_ID, Tag.TAG_STRING)) {
             event.getToolTip().add(Component.literal(

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.EditorDevMode;
@@ -11,15 +12,18 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraft.world.entity.player.Player;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Supplier;
 
 /**
  * C→S: save the variant snippet at {@code localPos} in the player's current
@@ -37,9 +41,18 @@ import java.util.function.Supplier;
  *   <li>Send action-bar feedback to the saver.</li>
  * </ol></p>
  */
-public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
+public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) implements CustomPacketPayload {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    public static final Type<SaveBlockVariantPrefabPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "save_block_variant_prefab"));
+
+    public static final StreamCodec<FriendlyByteBuf, SaveBlockVariantPrefabPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            SaveBlockVariantPrefabPacket::decode
+        );
 
     public void encode(FriendlyByteBuf buf) {
         buf.writeBlockPos(localPos);
@@ -52,17 +65,21 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
         return new SaveBlockVariantPrefabPacket(pos, n);
     }
 
-    public void handle(Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(SaveBlockVariantPrefabPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            ServerPlayer player = ctx.getSender();
-            if (player == null) return;
+            Player p = ctx.player();
+            if (!(p instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(2)) {
                 actionBar(player, "Save requires OP", ChatFormatting.RED);
                 return;
             }
-            if (!BlockVariantPrefabStore.isValidName(name)) {
-                actionBar(player, "Invalid name '" + name + "' (a-z, 0-9, _, 1-32 chars)",
+            if (!BlockVariantPrefabStore.isValidName(packet.name())) {
+                actionBar(player, "Invalid name '" + packet.name() + "' (a-z, 0-9, _, 1-32 chars)",
                     ChatFormatting.RED);
                 return;
             }
@@ -73,16 +90,16 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
                 actionBar(player, "Not in an editor plot", ChatFormatting.YELLOW);
                 return;
             }
-            List<VariantState> states = plot.statesAt(localPos);
+            List<VariantState> states = plot.statesAt(packet.localPos());
             if (states == null || states.isEmpty()) {
                 actionBar(player, "No data at this cell", ChatFormatting.YELLOW);
                 return;
             }
             try {
-                boolean isNew = BlockVariantPrefabStore.save(name, states);
-                String suffix = writeToSourceTreeIfDevMode(name, states);
+                boolean isNew = BlockVariantPrefabStore.save(packet.name(), states);
+                String suffix = writeToSourceTreeIfDevMode(packet.name(), states);
                 actionBar(player,
-                    (isNew ? "Saved prefab '" : "Overwrote prefab '") + name + "'" + suffix,
+                    (isNew ? "Saved prefab '" : "Overwrote prefab '") + packet.name() + "'" + suffix,
                     ChatFormatting.GREEN);
                 broadcastSync();
             } catch (IOException e) {
@@ -91,17 +108,8 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
                     ChatFormatting.RED);
             }
         });
-        ctx.setPacketHandled(true);
     }
 
-    /**
-     * If dev mode is on and the source tree is reachable, also write the
-     * prefab JSON into {@code src/main/resources/data/dungeontrain/prefabs/...}
-     * so the next git commit picks it up. Returns a short suffix to append to
-     * the action-bar feedback so the saver knows which tiers were written.
-     * Source-write failures are logged but never escalated — the config-dir
-     * save already succeeded.
-     */
     private static String writeToSourceTreeIfDevMode(String name, List<VariantState> states) {
         if (!EditorDevMode.isEnabled()) return "";
         if (!BlockVariantPrefabStore.sourceTreeAvailable()) return " (no src tree)";
@@ -119,7 +127,6 @@ public record SaveBlockVariantPrefabPacket(BlockPos localPos, String name) {
     }
 
     private static void broadcastSync() {
-        PrefabRegistrySyncPacket pkt = PrefabRegistrySyncPacket.fromRegistries();
-        DungeonTrainNet.CHANNEL.send(PacketDistributor.ALL.noArg(), pkt);
+        PacketDistributor.sendToAllPlayers(PrefabRegistrySyncPacket.fromRegistries());
     }
 }

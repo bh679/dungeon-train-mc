@@ -10,7 +10,7 @@ import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -169,7 +169,7 @@ public final class TrackVariantStore {
         Files.createDirectories(dir);
         Path file = fileFor(kind, name);
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         CACHE.put(key(kind, name), Optional.of(template));
         LOGGER.info("[DungeonTrain] Saved track template {}:{} to {}", kind.id(), name, file);
     }
@@ -181,7 +181,7 @@ public final class TrackVariantStore {
         Path file = sourceFileFor(kind, name);
         Files.createDirectories(file.getParent());
         CompoundTag tag = template.save(new CompoundTag());
-        NbtIo.writeCompressed(tag, file.toFile());
+        NbtIo.writeCompressed(tag, file);
         LOGGER.info("[DungeonTrain] Wrote bundled track template {}:{} to {}", kind.id(), name, file);
     }
 
@@ -225,7 +225,7 @@ public final class TrackVariantStore {
         Path file = fileFor(kind, name);
         if (!Files.isRegularFile(file)) return Optional.empty();
         try {
-            CompoundTag tag = NbtIo.readCompressed(file.toFile());
+            CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "config " + file);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read config track template {}:{} at {}: {}",
@@ -240,7 +240,7 @@ public final class TrackVariantStore {
         String resource = bundledResourceFor(kind, name);
         try (InputStream in = TrackVariantStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
-            CompoundTag tag = NbtIo.readCompressed(in);
+            CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "bundled " + resource);
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled track template {}: {}",

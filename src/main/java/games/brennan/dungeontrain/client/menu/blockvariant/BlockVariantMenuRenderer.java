@@ -17,10 +17,11 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.Mod;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -38,9 +39,8 @@ import java.util.List;
  * from "minecraft:stone_bricks") to keep the row narrow; full id is shown
  * in the search screen.</p>
  */
-@Mod.EventBusSubscriber(
+@EventBusSubscriber(
     modid = DungeonTrain.MOD_ID,
-    bus = Mod.EventBusSubscriber.Bus.FORGE,
     value = Dist.CLIENT
 )
 public final class BlockVariantMenuRenderer {
@@ -569,9 +569,9 @@ public final class BlockVariantMenuRenderer {
         int b = argb & 0xFF;
         VertexConsumer vc = buffer.getBuffer(PANEL_QUAD);
         Matrix4f mat = ps.last().pose();
-        vc.vertex(mat, (float) x1, (float) y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, (float) x2, (float) y1, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, (float) x2, (float) y2, 0).color(r, g, b, a).endVertex();
-        vc.vertex(mat, (float) x1, (float) y2, 0).color(r, g, b, a).endVertex();
+        vc.addVertex(mat, (float) x1, (float) y1, (float) 0).setColor(r, g, b, a);
+        vc.addVertex(mat, (float) x2, (float) y1, (float) 0).setColor(r, g, b, a);
+        vc.addVertex(mat, (float) x2, (float) y2, (float) 0).setColor(r, g, b, a);
+        vc.addVertex(mat, (float) x1, (float) y2, (float) 0).setColor(r, g, b, a);
     }
 }

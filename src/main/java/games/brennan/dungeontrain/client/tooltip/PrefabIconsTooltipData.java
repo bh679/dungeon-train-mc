@@ -2,14 +2,14 @@ package games.brennan.dungeontrain.client.tooltip;
 
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.List;
 
 /**
  * Data carrier for the prefab icon-grid tooltip row. Resolved on the client
- * during {@link net.minecraftforge.client.event.RenderTooltipEvent.GatherComponents}
+ * during {@link net.neoforged.neoforge.client.event.RenderTooltipEvent.GatherComponents}
  * from the prefab id stamped on the hovered stack, then mapped to
  * {@link PrefabIconsClientTooltipComponent} by the registered factory.
  *
