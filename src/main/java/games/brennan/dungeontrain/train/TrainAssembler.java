@@ -284,6 +284,13 @@ public final class TrainAssembler {
         ship.setKinematicDriver(provider);
         ship.setStatic(true);
 
+        // Register in the spawn-time truth source. Sable's SubLevelContainer
+        // is lazy after assembly (a freshly-assembled sub-level can take
+        // several ticks to appear in getAllSubLevels()), so the appender
+        // can't trust Trains.byTrainId for "what anchors does this train
+        // already own." The registry is the authoritative answer.
+        Trains.registerSpawned(trainId, anchorPIdx, ship);
+
         LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={}",
             anchorPIdx, groupSize, summariseVariants(enclosedBySlot),
             wrapWithPads ? "back+front" : "none",
@@ -330,6 +337,10 @@ public final class TrainAssembler {
     }
 
     private static int deleteExistingTrains(ServerLevel level) {
+        // Wipe the spawn-time registry first so any trainIds being torn
+        // down here don't linger as ghost entries that would block a
+        // future appender from re-spawning at those anchors.
+        Trains.clearRegistry();
         Shipyard shipyard = Shipyards.of(level);
         List<ManagedShip> trains = new ArrayList<>();
         for (ManagedShip ship : shipyard.findAll()) {

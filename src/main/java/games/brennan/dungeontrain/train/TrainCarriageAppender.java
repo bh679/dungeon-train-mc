@@ -162,15 +162,62 @@ public final class TrainCarriageAppender {
         }
         if (nearPlayerPIdxs.isEmpty()) return;
 
-        // Train's current carriage-pIdx range and group-anchor range.
-        int trainMaxPIdx = leadAnchorPIdx + groupSize - 1; // = Trains.maxPIdx(train)
-        int trainMinPIdx = tail.provider().getPIdx();      // = Trains.minPIdx(train)
-        int trainMaxAnchor = leadAnchorPIdx;
-        int trainMinAnchor = tail.provider().getPIdx();
+        // Use the spawn-time registry (not Sable's visible train) to
+        // determine the train's anchor range. Sable's
+        // SubLevelContainer.getAllSubLevels() is asynchronous after
+        // assembly — bootstrap-spawned sub-levels can take several ticks
+        // to appear in the visible train, during which `lead`/`tail`
+        // computed from the visible list misrepresent the actual range
+        // (often returning just one or two of the four bootstrap groups).
+        // Without this guard, the appender requests anchors that already
+        // exist and stacks duplicate sub-levels at the same world position.
+        Set<Integer> knownAnchors = Trains.knownAnchors(trainId);
+        int trainMaxAnchor;
+        int trainMinAnchor;
+        if (knownAnchors.isEmpty()) {
+            // Defensive — should never happen since the visible train has
+            // at least one carriage and the spawn path always registers.
+            trainMaxAnchor = leadAnchorPIdx;
+            trainMinAnchor = tail.provider().getPIdx();
+        } else {
+            int maxA = Integer.MIN_VALUE;
+            int minA = Integer.MAX_VALUE;
+            for (int a : knownAnchors) {
+                if (a > maxA) maxA = a;
+                if (a < minA) minA = a;
+            }
+            trainMaxAnchor = maxA;
+            trainMinAnchor = minA;
+        }
 
         List<Integer> anchorsToSpawn = computeGroupAnchorsToSpawn(
             trainMaxAnchor, trainMinAnchor, halfBack, halfFront, groupSize, nearPlayerPIdxs);
         if (anchorsToSpawn.isEmpty()) return;
+
+        // Belt-and-braces: even though trainMin/Max came from the
+        // registry, drop any anchor that's already known. Protects against
+        // races in computeGroupAnchorsToSpawn or future logic changes.
+        anchorsToSpawn.removeIf(a -> {
+            if (!knownAnchors.contains(a)) return false;
+            LOGGER.debug("[DungeonTrain] Appender skipping already-spawned anchor={} for trainId={} (in registry)",
+                a, trainId);
+            return true;
+        });
+        if (anchorsToSpawn.isEmpty()) return;
+
+        // Diagnostic: every time we're about to spawn, log the train state
+        // we based the decision on. Helps catch "appender thinks tail is X
+        // but a sub-level at X-groupSize actually exists" — which causes
+        // duplicate spawns on top of existing groups.
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder pidxs = new StringBuilder();
+            for (Trains.Carriage c : train) {
+                if (pidxs.length() > 0) pidxs.append(",");
+                pidxs.append(c.provider().getPIdx());
+            }
+            LOGGER.debug("[DungeonTrain] Appender about to spawn anchors={} (trainAnchor=[{},{}] trainPIdxList=[{}] players={})",
+                anchorsToSpawn, trainMinAnchor, trainMaxAnchor, pidxs, nearPlayerPIdxs);
+        }
 
         // Safety cap.
         if (anchorsToSpawn.size() > MAX_SPAWNS_PER_TICK) {

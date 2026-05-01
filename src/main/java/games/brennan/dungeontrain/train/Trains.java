@@ -1,15 +1,20 @@
 package games.brennan.dungeontrain.train;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import net.minecraft.server.level.ServerLevel;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Aggregation helpers that turn the flat list of all loaded carriage
@@ -37,6 +42,8 @@ import java.util.UUID;
  */
 public final class Trains {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /**
      * Lightweight pair of {@link ManagedShip} and its
      * {@link TrainTransformProvider}, returned together to avoid the cost
@@ -45,7 +52,52 @@ public final class Trains {
      */
     public record Carriage(ManagedShip ship, TrainTransformProvider provider) {}
 
+    /**
+     * Authoritative registry of every carriage group ever spawned via
+     * {@link TrainAssembler#spawnGroup}, keyed by trainId then anchor pIdx.
+     * Exists because Sable's {@code SubLevelContainer.getAllSubLevels()}
+     * is asynchronous after assembly — fresh sub-levels can take several
+     * server ticks to appear in {@link Shipyards#findAll()}, during which
+     * {@link TrainCarriageAppender} would otherwise see an incomplete
+     * train and request anchors that already exist (creating duplicate
+     * sub-levels stacked on top of each other).
+     *
+     * <p>Sourced ONLY by {@link TrainAssembler#spawnGroup} (on success)
+     * and cleared by {@link TrainAssembler#deleteAllTrains} (and by
+     * {@code WorldLifecycleEvents.onServerStopped} for cross-session
+     * safety). Never invalidated by Sable's lazy load — the registry is
+     * the source of truth for "what anchors this train owns."</p>
+     */
+    private static final Map<UUID, Map<Integer, ManagedShip>> SPAWNED_GROUPS = new ConcurrentHashMap<>();
+
     private Trains() {}
+
+    /**
+     * Record a freshly-spawned carriage group in the registry. Called
+     * from {@link TrainAssembler#spawnGroup} after a successful
+     * {@link Shipyards#assemble} + driver-attach pass.
+     */
+    public static void registerSpawned(UUID trainId, int anchorPIdx, ManagedShip ship) {
+        SPAWNED_GROUPS
+            .computeIfAbsent(trainId, k -> new ConcurrentHashMap<>())
+            .put(anchorPIdx, ship);
+    }
+
+    /**
+     * Snapshot of every anchor pIdx known to belong to {@code trainId}.
+     * Returns an empty set for an unknown trainId. The returned set is a
+     * defensive copy — callers may freely iterate or mutate it.
+     */
+    public static Set<Integer> knownAnchors(UUID trainId) {
+        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+        if (map == null) return Set.of();
+        return new HashSet<>(map.keySet());
+    }
+
+    /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
+    public static void clearRegistry() {
+        SPAWNED_GROUPS.clear();
+    }
 
     /**
      * Group every loaded carriage sub-level in {@code level} by trainId.
@@ -54,10 +106,32 @@ public final class Trains {
      */
     public static Map<UUID, List<Carriage>> byTrainId(ServerLevel level) {
         Map<UUID, List<Carriage>> trains = new LinkedHashMap<>();
+        int totalShips = 0;
+        int withTrainProvider = 0;
         for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            totalShips++;
             if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
+            withTrainProvider++;
             trains.computeIfAbsent(provider.getTrainId(), k -> new ArrayList<>())
                 .add(new Carriage(ship, provider));
+        }
+        if (LOGGER.isDebugEnabled()) {
+            StringBuilder summary = new StringBuilder();
+            for (Map.Entry<UUID, List<Carriage>> e : trains.entrySet()) {
+                if (summary.length() > 0) summary.append("; ");
+                summary.append("trainId=").append(e.getKey()).append(" carriages=[");
+                boolean first = true;
+                for (Carriage c : e.getValue()) {
+                    if (!first) summary.append(", ");
+                    first = false;
+                    summary.append("pIdx=").append(c.provider().getPIdx())
+                        .append(" ship=").append(c.ship().id())
+                        .append(" sy=").append(c.provider().getShipyardOrigin().getX());
+                }
+                summary.append("]");
+            }
+            LOGGER.debug("[DungeonTrain] Trains.byTrainId: totalShips={} withTrainProvider={} trains={{{}}}",
+                totalShips, withTrainProvider, summary);
         }
         return trains;
     }
