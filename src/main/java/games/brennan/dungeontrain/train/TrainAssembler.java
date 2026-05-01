@@ -92,15 +92,7 @@ public final class TrainAssembler {
         // ENCLOSED CARRIAGE start (NOT the sub-level's back pad — the
         // back pad sits at origin.x − halfPadLen).
         int initialPIdx = (int) Math.floor((spawnerWorldPos.x() - origin.getX()) / (double) dims.length());
-        int halfBack = (count - 1) / 2;
-        int halfFront = count - halfBack - 1;
-        int firstPIdx = initialPIdx - halfBack;
-        int lastPIdx = initialPIdx + halfFront;
 
-        // Capture per-train at spawn-time. Subsequent runtime changes to
-        // CarriageGenerationConfig.groupSize affect future spawnTrain
-        // calls only; this train keeps its size for life.
-        //
         // Each Sable sub-level packs `groupSize` enclosed carriages PLUS
         // a half-flatbed pad on each side, sitting OUTSIDE the integer
         // carriage-slot grid:
@@ -111,22 +103,33 @@ public final class TrainAssembler {
         // Both pads use a SINGLE half-sized NBT derived once from
         // FLATBED — BACK stamps it as-is, FRONT stamps it mirrored
         // (Mirror.FRONT_BACK). Adjacent groups' BACK + FRONT pads at
-        // every seam combine to 2×halfPadLen blocks of contiguous floor
-        // (10 for length=9), eliminating any visible gap and keeping
-        // each pad mechanically attached to its own sub-level (no air
-        // gap to confuse Sable's FloatingBlockController).
+        // every seam combine to 2×halfPadLen blocks of contiguous floor.
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
         int groupSize = genCfg.groupSize();
         int length = dims.length();
         int halfPadLen = CarriageTemplate.halfPadLen(dims);
         int subLevelStride = groupSize * length + 2 * halfPadLen;
 
-        // Snap the requested pIdx range outward to group anchors. Anchors
-        // step by groupSize (NOT groupSize + 2 — pads aren't pIdx-counted).
-        // Math.floorDiv handles negative pIdx correctly
-        // (e.g. floorDiv(-4, 3) = -2).
-        int firstAnchor = Math.floorDiv(firstPIdx, groupSize) * groupSize;
-        int lastAnchor = Math.floorDiv(lastPIdx, groupSize) * groupSize;
+        // Bootstrap spawns ONLY the seed group — the one containing the
+        // player's initial pIdx. {@link TrainCarriageAppender} extends
+        // the train backward and forward over the next several ticks
+        // (capped at one new group per tick) until it covers the
+        // player's window of `count` carriages.
+        //
+        // Why not bulk-spawn all `count` carriages here:
+        // {@code Shipyards.assemble} returns a {@link ManagedShip} whose
+        // backing Sable {@code ServerSubLevel} is queued for asynchronous
+        // plot-loading. A burst spawn of N sub-levels in one tick races
+        // against Sable's lazy load: the appender on subsequent ticks
+        // sees only a subset of just-created sub-levels in
+        // {@code SubLevelContainer.getAllSubLevels()} and was previously
+        // tricked into stacking duplicates at the same anchor. Spawning
+        // one per tick gives Sable's plot-loader a full tick to register
+        // each new sub-level before the next is requested.
+        int seedAnchor = Math.floorDiv(initialPIdx, groupSize) * groupSize;
+        int seedGroupIdx = Math.floorDiv(seedAnchor, groupSize);
+        int seedGroupOriginX = origin.getX() + seedGroupIdx * subLevelStride - halfPadLen;
+        BlockPos seedGroupOrigin = new BlockPos(seedGroupOriginX, origin.getY(), origin.getZ());
 
         UUID trainId = UUID.randomUUID();
 
@@ -136,35 +139,18 @@ public final class TrainAssembler {
             origin.getZ(),
             origin.getZ() + dims.width() - 1);
 
-        LOGGER.info("[DungeonTrain] Spawning train trainId={} requested pIdx range [{}, {}] (count={}) → groups [{}, {}] groupSize={} (enclosed; ±halfPadLen={} pads each side) dims={}x{}x{} velocity={} origin={}",
-            trainId, firstPIdx, lastPIdx, count,
-            firstAnchor, lastAnchor, groupSize, halfPadLen,
+        LOGGER.info("[DungeonTrain] Spawning train trainId={} seedAnchor={} (initialPIdx={}, targetCount={}) groupSize={} halfPadLen={} subLevelStride={} dims={}x{}x{} velocity={} origin={} — appender will extend",
+            trainId, seedAnchor, initialPIdx, count, groupSize, halfPadLen, subLevelStride,
             length, dims.height(), dims.width(),
             velocity, origin);
 
-        List<ManagedShip> ships = new ArrayList<>();
-        for (int anchor = firstAnchor; anchor <= lastAnchor; anchor += groupSize) {
-            // groupOrigin = sub-level's back pad start = world X of pIdx
-            // anchor's enclosed carriage minus halfPadLen.
-            int groupIdx = Math.floorDiv(anchor, groupSize);
-            int groupOriginX = origin.getX() + groupIdx * subLevelStride - halfPadLen;
-            BlockPos groupOrigin = new BlockPos(groupOriginX, origin.getY(), origin.getZ());
-            ManagedShip ship = spawnGroup(level, groupOrigin, velocity, anchor, groupSize, dims, trainId);
-            if (ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
-                provider.setTrackGeometry(geometry);
-            }
-            ships.add(ship);
+        ManagedShip seedShip = spawnGroup(level, seedGroupOrigin, velocity, seedAnchor, groupSize, dims, trainId);
+        if (seedShip.getKinematicDriver() instanceof TrainTransformProvider seedProvider) {
+            seedProvider.setTrackGeometry(geometry);
+            TrackGenerator.bootstrapPendingChunks(level, seedShip, seedProvider);
         }
 
-        // Bootstrap track-gen pending chunks on the tail (lowest anchor).
-        ManagedShip tail = ships.get(0);
-        if (tail.getKinematicDriver() instanceof TrainTransformProvider tailProvider) {
-            TrackGenerator.bootstrapPendingChunks(level, tail, tailProvider);
-        }
-
-        // Return lead (highest anchor's group). Callers needing the full
-        // train iterate via Trains.findById(level, trainId).
-        return ships.get(ships.size() - 1);
+        return seedShip;
     }
 
     /**

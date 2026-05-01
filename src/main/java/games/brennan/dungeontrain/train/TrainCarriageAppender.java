@@ -61,13 +61,28 @@ public final class TrainCarriageAppender {
 
     /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
-     * single server tick. With groupSize=3 this caps carriages per tick at
-     * {@code 32 * 3 = 96} — plenty of headroom for normal player movement
-     * (a player crosses at most a handful of group boundaries per tick at
-     * any sane speed). Prevents runaway spawning if pIdx computation goes
-     * wildly wrong (e.g. pose corruption).
+     * single server tick. Set to 1 — Sable's
+     * {@link dev.ryanhcode.sable.api.sublevel.SubLevelContainer#getAllSubLevels}
+     * is asynchronous: a freshly-assembled sub-level can take several
+     * server ticks to appear in {@code findAll()}. Bursting more than one
+     * spawn per tick races against this lazy load and produces visible
+     * overlap (each new spawn happens before Sable has registered the
+     * previous one's plot, so the appender's reference math may pick the
+     * wrong sub-level as lead/tail).
+     *
+     * <p>The {@link Trains#knownAnchors} registry remains the
+     * source of truth for "what anchors does this train own" — even with
+     * the throttle, any duplicate the appender accidentally requests is
+     * deduped against the registry. The throttle is the architectural
+     * fix; the registry is the safety net.</p>
+     *
+     * <p>Throughput cost: at groupSize=3, this caps carriages added per
+     * tick at 3. The seed group from
+     * {@link TrainAssembler#spawnTrain} plus the appender's first ~9
+     * ticks fully populate the player's default 10-carriage window in
+     * &lt;0.5 seconds — imperceptible.</p>
      */
-    private static final int MAX_SPAWNS_PER_TICK = 32;
+    private static final int MAX_SPAWNS_PER_TICK = 1;
 
     private TrainCarriageAppender() {}
 
