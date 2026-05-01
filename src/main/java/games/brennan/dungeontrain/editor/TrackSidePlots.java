@@ -47,17 +47,13 @@ public final class TrackSidePlots {
     public static final int Y_BASELINE = 250;
 
     /**
-     * Z baseline for the track-side row. Chosen to clear both the carriage
-     * row ({@code Z=0..MAX_WIDTH-1}) and the contents row
-     * ({@code Z=MAX_WIDTH+GAP..2*MAX_WIDTH+GAP-1}) with another
-     * {@link EditorLayout#GAP} buffer past the contents row's max-width
-     * extent. Without this buffer the track-tile plot at {@code (0, 250, 0)}
-     * would sit inside the carriage_standard plot at {@code (0, 250, 0)} and
-     * {@link CarriageEditor#plotContaining} would claim the position first.
+     * Z baseline for the track-side row — sourced from {@link
+     * EditorLayout#TRACKS_FIRST_Z}. Sits past every other view's Z range
+     * (CARRIAGES extends through the parts grid; CONTENTS sits between)
+     * so {@link #locate} can never claim a position that also belongs to
+     * a parts, contents, or carriage plot.
      */
-    public static final int Z_BASELINE =
-        2 * games.brennan.dungeontrain.train.CarriageDims.MAX_WIDTH
-        + 2 * EditorLayout.GAP;
+    public static final int Z_BASELINE = EditorLayout.TRACKS_FIRST_Z;
 
     /**
      * X start of each category's column. Defined in declaration order:
