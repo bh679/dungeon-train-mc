@@ -18,11 +18,21 @@ public interface KinematicDriver {
     /**
      * Snapshot of the ship's current physics-tick state passed into
      * {@link #nextTransform}.
+     *
+     * <p>{@code gameTime} is the level's current
+     * {@code ServerLevel.getGameTime()} value (monotonic tick counter).
+     * Drivers that need to be resilient against chunk unload/reload —
+     * which freezes a sub-level's mutable state for the unload duration
+     * — should compute their next pose deterministically from a captured
+     * spawn-time pose plus {@code (gameTime − spawnGameTime) * PHYSICS_DT}
+     * rather than incrementing per-tick state. See
+     * {@link games.brennan.dungeontrain.train.TrainTransformProvider}.</p>
      */
     record TickInput(
         Vector3dc currentPosition,
         Quaterniondc currentRotation,
-        Vector3dc currentPositionInModel
+        Vector3dc currentPositionInModel,
+        long gameTime
     ) {}
 
     /**

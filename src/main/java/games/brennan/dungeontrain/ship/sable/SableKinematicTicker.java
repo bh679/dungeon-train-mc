@@ -40,11 +40,12 @@ public final class SableKinematicTicker {
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
+        long gameTime = level.getGameTime();
         Shipyard shipyard = Shipyards.of(level);
         for (ManagedShip ship : shipyard.findAll()) {
             KinematicDriver driver = ship.getKinematicDriver();
             if (driver == null) continue;
-            KinematicDriver.TickOutput output = driver.nextTransform(ship.currentTickInput());
+            KinematicDriver.TickOutput output = driver.nextTransform(ship.currentTickInput(gameTime));
             if (output != null) {
                 ship.applyTickOutput(output);
             }

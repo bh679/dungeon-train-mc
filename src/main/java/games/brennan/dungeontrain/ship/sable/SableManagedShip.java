@@ -6,6 +6,7 @@ import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.physics.mass.MassData;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
+import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.ship.InertiaSnapshot;
@@ -158,6 +159,22 @@ public final class SableManagedShip implements ManagedShip {
         // and the current pose, so the visual motion is smooth as long as
         // applyTickOutput fires every tick.
         handle.teleport(output.position(), output.rotation());
+
+        // Pin the model-space pivot ({@code Pose3d.rotationPoint}) to the
+        // driver's spawn-time-locked value. Sable's MassTracker recomputes
+        // the sub-level's centre of mass on every block change and feeds it
+        // back into rotationPoint, which would otherwise translate every
+        // block visibly each time the appender adds a carriage (the world
+        // mapping is {@code position + rotation*(voxel_shipyard - rotationPoint)},
+        // so any rotationPoint drift shifts ALL blocks). RigidBodyHandle
+        // exposes no setter for rotationPoint, but Pose3d returns the live
+        // mutable {@code Vector3d}, so {@code .set(...)} pins it in place.
+        // This is the Sable equivalent of the VS-era inertia-pin we
+        // formerly applied via reflection in {@code ship.vs.VsInertiaLocker}.
+        Vector3dc pivotTarget = output.positionInModel();
+        if (pivotTarget != null && subLevel.logicalPose() instanceof Pose3d livePose) {
+            livePose.rotationPoint().set(pivotTarget.x(), pivotTarget.y(), pivotTarget.z());
+        }
 
         // Reset velocity to zero, then add the driver's chosen velocity.
         // Sable has no direct `setVelocity` — only `addLinearAndAngularVelocity`

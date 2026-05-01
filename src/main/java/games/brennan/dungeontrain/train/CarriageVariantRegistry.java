@@ -62,7 +62,13 @@ public final class CarriageVariantRegistry {
     private static final List<CarriageVariant> BUILTINS;
     static {
         List<CarriageVariant> list = new ArrayList<>();
-        for (CarriageType t : CarriageType.values()) list.add(CarriageVariant.of(t));
+        // Half-flatbeds are no longer carriage variants — they're
+        // sub-level boundary pads placed directly by TrainAssembler via
+        // CarriageTemplate.placeHalfFlatbedPad (Gate B.2 pad refactor).
+        // Every CarriageType enum value is a valid mid-train carriage.
+        for (CarriageType t : CarriageType.values()) {
+            list.add(CarriageVariant.of(t));
+        }
         BUILTINS = List.copyOf(list);
     }
 
