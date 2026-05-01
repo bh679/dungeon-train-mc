@@ -43,12 +43,18 @@ public interface ManagedShip {
     /** Current model-space pivot ({@code positionInModel} in VS terms). */
     Vector3dc currentPositionInModel();
 
-    /** Snapshot of the current transform as a {@link KinematicDriver.TickInput}. */
-    default KinematicDriver.TickInput currentTickInput() {
+    /**
+     * Snapshot of the current transform as a {@link KinematicDriver.TickInput}.
+     * {@code gameTime} should be the level's current
+     * {@code ServerLevel.getGameTime()} (monotonic tick counter) so
+     * drivers can compute deterministic poses immune to chunk unload.
+     */
+    default KinematicDriver.TickInput currentTickInput(long gameTime) {
         return new KinematicDriver.TickInput(
             currentWorldPosition(),
             currentRotation(),
-            currentPositionInModel());
+            currentPositionInModel(),
+            gameTime);
     }
 
     /** Total world-space AABB covering every voxel claimed by the ship. */

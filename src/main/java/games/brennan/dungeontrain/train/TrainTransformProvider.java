@@ -101,9 +101,25 @@ public final class TrainTransformProvider implements KinematicDriver {
     // authoritative baseline. Re-applying them every tick makes the
     // carriage immune to gravity, collision impulses, and any
     // (now-impossible-on-per-carriage) COM-shift side effects.
+    //
+    // {@code spawnWorldPos} and {@code spawnGameTick} are the basis for
+    // a deterministic per-tick position calculation:
+    // {@code canonicalPos = spawnWorldPos + targetVelocity * (currentGameTick − spawnGameTick) * PHYSICS_DT}.
+    // This formula is resilient to chunk unload/reload — when a sub-level's
+    // chunks are evicted (player flies away), the provider's
+    // {@link #nextTransform} doesn't fire, but the missed ticks don't
+    // accumulate as drift because each surviving call recomputes
+    // {@code canonicalPos} from scratch. Without this, the previous
+    // implementation incremented {@code canonicalPos} per tick and
+    // sub-levels that were unloaded for N ticks resumed N*velocity*dt
+    // blocks behind their always-loaded siblings (visible as half-carriage
+    // overlaps and gaps when the player flies back to a previously-visited
+    // section of the train).
     private Quaterniondc lockedRotation;
     private Vector3d canonicalPos;
     private Vector3dc lockedPositionInModel;
+    private Vector3d spawnWorldPos;
+    private long spawnGameTick = -1L;
 
     // When true, {@link TrainCarriageAppender} skips this carriage's train
     // entirely — no append regardless of player pIdx. Set by debug probes
@@ -357,37 +373,52 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     @Override
     public TickOutput nextTransform(TickInput input) {
+        long currentGameTick = input.gameTime();
         if (lockedRotation == null) {
             // Force identity rotation — the carriage must always be axis-
             // aligned. Capturing input.currentRotation() here would freeze
             // in whatever rotation Sable's physics produced between
             // assembly and the first kinematic tick.
             lockedRotation = new Quaterniond();
-            canonicalPos = new Vector3d(input.currentPosition());
+            spawnWorldPos = new Vector3d(input.currentPosition());
+            spawnGameTick = currentGameTick;
+            canonicalPos = new Vector3d(spawnWorldPos);
             lockedPositionInModel = new Vector3d(input.currentPositionInModel());
             JITTER_LOGGER.info(
-                "[baseline] pIdx={} groupSize={} trainId={} forced identity lockedRotation; canonicalPos={} lockedPositionInModel={}",
-                pIdx, groupSize, trainId, fmt(canonicalPos), fmt(lockedPositionInModel));
+                "[baseline] pIdx={} groupSize={} trainId={} forced identity lockedRotation; spawnWorldPos={} spawnGameTick={} lockedPositionInModel={}",
+                pIdx, groupSize, trainId, fmt(spawnWorldPos), spawnGameTick, fmt(lockedPositionInModel));
         }
 
-        // Snapshot prior canonical so we can roll back NaN propagation.
+        // Deterministic position formula:
+        //   canonicalPos = spawnWorldPos + velocity * (currentGameTick − spawnGameTick) * PHYSICS_DT
+        //
+        // Resilient to chunk unload/reload: a sub-level whose chunks are
+        // evicted does not tick, but each surviving tick re-derives
+        // canonicalPos from scratch using the level's monotonic gameTime
+        // — so missed ticks don't accumulate as positional drift. The
+        // previous "canonicalPos.add(velocity*dt)" approach lagged a
+        // sub-level by N*velocity*dt blocks if it was unloaded for N
+        // ticks, producing the half-carriage overlap/gap pattern when
+        // the player flew back to a previously-visited part of the train.
         double prevCanonX = canonicalPos.x;
         double prevCanonY = canonicalPos.y;
         double prevCanonZ = canonicalPos.z;
-        canonicalPos.add(
-            targetVelocity.x() * PHYSICS_DT,
-            targetVelocity.y() * PHYSICS_DT,
-            targetVelocity.z() * PHYSICS_DT
+        long elapsedTicks = currentGameTick - spawnGameTick;
+        canonicalPos.set(
+            spawnWorldPos.x + targetVelocity.x() * elapsedTicks * PHYSICS_DT,
+            spawnWorldPos.y + targetVelocity.y() * elapsedTicks * PHYSICS_DT,
+            spawnWorldPos.z + targetVelocity.z() * elapsedTicks * PHYSICS_DT
         );
         if (!Double.isFinite(canonicalPos.x)
             || !Double.isFinite(canonicalPos.y)
             || !Double.isFinite(canonicalPos.z)) {
             if (!canonicalPosNanLogged) {
                 JITTER_LOGGER.warn(
-                    "[panic.canonicalPos] non-finite canonicalPos after velocity step — freezing at last good value. "
-                        + "pIdx={} trainId={} physicsTick={} velocity=({}, {}, {}) canonicalBefore=({}, {}, {}) canonicalAfter=({}, {}, {})",
-                    pIdx, trainId, physicsTickCounter,
+                    "[panic.canonicalPos] non-finite canonicalPos after deterministic step — freezing at last good value. "
+                        + "pIdx={} trainId={} physicsTick={} elapsedTicks={} velocity=({}, {}, {}) spawnWorldPos=({}, {}, {}) canonicalBefore=({}, {}, {}) canonicalAfter=({}, {}, {})",
+                    pIdx, trainId, physicsTickCounter, elapsedTicks,
                     targetVelocity.x(), targetVelocity.y(), targetVelocity.z(),
+                    spawnWorldPos.x, spawnWorldPos.y, spawnWorldPos.z,
                     prevCanonX, prevCanonY, prevCanonZ,
                     canonicalPos.x, canonicalPos.y, canonicalPos.z);
                 canonicalPosNanLogged = true;
