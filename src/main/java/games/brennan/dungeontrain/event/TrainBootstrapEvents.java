@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -45,7 +46,6 @@ public final class TrainBootstrapEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final int DEFAULT_CARRIAGE_COUNT = 10;
     static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
 
     /** Perpendicular Z offset of the world spawn from corridor centerline. */
@@ -85,10 +85,11 @@ public final class TrainBootstrapEvents {
         CarriageDims dims = data.dims();
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
+        int carriageCount = DungeonTrainConfig.getNumCarriages();
         LOGGER.info("[DungeonTrain] Bootstrap auto-spawning {} carriages at {} in {} dims={}x{}x{}",
-            DEFAULT_CARRIAGE_COUNT, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height());
+            carriageCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height());
         try {
-            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos, dims);
+            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, carriageCount, spawnerPos, dims);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }

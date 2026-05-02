@@ -25,7 +25,7 @@ public final class DungeonTrainConfig {
 
     public static final int MIN_CARRIAGES = 1;
     public static final int MAX_CARRIAGES = 50;
-    public static final int DEFAULT_CARRIAGES = 5;
+    public static final int DEFAULT_CARRIAGES = 15;
 
     public static final double MIN_SPEED = 0.0;
     public static final double MAX_SPEED = 20.0;
@@ -68,7 +68,7 @@ public final class DungeonTrainConfig {
     private static Holder build(ModConfigSpec.Builder b) {
         b.push("train");
         ModConfigSpec.IntValue numCarriages = b
-                .comment("Number of carriages visible in the rolling window around each player.")
+                .comment("Number of carriages visible in the rolling window around each player. Defaults to 15 (= 5 groups at the default groupSize of 3).")
                 .defineInRange("numCarriages", DEFAULT_CARRIAGES, MIN_CARRIAGES, MAX_CARRIAGES);
         ModConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")
