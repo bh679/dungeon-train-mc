@@ -55,7 +55,6 @@ public final class CarriageTemplate {
     public enum CarriageType {
         STANDARD,
         WINDOWED,
-        SOLID_ROOF,
         FLATBED
     }
 
@@ -106,7 +105,6 @@ public final class CarriageTemplate {
         static final BlockState FLOOR = Blocks.STONE_BRICKS.defaultBlockState();
         static final BlockState WALL = Blocks.STONE_BRICKS.defaultBlockState();
         static final BlockState GLASS_CEILING = Blocks.GLASS.defaultBlockState();
-        static final BlockState SOLID_CEILING = Blocks.STONE_BRICKS.defaultBlockState();
         static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
     }
 
@@ -781,7 +779,7 @@ public final class CarriageTemplate {
 
         if (dy == 0) return BlockStates.FLOOR;
         if (dy == dims.height() - 1) {
-            return (type == CarriageType.SOLID_ROOF) ? BlockStates.SOLID_CEILING : BlockStates.GLASS_CEILING;
+            return BlockStates.GLASS_CEILING;
         }
 
         boolean onPerimeter = (dx == 0 || dx == dims.length() - 1 || dz == 0 || dz == dims.width() - 1);

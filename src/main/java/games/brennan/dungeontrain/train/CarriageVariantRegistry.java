@@ -152,9 +152,9 @@ public final class CarriageVariantRegistry {
      * every basename that isn't reserved for a built-in {@link CarriageType}.
      *
      * <p>Built-in NBTs ({@code standard.nbt}, {@code flatbed.nbt},
-     * {@code windowed.nbt}, {@code solid_roof.nbt}) override the legacy
-     * stamping geometry for the four enum entries — they ship in the same
-     * directory but are NOT customs and must never enter {@link #CUSTOMS}.
+     * {@code windowed.nbt}) override the legacy stamping geometry for the
+     * built-in enum entries — they ship in the same directory but are NOT
+     * customs and must never enter {@link #CUSTOMS}.
      * The {@link CarriageVariant#isReservedBuiltinName} filter keeps them
      * out of both the registration loop and the drift comparison so the
      * cross-check doesn't generate spurious "missing from manifest" warnings
