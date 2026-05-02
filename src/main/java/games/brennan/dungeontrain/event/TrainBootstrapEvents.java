@@ -85,17 +85,16 @@ public final class TrainBootstrapEvents {
         CarriageDims dims = data.dims();
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
-        int carriageCount = DungeonTrainConfig.getNumCarriages();
-        if (carriageCount <= 0) {
-            LOGGER.info("[DungeonTrain] Bootstrap auto-spawn skipped (numCarriages={} — train disabled via config)",
-                carriageCount);
-            anchorWorldSpawnNearCorridor(target, dims, trainY);
-            return;
-        }
-        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning {} carriages at {} in {} dims={}x{}x{}",
-            carriageCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height());
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        // Bootstrap only places the seed group; the appender retargets to
+        // each player's render distance on the first tick. When config = 0
+        // (auto), use a benign positive seed so the seed-anchor math in
+        // TrainAssembler.spawnTrain doesn't degenerate.
+        int seedCount = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
+        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning seed for {} carriages at {} in {} dims={}x{}x{} (configCount={})",
+            seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
         try {
-            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, carriageCount, spawnerPos, dims);
+            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }

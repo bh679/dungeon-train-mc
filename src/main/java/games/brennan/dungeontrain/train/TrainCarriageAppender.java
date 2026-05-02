@@ -5,9 +5,13 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
@@ -52,12 +56,31 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
 
     /**
-     * Minimum visible gap (in blocks) between a freshly-spawned group and
-     * its reference. Sable's collision broad-phase appears to consider
-     * very narrow gaps as contact, so we add this bias before rounding to
-     * keep the gap at least this large.
+     * Per-train tick counter for "Sable visible-list lagging the spawn
+     * registry" — incremented every tick the visible lead/tail's pIdx
+     * doesn't match the registry's max/min anchor, reset to 0 when they
+     * agree. While > 0 and below {@link #SABLE_LAG_TIMEOUT_TICKS} the
+     * appender defers spawning, so the placement reference is always
+     * the registry-current lead or tail (subLevelDelta=±1). Beyond the
+     * timeout, the appender proceeds with the stale visible reference
+     * to avoid permanently stalling train growth if Sable registration
+     * gets stuck.
      */
-    private static final double MIN_GAP_BLOCKS = 0.1;
+    private static final Map<UUID, Integer> SABLE_LAG_TICKS = new HashMap<>();
+    private static final int SABLE_LAG_TIMEOUT_TICKS = 20;
+
+    /**
+     * Minimum visible gap (in blocks) between a freshly-spawned group and
+     * its reference. Sable's collision broad-phase considers narrow gaps
+     * as contact and reacts violently — at 0.1 blocks we observed groups
+     * that landed near the floor jittering by 10-20 blocks per physics
+     * tick, with overlapping blocks getting destroyed (smoke particles)
+     * and the emptied sub-level disposed by Sable. 0.3 leaves enough
+     * slack for the broad-phase even when reference-frame drift produces
+     * sub-1-block stride errors. Visible gap range becomes [0.3, 1.3]
+     * blocks at every group seam — a slight aesthetic cost vs prior 0.1.
+     */
+    private static final double MIN_GAP_BLOCKS = 0.3;
 
     /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
@@ -78,9 +101,9 @@ public final class TrainCarriageAppender {
      *
      * <p>Throughput cost: at groupSize=3, this caps carriages added per
      * tick at 3. The seed group from
-     * {@link TrainAssembler#spawnTrain} plus the appender's first ~9
-     * ticks fully populate the player's default 10-carriage window in
-     * &lt;0.5 seconds — imperceptible.</p>
+     * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
+     * ticks fully populate a typical auto-rd window (~14 groups at
+     * render distance 12) in &lt;1 second — imperceptible.</p>
      */
     private static final int MAX_SPAWNS_PER_TICK = 1;
 
@@ -122,11 +145,14 @@ public final class TrainCarriageAppender {
         int groupSize = leadProvider.getGroupSize();
         int length = dims.length();
 
-        // Target carriage count from config — drives halfBack / halfFront so
-        // /dt carriages adjusts how aggressively the appender extends.
-        int targetCount = DungeonTrainConfig.getNumCarriages();
-        int halfBack = (targetCount - 1) / 2;
-        int halfFront = targetCount - halfBack - 1;
+        // Target carriage count: per-player, derived from config or each
+        // player's render distance when the config is set to 0 (auto). The
+        // global needed-pIdx range is the union of per-player ranges, so
+        // players with different rd settings each contribute their own
+        // contribution to the eventual train length.
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        int globalMaxNeededPIdx = Integer.MIN_VALUE;
+        int globalMinNeededPIdx = Integer.MAX_VALUE;
 
         List<Integer> nearPlayerPIdxs = new ArrayList<>();
         for (ServerPlayer player : players) {
@@ -173,6 +199,16 @@ public final class TrainCarriageAppender {
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
+            int pTargetCount = (configCount > 0)
+                ? configCount
+                : autoTargetFromRenderDistance(player, length);
+            int pHalfBack = (pTargetCount - 1) / 2;
+            int pHalfFront = pTargetCount - pHalfBack - 1;
+            int pMaxNeeded = pIdx + pHalfFront;
+            int pMinNeeded = pIdx - pHalfBack;
+            if (pMaxNeeded > globalMaxNeededPIdx) globalMaxNeededPIdx = pMaxNeeded;
+            if (pMinNeeded < globalMinNeededPIdx) globalMinNeededPIdx = pMinNeeded;
+
             nearPlayerPIdxs.add(pIdx);
         }
         if (nearPlayerPIdxs.isEmpty()) return;
@@ -206,7 +242,7 @@ public final class TrainCarriageAppender {
         }
 
         List<Integer> anchorsToSpawn = computeGroupAnchorsToSpawn(
-            trainMaxAnchor, trainMinAnchor, halfBack, halfFront, groupSize, nearPlayerPIdxs);
+            trainMaxAnchor, trainMinAnchor, globalMaxNeededPIdx, globalMinNeededPIdx, groupSize);
         if (anchorsToSpawn.isEmpty()) return;
 
         // Belt-and-braces: even though trainMin/Max came from the
@@ -241,51 +277,70 @@ public final class TrainCarriageAppender {
             anchorsToSpawn = anchorsToSpawn.subList(0, MAX_SPAWNS_PER_TICK);
         }
 
+        // Wait-for-registry guard: when Sable's visible list lags the
+        // registry, lead/tail returns a group whose pIdx is far from
+        // newAnchor. The placement math then uses a subLevelDelta > 1
+        // and amplifies any pose noise in the reference by that factor.
+        // Defer the spawn for up to SABLE_LAG_TIMEOUT_TICKS so the
+        // reference is always adjacent (subLevelDelta=±1, no
+        // amplification). Beyond the timeout, fall through with the
+        // stale reference to avoid permanently stalling train growth.
+        int visibleMaxAnchor = lead.provider().getPIdx();
+        int visibleMinAnchor = tail.provider().getPIdx();
+        boolean sableCaughtUp = (visibleMaxAnchor == trainMaxAnchor && visibleMinAnchor == trainMinAnchor);
+        if (sableCaughtUp) {
+            SABLE_LAG_TICKS.remove(trainId);
+        } else {
+            int lagTicks = SABLE_LAG_TICKS.getOrDefault(trainId, 0) + 1;
+            SABLE_LAG_TICKS.put(trainId, lagTicks);
+            if (lagTicks <= SABLE_LAG_TIMEOUT_TICKS) {
+                LOGGER.debug("[DungeonTrain] Appender deferring trainId={} ({}/{} ticks): visible=[{},{}] registry=[{},{}]",
+                    trainId, lagTicks, SABLE_LAG_TIMEOUT_TICKS,
+                    visibleMinAnchor, visibleMaxAnchor, trainMinAnchor, trainMaxAnchor);
+                return;
+            }
+            LOGGER.warn("[DungeonTrain] Appender Sable-lag timeout for trainId={} ({} ticks): visible=[{},{}] registry=[{},{}]; proceeding with stale reference",
+                trainId, lagTicks, visibleMinAnchor, visibleMaxAnchor, trainMinAnchor, trainMaxAnchor);
+            SABLE_LAG_TICKS.remove(trainId);
+        }
+
         for (int newAnchor : anchorsToSpawn) {
             // Forward groups use the lead as the world-position reference;
             // backward groups use the tail. The reference's shipyardOrigin
             // is its own anchor's world position; we extrapolate to the
             // new group's anchor by adding (newAnchor - refAnchor) * length.
             Trains.Carriage reference = (newAnchor > trainMaxAnchor) ? lead : tail;
-            spawnNewGroup(level, reference, newAnchor, groupSize, dims, velocity, trainId);
+            spawnNewGroup(level, reference, newAnchor, groupSize, dims, velocity, trainId, train);
         }
     }
 
     /**
      * Pure decision helper — exposed package-private for unit tests.
-     * Given the train's current min/max group anchors and a list of
-     * near-player pIdx values, return the list of new group anchors to
-     * spawn this tick in spawn order: forward anchors ascending, then
-     * backward anchors descending. Anchors already inside
-     * {@code [trainMinAnchor, trainMaxAnchor]} are never re-emitted.
+     * Given the train's current min/max group anchors and the resolved
+     * needed pIdx range (already unioned across all near players, with
+     * each player's halfBack/halfFront applied by the caller), return the
+     * list of new group anchors to spawn this tick in spawn order: forward
+     * anchors ascending, then backward anchors descending. Anchors already
+     * inside {@code [trainMinAnchor, trainMaxAnchor]} are never re-emitted.
      *
      * @param trainMaxAnchor current lead anchor pIdx
      * @param trainMinAnchor current tail anchor pIdx
-     * @param halfBack       per-player look-behind in carriage units
-     * @param halfFront      per-player look-ahead in carriage units
+     * @param maxNeededPIdx  highest pIdx any player needs (player.pIdx + halfFront)
+     * @param minNeededPIdx  lowest pIdx any player needs (player.pIdx − halfBack)
      * @param groupSize      carriages per group (≥ 1)
-     * @param playerPIdxs    near-player absolute pIdx values
      */
     static List<Integer> computeGroupAnchorsToSpawn(
         int trainMaxAnchor,
         int trainMinAnchor,
-        int halfBack,
-        int halfFront,
-        int groupSize,
-        List<Integer> playerPIdxs
+        int maxNeededPIdx,
+        int minNeededPIdx,
+        int groupSize
     ) {
-        if (playerPIdxs.isEmpty()) return List.of();
         if (groupSize < 1) {
             throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
         }
-
-        int maxNeededPIdx = Integer.MIN_VALUE;
-        int minNeededPIdx = Integer.MAX_VALUE;
-        for (int p : playerPIdxs) {
-            int h = p + halfFront;
-            int l = p - halfBack;
-            if (h > maxNeededPIdx) maxNeededPIdx = h;
-            if (l < minNeededPIdx) minNeededPIdx = l;
+        if (maxNeededPIdx == Integer.MIN_VALUE || minNeededPIdx == Integer.MAX_VALUE) {
+            return List.of();
         }
         // Snap needed pIdx range outward to group anchors. Math.floorDiv
         // handles negative pIdx correctly.
@@ -300,6 +355,29 @@ public final class TrainCarriageAppender {
             out.add(a);
         }
         return out;
+    }
+
+    /**
+     * Compute the per-player target carriage count from the player's
+     * render distance. Used when the {@code numCarriages} config is set
+     * to {@code 0} (auto). Falls back to the server-wide view distance
+     * if the player hasn't reported their setting yet (early-join window),
+     * then to a hardcoded 10-chunk floor if even that is unavailable
+     * (dedicated server with no setting). Clamps to
+     * {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR} ..
+     * {@link DungeonTrainConfig#MAX_CARRIAGES} so very low or very high
+     * rd values still produce a sensible train length.
+     */
+    static int autoTargetFromRenderDistance(ServerPlayer player, int carriageLength) {
+        int rdChunks = player.requestedViewDistance();
+        if (rdChunks <= 0) {
+            rdChunks = player.serverLevel().getServer().getPlayerList().getViewDistance();
+            if (rdChunks <= 0) rdChunks = 10;
+        }
+        int rdBlocks = rdChunks * 16;
+        int target = (rdBlocks * 2) / Math.max(1, carriageLength);
+        return Math.max(DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR,
+                        Math.min(DungeonTrainConfig.MAX_CARRIAGES, target));
     }
 
     /**
@@ -321,7 +399,8 @@ public final class TrainCarriageAppender {
         int groupSize,
         CarriageDims dims,
         Vector3dc velocity,
-        UUID trainId
+        UUID trainId,
+        List<Trains.Carriage> train
     ) {
         BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
         int refAnchor = reference.provider().getPIdx();
@@ -370,6 +449,71 @@ public final class TrainCarriageAppender {
             forward ? "forward" : "backward",
             String.format("%.4f", gap),
             subLevelStride);
+
+        markCollidingNeighbours(level, newShip, newAnchor, train);
+    }
+
+    /**
+     * Bandaid identification: after a new group is spawned, compare its
+     * world-space AABB against every other carriage already in this
+     * train. On overlap, log a warning and place a redstone block on
+     * the roof of the offending sub-level (in shipyard space, so the
+     * marker moves with the train).
+     *
+     * <p>Strict AABB overlap only — the intended {@link #MIN_GAP_BLOCKS}
+     * gap leaves AABBs strictly separated, so no false positives.</p>
+     */
+    private static void markCollidingNeighbours(
+        ServerLevel level,
+        ManagedShip newShip,
+        int newAnchor,
+        List<Trains.Carriage> train
+    ) {
+        AABBdc newAabb = newShip.worldAABB();
+        for (Trains.Carriage other : train) {
+            ManagedShip otherShip = other.ship();
+            if (otherShip.id() == newShip.id()) continue;
+            AABBdc otherAabb = otherShip.worldAABB();
+            if (!aabbsOverlap(newAabb, otherAabb)) continue;
+
+            BlockPos marker = roofMarkerPosOnShip(otherShip, otherAabb);
+            int otherPIdx = other.provider().getPIdx();
+            LOGGER.warn("[DungeonTrain] Carriage collision detected: newShip id={} pIdx={} overlapping otherShip id={} pIdx={}; marking with redstone block at shipyard pos {}",
+                newShip.id(), newAnchor, otherShip.id(), otherPIdx, marker);
+            SilentBlockOps.setBlockSilent(level, marker, Blocks.REDSTONE_BLOCK.defaultBlockState());
+            level.getServer().getPlayerList().broadcastSystemMessage(
+                Component.literal(
+                    "[DungeonTrain] Carriage collision: new pIdx=" + newAnchor
+                        + " overlapping pIdx=" + otherPIdx
+                        + " — redstone marker placed on roof"
+                ).withStyle(ChatFormatting.RED),
+                false);
+        }
+    }
+
+    private static boolean aabbsOverlap(AABBdc a, AABBdc b) {
+        return a.maxX() > b.minX() && a.minX() < b.maxX()
+            && a.maxY() > b.minY() && a.minY() < b.maxY()
+            && a.maxZ() > b.minZ() && a.minZ() < b.maxZ();
+    }
+
+    /**
+     * Roof-marker position in {@code ship}'s shipyard space — one block
+     * above the AABB's top, centred horizontally. Converts the
+     * world-space target through {@link ManagedShip#worldToShip} so the
+     * resulting {@link BlockPos} lands on the sub-level (not the static
+     * world) and travels with the train.
+     */
+    private static BlockPos roofMarkerPosOnShip(ManagedShip ship, AABBdc worldAabb) {
+        Vector3d worldTopCenter = new Vector3d(
+            (worldAabb.minX() + worldAabb.maxX()) / 2.0,
+            worldAabb.maxY() + 1.0,
+            (worldAabb.minZ() + worldAabb.maxZ()) / 2.0);
+        ship.worldToShip(worldTopCenter);
+        return new BlockPos(
+            (int) Math.round(worldTopCenter.x),
+            (int) Math.round(worldTopCenter.y),
+            (int) Math.round(worldTopCenter.z));
     }
 
     /**
