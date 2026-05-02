@@ -40,10 +40,15 @@ public final class CarriageContentsEditor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int PLOT_Y = 250;
-    /** Contents row Z-origin. Carriages occupy {@code Z=0} (max width 32),
-     *  so {@code 32 + EditorLayout.GAP = 37} keeps the contents row clear of
-     *  any carriage plot at any width. */
-    private static final int PLOT_Z = CarriageDims.MAX_WIDTH + EditorLayout.GAP;
+    /**
+     * Contents row Z-origin — sourced from {@link
+     * EditorLayout#CONTENTS_FIRST_Z}. Sits in its own Z range past the
+     * CARRIAGES view (which extends through the parts grid), so the
+     * contents row never overlaps a parts plot in plan view and the FLOOR
+     * parts editor's air column can't pick up stale contents-interior
+     * blocks from a prior CONTENTS visit.
+     */
+    private static final int PLOT_Z = EditorLayout.CONTENTS_FIRST_Z;
     private static final int FIRST_PLOT_X = 0;
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();

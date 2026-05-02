@@ -7,7 +7,6 @@ import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.Trains;
-import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -56,9 +55,6 @@ public final class TrainTickEvents {
     /** Phase + period for the periodic track-fill drain. */
     private static final int TRACK_FILL_PERIOD_TICKS = 10;
     private static final int TRACK_FILL_PHASE_OFFSET = 5;
-    /** Phase + period for the periodic tunnel-fill drain. */
-    private static final int TUNNEL_FILL_PERIOD_TICKS = 10;
-    private static final int TUNNEL_FILL_PHASE_OFFSET = 2;
 
     private static int tickCounter = 0;
 
@@ -123,15 +119,8 @@ public final class TrainTickEvents {
         }
         long tAfterTracks = System.nanoTime();
 
-        if (DungeonTrainConfig.getGenerateTunnels()
-            && Math.floorMod(tickCounter, TUNNEL_FILL_PERIOD_TICKS) == TUNNEL_FILL_PHASE_OFFSET) {
-            for (List<Trains.Carriage> train : trainsById.values()) {
-                Trains.Carriage tail = Trains.tail(train);
-                if (tail != null) {
-                    TunnelGenerator.fillRenderDistance(level, tail.ship(), tail.provider());
-                }
-            }
-        }
+        // Tunnel runtime drain removed — tunnels are now generated entirely
+        // at worldgen time via TunnelGenerator.placeTunnelStampsAtWorldgen.
         long tAfterTunnels = System.nanoTime();
 
         long totalMs = (tAfterTunnels - t0) / 1_000_000;

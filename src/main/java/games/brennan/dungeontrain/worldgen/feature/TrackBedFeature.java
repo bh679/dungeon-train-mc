@@ -98,10 +98,10 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // runs. Order matters.
             TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
             TrackGenerator.placeTracksForChunk(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
-            // Tunnel space last — the underground qualification reads at
-            // ceilingY+5/6, well above the bed/rails, so order vs. tracks
-            // doesn't matter for the probe. Templates and approach trenches
-            // remain on the runtime drain.
+            // Tunnel space — single-phase per-column NBT placement (or
+            // LegacyTunnelPaint fallback when NBTs missing). Underground
+            // qualification reads at ceilingY+5, well above the bed/rails,
+            // so order vs. tracks doesn't matter.
             TunnelGenerator.placeTunnelSpaceAtWorldgen(level, serverLevel, chunkPos.x, chunkPos.z, g);
             return true;
         } catch (Throwable t) {

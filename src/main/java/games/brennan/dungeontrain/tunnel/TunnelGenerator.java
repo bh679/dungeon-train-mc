@@ -1,420 +1,92 @@
 package games.brennan.dungeontrain.tunnel;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.event.TunnelChunkEvents;
-import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
-import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
-import net.minecraft.world.level.block.state.BlockState;
-import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Dispatcher that paints stone-brick tunnels around the train's path.
- * Detection + qualification happen here; the actual block placement is
- * delegated to {@link TunnelTemplate} (NBT-backed, editable via
- * {@code /dungeontrain editor enter tunnel_section|tunnel_portal}) or falls
- * back to {@link LegacyTunnelPaint} when no template has been saved.
+ * Worldgen-only tunnel placement. Two-pass per chunk: Pass A qualifies each
+ * of the 16 X columns as underground (plus cross-chunk terrain probes at
+ * chunkMinX-1 / chunkMaxX+1 to detect run boundaries accurately); Pass B
+ * walks those qualifications and stamps {@link TunnelTemplate#LENGTH}-col
+ * section NBTs (interior) or portal NBTs (run boundaries that pass
+ * {@link #airAboveOk}). Pyramid facing outward, connecting side flush against
+ * the run interior. Adjacent stamps tile flush along X.
  *
- * <p><b>Run-based stamping.</b> A tunnel <i>run</i> is a contiguous block
- * of qualified X columns. For each run visible in the chunk's 16-column
- * window (with single-column peeks into the immediate neighbours to set
- * cross-chunk extension flags correctly) we:</p>
+ * <p>Short-tunnel rule: portals are skipped on tunnel runs that are
+ * "fully internal" to one chunk (both endpoints inside the chunk OR at
+ * chunk boundaries that don't extend cross-chunk). Such runs are at most
+ * 16 columns long — too short to fit two non-overlapping 10-col portal
+ * stamps.</p>
  *
- * <ol>
- *   <li>Stamp {@code tunnel_portal} unmirrored at {@code runStart} (the
- *       actual leftmost qualified column — not rounded to a 10-block
- *       boundary) if the run is ≥ 10 columns long.</li>
- *   <li>Stamp {@code tunnel_portal} mirrored on +X at {@code runEnd - 9}
- *       if the run is ≥ 11 columns long. (For 10-column runs the entrance
- *       alone covers the whole run.) For 11-19 column runs the two stamps
- *       overlap — exit wins the overlap since it stamps second — giving
- *       pyramid facades at both ends.</li>
- *   <li>Stamp {@code tunnel_section} at every {@code sx % 10 == 0}
- *       position that fits entirely in the run's middle region
- *       {@code [runStart + 10, runEnd - 10]}. Absolute alignment (instead
- *       of relative to {@code runStart}) keeps section boundaries coherent
- *       across chunks that each see only part of a long run.</li>
- * </ol>
+ * <p>Extension retry: when the air-above check fails at a run boundary,
+ * the tunnel is extended by one section (10 cols) into the open-end
+ * direction and the check is retried at the new boundary. Up to
+ * {@link #MAX_PORTAL_EXTENSIONS} retries; the chain stops early if it
+ * would exceed the worldgen 3×3 chunk write window. Pre-scanned: no
+ * section is committed until a portal placement succeeds further out.</p>
  *
- * <p>Any qualified column not covered by a stamp falls back to
- * {@link LegacyTunnelPaint#paintTunnelColumn}. Approach trenches
- * (non-qualified columns near a tunnel) always stay procedural.</p>
- *
- * <p>Runs that touch the qualified window edges have unknown actual
- * endpoints — for those we skip the out-of-window portal stamp and rely on
- * the chunk that can see that endpoint to handle it. Middle sections in
- * window-edge runs start at least 10 blocks inside the window so they
- * can't overlap an unseen entrance/exit stamp.</p>
+ * <p>Falls back to {@link LegacyTunnelPaint#paintTunnelColumnWorldgen} when
+ * no section NBT is registered (so the corridor stays passable on a fresh
+ * install) or when the corridor is too wide for the 3×3 worldgen window.
+ * Wide corridors don't get portal facades today (legacy paint has no
+ * pyramid).</p>
  */
 public final class TunnelGenerator {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** 13-wide tunnel needs ±2 chunks on Z to be covered by the view-distance sweep. */
-    private static final int Z_CHUNK_MARGIN = 2;
+    /**
+     * Per-chunk "this chunk had ≥ 1 tunnel column placed" flag, used to
+     * propagate the more-lenient {@code ext} qualification mode to
+     * neighbouring chunks along the corridor (X-axis). When this chunk is
+     * processed, if either {@code (chunkX±1, chunkZ)} is in this set the
+     * scan starts in extended mode — a single soft spot at {@code centerZ}
+     * (cave entrance, river bed, etc.) won't terminate an otherwise
+     * continuous tunnel.
+     *
+     * <p>In-memory only; on server restart the flag resets. Chunks
+     * generated post-restart at the boundary may show a slight seam where
+     * the tunnel doesn't start as early as it would have. Accepted
+     * trade-off vs. {@link net.minecraft.world.level.saveddata.SavedData}
+     * synchronization across worldgen worker threads.</p>
+     */
+    private static final Set<Long> TUNNELED_CHUNKS = ConcurrentHashMap.newKeySet();
 
-    /** Max previously-unprocessed chunks to fill per periodic scan — same budget as track fill. */
-    private static final int CHUNKS_PER_SCAN_BUDGET = 1;
-
-    /** Minimum qualified-column run length that uses a portal stamp at all. */
-    private static final int MIN_PORTAL_RUN = 10;
-
-    /** Minimum run length for stamping BOTH entrance and exit (10-col runs get entrance only). */
-    private static final int MIN_DUAL_PORTAL_RUN = 11;
+    /**
+     * Maximum number of 10-col tunnel-section extensions to try when the
+     * air-above check fails at a run boundary. Each extension moves the
+     * candidate portal location {@link TunnelTemplate#LENGTH} blocks
+     * further into the open-end direction. The chain stops earlier if
+     * the next candidate would exceed the worldgen 3×3 chunk write window.
+     */
+    private static final int MAX_PORTAL_EXTENSIONS = 3;
 
     private TunnelGenerator() {}
 
-    /** A contiguous block of qualified columns detected in a chunk's qualified window. */
-    private record Run(int start, int end, boolean extendsLeft, boolean extendsRight) {
-        int length() { return end - start + 1; }
-    }
-
     /**
-     * Ensure tunnel blocks exist in the given chunk for the given track geometry.
-     * Caches the chunk key on completion so subsequent calls exit in O(1).
+     * Worldgen-time tunnel placement. For each X column in this chunk that
+     * qualifies as underground (probe at {@code (worldX, ceilingY+1, centerZ)},
+     * see {@link #isColumnUndergroundWorldgen}), stamp the full section NBT at
+     * that column via {@link TunnelTemplate#placeSectionAtWorldgen}. On NBT
+     * miss (or when the tunnel Z extent exceeds the 3×3 worldgen window for
+     * very wide corridors), fall back to
+     * {@link LegacyTunnelPaint#paintTunnelColumnWorldgen}.
      *
-     * <p><b>Two-phase detection.</b> First a single-block probe at the chunk
-     * centre column above the cleared corridor; if the probe sees open sky
-     * (or water / leaves / any non-underground material) we mark the chunk
-     * processed and bail — the common case in flat / ocean terrain. Only
-     * when the probe hits underground material do we scan the chunk's 16
-     * columns, validate roof material at run boundaries, and stamp the
-     * tunnel. See {@code plans/peaceful-sprouting-sonnet.md}.</p>
-     */
-    public static void ensureTunnelForChunk(
-        ServerLevel level, int chunkX, int chunkZ,
-        TrackGeometry g, Set<Long> tunnelFilledChunks
-    ) {
-        long chunkKey = ChunkPos.asLong(chunkX, chunkZ);
-        if (tunnelFilledChunks.contains(chunkKey)) return;
-
-        TunnelGeometry tg = TunnelGeometry.from(g);
-
-        int chunkMinX = chunkX << 4;
-        int chunkMaxX = chunkMinX + 15;
-        int chunkMinZ = chunkZ << 4;
-        int chunkMaxZ = chunkMinZ + 15;
-
-        // Fast Z-corridor prefilter — the tunnel spans z ∈ [wallMinZ, wallMaxZ]
-        // (13 wide). Chunks fully outside that range can never contain tunnel
-        // blocks; mark processed so we never look at them again.
-        if (chunkMaxZ < tg.wallMinZ() || chunkMinZ > tg.wallMaxZ()) {
-            tunnelFilledChunks.add(chunkKey);
-            return;
-        }
-
-        long t0 = System.nanoTime();
-
-        // PHASE 1 — Cheap probe at the chunk's centre column, above the
-        // carved corridor. One block read against the chunk we're
-        // processing. We use {@code getChunkNow} + {@code chunk.getBlockState}
-        // instead of {@code level.getBlockState} because the latter triggers
-        // a synchronous chunk load when the chunk is "loaded" at the holder
-        // level but not yet at FULL ChunkStatus — observed as a single
-        // 200ms+ probe call during fly-over chunk streaming. With
-        // getChunkNow, a not-yet-FULL chunk returns null and we bail
-        // (the next sweep will retry once the chunk reaches FULL).
-        net.minecraft.world.level.chunk.LevelChunk chunk =
-            level.getChunkSource().getChunkNow(chunkX, chunkZ);
-        if (chunk == null) return;
-        BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
-        probePos.set(chunkMinX + 8, tg.ceilingY() + 5, tg.centerZ());
-        boolean probeHit = TunnelPalette.isUndergroundMaterial(chunk.getBlockState(probePos));
-        long tAfterProbe = System.nanoTime();
-        if (!probeHit) {
-            tunnelFilledChunks.add(chunkKey);
-            long dtProbeMs = (tAfterProbe - t0) / 1_000_000;
-            if (dtProbeMs > 5) {
-                LOGGER.debug("[DungeonTrain] tunnel.probe slow: chunk=({},{}) probe={}ms (miss)",
-                    chunkX, chunkZ, dtProbeMs);
-            }
-            return;
-        }
-
-        // PHASE 2 — Probe hit underground material. Scan the chunk's 16 X
-        // columns + cross-chunk peeks. Run ends get full roof verification.
-        boolean[] qualified = new boolean[16];
-        for (int dx = 0; dx < 16; dx++) {
-            qualified[dx] = isColumnUnderground(level, chunkMinX + dx, tg);
-        }
-        boolean prevEdgeQualified = qualified[0]
-            && isColumnUnderground(level, chunkMinX - 1, tg);
-        boolean nextEdgeQualified = qualified[15]
-            && isColumnUnderground(level, chunkMaxX + 1, tg);
-        long tAfterScan = System.nanoTime();
-
-        List<Run> rawRuns = detectRuns(qualified, chunkMinX);
-        List<Run> runs = new ArrayList<>(rawRuns.size());
-        for (Run r : rawRuns) {
-            boolean extL = r.extendsLeft && prevEdgeQualified;
-            boolean extR = r.extendsRight && nextEdgeQualified;
-            if (!extL && !verifyTunnelRoof(level, r.start, tg)) continue;
-            if (!extR && !verifyTunnelRoof(level, r.end, tg)) continue;
-            runs.add(new Run(r.start, r.end, extL, extR));
-        }
-        long tAfterDetect = System.nanoTime();
-
-        // Stamp portals + sections.
-        boolean[] covered = new boolean[16];
-        int stampsPlaced = 0;
-        for (Run r : runs) {
-            stampRun(level, r, tg, chunkMinX, chunkMaxX, covered);
-            stampsPlaced++;
-        }
-        long tAfterStamp = System.nanoTime();
-
-        // Procedural fallback for non-covered qualified columns.
-        int proceduralCols = 0;
-        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
-            if (covered[worldX - chunkMinX]) continue;
-            int idx = worldX - chunkMinX;
-            if (qualified[idx]) {
-                LegacyTunnelPaint.paintTunnelColumn(level, worldX, tg);
-                proceduralCols++;
-                boolean prev = idx > 0 ? qualified[idx - 1] : prevEdgeQualified;
-                boolean next = idx + 1 < 16 ? qualified[idx + 1] : nextEdgeQualified;
-                if (!prev || !next) {
-                    LegacyTunnelPaint.placePortalPyramid(level, worldX, tg);
-                }
-            }
-        }
-        long tAfterPaint = System.nanoTime();
-
-        tunnelFilledChunks.add(chunkKey);
-
-        // Diagnostic — prints sub-phase ms for chunks that took > 50ms total,
-        // so we can attribute the spike (probe vs scan vs detect vs stamp vs paint).
-        long totalMs = (tAfterPaint - t0) / 1_000_000;
-        if (totalMs > 50) {
-            LOGGER.debug("[DungeonTrain] tunnel.slow chunk=({},{}) total={}ms probe={}ms scan={}ms detect={}ms stamp={}ms paint={}ms runs={} stamps={} procCols={} qualifiedCount={}",
-                chunkX, chunkZ, totalMs,
-                (tAfterProbe - t0) / 1_000_000,
-                (tAfterScan - tAfterProbe) / 1_000_000,
-                (tAfterDetect - tAfterScan) / 1_000_000,
-                (tAfterStamp - tAfterDetect) / 1_000_000,
-                (tAfterPaint - tAfterStamp) / 1_000_000,
-                runs.size(), stampsPlaced, proceduralCols,
-                countTrue(qualified));
-        }
-    }
-
-    private static int countTrue(boolean[] a) {
-        int c = 0;
-        for (boolean b : a) if (b) c++;
-        return c;
-    }
-
-    /**
-     * Scan the {@code qualified} window and collect every contiguous block
-     * of qualified columns. Window-edge runs (first / last index qualified)
-     * have {@code extendsLeft} / {@code extendsRight} set so the stamping
-     * logic can skip out-of-window portal placements.
-     */
-    private static List<Run> detectRuns(boolean[] qualified, int baseX) {
-        List<Run> runs = new ArrayList<>();
-        int i = 0;
-        while (i < qualified.length) {
-            if (!qualified[i]) { i++; continue; }
-            int startIdx = i;
-            while (i < qualified.length && qualified[i]) i++;
-            int endIdx = i - 1;
-            runs.add(new Run(
-                baseX + startIdx,
-                baseX + endIdx,
-                startIdx == 0,
-                endIdx == qualified.length - 1
-            ));
-        }
-        return runs;
-    }
-
-    /**
-     * Stamp the portals + middle sections for a single run, and mark the
-     * chunk columns each stamp covers in the {@code covered} array. Stamps
-     * whose origin is outside this chunk's [chunkMinX, chunkMaxX] range
-     * are NOT written by this chunk — the chunk that contains that origin
-     * will write them on its own pass — but we still mark their covered
-     * columns so this chunk skips procedural paint on them.
-     */
-    private static void stampRun(ServerLevel level, Run r, TunnelGeometry tg,
-                                 int chunkMinX, int chunkMaxX, boolean[] covered) {
-        if (r.length() < MIN_PORTAL_RUN) return;
-
-        // Entrance portal — stamped only when we actually see the run's
-        // left edge (otherwise the true runStart is somewhere past the
-        // window and another chunk will stamp it).
-        if (!r.extendsLeft) {
-            stampPortalAt(level, r.start, tg, false, chunkMinX, chunkMaxX, covered);
-        }
-
-        // Exit portal — needs runLength ≥ 11 so it doesn't self-overlap
-        // at runLength == 10 (in which case entrance alone covers the run).
-        if (!r.extendsRight && r.length() >= MIN_DUAL_PORTAL_RUN) {
-            stampPortalAt(level, r.end - 9, tg, true, chunkMinX, chunkMaxX, covered);
-        }
-
-        // Middle sections packed tightly after the entrance portal —
-        // alignment is relative to {@code r.start} (not world-absolute
-        // {@code worldX % 10 == 0}) so sections land flush against the
-        // portal regardless of where the run starts. For a 30-column run
-        // beginning at worldX=53 this gives entrance [53..62], section
-        // [63..72], exit [73..82] with zero procedural gap. Absolute
-        // alignment would have lost the middle section entirely (firstSx=70,
-        // sx+9=79 > middleEnd=72 → no stamp).
-        //
-        // Runs wider than the 56-column qualified window can't see both
-        // ends from a single chunk. Chunks where {@code extendsLeft} is
-        // true derive section alignment from the window-edge {@code r.start}
-        // instead of the real run start, so sections may misalign across
-        // chunk boundaries for very long tunnels — visible but rare.
-        int middleStart = r.start + 10;
-        int middleEnd;
-        if (r.extendsRight) {
-            middleEnd = r.end - 10;
-        } else if (r.length() >= MIN_DUAL_PORTAL_RUN) {
-            middleEnd = r.end - 10;
-        } else {
-            // runLength is 10 — entrance covers everything, no middle.
-            middleEnd = r.start - 1;
-        }
-
-        for (int sx = middleStart; sx + 9 <= middleEnd; sx += 10) {
-            stampSectionAt(level, sx, tg, chunkMinX, chunkMaxX, covered);
-        }
-    }
-
-    /** Stamp (or mark-covered) a portal at {@code origin} — actual
-     *  placeInWorld call only runs if origin is in this chunk's X range
-     *  AND the 2×2 chunk footprint is loaded. Covered[] is marked whether
-     *  we stamp or not, so procedural paint stays off those columns. */
-    private static void stampPortalAt(ServerLevel level, int origin, TunnelGeometry tg,
-                                      boolean mirrorX, int chunkMinX, int chunkMaxX,
-                                      boolean[] covered) {
-        markCovered(covered, origin, origin + 9, chunkMinX, chunkMaxX);
-        if (origin >= chunkMinX && origin <= chunkMaxX
-            && sectionChunksLoaded(level, origin, TunnelTemplate.LENGTH, tg)) {
-            TunnelTemplate.placePortalAt(
-                level,
-                new BlockPos(origin, tg.floorY(), tg.wallMinZ()),
-                mirrorX
-            );
-        }
-    }
-
-    /** Same contract as {@link #stampPortalAt} but places the section template. */
-    private static void stampSectionAt(ServerLevel level, int origin, TunnelGeometry tg,
-                                       int chunkMinX, int chunkMaxX, boolean[] covered) {
-        markCovered(covered, origin, origin + 9, chunkMinX, chunkMaxX);
-        if (origin >= chunkMinX && origin <= chunkMaxX
-            && sectionChunksLoaded(level, origin, TunnelTemplate.LENGTH, tg)) {
-            TunnelTemplate.placeSectionAt(
-                level,
-                new BlockPos(origin, tg.floorY(), tg.wallMinZ())
-            );
-        }
-    }
-
-    private static void markCovered(boolean[] covered, int worldMinX, int worldMaxX,
-                                    int chunkMinX, int chunkMaxX) {
-        int lo = Math.max(worldMinX, chunkMinX);
-        int hi = Math.min(worldMaxX, chunkMaxX);
-        for (int wx = lo; wx <= hi; wx++) {
-            covered[wx - chunkMinX] = true;
-        }
-    }
-
-    /**
-     * Check that every chunk the 10×14×13 section footprint overlaps is
-     * currently loaded. A section spans chunks on both X (when it crosses
-     * a 16-block boundary) and Z (the 13-wide wall span always straddles
-     * at least 2 chunks on Z).
-     */
-    private static boolean sectionChunksLoaded(ServerLevel level, int sectionStart, int lengthX, TunnelGeometry tg) {
-        int minCx = sectionStart >> 4;
-        int maxCx = (sectionStart + lengthX - 1) >> 4;
-        int minCz = tg.wallMinZ() >> 4;
-        int maxCz = tg.wallMaxZ() >> 4;
-        for (int cx = minCx; cx <= maxCx; cx++) {
-            for (int cz = minCz; cz <= maxCz; cz++) {
-                if (!level.getChunkSource().hasChunk(cx, cz)) return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Single-sample probe: one block read at
-     * {@code (worldX, ceilingY + 5, centerZ)}. Returns {@code true} when the
-     * sampled block is natural underground material AND the chunk holding it
-     * is loaded.
-     *
-     * <p>This is the lightweight per-column qualification used by both Phase 1
-     * (the chunk-centre probe in {@link #ensureTunnelForChunk}) and Phase 2
-     * (the 16-column scan inside the chunk plus single-column peeks into
-     * neighbours). Run boundaries get extra rigor via
-     * {@link #verifyTunnelRoof}, which samples the corridor's full Z width.</p>
-     *
-     * <p>The y of {@code ceilingY + 5} sits two rows above the tunnel's arched
-     * apex (apex at {@code ceilingY + 4}), so a column qualifies only when the
-     * full arched silhouette is buried — a 3-block-thick mountain roof
-     * disqualifies because the arch would poke out the top.</p>
-     */
-    public static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
-        if (!level.hasChunkAt(pos)) return false;
-        return TunnelPalette.isUndergroundMaterial(level.getBlockState(pos));
-    }
-
-    /**
-     * Roof verification at a tunnel-end column. Confirms underground material
-     * at three Z positions ({@code trackZMin / centerZ / trackZMax}) along the
-     * ceiling row at {@code ceilingY + 5}. Catches the case where the
-     * single-column probe passes (because the centre column happens to be
-     * solid) but the corridor's side columns are open — i.e. a thin rocky
-     * outcrop that shouldn't get a portal stamp.
-     *
-     * <p>Three reads. Called once per non-cross-chunk-extending run boundary,
-     * so at most twice per chunk-with-tunnel.</p>
-     */
-    static boolean verifyTunnelRoof(ServerLevel level, int worldX, TunnelGeometry tg) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        int y = tg.ceilingY() + 5;
-        int[] zs = { tg.trackZMin(), tg.centerZ(), tg.trackZMax() };
-        for (int z : zs) {
-            pos.set(worldX, y, z);
-            if (!level.hasChunkAt(pos)) return false;
-            if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return false;
-        }
-        return true;
-    }
-
-    /**
-     * Worldgen-time tunnel space placement. For each X column in this chunk,
-     * qualify against natural underground material at {@code ceilingY+5/6}
-     * (single-X read; no neighbour-chunk dependency) and, if qualified, paint
-     * the procedural tunnel column (floor, rails, airspace clearance, walls,
-     * lamps, arched roof) via {@link LegacyTunnelPaint#paintTunnelColumnWorldgen}.
-     *
-     * <p>Run detection, portal/section template stamps, and approach trenches
-     * are NOT done here — those need a ±20-column window that exceeds the
-     * single-chunk worldgen scope and stay on the runtime drain (
-     * {@link #fillRenderDistance}) until item 6.</p>
-     *
-     * <p>Cross-chunk Z writes (walls at trackZMin-4 and trackZMax+4, plus arch
-     * tier overflow) stay inside the immediate Z-neighbour chunk, within
-     * NeoForge's standard 3×3 decoration window.</p>
+     * <p>Tunnel continuity uses an {@code ext} flag tracked in
+     * {@link #TUNNELED_CHUNKS}: a chunk inherits {@code ext=true} on entry if
+     * either X-neighbour was tunneled, and within the chunk {@code ext} also
+     * upgrades to true once the first column gets a tunnel placement. In
+     * extended mode the qualification probe widens to a 7-block Z scan,
+     * tolerating soft spots at {@code centerZ}.</p>
      */
     public static void placeTunnelSpaceAtWorldgen(
         WorldGenLevel level, ServerLevel serverLevel,
@@ -429,141 +101,362 @@ public final class TunnelGenerator {
         int chunkMinZ = chunkZ << 4;
         int chunkMaxZ = chunkMinZ + 15;
 
-        // Fast Z-corridor prefilter — only chunks containing the corridor
-        // center can qualify columns. Off-corridor chunks skip cleanly.
         if (chunkMaxZ < tg.trackZMin() || chunkMinZ > tg.trackZMax()) return;
 
-        // Probe-and-confirm — same pattern as the runtime variant. One
-        // read at the chunk centre column; if it's not natural underground
-        // material the chunk's corridor has open sky / water above and
-        // there's no tunnel work to do. Replaces the previous 16 × 6 = 96
-        // reads per chunk with 1 read in the common case (ocean / flat
-        // terrain dominates worldgen during flight).
-        BlockPos.MutableBlockPos probePos = new BlockPos.MutableBlockPos();
-        probePos.set(chunkMinX + 8, tg.ceilingY() + 5, tg.centerZ());
-        if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(probePos))) {
-            return;
-        }
+        // 3×3-window fit on Z: stamp origin is offset +1 on Z (template is
+        // authored 1 block toward +Z relative to the corridor walls), so
+        // the stamp spans tg.wallMinZ+1..tg.wallMaxZ+1 (13 wide).
+        // Worldgen can write to chunks within ±1 of this chunk on Z. Wider
+        // corridors (width > 16) exceed that envelope and fall back to
+        // legacy paint per-column for the whole chunk.
+        int stampOriginZ = tg.wallMinZ() + 1;
+        int stampMinChunkZ = stampOriginZ >> 4;
+        int stampMaxChunkZ = (stampOriginZ + TunnelTemplate.WIDTH - 1) >> 4;
+        boolean canStampSection = stampMinChunkZ >= chunkZ - 1 && stampMaxChunkZ <= chunkZ + 1;
 
-        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
-            if (!isColumnUndergroundWorldgen(level, worldX, tg)) continue;
+        // ext starts true if either X-neighbour at this chunkZ has already
+        // been tunneled — lets a continuous tunnel cross a soft spot at
+        // centerZ that would otherwise break it. Within Pass A, ext also
+        // upgrades to true once the first column in this chunk qualifies,
+        // so subsequent qualification probes get the lenient check.
+        boolean ext = TUNNELED_CHUNKS.contains(ChunkPos.asLong(chunkX - 1, chunkZ))
+                   || TUNNELED_CHUNKS.contains(ChunkPos.asLong(chunkX + 1, chunkZ));
+
+        // Pass A — qualification scan. Indexed (worldX - chunkMinX). Drives
+        // both stamping and entrance/exit boundary detection.
+        boolean[] qualified = new boolean[16];
+        boolean anyQualified = false;
+        for (int dx = 0; dx < 16; dx++) {
+            int worldX = chunkMinX + dx;
+            boolean q = isColumnUndergroundWorldgen(level, worldX, tg, ext);
+            qualified[dx] = q;
+            if (q) {
+                anyQualified = true;
+                ext = true;
+            }
+        }
+        if (!anyQualified) return;
+
+        // Cross-chunk terrain probes — read the immediate-neighbour columns
+        // (in next/prev chunk) so boundary detection is based on actual
+        // terrain qualification rather than a coarse "neighbour chunk has
+        // some tunnel" heuristic. Both reads land 1 column outside this
+        // chunk, well inside the worldgen 3×3 window.
+        boolean prevX_qualified = isColumnUndergroundWorldgen(level, chunkMinX - 1, tg, ext);
+        boolean nextX_qualified = isColumnUndergroundWorldgen(level, chunkMaxX + 1, tg, ext);
+
+        int stampLen = TunnelTemplate.LENGTH;
+        int lastStampEndX = Integer.MIN_VALUE;  // exclusive lower bound for next non-exit stamp
+        int stamped = 0;
+        int portals = 0;
+        int legacy = 0;
+
+        // Pass B — boundary-aware stamp loop. Per qualified column:
+        //  1. Detect entrance / exit using qualified[] + cross-chunk probes.
+        //  2. Skip portals on "fully internal" runs (both endpoints inside
+        //     this chunk, no cross-chunk extension) — those are at most
+        //     16 cols, too short to fit two non-overlapping 10-col stamps.
+        //  3. Try exit FIRST — exit portals are allowed to overlap (and
+        //     overwrite) prior interior section stamps in the same run.
+        //  4. Otherwise, if covered by prior stamp, skip; else try entrance
+        //     portal (with backward extensions) or stamp interior section.
+        for (int dx = 0; dx < 16; dx++) {
+            if (!qualified[dx]) continue;
+            int worldX = chunkMinX + dx;
+
+            boolean prevQualified = (dx > 0) ? qualified[dx - 1] : prevX_qualified;
+            boolean nextQualified = (dx < 15) ? qualified[dx + 1] : nextX_qualified;
+            boolean isEntrance = !prevQualified;
+            boolean isExit = !nextQualified;
+
+            // Fully-internal short-tunnel rule — applied at any boundary
+            // detection. A run is "fully internal" when both endpoints sit
+            // within this chunk (or at chunk boundaries that don't extend
+            // cross-chunk). Such runs are at most 16 cols < 20 → skip.
+            if (isEntrance || isExit) {
+                int runStart = dx;
+                int runEnd = dx;
+                while (runStart - 1 >= 0 && qualified[runStart - 1]) runStart--;
+                while (runEnd + 1 < 16 && qualified[runEnd + 1]) runEnd++;
+                boolean runStartsInChunk = runStart > 0 || !prevX_qualified;
+                boolean runEndsInChunk = runEnd < 15 || !nextX_qualified;
+                if (runStartsInChunk && runEndsInChunk) {
+                    isEntrance = false;
+                    isExit = false;
+                }
+            }
+
+            // Exit first — exit portals overlap & overwrite prior section
+            // stamps in the same run, so they bypass the lastStampEndX gate.
+            if (isExit && canStampSection) {
+                int placed = tryPlaceExitPortal(level, serverLevel, tg, worldX, stampOriginZ, chunkMaxX);
+                if (placed >= 0) {
+                    portals++;
+                    lastStampEndX = Math.max(lastStampEndX, placed);
+                    continue;
+                }
+            }
+
+            if (worldX <= lastStampEndX) continue;
+
+            if (canStampSection) {
+                if (isEntrance) {
+                    int placed = tryPlaceEntrancePortal(level, serverLevel, tg, worldX, stampOriginZ, chunkMinX);
+                    if (placed >= 0) {
+                        portals++;
+                        lastStampEndX = placed;
+                        continue;
+                    }
+                }
+                BlockPos origin = new BlockPos(worldX, tg.floorY(), stampOriginZ);
+                if (TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, origin)) {
+                    stamped++;
+                    lastStampEndX = worldX + stampLen - 1;
+                    continue;
+                }
+            }
+            // NBT missing OR wide-corridor case — legacy paint keeps the
+            // corridor passable. Portals require NBT stamping so wide
+            // corridors get no facade today.
             LegacyTunnelPaint.paintTunnelColumnWorldgen(level, worldX, tg);
+            legacy++;
+        }
+        if (stamped > 0 || portals > 0 || legacy > 0) {
+            TUNNELED_CHUNKS.add(ChunkPos.asLong(chunkX, chunkZ));
+            LOGGER.info("[DungeonTrain] tunnel.cols.worldgen chunk=({},{}) nbt={} portal={} legacy={}",
+                chunkX, chunkZ, stamped, portals, legacy);
         }
     }
 
     /**
-     * Worldgen-friendly variant of {@link #isColumnUnderground}. Reads
-     * through {@link WorldGenLevel} and skips the {@code level.hasChunkAt}
-     * gate (worldgen guarantees the current chunk is loaded). Single
-     * sample at {@code (worldX, ceilingY+5, centerZ)} matches the runtime
-     * variant — the corridor's full Z width is not validated here because
-     * any chunk reaching this code already passed the centre probe in
-     * {@link #placeTunnelSpaceAtWorldgen}, and the per-column skip below
-     * picks off any column whose centre isn't itself underground.
+     * Try placing an entrance portal anchored at {@code worldX} (the run's
+     * first qualified column), retrying with up to
+     * {@link #MAX_PORTAL_EXTENSIONS} backward 10-col tunnel-section
+     * extensions when {@link #airAboveOk} fails. Pre-scans candidate
+     * positions: nothing is committed to the world until a position passes
+     * the air-above check.
+     *
+     * <p>Returns {@code worldX + LENGTH - 1} (the rightmost X covered) on
+     * success, or {@code -1} when no portal could be placed (all candidates
+     * failed, hit the worldgen 3×3 window boundary, or NBT missing). On
+     * success with extensions > 0, also stamps the original boundary's
+     * section so the qualified run is continuous between the portal's
+     * extended position and the original boundary.</p>
      */
-    static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg) {
+    private static int tryPlaceEntrancePortal(WorldGenLevel level, ServerLevel serverLevel,
+            TunnelGeometry tg, int worldX, int stampOriginZ, int chunkMinX) {
+        int currentBoundary = worldX;
+        int extensions = 0;
+        while (!airAboveOk(level, tg, currentBoundary, false)) {
+            if (extensions >= MAX_PORTAL_EXTENSIONS) return -1;
+            int next = currentBoundary - TunnelTemplate.LENGTH;
+            // Stay within the worldgen 3×3 chunk write window on -X.
+            if (next < chunkMinX - 16) return -1;
+            currentBoundary = next;
+            extensions++;
+        }
+        // Commit: intermediate sections fill the gap between the portal and
+        // the original boundary. Portal stamp at currentBoundary covers
+        // currentBoundary..currentBoundary+9; intermediates are at
+        // worldX - LENGTH * e for e in [1, extensions - 1].
+        for (int e = 1; e < extensions; e++) {
+            int sectionOriginX = worldX - TunnelTemplate.LENGTH * e;
+            BlockPos sectionOrigin = new BlockPos(sectionOriginX, tg.floorY(), stampOriginZ);
+            if (!TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
+                return -1;
+            }
+        }
+        BlockPos portalOrigin = new BlockPos(currentBoundary, tg.floorY(), stampOriginZ);
+        if (!TunnelTemplate.placePortalAtWorldgen(level, serverLevel, portalOrigin, false)) {
+            return -1;
+        }
+        // For extensions > 0 the portal stamp doesn't reach the original
+        // boundary worldX; stamp the boundary's section so the qualified
+        // run has continuous tunnel from the portal forward.
+        if (extensions > 0) {
+            BlockPos origSection = new BlockPos(worldX, tg.floorY(), stampOriginZ);
+            TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, origSection);
+        }
+        return worldX + TunnelTemplate.LENGTH - 1;
+    }
+
+    /**
+     * Try placing an exit portal anchored at {@code worldX} (the run's
+     * last qualified column), retrying with up to
+     * {@link #MAX_PORTAL_EXTENSIONS} forward 10-col tunnel-section
+     * extensions when {@link #airAboveOk} fails. Mirrors
+     * {@link #tryPlaceEntrancePortal} on +X. The original boundary's
+     * tunnel section is already covered by prior interior section stamps
+     * (placed earlier in Pass B during interior iteration), so no extra
+     * boundary section is stamped here.
+     *
+     * <p>Returns {@code currentBoundary} (the extended boundary X, where
+     * the pyramid lands) on success, or {@code -1} on failure.</p>
+     */
+    private static int tryPlaceExitPortal(WorldGenLevel level, ServerLevel serverLevel,
+            TunnelGeometry tg, int worldX, int stampOriginZ, int chunkMaxX) {
+        int currentBoundary = worldX;
+        int extensions = 0;
+        while (!airAboveOk(level, tg, currentBoundary, true)) {
+            if (extensions >= MAX_PORTAL_EXTENSIONS) return -1;
+            int next = currentBoundary + TunnelTemplate.LENGTH;
+            // Stay within the worldgen 3×3 chunk write window on +X. The
+            // section/portal stamp covers up to currentBoundary, so the
+            // rightmost write is currentBoundary itself.
+            if (next > chunkMaxX + 16) return -1;
+            currentBoundary = next;
+            extensions++;
+        }
+        // Intermediate sections: e in [1, extensions - 1], section at
+        // origin = worldX + LENGTH * e - (LENGTH - 1) = worldX + 10*e - 9.
+        for (int e = 1; e < extensions; e++) {
+            int sectionOriginX = worldX + TunnelTemplate.LENGTH * e - (TunnelTemplate.LENGTH - 1);
+            BlockPos sectionOrigin = new BlockPos(sectionOriginX, tg.floorY(), stampOriginZ);
+            if (!TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
+                return -1;
+            }
+        }
+        // Exit portal: mirrorX=true puts pyramid at originX + 9, so origin
+        // = currentBoundary - 9 lands the pyramid AT currentBoundary.
+        BlockPos portalOrigin = new BlockPos(currentBoundary - (TunnelTemplate.LENGTH - 1), tg.floorY(), stampOriginZ);
+        if (!TunnelTemplate.placePortalAtWorldgen(level, serverLevel, portalOrigin, true)) {
+            return -1;
+        }
+        return currentBoundary;
+    }
+
+    /**
+     * Single-column underground qualification at {@code (worldX, ceilingY+1,
+     * centerZ)} via {@link WorldGenLevel}. Skips the {@code level.hasChunkAt}
+     * gate (worldgen guarantees the current chunk is loaded; ±1 chunk reads
+     * land in the standard 3×3 decoration window).
+     *
+     * <p>Two modes:</p>
+     * <ul>
+     *   <li><b>Default ({@code ext=false})</b>: single probe at
+     *       {@code (worldX, ceilingY+1, centerZ)}. A miss disqualifies the
+     *       column.</li>
+     *   <li><b>Extended ({@code ext=true})</b>: only enabled once a tunnel
+     *       is "active" upstream (within the same chunk after a stamp, or
+     *       on entry from a neighbour chunk that was tunneled). On a center
+     *       miss, scan a coarse 3D grid: 4 Y levels going down from
+     *       {@code probeY}, with Z patterns alternating between
+     *       <ul>
+     *         <li>Pattern A ({@code dy} even): {@code dz ∈ {-3,-1,0,+1,+3}}</li>
+     *         <li>Pattern B ({@code dy} odd):  {@code dz ∈ {-2,0,+2}}</li>
+     *       </ul>
+     *       Tolerates a soft spot at {@code centerZ} (e.g. cave entrance,
+     *       river bed) so it doesn't terminate an otherwise continuous
+     *       tunnel. Scanning down 4 Y levels keeps an ongoing tunnel from
+     *       breaking just because the prospective ceiling clips a thin
+     *       overhead air pocket while the lower body of the column is
+     *       still buried.</li>
+     * </ul>
+     */
+    static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg, boolean ext) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        pos.set(worldX, tg.ceilingY() + 5, tg.centerZ());
+        int probeY = tg.ceilingY() + 1;
+        int centerZ = tg.centerZ();
+        pos.set(worldX, probeY, centerZ);
+        if (TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return true;
+        if (!ext) return false;
+        int[] patternA = { -3, -1, 0, 1, 3 };
+        int[] patternB = { -2, 0, 2 };
+        for (int dy = 0; dy < 4; dy++) {
+            int y = probeY - dy;
+            int[] pattern = (dy % 2 == 0) ? patternA : patternB;
+            for (int dz : pattern) {
+                if (dy == 0 && dz == 0) continue; // already checked in cheap path
+                pos.set(worldX, y, centerZ + dz);
+                if (TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * {@link ServerLevel} variant of {@link #isColumnUndergroundWorldgen}.
+     * Used by login-spawn placement
+     * ({@code games.brennan.dungeontrain.event.PlayerJoinEvents}) to find
+     * the first non-tunnel column for the player's safe-spawn fallback.
+     * Independent of worldgen — caller is responsible for loading the chunk
+     * before calling. Returns {@code false} for unloaded chunks.
+     */
+    public static boolean isColumnUnderground(ServerLevel level, int worldX, TunnelGeometry tg) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        pos.set(worldX, tg.ceilingY() + 1, tg.centerZ());
+        if (!level.hasChunkAt(pos)) return false;
         return TunnelPalette.isUndergroundMaterial(level.getBlockState(pos));
     }
 
     /**
-     * Drain up to {@link #CHUNKS_PER_SCAN_BUDGET} chunks of work per call —
-     * first the pending queue populated by {@code TunnelChunkEvents}, then a
-     * sweep of the view-distance corridor on X × ±{@link #Z_CHUNK_MARGIN} on Z.
+     * X-axis offsets for the {@link #airAboveOk} probe span — 3 columns
+     * spaced 2 blocks apart, starting one column outside the open-end face
+     * and extending inward toward the connecting side. The 3 probes cover
+     * a 6-column zone at the open end of the portal.
+     *
+     * <ul>
+     *   <li>{@code mirrorX == false} (entrance, open faces -X):
+     *       {@code { -1, +1, +3 }} — outside the -X open end, then 2 cols
+     *       inward, then 4 cols inward (toward connecting side at +X).</li>
+     *   <li>{@code mirrorX == true} (exit, open faces +X):
+     *       {@code { +1, -1, -3 }} — same pattern mirrored.</li>
+     * </ul>
+     *
+     * <p>Pure arithmetic, no level access — extracted so the offset shape
+     * can be unit-tested independently of {@link WorldGenLevel}.</p>
      */
-    public static void fillRenderDistance(ServerLevel level, ManagedShip ship, TrainTransformProvider provider) {
-        TrackGeometry g = provider.getTrackGeometry();
-        if (g == null) return;
+    static int[] probeXOffsets(boolean mirrorX) {
+        int dir = mirrorX ? -1 : 1;
+        return new int[] { -dir, dir, 3 * dir };
+    }
 
-        long t0 = System.nanoTime();
-
-        Set<Long> filled = provider.getTunnelFilledChunks();
-        Set<Long> pending = provider.getPendingTunnelChunks();
-        int budget = CHUNKS_PER_SCAN_BUDGET;
-        int drainedFromPending = 0;
-        int pendingHasChunkChecks = 0;
-        int pendingSizeAtStart = pending.size();
-
-        if (!pending.isEmpty()) {
-            // Save-busy chunks must be re-queued for a later sweep, but
-            // re-adding to the pending Deque DURING iteration triggers a
-            // weakly-consistent iterator's see-your-own-writes behaviour
-            // — the iterator picks the just-re-added key, finds it still
-            // save-busy, re-adds again, and loops millions of times in a
-            // single tick (observed: 16M hasChunk calls, 1.8s spike).
-            // Stage re-queue to a side list and write back once after the
-            // drain loop exits.
-            java.util.List<Long> deferredKeys = null;
-            Iterator<Long> it = pending.iterator();
-            while (budget > 0 && it.hasNext()) {
-                long key = it.next();
-                it.remove();
-                int cx = ChunkPos.getX(key);
-                int cz = ChunkPos.getZ(key);
-                if (filled.contains(key)) continue;
-                if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
-                pendingHasChunkChecks++;
-                if (!level.getChunkSource().hasChunk(cx, cz)) continue;
-                if (TunnelChunkEvents.isSaveBusy(key)) {
-                    if (deferredKeys == null) deferredKeys = new java.util.ArrayList<>();
-                    deferredKeys.add(key);
-                    continue;
-                }
-                ensureTunnelForChunk(level, cx, cz, g, filled);
-                budget--;
-                drainedFromPending++;
-            }
-            if (deferredKeys != null) pending.addAll(deferredKeys);
+    /**
+     * Validity gate for portal placement. At each of the 3 X probe columns
+     * (see {@link #probeXOffsets}), checks 3 spatial positions:
+     * <ul>
+     *   <li><b>Top of tunnel</b>: {@code (probeX, ceilingY + 1, centerZ)} —
+     *       just above the tunnel ceiling at the corridor centre.</li>
+     *   <li><b>Left side</b>: {@code (probeX, midY, wallMinZ)} —
+     *       mid-height of the tunnel cross-section, at the left wall.</li>
+     *   <li><b>Right side</b>: {@code (probeX, midY, wallMaxZ)} —
+     *       mid-height of the tunnel cross-section, at the right wall.</li>
+     * </ul>
+     * where {@code midY = (floorY + ceilingY) / 2}.
+     *
+     * <p>All 9 probes (3 X × 3 spatial) must land on non-underground
+     * material (air, leaves, plants, water — anything
+     * {@link TunnelPalette#isUndergroundMaterial} returns {@code false} for).
+     * Any single probe hitting solid underground rock disqualifies the
+     * portal — the tunnel just terminates raw at the boundary, OR the
+     * caller may attempt an extension and re-probe further out.</p>
+     *
+     * <p>Intent: a portal facade only makes visual sense where the open
+     * end emerges into open space — open above the ceiling AND open to
+     * each side at mid-height. Placing one inside continuous solid rock
+     * would just be a stone wall pyramid embedded in the mountain.</p>
+     *
+     * <p>Probe X range stays within ±3 of {@code x}, well inside the
+     * worldgen 3×3 decoration window's read envelope when called for
+     * any column the chunk's loop touches (or for an extension within the
+     * window's bounds).</p>
+     */
+    private static boolean airAboveOk(WorldGenLevel level, TunnelGeometry tg, int x, boolean mirrorX) {
+        int topY = tg.ceilingY() + 1;
+        int sideY = (tg.floorY() + tg.ceilingY()) / 2;
+        int centerZ = tg.centerZ();
+        int wallMinZ = tg.wallMinZ();
+        int wallMaxZ = tg.wallMaxZ();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int xOffset : probeXOffsets(mirrorX)) {
+            int probeX = x + xOffset;
+            pos.set(probeX, topY, centerZ);
+            if (TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return false;
+            pos.set(probeX, sideY, wallMinZ);
+            if (TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return false;
+            pos.set(probeX, sideY, wallMaxZ);
+            if (TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) return false;
         }
-
-        long tAfterPending = System.nanoTime();
-
-        int scanned = 0;
-        int scanHasChunkChecks = 0;
-        int scanCells = 0;
-        if (budget > 0) {
-            int viewDistance = level.getServer().getPlayerList().getViewDistance();
-            if (viewDistance <= 0) viewDistance = 10;
-
-            Vector3dc shipWorldPos = ship.currentWorldPosition();
-            int centerCx = (int) Math.floor(shipWorldPos.x()) >> 4;
-            int centerCz = g.trackCenterZ() >> 4;
-
-            for (int cz = centerCz - Z_CHUNK_MARGIN; cz <= centerCz + Z_CHUNK_MARGIN && budget > 0; cz++) {
-                for (int cx = centerCx - viewDistance; cx <= centerCx + viewDistance && budget > 0; cx++) {
-                    scanCells++;
-                    if (TrackGenerator.isShipyardChunk(cx, cz)) continue;
-                    long key = ChunkPos.asLong(cx, cz);
-                    if (filled.contains(key)) continue;
-                    scanHasChunkChecks++;
-                    if (!level.getChunkSource().hasChunk(cx, cz)) continue;
-                    // Same save-busy guard as the pending-drain path above —
-                    // sweep will revisit the chunk on a later tick once
-                    // IOWorker has finished serialising its NBT.
-                    if (TunnelChunkEvents.isSaveBusy(key)) continue;
-                    ensureTunnelForChunk(level, cx, cz, g, filled);
-                    budget--;
-                    scanned++;
-                }
-            }
-        }
-
-        long tEnd = System.nanoTime();
-        long totalMs = (tEnd - t0) / 1_000_000;
-        if (totalMs > 50) {
-            LOGGER.info("[tunnel.fill.slow] total={}ms pending={}ms scan={}ms pendingSize={} pendingHasChunk={} drained={} scanCells={} scanHasChunk={} scanned={} filled.size={}",
-                totalMs,
-                (tAfterPending - t0) / 1_000_000,
-                (tEnd - tAfterPending) / 1_000_000,
-                pendingSizeAtStart, pendingHasChunkChecks, drainedFromPending,
-                scanCells, scanHasChunkChecks, scanned, filled.size());
-        }
-
-        if (budget < CHUNKS_PER_SCAN_BUDGET && LOGGER.isDebugEnabled()) {
-            LOGGER.debug("[DungeonTrain] fillTunnelRenderDistance ship={} drained={} (pending={} scan={}) filled.size={} pending.size={}",
-                ship.id(), CHUNKS_PER_SCAN_BUDGET - budget, drainedFromPending, scanned,
-                filled.size(), pending.size());
-        }
+        return true;
     }
 }
