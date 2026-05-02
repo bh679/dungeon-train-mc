@@ -78,9 +78,9 @@ public final class TrainCarriageAppender {
      *
      * <p>Throughput cost: at groupSize=3, this caps carriages added per
      * tick at 3. The seed group from
-     * {@link TrainAssembler#spawnTrain} plus the appender's first ~9
-     * ticks fully populate the player's default 10-carriage window in
-     * &lt;0.5 seconds — imperceptible.</p>
+     * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
+     * ticks fully populate a typical auto-rd window (~14 groups at
+     * render distance 12) in &lt;1 second — imperceptible.</p>
      */
     private static final int MAX_SPAWNS_PER_TICK = 1;
 
@@ -122,11 +122,14 @@ public final class TrainCarriageAppender {
         int groupSize = leadProvider.getGroupSize();
         int length = dims.length();
 
-        // Target carriage count from config — drives halfBack / halfFront so
-        // /dt carriages adjusts how aggressively the appender extends.
-        int targetCount = DungeonTrainConfig.getNumCarriages();
-        int halfBack = (targetCount - 1) / 2;
-        int halfFront = targetCount - halfBack - 1;
+        // Target carriage count: per-player, derived from config or each
+        // player's render distance when the config is set to 0 (auto). The
+        // global needed-pIdx range is the union of per-player ranges, so
+        // players with different rd settings each contribute their own
+        // contribution to the eventual train length.
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        int globalMaxNeededPIdx = Integer.MIN_VALUE;
+        int globalMinNeededPIdx = Integer.MAX_VALUE;
 
         List<Integer> nearPlayerPIdxs = new ArrayList<>();
         for (ServerPlayer player : players) {
@@ -173,6 +176,16 @@ public final class TrainCarriageAppender {
                 LAST_SENT_PIDX.put(uuid, pIdx);
             }
 
+            int pTargetCount = (configCount > 0)
+                ? configCount
+                : autoTargetFromRenderDistance(player, length);
+            int pHalfBack = (pTargetCount - 1) / 2;
+            int pHalfFront = pTargetCount - pHalfBack - 1;
+            int pMaxNeeded = pIdx + pHalfFront;
+            int pMinNeeded = pIdx - pHalfBack;
+            if (pMaxNeeded > globalMaxNeededPIdx) globalMaxNeededPIdx = pMaxNeeded;
+            if (pMinNeeded < globalMinNeededPIdx) globalMinNeededPIdx = pMinNeeded;
+
             nearPlayerPIdxs.add(pIdx);
         }
         if (nearPlayerPIdxs.isEmpty()) return;
@@ -206,7 +219,7 @@ public final class TrainCarriageAppender {
         }
 
         List<Integer> anchorsToSpawn = computeGroupAnchorsToSpawn(
-            trainMaxAnchor, trainMinAnchor, halfBack, halfFront, groupSize, nearPlayerPIdxs);
+            trainMaxAnchor, trainMinAnchor, globalMaxNeededPIdx, globalMinNeededPIdx, groupSize);
         if (anchorsToSpawn.isEmpty()) return;
 
         // Belt-and-braces: even though trainMin/Max came from the
@@ -253,39 +266,31 @@ public final class TrainCarriageAppender {
 
     /**
      * Pure decision helper — exposed package-private for unit tests.
-     * Given the train's current min/max group anchors and a list of
-     * near-player pIdx values, return the list of new group anchors to
-     * spawn this tick in spawn order: forward anchors ascending, then
-     * backward anchors descending. Anchors already inside
-     * {@code [trainMinAnchor, trainMaxAnchor]} are never re-emitted.
+     * Given the train's current min/max group anchors and the resolved
+     * needed pIdx range (already unioned across all near players, with
+     * each player's halfBack/halfFront applied by the caller), return the
+     * list of new group anchors to spawn this tick in spawn order: forward
+     * anchors ascending, then backward anchors descending. Anchors already
+     * inside {@code [trainMinAnchor, trainMaxAnchor]} are never re-emitted.
      *
      * @param trainMaxAnchor current lead anchor pIdx
      * @param trainMinAnchor current tail anchor pIdx
-     * @param halfBack       per-player look-behind in carriage units
-     * @param halfFront      per-player look-ahead in carriage units
+     * @param maxNeededPIdx  highest pIdx any player needs (player.pIdx + halfFront)
+     * @param minNeededPIdx  lowest pIdx any player needs (player.pIdx − halfBack)
      * @param groupSize      carriages per group (≥ 1)
-     * @param playerPIdxs    near-player absolute pIdx values
      */
     static List<Integer> computeGroupAnchorsToSpawn(
         int trainMaxAnchor,
         int trainMinAnchor,
-        int halfBack,
-        int halfFront,
-        int groupSize,
-        List<Integer> playerPIdxs
+        int maxNeededPIdx,
+        int minNeededPIdx,
+        int groupSize
     ) {
-        if (playerPIdxs.isEmpty()) return List.of();
         if (groupSize < 1) {
             throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
         }
-
-        int maxNeededPIdx = Integer.MIN_VALUE;
-        int minNeededPIdx = Integer.MAX_VALUE;
-        for (int p : playerPIdxs) {
-            int h = p + halfFront;
-            int l = p - halfBack;
-            if (h > maxNeededPIdx) maxNeededPIdx = h;
-            if (l < minNeededPIdx) minNeededPIdx = l;
+        if (maxNeededPIdx == Integer.MIN_VALUE || minNeededPIdx == Integer.MAX_VALUE) {
+            return List.of();
         }
         // Snap needed pIdx range outward to group anchors. Math.floorDiv
         // handles negative pIdx correctly.
@@ -300,6 +305,29 @@ public final class TrainCarriageAppender {
             out.add(a);
         }
         return out;
+    }
+
+    /**
+     * Compute the per-player target carriage count from the player's
+     * render distance. Used when the {@code numCarriages} config is set
+     * to {@code 0} (auto). Falls back to the server-wide view distance
+     * if the player hasn't reported their setting yet (early-join window),
+     * then to a hardcoded 10-chunk floor if even that is unavailable
+     * (dedicated server with no setting). Clamps to
+     * {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR} ..
+     * {@link DungeonTrainConfig#MAX_CARRIAGES} so very low or very high
+     * rd values still produce a sensible train length.
+     */
+    static int autoTargetFromRenderDistance(ServerPlayer player, int carriageLength) {
+        int rdChunks = player.requestedViewDistance();
+        if (rdChunks <= 0) {
+            rdChunks = player.serverLevel().getServer().getPlayerList().getViewDistance();
+            if (rdChunks <= 0) rdChunks = 10;
+        }
+        int rdBlocks = rdChunks * 16;
+        int target = (rdBlocks * 2) / Math.max(1, carriageLength);
+        return Math.max(DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR,
+                        Math.min(DungeonTrainConfig.MAX_CARRIAGES, target));
     }
 
     /**

@@ -23,9 +23,13 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public final class DungeonTrainConfig {
 
-    public static final int MIN_CARRIAGES = 1;
+    public static final int MIN_CARRIAGES = 0;
     public static final int MAX_CARRIAGES = 50;
-    public static final int DEFAULT_CARRIAGES = 15;
+    public static final int DEFAULT_CARRIAGES = 0;
+    /** Seed value passed to TrainAssembler.spawnTrain when config = 0 (auto). The appender retargets immediately on the first tick. */
+    public static final int DEFAULT_CARRIAGES_AUTO_SEED = 15;
+    /** Lower bound applied to the auto-from-render-distance computation so very low rd doesn't produce a degenerate train. */
+    public static final int MIN_CARRIAGES_AUTO_FLOOR = 5;
 
     public static final double MIN_SPEED = 0.0;
     public static final double MAX_SPEED = 20.0;
@@ -68,7 +72,7 @@ public final class DungeonTrainConfig {
     private static Holder build(ModConfigSpec.Builder b) {
         b.push("train");
         ModConfigSpec.IntValue numCarriages = b
-                .comment("Number of carriages visible in the rolling window around each player. Defaults to 15 (= 5 groups at the default groupSize of 3).")
+                .comment("Carriages visible in the rolling window around each player. Set to 0 to auto-scale to each player's render distance (recommended). Positive values pin the count; e.g. 15 = 5 groups at the default groupSize of 3.")
                 .defineInRange("numCarriages", DEFAULT_CARRIAGES, MIN_CARRIAGES, MAX_CARRIAGES);
         ModConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")
