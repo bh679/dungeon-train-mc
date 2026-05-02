@@ -87,7 +87,7 @@ public final class DungeonTrainConfig {
                 .comment("Auto-generate stone-brick tunnels with stepped portal entrances where the train runs through thick underground rock.")
                 .define("generateTunnels", DEFAULT_GENERATE_TUNNELS);
         ModConfigSpec.EnumValue<CarriageGenerationMode> generationMode = b
-                .comment("How carriage variants are chosen. RANDOM = each index picks one of the four types at random (seeded per-world for determinism). RANDOM_GROUPED = groups of N random non-flatbed carriages separated by a flatbed. LOOPING = original 4-way cycle (STANDARD → WINDOWED → SOLID_ROOF → FLATBED).")
+                .comment("How carriage variants are chosen. RANDOM = each index picks one of the built-in types at random (seeded per-world for determinism). RANDOM_GROUPED = groups of N random non-flatbed carriages separated by a flatbed. LOOPING = original cycle (STANDARD → WINDOWED → FLATBED).")
                 .defineEnum("generationMode", DEFAULT_GENERATION_MODE);
         ModConfigSpec.IntValue groupSize = b
                 .comment("Non-flatbed run length for RANDOM_GROUPED: every Nth carriage becomes a flatbed separator. Ignored by RANDOM and LOOPING modes.")

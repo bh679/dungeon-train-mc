@@ -65,43 +65,43 @@ final class CarriageTemplateTest {
     }
 
     @Test
-    @DisplayName("LOOPING: variantForIndex(2) returns SOLID_ROOF")
-    void loop_two_returnsSolidRoof() {
-        assertEquals("solid_roof", CarriageTemplate.variantForIndex(2, LOOP).id());
+    @DisplayName("LOOPING: variantForIndex(2) returns FLATBED")
+    void loop_two_returnsFlatbed() {
+        assertEquals("flatbed", CarriageTemplate.variantForIndex(2, LOOP).id());
     }
 
     @Test
-    @DisplayName("LOOPING: variantForIndex(3) returns FLATBED")
-    void loop_three_returnsFlatbed() {
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(3, LOOP).id());
+    @DisplayName("LOOPING: variantForIndex(3) wraps back to STANDARD — cycle of 3 with no customs")
+    void loop_three_wrapsToStandard() {
+        assertEquals("standard", CarriageTemplate.variantForIndex(3, LOOP).id());
     }
 
     @Test
-    @DisplayName("LOOPING: variantForIndex(4) wraps back to STANDARD — cycle of 4 with no customs")
-    void loop_four_wrapsToStandard() {
-        assertEquals("standard", CarriageTemplate.variantForIndex(4, LOOP).id());
+    @DisplayName("LOOPING: variantForIndex(4) returns WINDOWED — cycle of 3 wraps")
+    void loop_four_returnsWindowed() {
+        assertEquals("windowed", CarriageTemplate.variantForIndex(4, LOOP).id());
     }
 
     @Test
-    @DisplayName("LOOPING: variantForIndex(-1) returns FLATBED — Math.floorMod(-1, 4) == 3")
+    @DisplayName("LOOPING: variantForIndex(-1) returns FLATBED — Math.floorMod(-1, 3) == 2")
     void loop_negativeOne_returnsFlatbed() {
-        // Math.floorMod distinguishes from Java's % operator: -1 % 4 == -1,
-        // but Math.floorMod(-1, 4) == 3. The rolling-window manager depends
+        // Math.floorMod distinguishes from Java's % operator: -1 % 3 == -1,
+        // but Math.floorMod(-1, 3) == 2. The rolling-window manager depends
         // on negative indices wrapping forward (carriage index -1 is behind
         // the spawner), so this test pins the contract explicitly.
         assertEquals("flatbed", CarriageTemplate.variantForIndex(-1, LOOP).id());
     }
 
     @Test
-    @DisplayName("LOOPING: variantForIndex(-4) returns STANDARD")
-    void loop_negativeFour_returnsStandard() {
-        assertEquals("standard", CarriageTemplate.variantForIndex(-4, LOOP).id());
+    @DisplayName("LOOPING: variantForIndex(-4) returns FLATBED — Math.floorMod(-4, 3) == 2")
+    void loop_negativeFour_returnsFlatbed() {
+        assertEquals("flatbed", CarriageTemplate.variantForIndex(-4, LOOP).id());
     }
 
     @Test
-    @DisplayName("LOOPING: variantForIndex(400) returns STANDARD — large multiples of cycle length still wrap")
-    void loop_largeMultipleOfFour_returnsStandard() {
-        assertEquals("standard", CarriageTemplate.variantForIndex(400, LOOP).id());
+    @DisplayName("LOOPING: variantForIndex(399) returns STANDARD — large multiples of cycle length still wrap")
+    void loop_largeMultipleOfThree_returnsStandard() {
+        assertEquals("standard", CarriageTemplate.variantForIndex(399, LOOP).id());
     }
 
     @Test
@@ -114,11 +114,10 @@ final class CarriageTemplateTest {
 
         assertEquals("standard",    CarriageTemplate.variantForIndex(0, LOOP).id());
         assertEquals("windowed",    CarriageTemplate.variantForIndex(1, LOOP).id());
-        assertEquals("solid_roof",  CarriageTemplate.variantForIndex(2, LOOP).id());
-        assertEquals("flatbed",     CarriageTemplate.variantForIndex(3, LOOP).id());
-        assertEquals("aaa_custom",  CarriageTemplate.variantForIndex(4, LOOP).id());
-        assertEquals("zzz_custom",  CarriageTemplate.variantForIndex(5, LOOP).id());
-        assertEquals("standard",    CarriageTemplate.variantForIndex(6, LOOP).id()); // wraps
+        assertEquals("flatbed",     CarriageTemplate.variantForIndex(2, LOOP).id());
+        assertEquals("aaa_custom",  CarriageTemplate.variantForIndex(3, LOOP).id());
+        assertEquals("zzz_custom",  CarriageTemplate.variantForIndex(4, LOOP).id());
+        assertEquals("standard",    CarriageTemplate.variantForIndex(5, LOOP).id()); // wraps
     }
 
     // ---- variantForIndex RANDOM: deterministic, covers all variants ----
@@ -134,14 +133,14 @@ final class CarriageTemplateTest {
     }
 
     @Test
-    @DisplayName("RANDOM: over 10 000 indices, all 4 built-ins appear (sanity check)")
+    @DisplayName("RANDOM: over 10 000 indices, all 3 built-ins appear (sanity check)")
     void random_coversAllVariants() {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xDEADBEEFL);
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < 10_000; i++) {
             seen.add(CarriageTemplate.variantForIndex(i, cfg).id());
         }
-        assertEquals(4, seen.size(), "expected all four built-in variants in a 10k-index sweep, saw: " + seen);
+        assertEquals(3, seen.size(), "expected all three built-in variants in a 10k-index sweep, saw: " + seen);
     }
 
     @Test
@@ -314,19 +313,17 @@ final class CarriageTemplateTest {
     // ---- CarriageType enum contract ----
 
     @Test
-    @DisplayName("CarriageType has exactly 4 variants in declared order")
-    void carriageType_hasFourVariantsInDeclaredOrder() {
+    @DisplayName("CarriageType has exactly 3 variants in declared order")
+    void carriageType_hasThreeVariantsInDeclaredOrder() {
         // Order is part of the public contract: variantForIndex cycles through
         // the registry whose built-in section uses CarriageType.values() in
         // declaration order, and the wiki Features table documents the
-        // STANDARD → WINDOWED → SOLID_ROOF → FLATBED cycle. Reordering the
-        // enum silently changes which variant spawns at any given index, so
-        // lock it here.
+        // STANDARD → WINDOWED → FLATBED cycle. Reordering the enum silently
+        // changes which variant spawns at any given index, so lock it here.
         assertArrayEquals(
             new CarriageType[] {
                 CarriageType.STANDARD,
                 CarriageType.WINDOWED,
-                CarriageType.SOLID_ROOF,
                 CarriageType.FLATBED,
             },
             CarriageType.values()
@@ -445,22 +442,20 @@ final class CarriageTemplateTest {
         }
         assertFalse(seen.contains("windowed"),
                 "weight=0 variant should never be picked, saw: " + seen);
-        // Sanity: the other three built-ins still come through.
+        // Sanity: the other two built-ins still come through.
         assertTrue(seen.contains("standard"));
-        assertTrue(seen.contains("solid_roof"));
         assertTrue(seen.contains("flatbed"));
     }
 
     @Test
     @DisplayName("Weighted: a 2x weight roughly doubles draw frequency")
     void weighted_doubleWeightDoublesFrequency() {
-        // standard=2, others=1 → expected share of 'standard' is 2/(2+1+1+1) = 0.4.
+        // standard=2, others=1 → expected share of 'standard' is 2/(2+1+1) = 0.5.
         // Over 20_000 samples with a fixed seed, a ±5% tolerance is loose
         // enough to avoid flakes but tight enough to catch a broken mapping.
         CarriageWeights weights = new CarriageWeights(Map.of(
                 "standard", 2,
                 "windowed", 1,
-                "solid_roof", 1,
                 "flatbed", 1
         ));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0x1234567L);
@@ -470,8 +465,8 @@ final class CarriageTemplateTest {
             counts.merge(CarriageTemplate.variantForIndex(i, cfg, weights).id(), 1, Integer::sum);
         }
         double standardShare = counts.getOrDefault("standard", 0) / (double) total;
-        assertTrue(standardShare > 0.35 && standardShare < 0.45,
-                "expected 'standard' share near 0.40, got " + standardShare + " (counts=" + counts + ")");
+        assertTrue(standardShare > 0.45 && standardShare < 0.55,
+                "expected 'standard' share near 0.50, got " + standardShare + " (counts=" + counts + ")");
     }
 
     @Test
@@ -517,7 +512,6 @@ final class CarriageTemplateTest {
         CarriageWeights weights = new CarriageWeights(Map.of(
                 "standard", 0,
                 "windowed", 0,
-                "solid_roof", 0,
                 "flatbed", 0
         ));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 42L);
@@ -525,7 +519,7 @@ final class CarriageTemplateTest {
         for (int i = 0; i < 10_000; i++) {
             seen.add(CarriageTemplate.variantForIndex(i, cfg, weights).id());
         }
-        assertEquals(4, seen.size(),
+        assertEquals(3, seen.size(),
                 "all-zero pool should fall back to uniform, covering every built-in. Saw: " + seen);
     }
 

@@ -1006,7 +1006,7 @@ public final class EditorCommand {
             return CarriageType.valueOf(raw.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             source.sendFailure(Component.literal(
-                "Unknown built-in '" + raw + "'. Valid: standard, windowed, solid_roof, flatbed"
+                "Unknown built-in '" + raw + "'. Valid: standard, windowed, flatbed"
             ));
             return null;
         }
