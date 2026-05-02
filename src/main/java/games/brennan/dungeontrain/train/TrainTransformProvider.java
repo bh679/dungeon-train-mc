@@ -173,8 +173,6 @@ public final class TrainTransformProvider implements KinematicDriver {
      */
     private final Set<Long> filledChunks = ConcurrentHashMap.newKeySet();
     private final Deque<Long> pendingChunks = new ConcurrentLinkedDeque<>();
-    private final Set<Long> tunnelFilledChunks = ConcurrentHashMap.newKeySet();
-    private final Set<Long> pendingTunnelChunks = ConcurrentHashMap.newKeySet();
 
     public TrainTransformProvider(
         Vector3dc targetVelocity,
@@ -327,14 +325,6 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public Deque<Long> getPendingChunks() {
         return pendingChunks;
-    }
-
-    public Set<Long> getTunnelFilledChunks() {
-        return tunnelFilledChunks;
-    }
-
-    public Set<Long> getPendingTunnelChunks() {
-        return pendingTunnelChunks;
     }
 
     /**

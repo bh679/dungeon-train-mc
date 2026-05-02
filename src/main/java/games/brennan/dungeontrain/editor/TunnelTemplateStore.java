@@ -70,6 +70,22 @@ public final class TunnelTemplateStore {
         TrackVariantStore.save(tunnelKind(variant), TrackKind.DEFAULT_NAME, template);
     }
 
+    /** Write {@code template} into the source tree for {@code (variant, name)} (dev mode). */
+    public static synchronized void saveToSource(
+        TunnelVariant variant, String name, StructureTemplate template
+    ) throws IOException {
+        TrackVariantStore.saveToSource(tunnelKind(variant), name, template);
+    }
+
+    /** Promote the runtime config-dir copy of {@code (variant, name)} to the source tree (dev mode). */
+    public static synchronized void promote(TunnelVariant variant, String name) throws IOException {
+        TrackVariantStore.promote(tunnelKind(variant), name);
+    }
+
+    public static boolean sourceTreeAvailable() {
+        return TrackVariantStore.sourceTreeAvailable();
+    }
+
     public static synchronized boolean delete(TunnelVariant variant) throws IOException {
         return TrackVariantStore.delete(tunnelKind(variant), TrackKind.DEFAULT_NAME);
     }
