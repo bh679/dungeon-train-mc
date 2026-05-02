@@ -249,10 +249,21 @@ public final class SaveCommand {
             return;
         }
         if (model instanceof EditorModel.TunnelModel tunnel) {
-            TunnelEditor.save(player, tunnel.variant());
+            TunnelEditor.SaveResult result = TunnelEditor.save(player, tunnel.variant());
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + tunnel.id() + "' template."), true);
+                    "Editor: saved '" + tunnel.id() + "' template (config-dir)."), true);
+                if (result.sourceAttempted()) {
+                    if (result.sourceWritten()) {
+                        source.sendSuccess(() -> Component.literal(
+                            "Editor: also wrote bundled tunnel copy to source tree (devmode ON)."
+                        ).withStyle(ChatFormatting.GREEN), true);
+                    } else {
+                        source.sendFailure(Component.literal(
+                            "Editor: tunnel source-tree write failed: " + result.sourceError()
+                        ).withStyle(ChatFormatting.YELLOW));
+                    }
+                }
             }
             return;
         }
