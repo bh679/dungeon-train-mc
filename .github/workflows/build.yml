@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - uses: gradle/actions/setup-gradle@v3
         # Note: NOT setting gradle-home-cache-cleanup: true. The action's
@@ -28,14 +28,6 @@ jobs:
         # which crash against our Gradle 8.4 wrapper. Without this flag the
         # cleanup is skipped; the cache grows slightly over time but the
         # build never fails on a transient cache-save outage.
-
-      - name: Cache Forge Gradle artifacts
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches/forge_gradle
-          key: forge-gradle-${{ runner.os }}-${{ hashFiles('build.gradle', 'gradle.properties') }}
-          restore-keys: |
-            forge-gradle-${{ runner.os }}-
 
       - run: ./gradlew build --no-daemon
 

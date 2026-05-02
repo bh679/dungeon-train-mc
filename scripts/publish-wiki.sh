@@ -66,7 +66,7 @@ DL_FILE="$WORKDIR/Downloads.md"
 cat > "$DL_FILE" <<EOF
 # Downloads
 
-> **First time installing?** Read [Installation](Installation) first — Dungeon Train needs Forge 1.20.1, Valkyrien Skies, and Kotlin for Forge to work, and they all have to match versions.
+> **First time installing?** Read [Installation](Installation) first — Dungeon Train needs NeoForge 1.21.1 and Sable to work, and they all have to match versions.
 
 ## Latest release: $LATEST_TAG
 
@@ -82,8 +82,8 @@ Looking for an older build? See [Downloads-Archive](Downloads-Archive).
 
 ## Setup
 
-1. **[Installation](Installation)** — full step-by-step (Minecraft 1.20.1 + Forge 47.4.2 + Valkyrien Skies + Kotlin for Forge + this jar)
-2. [Compatibility](Compatibility) — known Valkyrien Skies quirks
+1. **[Installation](Installation)** — full step-by-step (Minecraft 1.21.1 + NeoForge + Sable + this jar)
+2. [Compatibility](Compatibility) — known Sable quirks
 3. [Features](Features) — what the mod adds
 
 > This page is auto-updated on every release by \`scripts/publish-wiki.sh\` (run from the \`release.yml\` workflow on every \`v*.*.*\` tag push).
