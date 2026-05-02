@@ -23,7 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
  */
 public final class DungeonTrainConfig {
 
-    public static final int MIN_CARRIAGES = 1;
+    public static final int MIN_CARRIAGES = 0;
     public static final int MAX_CARRIAGES = 50;
     public static final int DEFAULT_CARRIAGES = 15;
 
@@ -68,7 +68,7 @@ public final class DungeonTrainConfig {
     private static Holder build(ModConfigSpec.Builder b) {
         b.push("train");
         ModConfigSpec.IntValue numCarriages = b
-                .comment("Number of carriages visible in the rolling window around each player. Defaults to 15 (= 5 groups at the default groupSize of 3).")
+                .comment("Number of carriages visible in the rolling window around each player. Defaults to 15 (= 5 groups at the default groupSize of 3). Set to 0 to disable the train entirely (skips bootstrap auto-spawn) — useful for worldgen / tunnel debugging.")
                 .defineInRange("numCarriages", DEFAULT_CARRIAGES, MIN_CARRIAGES, MAX_CARRIAGES);
         ModConfigSpec.DoubleValue speed = b
                 .comment("Train speed along +X in blocks per second.")

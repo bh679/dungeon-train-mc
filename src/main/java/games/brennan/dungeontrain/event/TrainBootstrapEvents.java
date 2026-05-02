@@ -86,6 +86,12 @@ public final class TrainBootstrapEvents {
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
         int carriageCount = DungeonTrainConfig.getNumCarriages();
+        if (carriageCount <= 0) {
+            LOGGER.info("[DungeonTrain] Bootstrap auto-spawn skipped (numCarriages={} — train disabled via config)",
+                carriageCount);
+            anchorWorldSpawnNearCorridor(target, dims, trainY);
+            return;
+        }
         LOGGER.info("[DungeonTrain] Bootstrap auto-spawning {} carriages at {} in {} dims={}x{}x{}",
             carriageCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height());
         try {
