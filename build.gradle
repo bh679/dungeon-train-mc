@@ -87,6 +87,11 @@ neoForge {
             sourceSet sourceSets.main
         }
     }
+
+    unitTest {
+        enable()
+        testedMod = mods.named(mod_id)
+    }
 }
 
 configurations {
