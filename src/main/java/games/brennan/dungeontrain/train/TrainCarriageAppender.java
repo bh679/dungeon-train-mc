@@ -53,11 +53,16 @@ public final class TrainCarriageAppender {
 
     /**
      * Minimum visible gap (in blocks) between a freshly-spawned group and
-     * its reference. Sable's collision broad-phase appears to consider
-     * very narrow gaps as contact, so we add this bias before rounding to
-     * keep the gap at least this large.
+     * its reference. Sable's collision broad-phase considers narrow gaps
+     * as contact and reacts violently — at 0.1 blocks we observed groups
+     * that landed near the floor jittering by 10-20 blocks per physics
+     * tick, with overlapping blocks getting destroyed (smoke particles)
+     * and the emptied sub-level disposed by Sable. 0.3 leaves enough
+     * slack for the broad-phase even when reference-frame drift produces
+     * sub-1-block stride errors. Visible gap range becomes [0.3, 1.3]
+     * blocks at every group seam — a slight aesthetic cost vs prior 0.1.
      */
-    private static final double MIN_GAP_BLOCKS = 0.1;
+    private static final double MIN_GAP_BLOCKS = 0.3;
 
     /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
