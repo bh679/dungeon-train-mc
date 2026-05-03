@@ -122,6 +122,15 @@ public final class EditorMenuScreen implements MenuScreen {
                 "dungeontrain editor partmenu on",
                 "dungeontrain editor partmenu off"
             ));
+            // Contents — drilldown listing every registered content with a
+            // per-row red/green toggle so the author can exclude specific
+            // contents from this carriage's spawn pool. Only shown when a
+            // concrete variant id is in scope (modelId non-empty).
+            if (modelId != null && !modelId.isEmpty()) {
+                out.add(new CommandMenuEntry.DrillIn(
+                    "Contents",
+                    new CarriageContentsAllowScreen(modelId)));
+            }
         }
 
         // Weight — Triple row: [-] / Weight (N) / [+] for every category that
