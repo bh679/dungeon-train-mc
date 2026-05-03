@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "floor": [
+    {
+      "name": "dirt",
+      "weight": 1
+    }
+  ],
+  "walls": [
+    {
+      "name": "open",
+      "weight": 20,
+      "sideMode": "either"
+    },
+    {
+      "name": "standard",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "cracked",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "wooden",
+      "weight": 2,
+      "sideMode": "either"
+    },
+    {
+      "name": "slotwindow",
+      "weight": 1
+    }
+  ],
+  "roof": [
+    {
+      "name": "open",
+      "weight": 5
+    },
+    {
+      "name": "standard",
+      "weight": 1
+    },
+    {
+      "name": "windowed",
+      "weight": 1
+    }
+  ],
+  "doors": [
+    {
+      "name": "wooddoor",
+      "weight": 1
+    }
+  ]
+}
