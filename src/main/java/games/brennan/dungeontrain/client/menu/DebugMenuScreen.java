@@ -6,29 +6,23 @@ import java.util.List;
 
 /**
  * Drilled into from {@link MainMenuScreen} as "Debug". Surfaces the
- * gap-overlay wireframes toggle and the auto/manual spawn switch through
- * {@link CommandMenuEntry.Toggle} entries — both flags live in
+ * Wireframes sub-menu and the auto/manual spawn switch — wireframes are
+ * exposed as a {@link CommandMenuEntry.DrillIn} into
+ * {@link WireframesMenuScreen} so each of the five overlays gets its own
+ * toggle plus an "All On / All Off" master. The Manual Spawn flag stays
+ * inline because there's only one of it and it's the only non-wireframe
+ * server-side debug toggle. Both flags live in
  * {@link games.brennan.dungeontrain.debug.DebugFlags} server-side and are
- * mirrored on the client by
- * {@link DebugFlagsState} (kept in sync via
- * {@link games.brennan.dungeontrain.net.DebugFlagsPacket} on join + on every
- * change). The menu rebuilds entries each tick, so the toggle button's
- * {@code [ON]} / {@code [OFF]} suffix reflects the current server state
- * without an extra refresh hook.
+ * mirrored on the client by {@link DebugFlagsState}.
  */
 public final class DebugMenuScreen implements MenuScreen {
 
     @Override public String title() { return "Debug"; }
 
     @Override public List<CommandMenuEntry> entries() {
-        boolean wireframes = DebugFlagsState.wireframesEnabled();
         boolean manual = DebugFlagsState.manualSpawnMode();
         return List.of(
-            new CommandMenuEntry.Toggle(
-                "Wireframes", wireframes,
-                "dungeontrain debug wireframes on",
-                "dungeontrain debug wireframes off"
-            ),
+            new CommandMenuEntry.DrillIn("Wireframes", new WireframesMenuScreen()),
             new CommandMenuEntry.Toggle(
                 "Manual Spawn (J)", manual,
                 "dungeontrain debug spawnmode manual",

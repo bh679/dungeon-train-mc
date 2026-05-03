@@ -79,81 +79,85 @@ public final class CarriageGroupGapTicker {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
 
-        // Post-spawn collision-check broadcast runs UNCONDITIONALLY — this
-        // overlay is on by default so the player can SEE overlap bugs the
-        // moment they happen, without flipping a debug toggle. During
-        // testing we visualize EVERY carriage's 1×3×5 ship-space box, not
-        // just the most-recent spawn — see
+        // Post-spawn collision-check broadcast — gated on the {@code collision}
+        // flag (off by default). Skipping the entire block when off avoids
+        // the per-tick AABB scan AND suppresses the once-per-carriage red
+        // chat warning, consistent with the user-facing rule that all five
+        // wireframes default off and the player opts in via the X menu.
+        // During testing we visualize EVERY carriage's 1×3×5 ship-space
+        // box, not just the most-recent spawn — see
         // {@link TrainCarriageAppender#computeAllCarriageCollisionChecks}.
-        // To revert to "most recent spawn only", swap back to
-        // {@code TrainCarriageAppender.snapshotSpawnCollisionChecks().values()}.
-        List<TrainCarriageAppender.SpawnCollisionCheck> collisionChecks =
-            TrainCarriageAppender.computeAllCarriageCollisionChecks(level);
-        List<CarriageSpawnCollisionPacket.Entry> collisionEntries =
-            new ArrayList<>(collisionChecks.size());
-        for (TrainCarriageAppender.SpawnCollisionCheck c : collisionChecks) {
-            collisionEntries.add(new CarriageSpawnCollisionPacket.Entry(
-                c.newShipId(),
-                c.shipyardOrigin().getX(), c.shipyardOrigin().getY(), c.shipyardOrigin().getZ(),
-                c.sizeX(), c.sizeY(), c.sizeZ(),
-                c.colliding(),
-                c.collidingPIdx()));
+        if (DebugFlags.collision()) {
+            List<TrainCarriageAppender.SpawnCollisionCheck> collisionChecks =
+                TrainCarriageAppender.computeAllCarriageCollisionChecks(level);
+            List<CarriageSpawnCollisionPacket.Entry> collisionEntries =
+                new ArrayList<>(collisionChecks.size());
+            for (TrainCarriageAppender.SpawnCollisionCheck c : collisionChecks) {
+                collisionEntries.add(new CarriageSpawnCollisionPacket.Entry(
+                    c.newShipId(),
+                    c.shipyardOrigin().getX(), c.shipyardOrigin().getY(), c.shipyardOrigin().getZ(),
+                    c.sizeX(), c.sizeY(), c.sizeZ(),
+                    c.colliding(),
+                    c.collidingPIdx()));
 
-            // Once-per-carriage chat warning. A given carriage produces at
-            // most one collision chat line for its entire lifetime — the
-            // UUID stays in WARNED_COLLIDING_SHIPS even after the AABB
-            // intersection clears, so transient overlaps don't re-fire.
-            if (c.colliding() && WARNED_COLLIDING_SHIPS.add(c.newShipId())) {
-                Component msg = Component.literal(
-                    "[DungeonTrain] Collision detected: carriage pIdx="
-                        + c.selfPIdx()
-                        + " shipId=" + c.newShipId()
-                        + " overlaps pIdx=" + c.collidingPIdx()
-                        + " (ticks since spawn=" + c.ticksSinceSpawn() + ")"
-                ).withStyle(ChatFormatting.RED);
-                for (ServerPlayer player : players) {
-                    player.sendSystemMessage(msg);
+                // Once-per-carriage chat warning. A given carriage produces at
+                // most one collision chat line for its entire lifetime — the
+                // UUID stays in WARNED_COLLIDING_SHIPS even after the AABB
+                // intersection clears, so transient overlaps don't re-fire.
+                if (c.colliding() && WARNED_COLLIDING_SHIPS.add(c.newShipId())) {
+                    Component msg = Component.literal(
+                        "[DungeonTrain] Collision detected: carriage pIdx="
+                            + c.selfPIdx()
+                            + " shipId=" + c.newShipId()
+                            + " overlaps pIdx=" + c.collidingPIdx()
+                            + " (ticks since spawn=" + c.ticksSinceSpawn() + ")"
+                    ).withStyle(ChatFormatting.RED);
+                    for (ServerPlayer player : players) {
+                        player.sendSystemMessage(msg);
+                    }
                 }
+            }
+
+            CarriageSpawnCollisionPacket collisionPacket = collisionEntries.isEmpty()
+                ? CarriageSpawnCollisionPacket.empty()
+                : new CarriageSpawnCollisionPacket(collisionEntries);
+            for (ServerPlayer player : players) {
+                DungeonTrainNet.sendTo(player, collisionPacket);
             }
         }
 
-        CarriageSpawnCollisionPacket collisionPacket = collisionEntries.isEmpty()
-            ? CarriageSpawnCollisionPacket.empty()
-            : new CarriageSpawnCollisionPacket(collisionEntries);
-        for (ServerPlayer player : players) {
-            DungeonTrainNet.sendTo(player, collisionPacket);
+        // Gap broadcast feeds gap-cubes, gap-line, and the HUD Δx line —
+        // any of those three flags being on triggers the compute + send.
+        if (DebugFlags.gapCubes() || DebugFlags.gapLine() || DebugFlags.hudDistance()) {
+            List<CarriageGroupGapPacket.Entry> entries = CarriageGroupGap.compute(level);
+            CarriageGroupGapPacket packet = entries.isEmpty()
+                ? CarriageGroupGapPacket.empty()
+                : new CarriageGroupGapPacket(entries);
+            for (ServerPlayer player : players) {
+                DungeonTrainNet.sendTo(player, packet);
+            }
         }
-
-        // Remaining wireframes (gap cubes, next-spawn preview) stay gated
-        // behind the debug toggle — bandwidth + per-tick AABB scan only
-        // matter when wireframes are actually being rendered.
-        if (!DebugFlags.wireframesEnabled()) return;
-
-        List<CarriageGroupGapPacket.Entry> entries = CarriageGroupGap.compute(level);
-        CarriageGroupGapPacket packet = entries.isEmpty()
-            ? CarriageGroupGapPacket.empty()
-            : new CarriageGroupGapPacket(entries);
 
         // Planned-next-spawn snapshot for the wireframe-preview overlay.
         // Built from {@link TrainCarriageAppender}'s per-train cache so the
         // wireframe tracks the same placement math {@code spawnNewGroup} will
         // use when the J-keybind triggers a manual spawn.
-        Map<UUID, TrainCarriageAppender.PlannedSpawn> planned = TrainCarriageAppender.snapshotPlannedSpawns();
-        List<CarriageNextSpawnPacket.Entry> previewEntries = new ArrayList<>(planned.size());
-        for (TrainCarriageAppender.PlannedSpawn p : planned.values()) {
-            previewEntries.add(new CarriageNextSpawnPacket.Entry(
-                p.referenceShipId(),
-                p.worldOrigin().getX(), p.worldOrigin().getY(), p.worldOrigin().getZ(),
-                p.sizeX(), p.sizeY(), p.sizeZ(),
-                p.newAnchor()));
-        }
-        CarriageNextSpawnPacket previewPacket = previewEntries.isEmpty()
-            ? CarriageNextSpawnPacket.empty()
-            : new CarriageNextSpawnPacket(previewEntries);
-
-        for (ServerPlayer player : players) {
-            DungeonTrainNet.sendTo(player, packet);
-            DungeonTrainNet.sendTo(player, previewPacket);
+        if (DebugFlags.nextSpawn()) {
+            Map<UUID, TrainCarriageAppender.PlannedSpawn> planned = TrainCarriageAppender.snapshotPlannedSpawns();
+            List<CarriageNextSpawnPacket.Entry> previewEntries = new ArrayList<>(planned.size());
+            for (TrainCarriageAppender.PlannedSpawn p : planned.values()) {
+                previewEntries.add(new CarriageNextSpawnPacket.Entry(
+                    p.referenceShipId(),
+                    p.worldOrigin().getX(), p.worldOrigin().getY(), p.worldOrigin().getZ(),
+                    p.sizeX(), p.sizeY(), p.sizeZ(),
+                    p.newAnchor()));
+            }
+            CarriageNextSpawnPacket previewPacket = previewEntries.isEmpty()
+                ? CarriageNextSpawnPacket.empty()
+                : new CarriageNextSpawnPacket(previewEntries);
+            for (ServerPlayer player : players) {
+                DungeonTrainNet.sendTo(player, previewPacket);
+            }
         }
     }
 }

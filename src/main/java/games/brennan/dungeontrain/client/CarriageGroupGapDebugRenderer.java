@@ -125,17 +125,20 @@ public final class CarriageGroupGapDebugRenderer {
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
-        // Post-spawn collision wireframe is ON BY DEFAULT — no DebugFlags
-        // gate. Other wireframes (gap cubes + next-spawn preview) stay
-        // gated behind the toggle so the player only sees the always-on
-        // green/red box unless they explicitly enable verbose wireframes.
-        boolean wireframesOn = DebugFlagsState.wireframesEnabled();
-        List<CarriageGroupGapPacket.Entry> snapshot = wireframesOn
+        // Each wireframe is gated on its own client-mirror flag — flips
+        // take effect on the next frame regardless of broadcast timing.
+        // Server-side gating in CarriageGroupGapTicker is a bandwidth
+        // optimization; this client gate is the correctness mechanism.
+        boolean cubesOn = DebugFlagsState.gapCubes();
+        boolean lineOn = DebugFlagsState.gapLine();
+        boolean nextSpawnOn = DebugFlagsState.nextSpawn();
+        boolean collisionOn = DebugFlagsState.collision();
+        List<CarriageGroupGapPacket.Entry> snapshot = (cubesOn || lineOn)
             ? CarriageGroupGapState.snapshot() : List.of();
-        List<CarriageNextSpawnPacket.Entry> previews = wireframesOn
+        List<CarriageNextSpawnPacket.Entry> previews = nextSpawnOn
             ? CarriageNextSpawnState.snapshot() : List.of();
-        List<CarriageSpawnCollisionPacket.Entry> collisions =
-            CarriageSpawnCollisionState.snapshot();
+        List<CarriageSpawnCollisionPacket.Entry> collisions = collisionOn
+            ? CarriageSpawnCollisionState.snapshot() : List.of();
         if (snapshot.isEmpty() && previews.isEmpty() && collisions.isEmpty()) return;
 
         Minecraft mc = Minecraft.getInstance();
@@ -170,46 +173,50 @@ public final class CarriageGroupGapDebugRenderer {
             Pose3dc pose = sub.renderPose(partialTick);
             if (pose == null) continue;
 
-            int firstCubeX = (int) Math.floor(0.0); // first integer offset along +X
-            int afterLastCubeX = (int) Math.floor(entry.distance());
-            // One cube per integer offset in [0, floor(distance)). Negative
-            // / zero gap → loop body never runs, no cubes drawn.
-            for (int xi = firstCubeX; xi < afterLastCubeX; xi++) {
-                local.set(entry.localStartX() + xi, entry.localY(), entry.localZ() - 0.5);
-                pose.transformPosition(local, world);
-                double wx0 = world.x;
-                double wy0 = world.y;
-                double wz0 = world.z;
-                local.set(entry.localStartX() + xi + 1, entry.localY() + 1, entry.localZ() + 0.5);
-                pose.transformPosition(local, world);
-                double wx1 = world.x;
-                double wy1 = world.y;
-                double wz1 = world.z;
-                LevelRenderer.renderLineBox(ps, linesVc,
-                    new AABB(
-                        Math.min(wx0, wx1), Math.min(wy0, wy1), Math.min(wz0, wz1),
-                        Math.max(wx0, wx1), Math.max(wy0, wy1), Math.max(wz0, wz1)),
-                    CUBE_R, CUBE_G, CUBE_B, CUBE_A);
+            if (cubesOn) {
+                int firstCubeX = (int) Math.floor(0.0); // first integer offset along +X
+                int afterLastCubeX = (int) Math.floor(entry.distance());
+                // One cube per integer offset in [0, floor(distance)). Negative
+                // / zero gap → loop body never runs, no cubes drawn.
+                for (int xi = firstCubeX; xi < afterLastCubeX; xi++) {
+                    local.set(entry.localStartX() + xi, entry.localY(), entry.localZ() - 0.5);
+                    pose.transformPosition(local, world);
+                    double wx0 = world.x;
+                    double wy0 = world.y;
+                    double wz0 = world.z;
+                    local.set(entry.localStartX() + xi + 1, entry.localY() + 1, entry.localZ() + 0.5);
+                    pose.transformPosition(local, world);
+                    double wx1 = world.x;
+                    double wy1 = world.y;
+                    double wz1 = world.z;
+                    LevelRenderer.renderLineBox(ps, linesVc,
+                        new AABB(
+                            Math.min(wx0, wx1), Math.min(wy0, wy1), Math.min(wz0, wz1),
+                            Math.max(wx0, wx1), Math.max(wy0, wy1), Math.max(wz0, wz1)),
+                        CUBE_R, CUBE_G, CUBE_B, CUBE_A);
+                }
             }
 
-            // Precise-length line — one block above the cube row, exactly
-            // {@code distance} blocks long along +X. Drawn as a thin
-            // wireframe box (half-thickness LINE_HALF_THICKNESS in Y/Z) so
-            // it reads clearly even at distance, and so overlapping
-            // (negative-distance) seams still show a visible bar going
-            // backward into THIS group.
-            double lineY = entry.localY() + 1.0;
-            local.set(entry.localStartX(), lineY - LINE_HALF_THICKNESS, entry.localZ() - LINE_HALF_THICKNESS);
-            pose.transformPosition(local, world);
-            double lx0 = world.x, ly0 = world.y, lz0 = world.z;
-            local.set(entry.localStartX() + entry.distance(), lineY + LINE_HALF_THICKNESS, entry.localZ() + LINE_HALF_THICKNESS);
-            pose.transformPosition(local, world);
-            double lx1 = world.x, ly1 = world.y, lz1 = world.z;
-            LevelRenderer.renderLineBox(ps, linesVc,
-                new AABB(
-                    Math.min(lx0, lx1), Math.min(ly0, ly1), Math.min(lz0, lz1),
-                    Math.max(lx0, lx1), Math.max(ly0, ly1), Math.max(lz0, lz1)),
-                LINE_R, LINE_G, LINE_B, LINE_A);
+            if (lineOn) {
+                // Precise-length line — one block above the cube row, exactly
+                // {@code distance} blocks long along +X. Drawn as a thin
+                // wireframe box (half-thickness LINE_HALF_THICKNESS in Y/Z) so
+                // it reads clearly even at distance, and so overlapping
+                // (negative-distance) seams still show a visible bar going
+                // backward into THIS group.
+                double lineY = entry.localY() + 1.0;
+                local.set(entry.localStartX(), lineY - LINE_HALF_THICKNESS, entry.localZ() - LINE_HALF_THICKNESS);
+                pose.transformPosition(local, world);
+                double lx0 = world.x, ly0 = world.y, lz0 = world.z;
+                local.set(entry.localStartX() + entry.distance(), lineY + LINE_HALF_THICKNESS, entry.localZ() + LINE_HALF_THICKNESS);
+                pose.transformPosition(local, world);
+                double lx1 = world.x, ly1 = world.y, lz1 = world.z;
+                LevelRenderer.renderLineBox(ps, linesVc,
+                    new AABB(
+                        Math.min(lx0, lx1), Math.min(ly0, ly1), Math.min(lz0, lz1),
+                        Math.max(lx0, lx1), Math.max(ly0, ly1), Math.max(lz0, lz1)),
+                    LINE_R, LINE_G, LINE_B, LINE_A);
+            }
         }
 
         // Planned-next-spawn wireframe — orange box showing where the
@@ -260,10 +267,13 @@ public final class CarriageGroupGapDebugRenderer {
 
         // Post-spawn collision-check wireframe — green if the 1×3×5 box at
         // the new carriage's first block (ship-space) is clear of all
-        // other carriages, red if it overlaps. Origin is in shipyard
-        // coords so {@code transformPosition} via the new ship's
-        // interpolated render-pose lands the box exactly on the carriage,
-        // riding with it perfectly between server snapshots.
+        // other carriages, red if it overlaps. Gated on the per-flag
+        // {@code collision} toggle (off by default); the {@code collisions}
+        // list is empty when the flag is off, so this loop short-circuits
+        // without rendering. Origin is in shipyard coords so
+        // {@code transformPosition} via the new ship's interpolated
+        // render-pose lands the box exactly on the carriage, riding with
+        // it perfectly between server snapshots.
         for (CarriageSpawnCollisionPacket.Entry collision : collisions) {
             ClientSubLevel newSub = byUuid.get(collision.newShipId());
             if (newSub == null) continue;
@@ -303,6 +313,10 @@ public final class CarriageGroupGapDebugRenderer {
         buffer.endBatch(RenderType.lines());
 
         // Label pass — one PoseStack push per label since each one billboards.
+        // The "X.XX blocks" billboard label belongs to the precise-length
+        // line conceptually (same data, same colour family); gate it on
+        // {@code lineOn} so the label only shows when the line is enabled.
+        if (lineOn) {
         for (CarriageGroupGapPacket.Entry entry : snapshot) {
             ClientSubLevel sub = byUuid.get(entry.subLevelId());
             if (sub == null) continue;
@@ -339,6 +353,7 @@ public final class CarriageGroupGapDebugRenderer {
                 TEXT_FRONT_COLOR, false, mat, buffer,
                 Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             ps.popPose();
+        }
         }
         buffer.endBatch();
     }
