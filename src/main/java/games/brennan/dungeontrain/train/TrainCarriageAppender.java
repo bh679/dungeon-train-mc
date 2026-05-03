@@ -828,14 +828,15 @@ public final class TrainCarriageAppender {
 
     /**
      * Confirm a spawn in chat (action bar). In manual mode it's the
-     * J-press confirmation. In auto mode the message fires only when
-     * the next-spawn wireframe is enabled so the chat isn't spammed
-     * during normal gameplay — the player who's watching that overlay
-     * is the one tracking spawn rhythm and wants the chat correlation
-     * with overlap / Sable-lag events.
+     * J-press confirmation (always shown — pressing J is a deliberate
+     * user action). In auto mode the message fires only when the
+     * "Train Spawn" chat-log toggle is on (X menu → Debug → Chat Logs)
+     * so the chat isn't spammed during normal gameplay — independent
+     * of the wireframe flags so a player can keep visual overlays on
+     * without the chat noise.
      */
     private static void announceSpawn(ServerLevel level, int newAnchor) {
-        if (!MANUAL_MODE && !games.brennan.dungeontrain.debug.DebugFlags.nextSpawn()) return;
+        if (!MANUAL_MODE && !games.brennan.dungeontrain.debug.DebugFlags.chatTrainSpawn()) return;
         for (ServerPlayer player : level.players()) {
             player.displayClientMessage(
                 Component.literal(
@@ -1154,13 +1155,19 @@ public final class TrainCarriageAppender {
             LOGGER.warn("[DungeonTrain] Carriage collision detected: newShip id={} pIdx={} overlapping otherShip id={} pIdx={}; marking with redstone block at shipyard pos {}",
                 newShip.id(), newAnchor, otherShip.id(), otherPIdx, marker);
             SilentBlockOps.setBlockSilent(level, marker, Blocks.REDSTONE_BLOCK.defaultBlockState());
-            level.getServer().getPlayerList().broadcastSystemMessage(
-                Component.literal(
-                    "[DungeonTrain] Carriage collision: new pIdx=" + newAnchor
-                        + " overlapping pIdx=" + otherPIdx
-                        + " — redstone marker placed on roof"
-                ).withStyle(ChatFormatting.RED),
-                false);
+            // Chat broadcast is gated on the "Collision" chat-log toggle
+            // (X menu → Debug → Chat Logs). The LOGGER.warn above and the
+            // redstone marker stay unconditional — they're diagnostic
+            // state, not chat noise.
+            if (games.brennan.dungeontrain.debug.DebugFlags.chatCollision()) {
+                level.getServer().getPlayerList().broadcastSystemMessage(
+                    Component.literal(
+                        "[DungeonTrain] Carriage collision: new pIdx=" + newAnchor
+                            + " overlapping pIdx=" + otherPIdx
+                            + " — redstone marker placed on roof"
+                    ).withStyle(ChatFormatting.RED),
+                    false);
+            }
         }
     }
 

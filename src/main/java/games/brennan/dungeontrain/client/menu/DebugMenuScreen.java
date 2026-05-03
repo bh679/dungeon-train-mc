@@ -6,14 +6,15 @@ import java.util.List;
 
 /**
  * Drilled into from {@link MainMenuScreen} as "Debug". Surfaces the
- * Wireframes sub-menu and the auto/manual spawn switch — wireframes are
- * exposed as a {@link CommandMenuEntry.DrillIn} into
- * {@link WireframesMenuScreen} so each of the five overlays gets its own
- * toggle plus an "All On / All Off" master. The Manual Spawn flag stays
- * inline because there's only one of it and it's the only non-wireframe
- * server-side debug toggle. Both flags live in
- * {@link games.brennan.dungeontrain.debug.DebugFlags} server-side and are
- * mirrored on the client by {@link DebugFlagsState}.
+ * Wireframes sub-menu, the Chat Logs sub-menu, and the auto/manual spawn
+ * switch — wireframes are exposed as a {@link CommandMenuEntry.DrillIn}
+ * into {@link WireframesMenuScreen} so each overlay gets its own toggle
+ * plus an "All On / All Off" master, and chat logs follow the same
+ * pattern via {@link ChatLogsMenuScreen} for the spawn / collision chat
+ * broadcasts. The Manual Spawn flag stays inline because there's only
+ * one of it and it's the only non-grouped server-side debug toggle. All
+ * flags live in {@link games.brennan.dungeontrain.debug.DebugFlags}
+ * server-side and are mirrored on the client by {@link DebugFlagsState}.
  */
 public final class DebugMenuScreen implements MenuScreen {
 
@@ -23,6 +24,7 @@ public final class DebugMenuScreen implements MenuScreen {
         boolean manual = DebugFlagsState.manualSpawnMode();
         return List.of(
             new CommandMenuEntry.DrillIn("Wireframes", new WireframesMenuScreen()),
+            new CommandMenuEntry.DrillIn("Chat Logs", new ChatLogsMenuScreen()),
             new CommandMenuEntry.Toggle(
                 "Manual Spawn (J)", manual,
                 "dungeontrain debug spawnmode manual",

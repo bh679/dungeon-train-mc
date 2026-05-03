@@ -7,11 +7,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Server-side toggle hub for in-world debugging overlays. All flags default
- * off (production-style behaviour); the in-world Debug menu (or its
- * underlying {@code /dungeontrain debug ...} commands) flips them on for a
- * debugging session and auto-broadcasts the new state to every player so
- * client renderers and the HUD pick it up immediately.
+ * Server-side toggle hub for in-world debugging overlays and chat debug
+ * broadcasts. All flags default off (production-style behaviour); the
+ * in-world Debug menu (or its underlying {@code /dungeontrain debug ...}
+ * commands) flips them on for a debugging session and auto-broadcasts the
+ * new state to every player so client renderers, HUD, and chat-emit gates
+ * pick it up immediately.
  *
  * <p>The five wireframe flags expose what was previously a single
  * {@code wireframes} switch as individual toggles — they serve different
@@ -20,6 +21,18 @@ import net.minecraft.server.level.ServerPlayer;
  * overlays at once. The {@code Wireframes} sub-menu (X menu → Debug →
  * Wireframes) provides an "All On / All Off" master alongside the per-flag
  * toggles.</p>
+ *
+ * <p>The two chat-log flags ({@link #chatTrainSpawn()} and
+ * {@link #chatCollision()}) gate the in-game CHAT broadcasts emitted by
+ * the spawn / collision codepaths. They are intentionally independent of
+ * the wireframe flags: wireframes control the visual overlays, chat-logs
+ * control whether the matching event also speaks up in chat. Both default
+ * off, surfaced as the "Chat Logs" sub-menu next to "Wireframes". Note:
+ * the per-carriage {@code WARNED_COLLIDING_SHIPS} dedup in
+ * {@link games.brennan.dungeontrain.event.CarriageGroupGapTicker} survives
+ * across toggles, so flipping {@code chatCollision} OFF→ON does not
+ * re-emit warnings for already-warned carriages (matches the existing
+ * "one warning per carriage lifetime" intent).</p>
  *
  * <p>{@link #manualSpawnMode()} delegates to
  * {@link TrainCarriageAppender#MANUAL_MODE} (the appender owns the flag so
@@ -32,6 +45,8 @@ public final class DebugFlags {
     private static volatile boolean nextSpawn = false;
     private static volatile boolean collision = false;
     private static volatile boolean hudDistance = false;
+    private static volatile boolean chatTrainSpawn = false;
+    private static volatile boolean chatCollision = false;
 
     private DebugFlags() {}
 
@@ -40,6 +55,8 @@ public final class DebugFlags {
     public static boolean nextSpawn() { return nextSpawn; }
     public static boolean collision() { return collision; }
     public static boolean hudDistance() { return hudDistance; }
+    public static boolean chatTrainSpawn() { return chatTrainSpawn; }
+    public static boolean chatCollision() { return chatCollision; }
 
     public static boolean manualSpawnMode() {
         return TrainCarriageAppender.MANUAL_MODE;
@@ -80,6 +97,23 @@ public final class DebugFlags {
         broadcastTo(server);
     }
 
+    public static void setChatTrainSpawn(MinecraftServer server, boolean value) {
+        chatTrainSpawn = value;
+        broadcastTo(server);
+    }
+
+    public static void setChatCollision(MinecraftServer server, boolean value) {
+        chatCollision = value;
+        broadcastTo(server);
+    }
+
+    /** Master setter — flips both chat-log flags to {@code value} in one broadcast. */
+    public static void setAllChatLogs(MinecraftServer server, boolean value) {
+        chatTrainSpawn = value;
+        chatCollision = value;
+        broadcastTo(server);
+    }
+
     /** Toggle manual-spawn mode server-side and broadcast to all connected clients. */
     public static void setManualSpawnMode(MinecraftServer server, boolean value) {
         TrainCarriageAppender.MANUAL_MODE = value;
@@ -105,7 +139,8 @@ public final class DebugFlags {
     private static DebugFlagsPacket snapshotPacket() {
         return new DebugFlagsPacket(
             gapCubes, gapLine, nextSpawn, collision, hudDistance,
-            TrainCarriageAppender.MANUAL_MODE
+            TrainCarriageAppender.MANUAL_MODE,
+            chatTrainSpawn, chatCollision
         );
     }
 }

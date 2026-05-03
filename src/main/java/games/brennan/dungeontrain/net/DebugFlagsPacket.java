@@ -22,11 +22,19 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * {@link games.brennan.dungeontrain.train.TrainCarriageAppender#MANUAL_MODE}
  * so the menu's Auto / Manual toggle reflects current server truth.</p>
  *
- * <p>Wire field order is fixed: writer and reader lambdas must consume the
- * six booleans in the same sequence ({@code gapCubes}, {@code gapLine},
- * {@code nextSpawn}, {@code collision}, {@code hudDistance},
- * {@code manualSpawnMode}). Mismatched order would silently scramble
- * client-side state.</p>
+ * <p>The two chat-log flags ({@code chatTrainSpawn}, {@code chatCollision})
+ * gate the in-game CHAT broadcasts emitted by the spawn / collision
+ * codepaths — independent of the wireframe flags so a player can keep
+ * the visual collision overlay on while silencing the chat warnings (or
+ * vice versa).</p>
+ *
+ * <p>Wire field order is fixed and append-only: writer and reader lambdas
+ * must consume the eight booleans in the same sequence ({@code gapCubes},
+ * {@code gapLine}, {@code nextSpawn}, {@code collision}, {@code hudDistance},
+ * {@code manualSpawnMode}, {@code chatTrainSpawn}, {@code chatCollision}).
+ * Mismatched order would silently scramble client-side state. New flags
+ * MUST be appended at the end (never inserted) so existing clients see
+ * a consistent prefix.</p>
  */
 public record DebugFlagsPacket(
     boolean gapCubes,
@@ -34,7 +42,9 @@ public record DebugFlagsPacket(
     boolean nextSpawn,
     boolean collision,
     boolean hudDistance,
-    boolean manualSpawnMode
+    boolean manualSpawnMode,
+    boolean chatTrainSpawn,
+    boolean chatCollision
 ) implements CustomPacketPayload {
 
     public static final Type<DebugFlagsPacket> TYPE =
@@ -49,8 +59,12 @@ public record DebugFlagsPacket(
                 buf.writeBoolean(packet.collision);
                 buf.writeBoolean(packet.hudDistance);
                 buf.writeBoolean(packet.manualSpawnMode);
+                buf.writeBoolean(packet.chatTrainSpawn);
+                buf.writeBoolean(packet.chatCollision);
             },
             buf -> new DebugFlagsPacket(
+                buf.readBoolean(),
+                buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),

@@ -15,8 +15,11 @@ import games.brennan.dungeontrain.net.DebugFlagsPacket;
  *       collision box) on its individual flag.</li>
  *   <li>{@link VersionHudOverlay} — gates the second HUD line
  *       ({@code Δx to next group}) on {@link #hudDistance()}.</li>
- *   <li>{@code WireframesMenuScreen} — reads all five flags to render the
- *       per-overlay Toggle button states.</li>
+ *   <li>{@code WireframesMenuScreen} — reads all five wireframe flags to
+ *       render the per-overlay Toggle button states.</li>
+ *   <li>{@code ChatLogsMenuScreen} — reads {@link #chatTrainSpawn()} and
+ *       {@link #chatCollision()} to render the per-category chat-log
+ *       Toggle button states.</li>
  *   <li>{@code DebugMenuScreen} — reads {@link #manualSpawnMode()} to
  *       render its Manual Spawn Toggle.</li>
  * </ul>
@@ -29,6 +32,8 @@ public final class DebugFlagsState {
     private static volatile boolean collision = false;
     private static volatile boolean hudDistance = false;
     private static volatile boolean manualSpawnMode = false;
+    private static volatile boolean chatTrainSpawn = false;
+    private static volatile boolean chatCollision = false;
 
     private DebugFlagsState() {}
 
@@ -38,6 +43,8 @@ public final class DebugFlagsState {
     public static boolean collision() { return collision; }
     public static boolean hudDistance() { return hudDistance; }
     public static boolean manualSpawnMode() { return manualSpawnMode; }
+    public static boolean chatTrainSpawn() { return chatTrainSpawn; }
+    public static boolean chatCollision() { return chatCollision; }
 
     public static void applyServerState(DebugFlagsPacket packet) {
         gapCubes = packet.gapCubes();
@@ -46,5 +53,7 @@ public final class DebugFlagsState {
         collision = packet.collision();
         hudDistance = packet.hudDistance();
         manualSpawnMode = packet.manualSpawnMode();
+        chatTrainSpawn = packet.chatTrainSpawn();
+        chatCollision = packet.chatCollision();
     }
 }
