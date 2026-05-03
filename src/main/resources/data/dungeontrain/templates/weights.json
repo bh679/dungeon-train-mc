@@ -1,6 +1,7 @@
 {
-  "open": 10,
-  "pen": 4,
-  "standard": 10,
-  "windowed": 10
+  "black": 1,
+  "open": 20,
+  "pen": 15,
+  "standard": 20,
+  "windowed": 20
 }
