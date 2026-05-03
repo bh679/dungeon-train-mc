@@ -542,9 +542,12 @@ public final class PlayerJoinEvents {
     /**
      * Validates a candidate player position. Rejects positions in the void,
      * against the ceiling, with water/lava at body/head level (no submerged
-     * spawns), or with leaves at body/head level (the ground probe walks
-     * through leaves to reach the trunk top, which can leave the player's
-     * body inside the canopy).
+     * spawns), with leaves at body/head level (the ground probe walks through
+     * leaves to reach the trunk top, which can leave the player's body inside
+     * the canopy), or with ice at body/head level (the ground probe also
+     * descends through {@code BlockTags.ICE} so pillars and probes find the
+     * true seabed under frozen oceans — without this guard, the analogue for
+     * ice spikes lands the player at snow-Y but inside a tall ice column).
      */
     private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z) {
         if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
@@ -555,10 +558,12 @@ public final class PlayerJoinEvents {
         BlockState body = level.getBlockState(pos);
         if (!body.getFluidState().isEmpty()) return false;
         if (body.is(BlockTags.LEAVES)) return false;
+        if (body.is(BlockTags.ICE)) return false;
         pos.set(x, y + 1, z);
         BlockState head = level.getBlockState(pos);
         if (!head.getFluidState().isEmpty()) return false;
         if (head.is(BlockTags.LEAVES)) return false;
+        if (head.is(BlockTags.ICE)) return false;
         return true;
     }
 
