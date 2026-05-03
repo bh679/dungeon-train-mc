@@ -829,13 +829,13 @@ public final class TrainCarriageAppender {
     /**
      * Confirm a spawn in chat (action bar). In manual mode it's the
      * J-press confirmation. In auto mode the message fires only when
-     * wireframes are enabled so the chat isn't spammed during normal
-     * gameplay — but during a debug session the spawn rhythm is visible
-     * so the user can correlate spawn events with overlaps and
-     * Sable-lag warnings.
+     * the next-spawn wireframe is enabled so the chat isn't spammed
+     * during normal gameplay — the player who's watching that overlay
+     * is the one tracking spawn rhythm and wants the chat correlation
+     * with overlap / Sable-lag events.
      */
     private static void announceSpawn(ServerLevel level, int newAnchor) {
-        if (!MANUAL_MODE && !games.brennan.dungeontrain.debug.DebugFlags.wireframesEnabled()) return;
+        if (!MANUAL_MODE && !games.brennan.dungeontrain.debug.DebugFlags.nextSpawn()) return;
         for (ServerPlayer player : level.players()) {
             player.displayClientMessage(
                 Component.literal(

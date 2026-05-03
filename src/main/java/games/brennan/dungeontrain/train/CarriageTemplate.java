@@ -238,7 +238,7 @@ public final class CarriageTemplate {
             return;
         }
         try {
-            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex);
+            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant);
             // Clear any entities left over from a previous carriage at this
             // shipyard position — the block-only clearBoundingBox in
             // TrainAssembler doesn't discard entities, so armor stands and
