@@ -25,17 +25,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - uses: gradle/actions/setup-gradle@v3
-
-      - name: Cache Forge Gradle artifacts
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches/forge_gradle
-          key: forge-gradle-${{ runner.os }}-${{ hashFiles('build.gradle', 'gradle.properties') }}
-          restore-keys: |
-            forge-gradle-${{ runner.os }}-
 
       - name: Verify tag matches mod_version
         run: |
@@ -128,12 +120,11 @@ jobs:
           name: Dungeon Train ${{ env.RELEASE_TAG }}
           version: ${{ env.RELEASE_TAG }}
           version-type: ${{ steps.release_type.outputs.type }}
-          loaders: forge
-          game-versions: 1.20.1
+          loaders: neoforge
+          game-versions: 1.21.1
           dependencies: |
-            valkyrien-skies(required)
-            kotlin-for-forge(required)
-          java: 17
+            sable(required)
+          java: 21
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn

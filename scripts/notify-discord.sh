@@ -70,7 +70,7 @@ PAYLOAD=$(jq -n \
         { name: "Modrinth",   value: ($mr_status + " [Download](" + $mr_url + ")"), inline: true },
         { name: "GitHub",     value: ("✅ [Download](" + $gh_url + ")"),             inline: true }
       ],
-      footer: { text: "Powered by Valkyrien Skies 2" }
+      footer: { text: "Powered by Sable" }
     }]
   }')
 
