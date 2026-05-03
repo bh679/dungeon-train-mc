@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
+import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -33,7 +34,8 @@ import java.util.Optional;
  *       Per-install override; the editor's {@code carriage-contents} subcommand
  *       writes here.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.contents-allow.json}
- *       on the classpath. Optional; no built-in sidecars ship right now.</li>
+ *       on the classpath. Shipped defaults for built-in variants (e.g. the
+ *       {@code black} carriage's no-themed-content rule).</li>
  *   <li><b>Absent</b> — no sidecar in either tier. Caller treats as
  *       {@link CarriageContentsAllowList#EMPTY} (all contents allowed).</li>
  * </ol>
@@ -43,6 +45,13 @@ import java.util.Optional;
  * {@code .contents-allow.json} suffix keeps
  * {@link games.brennan.dungeontrain.train.CarriageVariantRegistry}'s
  * {@code *.nbt}-only scan from picking these up as custom carriages.</p>
+ *
+ * <p>Promote behaviour: when {@link #save} or {@link #delete} runs from a
+ * gradle checkout (i.e. {@code ./gradlew runClient}, where
+ * {@code src/main/resources/} is writable), the change is also mirrored into
+ * the source tree at {@link #sourceFileFor(CarriageType)} for built-in
+ * variants — so editor toggles ship in the next build. Custom variants and
+ * production installs silently skip the source-tree step.</p>
  */
 public final class CarriageVariantContentsAllowStore {
 
@@ -50,6 +59,7 @@ public final class CarriageVariantContentsAllowStore {
     private static final String SUBDIR = "dungeontrain/templates";
     private static final String EXT = ".contents-allow.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
+    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
 
     // Per-id cache; Optional.empty() means "both tiers missing", short-circuits future lookups.
     private static final Map<String, Optional<CarriageContentsAllowList>> CACHE = new HashMap<>();
@@ -62,6 +72,15 @@ public final class CarriageVariantContentsAllowStore {
 
     public static Path fileFor(CarriageVariant variant) {
         return directory().resolve(variant.id() + EXT);
+    }
+
+    public static Path sourceFileFor(CarriageType type) {
+        return sourceDirectory().resolve(type.name().toLowerCase(Locale.ROOT) + EXT);
+    }
+
+    public static boolean sourceTreeAvailable() {
+        Path resources = resourcesRootOrNull();
+        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
     }
 
     public static synchronized void clearCache() {
@@ -103,6 +122,20 @@ public final class CarriageVariantContentsAllowStore {
         }
         CACHE.put(variant.id(), Optional.of(allow));
         LOGGER.info("[DungeonTrain] Saved contents allow-list for {} to {}", variant.id(), file);
+        trySaveToSource(variant, allow);
+    }
+
+    public static synchronized void saveToSource(CarriageType type, CarriageContentsAllowList allow) throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path file = sourceFileFor(type);
+        Files.createDirectories(file.getParent());
+        String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(allow.toJson());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(pretty);
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled contents allow-list {} to {}", type, file);
     }
 
     public static synchronized boolean delete(CarriageVariant variant) throws IOException {
@@ -110,7 +143,48 @@ public final class CarriageVariantContentsAllowStore {
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(variant.id(), Optional.empty());
         if (existed) LOGGER.info("[DungeonTrain] Deleted contents allow-list for {} ({})", variant.id(), file);
+        tryDeleteFromSource(variant);
         return existed;
+    }
+
+    /**
+     * Best-effort source-tree write invoked from {@link #save}. Silent no-op
+     * outside dev mode (production installs have no writable
+     * {@code src/main/resources/}) or for non-builtin variants (custom
+     * carriages have no bundled-resource home). Warn-level log on dev-mode
+     * failures so the config write isn't masked by a source-tree problem.
+     * Mirrors {@link CarriageVariantPartsStore#trySaveToSource}.
+     */
+    private static void trySaveToSource(CarriageVariant variant, CarriageContentsAllowList allow) {
+        if (!sourceTreeAvailable()) return;
+        if (!(variant instanceof CarriageVariant.Builtin b)) return;
+        try {
+            saveToSource(b.type(), allow);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to write bundled contents allow-list for {} to source tree: {} (config write succeeded).",
+                variant.id(), e.toString());
+        }
+    }
+
+    /**
+     * Best-effort source-tree delete invoked from {@link #delete}. Removes the
+     * promoted {@code <type>.contents-allow.json} so a Clear from the in-game
+     * menu also propagates to the bundled copy in dev — otherwise the next
+     * load tier would fall back to the stale promoted bundled file. Silent
+     * no-op outside dev mode or for non-builtin variants.
+     */
+    private static void tryDeleteFromSource(CarriageVariant variant) {
+        if (!sourceTreeAvailable()) return;
+        if (!(variant instanceof CarriageVariant.Builtin b)) return;
+        try {
+            Path file = sourceFileFor(b.type());
+            if (Files.deleteIfExists(file)) {
+                LOGGER.info("[DungeonTrain] Deleted bundled contents allow-list {} (devmode promote).", file);
+            }
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Failed to delete bundled contents allow-list for {} from source tree: {} (config delete succeeded).",
+                variant.id(), e.toString());
+        }
     }
 
     public static boolean exists(CarriageVariant variant) {
@@ -153,5 +227,32 @@ public final class CarriageVariantContentsAllowStore {
                 resource, e.toString());
             return Optional.empty();
         }
+    }
+
+    private static Path sourceDirectory() {
+        Path dir = sourceDirectoryOrNull();
+        if (dir == null) {
+            throw new IllegalStateException(
+                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
+            );
+        }
+        return dir;
+    }
+
+    private static Path sourceDirectoryOrNull() {
+        Path projectRoot = projectRootOrNull();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve(SOURCE_REL_PATH);
+    }
+
+    private static Path resourcesRootOrNull() {
+        Path projectRoot = projectRootOrNull();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve("src/main/resources");
+    }
+
+    private static Path projectRootOrNull() {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        return gameDir.getParent();
     }
 }
