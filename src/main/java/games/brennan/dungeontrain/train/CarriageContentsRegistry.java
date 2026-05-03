@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.core.BlockPos;
@@ -142,30 +143,71 @@ public final class CarriageContentsRegistry {
      * variant-block pick for the same carriage are not correlated.</p>
      */
     public static synchronized CarriageContents pick(long worldSeed, int carriageIndex) {
+        return pick(worldSeed, carriageIndex, CarriageContentsAllowList.EMPTY);
+    }
+
+    /**
+     * Variant-aware {@link #pick(long, int)}. Loads the per-variant allow-list
+     * from {@link CarriageVariantContentsAllowStore} and delegates to
+     * {@link #pick(long, int, CarriageContentsAllowList)}. {@code variant == null}
+     * skips the lookup and falls through to no filtering (matches the legacy
+     * 2-arg behaviour for callers / tests that don't have a variant in scope).
+     */
+    public static synchronized CarriageContents pick(long worldSeed, int carriageIndex, CarriageVariant variant) {
+        CarriageContentsAllowList allow = (variant == null)
+            ? CarriageContentsAllowList.EMPTY
+            : CarriageVariantContentsAllowStore.get(variant).orElse(CarriageContentsAllowList.EMPTY);
+        return pick(worldSeed, carriageIndex, allow);
+    }
+
+    /**
+     * Pure overload: weighted deterministic pick filtered by the supplied
+     * allow-list. Excluded ids are dropped from the candidate pool before the
+     * weighted draw. Safety net: if the allow-list excludes every registered
+     * content, the function falls back to the {@link ContentsType#DEFAULT}
+     * built-in so the carriage still spawns with a coherent interior. Visible
+     * for testing — no filesystem state, no Forge bootstrap needed.
+     */
+    public static synchronized CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow) {
         List<CarriageContents> all = allContents();
         int n = all.size();
         if (n == 0) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
+        if (allow == null) allow = CarriageContentsAllowList.EMPTY;
+        List<CarriageContents> pool;
+        if (allow.excluded().isEmpty()) {
+            pool = all;
+        } else {
+            pool = new ArrayList<>(n);
+            for (CarriageContents c : all) {
+                if (allow.isAllowed(c.id())) pool.add(c);
+            }
+            if (pool.isEmpty()) {
+                // Author excluded everything — fall back to DEFAULT so spawns don't break.
+                return CarriageContents.of(ContentsType.DEFAULT);
+            }
+        }
+        int m = pool.size();
         CarriageContentsWeights weights = CarriageContentsWeights.current();
-        int[] cumulative = new int[n];
+        int[] cumulative = new int[m];
         int total = 0;
-        for (int i = 0; i < n; i++) {
-            total += weights.weightFor(all.get(i).id());
+        for (int i = 0; i < m; i++) {
+            total += weights.weightFor(pool.get(i).id());
             cumulative[i] = total;
         }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
         Random rng = new Random(seed);
         if (total <= 0) {
             warnAllZeroOnce();
-            return all.get(rng.nextInt(n));
+            return pool.get(rng.nextInt(m));
         }
         int r = rng.nextInt(total);
-        for (int i = 0; i < n; i++) {
-            if (r < cumulative[i]) return all.get(i);
+        for (int i = 0; i < m; i++) {
+            if (r < cumulative[i]) return pool.get(i);
         }
-        // Unreachable: r < total and cumulative[n-1] == total. Defensive tail.
-        return all.get(n - 1);
+        // Unreachable: r < total and cumulative[m-1] == total. Defensive tail.
+        return pool.get(m - 1);
     }
 
     /** One-shot warning when every registered contents has weight 0 — once per server lifetime. */
@@ -251,6 +293,7 @@ public final class CarriageContentsRegistry {
 
     public static synchronized void clear() {
         CUSTOMS.clear();
+        CarriageVariantContentsAllowStore.clearCache();
         ZERO_WARNED = false;
     }
 
