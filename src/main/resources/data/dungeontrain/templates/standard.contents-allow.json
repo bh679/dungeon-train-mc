@@ -1,7 +1,10 @@
 {
   "schemaVersion": 1,
   "excluded": [
+    "chest",
     "cows",
+    "ender",
+    "library",
     "pigs",
     "sheep"
   ]

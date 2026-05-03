@@ -25,6 +25,11 @@
       "name": "smallwindows",
       "weight": 1,
       "sideMode": "either"
+    },
+    {
+      "name": "window2",
+      "weight": 1,
+      "sideMode": "either"
     }
   ],
   "roof": [
