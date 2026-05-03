@@ -19,7 +19,6 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -135,12 +134,14 @@ public final class CarriageGroupGapTicker {
             : new CarriageGroupGapPacket(entries);
 
         // Planned-next-spawn snapshot for the wireframe-preview overlay.
-        // Built from {@link TrainCarriageAppender}'s per-train cache so the
-        // wireframe tracks the same placement math {@code spawnNewGroup} will
-        // use when the J-keybind triggers a manual spawn.
-        Map<UUID, TrainCarriageAppender.PlannedSpawn> planned = TrainCarriageAppender.snapshotPlannedSpawns();
+        // Built from {@link TrainCarriageAppender}'s per-direction cache so
+        // the wireframe tracks the same placement math {@code spawnNewGroup}
+        // will use when the J-keybind triggers a manual spawn. Each train can
+        // have up to TWO entries (one forward, one backward) — both directions
+        // run independently and may have a queued spawn at the same time.
+        List<TrainCarriageAppender.PlannedSpawn> planned = TrainCarriageAppender.snapshotPlannedSpawns();
         List<CarriageNextSpawnPacket.Entry> previewEntries = new ArrayList<>(planned.size());
-        for (TrainCarriageAppender.PlannedSpawn p : planned.values()) {
+        for (TrainCarriageAppender.PlannedSpawn p : planned) {
             previewEntries.add(new CarriageNextSpawnPacket.Entry(
                 p.referenceShipId(),
                 p.worldOrigin().getX(), p.worldOrigin().getY(), p.worldOrigin().getZ(),
