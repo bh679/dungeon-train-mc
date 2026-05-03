@@ -75,6 +75,12 @@ public final class CommandMenuRenderer {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
         if (!CommandMenuState.isOpen()) return;
 
+        // Re-anchor every frame against the partial-tick interpolated eye so
+        // the panel tracks player translation smoothly. Must run before the
+        // raycast below so hover detection sees the same anchor as the draw.
+        float partialTick = event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        CommandMenuState.refreshAnchorForFrame(partialTick);
+
         // Refresh hover using the current frame's camera — between ticks
         // the crosshair keeps moving, so this keeps the highlight glued
         // to the player's aim.
