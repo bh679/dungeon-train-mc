@@ -39,7 +39,7 @@ import java.util.Random;
  *   "floor": [ { "name": "wood", "weight": 3 } ],
  *   "walls": [ { "name": "standard_walls", "weight": 1 },
  *              { "name": "none", "weight": 1 } ],
- *   "roof":  [ { "name": "solid_roof", "weight": 1 } ],
+ *   "roof":  [ { "name": "standard", "weight": 1 } ],
  *   "doors": [] }
  * </pre>
  */

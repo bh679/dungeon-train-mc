@@ -8,6 +8,10 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * Server → client: update the editor status HUD bar with the player's current
  * category + model, the session's dev-mode flag, the variant's
@@ -16,8 +20,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * outside every editor plot).
  *
  * <p>Sent only when the player's
- * (category, model, devmode, weight, partMenuEnabled) tuple changes — no
- * per-tick spam. See
+ * (category, model, devmode, weight, partMenuEnabled, excludedContents)
+ * tuple changes — no per-tick spam. See
  * {@link games.brennan.dungeontrain.editor.VariantOverlayRenderer} for the
  * detection loop.</p>
  *
@@ -43,11 +47,26 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * editor menu's "Part Variant Menu" toggle reads this for state. Defaults
  * to {@code true} for the empty clear packet so a stale HUD never shows
  * "menu disabled" out-of-context.</p>
+ *
+ * <p>{@code excludedContents} is the set of content ids the active carriage
+ * variant has explicitly disallowed (sourced from
+ * {@link games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore}).
+ * Empty for non-carriage statuses and for carriages with no exclusions. The
+ * client's Contents drilldown reads this to render the per-content red/green
+ * toggles.</p>
  */
-public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode, int weight, boolean partMenuEnabled) implements CustomPacketPayload {
+public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
+                                 int weight, boolean partMenuEnabled, Set<String> excludedContents)
+    implements CustomPacketPayload {
 
     /** Sentinel for "weight is not applicable to this model". */
     public static final int NO_WEIGHT = -1;
+
+    public EditorStatusPacket {
+        excludedContents = (excludedContents == null || excludedContents.isEmpty())
+            ? Collections.emptySet()
+            : Set.copyOf(excludedContents);
+    }
 
     public static final Type<EditorStatusPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_status"));
@@ -59,7 +78,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         );
 
     public static EditorStatusPacket empty() {
-        return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT, true);
+        return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT, true, Collections.emptySet());
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -70,6 +89,8 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeBoolean(devmode);
         buf.writeVarInt(weight);
         buf.writeBoolean(partMenuEnabled);
+        buf.writeVarInt(excludedContents.size());
+        for (String s : excludedContents) buf.writeUtf(s);
     }
 
     public static EditorStatusPacket decode(FriendlyByteBuf buf) {
@@ -80,7 +101,15 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         boolean d = buf.readBoolean();
         int w = buf.readVarInt();
         boolean pme = buf.readBoolean();
-        return new EditorStatusPacket(c, m, id, name, d, w, pme);
+        int n = buf.readVarInt();
+        Set<String> excluded;
+        if (n <= 0) {
+            excluded = Collections.emptySet();
+        } else {
+            excluded = new LinkedHashSet<>(n);
+            for (int i = 0; i < n; i++) excluded.add(buf.readUtf(64));
+        }
+        return new EditorStatusPacket(c, m, id, name, d, w, pme, excluded);
     }
 
     @Override
@@ -91,6 +120,6 @@ public record EditorStatusPacket(String category, String model, String modelId, 
     public static void handle(EditorStatusPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> EditorStatusHudOverlay.setStatus(
             packet.category, packet.model, packet.modelId, packet.modelName,
-            packet.devmode, packet.weight, packet.partMenuEnabled));
+            packet.devmode, packet.weight, packet.partMenuEnabled, packet.excludedContents));
     }
 }

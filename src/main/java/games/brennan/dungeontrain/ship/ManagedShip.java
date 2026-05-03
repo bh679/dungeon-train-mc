@@ -6,6 +6,8 @@ import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
 
+import java.util.UUID;
+
 /**
  * Handle for one managed ship — a single train-shaped rigid body with its
  * own model-space coordinate system.
@@ -21,6 +23,14 @@ public interface ManagedShip {
 
     /** Unique identifier stable for the ship's lifetime. */
     long id();
+
+    /**
+     * Full {@link UUID} of the underlying physics object — equivalent to
+     * Sable's {@code SubLevel.getUniqueId()}. Required for client-side
+     * pose lookup (the truncated-to-long {@link #id()} loses the lower
+     * 64 bits and can't reconstruct the original UUID).
+     */
+    UUID subLevelId();
 
     /**
      * Transform a world-space point into model-space, in place. Returns

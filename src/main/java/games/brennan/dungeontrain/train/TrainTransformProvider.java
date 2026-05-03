@@ -173,8 +173,6 @@ public final class TrainTransformProvider implements KinematicDriver {
      */
     private final Set<Long> filledChunks = ConcurrentHashMap.newKeySet();
     private final Deque<Long> pendingChunks = new ConcurrentLinkedDeque<>();
-    private final Set<Long> tunnelFilledChunks = ConcurrentHashMap.newKeySet();
-    private final Set<Long> pendingTunnelChunks = ConcurrentHashMap.newKeySet();
 
     public TrainTransformProvider(
         Vector3dc targetVelocity,
@@ -289,6 +287,86 @@ public final class TrainTransformProvider implements KinematicDriver {
     }
 
     /**
+     * The {@code level.getGameTime()} value captured on this driver's
+     * first {@link #nextTransform} call — i.e. the first physics tick
+     * after assembly. Returns {@code -1L} until that first tick fires.
+     * Used by diagnostic overlays (collision-warning chat) to report
+     * "ticks since spawn" without having to plumb game-time into
+     * separate tracking maps.
+     */
+    public long getSpawnGameTick() {
+        return spawnGameTick;
+    }
+
+    // ──────────────────────────────────────────────────────────────────
+    // Placement state machine (per-carriage). Owned by the per-tick
+    // collision tracker in TrainCarriageAppender — once a carriage runs
+    // {@code TrainCarriageAppender#CLEAN_TICKS_FOR_SUCCESS} consecutive
+    // ticks without an AABB overlap against any sibling, it transitions
+    // into {@code placedSuccessfully = true} and is permanently exempt
+    // from further checks (overlay disappears, no more shifts).
+    //
+    // While {@code placedSuccessfully = false}: a colliding tick
+    // shifts the carriage forward via {@link #shiftSpawnPosition} and
+    // resets {@code consecutiveCleanTicks} to 0.
+    private volatile boolean placedSuccessfully = false;
+    private volatile int consecutiveCleanTicks = 0;
+    /**
+     * {@code true} iff this carriage was spawned BEHIND the existing
+     * train (newAnchor &lt; existing trainMinAnchor). Read by the
+     * collision-check box positioner so the 1×3×5 detection slab sits
+     * at the end of the carriage that faces the train — for forward
+     * spawns that's the LOW-X corner, for backward spawns the HIGH-X
+     * corner. Default {@code false} (forward) — set by the appender's
+     * spawn loop right after assembly.
+     */
+    private volatile boolean spawnedBackward = false;
+
+    public boolean isPlacedSuccessfully() {
+        return placedSuccessfully;
+    }
+
+    public void markPlacedSuccessfully() {
+        this.placedSuccessfully = true;
+    }
+
+    public int getConsecutiveCleanTicks() {
+        return consecutiveCleanTicks;
+    }
+
+    public void incrementConsecutiveCleanTicks() {
+        this.consecutiveCleanTicks++;
+    }
+
+    public void resetConsecutiveCleanTicks() {
+        this.consecutiveCleanTicks = 0;
+    }
+
+    public boolean isSpawnedBackward() {
+        return spawnedBackward;
+    }
+
+    public void setSpawnedBackward(boolean v) {
+        this.spawnedBackward = v;
+    }
+
+    /**
+     * Add {@code (dx, dy, dz)} world-space blocks to {@link #spawnWorldPos}.
+     * The deterministic position formula in {@link #nextTransform} reads
+     * spawnWorldPos every tick, so the next physics tick teleports the
+     * carriage to the new offset position automatically — no extra
+     * apply-output plumbing required.
+     *
+     * <p>No-op until {@code spawnWorldPos} is captured on the first
+     * kinematic tick. Used by the collision-resolution loop to nudge a
+     * carriage out of overlap with a sibling.</p>
+     */
+    public void shiftSpawnPosition(double dx, double dy, double dz) {
+        if (spawnWorldPos == null) return;
+        spawnWorldPos.add(dx, dy, dz);
+    }
+
+    /**
      * Advance the sub-level's reference frame forward by {@code shipyardDelta}.
      * Used by {@link ShipyardShifter} on VS to keep the pivot close to the
      * player's current shipyard position. No-op-equivalent on Sable (no
@@ -327,14 +405,6 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public Deque<Long> getPendingChunks() {
         return pendingChunks;
-    }
-
-    public Set<Long> getTunnelFilledChunks() {
-        return tunnelFilledChunks;
-    }
-
-    public Set<Long> getPendingTunnelChunks() {
-        return pendingTunnelChunks;
     }
 
     /**

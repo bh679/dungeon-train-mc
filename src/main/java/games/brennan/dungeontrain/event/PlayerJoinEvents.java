@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -158,6 +159,9 @@ public final class PlayerJoinEvents {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
+        // Seed debug flags so the in-world Debug menu's Toggle states render
+        // the correct value the first time it's opened on this client.
+        DebugFlags.sendSnapshotTo(player);
         PENDING.put(player.getUUID(), 0);
     }
 
@@ -538,9 +542,12 @@ public final class PlayerJoinEvents {
     /**
      * Validates a candidate player position. Rejects positions in the void,
      * against the ceiling, with water/lava at body/head level (no submerged
-     * spawns), or with leaves at body/head level (the ground probe walks
-     * through leaves to reach the trunk top, which can leave the player's
-     * body inside the canopy).
+     * spawns), with leaves at body/head level (the ground probe walks through
+     * leaves to reach the trunk top, which can leave the player's body inside
+     * the canopy), or with ice at body/head level (the ground probe also
+     * descends through {@code BlockTags.ICE} so pillars and probes find the
+     * true seabed under frozen oceans — without this guard, the analogue for
+     * ice spikes lands the player at snow-Y but inside a tall ice column).
      */
     private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z) {
         if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
@@ -551,10 +558,12 @@ public final class PlayerJoinEvents {
         BlockState body = level.getBlockState(pos);
         if (!body.getFluidState().isEmpty()) return false;
         if (body.is(BlockTags.LEAVES)) return false;
+        if (body.is(BlockTags.ICE)) return false;
         pos.set(x, y + 1, z);
         BlockState head = level.getBlockState(pos);
         if (!head.getFluidState().isEmpty()) return false;
         if (head.is(BlockTags.LEAVES)) return false;
+        if (head.is(BlockTags.ICE)) return false;
         return true;
     }
 

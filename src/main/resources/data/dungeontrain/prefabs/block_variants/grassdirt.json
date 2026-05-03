@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    {"state": "minecraft:grass_block[snowy=false]", "weight": 20},
+    "minecraft:coarse_dirt",
+    {"state": "minecraft:dirt", "weight": 2},
+    "minecraft:rooted_dirt"
+  ]
+}

@@ -55,18 +55,13 @@ public final class Trains {
     /**
      * Authoritative registry of every carriage group ever spawned via
      * {@link TrainAssembler#spawnGroup}, keyed by trainId then anchor pIdx.
-     * Exists because Sable's {@code SubLevelContainer.getAllSubLevels()}
-     * is asynchronous after assembly — fresh sub-levels can take several
-     * server ticks to appear in {@link Shipyards#findAll()}, during which
-     * {@link TrainCarriageAppender} would otherwise see an incomplete
-     * train and request anchors that already exist (creating duplicate
-     * sub-levels stacked on top of each other).
-     *
-     * <p>Sourced ONLY by {@link TrainAssembler#spawnGroup} (on success)
-     * and cleared by {@link TrainAssembler#deleteAllTrains} (and by
+     * Sourced ONLY by {@link TrainAssembler#spawnGroup} on success and
+     * cleared by {@link TrainAssembler#deleteAllTrains} (and by
      * {@code WorldLifecycleEvents.onServerStopped} for cross-session
-     * safety). Never invalidated by Sable's lazy load — the registry is
-     * the source of truth for "what anchors this train owns."</p>
+     * safety). The appender's wait-for-Sable-settle check reads back the
+     * stored {@link ManagedShip} references to detect when a freshly-
+     * spawned sub-level has ticked at least once (its {@code worldAABB}
+     * becomes non-zero) before allowing the next auto spawn.
      */
     private static final Map<UUID, Map<Integer, ManagedShip>> SPAWNED_GROUPS = new ConcurrentHashMap<>();
 
@@ -85,13 +80,23 @@ public final class Trains {
 
     /**
      * Snapshot of every anchor pIdx known to belong to {@code trainId}.
-     * Returns an empty set for an unknown trainId. The returned set is a
-     * defensive copy — callers may freely iterate or mutate it.
+     * Returns an empty set for an unknown trainId. Defensive copy.
      */
     public static Set<Integer> knownAnchors(UUID trainId) {
         Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
         if (map == null) return Set.of();
         return new HashSet<>(map.keySet());
+    }
+
+    /**
+     * Snapshot of every registered group for {@code trainId} as
+     * {@code (anchorPIdx, ship)} pairs. Returns an empty map for an
+     * unknown trainId. Defensive copy.
+     */
+    public static Map<Integer, ManagedShip> knownGroups(UUID trainId) {
+        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+        if (map == null) return Map.of();
+        return new LinkedHashMap<>(map);
     }
 
     /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */

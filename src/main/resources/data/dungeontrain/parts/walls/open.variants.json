@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 5,
+  "variants": {
+    "4,1,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "3,1,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "2,1,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "2,2,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "2,3,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "2,4,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "2,5,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "3,5,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "4,5,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "4,4,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "3,4,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "4,3,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "3,3,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "3,2,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] },
+    "4,2,0": { "lockId": 1, "states": ["minecraft:spruce_fence[east=true,north=false,south=false,waterlogged=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20}, {"state": "minecraft:spruce_planks", "weight": 2}] }
+  }
+}

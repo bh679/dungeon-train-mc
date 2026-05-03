@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -49,6 +50,12 @@ public final class TunnelEditor {
 
     /** Resolved variant + name pair for a player position. */
     public record TunnelPlot(TunnelVariant variant, String name) {}
+
+    public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
+        public static SaveResult skipped() { return new SaveResult(false, false, null); }
+        public static SaveResult written() { return new SaveResult(true, true, null); }
+        public static SaveResult failed(String error) { return new SaveResult(true, false, error); }
+    }
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
@@ -162,9 +169,13 @@ public final class TunnelEditor {
 
     /**
      * Save the captured 10×14×13 region for the {@code (variant, name)}
-     * the player is currently standing in.
+     * the player is currently standing in. When {@link EditorDevMode} is on,
+     * also writes the captured template (and its variant-blocks sidecar) into
+     * the source tree at {@code src/main/resources/data/dungeontrain/tunnels/...}
+     * so authored tunnels ship with the next build — parity with
+     * {@link TrackEditor#save} and {@link PillarEditor#save}.
      */
-    public static void save(ServerPlayer player, TunnelVariant variant) throws IOException {
+    public static SaveResult save(ServerPlayer player, TunnelVariant variant) throws IOException {
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
@@ -187,6 +198,24 @@ public final class TunnelEditor {
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{}/{} template",
             player.getName().getString(),
             variant.name().toLowerCase(java.util.Locale.ROOT), name);
+
+        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        try {
+            TunnelTemplateStore.saveToSource(variant, name, template);
+            try {
+                Vec3i footprint = kind.dims(CarriageDims.clamp(
+                    CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT));
+                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource(kind, name);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Tunnel editor save: variant sidecar source write failed for {}: {}",
+                    variant.name().toLowerCase(java.util.Locale.ROOT), e.toString());
+            }
+            return SaveResult.written();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Tunnel editor save: source write failed for {}: {}",
+                variant.name().toLowerCase(java.util.Locale.ROOT), e.toString());
+            return SaveResult.failed(e.getMessage());
+        }
     }
 
     /**

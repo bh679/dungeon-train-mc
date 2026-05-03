@@ -17,15 +17,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>With the per-group architecture, a "train" is a collection of Sable
  * sub-levels each holding {@code groupSize} consecutive carriages. The
- * helper takes the train's current min/max group anchors and decides which
- * NEW anchors need to be spawned to cover all near players' needed pIdx
- * window.</p>
+ * helper takes the train's current min/max group anchors and the resolved
+ * needed pIdx range (already unioned across all near players, with each
+ * player's halfBack/halfFront applied by the caller) and decides which
+ * NEW anchors need to be spawned to cover that range.</p>
  *
  * <p>Default fixture: {@code count=10} → {@code halfBack=4}, {@code halfFront=5}.
- * With groupSize=3, the bootstrap snaps the requested pIdx range
- * {@code [-4, 5]} outward to group anchors. floorDiv(-4, 3) = -2, * 3 = -6;
- * floorDiv(5, 3) = 1, * 3 = 3. So anchors are {-6, -3, 0, 3} — 4 groups
- * covering pIdx range [-6, 5].</p>
+ * Tests apply these per-player half-widths to compute the {@code maxNeededPIdx} /
+ * {@code minNeededPIdx} arguments before calling the helper, mirroring what
+ * the per-player loop in {@link TrainCarriageAppender#updateTrain} does.</p>
  */
 final class TrainCarriageAppenderTest {
 
@@ -37,11 +37,25 @@ final class TrainCarriageAppenderTest {
     /** Tail anchor for the default bootstrap. */
     private static final int INITIAL_MIN_ANCHOR = -6;
 
+    /** Helper: max needed pIdx across players, mirroring the appender's per-player loop. */
+    private static int maxNeeded(int... playerPIdxs) {
+        int m = Integer.MIN_VALUE;
+        for (int p : playerPIdxs) m = Math.max(m, p + HALF_FRONT);
+        return m;
+    }
+
+    /** Helper: min needed pIdx across players, mirroring the appender's per-player loop. */
+    private static int minNeeded(int... playerPIdxs) {
+        int m = Integer.MAX_VALUE;
+        for (int p : playerPIdxs) m = Math.min(m, p - HALF_BACK);
+        return m;
+    }
+
     @Test
     @DisplayName("no near players → empty list")
     void noPlayers_returnsEmpty() {
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of());
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, Integer.MIN_VALUE, Integer.MAX_VALUE, GROUP_SIZE);
         assertTrue(out.isEmpty());
     }
 
@@ -49,7 +63,7 @@ final class TrainCarriageAppenderTest {
     @DisplayName("groupSize=0 throws (defensive)")
     void groupSizeZero_throws() {
         assertThrows(IllegalArgumentException.class, () ->
-            TrainCarriageAppender.computeGroupAnchorsToSpawn(0, 0, HALF_BACK, HALF_FRONT, 0, List.of(1)));
+            TrainCarriageAppender.computeGroupAnchorsToSpawn(0, 0, 5, -5, 0));
     }
 
     @Test
@@ -57,7 +71,7 @@ final class TrainCarriageAppenderTest {
     void playerInsideRange_returnsEmpty() {
         // Player at pIdx=0; needs [-4, 5]. Train covers [-6, 5]. Already covered.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(0));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(0), minNeeded(0), GROUP_SIZE);
         assertTrue(out.isEmpty());
     }
 
@@ -67,7 +81,7 @@ final class TrainCarriageAppenderTest {
         // Player at pIdx=1; needs [-3, 6]. Train covers [-6, 5]. needHigh=6 →
         // floorDiv(6, 3) = 2 * 3 = 6. trainMax=3. Forward: anchor 6.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(1));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(1), minNeeded(1), GROUP_SIZE);
         assertEquals(List.of(6), out);
     }
 
@@ -77,7 +91,7 @@ final class TrainCarriageAppenderTest {
         // Player at pIdx=-3; needs [-7, 2]. Train covers [-6, 5]. needLow=-7 →
         // floorDiv(-7, 3) = -3 * 3 = -9. trainMin=-6. Backward: anchor -9.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(-3));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(-3), minNeeded(-3), GROUP_SIZE);
         assertEquals(List.of(-9), out);
     }
 
@@ -87,7 +101,7 @@ final class TrainCarriageAppenderTest {
         // Player at pIdx=10; needs [6, 15]. floorDiv(15, 3) = 5 * 3 = 15.
         // From trainMax=3, forward anchors: 6, 9, 12, 15.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(10));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(10), minNeeded(10), GROUP_SIZE);
         assertEquals(List.of(6, 9, 12, 15), out);
     }
 
@@ -97,7 +111,7 @@ final class TrainCarriageAppenderTest {
         // Player at pIdx=-10; needs [-14, -5]. floorDiv(-14, 3) = -5 * 3 = -15.
         // From trainMin=-6, backward anchors: -9, -12, -15.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(-10));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(-10), minNeeded(-10), GROUP_SIZE);
         assertEquals(List.of(-9, -12, -15), out);
     }
 
@@ -108,7 +122,7 @@ final class TrainCarriageAppenderTest {
         // p2 at pIdx=-3 needs [-7, 2] → backward floorDiv(-7,3)*3 = -9.
         // Forward: anchor 6. Backward: anchor -9. Output: 6 then -9.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(3, -3));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(3, -3), minNeeded(3, -3), GROUP_SIZE);
         assertEquals(List.of(6, -9), out);
     }
 
@@ -121,7 +135,7 @@ final class TrainCarriageAppenderTest {
         // -3 ≥ trainMin -6, so no backward spawn.
         // Forward: 6, 9, 12, 15.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(2, 12));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(2, 12), minNeeded(2, 12), GROUP_SIZE);
         assertEquals(List.of(6, 9, 12, 15), out);
     }
 
@@ -131,7 +145,7 @@ final class TrainCarriageAppenderTest {
         // Pretend the train already extends from anchor -99 to 99 (huge train).
         // Player at pIdx=0 needs [-4, 5] — well inside.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            99, -99, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(0));
+            99, -99, maxNeeded(0), minNeeded(0), GROUP_SIZE);
         assertTrue(out.isEmpty());
     }
 
@@ -143,7 +157,7 @@ final class TrainCarriageAppenderTest {
         // Player at pIdx=10 with trainMax=5 (B.1 fixture); needs [6, 15].
         // Forward anchors: 6, 7, 8, 9, 10, 11, 12, 13, 14, 15.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            5, -4, HALF_BACK, HALF_FRONT, 1, List.of(10));
+            5, -4, maxNeeded(10), minNeeded(10), 1);
         assertEquals(List.of(6, 7, 8, 9, 10, 11, 12, 13, 14, 15), out);
     }
 
@@ -155,7 +169,7 @@ final class TrainCarriageAppenderTest {
         // Train min/max anchors at 0 (assume groupSize=16 bootstrap covers [0, 15]).
         // Forward: anchor 16.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            0, 0, HALF_BACK, HALF_FRONT, 16, List.of(20));
+            0, 0, maxNeeded(20), minNeeded(20), 16);
         assertEquals(List.of(16), out);
     }
 
@@ -166,7 +180,7 @@ final class TrainCarriageAppenderTest {
         // From trainMin=-6, backward step by -3: -9, -12, ..., -105.
         // That's (105 - 6) / 3 = 33 anchors.
         List<Integer> out = TrainCarriageAppender.computeGroupAnchorsToSpawn(
-            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, HALF_BACK, HALF_FRONT, GROUP_SIZE, List.of(-100));
+            INITIAL_MAX_ANCHOR, INITIAL_MIN_ANCHOR, maxNeeded(-100), minNeeded(-100), GROUP_SIZE);
         assertEquals(33, out.size());
         assertEquals(-9, (int) out.get(0));
         assertEquals(-105, (int) out.get(out.size() - 1));

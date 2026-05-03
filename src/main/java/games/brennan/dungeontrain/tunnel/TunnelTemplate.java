@@ -10,6 +10,8 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
@@ -56,18 +58,6 @@ public final class TunnelTemplate {
     private TunnelTemplate() {}
 
     /**
-     * Place a tunnel section at {@code origin} (= min corner, i.e.
-     * {@code (worldX, floorY, wallMinZ)}). Uses saved template if present,
-     * else delegates to the procedural fallback.
-     */
-    public static void placeSectionAt(ServerLevel level, BlockPos origin) {
-        long worldSeed = level.getSeed();
-        int tileIndex = origin.getX();
-        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex);
-        placeSectionNamed(level, origin, name);
-    }
-
-    /**
      * Editor-facing — stamp the named section variant at {@code origin}
      * (skips registry weight pick). Falls back to procedural paint if the
      * named template is missing. Sidecar applied with
@@ -87,26 +77,6 @@ public final class TunnelTemplate {
     }
 
     /**
-     * Place a tunnel portal at {@code origin}. When {@code mirrorX == false}
-     * (entrance), the pyramid facade sits at {@code origin.x}. When
-     * {@code mirrorX == true} (exit), the template is mirrored along X via
-     * {@link Mirror#FRONT_BACK} so the pyramid facade lands at
-     * {@code origin.x + LENGTH - 1}.
-     *
-     * <p>Because {@code Mirror.FRONT_BACK} negates local-x, the mirrored
-     * template's blocks land at {@code world.x = origin.x - local.x}. To keep
-     * the footprint at {@code [origin.x .. origin.x + LENGTH - 1]} we call
-     * {@link StructureTemplate#placeInWorld} with an origin shifted by
-     * {@code LENGTH - 1} on X.</p>
-     */
-    public static void placePortalAt(ServerLevel level, BlockPos origin, boolean mirrorX) {
-        long worldSeed = level.getSeed();
-        int tileIndex = origin.getX();
-        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_PORTAL, worldSeed, tileIndex);
-        placePortalNamed(level, origin, mirrorX, name);
-    }
-
-    /**
      * Editor-facing — stamp the named portal variant at {@code origin}
      * (skips registry weight pick). See {@link #placeSectionNamed} for
      * rationale.
@@ -123,6 +93,86 @@ public final class TunnelTemplate {
         }
         TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
         LegacyTunnelPaint.paintPortal(level, origin.getX(), tg, mirrorX);
+    }
+
+    /**
+     * Worldgen-time tunnel section stamp. Mirrors {@link #placeSectionAt}
+     * but reads/writes through {@link WorldGenLevel}. Returns {@code true}
+     * if an NBT-backed stamp was placed; {@code false} if no template was
+     * available (caller falls back to {@link LegacyTunnelPaint#paintSection}
+     * which already runs in the worldgen path).
+     *
+     * <p>Skips the {@link Shipyards} check (no ships exist at chunkgen) and
+     * the {@link ShipFilterProcessor} (same reason). Uses
+     * {@link Block#UPDATE_CLIENTS} as the placement flag — neighbour-update
+     * cascades are unsafe within the worldgen 3×3 decoration window.</p>
+     */
+    public static boolean placeSectionAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin) {
+        long worldSeed = serverLevel.getSeed();
+        int tileIndex = origin.getX();
+        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex);
+        Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.SECTION, name);
+        if (stored.isEmpty()) return false;
+        stampTemplateWorldgen(level, origin, stored.get(), false);
+        applyTunnelSidecarWorldgen(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
+        return true;
+    }
+
+    /**
+     * Worldgen-time tunnel portal stamp. Mirrors {@link #placePortalAt} but
+     * reads/writes through {@link WorldGenLevel}. See
+     * {@link #placeSectionAtWorldgen} for the rationale on skipped runtime-
+     * only post-processing (shipyard guard, sidecar SilentBlockOps).
+     */
+    public static boolean placePortalAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin, boolean mirrorX) {
+        long worldSeed = serverLevel.getSeed();
+        int tileIndex = origin.getX();
+        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_PORTAL, worldSeed, tileIndex);
+        Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.PORTAL, name);
+        if (stored.isEmpty()) return false;
+        BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
+        stampTemplateWorldgen(level, stampOrigin, stored.get(), mirrorX);
+        applyTunnelSidecarWorldgen(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
+        return true;
+    }
+
+
+    private static void stampTemplateWorldgen(WorldGenLevel level, BlockPos origin,
+                                              StructureTemplate template, boolean mirrorX) {
+        StructurePlaceSettings settings = new StructurePlaceSettings()
+            .setIgnoreEntities(true);
+        // No ShipFilterProcessor — no ships at chunkgen.
+        if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
+        template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Worldgen variant of {@link #applyTunnelSidecar}. Direct
+     * {@link WorldGenLevel#setBlock} with {@link Block#UPDATE_CLIENTS}; no
+     * {@link Shipyards} guard (no ships at chunkgen); no block-entity NBT
+     * stamping (BE wiring through WorldGenLevel is awkward and tunnel sidecars
+     * rarely carry BE data).
+     */
+    private static void applyTunnelSidecarWorldgen(
+        WorldGenLevel level, BlockPos origin, boolean mirrorX,
+        TrackKind kind, String name, long worldSeed, int tileIndex
+    ) {
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+            kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
+        if (sidecar.isEmpty()) return;
+        for (var entry : sidecar.entries()) {
+            int lx = entry.localPos().getX();
+            int ly = entry.localPos().getY();
+            int lz = entry.localPos().getZ();
+            int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
+            int wy = origin.getY() + ly;
+            int wz = origin.getZ() + lz;
+            BlockPos wpos = new BlockPos(wx, wy, wz);
+            games.brennan.dungeontrain.editor.VariantState picked =
+                sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
+            if (picked == null) continue;
+            level.setBlock(wpos, picked.state(), Block.UPDATE_CLIENTS);
+        }
     }
 
     /** Zero-out the 10×14×13 footprint at {@code origin}. Used by the editor. */

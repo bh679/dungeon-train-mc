@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -45,7 +46,6 @@ public final class TrainBootstrapEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final int DEFAULT_CARRIAGE_COUNT = 10;
     static final Vector3dc TRAIN_VELOCITY = new Vector3d(2.0, 0.0, 0.0);
 
     /** Perpendicular Z offset of the world spawn from corridor centerline. */
@@ -85,10 +85,16 @@ public final class TrainBootstrapEvents {
         CarriageDims dims = data.dims();
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
-        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning {} carriages at {} in {} dims={}x{}x{}",
-            DEFAULT_CARRIAGE_COUNT, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height());
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        // Bootstrap only places the seed group; the appender retargets to
+        // each player's render distance on the first tick. When config = 0
+        // (auto), use a benign positive seed so the seed-anchor math in
+        // TrainAssembler.spawnTrain doesn't degenerate.
+        int seedCount = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
+        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning seed for {} carriages at {} in {} dims={}x{}x{} (configCount={})",
+            seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
         try {
-            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, DEFAULT_CARRIAGE_COUNT, spawnerPos, dims);
+            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }
