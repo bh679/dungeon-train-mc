@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "2ndlevel",
+    "armor",
+    "barrel",
+    "books",
+    "chest",
+    "cows",
+    "craft",
+    "enchant",
+    "kitchen",
+    "maze",
+    "pigs",
+    "sand",
+    "sheep",
+    "smelt",
+    "upgrade",
+    "vase"
+  ]
+}

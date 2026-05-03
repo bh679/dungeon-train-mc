@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "floor": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "walls": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "roof": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "doors": [
+    {
+      "name": "standard",
+      "weight": 1
+    }
+  ]
+}
