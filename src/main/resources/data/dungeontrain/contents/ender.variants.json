@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 5,
+  "variants": {
+    "3,0,2": [{"state": "minecraft:ender_chest[facing=west,waterlogged=false]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}}, "minecraft:black_concrete"]
+  }
+}
