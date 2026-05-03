@@ -9,6 +9,7 @@ import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -148,6 +149,18 @@ public final class EditorStatusHudOverlay {
      */
     public static Set<String> excludedContents() {
         return excludedContents;
+    }
+
+    /**
+     * Wipe the HUD's static state when the player disconnects from a world
+     * (single-player exit-to-menu fires this too). Without this, the next
+     * world inherits the previous session's "Editor: …" text plus any
+     * {@code [DEV]} badge until a fresh {@link games.brennan.dungeontrain.net.EditorStatusPacket}
+     * arrives — which only happens once the player steps onto an editor plot.
+     */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        clear();
     }
 
     @SubscribeEvent
