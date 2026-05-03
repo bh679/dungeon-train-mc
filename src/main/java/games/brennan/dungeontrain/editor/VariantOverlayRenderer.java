@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -32,11 +33,13 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 /**
@@ -284,7 +287,8 @@ public final class VariantOverlayRenderer {
             // Parts have no weight pool — pass the part name as modelName for
             // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT, partMenuEnabled));
+                "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
+                partMenuEnabled, Collections.emptySet()));
             return;
         }
 
@@ -301,15 +305,33 @@ public final class VariantOverlayRenderer {
         int weight = weightFor(l.model());
         String modelName = modelNameFor(l.model());
         boolean partMenuEnabled = PartPositionMenuController.isMenuEnabled(player);
+        Set<String> excludedContents = excludedContentsFor(l.model());
         // Dedup key includes displayName (not just id) so walking from one
         // named variant to another in the same kind invalidates the cache —
         // model.id() is the kind tag and stays constant across a kind's
-        // variants.
-        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight + "|" + partMenuEnabled;
+        // variants. Excluded set is sorted so its serialization is stable.
+        String excludedKey = excludedContents.isEmpty()
+            ? ""
+            : String.join(",", new TreeSet<>(excludedContents));
+        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight + "|" + partMenuEnabled + "|" + excludedKey;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
-            l.category().displayName(), l.model().displayName(), l.model().id(), modelName, devmode, weight, partMenuEnabled));
+            l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
+            devmode, weight, partMenuEnabled, excludedContents));
+    }
+
+    /**
+     * Sidecar-driven excluded contents set for the active carriage variant
+     * (loaded via {@link CarriageVariantContentsAllowStore}). Empty for any
+     * non-carriage model — the field is meaningless outside carriage editor
+     * plots and the client renders nothing for it.
+     */
+    private static Set<String> excludedContentsFor(EditorModel model) {
+        if (!(model instanceof EditorModel.CarriageModel cm)) return Collections.emptySet();
+        CarriageContentsAllowList allow = CarriageVariantContentsAllowStore.get(cm.variant())
+            .orElse(CarriageContentsAllowList.EMPTY);
+        return allow.excluded();
     }
 
     /**

@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
@@ -33,6 +34,7 @@ import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
@@ -296,6 +298,17 @@ public final class EditorCommand {
             .then(Commands.literal("partmenu")
                 .then(Commands.literal("on").executes(ctx -> runPartMenu(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runPartMenu(ctx.getSource(), false))))
+            .then(Commands.literal("carriage-contents")
+                .then(Commands.argument("variant", StringArgumentType.word())
+                    .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                    .then(Commands.argument("contents", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.literal("on").executes(ctx -> runCarriageContentsAllow(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "variant"),
+                            StringArgumentType.getString(ctx, "contents"), true)))
+                        .then(Commands.literal("off").executes(ctx -> runCarriageContentsAllow(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "variant"),
+                            StringArgumentType.getString(ctx, "contents"), false))))))
             .then(Commands.literal("promote")
                 .then(Commands.literal("all").executes(ctx -> runPromoteAll(ctx.getSource())))
                 .then(Commands.argument("variant", StringArgumentType.word())
@@ -1602,6 +1615,41 @@ public final class EditorCommand {
             "Editor part-position menu: " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
+    }
+
+    /**
+     * Toggle whether the named contents id may spawn inside the named carriage
+     * variant. {@code on} means allowed (removed from the excluded set);
+     * {@code off} means disallowed (added to the excluded set). Persists to
+     * {@link CarriageVariantContentsAllowStore} so the choice survives restarts.
+     * Idempotent — re-toggling to the current state still rewrites the sidecar
+     * but doesn't change content.
+     */
+    private static int runCarriageContentsAllow(CommandSourceStack source, String rawVariant, String rawContents, boolean on) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        try {
+            CarriageContentsAllowList current = CarriageVariantContentsAllowStore.get(variant)
+                .orElse(CarriageContentsAllowList.EMPTY);
+            CarriageContentsAllowList updated = on
+                ? current.withAllowed(contents.id())
+                : current.withExcluded(contents.id());
+            CarriageVariantContentsAllowStore.save(variant, updated);
+            String summary = "Carriage '" + variant.id() + "' content '" + contents.id() + "': "
+                + (on ? "ALLOWED" : "EXCLUDED");
+            source.sendSuccess(() -> Component.literal(summary)
+                .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor carriage-contents save failed for {}/{}",
+                variant.id(), contents.id(), e);
+            source.sendFailure(Component.literal(
+                "Failed to update contents allow-list: " + e.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 
     private static int runDevMode(CommandSourceStack source, boolean on) {

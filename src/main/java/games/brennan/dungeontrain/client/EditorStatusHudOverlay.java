@@ -14,6 +14,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * Client-side HUD overlay: when the player stands inside an editor plot, show
  * a top-centre bar with the current category + model name. Updated via
@@ -52,6 +55,12 @@ public final class EditorStatusHudOverlay {
     private static int weight = NO_WEIGHT;
     /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
     private static boolean partMenuEnabled = true;
+    /**
+     * Content ids the active carriage variant has explicitly disallowed. Empty
+     * for non-carriage statuses and for carriages with no exclusions. The
+     * Contents drilldown screen reads this for per-row red/green toggle state.
+     */
+    private static Set<String> excludedContents = Collections.emptySet();
 
     /** Distance from the top of the screen in GUI pixels. */
     private static final int OFFSET_FROM_TOP = 8;
@@ -63,7 +72,9 @@ public final class EditorStatusHudOverlay {
     private EditorStatusHudOverlay() {}
 
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
-    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName, boolean newDevmode, int newWeight, boolean newPartMenuEnabled) {
+    public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
+                                 boolean newDevmode, int newWeight, boolean newPartMenuEnabled,
+                                 Set<String> newExcludedContents) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -71,6 +82,9 @@ public final class EditorStatusHudOverlay {
         devmode = newDevmode;
         weight = newWeight;
         partMenuEnabled = newPartMenuEnabled;
+        excludedContents = (newExcludedContents == null || newExcludedContents.isEmpty())
+            ? Collections.emptySet()
+            : Set.copyOf(newExcludedContents);
     }
 
     public static void clear() {
@@ -81,6 +95,7 @@ public final class EditorStatusHudOverlay {
         devmode = false;
         weight = NO_WEIGHT;
         partMenuEnabled = true;
+        excludedContents = Collections.emptySet();
     }
 
     /**
@@ -125,6 +140,14 @@ public final class EditorStatusHudOverlay {
     /** Server-reported per-player part-position auto-open menu flag. Default true. */
     public static boolean isPartMenuEnabled() {
         return partMenuEnabled;
+    }
+
+    /**
+     * Content ids the active carriage variant currently has disallowed.
+     * Empty when not on a carriage variant or when none are excluded.
+     */
+    public static Set<String> excludedContents() {
+        return excludedContents;
     }
 
     @SubscribeEvent
