@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-tick append-only group spawner. For each train (collection of
@@ -56,18 +57,25 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
 
     /**
-     * Per-train tick counter for "Sable visible-list lagging the spawn
-     * registry" — incremented every tick the visible lead/tail's pIdx
-     * doesn't match the registry's max/min anchor, reset to 0 when they
-     * agree. While > 0 and below {@link #SABLE_LAG_TIMEOUT_TICKS} the
-     * appender defers spawning, so the placement reference is always
-     * the registry-current lead or tail (subLevelDelta=±1). Beyond the
-     * timeout, the appender proceeds with the stale visible reference
-     * to avoid permanently stalling train growth if Sable registration
-     * gets stuck.
+     * Per-train: the most recently spawned {@link ManagedShip}. Read by
+     * the wait-for-placement-success gate in {@link #updateTrain} —
+     * auto-spawn defers until this ship's
+     * {@link TrainTransformProvider#isPlacedSuccessfully} flips true,
+     * which only happens after {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive
+     * collision-free ticks (with any +0.5-X collision-resolution shifts
+     * already applied by {@link #runPlacementCollisionTracker}). This
+     * ensures the next spawn lands relative to a fully-settled sibling.
      */
-    private static final Map<UUID, Integer> SABLE_LAG_TICKS = new HashMap<>();
-    private static final int SABLE_LAG_TIMEOUT_TICKS = 20;
+    private static final Map<UUID, ManagedShip> LAST_SPAWNED_SHIP = new ConcurrentHashMap<>();
+
+    /**
+     * Per-train: {@code level.getGameTime()} of the most recent spawn.
+     * Diagnostic-only now (the placement-success gate doesn't read this);
+     * kept populated for log/debug correlation when investigating
+     * spawn-cadence questions.
+     */
+    private static final Map<UUID, Long> LAST_SPAWNED_TICK = new ConcurrentHashMap<>();
+
 
     /**
      * Minimum visible gap (in blocks) between a freshly-spawned group and
@@ -81,6 +89,334 @@ public final class TrainCarriageAppender {
      * blocks at every group seam — a slight aesthetic cost vs prior 0.1.
      */
     private static final double MIN_GAP_BLOCKS = 0.3;
+
+    /**
+     * Maximum iterations of pre-spawn AABB-vs-AABB collision shifting in
+     * {@link #adjustForCollisions}. The appender only ever spawns at train
+     * ends, so realistically one or two iterations is enough to clear the
+     * lead/tail group; this cap protects against pathological topologies
+     * (e.g. a future debug mode that tries to spawn into a fully-packed
+     * window) without risking an infinite loop.
+     */
+    private static final int COLLISION_ADJUST_SAFETY_LIMIT = 16;
+
+    /**
+     * When {@code true}, the appender skips its automatic spawn loop on
+     * {@link #onLevelTick}; spawns happen only via
+     * {@link #requestManualSpawn()} (one J-press = one spawn cycle = up to
+     * {@link #MAX_SPAWNS_PER_TICK} per train). HUD updates and planned-spawn
+     * broadcasting still run every tick so the wireframe preview stays
+     * fresh as the reference carriage drifts.
+     *
+     * <p>Default {@code false} (auto mode). Toggled via the in-world Debug
+     * menu (and underlying {@code /dungeontrain debug spawnmode} command).</p>
+     */
+    public static volatile boolean MANUAL_MODE = false;
+
+    /**
+     * One-shot consumed by the next {@link #onLevelTick}. Set by the
+     * J-keybind packet handler via {@link #requestManualSpawn()}.
+     */
+    private static volatile boolean MANUAL_SPAWN_REQUESTED = false;
+
+    /**
+     * Snapshot of the next planned-spawn placement per train, refreshed
+     * every appender tick whether or not we actually spawn. Read by
+     * {@link games.brennan.dungeontrain.event.CarriageGroupGapTicker} to
+     * broadcast to clients for the wireframe preview overlay.
+     *
+     * <p>One entry per train with at least one anchor queued for spawning;
+     * trains that are fully populated relative to nearby players don't
+     * appear in the map.</p>
+     */
+    public record PlannedSpawn(
+        UUID trainId,
+        UUID referenceShipId,
+        BlockPos worldOrigin,
+        int sizeX,
+        int sizeY,
+        int sizeZ,
+        int newAnchor
+    ) {}
+
+    private static final Map<UUID, PlannedSpawn> NEXT_PLANNED_SPAWNS = new ConcurrentHashMap<>();
+
+    /** Snapshot of the planned next-spawn for every train with a queued anchor. */
+    public static Map<UUID, PlannedSpawn> snapshotPlannedSpawns() {
+        return new HashMap<>(NEXT_PLANNED_SPAWNS);
+    }
+
+    /**
+     * Post-spawn diagnostic check region. After every successful
+     * {@link #spawnNewGroup} we run an AABB-vs-AABB intersection between
+     * a fixed-size 1×3×5 box anchored at the new sub-level's first block
+     * (world-space lowest-X corner) and every other carriage of the same
+     * train. The result is recorded here for the wireframe overlay so
+     * we can SEE — not just measure — when the previous carriage's blocks
+     * have crept into the new spawn's footprint.
+     *
+     * <p>Anchored to the new ship's sub-level pose so the overlay rides
+     * with the train. Cleared on next spawn (per-train) or
+     * {@link #clearSettleTracker} on server stop / train wipe.</p>
+     */
+    public record SpawnCollisionCheck(
+        UUID trainId,
+        UUID newShipId,
+        int selfPIdx,
+        long ticksSinceSpawn,
+        BlockPos shipyardOrigin,
+        int sizeX,
+        int sizeY,
+        int sizeZ,
+        boolean colliding,
+        int collidingPIdx
+    ) {}
+
+    private static final Map<UUID, SpawnCollisionCheck> LAST_SPAWN_COLLISION_CHECK = new ConcurrentHashMap<>();
+
+    /**
+     * 1-block-thick check region size on X (the spawn-direction axis):
+     * we're asking "does the previous carriage occupy the new carriage's
+     * very first slice?" — a positive answer means the placement-math
+     * gap was eaten and the two AABBs are touching or overlapping.
+     */
+    private static final int COLLISION_CHECK_SIZE_X = 1;
+    /**
+     * 3-block check height on Y. The carriage's interior is 5 tall, but
+     * 3 catches the floor + first 2 wall courses which is where a
+     * back-pad overlap would land. Configurable via this constant if
+     * empirical testing wants more / less coverage.
+     */
+    private static final int COLLISION_CHECK_SIZE_Y = 3;
+    /**
+     * 5-block check width on Z — full track width. The carriage spans
+     * the full Z range so anything overlapping at all on Z is caught.
+     */
+    private static final int COLLISION_CHECK_SIZE_Z = 5;
+
+    /**
+     * Consecutive clean (collision-free) game ticks a carriage must run
+     * before {@link TrainTransformProvider#markPlacedSuccessfully} fires.
+     * Once placed, the carriage is permanently exempt from the per-tick
+     * collision tracker and the wireframe overlay disappears for it.
+     * 60 ticks ≈ 3 s at 20 Hz, comfortably past any spawn-time AABB
+     * settle latency.
+     */
+    private static final int CLEAN_TICKS_FOR_SUCCESS = 60;
+    /**
+     * Per-collision shift distance in the spawn (+X) direction. The
+     * carriage's {@code spawnWorldPos} is bumped by this amount each
+     * tick it's seen colliding, which the deterministic position
+     * formula in {@link TrainTransformProvider#nextTransform} picks up
+     * on the next physics tick — the carriage visibly hops forward
+     * 0.5 blocks, away from the offending sibling. Counter resets to
+     * 0 on every shift so the 60-tick clean run starts fresh.
+     */
+    private static final double COLLISION_SHIFT_BLOCKS = 0.5;
+
+    /** Snapshot of the most recent post-spawn collision check per train. */
+    public static Map<UUID, SpawnCollisionCheck> snapshotSpawnCollisionChecks() {
+        return new HashMap<>(LAST_SPAWN_COLLISION_CHECK);
+    }
+
+    /**
+     * Live per-carriage collision check across every loaded train —
+     * NOT just the most recent spawn. Used during testing so the wireframe
+     * overlay shows green/red at the back of EVERY group simultaneously,
+     * which makes overlap regressions easier to spot when scanning the
+     * train end-to-end.
+     *
+     * <p>Cheap: one 1×3×5 AABB-vs-AABB check per carriage against (visible
+     * ∪ registry), deduped by ship id and self-skipped. Even at ~45 groups
+     * per train that's well under 2k integer compares per broadcast tick.</p>
+     *
+     * <p>To revert to the original "most recent spawn only" behaviour,
+     * point {@code CarriageGroupGapTicker} back at
+     * {@link #snapshotSpawnCollisionChecks} — the post-spawn write path
+     * is still wired and kept the per-train map populated.</p>
+     */
+    public static List<SpawnCollisionCheck> computeAllCarriageCollisionChecks(ServerLevel level) {
+        long now = level.getGameTime();
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        List<SpawnCollisionCheck> out = new ArrayList<>();
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            UUID trainId = entry.getKey();
+            List<Trains.Carriage> train = entry.getValue();
+            for (Trains.Carriage carriage : train) {
+                if (carriage.provider().isPlacedSuccessfully()) continue;
+                SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
+                if (check != null) out.add(check);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Per-tick collision-resolution pass. For every not-yet-placed
+     * carriage:
+     * <ul>
+     *   <li><b>Colliding</b>: nudge its {@code spawnWorldPos} forward by
+     *       {@link #COLLISION_SHIFT_BLOCKS}, reset clean-tick counter to 0.</li>
+     *   <li><b>Clear</b>: increment clean-tick counter; if it reaches
+     *       {@link #CLEAN_TICKS_FOR_SUCCESS}, mark the carriage
+     *       {@code placedSuccessfully} — the wireframe overlay drops
+     *       it on the next broadcast and the tracker stops touching
+     *       it for the rest of the session.</li>
+     * </ul>
+     * Called from {@link #onLevelTick} every game tick (not gated by
+     * the broadcast period) so counters are accurate to the tick.
+     */
+    public static void runPlacementCollisionTracker(ServerLevel level) {
+        long now = level.getGameTime();
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            UUID trainId = entry.getKey();
+            List<Trains.Carriage> train = entry.getValue();
+            for (Trains.Carriage carriage : train) {
+                TrainTransformProvider provider = carriage.provider();
+                if (provider.isPlacedSuccessfully()) continue;
+
+                SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
+                if (check == null) continue;
+
+                if (check.colliding()) {
+                    // Direction-aware shift: push self AWAY from the
+                    // offender. Offender at higher pIdx (forward of us)
+                    // → shift -X; offender at lower pIdx (behind us)
+                    // → shift +X. Equal pIdx is impossible (collision
+                    // check skips self), so the ternary is exhaustive.
+                    double dx = (check.collidingPIdx() > check.selfPIdx())
+                        ? -COLLISION_SHIFT_BLOCKS
+                        : +COLLISION_SHIFT_BLOCKS;
+                    provider.shiftSpawnPosition(dx, 0.0, 0.0);
+                    provider.resetConsecutiveCleanTicks();
+                    LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} colliding (overlaps pIdx={}) — shifted {} X, timer reset",
+                        provider.getPIdx(), check.collidingPIdx(),
+                        String.format("%+.1f", dx));
+                } else {
+                    provider.incrementConsecutiveCleanTicks();
+                    if (provider.getConsecutiveCleanTicks() >= CLEAN_TICKS_FOR_SUCCESS) {
+                        provider.markPlacedSuccessfully();
+                        LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} placed successfully after {} clean ticks (ticksSinceSpawn={})",
+                            provider.getPIdx(), CLEAN_TICKS_FOR_SUCCESS, check.ticksSinceSpawn());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Per-carriage helper for {@link #computeAllCarriageCollisionChecks}.
+     * Returns {@code null} for carriages that aren't Dungeon Train carriages
+     * (no provider) — defensive, the map iteration shouldn't surface those
+     * but caller filters anyway.
+     */
+    private static SpawnCollisionCheck checkOneCarriage(
+        UUID trainId,
+        Trains.Carriage carriage,
+        List<Trains.Carriage> train,
+        long currentGameTick
+    ) {
+        TrainTransformProvider provider = carriage.provider();
+        BlockPos shipyardOrigin = provider.getShipyardOrigin();
+        int anchorPIdx = provider.getPIdx();
+        long spawnTick = provider.getSpawnGameTick();
+        long ticksSinceSpawn = (spawnTick < 0) ? 0L : (currentGameTick - spawnTick);
+
+        // Position the 1×3×5 check box at whichever end of the carriage
+        // faces the existing train. Forward spawn (default): the LOW-X
+        // corner — the previous-pIdx sibling sits at lower X and could
+        // bleed into self's first slice. Backward spawn: the HIGH-X
+        // corner — the next-pIdx sibling sits at higher X and could
+        // bleed into self's last slice. Stride matches the
+        // {@link TrainAssembler#spawnGroup} layout: groupSize×length +
+        // 2×halfPadLen for groupSize > 1, just length for groupSize == 1.
+        int groupSize = provider.getGroupSize();
+        CarriageDims pdims = provider.dims();
+        int halfPadLen = CarriageTemplate.halfPadLen(pdims);
+        int subLevelStride = (groupSize > 1)
+            ? (groupSize * pdims.length() + 2 * halfPadLen)
+            : pdims.length();
+        int boxLocalOriginX = provider.isSpawnedBackward()
+            ? (shipyardOrigin.getX() + subLevelStride - COLLISION_CHECK_SIZE_X)
+            : shipyardOrigin.getX();
+
+        Vector3d corner = new Vector3d(
+            boxLocalOriginX, shipyardOrigin.getY(), shipyardOrigin.getZ());
+        carriage.ship().shipToWorld(corner);
+        double minX = corner.x;
+        double minY = corner.y;
+        double minZ = corner.z;
+        double maxX = minX + COLLISION_CHECK_SIZE_X;
+        double maxY = minY + COLLISION_CHECK_SIZE_Y;
+        double maxZ = minZ + COLLISION_CHECK_SIZE_Z;
+
+        long selfId = carriage.ship().id();
+        boolean colliding = false;
+        int collidingPIdx = 0;
+        Set<Long> seen = new HashSet<>();
+        seen.add(selfId);
+
+        for (Trains.Carriage other : train) {
+            if (!seen.add(other.ship().id())) continue;
+            AABBdc aabb = other.ship().worldAABB();
+            if (isZeroAabb(aabb)) continue;
+            if (maxX > aabb.minX() && minX < aabb.maxX()
+                && maxY > aabb.minY() && minY < aabb.maxY()
+                && maxZ > aabb.minZ() && minZ < aabb.maxZ()) {
+                colliding = true;
+                collidingPIdx = other.provider().getPIdx();
+                break;
+            }
+        }
+        if (!colliding) {
+            Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+            for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
+                ManagedShip ship = e.getValue();
+                if (!seen.add(ship.id())) continue;
+                AABBdc aabb = ship.worldAABB();
+                if (isZeroAabb(aabb)) continue;
+                if (maxX > aabb.minX() && minX < aabb.maxX()
+                    && maxY > aabb.minY() && minY < aabb.maxY()
+                    && maxZ > aabb.minZ() && minZ < aabb.maxZ()) {
+                    colliding = true;
+                    collidingPIdx = e.getKey();
+                    break;
+                }
+            }
+        }
+
+        BlockPos boxShipyardOrigin = new BlockPos(
+            boxLocalOriginX, shipyardOrigin.getY(), shipyardOrigin.getZ());
+        return new SpawnCollisionCheck(
+            trainId,
+            carriage.ship().subLevelId(),
+            anchorPIdx,
+            ticksSinceSpawn,
+            boxShipyardOrigin,
+            COLLISION_CHECK_SIZE_X,
+            COLLISION_CHECK_SIZE_Y,
+            COLLISION_CHECK_SIZE_Z,
+            colliding,
+            colliding ? collidingPIdx : 0);
+    }
+
+    /** Trigger one spawn cycle on the next {@link #onLevelTick}. Server thread only. */
+    public static void requestManualSpawn() {
+        MANUAL_SPAWN_REQUESTED = true;
+    }
+
+    /**
+     * Clear the wait-for-Sable-settle tracker. Wired alongside
+     * {@link Trains#clearRegistry()} on server stop / train wipe so a
+     * stale ship reference from a previous session doesn't gate the
+     * first spawn after a fresh start.
+     */
+    public static void clearSettleTracker() {
+        LAST_SPAWNED_SHIP.clear();
+        LAST_SPAWNED_TICK.clear();
+        LAST_SPAWN_COLLISION_CHECK.clear();
+    }
 
     /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
@@ -113,24 +449,66 @@ public final class TrainCarriageAppender {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
 
+        // Per-tick placement collision tracker — runs every game tick
+        // (not gated by the broadcast period) so the 60-tick clean-run
+        // counter is precise. Mutates per-carriage state on
+        // TrainTransformProvider; once a carriage transitions to
+        // {@code placedSuccessfully = true} it's permanently exempt
+        // from the tracker AND the wireframe overlay.
+        runPlacementCollisionTracker(level);
+
+        // Manual mode: spawn cycles fire only when a J-press has set
+        // MANUAL_SPAWN_REQUESTED. The flag is NOT consumed at the top of
+        // the tick — it's consumed only after a spawn actually happens
+        // (see below). This matters because {@link #updateTrain} can
+        // bail before its spawn loop runs (Sable visible-list lag, empty
+        // anchorsToSpawn after dedup, etc.); if we consumed the flag
+        // up-front, J presses that landed during a Sable-lag window
+        // would be silently dropped.
+        boolean spawnAllowedThisTick = !MANUAL_MODE || MANUAL_SPAWN_REQUESTED;
+
         Set<UUID> seenThisTick = new HashSet<>();
+        Set<UUID> trainsTouchedThisTick = new HashSet<>();
         Map<UUID, List<Trains.Carriage>> trainsById = Trains.byTrainId(level);
+        boolean anySpawnFired = false;
         for (List<Trains.Carriage> train : trainsById.values()) {
-            updateTrain(level, train, players, seenThisTick);
+            if (updateTrain(level, train, players, seenThisTick, trainsTouchedThisTick, spawnAllowedThisTick)) {
+                anySpawnFired = true;
+            }
         }
+        // Consume the manual-spawn request only if a spawn actually
+        // happened. Otherwise the request stays queued for the next tick
+        // (next chance to clear Sable lag, etc.) so J presses can't be
+        // silently lost.
+        if (MANUAL_MODE && MANUAL_SPAWN_REQUESTED && anySpawnFired) {
+            MANUAL_SPAWN_REQUESTED = false;
+        }
+        // Drop planned-spawn entries for trains we didn't see this tick (no
+        // queued anchor → wireframe should disappear). Trains we DID see
+        // wrote into NEXT_PLANNED_SPAWNS or removed themselves from it.
+        NEXT_PLANNED_SPAWNS.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
-    private static void updateTrain(
+    /**
+     * @return {@code true} iff at least one new group was spawned during this
+     *     call. Used by {@link #onLevelTick} to know whether to consume
+     *     {@link #MANUAL_SPAWN_REQUESTED} — bail-outs (Sable lag, empty
+     *     queue, no near players) all return {@code false} so a queued
+     *     J-press persists across ticks until it can fire.
+     */
+    private static boolean updateTrain(
         ServerLevel level,
         List<Trains.Carriage> train,
         List<ServerPlayer> players,
-        Set<UUID> seenThisTick
+        Set<UUID> seenThisTick,
+        Set<UUID> trainsTouchedThisTick,
+        boolean spawnAllowedThisTick
     ) {
-        if (train.isEmpty()) return;
+        if (train.isEmpty()) return false;
         // Any group of the train can opt the whole train out (debug probes).
         for (Trains.Carriage c : train) {
-            if (c.provider().isAppenderDisabled()) return;
+            if (c.provider().isAppenderDisabled()) return false;
         }
 
         Trains.Carriage lead = Trains.lead(train);
@@ -144,6 +522,13 @@ public final class TrainCarriageAppender {
         int leadAnchorPIdx = leadProvider.getPIdx();
         int groupSize = leadProvider.getGroupSize();
         int length = dims.length();
+
+        // Mark the train as touched up-front so any subsequent early-return
+        // (no near players in auto mode, empty anchors after dedup, Sable lag
+        // deferral, etc.) does NOT cause its NEXT_PLANNED_SPAWNS entry to be
+        // wiped at the end of {@link #onLevelTick}. Only trains that aren't
+        // loaded at all should fall out of the preview broadcast.
+        trainsTouchedThisTick.add(trainId);
 
         // Target carriage count: per-player, derived from config or each
         // player's render distance when the config is set to 0 (auto). The
@@ -211,7 +596,13 @@ public final class TrainCarriageAppender {
 
             nearPlayerPIdxs.add(pIdx);
         }
-        if (nearPlayerPIdxs.isEmpty()) return;
+        // Auto mode bails when no player is near the train (no spawning
+        // and no preview broadcast are needed). Manual mode skips this
+        // bailout: the wireframe preview should stay visible regardless
+        // of how far the player wanders from the train, so we keep
+        // updating NEXT_PLANNED_SPAWNS and let J fire spawns even after
+        // the player has walked past the train front.
+        if (!MANUAL_MODE && nearPlayerPIdxs.isEmpty()) return false;
 
         // Use the spawn-time registry (not Sable's visible train) to
         // determine the train's anchor range. Sable's
@@ -241,9 +632,23 @@ public final class TrainCarriageAppender {
             trainMinAnchor = minA;
         }
 
-        List<Integer> anchorsToSpawn = computeGroupAnchorsToSpawn(
-            trainMaxAnchor, trainMinAnchor, globalMaxNeededPIdx, globalMinNeededPIdx, groupSize);
-        if (anchorsToSpawn.isEmpty()) return;
+        // Queue exactly ONE anchor per tick — the placement-success gate
+        // is per-spawn, and stacking two spawns in the same tick would
+        // defeat its purpose. Prefer backward when the player has walked
+        // off the tail (globalMinNeededPIdx is below the registry's min);
+        // otherwise extend forward, which matches the previous always-
+        // forward behaviour and keeps the player-walks-forward case
+        // unchanged. Manual J always falls through to forward for
+        // press-contract continuity (J = "spawn one carriage in front").
+        boolean needsBackward = (globalMinNeededPIdx != Integer.MAX_VALUE
+            && globalMinNeededPIdx < trainMinAnchor);
+        List<Integer> anchorsToSpawn = new ArrayList<>();
+        if (needsBackward && !MANUAL_MODE) {
+            anchorsToSpawn.add(trainMinAnchor - groupSize);
+        } else {
+            anchorsToSpawn.add(trainMaxAnchor + groupSize);
+        }
+        if (anchorsToSpawn.isEmpty()) return false;
 
         // Belt-and-braces: even though trainMin/Max came from the
         // registry, drop any anchor that's already known. Protects against
@@ -254,7 +659,7 @@ public final class TrainCarriageAppender {
                 a, trainId);
             return true;
         });
-        if (anchorsToSpawn.isEmpty()) return;
+        if (anchorsToSpawn.isEmpty()) return false;
 
         // Diagnostic: every time we're about to spawn, log the train state
         // we based the decision on. Helps catch "appender thinks tail is X
@@ -277,41 +682,96 @@ public final class TrainCarriageAppender {
             anchorsToSpawn = anchorsToSpawn.subList(0, MAX_SPAWNS_PER_TICK);
         }
 
-        // Wait-for-registry guard: when Sable's visible list lags the
-        // registry, lead/tail returns a group whose pIdx is far from
-        // newAnchor. The placement math then uses a subLevelDelta > 1
-        // and amplifies any pose noise in the reference by that factor.
-        // Defer the spawn for up to SABLE_LAG_TIMEOUT_TICKS so the
-        // reference is always adjacent (subLevelDelta=±1, no
-        // amplification). Beyond the timeout, fall through with the
-        // stale reference to avoid permanently stalling train growth.
-        int visibleMaxAnchor = lead.provider().getPIdx();
-        int visibleMinAnchor = tail.provider().getPIdx();
-        boolean sableCaughtUp = (visibleMaxAnchor == trainMaxAnchor && visibleMinAnchor == trainMinAnchor);
-        if (sableCaughtUp) {
-            SABLE_LAG_TICKS.remove(trainId);
+        // No more Sable-lag deferral here. Previously the appender waited
+        // for Sable's visible list to match the spawn registry before
+        // spawning, but Sable's plot view is player-relative and culls
+        // sub-levels far from the player — so the visible list can stay
+        // permanently behind the registry, deferring spawns indefinitely.
+        // {@link #adjustForCollisions} now consults BOTH the visible
+        // train AND {@link Trains#knownGroups}, so an in-flight or culled
+        // sibling still participates in the collision check, and the
+        // placement-math anchor delta absorbs any visible-list staleness.
+
+        // Record the next-planned-spawn for the wireframe preview. Always
+        // refresh from the head of the queue (the spawn that would happen
+        // next if MANUAL_SPAWN was triggered now), so the wireframe tracks
+        // the reference carriage's drift even when we're not spawning.
+        // {@code trainsTouchedThisTick.add(trainId)} already happened at
+        // the top of this method; we just write the per-train preview here.
+        if (!anchorsToSpawn.isEmpty()) {
+            int previewAnchor = anchorsToSpawn.get(0);
+            Trains.Carriage previewRef = (previewAnchor > trainMaxAnchor) ? lead : tail;
+            Plan previewPlan = planSpawnPlacement(previewRef, previewAnchor, groupSize, dims, train);
+            NEXT_PLANNED_SPAWNS.put(trainId, new PlannedSpawn(
+                trainId,
+                previewRef.ship().subLevelId(),
+                previewPlan.origin,
+                previewPlan.subLevelStride,
+                previewPlan.sizeY,
+                previewPlan.sizeZ,
+                previewAnchor));
         } else {
-            int lagTicks = SABLE_LAG_TICKS.getOrDefault(trainId, 0) + 1;
-            SABLE_LAG_TICKS.put(trainId, lagTicks);
-            if (lagTicks <= SABLE_LAG_TIMEOUT_TICKS) {
-                LOGGER.debug("[DungeonTrain] Appender deferring trainId={} ({}/{} ticks): visible=[{},{}] registry=[{},{}]",
-                    trainId, lagTicks, SABLE_LAG_TIMEOUT_TICKS,
-                    visibleMinAnchor, visibleMaxAnchor, trainMinAnchor, trainMaxAnchor);
-                return;
-            }
-            LOGGER.warn("[DungeonTrain] Appender Sable-lag timeout for trainId={} ({} ticks): visible=[{},{}] registry=[{},{}]; proceeding with stale reference",
-                trainId, lagTicks, visibleMinAnchor, visibleMaxAnchor, trainMinAnchor, trainMaxAnchor);
-            SABLE_LAG_TICKS.remove(trainId);
+            NEXT_PLANNED_SPAWNS.remove(trainId);
         }
 
+        if (!spawnAllowedThisTick) return false;
+
+        // Wait-for-placement-success gate: the previous spawn must have
+        // transitioned to {@code placedSuccessfully = true} via the
+        // per-tick {@link #runPlacementCollisionTracker} — i.e. it has
+        // run {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive collision-
+        // free game ticks AND any required +0.5-X shifts have already
+        // separated it from its predecessor. Until then we hold the
+        // train's queue: spawning the next group while the previous is
+        // still being nudged into place would compound overlaps.
+        //
+        // This subsumes the older AABB-non-zero and 20-tick-floor
+        // gates: a successfully-placed carriage has by definition gone
+        // 60 ticks without overlapping, so its AABB is settled and well
+        // past any Sable plot/mass-tracker latency.
+        long now = level.getGameTime();
+        ManagedShip pending = LAST_SPAWNED_SHIP.get(trainId);
+        if (pending != null) {
+            if (pending.getKinematicDriver() instanceof TrainTransformProvider pendingProvider
+                && !pendingProvider.isPlacedSuccessfully()) {
+                return false; // Previous spawn still settling, defer.
+            }
+            LAST_SPAWNED_SHIP.remove(trainId);
+        }
+
+        boolean spawnedAny = false;
         for (int newAnchor : anchorsToSpawn) {
             // Forward groups use the lead as the world-position reference;
             // backward groups use the tail. The reference's shipyardOrigin
             // is its own anchor's world position; we extrapolate to the
             // new group's anchor by adding (newAnchor - refAnchor) * length.
             Trains.Carriage reference = (newAnchor > trainMaxAnchor) ? lead : tail;
-            spawnNewGroup(level, reference, newAnchor, groupSize, dims, velocity, trainId, train);
+            boolean backwardSpawn = newAnchor < trainMinAnchor;
+            ManagedShip newShip = spawnNewGroup(level, reference, newAnchor, groupSize, dims, velocity, trainId, train);
+            if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
+                newProvider.setSpawnedBackward(backwardSpawn);
+            }
+            LAST_SPAWNED_SHIP.put(trainId, newShip);
+            LAST_SPAWNED_TICK.put(trainId, now);
+            recordPostSpawnCollisionCheck(trainId, newShip, newAnchor, train);
+            spawnedAny = true;
+            // Confirm the spawn in chat (action bar). In manual mode it's
+            // the J-press confirmation. In auto mode the message fires
+            // only when wireframes are enabled so the chat isn't spammed
+            // during normal gameplay — but during a debug session the
+            // spawn rhythm is visible so the user can correlate spawn
+            // events with overlaps and Sable-lag warnings.
+            if (MANUAL_MODE || games.brennan.dungeontrain.debug.DebugFlags.wireframesEnabled()) {
+                for (ServerPlayer player : level.players()) {
+                    player.displayClientMessage(
+                        Component.literal(
+                            "[DungeonTrain] Spawned group anchorPIdx=" + newAnchor
+                        ).withStyle(ChatFormatting.GREEN),
+                        true);
+                }
+            }
         }
+        return spawnedAny;
     }
 
     /**
@@ -392,7 +852,7 @@ public final class TrainCarriageAppender {
      * lowest-X face and the reference's nearest face is always strictly
      * positive (range {@code [MIN_GAP_BLOCKS, 1 + MIN_GAP_BLOCKS]} blocks).</p>
      */
-    private static void spawnNewGroup(
+    private static ManagedShip spawnNewGroup(
         ServerLevel level,
         Trains.Carriage reference,
         int newAnchor,
@@ -402,29 +862,54 @@ public final class TrainCarriageAppender {
         UUID trainId,
         List<Trains.Carriage> train
     ) {
+        Plan plan = planSpawnPlacement(reference, newAnchor, groupSize, dims, train);
+        ManagedShip newShip = TrainAssembler.spawnGroup(
+            level, plan.origin, velocity, newAnchor, groupSize, dims, trainId);
+
+        LOGGER.info("[DungeonTrain] Appender added group anchorPIdx={} groupSize={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={}, subLevelStride={}, collisionAdjustments={})",
+            newAnchor, groupSize, trainId, newShip.id(), plan.origin,
+            String.format("%.4f", plan.idealX),
+            plan.forward ? "forward" : "backward",
+            String.format("%.4f", plan.gap),
+            plan.subLevelStride,
+            plan.collisionAdjustments);
+
+        markCollidingNeighbours(level, newShip, newAnchor, train);
+        return newShip;
+    }
+
+    /**
+     * Pure-ish placement helper: replays {@link #spawnNewGroup}'s ideal-X
+     * derivation, the {@link #MIN_GAP_BLOCKS}-rounding bias, and the
+     * iterative {@link #adjustForCollisions} pass — but stops before
+     * {@link TrainAssembler#spawnGroup}, so callers can inspect the planned
+     * placement (debug-overlay preview, {@code /dt manualspawn next}) without
+     * actually creating a sub-level.
+     *
+     * <p>The "pure-ish" caveat is that {@link #adjustForCollisions} reads
+     * each sibling's live {@code worldAABB()} every iteration, so the
+     * returned placement reflects the train's CURRENT layout — call it from
+     * the same tick you intend to spawn for consistent results.</p>
+     */
+    private static Plan planSpawnPlacement(
+        Trains.Carriage reference,
+        int newAnchor,
+        int groupSize,
+        CarriageDims dims,
+        List<Trains.Carriage> train
+    ) {
         BlockPos refShipyardOrigin = reference.provider().getShipyardOrigin();
         int refAnchor = reference.provider().getPIdx();
+        UUID refTrainId = reference.provider().getTrainId();
         int length = dims.length();
         int halfPadLen = CarriageTemplate.halfPadLen(dims);
 
-        // World stride between adjacent sub-levels (the world delta one
-        // appender step should add). For groupSize > 1, the stride is
-        // groupSize × length + 2 × halfPadLen (two pads per sub-level).
-        // For groupSize == 1 there are no pads, stride is just length.
         int subLevelStride = (groupSize > 1) ? (groupSize * length + 2 * halfPadLen) : length;
 
-        // Reference sub-level's current world origin (= back pad's
-        // lowest-X corner for groupSize > 1, or anchor carriage's
-        // lowest-X corner for groupSize == 1, after velocity drift since
-        // spawn).
         Vector3d refWorldOriginVec = new Vector3d(
             refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
         reference.ship().shipToWorld(refWorldOriginVec);
 
-        // New sub-level's ideal world origin = ref + (anchor delta in
-        // groups) × subLevelStride. Anchors are always group-aligned by
-        // construction, so the integer division is exact even for
-        // negative deltas.
         int anchorDelta = newAnchor - refAnchor;
         int subLevelDelta = anchorDelta / groupSize;
         double idealX = refWorldOriginVec.x + subLevelDelta * (double) subLevelStride;
@@ -432,25 +917,142 @@ public final class TrainCarriageAppender {
         double idealZ = refWorldOriginVec.z;
 
         boolean forward = newAnchor > refAnchor;
-        int placeX = forward
+        int initialPlaceX = forward
             ? (int) Math.ceil(idealX + MIN_GAP_BLOCKS)
             : (int) Math.floor(idealX - MIN_GAP_BLOCKS);
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
-        BlockPos newGroupOrigin = new BlockPos(placeX, placeY, placeZ);
-        double gap = forward ? (placeX - idealX) : (idealX - placeX);
 
-        ManagedShip newShip = TrainAssembler.spawnGroup(
-            level, newGroupOrigin, velocity, newAnchor, groupSize, dims, trainId);
+        int adjustedPlaceX = adjustForCollisions(
+            initialPlaceX, placeY, placeZ, subLevelStride, dims, train, refTrainId, forward, newAnchor);
 
-        LOGGER.info("[DungeonTrain] Appender added group anchorPIdx={} groupSize={} trainId={} ship id={} placedAt={} (idealX={}, dir={}, gapBlocks={}, subLevelStride={})",
-            newAnchor, groupSize, trainId, newShip.id(), newGroupOrigin,
-            String.format("%.4f", idealX),
-            forward ? "forward" : "backward",
-            String.format("%.4f", gap),
-            subLevelStride);
+        BlockPos origin = new BlockPos(adjustedPlaceX, placeY, placeZ);
+        double gap = forward ? (adjustedPlaceX - idealX) : (idealX - adjustedPlaceX);
 
-        markCollidingNeighbours(level, newShip, newAnchor, train);
+        return new Plan(
+            origin,
+            subLevelStride,
+            dims.height(),
+            dims.width(),
+            idealX,
+            gap,
+            forward,
+            adjustedPlaceX - initialPlaceX);
+    }
+
+    private record Plan(
+        BlockPos origin,
+        int subLevelStride,
+        int sizeY,
+        int sizeZ,
+        double idealX,
+        double gap,
+        boolean forward,
+        int collisionAdjustments
+    ) {}
+
+    /**
+     * Iteratively shift {@code placeX} along the spawn direction until the
+     * would-be sub-level AABB no longer overlaps any sibling's AABB.
+     *
+     * <p>Sibling set: the union of (a) the visible train (Sable's
+     * {@link Shipyards#findAll}-derived list) and (b) the spawn-time
+     * registry ({@link Trains#knownGroups}), deduped by ship id, skipping
+     * zero-AABB ships. Auto-spawn pacing is handled separately by the
+     * wait-for-Sable-settle check in {@link #updateTrain} so that by the
+     * time we get here, the previous spawn's {@code worldAABB} is
+     * non-zero and the collision pass can see it.</p>
+     */
+    private static int adjustForCollisions(
+        int placeX,
+        int placeY,
+        int placeZ,
+        int subLevelStride,
+        CarriageDims dims,
+        List<Trains.Carriage> train,
+        UUID trainId,
+        boolean forward,
+        int newAnchor
+    ) {
+        int height = dims.height();
+        int width = dims.width();
+        List<long[]> siblingsForLog = new ArrayList<>();
+        List<AABBdc> siblings = new ArrayList<>();
+        Set<Long> seen = new HashSet<>();
+        for (Trains.Carriage other : train) {
+            long id = other.ship().id();
+            if (!seen.add(id)) continue;
+            AABBdc aabb = other.ship().worldAABB();
+            if (isZeroAabb(aabb)) continue;
+            siblings.add(aabb);
+            siblingsForLog.add(new long[] { id, other.provider().getPIdx() });
+        }
+        Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+        for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
+            ManagedShip ship = e.getValue();
+            long id = ship.id();
+            if (!seen.add(id)) continue;
+            AABBdc aabb = ship.worldAABB();
+            if (isZeroAabb(aabb)) continue;
+            siblings.add(aabb);
+            siblingsForLog.add(new long[] { id, e.getKey() });
+        }
+
+        for (int iter = 0; iter < COLLISION_ADJUST_SAFETY_LIMIT; iter++) {
+            double candMinX = placeX;
+            double candMaxX = placeX + subLevelStride;
+            double candMinY = placeY;
+            double candMaxY = placeY + height;
+            double candMinZ = placeZ;
+            double candMaxZ = placeZ + width;
+
+            AABBdc colliding = null;
+            int collidingPIdx = 0;
+            for (int i = 0; i < siblings.size(); i++) {
+                AABBdc o = siblings.get(i);
+                if (candMaxX > o.minX() && candMinX < o.maxX()
+                    && candMaxY > o.minY() && candMinY < o.maxY()
+                    && candMaxZ > o.minZ() && candMinZ < o.maxZ()) {
+                    colliding = o;
+                    collidingPIdx = (int) siblingsForLog.get(i)[1];
+                    break;
+                }
+            }
+            if (colliding == null) {
+                if (iter > 0) {
+                    LOGGER.info("[DungeonTrain] Pre-spawn collision adjust resolved for newAnchor={} after {} iter(s); finalPlaceX={}",
+                        newAnchor, iter, placeX);
+                }
+                return placeX;
+            }
+
+            int newPlaceX;
+            if (forward) {
+                newPlaceX = (int) Math.ceil(colliding.maxX() + MIN_GAP_BLOCKS);
+            } else {
+                newPlaceX = (int) Math.floor(colliding.minX() - MIN_GAP_BLOCKS) - subLevelStride;
+            }
+            if (newPlaceX == placeX) {
+                LOGGER.warn("[DungeonTrain] Pre-spawn collision adjust stalled for newAnchor={} (forward={}) at placeX={}; offender pIdx={} aabbX=[{}, {}]; proceeding with stale placement",
+                    newAnchor, forward, placeX, collidingPIdx,
+                    String.format("%.3f", colliding.minX()),
+                    String.format("%.3f", colliding.maxX()));
+                return placeX;
+            }
+            LOGGER.debug("[DungeonTrain] Pre-spawn collision adjust iter={} newAnchor={}: shifted placeX {} → {} (offender pIdx={} offenderEdgeX={})",
+                iter, newAnchor, placeX, newPlaceX, collidingPIdx,
+                String.format("%.3f", forward ? colliding.maxX() : colliding.minX()));
+            placeX = newPlaceX;
+        }
+        LOGGER.warn("[DungeonTrain] Pre-spawn collision adjust hit safety cap ({}) for newAnchor={} (forward={}); proceeding with placeX={}",
+            COLLISION_ADJUST_SAFETY_LIMIT, newAnchor, forward, placeX);
+        return placeX;
+    }
+
+    private static boolean isZeroAabb(AABBdc aabb) {
+        return aabb.minX() == 0 && aabb.maxX() == 0
+            && aabb.minY() == 0 && aabb.maxY() == 0
+            && aabb.minZ() == 0 && aabb.maxZ() == 0;
     }
 
     /**
@@ -495,6 +1097,110 @@ public final class TrainCarriageAppender {
         return a.maxX() > b.minX() && a.minX() < b.maxX()
             && a.maxY() > b.minY() && a.minY() < b.maxY()
             && a.maxZ() > b.minZ() && a.minZ() < b.maxZ();
+    }
+
+    /**
+     * Run the diagnostic 1×3×5 post-spawn collision check at the new
+     * carriage's first block (lowest-X corner of its sub-level footprint).
+     * AABB-vs-AABB against every other carriage of the same train (visible
+     * + registry, deduped by ship id, skipping zero/degenerate AABBs); the
+     * result lands in {@link #LAST_SPAWN_COLLISION_CHECK} for the wireframe
+     * overlay drawn by
+     * {@link games.brennan.dungeontrain.client.CarriageGroupGapDebugRenderer}.
+     *
+     * <p>The new ship's {@code worldAABB} is typically still zero on the
+     * spawn tick (Sable hasn't ticked it yet), so we derive the check
+     * region from the sub-level's pose-translated shipyard origin instead
+     * of from the AABB. {@link #planSpawnPlacement} placed the back pad's
+     * lowest-X corner at the spawn-tick {@code shipToWorld(shipyardOrigin)},
+     * which is what we re-derive here so the box lands exactly where the
+     * carriage starts.</p>
+     */
+    private static void recordPostSpawnCollisionCheck(
+        UUID trainId,
+        ManagedShip newShip,
+        int newAnchor,
+        List<Trains.Carriage> train
+    ) {
+        // The 1×3×5 box anchors at the new sub-level's first block in
+        // SHIPYARD coordinates — fixed for the sub-level's lifetime, so the
+        // wireframe rides the carriage perfectly via {@code shipToWorld}
+        // every frame on the client.
+        if (!(newShip.getKinematicDriver() instanceof TrainTransformProvider provider)) {
+            return; // shouldn't happen — the spawn path always sets the driver
+        }
+        BlockPos shipyardOrigin = provider.getShipyardOrigin();
+
+        // For the AABB-vs-AABB check we need world-space bounds of the box,
+        // computed from the new ship's CURRENT pose so the comparison
+        // matches where the just-placed blocks actually live in the world.
+        Vector3d cornerVec = new Vector3d(
+            shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ());
+        newShip.shipToWorld(cornerVec);
+        double checkMinX = cornerVec.x;
+        double checkMinY = cornerVec.y;
+        double checkMinZ = cornerVec.z;
+        double checkMaxX = checkMinX + COLLISION_CHECK_SIZE_X;
+        double checkMaxY = checkMinY + COLLISION_CHECK_SIZE_Y;
+        double checkMaxZ = checkMinZ + COLLISION_CHECK_SIZE_Z;
+
+        boolean colliding = false;
+        int collidingPIdx = 0;
+        long newId = newShip.id();
+
+        // Walk visible train ∪ registry, deduped by id, skipping the new
+        // ship itself (its AABB is still zero anyway) and any
+        // zero/degenerate AABBs (unsafe to compare against).
+        Set<Long> seen = new HashSet<>();
+        seen.add(newId);
+        for (Trains.Carriage other : train) {
+            if (!seen.add(other.ship().id())) continue;
+            AABBdc aabb = other.ship().worldAABB();
+            if (isZeroAabb(aabb)) continue;
+            if (checkMaxX > aabb.minX() && checkMinX < aabb.maxX()
+                && checkMaxY > aabb.minY() && checkMinY < aabb.maxY()
+                && checkMaxZ > aabb.minZ() && checkMinZ < aabb.maxZ()) {
+                colliding = true;
+                collidingPIdx = other.provider().getPIdx();
+                break;
+            }
+        }
+        if (!colliding) {
+            Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+            for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
+                ManagedShip ship = e.getValue();
+                if (!seen.add(ship.id())) continue;
+                AABBdc aabb = ship.worldAABB();
+                if (isZeroAabb(aabb)) continue;
+                if (checkMaxX > aabb.minX() && checkMinX < aabb.maxX()
+                    && checkMaxY > aabb.minY() && checkMinY < aabb.maxY()
+                    && checkMaxZ > aabb.minZ() && checkMinZ < aabb.maxZ()) {
+                    colliding = true;
+                    collidingPIdx = e.getKey();
+                    break;
+                }
+            }
+        }
+
+        if (colliding) {
+            LOGGER.warn("[DungeonTrain] Post-spawn collision check: newAnchor={} shipyardOrigin={} 1x3y5z box overlaps pIdx={}",
+                newAnchor, shipyardOrigin, collidingPIdx);
+        } else {
+            LOGGER.debug("[DungeonTrain] Post-spawn collision check: newAnchor={} shipyardOrigin={} 1x3y5z box clear",
+                newAnchor, shipyardOrigin);
+        }
+
+        LAST_SPAWN_COLLISION_CHECK.put(trainId, new SpawnCollisionCheck(
+            trainId,
+            newShip.subLevelId(),
+            newAnchor,
+            0L,
+            shipyardOrigin,
+            COLLISION_CHECK_SIZE_X,
+            COLLISION_CHECK_SIZE_Y,
+            COLLISION_CHECK_SIZE_Z,
+            colliding,
+            collidingPIdx));
     }
 
     /**

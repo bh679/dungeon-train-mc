@@ -73,6 +73,11 @@ public final class SableManagedShip implements ManagedShip {
     }
 
     @Override
+    public UUID subLevelId() {
+        return subLevel.getUniqueId();
+    }
+
+    @Override
     public Vector3d worldToShip(Vector3d worldPos) {
         return subLevel.logicalPose().transformPositionInverse(worldPos);
     }
