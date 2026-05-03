@@ -103,6 +103,8 @@ public final class WorldLifecycleEvents {
         CarriageTemplateStore.clearCache();
         games.brennan.dungeontrain.train.CarriageTemplate.clearHalfFlatbedCache();
         games.brennan.dungeontrain.train.Trains.clearRegistry();
+        games.brennan.dungeontrain.train.TrainCarriageAppender.clearSettleTracker();
+        games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         PillarTemplateStore.clearCache();
         TrackTemplateStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();

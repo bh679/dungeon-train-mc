@@ -325,8 +325,12 @@ public final class TrainAssembler {
     private static int deleteExistingTrains(ServerLevel level) {
         // Wipe the spawn-time registry first so any trainIds being torn
         // down here don't linger as ghost entries that would block a
-        // future appender from re-spawning at those anchors.
+        // future appender from re-spawning at those anchors. Also clear
+        // the appender's wait-for-Sable-settle tracker so the first
+        // post-wipe spawn doesn't get gated on a now-deleted ship's AABB.
         Trains.clearRegistry();
+        TrainCarriageAppender.clearSettleTracker();
+        games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         Shipyard shipyard = Shipyards.of(level);
         List<ManagedShip> trains = new ArrayList<>();
         for (ManagedShip ship : shipyard.findAll()) {

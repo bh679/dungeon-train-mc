@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -158,6 +159,9 @@ public final class PlayerJoinEvents {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         DungeonTrainNet.sendTo(player, PrefabRegistrySyncPacket.fromRegistries());
+        // Seed debug flags so the in-world Debug menu's Toggle states render
+        // the correct value the first time it's opened on this client.
+        DebugFlags.sendSnapshotTo(player);
         PENDING.put(player.getUUID(), 0);
     }
 

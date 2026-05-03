@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.debug.CarriageDebug;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -39,7 +40,33 @@ public final class DebugCommand {
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
-                    .executes(ctx -> runPair(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "velocity")))));
+                    .executes(ctx -> runPair(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "velocity")))))
+            // /dungeontrain debug wireframes on|off — toggles world-space
+            // gap overlay rendering for every connected client.
+            .then(Commands.literal("wireframes")
+                .then(Commands.literal("on").executes(ctx -> setWireframes(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setWireframes(ctx.getSource(), false))))
+            // /dungeontrain debug spawnmode auto|manual — switches the
+            // appender between auto-spawn and J-keybind manual spawn.
+            .then(Commands.literal("spawnmode")
+                .then(Commands.literal("auto").executes(ctx -> setSpawnMode(ctx.getSource(), false)))
+                .then(Commands.literal("manual").executes(ctx -> setSpawnMode(ctx.getSource(), true))));
+    }
+
+    private static int setWireframes(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setWireframesEnabled(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Wireframes " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setSpawnMode(CommandSourceStack source, boolean manual) {
+        DebugFlags.setManualSpawnMode(source.getServer(), manual);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Spawn mode: " + (manual ? "MANUAL (press J)" : "AUTO")
+        ).withStyle(manual ? ChatFormatting.YELLOW : ChatFormatting.GREEN), true);
+        return 1;
     }
 
     private static int runScan(CommandSourceStack source) {

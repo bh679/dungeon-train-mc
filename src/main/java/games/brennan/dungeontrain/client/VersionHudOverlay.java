@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.resources.ResourceLocation;
@@ -10,6 +11,8 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
+
+import java.util.Locale;
 
 /**
  * Client-only HUD overlay: draws "Dungeon Train v&lt;version&gt; (&lt;branch&gt;)"
@@ -66,6 +69,20 @@ public final class VersionHudOverlay {
                 ? VersionInfo.DISPLAY + " — Carriage: " + formatSigned(carriageIndex)
                 : VersionInfo.DISPLAY;
             graphics.drawString(mc.font, text, 4, 4, 0xFFFFFFFF, true);
+
+            // Second line: distance from THIS group (the one the player is
+            // standing in) to the next-higher-pIdx group in the same train.
+            // Only shown when the player is in a tracked carriage AND that
+            // carriage's group is not the leading group of its train.
+            if (carriagePresent && DebugFlagsState.wireframesEnabled()) {
+                CarriageGroupGapPacket.Entry gap = CarriageGroupGapState.findByCarriage(carriageIndex);
+                if (gap != null) {
+                    String gapText = String.format(Locale.ROOT,
+                        "  Δx to next group: %.2f blocks", gap.distance());
+                    graphics.drawString(mc.font, gapText, 4, 4 + mc.font.lineHeight + 1,
+                        0xFFCCFFCC, true);
+                }
+            }
         };
 
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "version_hud"), overlay);
