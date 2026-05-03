@@ -57,24 +57,29 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
 
     /**
-     * Per-train: the most recently spawned {@link ManagedShip}. Read by
-     * the wait-for-placement-success gate in {@link #updateTrain} —
-     * auto-spawn defers until this ship's
-     * {@link TrainTransformProvider#isPlacedSuccessfully} flips true,
-     * which only happens after {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive
-     * collision-free ticks (with any +0.5-X collision-resolution shifts
-     * already applied by {@link #runPlacementCollisionTracker}). This
-     * ensures the next spawn lands relative to a fully-settled sibling.
+     * Per-train, per-direction: the most recently spawned {@link ManagedShip}
+     * for that direction. Read by the wait-for-placement-success gate in
+     * {@link #updateTrain} — auto-spawn for a given direction defers until
+     * THAT direction's last ship's
+     * {@link TrainTransformProvider#isPlacedSuccessfully} flips true.
+     *
+     * <p>Split per-direction so the two ends of the train spawn
+     * INDEPENDENTLY: a still-settling carriage at the lead end no longer
+     * blocks the next spawn at the tail end, and vice versa. This makes the
+     * forward and backward spawn lanes effectively two copies of the same
+     * pipeline running in parallel.</p>
      */
-    private static final Map<UUID, ManagedShip> LAST_SPAWNED_SHIP = new ConcurrentHashMap<>();
+    private static final Map<UUID, ManagedShip> LAST_SPAWNED_SHIP_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, ManagedShip> LAST_SPAWNED_SHIP_BACKWARD = new ConcurrentHashMap<>();
 
     /**
-     * Per-train: {@code level.getGameTime()} of the most recent spawn.
-     * Diagnostic-only now (the placement-success gate doesn't read this);
-     * kept populated for log/debug correlation when investigating
-     * spawn-cadence questions.
+     * Per-train, per-direction: {@code level.getGameTime()} of the most
+     * recent spawn in that direction. Diagnostic-only (the placement-success
+     * gate doesn't read this); kept populated for log/debug correlation when
+     * investigating spawn-cadence questions on either end.
      */
-    private static final Map<UUID, Long> LAST_SPAWNED_TICK = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> LAST_SPAWNED_TICK_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> LAST_SPAWNED_TICK_BACKWARD = new ConcurrentHashMap<>();
 
 
     /**
@@ -139,11 +144,22 @@ public final class TrainCarriageAppender {
         int newAnchor
     ) {}
 
-    private static final Map<UUID, PlannedSpawn> NEXT_PLANNED_SPAWNS = new ConcurrentHashMap<>();
+    private static final Map<UUID, PlannedSpawn> NEXT_PLANNED_SPAWNS_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, PlannedSpawn> NEXT_PLANNED_SPAWNS_BACKWARD = new ConcurrentHashMap<>();
 
-    /** Snapshot of the planned next-spawn for every train with a queued anchor. */
-    public static Map<UUID, PlannedSpawn> snapshotPlannedSpawns() {
-        return new HashMap<>(NEXT_PLANNED_SPAWNS);
+    /**
+     * Snapshot of every planned next-spawn across both directions. With the
+     * forward and backward spawn lanes running independently, a single train
+     * can have two simultaneous previews (one at each end), so this returns
+     * a flat list rather than a per-train map. The wireframe overlay just
+     * iterates and draws each entry.
+     */
+    public static List<PlannedSpawn> snapshotPlannedSpawns() {
+        List<PlannedSpawn> out = new ArrayList<>(
+            NEXT_PLANNED_SPAWNS_FORWARD.size() + NEXT_PLANNED_SPAWNS_BACKWARD.size());
+        out.addAll(NEXT_PLANNED_SPAWNS_FORWARD.values());
+        out.addAll(NEXT_PLANNED_SPAWNS_BACKWARD.values());
+        return out;
     }
 
     /**
@@ -413,21 +429,30 @@ public final class TrainCarriageAppender {
      * first spawn after a fresh start.
      */
     public static void clearSettleTracker() {
-        LAST_SPAWNED_SHIP.clear();
-        LAST_SPAWNED_TICK.clear();
+        LAST_SPAWNED_SHIP_FORWARD.clear();
+        LAST_SPAWNED_SHIP_BACKWARD.clear();
+        LAST_SPAWNED_TICK_FORWARD.clear();
+        LAST_SPAWNED_TICK_BACKWARD.clear();
         LAST_SPAWN_COLLISION_CHECK.clear();
     }
 
     /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
-     * single server tick. Set to 1 — Sable's
-     * {@link dev.ryanhcode.sable.api.sublevel.SubLevelContainer#getAllSubLevels}
-     * is asynchronous: a freshly-assembled sub-level can take several
-     * server ticks to appear in {@code findAll()}. Bursting more than one
-     * spawn per tick races against this lazy load and produces visible
-     * overlap (each new spawn happens before Sable has registered the
-     * previous one's plot, so the appender's reference math may pick the
-     * wrong sub-level as lead/tail).
+     * single server tick. Set to 2 — one per direction. Forward and
+     * backward spawn lanes run independently (separate
+     * {@code LAST_SPAWNED_SHIP_*} gates and separate placement-success
+     * waits), so a forward spawn at the +X end and a backward spawn at
+     * the −X end in the same tick don't race each other: they touch
+     * different reference carriages and different sub-level neighbours,
+     * and Sable's async {@link dev.ryanhcode.sable.api.sublevel.SubLevelContainer#getAllSubLevels}
+     * lag is irrelevant because each direction's collision check consults
+     * {@link Trains#knownGroups} (the spawn-time registry, not the visible
+     * train) for sibling AABBs.
+     *
+     * <p>Within a single direction, the per-direction
+     * {@code LAST_SPAWNED_SHIP_*} gate enforces the "one in flight at a
+     * time" constraint that the previous {@code MAX_SPAWNS_PER_TICK = 1}
+     * was approximating, so the Sable-lag protection is preserved.</p>
      *
      * <p>The {@link Trains#knownAnchors} registry remains the
      * source of truth for "what anchors does this train own" — even with
@@ -436,12 +461,12 @@ public final class TrainCarriageAppender {
      * fix; the registry is the safety net.</p>
      *
      * <p>Throughput cost: at groupSize=3, this caps carriages added per
-     * tick at 3. The seed group from
+     * tick at 6 (3 per direction × 2 directions). The seed group from
      * {@link TrainAssembler#spawnTrain} plus the appender's first ~15
      * ticks fully populate a typical auto-rd window (~14 groups at
-     * render distance 12) in &lt;1 second — imperceptible.</p>
+     * render distance 12) in &lt;1 second per side — imperceptible.</p>
      */
-    private static final int MAX_SPAWNS_PER_TICK = 1;
+    private static final int MAX_SPAWNS_PER_TICK = 2;
 
     private TrainCarriageAppender() {}
 
@@ -485,8 +510,10 @@ public final class TrainCarriageAppender {
         }
         // Drop planned-spawn entries for trains we didn't see this tick (no
         // queued anchor → wireframe should disappear). Trains we DID see
-        // wrote into NEXT_PLANNED_SPAWNS or removed themselves from it.
-        NEXT_PLANNED_SPAWNS.keySet().retainAll(trainsTouchedThisTick);
+        // wrote into NEXT_PLANNED_SPAWNS_* or removed themselves from those
+        // maps. Both directions are pruned in lock-step.
+        NEXT_PLANNED_SPAWNS_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        NEXT_PLANNED_SPAWNS_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -525,9 +552,10 @@ public final class TrainCarriageAppender {
 
         // Mark the train as touched up-front so any subsequent early-return
         // (no near players in auto mode, empty anchors after dedup, Sable lag
-        // deferral, etc.) does NOT cause its NEXT_PLANNED_SPAWNS entry to be
-        // wiped at the end of {@link #onLevelTick}. Only trains that aren't
-        // loaded at all should fall out of the preview broadcast.
+        // deferral, etc.) does NOT cause its NEXT_PLANNED_SPAWNS_FORWARD /
+        // _BACKWARD entries to be wiped at the end of {@link #onLevelTick}.
+        // Only trains that aren't loaded at all should fall out of the
+        // preview broadcast.
         trainsTouchedThisTick.add(trainId);
 
         // Target carriage count: per-player, derived from config or each
@@ -600,8 +628,8 @@ public final class TrainCarriageAppender {
         // and no preview broadcast are needed). Manual mode skips this
         // bailout: the wireframe preview should stay visible regardless
         // of how far the player wanders from the train, so we keep
-        // updating NEXT_PLANNED_SPAWNS and let J fire spawns even after
-        // the player has walked past the train front.
+        // updating NEXT_PLANNED_SPAWNS_FORWARD and let J fire spawns
+        // even after the player has walked past the train front.
         if (!MANUAL_MODE && nearPlayerPIdxs.isEmpty()) return false;
 
         // Use the spawn-time registry (not Sable's visible train) to
@@ -632,34 +660,48 @@ public final class TrainCarriageAppender {
             trainMinAnchor = minA;
         }
 
-        // Queue exactly ONE anchor per tick — the placement-success gate
-        // is per-spawn, and stacking two spawns in the same tick would
-        // defeat its purpose. Prefer backward when the player has walked
-        // off the tail (globalMinNeededPIdx is below the registry's min);
-        // otherwise extend forward, which matches the previous always-
-        // forward behaviour and keeps the player-walks-forward case
-        // unchanged. Manual J always falls through to forward for
-        // press-contract continuity (J = "spawn one carriage in front").
-        boolean needsBackward = (globalMinNeededPIdx != Integer.MAX_VALUE
-            && globalMinNeededPIdx < trainMinAnchor);
-        List<Integer> anchorsToSpawn = new ArrayList<>();
-        if (needsBackward && !MANUAL_MODE) {
-            anchorsToSpawn.add(trainMinAnchor - groupSize);
-        } else {
-            anchorsToSpawn.add(trainMaxAnchor + groupSize);
-        }
-        if (anchorsToSpawn.isEmpty()) return false;
+        // Independent per-direction spawn decision. Forward and backward
+        // are evaluated as two SEPARATE spawn lanes — each has its own
+        // preview slot ({@code NEXT_PLANNED_SPAWNS_FORWARD/BACKWARD}),
+        // its own placement-success gate ({@code LAST_SPAWNED_SHIP_FORWARD
+        // / _BACKWARD}), and its own per-spawn bookkeeping. A still-
+        // settling forward carriage no longer blocks the next backward
+        // spawn (or vice versa); both directions can fire in the same
+        // tick when both ends of the train need extension.
+        //
+        // Forward semantics preserved from the prior single-lane code:
+        // we extend forward whenever any near player exists (the
+        // {@code nearPlayerPIdxs.isEmpty()} early-return above already
+        // filtered out the no-near-players case for auto mode). Manual
+        // J always falls through to forward for press-contract continuity
+        // (J = "spawn one carriage in front") — backward is auto-only.
+        //
+        // Backward fires only when the lowest needed pIdx falls below
+        // the registry's current min anchor (i.e. a player has walked
+        // off the tail).
+        boolean needsForward = true;
+        boolean needsBackward = !MANUAL_MODE
+            && globalMinNeededPIdx != Integer.MAX_VALUE
+            && globalMinNeededPIdx < trainMinAnchor;
+
+        int forwardAnchor = trainMaxAnchor + groupSize;
+        int backwardAnchor = trainMinAnchor - groupSize;
 
         // Belt-and-braces: even though trainMin/Max came from the
         // registry, drop any anchor that's already known. Protects against
-        // races in computeGroupAnchorsToSpawn or future logic changes.
-        anchorsToSpawn.removeIf(a -> {
-            if (!knownAnchors.contains(a)) return false;
-            LOGGER.debug("[DungeonTrain] Appender skipping already-spawned anchor={} for trainId={} (in registry)",
-                a, trainId);
-            return true;
-        });
-        if (anchorsToSpawn.isEmpty()) return false;
+        // races and future logic changes. Done per-direction so the other
+        // direction can still proceed.
+        if (needsForward && knownAnchors.contains(forwardAnchor)) {
+            LOGGER.debug("[DungeonTrain] Appender skipping already-spawned forward anchor={} for trainId={} (in registry)",
+                forwardAnchor, trainId);
+            needsForward = false;
+        }
+        if (needsBackward && knownAnchors.contains(backwardAnchor)) {
+            LOGGER.debug("[DungeonTrain] Appender skipping already-spawned backward anchor={} for trainId={} (in registry)",
+                backwardAnchor, trainId);
+            needsBackward = false;
+        }
+        if (!needsForward && !needsBackward) return false;
 
         // Diagnostic: every time we're about to spawn, log the train state
         // we based the decision on. Helps catch "appender thinks tail is X
@@ -671,15 +713,9 @@ public final class TrainCarriageAppender {
                 if (pidxs.length() > 0) pidxs.append(",");
                 pidxs.append(c.provider().getPIdx());
             }
-            LOGGER.debug("[DungeonTrain] Appender about to spawn anchors={} (trainAnchor=[{},{}] trainPIdxList=[{}] players={})",
-                anchorsToSpawn, trainMinAnchor, trainMaxAnchor, pidxs, nearPlayerPIdxs);
-        }
-
-        // Safety cap.
-        if (anchorsToSpawn.size() > MAX_SPAWNS_PER_TICK) {
-            LOGGER.warn("[DungeonTrain] Appender wanted to spawn {} groups this tick (trainAnchor=[{}, {}] groupSize={} players={}); clamping to {}",
-                anchorsToSpawn.size(), trainMinAnchor, trainMaxAnchor, groupSize, nearPlayerPIdxs, MAX_SPAWNS_PER_TICK);
-            anchorsToSpawn = anchorsToSpawn.subList(0, MAX_SPAWNS_PER_TICK);
+            LOGGER.debug("[DungeonTrain] Appender about to spawn forward={}({}) backward={}({}) (trainAnchor=[{},{}] trainPIdxList=[{}] players={})",
+                needsForward, forwardAnchor, needsBackward, backwardAnchor,
+                trainMinAnchor, trainMaxAnchor, pidxs, nearPlayerPIdxs);
         }
 
         // No more Sable-lag deferral here. Previously the appender waited
@@ -692,86 +728,121 @@ public final class TrainCarriageAppender {
         // sibling still participates in the collision check, and the
         // placement-math anchor delta absorbs any visible-list staleness.
 
-        // Record the next-planned-spawn for the wireframe preview. Always
-        // refresh from the head of the queue (the spawn that would happen
-        // next if MANUAL_SPAWN was triggered now), so the wireframe tracks
-        // the reference carriage's drift even when we're not spawning.
-        // {@code trainsTouchedThisTick.add(trainId)} already happened at
-        // the top of this method; we just write the per-train preview here.
-        if (!anchorsToSpawn.isEmpty()) {
-            int previewAnchor = anchorsToSpawn.get(0);
-            Trains.Carriage previewRef = (previewAnchor > trainMaxAnchor) ? lead : tail;
-            Plan previewPlan = planSpawnPlacement(previewRef, previewAnchor, groupSize, dims, train);
-            NEXT_PLANNED_SPAWNS.put(trainId, new PlannedSpawn(
+        // Record the next-planned-spawn for the wireframe preview, one
+        // entry per direction. Always refresh from the would-be anchor
+        // for each direction (the spawn that would happen next if
+        // MANUAL_SPAWN was triggered now), so the wireframe tracks the
+        // reference carriage's drift even when we're not spawning. With
+        // both lanes independent, the train can show two simultaneous
+        // previews — one at each end. {@code trainsTouchedThisTick.add(
+        // trainId)} already happened at the top of this method.
+        if (needsForward) {
+            Plan plan = planSpawnPlacement(lead, forwardAnchor, groupSize, dims, train);
+            NEXT_PLANNED_SPAWNS_FORWARD.put(trainId, new PlannedSpawn(
                 trainId,
-                previewRef.ship().subLevelId(),
-                previewPlan.origin,
-                previewPlan.subLevelStride,
-                previewPlan.sizeY,
-                previewPlan.sizeZ,
-                previewAnchor));
+                lead.ship().subLevelId(),
+                plan.origin,
+                plan.subLevelStride,
+                plan.sizeY,
+                plan.sizeZ,
+                forwardAnchor));
         } else {
-            NEXT_PLANNED_SPAWNS.remove(trainId);
+            NEXT_PLANNED_SPAWNS_FORWARD.remove(trainId);
+        }
+        if (needsBackward) {
+            Plan plan = planSpawnPlacement(tail, backwardAnchor, groupSize, dims, train);
+            NEXT_PLANNED_SPAWNS_BACKWARD.put(trainId, new PlannedSpawn(
+                trainId,
+                tail.ship().subLevelId(),
+                plan.origin,
+                plan.subLevelStride,
+                plan.sizeY,
+                plan.sizeZ,
+                backwardAnchor));
+        } else {
+            NEXT_PLANNED_SPAWNS_BACKWARD.remove(trainId);
         }
 
         if (!spawnAllowedThisTick) return false;
 
-        // Wait-for-placement-success gate: the previous spawn must have
-        // transitioned to {@code placedSuccessfully = true} via the
-        // per-tick {@link #runPlacementCollisionTracker} — i.e. it has
-        // run {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive collision-
-        // free game ticks AND any required +0.5-X shifts have already
-        // separated it from its predecessor. Until then we hold the
-        // train's queue: spawning the next group while the previous is
-        // still being nudged into place would compound overlaps.
+        // Wait-for-placement-success gate, evaluated INDEPENDENTLY per
+        // direction. Each direction's previous spawn must have transitioned
+        // to {@code placedSuccessfully = true} via the per-tick
+        // {@link #runPlacementCollisionTracker} — i.e. it has run
+        // {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive collision-free
+        // game ticks AND any required ±0.5-X shifts have already separated
+        // it from its predecessor — before its lane fires again. The
+        // other direction's gate has no effect on this one: a forward
+        // spawn settling at +X never holds up a backward spawn at −X.
         //
-        // This subsumes the older AABB-non-zero and 20-tick-floor
-        // gates: a successfully-placed carriage has by definition gone
-        // 60 ticks without overlapping, so its AABB is settled and well
-        // past any Sable plot/mass-tracker latency.
+        // This subsumes the older AABB-non-zero and 20-tick-floor gates:
+        // a successfully-placed carriage has by definition gone 60 ticks
+        // without overlapping, so its AABB is settled and well past any
+        // Sable plot/mass-tracker latency.
         long now = level.getGameTime();
-        ManagedShip pending = LAST_SPAWNED_SHIP.get(trainId);
-        if (pending != null) {
-            if (pending.getKinematicDriver() instanceof TrainTransformProvider pendingProvider
-                && !pendingProvider.isPlacedSuccessfully()) {
-                return false; // Previous spawn still settling, defer.
+        boolean spawnedAny = false;
+
+        if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, trainId)) {
+            ManagedShip newShip = spawnNewGroup(level, lead, forwardAnchor, groupSize, dims, velocity, trainId, train);
+            if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
+                newProvider.setSpawnedBackward(false);
             }
-            LAST_SPAWNED_SHIP.remove(trainId);
+            LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
+            LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
+            recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
+            announceSpawn(level, forwardAnchor);
+            spawnedAny = true;
         }
 
-        boolean spawnedAny = false;
-        for (int newAnchor : anchorsToSpawn) {
-            // Forward groups use the lead as the world-position reference;
-            // backward groups use the tail. The reference's shipyardOrigin
-            // is its own anchor's world position; we extrapolate to the
-            // new group's anchor by adding (newAnchor - refAnchor) * length.
-            Trains.Carriage reference = (newAnchor > trainMaxAnchor) ? lead : tail;
-            boolean backwardSpawn = newAnchor < trainMinAnchor;
-            ManagedShip newShip = spawnNewGroup(level, reference, newAnchor, groupSize, dims, velocity, trainId, train);
+        if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, trainId)) {
+            ManagedShip newShip = spawnNewGroup(level, tail, backwardAnchor, groupSize, dims, velocity, trainId, train);
             if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
-                newProvider.setSpawnedBackward(backwardSpawn);
+                newProvider.setSpawnedBackward(true);
             }
-            LAST_SPAWNED_SHIP.put(trainId, newShip);
-            LAST_SPAWNED_TICK.put(trainId, now);
-            recordPostSpawnCollisionCheck(trainId, newShip, newAnchor, train);
+            LAST_SPAWNED_SHIP_BACKWARD.put(trainId, newShip);
+            LAST_SPAWNED_TICK_BACKWARD.put(trainId, now);
+            recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
+            announceSpawn(level, backwardAnchor);
             spawnedAny = true;
-            // Confirm the spawn in chat (action bar). In manual mode it's
-            // the J-press confirmation. In auto mode the message fires
-            // only when the next-spawn wireframe is enabled so the chat
-            // isn't spammed during normal gameplay — the player who's
-            // watching that overlay is the one tracking spawn rhythm and
-            // wants the chat correlation with overlap / Sable-lag events.
-            if (MANUAL_MODE || games.brennan.dungeontrain.debug.DebugFlags.nextSpawn()) {
-                for (ServerPlayer player : level.players()) {
-                    player.displayClientMessage(
-                        Component.literal(
-                            "[DungeonTrain] Spawned group anchorPIdx=" + newAnchor
-                        ).withStyle(ChatFormatting.GREEN),
-                        true);
-                }
-            }
         }
         return spawnedAny;
+    }
+
+    /**
+     * Per-direction placement-success gate. Returns {@code true} iff the
+     * direction's previous spawn (if any) has transitioned to
+     * {@code placedSuccessfully = true} on its
+     * {@link TrainTransformProvider}. Removes the entry from {@code lane}
+     * once cleared so the gate's "hot" set stays bounded to in-flight ships.
+     */
+    private static boolean isLanePlacementGateClear(Map<UUID, ManagedShip> lane, UUID trainId) {
+        ManagedShip pending = lane.get(trainId);
+        if (pending == null) return true;
+        if (pending.getKinematicDriver() instanceof TrainTransformProvider provider
+            && !provider.isPlacedSuccessfully()) {
+            return false;
+        }
+        lane.remove(trainId);
+        return true;
+    }
+
+    /**
+     * Confirm a spawn in chat (action bar). In manual mode it's the
+     * J-press confirmation. In auto mode the message fires only when
+     * the next-spawn wireframe is enabled so the chat isn't spammed
+     * during normal gameplay — the player who's watching that overlay
+     * is the one tracking spawn rhythm and wants the chat correlation
+     * with overlap / Sable-lag events.
+     */
+    private static void announceSpawn(ServerLevel level, int newAnchor) {
+        if (!MANUAL_MODE && !games.brennan.dungeontrain.debug.DebugFlags.nextSpawn()) return;
+        for (ServerPlayer player : level.players()) {
+            player.displayClientMessage(
+                Component.literal(
+                    "[DungeonTrain] Spawned group anchorPIdx=" + newAnchor
+                ).withStyle(ChatFormatting.GREEN),
+                true);
+        }
     }
 
     /**
