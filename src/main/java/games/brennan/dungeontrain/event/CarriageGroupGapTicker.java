@@ -103,7 +103,14 @@ public final class CarriageGroupGapTicker {
                 // most one collision chat line for its entire lifetime — the
                 // UUID stays in WARNED_COLLIDING_SHIPS even after the AABB
                 // intersection clears, so transient overlaps don't re-fire.
-                if (c.colliding() && WARNED_COLLIDING_SHIPS.add(c.newShipId())) {
+                // Independently gated on DebugFlags.chatCollision() so the
+                // visual collision overlay can stay on without the chat
+                // noise (and vice versa). Toggling chatCollision OFF→ON
+                // does NOT replay warnings for already-warned carriages —
+                // the dedup set persists across toggles by design.
+                if (c.colliding()
+                    && DebugFlags.chatCollision()
+                    && WARNED_COLLIDING_SHIPS.add(c.newShipId())) {
                     Component msg = Component.literal(
                         "[DungeonTrain] Collision detected: carriage pIdx="
                             + c.selfPIdx()

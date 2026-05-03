@@ -67,6 +67,21 @@ public final class DebugCommand {
                 .then(Commands.literal("hud-distance")
                     .then(Commands.literal("on").executes(ctx -> setHudDistance(ctx.getSource(), true)))
                     .then(Commands.literal("off").executes(ctx -> setHudDistance(ctx.getSource(), false)))))
+            // /dungeontrain debug chatlogs <type|all> on|off — gates the
+            // in-game CHAT broadcasts emitted by the spawn / collision
+            // codepaths. Independent of the wireframes sub-tree so a
+            // player can keep visual overlays on while silencing chat
+            // (or vice versa). All flags default off.
+            .then(Commands.literal("chatlogs")
+                .then(Commands.literal("all")
+                    .then(Commands.literal("on").executes(ctx -> setAllChatLogs(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setAllChatLogs(ctx.getSource(), false))))
+                .then(Commands.literal("train-spawn")
+                    .then(Commands.literal("on").executes(ctx -> setChatTrainSpawn(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setChatTrainSpawn(ctx.getSource(), false))))
+                .then(Commands.literal("collision")
+                    .then(Commands.literal("on").executes(ctx -> setChatCollision(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setChatCollision(ctx.getSource(), false)))))
             // /dungeontrain debug spawnmode auto|manual — switches the
             // appender between auto-spawn and J-keybind manual spawn.
             .then(Commands.literal("spawnmode")
@@ -127,6 +142,30 @@ public final class DebugCommand {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Spawn mode: " + (manual ? "MANUAL (press J)" : "AUTO")
         ).withStyle(manual ? ChatFormatting.YELLOW : ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    private static int setAllChatLogs(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setAllChatLogs(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chat-logs (all) " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setChatTrainSpawn(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setChatTrainSpawn(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chat-log train-spawn " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setChatCollision(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setChatCollision(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chat-log collision " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
 
