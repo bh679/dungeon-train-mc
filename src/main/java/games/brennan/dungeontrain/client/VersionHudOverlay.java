@@ -74,7 +74,7 @@ public final class VersionHudOverlay {
             // standing in) to the next-higher-pIdx group in the same train.
             // Only shown when the player is in a tracked carriage AND that
             // carriage's group is not the leading group of its train.
-            if (carriagePresent && DebugFlagsState.wireframesEnabled()) {
+            if (carriagePresent && DebugFlagsState.hudDistance()) {
                 CarriageGroupGapPacket.Entry gap = CarriageGroupGapState.findByCarriage(carriageIndex);
                 if (gap != null) {
                     String gapText = String.format(Locale.ROOT,

@@ -13,11 +13,13 @@ import net.minecraft.server.level.ServerPlayer;
  * debugging session and auto-broadcasts the new state to every player so
  * client renderers and the HUD pick it up immediately.
  *
- * <p>The two flags here intentionally collapse what would otherwise be
- * multiple finer-grained switches (gap line, ghost cubes, precise-length
- * bar, planned-spawn wireframe, HUD second line) into a single
- * {@code wireframes} toggle — they all serve the same debugging purpose
- * and the user wants one switch.</p>
+ * <p>The five wireframe flags expose what was previously a single
+ * {@code wireframes} switch as individual toggles — they serve different
+ * debugging workflows (e.g. collision-only vs. gap-tuning) so the player
+ * wants to enable one at a time rather than pay the visual cost of all
+ * overlays at once. The {@code Wireframes} sub-menu (X menu → Debug →
+ * Wireframes) provides an "All On / All Off" master alongside the per-flag
+ * toggles.</p>
  *
  * <p>{@link #manualSpawnMode()} delegates to
  * {@link TrainCarriageAppender#MANUAL_MODE} (the appender owns the flag so
@@ -25,21 +27,56 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class DebugFlags {
 
-    private static volatile boolean wireframesEnabled = false;
+    private static volatile boolean gapCubes = false;
+    private static volatile boolean gapLine = false;
+    private static volatile boolean nextSpawn = false;
+    private static volatile boolean collision = false;
+    private static volatile boolean hudDistance = false;
 
     private DebugFlags() {}
 
-    public static boolean wireframesEnabled() {
-        return wireframesEnabled;
-    }
+    public static boolean gapCubes() { return gapCubes; }
+    public static boolean gapLine() { return gapLine; }
+    public static boolean nextSpawn() { return nextSpawn; }
+    public static boolean collision() { return collision; }
+    public static boolean hudDistance() { return hudDistance; }
 
     public static boolean manualSpawnMode() {
         return TrainCarriageAppender.MANUAL_MODE;
     }
 
-    /** Toggle wireframes server-side and broadcast to all connected clients. */
-    public static void setWireframesEnabled(MinecraftServer server, boolean value) {
-        wireframesEnabled = value;
+    public static void setGapCubes(MinecraftServer server, boolean value) {
+        gapCubes = value;
+        broadcastTo(server);
+    }
+
+    public static void setGapLine(MinecraftServer server, boolean value) {
+        gapLine = value;
+        broadcastTo(server);
+    }
+
+    public static void setNextSpawn(MinecraftServer server, boolean value) {
+        nextSpawn = value;
+        broadcastTo(server);
+    }
+
+    public static void setCollision(MinecraftServer server, boolean value) {
+        collision = value;
+        broadcastTo(server);
+    }
+
+    public static void setHudDistance(MinecraftServer server, boolean value) {
+        hudDistance = value;
+        broadcastTo(server);
+    }
+
+    /** Master setter — flips all five wireframe flags to {@code value} in one broadcast. */
+    public static void setAllWireframes(MinecraftServer server, boolean value) {
+        gapCubes = value;
+        gapLine = value;
+        nextSpawn = value;
+        collision = value;
+        hudDistance = value;
         broadcastTo(server);
     }
 
@@ -66,6 +103,9 @@ public final class DebugFlags {
     }
 
     private static DebugFlagsPacket snapshotPacket() {
-        return new DebugFlagsPacket(wireframesEnabled, TrainCarriageAppender.MANUAL_MODE);
+        return new DebugFlagsPacket(
+            gapCubes, gapLine, nextSpawn, collision, hudDistance,
+            TrainCarriageAppender.MANUAL_MODE
+        );
     }
 }

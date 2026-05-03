@@ -10,31 +10,41 @@ import games.brennan.dungeontrain.net.DebugFlagsPacket;
  *
  * <p>Read by:
  * <ul>
- *   <li>{@link CarriageGroupGapDebugRenderer} — gates all world-space gap
- *       overlay rendering on {@link #wireframesEnabled()}.</li>
+ *   <li>{@link CarriageGroupGapDebugRenderer} — gates each world-space
+ *       overlay section (gap cubes, precise-length line, next-spawn box,
+ *       collision box) on its individual flag.</li>
  *   <li>{@link VersionHudOverlay} — gates the second HUD line
- *       ({@code Δx to next group}) on {@link #wireframesEnabled()}.</li>
- *   <li>{@code DebugMenuScreen} — reads both flags to render Toggle button
- *       states.</li>
+ *       ({@code Δx to next group}) on {@link #hudDistance()}.</li>
+ *   <li>{@code WireframesMenuScreen} — reads all five flags to render the
+ *       per-overlay Toggle button states.</li>
+ *   <li>{@code DebugMenuScreen} — reads {@link #manualSpawnMode()} to
+ *       render its Manual Spawn Toggle.</li>
  * </ul>
  */
 public final class DebugFlagsState {
 
-    private static volatile boolean wireframesEnabled = false;
+    private static volatile boolean gapCubes = false;
+    private static volatile boolean gapLine = false;
+    private static volatile boolean nextSpawn = false;
+    private static volatile boolean collision = false;
+    private static volatile boolean hudDistance = false;
     private static volatile boolean manualSpawnMode = false;
 
     private DebugFlagsState() {}
 
-    public static boolean wireframesEnabled() {
-        return wireframesEnabled;
-    }
-
-    public static boolean manualSpawnMode() {
-        return manualSpawnMode;
-    }
+    public static boolean gapCubes() { return gapCubes; }
+    public static boolean gapLine() { return gapLine; }
+    public static boolean nextSpawn() { return nextSpawn; }
+    public static boolean collision() { return collision; }
+    public static boolean hudDistance() { return hudDistance; }
+    public static boolean manualSpawnMode() { return manualSpawnMode; }
 
     public static void applyServerState(DebugFlagsPacket packet) {
-        wireframesEnabled = packet.wireframesEnabled();
+        gapCubes = packet.gapCubes();
+        gapLine = packet.gapLine();
+        nextSpawn = packet.nextSpawn();
+        collision = packet.collision();
+        hudDistance = packet.hudDistance();
         manualSpawnMode = packet.manualSpawnMode();
     }
 }

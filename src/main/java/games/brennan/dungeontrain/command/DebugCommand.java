@@ -41,11 +41,32 @@ public final class DebugCommand {
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
                     .executes(ctx -> runPair(ctx.getSource(), DoubleArgumentType.getDouble(ctx, "velocity")))))
-            // /dungeontrain debug wireframes on|off — toggles world-space
-            // gap overlay rendering for every connected client.
+            // /dungeontrain debug wireframes <type|all> on|off — each of
+            // the five wireframes has its own toggle. {@code all} flips
+            // every flag at once. Legacy {@code wireframes on|off}
+            // (without a type literal) is kept as an alias for
+            // {@code wireframes all on|off} so muscle memory survives.
             .then(Commands.literal("wireframes")
-                .then(Commands.literal("on").executes(ctx -> setWireframes(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> setWireframes(ctx.getSource(), false))))
+                .then(Commands.literal("on").executes(ctx -> setAllWireframes(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setAllWireframes(ctx.getSource(), false)))
+                .then(Commands.literal("all")
+                    .then(Commands.literal("on").executes(ctx -> setAllWireframes(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setAllWireframes(ctx.getSource(), false))))
+                .then(Commands.literal("gap-cubes")
+                    .then(Commands.literal("on").executes(ctx -> setGapCubes(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setGapCubes(ctx.getSource(), false))))
+                .then(Commands.literal("gap-line")
+                    .then(Commands.literal("on").executes(ctx -> setGapLine(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setGapLine(ctx.getSource(), false))))
+                .then(Commands.literal("next-spawn")
+                    .then(Commands.literal("on").executes(ctx -> setNextSpawn(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setNextSpawn(ctx.getSource(), false))))
+                .then(Commands.literal("collision")
+                    .then(Commands.literal("on").executes(ctx -> setCollision(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setCollision(ctx.getSource(), false))))
+                .then(Commands.literal("hud-distance")
+                    .then(Commands.literal("on").executes(ctx -> setHudDistance(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setHudDistance(ctx.getSource(), false)))))
             // /dungeontrain debug spawnmode auto|manual — switches the
             // appender between auto-spawn and J-keybind manual spawn.
             .then(Commands.literal("spawnmode")
@@ -53,10 +74,50 @@ public final class DebugCommand {
                 .then(Commands.literal("manual").executes(ctx -> setSpawnMode(ctx.getSource(), true))));
     }
 
-    private static int setWireframes(CommandSourceStack source, boolean enabled) {
-        DebugFlags.setWireframesEnabled(source.getServer(), enabled);
+    private static int setAllWireframes(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setAllWireframes(source.getServer(), enabled);
         source.sendSuccess(() -> Component.literal(
-            "[DungeonTrain] Wireframes " + (enabled ? "ON" : "OFF")
+            "[DungeonTrain] Wireframes (all) " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setGapCubes(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setGapCubes(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Wireframe gap-cubes " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setGapLine(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setGapLine(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Wireframe gap-line " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setNextSpawn(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setNextSpawn(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Wireframe next-spawn " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setCollision(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setCollision(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Wireframe collision " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setHudDistance(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setHudDistance(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Wireframe hud-distance " + (enabled ? "ON" : "OFF")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }

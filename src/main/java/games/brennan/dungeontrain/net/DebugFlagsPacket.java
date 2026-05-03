@@ -14,12 +14,28 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * correctly the first time it's opened) and again whenever a flag is
  * toggled (so all connected clients immediately see the new state).
  *
- * <p>{@code wireframesEnabled} gates every world-space gap-overlay
- * renderer + the HUD distance-to-next-group line; {@code manualSpawnMode}
- * mirrors {@link games.brennan.dungeontrain.train.TrainCarriageAppender#MANUAL_MODE}
+ * <p>The five wireframe flags ({@code gapCubes}, {@code gapLine},
+ * {@code nextSpawn}, {@code collision}, {@code hudDistance}) each gate one
+ * world-space overlay or HUD line — they were collapsed into a single
+ * switch in earlier versions but the player wants per-overlay control to
+ * isolate one debugging concern at a time. {@code manualSpawnMode} mirrors
+ * {@link games.brennan.dungeontrain.train.TrainCarriageAppender#MANUAL_MODE}
  * so the menu's Auto / Manual toggle reflects current server truth.</p>
+ *
+ * <p>Wire field order is fixed: writer and reader lambdas must consume the
+ * six booleans in the same sequence ({@code gapCubes}, {@code gapLine},
+ * {@code nextSpawn}, {@code collision}, {@code hudDistance},
+ * {@code manualSpawnMode}). Mismatched order would silently scramble
+ * client-side state.</p>
  */
-public record DebugFlagsPacket(boolean wireframesEnabled, boolean manualSpawnMode) implements CustomPacketPayload {
+public record DebugFlagsPacket(
+    boolean gapCubes,
+    boolean gapLine,
+    boolean nextSpawn,
+    boolean collision,
+    boolean hudDistance,
+    boolean manualSpawnMode
+) implements CustomPacketPayload {
 
     public static final Type<DebugFlagsPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "debug_flags"));
@@ -27,10 +43,21 @@ public record DebugFlagsPacket(boolean wireframesEnabled, boolean manualSpawnMod
     public static final StreamCodec<FriendlyByteBuf, DebugFlagsPacket> STREAM_CODEC =
         StreamCodec.of(
             (buf, packet) -> {
-                buf.writeBoolean(packet.wireframesEnabled);
+                buf.writeBoolean(packet.gapCubes);
+                buf.writeBoolean(packet.gapLine);
+                buf.writeBoolean(packet.nextSpawn);
+                buf.writeBoolean(packet.collision);
+                buf.writeBoolean(packet.hudDistance);
                 buf.writeBoolean(packet.manualSpawnMode);
             },
-            buf -> new DebugFlagsPacket(buf.readBoolean(), buf.readBoolean())
+            buf -> new DebugFlagsPacket(
+                buf.readBoolean(),
+                buf.readBoolean(),
+                buf.readBoolean(),
+                buf.readBoolean(),
+                buf.readBoolean(),
+                buf.readBoolean()
+            )
         );
 
     @Override
