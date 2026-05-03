@@ -8,10 +8,10 @@ package games.brennan.dungeontrain.train;
  * always renders the same carriage at each index.
  */
 public enum CarriageGenerationMode {
-    /** Any of the four variants at each index, seeded by world seed + index. */
+    /** Any of the built-in variants at each index, seeded by world seed + index. */
     RANDOM,
     /** Groups of {@code groupSize} random non-flatbed carriages, each group separated by one flatbed. */
     RANDOM_GROUPED,
-    /** The original 4-way cycle: STANDARD → WINDOWED → SOLID_ROOF → FLATBED, repeating. */
+    /** The original cycle: STANDARD → WINDOWED → FLATBED, repeating. */
     LOOPING
 }
