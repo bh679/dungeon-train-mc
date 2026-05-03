@@ -45,6 +45,7 @@ public final class CommandMenuState {
 
     private static boolean open;
     private static Vec3 anchorPos = Vec3.ZERO;
+    private static Vec3 anchorOffset = Vec3.ZERO;
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
     private static Vec3 anchorNormal = new Vec3(0, 0, 1);
@@ -65,9 +66,23 @@ public final class CommandMenuState {
 
     public static boolean isOpen() { return open; }
     public static Vec3 anchorPos() { return anchorPos; }
+    public static Vec3 anchorOffset() { return anchorOffset; }
     public static Vec3 anchorRight() { return anchorRight; }
     public static Vec3 anchorUp() { return anchorUp; }
     public static Vec3 anchorNormal() { return anchorNormal; }
+
+    /**
+     * Recompute {@link #anchorPos} for the current frame using a partial-tick
+     * interpolated eye position. Called from the renderer so the panel tracks
+     * the player at frame rate, not tick rate — without this the panel jitters
+     * by up to one tick (~50 ms) behind the camera while the player moves.
+     */
+    public static void refreshAnchorForFrame(float partialTick) {
+        if (!open) return;
+        LocalPlayer p = Minecraft.getInstance().player;
+        if (p == null) return;
+        anchorPos = p.getEyePosition(partialTick).add(anchorOffset);
+    }
     public static List<CommandMenuEntry> entries() { return entries; }
     public static int hoveredIdx() { return hoveredIdx; }
     public static int hoveredSubIdx() { return hoveredSubIdx; }
@@ -105,6 +120,9 @@ public final class CommandMenuState {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getLookAngle();
         anchorPos = eye.add(look.scale(ANCHOR_DISTANCE));
+        // World-space offset captured at open time; the per-tick refresh keeps
+        // the panel translating with the player while orientation stays fixed.
+        anchorOffset = anchorPos.subtract(eye);
 
         anchorNormal = look.scale(-1.0).normalize();
         Vec3 worldUp = new Vec3(0, 1, 0);
@@ -155,6 +173,7 @@ public final class CommandMenuState {
         hoveredSubIdx = 0;
         typingOriginRowIdx = -1;
         typingOriginSubIdx = 0;
+        anchorOffset = Vec3.ZERO;
         stack.clear();
         entries = List.of();
         dismissTypingScreen();
@@ -317,6 +336,7 @@ public final class CommandMenuState {
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null) { close(); return; }
         Vec3 eye = p.getEyePosition();
+        anchorPos = eye.add(anchorOffset);
         if (eye.distanceToSqr(anchorPos) > AUTO_CLOSE_DISTANCE_SQ) {
             LOGGER.info("Command menu auto-closed (player wandered out of range)");
             close();
