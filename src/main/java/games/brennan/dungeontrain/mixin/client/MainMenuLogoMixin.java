@@ -25,13 +25,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LogoRenderer.class)
 public abstract class MainMenuLogoMixin {
 
-    private static final int DT_SRC_W = 1440;
-    private static final int DT_SRC_H = 173;
-    private static final int DT_DEST_W = Math.round(LogoRenderer.LOGO_WIDTH * 1.25F); // 274 * 1.25 = 343
+    private static final int DT_SRC_W = 776;
+    private static final int DT_SRC_H = 214;
+    private static final int DT_DEST_W = LogoRenderer.LOGO_WIDTH; // 274
     private static final int DT_DEST_H = Math.round((float) DT_DEST_W * DT_SRC_H / DT_SRC_W);
 
-    /** Small nudge down from the vanilla origin. */
-    private static final int DT_Y_SHIFT = 5;
+    private static final int DT_Y_SHIFT = -10;
 
     @Inject(
         method = "renderLogo(Lnet/minecraft/client/gui/GuiGraphics;IFI)V",
