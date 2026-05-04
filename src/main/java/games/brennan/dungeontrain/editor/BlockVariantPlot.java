@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.train.CarriageContents;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -143,7 +143,7 @@ public interface BlockVariantPlot {
             BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents, dims);
             if (carriageOrigin == null) return null;
             BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-            Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
             return new ContentsPlot(contents, interiorOrigin, interiorSize);
         }
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);

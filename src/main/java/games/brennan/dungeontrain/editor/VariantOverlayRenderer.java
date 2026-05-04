@@ -9,15 +9,11 @@ import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.template.Template;
 import org.slf4j.Logger;
-import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
-import games.brennan.dungeontrain.train.CarriageContentsWeights;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
-import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.Vec3i;
 
@@ -203,7 +199,7 @@ public final class VariantOverlayRenderer {
                 BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
                 if (carriageOrigin == null) continue;
                 BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-                Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
                 CarriageContentsVariantBlocks contentsSidecar = CarriageContentsVariantBlocks.loadFor(
                     contentsPlot, interiorSize);
                 if (contentsSidecar.isEmpty()) {
@@ -335,75 +331,32 @@ public final class VariantOverlayRenderer {
      * plots and the client renders nothing for it.
      */
     private static Set<String> excludedContentsFor(Template model) {
-        if (!(model instanceof Template.CarriageModel cm)) return Collections.emptySet();
+        if (!(model instanceof Template.Carriage cm)) return Collections.emptySet();
         CarriageContentsAllowList allow = CarriageVariantContentsAllowStore.get(cm.variant())
             .orElse(CarriageContentsAllowList.EMPTY);
         return allow.excluded();
     }
 
     /**
-     * Variant pick weight for the given model. Carriage variants pull from
-     * {@link CarriageWeights}; track-side models (track tile, pillar
-     * sections, tunnel kinds) pull from {@link TrackVariantWeights}; contents
-     * models pull from {@link CarriageContentsWeights}. The HUD uses
-     * {@link EditorStatusPacket#NO_WEIGHT} as the sentinel for "don't render
-     * the weight line" — currently every {@link Template} variant has a
-     * weight pool, so no model returns the sentinel today.
+     * Variant pick weight for the given model — Phase-3 collapse onto
+     * {@link Template#weight()}. Each record routes to its own weight
+     * pool (carriage / contents / track-side); parts return
+     * {@link EditorStatusPacket#NO_WEIGHT} since their HUD path is
+     * synthetic and never reaches this method.
      */
     private static int weightFor(Template model) {
-        if (model instanceof Template.CarriageModel cm) {
-            return CarriageWeights.current().weightFor(cm.variant().id());
-        }
-        if (model instanceof Template.ContentsModel cm) {
-            return CarriageContentsWeights.current().weightFor(cm.contents().id());
-        }
-        if (model instanceof Template.TrackModel tm) {
-            return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
-        }
-        if (model instanceof Template.PillarModel pm) {
-            return TrackVariantWeights.weightFor(
-                TrackPlotLocator.pillarKind(pm.section()), pm.name());
-        }
-        if (model instanceof Template.AdjunctModel am) {
-            return TrackVariantWeights.weightFor(
-                PillarTemplateStore.adjunctKind(am.adjunct()), am.name());
-        }
-        if (model instanceof Template.TunnelModel tm) {
-            return TrackVariantWeights.weightFor(
-                TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
-        }
-        return EditorStatusPacket.NO_WEIGHT;
+        return model.weight();
     }
 
     /**
-     * Bare variant-name segment for the given model — what the editor menu
-     * splices into commands like {@code /dt editor tracks weight <kind>
-     * <name> ...}. For carriages and contents this equals the model id; for
-     * track-side models it's the trailing name segment of the display path.
-     * Falls back to {@link Template#id()} for any future model type that
-     * forgets to override this — never returns null so menu wiring is
-     * NPE-safe.
+     * Bare variant-name segment for the given model — Phase-3 collapse
+     * onto {@link Template#variantName()}. For carriages and contents this
+     * equals the model id; for track-side models it's the trailing name
+     * segment of the display path. Falls back to {@link Template#id()} for
+     * any future model type that forgets to override.
      */
     private static String modelNameFor(Template model) {
-        if (model instanceof Template.CarriageModel cm) {
-            return cm.variant().id();
-        }
-        if (model instanceof Template.ContentsModel cm) {
-            return cm.contents().id();
-        }
-        if (model instanceof Template.TrackModel tm) {
-            return tm.name();
-        }
-        if (model instanceof Template.PillarModel pm) {
-            return pm.name();
-        }
-        if (model instanceof Template.AdjunctModel am) {
-            return am.name();
-        }
-        if (model instanceof Template.TunnelModel tm) {
-            return tm.name();
-        }
-        return model.id();
+        return model.variantName();
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {

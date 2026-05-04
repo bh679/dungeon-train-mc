@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -192,9 +192,19 @@ public final class CarriageEditor {
         // the freshly-loaded map; `editor save` persists the result.
         CarriageVariantBlocks.invalidate(variant.id());
 
-        CarriageTemplate.eraseAt(overworld, origin, dims);
-        CarriageTemplate.placeAt(overworld, origin, variant, dims);
+        CarriagePlacer.eraseAt(overworld, origin, dims);
+        CarriagePlacer.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+
+        // Snapshot the freshly-stamped state so EditorDirtyCheck has a
+        // baseline to compare against. The stamp pass composes base NBT +
+        // parts overlay + sidecar variants — comparing live to saved NBT
+        // misses the parts/sidecar contributions, so we record the actual
+        // post-composition state here.
+        EditorPlotSnapshots.capture(
+            EditorPlotSnapshots.key("carriages", variant.id()),
+            overworld, origin, dims.length(), dims.height(), dims.width()
+        );
     }
 
     /**
@@ -206,8 +216,12 @@ public final class CarriageEditor {
     public static void clearPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
         BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) return;
-        CarriageTemplate.eraseAt(overworld, origin, dims);
+        CarriagePlacer.eraseAt(overworld, origin, dims);
         setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
+        // Drop the dirty-check baseline — the plot is no longer stamped, so
+        // comparing a future live read (all air) to a stamped snapshot would
+        // report every carriage as dirty when the player switches categories.
+        EditorPlotSnapshots.clear(EditorPlotSnapshots.key("carriages", variant.id()));
     }
 
     /**
@@ -235,6 +249,13 @@ public final class CarriageEditor {
         // entry doesn't leave a stale sidecar on disk.
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
         sidecar.save(variant);
+
+        // Refresh the dirty-check baseline so the just-saved state reads as
+        // clean on the next /dt editor unsaved-list query.
+        EditorPlotSnapshots.capture(
+            EditorPlotSnapshots.key("carriages", variant.id()),
+            overworld, origin, dims.length(), dims.height(), dims.width()
+        );
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
             player.getName().getString(), variant.id(), dims.length(), dims.width(), dims.height(),
@@ -283,7 +304,7 @@ public final class CarriageEditor {
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
 
         StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
         CarriageTemplateStore.save(target, template);
@@ -311,8 +332,8 @@ public final class CarriageEditor {
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
-        CarriageTemplate.placeAt(overworld, targetOrigin, source, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
+        CarriagePlacer.placeAt(overworld, targetOrigin, source, dims);
 
         StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
         if (template.getSize().equals(Vec3i.ZERO)) {

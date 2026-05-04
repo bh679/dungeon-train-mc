@@ -107,7 +107,7 @@ public final class TrainAssembler {
         CarriageGenerationConfig genCfg = DungeonTrainWorldData.get(level).getGenerationConfig();
         int groupSize = genCfg.groupSize();
         int length = dims.length();
-        int halfPadLen = CarriageTemplate.halfPadLen(dims);
+        int halfPadLen = CarriagePlacer.halfPadLen(dims);
         int subLevelStride = groupSize * length + 2 * halfPadLen;
 
         // Bootstrap spawns ONLY the seed group — the one containing the
@@ -171,7 +171,7 @@ public final class TrainAssembler {
      * stamps with {@link Mirror#FRONT_BACK}.</p>
      *
      * <p>Variant selection for enclosed slots is per-carriage via
-     * {@link CarriageTemplate#enclosedVariantForIndex(int, CarriageGenerationConfig)},
+     * {@link CarriagePlacer#enclosedVariantForIndex(int, CarriageGenerationConfig)},
      * deterministic on absolute pIdx — never produces a flatbed-like
      * variant (the pads already provide bed continuity at every seam).</p>
      *
@@ -196,7 +196,7 @@ public final class TrainAssembler {
         }
 
         int length = dims.length();
-        int halfPadLen = CarriageTemplate.halfPadLen(dims);
+        int halfPadLen = CarriagePlacer.halfPadLen(dims);
         boolean wrapWithPads = groupSize > 1;
         int subLevelLength = wrapWithPads ? (groupSize * length + 2 * halfPadLen) : length;
         int enclosedStartOffset = wrapWithPads ? halfPadLen : 0;
@@ -220,12 +220,12 @@ public final class TrainAssembler {
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageOrigin = origin.offset(enclosedStartOffset + slot * length, 0, 0);
-            CarriageVariant variant = CarriageTemplate.enclosedVariantForIndex(carriagePIdx, genCfg);
+            CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg);
             enclosedBySlot[slot] = variant;
 
             // applyContents=false: defer until after assembly so entities
             // land in shipyard space, not world space.
-            Set<BlockPos> carriageBlocks = CarriageTemplate.placeAt(
+            Set<BlockPos> carriageBlocks = CarriagePlacer.placeAt(
                 level, carriageOrigin, variant, dims, genCfg, carriagePIdx, false);
             if (carriageBlocks.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] spawnGroup produced empty enclosed block set anchorPIdx={} slot={} carriagePIdx={} variant={} at {}",
@@ -238,10 +238,10 @@ public final class TrainAssembler {
         if (wrapWithPads) {
             BlockPos backPadOrigin = origin;
             BlockPos frontPadOrigin = origin.offset(halfPadLen + groupSize * length, 0, 0);
-            blocks.addAll(CarriageTemplate.placeHalfFlatbedPad(
-                level, backPadOrigin, CarriageTemplate.HalfPadSide.BACK, dims));
-            blocks.addAll(CarriageTemplate.placeHalfFlatbedPad(
-                level, frontPadOrigin, CarriageTemplate.HalfPadSide.FRONT, dims));
+            blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
+                level, backPadOrigin, CarriagePlacer.HalfPadSide.BACK, dims));
+            blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
+                level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims));
         }
 
         ManagedShip ship = Shipyards.of(level).assemble(blocks, 1.0);
@@ -262,7 +262,7 @@ public final class TrainAssembler {
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
-            CarriageTemplate.applyContentsAt(level, carriageShipyardOrigin, enclosedBySlot[slot], dims, genCfg, carriagePIdx);
+            CarriagePlacer.applyContentsAt(level, carriageShipyardOrigin, enclosedBySlot[slot], dims, genCfg, carriagePIdx);
         }
 
         TrainTransformProvider provider = new TrainTransformProvider(

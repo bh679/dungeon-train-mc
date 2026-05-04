@@ -2,9 +2,9 @@ package games.brennan.dungeontrain.track.variant;
 
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import net.minecraft.core.Vec3i;
 
 import java.util.Locale;
@@ -22,7 +22,7 @@ import java.util.Locale;
  * structures) so the only shared method is {@link #dims} and the subdir
  * helpers — placement logic stays in the per-kind generators (
  * {@link games.brennan.dungeontrain.track.TrackGenerator},
- * {@link games.brennan.dungeontrain.tunnel.TunnelTemplate}).</p>
+ * {@link games.brennan.dungeontrain.tunnel.TunnelPlacer}).</p>
  *
  * <p>Disk layout (under {@code config/dungeontrain/}):
  * <ul>
@@ -105,9 +105,9 @@ public enum TrackKind {
      */
     public Vec3i dims(CarriageDims worldDims) {
         return switch (this) {
-            case TILE -> new Vec3i(TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, worldDims.width());
+            case TILE -> new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, worldDims.width());
             case TUNNEL_SECTION, TUNNEL_PORTAL ->
-                new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
+                new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
             case PILLAR_TOP -> new Vec3i(1, PillarSection.TOP.height(), worldDims.width());
             case PILLAR_MIDDLE -> new Vec3i(1, PillarSection.MIDDLE.height(), worldDims.width());
             case PILLAR_BOTTOM -> new Vec3i(1, PillarSection.BOTTOM.height(), worldDims.width());

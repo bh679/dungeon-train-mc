@@ -8,7 +8,7 @@ package games.brennan.dungeontrain.template;
  *
  * <p>Examples by kind:
  * <ul>
- *   <li>{@link TemplateKind#CARRIAGE} — {@code CarriageTemplate.CarriageType}
+ *   <li>{@link TemplateKind#CARRIAGE} — {@code CarriagePlacer.CarriageType}
  *       (STANDARD, WINDOWED, FLATBED) — only present on built-in carriages.</li>
  *   <li>{@link TemplateKind#CONTENTS} — {@code CarriageContents.ContentsType}
  *       (DEFAULT) — only present on built-in contents.</li>
@@ -18,7 +18,7 @@ package games.brennan.dungeontrain.template;
  *       BOTTOM) — stacking position of the pillar segment.</li>
  *   <li>{@link TemplateKind#STAIRS} — {@code PillarAdjunct} (STAIRS) — the
  *       only adjunct kind today.</li>
- *   <li>{@link TemplateKind#TUNNEL} — {@code TunnelTemplate.TunnelVariant}
+ *   <li>{@link TemplateKind#TUNNEL} — {@code TunnelPlacer.TunnelVariant}
  *       (SECTION, PORTAL) — straight section vs entrance facade.</li>
  * </ul>
  *

@@ -93,16 +93,16 @@ public final class CategoryTemplatesScreen implements MenuScreen {
      * its own command shape — see EditorCommand.build for the route table.
      */
     static String trackEnterCommandFor(Template model) {
-        if (model instanceof Template.TrackModel) {
+        if (model instanceof Template.Track) {
             return "dungeontrain editor track enter";
         }
-        if (model instanceof Template.PillarModel pm) {
-            return "dungeontrain editor pillar enter pillar_" + pm.section().id();
+        if (model instanceof Template.Pillar pm) {
+            return "dungeontrain editor pillar enter " + pm.section().id();
         }
-        if (model instanceof Template.AdjunctModel am) {
-            return "dungeontrain editor pillar enter adjunct_" + am.adjunct().id();
+        if (model instanceof Template.Adjunct am) {
+            return "dungeontrain editor pillar enter " + am.adjunct().id();
         }
-        if (model instanceof Template.TunnelModel tm) {
+        if (model instanceof Template.Tunnel tm) {
             return "dungeontrain editor enter tunnel_"
                 + tm.variant().name().toLowerCase(Locale.ROOT);
         }

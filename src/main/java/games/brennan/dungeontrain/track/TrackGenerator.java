@@ -405,7 +405,7 @@ public final class TrackGenerator {
         if (shipyard.isInShip(bedPos)) return false;
 
         int zOff = worldZ - g.trackZMin();
-        int xMod = Math.floorMod(worldX, TrackTemplate.TILE_LENGTH);
+        int xMod = Math.floorMod(worldX, TrackPlacer.TILE_LENGTH);
 
         BlockState bedState = paint.cells().isPresent()
             ? paint.cells().get()[xMod][0][zOff]
@@ -1054,7 +1054,7 @@ public final class TrackGenerator {
         // Mirror.LEFT_RIGHT negates local Z around stamp origin; shifting
         // origin by +(STAIRS_Z - 1) keeps the mirrored footprint at
         // [originZ .. originZ + STAIRS_Z - 1]. Same trick as the runtime
-        // variant and as TunnelTemplate's portal mirror.
+        // variant and as TunnelPlacer's portal mirror.
         int stampOriginZ = !flipped ? originZ + STAIRS_Z - 1 : originZ;
 
         int currentTop = topInclusive;
@@ -1172,7 +1172,7 @@ public final class TrackGenerator {
         // for the same reason; reintroduce both at worldgen time if needed.
         for (int localX = 0; localX < 16; localX++) {
             int worldX = chunkMinX + localX;
-            long tileIndex = Math.floorDiv((long) worldX, (long) TrackTemplate.TILE_LENGTH);
+            long tileIndex = Math.floorDiv((long) worldX, (long) TrackPlacer.TILE_LENGTH);
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> {
@@ -1282,8 +1282,8 @@ public final class TrackGenerator {
         BlockState air = Blocks.AIR.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = chunkMinX; x <= chunkMaxX; x++) {
-            long tileIndex = Math.floorDiv((long) x, (long) TrackTemplate.TILE_LENGTH);
-            int xMod = Math.floorMod(x, TrackTemplate.TILE_LENGTH);
+            long tileIndex = Math.floorDiv((long) x, (long) TrackPlacer.TILE_LENGTH);
+            int xMod = Math.floorMod(x, TrackPlacer.TILE_LENGTH);
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> {

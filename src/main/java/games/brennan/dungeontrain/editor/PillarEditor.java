@@ -163,6 +163,7 @@ public final class PillarEditor {
         eraseAt(overworld, origin, section, dims);
         stampNameAt(overworld, origin, section, name, dims);
         setOutline(overworld, origin, section, dims);
+        captureSectionSnapshot(overworld, origin, section, name, dims);
     }
 
     /** Erase every variant plot for {@code section}. */
@@ -170,6 +171,7 @@ public final class PillarEditor {
         for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section))) {
             BlockPos origin = plotOrigin(section, name, dims);
             eraseAt(overworld, origin, section, dims);
+            EditorPlotSnapshots.clear(sectionSnapshotKey(section, name));
         }
     }
 
@@ -177,6 +179,18 @@ public final class PillarEditor {
     public static void clearPlot(ServerLevel overworld, PillarSection section, String name, CarriageDims dims) {
         BlockPos origin = plotOrigin(section, name, dims);
         eraseAt(overworld, origin, section, dims);
+        EditorPlotSnapshots.clear(sectionSnapshotKey(section, name));
+    }
+
+    /** Snapshot the freshly-stamped {@code (1 × section.height × dims.width)} pillar region for {@link EditorDirtyCheck}'s baseline. */
+    private static void captureSectionSnapshot(ServerLevel overworld, BlockPos origin, PillarSection section, String name, CarriageDims dims) {
+        EditorPlotSnapshots.capture(sectionSnapshotKey(section, name), overworld, origin,
+            1, section.height(), dims.width());
+    }
+
+    /** Snapshot key shared with {@link EditorDirtyCheck} for pillar-section rows. */
+    public static String sectionSnapshotKey(PillarSection section, String name) {
+        return EditorPlotSnapshots.key("tracks", "pillar_" + section.id() + ":" + name);
     }
 
     /**
@@ -199,6 +213,9 @@ public final class PillarEditor {
         StructureTemplate template = captureTemplate(overworld, origin, section, dims);
         TrackKind kind = PillarTemplateStore.pillarKind(section);
         TrackVariantStore.save(kind, name, template);
+
+        // Refresh the dirty-check baseline.
+        captureSectionSnapshot(overworld, origin, section, name, dims);
 
         LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {}/{} (1x{}x{})",
             player.getName().getString(), section.id(), name,
@@ -309,6 +326,7 @@ public final class PillarEditor {
         eraseAtAdjunct(overworld, origin, adjunct);
         stampNameAtAdjunct(overworld, origin, adjunct, name);
         setOutlineAdjunct(overworld, origin, adjunct);
+        captureAdjunctSnapshot(overworld, origin, adjunct, name);
     }
 
     /** Erase every variant plot for {@code adjunct}. */
@@ -316,6 +334,7 @@ public final class PillarEditor {
         for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct))) {
             BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
             eraseAtAdjunct(overworld, origin, adjunct);
+            EditorPlotSnapshots.clear(adjunctSnapshotKey(adjunct, name));
         }
     }
 
@@ -323,6 +342,18 @@ public final class PillarEditor {
     public static void clearPlotAdjunct(ServerLevel overworld, PillarAdjunct adjunct, String name, CarriageDims dims) {
         BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
         eraseAtAdjunct(overworld, origin, adjunct);
+        EditorPlotSnapshots.clear(adjunctSnapshotKey(adjunct, name));
+    }
+
+    /** Snapshot the freshly-stamped adjunct region for {@link EditorDirtyCheck}'s baseline. */
+    private static void captureAdjunctSnapshot(ServerLevel overworld, BlockPos origin, PillarAdjunct adjunct, String name) {
+        EditorPlotSnapshots.capture(adjunctSnapshotKey(adjunct, name), overworld, origin,
+            adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+    }
+
+    /** Snapshot key shared with {@link EditorDirtyCheck} for adjunct rows. */
+    public static String adjunctSnapshotKey(PillarAdjunct adjunct, String name) {
+        return EditorPlotSnapshots.key("tracks", "adjunct_" + adjunct.id() + ":" + name);
     }
 
     /**
@@ -345,6 +376,9 @@ public final class PillarEditor {
         StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
         TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
         TrackVariantStore.save(kind, name, template);
+
+        // Refresh the dirty-check baseline.
+        captureAdjunctSnapshot(overworld, origin, adjunct, name);
 
         LOGGER.info("[DungeonTrain] Pillar editor save adjunct: {} -> {}/{} ({}x{}x{})",
             player.getName().getString(), adjunct.id(), name,

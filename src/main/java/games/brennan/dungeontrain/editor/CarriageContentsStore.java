@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
@@ -9,6 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
@@ -37,7 +42,7 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/contents/<id>.nbt}
  *       on the classpath. Ships inside the mod jar and represents the mod's
  *       defaults.</li>
- *   <li><b>Hardcoded fallback</b> — {@link games.brennan.dungeontrain.train.CarriageContentsTemplate#placeAt}
+ *   <li><b>Hardcoded fallback</b> — {@link games.brennan.dungeontrain.train.CarriageContentsPlacer#placeAt}
  *       drops to a legacy generator (single stone pressure plate at floor
  *       centre) when both above tiers miss. Only the {@code default} built-in
  *       falls back; custom contents with no config-dir file place nothing.</li>
@@ -113,7 +118,7 @@ public final class CarriageContentsStore {
      * only for reuse of the record; the shell minimums ({@code length>=4},
      * {@code width>=3}, {@code height>=3}) guarantee interior dims stay above
      * the {@link CarriageDims} floors of 4×3×3… except when width=3 (interior
-     * width=1) — see the helper in {@link games.brennan.dungeontrain.train.CarriageContentsTemplate}
+     * width=1) — see the helper in {@link games.brennan.dungeontrain.train.CarriageContentsPlacer}
      * which uses a raw {@link Vec3i} instead of {@link CarriageDims} to avoid
      * the invariant.</p>
      */
@@ -295,4 +300,32 @@ public final class CarriageContentsStore {
         Path gameDir = FMLPaths.GAMEDIR.get();
         return gameDir.getParent();
     }
+
+    /**
+     * Phase-2 adapter — exposes contents save/promote through the unified
+     * {@link TemplateStore} surface. Contents have no separate bundled tier
+     * (write-through happens inside {@link CarriageContentsEditor#save}
+     * when devmode is on), so {@link #canPromote} returns false and
+     * {@link #promote} throws — mirrors the existing {@code SaveCommand}
+     * arm for {@code Template.Contents}.
+     */
+    private static final TemplateStore<Template.Contents> ADAPTER = new TemplateStore<>() {
+        @Override public TemplateKind kind() { return TemplateKind.CONTENTS; }
+
+        @Override
+        public SaveResult save(ServerPlayer player, Template.Contents template) throws Exception {
+            CarriageContentsEditor.SaveResult r = CarriageContentsEditor.save(player, template.contents());
+            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+        }
+
+        @Override
+        public boolean canPromote(Template.Contents template) { return false; }
+
+        @Override
+        public void promote(Template.Contents template) throws Exception {
+            throw new IllegalStateException("Contents have no bundled tier — '/dt save default' does not apply.");
+        }
+    };
+
+    public static TemplateStore<Template.Contents> adapter() { return ADAPTER; }
 }

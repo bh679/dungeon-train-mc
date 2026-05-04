@@ -35,9 +35,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Dev-only TitleScreen shortcut: hold Shift on the title screen and the
- * Singleplayer button is replaced by "New World", which immediately spins up
- * a fresh creative-mode world using the Dungeon Train default preset.
+ * Dev-only TitleScreen shortcut: on dev branches the Singleplayer button is
+ * replaced by "New World" by default, which immediately spins up a fresh
+ * creative-mode world using the Dungeon Train default preset. Hold Shift to
+ * swap back to the vanilla Singleplayer button (world-select screen).
  *
  * <p>Gated on {@link VersionInfo#BRANCH} != "main" so release jars are unaffected.
  * Mirrors the dev-only pattern used by {@link VersionMenuOverlay}.</p>
@@ -82,7 +83,8 @@ public final class DevQuickWorldHandler {
                 .bounds(singleplayer.getX(), singleplayer.getY(),
                         singleplayer.getWidth(), singleplayer.getHeight())
                 .build();
-        newWorld.visible = false;
+        newWorld.visible = true;
+        singleplayer.visible = false;
 
         event.addListener(newWorld);
 
@@ -105,8 +107,8 @@ public final class DevQuickWorldHandler {
             return;
         }
         boolean shift = Screen.hasShiftDown();
-        sp.visible = !shift;
-        nw.visible = shift;
+        sp.visible = shift;
+        nw.visible = !shift;
     }
 
     private static Button findSingleplayerButton(ScreenEvent.Init.Post event) {

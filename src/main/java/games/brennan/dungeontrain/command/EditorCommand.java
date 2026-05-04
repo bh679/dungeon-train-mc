@@ -37,18 +37,18 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.train.CarriagePartTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
@@ -428,6 +428,18 @@ public final class EditorCommand {
                 .then(Commands.literal("reset").executes(ctx -> runTrackReset(ctx.getSource())))
                 .then(Commands.literal("promote").executes(ctx -> runTrackPromote(ctx.getSource()))))
             .then(buildPartSubtree(buildContext))
+            // `/dt editor view <category> <id>` — teleport into the named
+            // plot WITHOUT re-stamping it from disk. The unsaved-changes
+            // confirmation screen calls this from its per-row View button so
+            // the player can inspect a dirty plot in-place before deciding
+            // whether to save. (The regular `enter` paths re-stamp on entry,
+            // which would wipe the unsaved edits we're about to ask about.)
+            .then(Commands.literal("view")
+                .then(Commands.argument("category", StringArgumentType.word())
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .executes(ctx -> runEditorView(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "category"),
+                            StringArgumentType.getString(ctx, "id"))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -864,7 +876,7 @@ public final class EditorCommand {
             return 0;
         }
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-        Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
             source.sendFailure(Component.literal(
@@ -913,7 +925,7 @@ public final class EditorCommand {
 
         CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (contentsPlot != null) {
-            Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
             CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
             sendVariantsListing(source,
                 "contents '" + contentsPlot.id() + "'",
@@ -1100,17 +1112,17 @@ public final class EditorCommand {
         // Teleport to the first via the existing enter path (also handles session + outline).
         try {
             Template head = first.get();
-            if (head instanceof Template.CarriageModel cm) {
+            if (head instanceof Template.Carriage cm) {
                 CarriageEditor.enter(player, cm.variant());
-            } else if (head instanceof Template.ContentsModel cm) {
+            } else if (head instanceof Template.Contents cm) {
                 CarriageContentsEditor.enter(player, cm.contents(), null);
-            } else if (head instanceof Template.PillarModel pm) {
+            } else if (head instanceof Template.Pillar pm) {
                 PillarEditor.enter(player, pm.section());
-            } else if (head instanceof Template.AdjunctModel am) {
+            } else if (head instanceof Template.Adjunct am) {
                 PillarEditor.enter(player, am.adjunct());
-            } else if (head instanceof Template.TunnelModel tm) {
+            } else if (head instanceof Template.Tunnel tm) {
                 TunnelEditor.enter(player, tm.variant());
-            } else if (head instanceof Template.TrackModel) {
+            } else if (head instanceof Template.Track) {
                 TrackEditor.enter(player);
             }
             final Template firstModel = head;
@@ -1128,17 +1140,17 @@ public final class EditorCommand {
     }
 
     private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel cm) {
+        if (model instanceof Template.Carriage cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
-        } else if (model instanceof Template.ContentsModel cm) {
+        } else if (model instanceof Template.Contents cm) {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
-        } else if (model instanceof Template.PillarModel pm) {
+        } else if (model instanceof Template.Pillar pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
-        } else if (model instanceof Template.AdjunctModel am) {
+        } else if (model instanceof Template.Adjunct am) {
             PillarEditor.stampPlot(overworld, am.adjunct(), dims);
-        } else if (model instanceof Template.TunnelModel tm) {
+        } else if (model instanceof Template.Tunnel tm) {
             TunnelEditor.stampPlot(overworld, tm.variant());
-        } else if (model instanceof Template.TrackModel) {
+        } else if (model instanceof Template.Track) {
             TrackEditor.stampPlot(overworld, dims);
         }
     }
@@ -1152,6 +1164,135 @@ public final class EditorCommand {
         CarriageVariant v = parseVariant(source, raw);
         if (v == null) return 0;
         return runEnterCarriage(source, v);
+    }
+
+    /**
+     * View-only teleport: drop the player into the named plot without
+     * re-stamping or remembering a return position. Used by the worldspace
+     * menu's unsaved-changes confirmation screen so the View button doesn't
+     * destroy the in-world edits the user is being asked about.
+     *
+     * <p>Unlike {@link CarriageEditor#enter} / {@link CarriageContentsEditor#enter}
+     * etc., this does not call {@code rememberReturn} — the player is already
+     * inside the editor session ({@code runEnterCategory} sets up plots),
+     * so a separate return-position stash isn't appropriate here.</p>
+     */
+    private static int runEditorView(CommandSourceStack source, String categoryId, String id) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        java.util.Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
+        if (categoryOpt.isEmpty()) {
+            source.sendFailure(Component.literal("Unknown category '" + categoryId + "'."));
+            return 0;
+        }
+        EditorCategory category = categoryOpt.get();
+
+        BlockPos origin = null;
+        net.minecraft.core.Vec3i size = null;
+
+        // Track-side ids use a "kind.name" format mirroring EditorDirtyCheck:
+        //   "track.<name>"        — track tile variant
+        //   "pillar_<sec>.<name>" — pillar section variant
+        //   "adjunct_<id>.<name>" — pillar adjunct variant
+        //   "tunnel_<v>.<name>"   — tunnel variant
+        // Carriages and contents use the bare model id. Dot is used (not
+        // colon) so the id parses cleanly as a single Brigadier word()
+        // argument — colons aren't allowed in unquoted strings.
+        if (category == EditorCategory.TRACKS && id.contains(".")) {
+            int sep = id.indexOf('.');
+            String prefix = id.substring(0, sep);
+            String name = id.substring(sep + 1);
+            if ("track".equals(prefix)) {
+                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
+                    games.brennan.dungeontrain.track.variant.TrackKind.TILE, name, dims);
+                size = new net.minecraft.core.Vec3i(
+                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
+                    dims.width());
+            } else if (prefix.startsWith("pillar_")) {
+                games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
+                if (sec == null) {
+                    source.sendFailure(Component.literal("Unknown pillar section in '" + id + "'."));
+                    return 0;
+                }
+                origin = PillarEditor.plotOrigin(sec, name, dims);
+                size = new net.minecraft.core.Vec3i(1, sec.height(), dims.width());
+            } else if (prefix.startsWith("adjunct_")) {
+                games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
+                if (adj == null) {
+                    source.sendFailure(Component.literal("Unknown adjunct in '" + id + "'."));
+                    return 0;
+                }
+                origin = PillarEditor.plotOriginAdjunct(adj, name, dims);
+                size = new net.minecraft.core.Vec3i(adj.xSize(), adj.ySize(), adj.zSize());
+            } else if (prefix.startsWith("tunnel_")) {
+                TunnelVariant tv;
+                try {
+                    tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    source.sendFailure(Component.literal("Unknown tunnel variant in '" + id + "'."));
+                    return 0;
+                }
+                origin = TunnelEditor.plotOrigin(tv, name);
+                size = new net.minecraft.core.Vec3i(
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
+            } else {
+                source.sendFailure(Component.literal("Unrecognised track-side id '" + id + "'."));
+                return 0;
+            }
+        } else {
+            // Resolve the model by id within the category and read its plot
+            // footprint. The dispatch mirrors stampCategoryModel above —
+            // each editor's plotOrigin signature differs.
+            Template model = null;
+            for (Template m : category.models()) {
+                if (m.id().equals(id)) { model = m; break; }
+            }
+            if (model == null) {
+                source.sendFailure(Component.literal(
+                    "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
+                return 0;
+            }
+            if (model instanceof Template.Carriage cm) {
+                origin = CarriageEditor.plotOrigin(cm.variant(), dims);
+                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
+            } else if (model instanceof Template.Contents cm) {
+                origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
+                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
+            } else if (model instanceof Template.Pillar pm) {
+                origin = PillarEditor.plotOrigin(pm.section(), dims);
+                size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
+            } else if (model instanceof Template.Track) {
+                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
+                    games.brennan.dungeontrain.track.variant.TrackKind.TILE,
+                    games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+                size = new net.minecraft.core.Vec3i(
+                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
+                    dims.width());
+            } else {
+                source.sendFailure(Component.literal(
+                    "View not supported for model '" + id + "'."));
+                return 0;
+            }
+        }
+
+        if (origin == null) {
+            source.sendFailure(Component.literal(
+                "No plot origin for '" + id + "' in '" + category.displayName() + "'."));
+            return 0;
+        }
+
+        double tx = origin.getX() + size.getX() / 2.0;
+        double ty = origin.getY() + 1.0;
+        double tz = origin.getZ() + size.getZ() / 2.0;
+        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        return 1;
     }
 
     private static int runEnterCarriage(CommandSourceStack source, CarriageVariant variant) {
@@ -1460,7 +1601,7 @@ public final class EditorCommand {
         if (partLoc != null) {
             try {
                 BlockPos origin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
-                CarriagePartTemplate.eraseAt(overworld, origin, partLoc.kind(), dims);
+                CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
                 final String id = partLoc.kind().id() + ":" + partLoc.name();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."
@@ -1480,10 +1621,10 @@ public final class EditorCommand {
             try {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 // Interior-only erase — preserves the carriage shell stamped
-                // around it as visual context. CarriageContentsTemplate.eraseAt
+                // around it as visual context. CarriageContentsPlacer.eraseAt
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
                 // ceiling stay put for the author to keep building inside.
-                CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+                CarriageContentsPlacer.eraseAt(overworld, origin, dims);
                 final String id = contents.id();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."
@@ -1502,7 +1643,7 @@ public final class EditorCommand {
         if (carriage != null) {
             try {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
-                CarriageTemplate.eraseAt(overworld, origin, dims);
+                CarriagePlacer.eraseAt(overworld, origin, dims);
                 final String id = carriage.id();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."

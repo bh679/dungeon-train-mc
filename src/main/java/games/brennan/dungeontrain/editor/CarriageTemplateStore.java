@@ -1,9 +1,13 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
@@ -12,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -36,7 +41,7 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.nbt} on the
  *       classpath. Ships inside the mod jar and represents the mod's defaults.
  *       Only built-ins have bundled copies.</li>
- *   <li><b>Hardcoded fallback</b> — {@link CarriageTemplate#placeAt} drops to its
+ *   <li><b>Hardcoded fallback</b> — {@link CarriagePlacer#placeAt} drops to its
  *       legacy generator when both above tiers miss. Only built-ins fall back;
  *       custom variants with no config-dir file place nothing.</li>
  * </ol>
@@ -140,7 +145,7 @@ public final class CarriageTemplateStore {
      */
     private static Optional<StructureTemplate> filterForDims(CarriageVariant variant, Optional<StructureTemplate> cached, CarriageDims dims) {
         if (cached.isEmpty()) return cached;
-        if (CarriageTemplate.sizeMatches(cached.get().getSize(), dims)) return cached;
+        if (CarriagePlacer.sizeMatches(cached.get().getSize(), dims)) return cached;
         LOGGER.warn(
             "[DungeonTrain] Cached template {} no longer matches dims {}x{}x{} — falling back.",
             variant.id(), dims.length(), dims.width(), dims.height());
@@ -280,7 +285,7 @@ public final class CarriageTemplateStore {
         template.load(blocks, tag);
 
         Vec3i size = template.getSize();
-        if (!CarriageTemplate.sizeMatches(size, dims)) {
+        if (!CarriagePlacer.sizeMatches(size, dims)) {
             LOGGER.warn(
                 "[DungeonTrain] Template {} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
                 id, origin, size.getX(), size.getY(), size.getZ(),
@@ -322,4 +327,38 @@ public final class CarriageTemplateStore {
     private static String name(CarriageType type) {
         return type.name().toLowerCase(Locale.ROOT);
     }
+
+    /**
+     * Phase-2 adapter — exposes carriage save/promote through the unified
+     * {@link TemplateStore} surface so {@code SaveCommand} can dispatch
+     * without an {@code instanceof} chain. Wraps the per-editor
+     * {@code CarriageEditor.SaveResult} into the shared
+     * {@link games.brennan.dungeontrain.template.SaveResult} record (same
+     * shape, just hoisted into the {@code template/} package).
+     */
+    private static final TemplateStore<Template.Carriage> ADAPTER = new TemplateStore<>() {
+        @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
+
+        @Override
+        public SaveResult save(ServerPlayer player, Template.Carriage template) throws Exception {
+            CarriageEditor.SaveResult r = CarriageEditor.save(player, template.variant());
+            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+        }
+
+        @Override
+        public boolean canPromote(Template.Carriage template) {
+            return template.variant() instanceof CarriageVariant.Builtin
+                && sourceTreeAvailable();
+        }
+
+        @Override
+        public void promote(Template.Carriage template) throws Exception {
+            if (!(template.variant() instanceof CarriageVariant.Builtin builtin)) {
+                throw new IllegalStateException("Custom carriages cannot promote — no bundled tier.");
+            }
+            CarriageTemplateStore.promote(builtin.type());
+        }
+    };
+
+    public static TemplateStore<Template.Carriage> adapter() { return ADAPTER; }
 }

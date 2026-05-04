@@ -81,6 +81,28 @@ public sealed interface CommandMenuEntry {
     record Loading(String label) implements CommandMenuEntry {}
 
     /**
+     * Static, non-clickable text row. Renders the label centered with no
+     * backdrop tint and no hover highlight. Useful as a column label
+     * inside a {@link Triple} (e.g. "template name | Save | View") and as
+     * a one-row spacer when an extra gap is wanted between sections. The
+     * raycast skips Label rows entirely so the dispatcher never sees a
+     * click on them.
+     */
+    record Label(String text) implements CommandMenuEntry {
+        @Override public String label() { return text; }
+    }
+
+    /**
+     * A "save" action used by {@link UnsavedCheckScreen}. Rendered with a
+     * green tint when {@link #saved} is false, grey when true. Clicking
+     * invokes {@link #onClick} (which typically runs the save slash command
+     * and updates the screen's local greyed-out set) and stays open so
+     * the user can save other rows, then click Continue. Once {@code saved}
+     * flips true, dispatch is a no-op so subsequent clicks don't re-run.
+     */
+    record SaveAction(String label, Runnable onClick, boolean saved) implements CommandMenuEntry {}
+
+    /**
      * On/off state entry. The label is augmented with {@code [ON]} /
      * {@code [OFF]} at render time based on {@link #state}. Clicking runs
      * either {@link #cmdToTurnOn} (when currently off) or

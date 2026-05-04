@@ -4,15 +4,15 @@ package games.brennan.dungeontrain.train;
  * Per-world carriage footprint — length × width × height in blocks.
  *
  * <p>Replaces the previous {@code public static final} constants on
- * {@link CarriageTemplate}. Each world captures its dims at creation time
+ * {@link CarriagePlacer}. Each world captures its dims at creation time
  * (stored on {@code DungeonTrainWorldData}) and the value is fixed for
  * that world's lifetime. Different worlds can have different dims. The
  * shipped default is 9×7×7.</p>
  *
- * <p>Floors chosen so the {@link CarriageTemplate#stateAt} geometry still
+ * <p>Floors chosen so the {@link CarriagePlacer#stateAt} geometry still
  * produces a coherent carriage:
  * <ul>
- *   <li>{@code length >= 4} — the four {@link CarriageTemplate.CarriageType}
+ *   <li>{@code length >= 4} — the four {@link CarriagePlacer.CarriageType}
  *       variants need at least one carriage each to cycle through</li>
  *   <li>{@code width >= 3} — the door is centred at {@code width / 2};
  *       below 3 the door would sit on the corner wall</li>
@@ -21,8 +21,8 @@ package games.brennan.dungeontrain.train;
  * </ul>
  *
  * <p>Ceilings are a soft performance guard. The block-placement loops
- * {@link CarriageTemplate#eraseAt}, {@link CarriageTemplate#legacyPlaceAt},
- * and {@link CarriageTemplate#collectFootprint} are {@code O(length × width × height)}
+ * {@link CarriagePlacer#eraseAt}, {@link CarriagePlacer#legacyPlaceAt},
+ * and {@link CarriagePlacer#collectFootprint} are {@code O(length × width × height)}
  * and are called for every rolling-window add/remove plus each VS
  * {@code ShipAssembler.assembleToShip} pass. A 32×32×24 carriage is
  * 24 576 block operations per shift — tractable; a 64×64×64 carriage

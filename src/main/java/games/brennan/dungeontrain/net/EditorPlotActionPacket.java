@@ -11,10 +11,10 @@ import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
@@ -148,7 +148,7 @@ public record EditorPlotActionPacket(
             }
             case CLEAR -> {
                 BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
-                if (origin != null) CarriageTemplate.eraseAt(overworld, origin, dims);
+                if (origin != null) CarriagePlacer.eraseAt(overworld, origin, dims);
             }
             case ENTER_INSIDE -> CarriageEditor.enter(sender, variant, false);
         }
@@ -178,7 +178,7 @@ public record EditorPlotActionPacket(
             case CLEAR -> {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 if (origin != null) {
-                    games.brennan.dungeontrain.train.CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+                    games.brennan.dungeontrain.train.CarriageContentsPlacer.eraseAt(overworld, origin, dims);
                 }
             }
             case ENTER_INSIDE -> CarriageContentsEditor.enter(sender, contents, null, false);
@@ -228,7 +228,7 @@ public record EditorPlotActionPacket(
             }
         }
         // Tunnel variants.
-        for (TunnelTemplate.TunnelVariant tv : TunnelTemplate.TunnelVariant.values()) {
+        for (TunnelPlacer.TunnelVariant tv : TunnelPlacer.TunnelVariant.values()) {
             if (("tunnel_" + tv.name().toLowerCase(Locale.ROOT)).equals(modelId)) {
                 if (packet.action == Action.SAVE) {
                     TunnelEditor.save(sender, tv);

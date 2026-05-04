@@ -2,17 +2,8 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.editor.CarriageContentsEditor;
-import games.brennan.dungeontrain.editor.CarriageEditor;
-import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
-import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.template.Template;
-import games.brennan.dungeontrain.editor.PillarTemplateStore;
-import games.brennan.dungeontrain.editor.TrackEditor;
-import games.brennan.dungeontrain.editor.TrackTemplateStore;
-import games.brennan.dungeontrain.editor.TunnelEditor;
-import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -45,6 +36,13 @@ import java.util.Optional;
  * <p>Distinct from {@code /dungeontrain editor reset <variant>} which
  * <em>deletes</em> the config-dir file. This command only re-stamps the
  * in-world plot; it never mutates files.</p>
+ *
+ * <p>Phase 3 of the Template OOP refactor collapsed the per-kind
+ * {@code instanceof} chains in {@link #resetToSaved} and
+ * {@link #resetToDefault} onto {@link Template#restampPlot},
+ * {@link Template#bundled}, and {@link Template#editorPlotOrigin} — each
+ * record knows its own editor + storage delegate, so this command no
+ * longer enumerates kinds.</p>
  */
 public final class ResetCommand {
 
@@ -91,129 +89,67 @@ public final class ResetCommand {
         }
     }
 
-    /** Re-stamp the plot via the normal tier resolution — same as {@code enter} does. */
+    /**
+     * Re-stamp the plot via the normal tier resolution — same as {@code enter}
+     * does. Phase-3 collapse onto {@link Template#restampPlot} (per-record
+     * override delegates to the appropriate per-editor {@code stampPlot}).
+     * Parts use the default no-op since carriage-part plots are entered via a
+     * different flow.
+     */
     private static void resetToSaved(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel carriage) {
-            CarriageEditor.stampPlot(overworld, carriage.variant(), dims);
-            return;
-        }
-        if (model instanceof Template.ContentsModel contentsModel) {
-            CarriageContentsEditor.stampPlot(overworld, contentsModel.contents(), dims);
-            return;
-        }
-        if (model instanceof Template.PillarModel pillar) {
-            PillarEditor.stampPlot(overworld, pillar.section(), dims);
-            return;
-        }
-        if (model instanceof Template.AdjunctModel adjunct) {
-            PillarEditor.stampPlot(overworld, adjunct.adjunct(), dims);
-            return;
-        }
-        if (model instanceof Template.TunnelModel tunnel) {
-            TunnelEditor.stampPlot(overworld, tunnel.variant());
-            return;
-        }
-        if (model instanceof Template.TrackModel) {
-            TrackEditor.stampPlot(overworld, dims);
-            return;
-        }
+        model.restampPlot(overworld, dims);
     }
 
     /**
      * Re-stamp the plot from the bundled tier only. Errors when no bundled
-     * copy exists. Tunnels have no bundled tier today and will always error.
+     * copy exists. Contents and tunnels have no bundled tier today —
+     * {@link Template#hasBundledTier()} is false for those, and the message
+     * is preserved by {@link #noBundledTierMessage}.
      */
     private static int resetToDefault(CommandSourceStack source, ServerLevel overworld,
                                       Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel carriage) {
-            Optional<StructureTemplate> bundled =
-                CarriageTemplateStore.getBundled(overworld, carriage.variant(), dims);
-            if (bundled.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "No bundled template for '" + carriage.id() + "' — nothing to reset to."
-                ).withStyle(ChatFormatting.YELLOW));
-                return 0;
-            }
-            BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
-            if (origin == null) {
-                source.sendFailure(Component.literal(
-                    "Missing plot origin for '" + carriage.id() + "'."
-                ).withStyle(ChatFormatting.RED));
-                return 0;
-            }
-            games.brennan.dungeontrain.train.CarriageTemplate.eraseAt(overworld, origin, dims);
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: reset '" + carriage.id() + "' to bundled default."
-            ).withStyle(ChatFormatting.GREEN), true);
-            return 1;
+        if (!model.hasBundledTier()) {
+            source.sendFailure(Component.literal(noBundledTierMessage(model))
+                .withStyle(ChatFormatting.YELLOW));
+            return 0;
         }
-        if (model instanceof Template.PillarModel pillar) {
-            Optional<StructureTemplate> bundled =
-                PillarTemplateStore.getBundled(overworld, pillar.section(), dims);
-            if (bundled.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "No bundled template for '" + pillar.id() + "' — nothing to reset to."
-                ).withStyle(ChatFormatting.YELLOW));
-                return 0;
-            }
-            BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: reset '" + pillar.id() + "' to bundled default."
-            ).withStyle(ChatFormatting.GREEN), true);
-            return 1;
-        }
-        if (model instanceof Template.AdjunctModel adjunctModel) {
-            PillarAdjunct a = adjunctModel.adjunct();
-            Optional<StructureTemplate> bundled =
-                PillarTemplateStore.getBundledAdjunct(overworld, a);
-            if (bundled.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "No bundled template for '" + adjunctModel.id() + "' — nothing to reset to."
-                ).withStyle(ChatFormatting.YELLOW));
-                return 0;
-            }
-            BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: reset '" + adjunctModel.id() + "' to bundled default."
-            ).withStyle(ChatFormatting.GREEN), true);
-            return 1;
-        }
-        if (model instanceof Template.TunnelModel tunnel) {
+        Optional<StructureTemplate> bundled = model.bundled(overworld, dims);
+        if (bundled.isEmpty()) {
             source.sendFailure(Component.literal(
-                "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '" + tunnel.id() + "'."
+                "No bundled template for '" + model.id() + "' — nothing to reset to."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        if (model instanceof Template.ContentsModel contentsModel) {
+        BlockPos origin = model.editorPlotOrigin(overworld, dims);
+        if (origin == null) {
             source.sendFailure(Component.literal(
-                "Contents templates have no separate bundled tier — '/dt reset default' does not apply to '" + contentsModel.id() + "'."
-            ).withStyle(ChatFormatting.YELLOW));
+                "Missing plot origin for '" + model.id() + "'."
+            ).withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (model instanceof Template.TrackModel) {
-            Optional<StructureTemplate> bundled =
-                TrackTemplateStore.getBundled(overworld, dims);
-            if (bundled.isEmpty()) {
-                source.sendFailure(Component.literal(
-                    "No bundled template for 'track' — nothing to reset to."
-                ).withStyle(ChatFormatting.YELLOW));
-                return 0;
-            }
-            BlockPos origin = TrackEditor.plotOrigin(dims);
-            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-            bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
-            source.sendSuccess(() -> Component.literal(
-                "Editor: reset 'track' to bundled default."
-            ).withStyle(ChatFormatting.GREEN), true);
-            return 1;
-        }
-        return 0;
+        model.eraseEditorPlot(overworld, origin, dims);
+        StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
+        source.sendSuccess(() -> Component.literal(
+            "Editor: reset '" + model.id() + "' to bundled default."
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * Per-kind chat string for the {@code "/dt reset default"} no-tier
+     * failure. Mirrors {@code SaveCommand.promoteUnavailableMessage} but with
+     * reset-specific wording — kept as a separate helper to preserve the
+     * subtle differences between save and reset chat output.
+     */
+    private static String noBundledTierMessage(Template model) {
+        return switch (model.kind()) {
+            case CONTENTS -> "Contents templates have no separate bundled tier — '/dt reset default' does not apply to '"
+                + model.id() + "'.";
+            case TUNNEL -> "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '"
+                + model.id() + "'.";
+            default -> "'/dt reset default' is not supported for this template kind.";
+        };
     }
 
     private static ServerPlayer requirePlayer(CommandSourceStack source) {

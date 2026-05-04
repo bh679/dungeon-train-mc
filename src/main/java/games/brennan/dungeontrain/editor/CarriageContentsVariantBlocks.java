@@ -36,7 +36,7 @@ import java.util.Map;
  * {@link CarriagePartVariantBlocks}. Enables {@code shift-right-click} variant
  * authoring inside contents editor plots and deterministic per-carriage-index
  * randomisation when
- * {@link games.brennan.dungeontrain.train.CarriageContentsTemplate#placeAt(
+ * {@link games.brennan.dungeontrain.train.CarriageContentsPlacer#placeAt(
  * net.minecraft.server.level.ServerLevel, BlockPos, CarriageContents,
  * games.brennan.dungeontrain.train.CarriageDims, long, int)} stamps the
  * contents at spawn time.
