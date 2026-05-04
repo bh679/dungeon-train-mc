@@ -14,7 +14,13 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -75,6 +81,11 @@ public final class BlockVariantMenuRenderer {
     static final double ROT_DIRS_CELL_WIDTH = 0.32;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
+    static final double ICON_SIZE = 0.22;
+    static final double ICON_LEFT_PAD = 0.03;
+    static final double ICON_TEXT_GAP = 0.05;
+    /** Cumulative left-pad for the row text once an icon takes the leading slot. */
+    static final double NAME_TEXT_LEFT_OFFSET = ICON_LEFT_PAD + ICON_SIZE + ICON_TEXT_GAP;
 
     private BlockVariantMenuRenderer() {}
 
@@ -113,6 +124,11 @@ public final class BlockVariantMenuRenderer {
         }
 
         buffer.endBatch(PANEL_QUAD);
+        // Flush remaining queued render types (item-icon textures, glint,
+        // font batches) so they draw with correct depth ordering against
+        // the world. Items use multiple internal RenderTypes that the
+        // explicit PANEL_QUAD flush above doesn't cover.
+        buffer.endBatch();
         ps.popPose();
     }
 
@@ -238,14 +254,15 @@ public final class BlockVariantMenuRenderer {
             double nameCellL = colXL;
             double nameCellR = rotModeCellL;
 
-            // Name highlight + label
+            // Name highlight + icon + label
             boolean nameHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_NAME && hovered.index() == i;
             if (nameHover) {
                 drawQuad(ps, buffer, nameCellL + 0.01, rowBottom + 0.005,
                     nameCellR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
+            drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY);
             drawLeftText(ps, buffer, font, shortenStateLabel(entry.stateString()),
-                nameCellL + 0.04, rowCY,
+                nameCellL + NAME_TEXT_LEFT_OFFSET, rowCY,
                 nameHover ? 0xFF000000 : 0xFFFFFFFF);
 
             // Rotation cells
@@ -503,7 +520,9 @@ public final class BlockVariantMenuRenderer {
             drawQuad(ps, buffer, colXL + 0.01, rowBottom + 0.005,
                 colXR - 0.01, rowTop - 0.005, tint);
             int textColour = isHover ? 0xFF000000 : 0xFFFFFFFF;
-            drawLeftText(ps, buffer, font, filtered.get(i), colXL + 0.04, rowCY, textColour);
+            drawBlockIcon(ps, buffer, filtered.get(i), colXL, rowCY);
+            drawLeftText(ps, buffer, font, filtered.get(i),
+                colXL + NAME_TEXT_LEFT_OFFSET, rowCY, textColour);
         }
     }
 
@@ -531,6 +550,45 @@ public final class BlockVariantMenuRenderer {
         }
         int colon = trimmed.indexOf(':');
         return colon >= 0 ? trimmed.substring(colon + 1) : trimmed;
+    }
+
+    /**
+     * Render a small inventory-style icon for the block at the start of a
+     * row. Uses {@link ItemDisplayContext#GUI} so the model gets the same
+     * 3-quarter transform vanilla inventory slots use. Skipped for the
+     * {@code "nothing"} sentinel — its label already conveys it.
+     *
+     * <p>Falls back to {@link Items#BARRIER} when the block has no item
+     * representation, mirroring the pattern in
+     * {@link games.brennan.dungeontrain.client.VariantHoverHudOverlay}.</p>
+     */
+    static void drawBlockIcon(PoseStack ps, MultiBufferSource buffer,
+                              String stateString, double cellLeftX, double rowCY) {
+        if (stateString == null || stateString.isEmpty()) return;
+        if ("nothing".equals(shortenStateLabel(stateString))) return;
+        BlockState state = BlockVariantMenu.parseState(stateString);
+        if (state == null) return;
+        Item item = state.getBlock().asItem();
+        ItemStack stack = (item == null || item == Items.AIR)
+            ? new ItemStack(Items.BARRIER)
+            : new ItemStack(item);
+
+        Minecraft mc = Minecraft.getInstance();
+        ItemRenderer itemRenderer = mc.getItemRenderer();
+        ps.pushPose();
+        ps.translate(cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0, rowCY, 0.002);
+        ps.scale((float) ICON_SIZE, (float) ICON_SIZE, (float) ICON_SIZE);
+        itemRenderer.renderStatic(
+            stack,
+            ItemDisplayContext.GUI,
+            LightTexture.FULL_BRIGHT,
+            OverlayTexture.NO_OVERLAY,
+            ps,
+            buffer,
+            mc.level,
+            0
+        );
+        ps.popPose();
     }
 
     static void drawCenteredText(PoseStack ps, MultiBufferSource buffer, Font font,
