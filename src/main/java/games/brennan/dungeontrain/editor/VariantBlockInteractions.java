@@ -172,7 +172,8 @@ public final class VariantBlockInteractions {
                                              VariantState newVariant, CarriagePartEditor.PlotLocation loc) {
         CarriagePartKind kind = loc.kind();
         String name = loc.name();
-        BlockPos plotOrigin = CarriagePartEditor.plotOrigin(kind, name, dims);
+        BlockPos plotOrigin = CarriagePartEditor.plotOrigin(
+            new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, name), dims);
         if (plotOrigin == null) return;
 
         BlockPos local = clicked.subtract(plotOrigin);

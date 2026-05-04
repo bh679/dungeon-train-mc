@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
+import games.brennan.dungeontrain.template.PillarTemplateId;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
@@ -64,9 +66,14 @@ public final class PillarEditor {
         return TrackSidePlots.plotOriginDefault(PillarTemplateStore.pillarKind(section), dims);
     }
 
-    /** Plot origin for {@code (section, name)}. */
+    /** Plot origin for an id-record-shaped pillar template. */
+    public static BlockPos plotOrigin(PillarTemplateId id, CarriageDims dims) {
+        return TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(id.section()), id.name(), dims);
+    }
+
+    /** Plot origin for {@code (section, name)} — bare-tuple wrapper over the id-record form. */
     public static BlockPos plotOrigin(PillarSection section, String name, CarriageDims dims) {
-        return TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(section), name, dims);
+        return plotOrigin(new PillarTemplateId(section, name), dims);
     }
 
     /** Plot origin for {@code (adjunct, default)}. */
@@ -74,9 +81,14 @@ public final class PillarEditor {
         return TrackSidePlots.plotOriginDefault(PillarTemplateStore.adjunctKind(adjunct), dims);
     }
 
-    /** Plot origin for {@code (adjunct, name)}. */
+    /** Plot origin for an id-record-shaped pillar-adjunct template. */
+    public static BlockPos plotOriginAdjunct(PillarAdjunctTemplateId id, CarriageDims dims) {
+        return TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(id.adjunct()), id.name(), dims);
+    }
+
+    /** Plot origin for {@code (adjunct, name)} — bare-tuple wrapper over the id-record form. */
     public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct, String name, CarriageDims dims) {
-        return TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);
+        return plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
     }
 
     /**

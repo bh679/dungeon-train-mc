@@ -69,11 +69,16 @@ public final class TunnelEditor {
         return TrackSidePlots.plotOriginDefault(TunnelTemplateStore.tunnelKind(variant), dims);
     }
 
-    /** Plot origin for {@code (variant, name)}. Tunnel dims are fixed; CarriageDims is ignored. */
-    public static BlockPos plotOrigin(TunnelVariant variant, String name) {
+    /** Plot origin for an id-record-shaped tunnel template. Tunnel dims are fixed; CarriageDims is computed internally. */
+    public static BlockPos plotOrigin(games.brennan.dungeontrain.template.TunnelTemplateId id) {
         CarriageDims dims = CarriageDims.clamp(
             CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
-        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(variant), name, dims);
+        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(id.variant()), id.name(), dims);
+    }
+
+    /** Plot origin for {@code (variant, name)} — bare-tuple wrapper over the id-record form. */
+    public static BlockPos plotOrigin(TunnelVariant variant, String name) {
+        return plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(variant, name));
     }
 
     /** Returns the variant whose plot contains {@code pos}, or null. Legacy entry point. */

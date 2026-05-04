@@ -369,7 +369,7 @@ public sealed interface Template
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return CarriagePartEditor.plotOrigin(partKind, name, dims);
+            return CarriagePartEditor.plotOrigin(new CarriagePartTemplateId(partKind, name), dims);
         }
     }
 
@@ -537,8 +537,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<Adjunct> store() { return PillarTemplateStore.adapterForAdjunct(new StairsTemplateId(name)); }
-        @Override public TemplateRegistry<Adjunct> registry() { return TrackVariantRegistry.adapterForAdjunct(new StairsTemplateId(name)); }
+        @Override public TemplateStore<Adjunct> store() { return PillarTemplateStore.adapterForAdjunct(new PillarAdjunctTemplateId(adjunct, name)); }
+        @Override public TemplateRegistry<Adjunct> registry() { return TrackVariantRegistry.adapterForAdjunct(new PillarAdjunctTemplateId(adjunct, name)); }
 
         @Override public int weight() {
             return TrackVariantWeights.weightFor(PillarTemplateStore.adjunctKind(adjunct), name);
@@ -551,7 +551,7 @@ public sealed interface Template
             return PillarTemplateStore.getBundledAdjunct(level, adjunct);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOriginAdjunct(adjunct, name, dims);
+            return PillarEditor.plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
         }
     }
 

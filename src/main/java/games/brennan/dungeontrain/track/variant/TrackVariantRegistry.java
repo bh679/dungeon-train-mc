@@ -362,8 +362,8 @@ public final class TrackVariantRegistry {
     public static TemplateRegistry<Template.Pillar> adapterForPillar(games.brennan.dungeontrain.template.PillarTemplateId id) {
         return PILLAR_ADAPTERS.get(id.section());
     }
-    public static TemplateRegistry<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
-        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
+    public static TemplateRegistry<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.PillarAdjunctTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(id.adjunct());
     }
     public static TemplateRegistry<Template.Tunnel> adapterForTunnel(games.brennan.dungeontrain.template.TunnelTemplateId id) {
         return TUNNEL_ADAPTERS.get(id.variant());

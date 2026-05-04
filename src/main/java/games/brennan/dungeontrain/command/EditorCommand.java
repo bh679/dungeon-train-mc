@@ -827,7 +827,8 @@ public final class EditorCommand {
                                             CarriageDims dims, CarriagePartEditor.PlotLocation partLoc) {
         BlockPos hit = lookedAtBlock(source, player);
         if (hit == null) return 0;
-        BlockPos plotOrigin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
+        BlockPos plotOrigin = CarriagePartEditor.plotOrigin(
+            new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
         if (plotOrigin == null) {
             source.sendFailure(Component.literal("Plot origin missing for part '"
                 + partLoc.kind().id() + ":" + partLoc.name() + "'."));
@@ -1211,7 +1212,7 @@ public final class EditorCommand {
                     source.sendFailure(Component.literal("Unknown pillar section in '" + id + "'."));
                     return 0;
                 }
-                origin = PillarEditor.plotOrigin(sec, name, dims);
+                origin = PillarEditor.plotOrigin(new games.brennan.dungeontrain.template.PillarTemplateId(sec, name), dims);
                 size = new net.minecraft.core.Vec3i(1, sec.height(), dims.width());
             } else if (prefix.startsWith("adjunct_")) {
                 games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
@@ -1219,7 +1220,7 @@ public final class EditorCommand {
                     source.sendFailure(Component.literal("Unknown adjunct in '" + id + "'."));
                     return 0;
                 }
-                origin = PillarEditor.plotOriginAdjunct(adj, name, dims);
+                origin = PillarEditor.plotOriginAdjunct(new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adj, name), dims);
                 size = new net.minecraft.core.Vec3i(adj.xSize(), adj.ySize(), adj.zSize());
             } else if (prefix.startsWith("tunnel_")) {
                 TunnelVariant tv;
@@ -1229,7 +1230,7 @@ public final class EditorCommand {
                     source.sendFailure(Component.literal("Unknown tunnel variant in '" + id + "'."));
                     return 0;
                 }
-                origin = TunnelEditor.plotOrigin(tv, name);
+                origin = TunnelEditor.plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(tv, name));
                 size = new net.minecraft.core.Vec3i(
                     games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
                     games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
@@ -1593,7 +1594,8 @@ public final class EditorCommand {
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
         if (partLoc != null) {
             try {
-                BlockPos origin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
+                BlockPos origin = CarriagePartEditor.plotOrigin(
+                    new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
                 CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
                 final String id = partLoc.kind().id() + ":" + partLoc.name();
                 source.sendSuccess(() -> Component.literal(
@@ -2571,7 +2573,8 @@ public final class EditorCommand {
         try {
             CarriagePartEditor.enter(player, kind, name);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
-            BlockPos plot = CarriagePartEditor.plotOrigin(kind, name, dims);
+            BlockPos plot = CarriagePartEditor.plotOrigin(
+                new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, name), dims);
             if (plot == null) plot = CarriagePartEditor.nextFreePlotOrigin(kind, dims);
             final BlockPos plotFinal = plot;
             source.sendSuccess(() -> Component.literal(
@@ -2661,7 +2664,7 @@ public final class EditorCommand {
             targetName = newName.toLowerCase(Locale.ROOT);
         }
         try {
-            CarriagePartEditor.SaveResult result = CarriagePartEditor.save(player, kind, targetName);
+            CarriagePartEditor.SaveResult result = CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, targetName));
             final String name = targetName;
             source.sendSuccess(() -> Component.literal(
                 "Editor: saved part '" + kind.id() + ":" + name + "' (config-dir)."
@@ -2726,7 +2729,9 @@ public final class EditorCommand {
         }
 
         try {
-            CarriagePartEditor.SaveResult result = CarriagePartEditor.saveAs(player, kind, oldName, target);
+            CarriagePartEditor.SaveResult result = CarriagePartEditor.saveAs(player,
+                new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, oldName),
+                new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, target));
             final String oldRef = oldName;
             source.sendSuccess(() -> Component.literal(
                 "Editor: renamed part '" + kind.id() + ":" + oldRef
@@ -2767,7 +2772,7 @@ public final class EditorCommand {
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             for (String name : CarriagePartRegistry.registeredNames(kind)) {
                 try {
-                    CarriagePartEditor.save(player, kind, name);
+                    CarriagePartEditor.save(player, new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, name));
                     saved++;
                 } catch (Exception e) {
                     LOGGER.error("[DungeonTrain] editor part save-all failed for {}:{}", kind.id(), name, e);

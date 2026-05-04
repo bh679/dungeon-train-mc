@@ -382,14 +382,13 @@ public final class PillarTemplateStore {
     }
 
     /**
-     * Phase-3 record-shaped overload for adjunct (stairs) adapters. The
-     * {@link games.brennan.dungeontrain.template.StairsTemplateId} record
-     * doesn't carry a {@link PillarAdjunct} discriminator (only one
-     * adjunct kind exists today), so this resolves to the STAIRS adapter
-     * unconditionally.
+     * Record-shaped overload for adjunct adapters. The
+     * {@link games.brennan.dungeontrain.template.PillarAdjunctTemplateId}
+     * record carries the {@link PillarAdjunct} discriminator, so this
+     * resolves to the matching per-adjunct adapter.
      */
-    public static TemplateStore<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
-        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
+    public static TemplateStore<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.PillarAdjunctTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(id.adjunct());
     }
 
     private static BlockState[][] extractColumn(StructureTemplate template, int height, int width) {

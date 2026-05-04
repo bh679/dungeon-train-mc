@@ -188,7 +188,8 @@ public final class VariantOverlayRenderer {
             // sidecar.
             CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(playerPos, dims);
             if (partLoc != null) {
-                BlockPos plotOrigin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
+                BlockPos plotOrigin = CarriagePartEditor.plotOrigin(
+                    new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
                 if (plotOrigin == null) continue;
                 Vec3i partSize = partLoc.kind().dims(dims);
                 CarriagePartVariantBlocks partSidecar = CarriagePartVariantBlocks.loadFor(
