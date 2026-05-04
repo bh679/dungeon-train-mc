@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -18,6 +19,10 @@ import java.util.Locale;
  * per-template enter slash command — so a single click teleports straight
  * to that template's plot without the {@code /dt editor &lt;cat&gt;} clear-and-
  * restamp cycle.
+ *
+ * <p>The row matching the player's current model (per
+ * {@link EditorStatusHudOverlay#modelId()}) is rendered with the highlighted
+ * tint so the player can see at a glance where they are in the list.</p>
  *
  * <p>Sources used per category:
  * <ul>
@@ -45,27 +50,33 @@ public final class CategoryTemplatesScreen implements MenuScreen {
 
     @Override
     public List<CommandMenuEntry> entries() {
+        String activeId = EditorStatusHudOverlay.modelId();
         List<CommandMenuEntry> out = new ArrayList<>();
         switch (categoryId) {
             case "carriages" -> {
                 for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
                     out.add(new CommandMenuEntry.Run(
                         v.id(),
-                        "dungeontrain editor enter " + v.id()));
+                        "dungeontrain editor enter " + v.id(),
+                        v.id().equals(activeId)));
                 }
             }
             case "contents" -> {
                 for (CarriageContents c : CarriageContentsRegistry.allContents()) {
                     out.add(new CommandMenuEntry.Run(
                         c.id(),
-                        "dungeontrain editor contents enter " + c.id()));
+                        "dungeontrain editor contents enter " + c.id(),
+                        c.id().equals(activeId)));
                 }
             }
             case "tracks" -> {
                 for (Template model : EditorCategory.TRACKS.models()) {
                     String command = trackEnterCommandFor(model);
                     if (command == null) continue;
-                    out.add(new CommandMenuEntry.Run(model.displayName(), command));
+                    out.add(new CommandMenuEntry.Run(
+                        model.displayName(),
+                        command,
+                        model.id().equals(activeId)));
                 }
             }
             default -> {

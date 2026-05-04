@@ -41,7 +41,7 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
      */
     static CommandMenuEntry entryFor(String label, String catId, String currentCategory) {
         if (catId.equals(currentCategory)) {
-            return new CommandMenuEntry.DrillIn(label, new CategoryTemplatesScreen(catId));
+            return new CommandMenuEntry.DrillIn(label, new CategoryTemplatesScreen(catId), true);
         }
         return new CommandMenuEntry.Run(label, "dungeontrain editor " + catId);
     }
