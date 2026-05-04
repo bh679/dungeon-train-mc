@@ -195,6 +195,36 @@ final class TemplateTest {
     }
 
     @Test
+    @DisplayName("Phase 4 Goal 2: placeAt() default no-op — Track / Pillar / Adjunct don't override")
+    void phase4_placeAt_defaultNoOp() {
+        // Track / Pillar / Adjunct placement happens via TrackGenerator (outside
+        // editor scope); their Template.placeAt falls through the default no-op.
+        // Verify no exception when called with null world args (the default body
+        // never dereferences them).
+        new Template.Track().placeAt(null, null, null, PlaceContext.EMPTY);
+        new Template.Pillar(PillarSection.TOP).placeAt(null, null, null, PlaceContext.EMPTY);
+        new Template.Adjunct(PillarAdjunct.STAIRS).placeAt(null, null, null, PlaceContext.EMPTY);
+    }
+
+    @Test
+    @DisplayName("Phase 4 Goal 2: PlaceContext convenience constructors")
+    void phase4_placeContext() {
+        assertEquals(0L, PlaceContext.EMPTY.seed());
+        assertEquals(0, PlaceContext.EMPTY.carriageIndex());
+        assertFalse(PlaceContext.EMPTY.mirrorX());
+
+        PlaceContext partsCtx = PlaceContext.forParts(42L, 7);
+        assertEquals(42L, partsCtx.seed());
+        assertEquals(7, partsCtx.carriageIndex());
+        assertFalse(partsCtx.mirrorX());
+
+        PlaceContext portalCtx = PlaceContext.forPortal(true);
+        assertEquals(0L, portalCtx.seed());
+        assertEquals(0, portalCtx.carriageIndex());
+        assertTrue(portalCtx.mirrorX());
+    }
+
+    @Test
     @DisplayName("Phase 4: plotSize() returns the per-kind footprint for SaveCommand.isPlotEmpty scan")
     void phase4_plotSize() {
         games.brennan.dungeontrain.train.CarriageDims dims =

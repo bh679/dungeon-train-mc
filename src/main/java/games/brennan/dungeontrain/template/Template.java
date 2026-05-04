@@ -21,10 +21,12 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -200,6 +202,27 @@ public sealed interface Template
      */
     default void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {}
 
+    /**
+     * Place this template into the world at {@code origin}. For carriages /
+     * contents / parts the origin is the carriage shell anchor; for tunnels
+     * it's the tunnel section / portal corner.
+     *
+     * <p>Each record's override delegates to the existing per-subsystem static
+     * placer ({@link CarriagePlacer#placeAt}, etc.) — this method is the
+     * dispatch surface only, so callers ({@code TrainAssembler}, future
+     * placement consumers) can route through {@code Template} without
+     * {@code instanceof}-ing the model first.</p>
+     *
+     * <p>The runtime context bundle ({@link PlaceContext}) carries optional
+     * per-call inputs (seed, carriage index, mirror flag) that vary by kind.
+     * Records that don't need a field ignore it; pass
+     * {@link PlaceContext#EMPTY} if you have nothing to supply. The default
+     * is a no-op so kinds whose placement happens outside editor scope
+     * (track / pillar / adjunct via {@code TrackGenerator}) don't need to
+     * override.</p>
+     */
+    default void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {}
+
     record Carriage(CarriageVariant variant) implements Template {
         public Carriage {
             Objects.requireNonNull(variant, "variant");
@@ -257,6 +280,9 @@ public sealed interface Template
             // bundled placeInWorld preserves /dt reset default's fidelity.
             CarriagePlacer.eraseAt(level, origin, dims);
         }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriagePlacer.placeAt(level, origin, variant, dims);
+        }
     }
 
     record Contents(CarriageContents contents) implements Template {
@@ -313,6 +339,9 @@ public sealed interface Template
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(dims.length(), dims.height(), dims.width());
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriageContentsPlacer.placeAt(level, origin, contents, dims);
         }
     }
 
@@ -391,6 +420,9 @@ public sealed interface Template
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return partKind.dims(dims);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriagePartPlacer.placeAt(level, origin, partKind, name, dims, ctx.seed(), ctx.carriageIndex());
         }
     }
 
@@ -657,6 +689,15 @@ public sealed interface Template
         }
         @Override public Vec3i plotSize(CarriageDims dims) {
             return new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            // Section vs portal pick the matching placer; portal also honours
+            // the mirror flag so the exit orientation lands correctly.
+            if (variant == TunnelVariant.SECTION) {
+                TunnelPlacer.placeSectionNamed(level, origin, name);
+            } else {
+                TunnelPlacer.placePortalNamed(level, origin, ctx.mirrorX(), name);
+            }
         }
     }
 }
