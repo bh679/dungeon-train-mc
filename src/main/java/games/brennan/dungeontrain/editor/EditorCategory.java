@@ -166,6 +166,11 @@ public enum EditorCategory {
      * + 3 pillars + 2 tunnels).
      */
     public static void clearAllPlots(ServerLevel overworld, CarriageDims dims) {
+        // Tearing down every plot also invalidates the floating plot labels —
+        // VariantOverlayRenderer reads this state on the next tick and pushes
+        // an empty snapshot so the labels disappear in lockstep with the
+        // structures.
+        EditorStampedCategoryState.clear();
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             CarriageEditor.clearPlot(overworld, v, dims);
         }

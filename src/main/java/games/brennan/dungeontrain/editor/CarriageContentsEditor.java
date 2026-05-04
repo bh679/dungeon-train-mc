@@ -124,8 +124,9 @@ public final class CarriageContentsEditor {
         for (CarriageContents contents : CarriageContentsRegistry.allContents()) {
             BlockPos o = plotOrigin(contents, dims);
             if (o == null) continue;
+            // +2 Y headroom above cage top — see CarriageEditor.plotContaining for rationale.
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height()
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height() + 2
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + dims.width()) {
                 return contents;
             }
@@ -144,6 +145,10 @@ public final class CarriageContentsEditor {
      * interior volume). Re-entering will re-stamp the shell.</p>
      */
     public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant) {
+        enter(player, contents, shellVariant, true);
+    }
+
+    public static void enter(ServerPlayer player, CarriageContents contents, CarriageVariant shellVariant, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -172,13 +177,15 @@ public final class CarriageContentsEditor {
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
 
         double tx = origin.getX() + dims.length() / 2.0;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + dims.height() + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{}",
+        LOGGER.info("[DungeonTrain] Contents editor enter: {} -> {} (shell={}) plot at {} dims={}x{}x{} ({})",
             player.getName().getString(), contents.id(), shell.id(), origin,
-            dims.length(), dims.width(), dims.height());
+            dims.length(), dims.width(), dims.height(), onTop ? "top" : "inside");
     }
 
     /**
