@@ -5,15 +5,11 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.template.Template;
-import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
-import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
-import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.Vec3i;
 
@@ -314,68 +310,25 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Variant pick weight for the given model. Carriage variants pull from
-     * {@link CarriageWeights}; track-side models (track tile, pillar
-     * sections, tunnel kinds) pull from {@link TrackVariantWeights}; contents
-     * models pull from {@link CarriageContentsWeights}. The HUD uses
-     * {@link EditorStatusPacket#NO_WEIGHT} as the sentinel for "don't render
-     * the weight line" — currently every {@link Template} variant has a
-     * weight pool, so no model returns the sentinel today.
+     * Variant pick weight for the given model — Phase-3 collapse onto
+     * {@link Template#weight()}. Each record routes to its own weight
+     * pool (carriage / contents / track-side); parts return
+     * {@link EditorStatusPacket#NO_WEIGHT} since their HUD path is
+     * synthetic and never reaches this method.
      */
     private static int weightFor(Template model) {
-        if (model instanceof Template.Carriage cm) {
-            return CarriageWeights.current().weightFor(cm.variant().id());
-        }
-        if (model instanceof Template.Contents cm) {
-            return CarriageContentsWeights.current().weightFor(cm.contents().id());
-        }
-        if (model instanceof Template.Track tm) {
-            return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
-        }
-        if (model instanceof Template.Pillar pm) {
-            return TrackVariantWeights.weightFor(
-                TrackPlotLocator.pillarKind(pm.section()), pm.name());
-        }
-        if (model instanceof Template.Adjunct am) {
-            return TrackVariantWeights.weightFor(
-                PillarTemplateStore.adjunctKind(am.adjunct()), am.name());
-        }
-        if (model instanceof Template.Tunnel tm) {
-            return TrackVariantWeights.weightFor(
-                TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
-        }
-        return EditorStatusPacket.NO_WEIGHT;
+        return model.weight();
     }
 
     /**
-     * Bare variant-name segment for the given model — what the editor menu
-     * splices into commands like {@code /dt editor tracks weight <kind>
-     * <name> ...}. For carriages and contents this equals the model id; for
-     * track-side models it's the trailing name segment of the display path.
-     * Falls back to {@link Template#id()} for any future model type that
-     * forgets to override this — never returns null so menu wiring is
-     * NPE-safe.
+     * Bare variant-name segment for the given model — Phase-3 collapse
+     * onto {@link Template#variantName()}. For carriages and contents this
+     * equals the model id; for track-side models it's the trailing name
+     * segment of the display path. Falls back to {@link Template#id()} for
+     * any future model type that forgets to override.
      */
     private static String modelNameFor(Template model) {
-        if (model instanceof Template.Carriage cm) {
-            return cm.variant().id();
-        }
-        if (model instanceof Template.Contents cm) {
-            return cm.contents().id();
-        }
-        if (model instanceof Template.Track tm) {
-            return tm.name();
-        }
-        if (model instanceof Template.Pillar pm) {
-            return pm.name();
-        }
-        if (model instanceof Template.Adjunct am) {
-            return am.name();
-        }
-        if (model instanceof Template.Tunnel tm) {
-            return tm.name();
-        }
-        return model.id();
+        return model.variantName();
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {

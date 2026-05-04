@@ -1,22 +1,38 @@
 package games.brennan.dungeontrain.template;
 
+import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.CarriagePartEditor;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackEditor;
+import games.brennan.dungeontrain.editor.TrackPlotLocator;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
+import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
+import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.CarriageContentsWeights;
+import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
+import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -114,6 +130,64 @@ public sealed interface Template
      */
     TemplateRegistry<? extends Template> registry();
 
+    /**
+     * Pick weight for the editor HUD overlay. Returns
+     * {@link EditorStatusPacket#NO_WEIGHT} for kinds without a weight pool
+     * (today: parts). Phase-3 collapse target — replaces the per-kind
+     * {@code instanceof} chain in {@code VariantOverlayRenderer.weightFor}.
+     */
+    int weight();
+
+    /**
+     * Bare variant-name segment for the editor HUD and command splicing —
+     * what {@code /dt editor weight <kind> <name> ...} expects. Defaults
+     * to {@link #id()} so future kinds without a separate name field stay
+     * NPE-safe; overridden on records that carry an explicit name.
+     */
+    default String variantName() { return id(); }
+
+    /**
+     * Re-stamp this template's editor plot from the normal tier resolution
+     * (config → bundled → fallback). Default no-op for kinds without a
+     * dedicated editor (parts use a dedicated entry path). Phase-3
+     * collapse target — replaces the per-kind chain in
+     * {@code ResetCommand.resetToSaved}.
+     */
+    default void restampPlot(ServerLevel level, CarriageDims dims) {}
+
+    /**
+     * True iff this template has a bundled-tier copy that
+     * {@code /dt reset default} can re-stamp from. Distinct from
+     * {@link #canPromote()} (which gates writes): both happen to be
+     * {@code false} for contents and tunnel today, but the read/write
+     * distinction is preserved against future divergence. Default delegates
+     * to {@link #canPromote()}.
+     */
+    default boolean hasBundledTier() { return canPromote(); }
+
+    /**
+     * Bundled {@link StructureTemplate} for {@code /dt reset default}.
+     * Empty when no bundled copy exists for this id (custom carriage
+     * with no shipped tier; contents and tunnel always empty).
+     */
+    Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims);
+
+    /**
+     * Editor-plot world origin for this template — the position
+     * {@code /dt editor X} teleports to and the corner {@code /dt reset
+     * default} stamps the bundled copy at. Returns {@code null} when this
+     * template's plot is not registered in the editor world today
+     * (e.g. unknown contents, missing carriage variant).
+     */
+    BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims);
+
+    /**
+     * Erase the editor plot before re-stamping the bundled default.
+     * Default no-op; only carriages override (their hardcoded fallback
+     * leaves stale air patches that the bundled stamp won't overwrite).
+     */
+    default void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {}
+
     record Carriage(CarriageVariant variant) implements Template {
         public Carriage {
             Objects.requireNonNull(variant, "variant");
@@ -150,6 +224,24 @@ public sealed interface Template
 
         @Override public TemplateStore<Carriage> store() { return CarriageTemplateStore.adapter(); }
         @Override public TemplateRegistry<Carriage> registry() { return CarriageVariantRegistry.adapter(); }
+
+        @Override public int weight() { return CarriageWeights.current().weightFor(variant.id()); }
+        @Override public String variantName() { return variant.id(); }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            CarriageEditor.stampPlot(level, variant, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return CarriageTemplateStore.getBundled(level, variant, dims);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return CarriageEditor.plotOrigin(variant, dims);
+        }
+        @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
+            // Carriage hardcoded fallback leaves stale air patches that the
+            // bundled stamp won't overwrite — explicit eraseAt before the
+            // bundled placeInWorld preserves /dt reset default's fidelity.
+            CarriagePlacer.eraseAt(level, origin, dims);
+        }
     }
 
     record Contents(CarriageContents contents) implements Template {
@@ -189,6 +281,21 @@ public sealed interface Template
 
         @Override public TemplateStore<Contents> store() { return CarriageContentsStore.adapter(); }
         @Override public TemplateRegistry<Contents> registry() { return CarriageContentsRegistry.adapter(); }
+
+        @Override public int weight() { return CarriageContentsWeights.current().weightFor(contents.id()); }
+        @Override public String variantName() { return contents.id(); }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            CarriageContentsEditor.stampPlot(level, contents, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            // Contents have no separate bundled tier — write-through happens
+            // inside CarriageContentsEditor.save when devmode is on. Mirrors
+            // the canPromote() = false semantics.
+            return Optional.empty();
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return CarriageContentsEditor.plotOrigin(contents, dims);
+        }
     }
 
     /**
@@ -247,6 +354,23 @@ public sealed interface Template
 
         @Override public TemplateStore<Part> store() { return CarriagePartTemplateStore.adapter(new CarriagePartTemplateId(partKind, name)); }
         @Override public TemplateRegistry<Part> registry() { return CarriagePartRegistry.adapter(new CarriagePartTemplateId(partKind, name)); }
+
+        @Override public int weight() {
+            // Parts have no weight pool today — VariantOverlayRenderer
+            // handles parts via its own synthetic status path and never
+            // calls Template.weight() on a Part. Keep the sentinel so
+            // future callers don't NPE.
+            return EditorStatusPacket.NO_WEIGHT;
+        }
+        @Override public String variantName() { return name; }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            // Parts have no shipped bundled tier today — every part exists
+            // as a user-authored template under config/dungeontrain/parts/.
+            return Optional.empty();
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return CarriagePartEditor.plotOrigin(partKind, name, dims);
+        }
     }
 
     /**
@@ -289,6 +413,18 @@ public sealed interface Template
 
         @Override public TemplateStore<Track> store() { return TrackTemplateStore.adapter(); }
         @Override public TemplateRegistry<Track> registry() { return TrackVariantRegistry.adapterForTrack(); }
+
+        @Override public int weight() { return TrackVariantWeights.weightFor(TrackKind.TILE, name); }
+        @Override public String variantName() { return name; }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            TrackEditor.stampPlot(level, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return TrackTemplateStore.getBundled(level, dims);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return TrackEditor.plotOrigin(dims);
+        }
     }
 
     /**
@@ -336,6 +472,20 @@ public sealed interface Template
 
         @Override public TemplateStore<Pillar> store() { return PillarTemplateStore.adapter(new PillarTemplateId(section, name)); }
         @Override public TemplateRegistry<Pillar> registry() { return TrackVariantRegistry.adapterForPillar(new PillarTemplateId(section, name)); }
+
+        @Override public int weight() {
+            return TrackVariantWeights.weightFor(TrackPlotLocator.pillarKind(section), name);
+        }
+        @Override public String variantName() { return name; }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            PillarEditor.stampPlot(level, section, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return PillarTemplateStore.getBundled(level, section, dims);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return PillarEditor.plotOrigin(section, dims);
+        }
     }
 
     /**
@@ -389,6 +539,20 @@ public sealed interface Template
 
         @Override public TemplateStore<Adjunct> store() { return PillarTemplateStore.adapterForAdjunct(new StairsTemplateId(name)); }
         @Override public TemplateRegistry<Adjunct> registry() { return TrackVariantRegistry.adapterForAdjunct(new StairsTemplateId(name)); }
+
+        @Override public int weight() {
+            return TrackVariantWeights.weightFor(PillarTemplateStore.adjunctKind(adjunct), name);
+        }
+        @Override public String variantName() { return name; }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            PillarEditor.stampPlot(level, adjunct, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return PillarTemplateStore.getBundledAdjunct(level, adjunct);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return PillarEditor.plotOriginAdjunct(adjunct, name, dims);
+        }
     }
 
     /**
@@ -437,5 +601,20 @@ public sealed interface Template
 
         @Override public TemplateStore<Tunnel> store() { return TunnelTemplateStore.adapter(new TunnelTemplateId(variant, name)); }
         @Override public TemplateRegistry<Tunnel> registry() { return TrackVariantRegistry.adapterForTunnel(new TunnelTemplateId(variant, name)); }
+
+        @Override public int weight() {
+            return TrackVariantWeights.weightFor(TrackPlotLocator.tunnelKind(variant), name);
+        }
+        @Override public String variantName() { return name; }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            TunnelEditor.stampPlot(level, variant);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            // Tunnel templates have no bundled tier today.
+            return Optional.empty();
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return TunnelEditor.plotOrigin(variant);
+        }
     }
 }

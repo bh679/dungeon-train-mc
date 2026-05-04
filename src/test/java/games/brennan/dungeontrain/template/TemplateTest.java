@@ -132,4 +132,65 @@ final class TemplateTest {
         assertEquals(expected, t.registry().kind(),
             "registry().kind() must report the same kind as the template (" + t.id() + ")");
     }
+
+    @Test
+    @DisplayName("Phase 3: variantName() returns the template's name field for named records")
+    void phase3_variantName() {
+        // Carriage / Contents return the variant id (their constructor takes an id-bearing type).
+        assertEquals("standard",
+            new Template.Carriage(CarriageVariant.of(CarriageType.STANDARD)).variantName());
+        assertEquals("custom_thing",
+            new Template.Carriage(CarriageVariant.custom("custom_thing")).variantName());
+
+        // Track / Pillar / Adjunct / Tunnel all default to "default" via no-arg constructors.
+        assertEquals("default", new Template.Track().variantName());
+        assertEquals("default", new Template.Pillar(PillarSection.TOP).variantName());
+        assertEquals("default", new Template.Adjunct(PillarAdjunct.STAIRS).variantName());
+        assertEquals("default", new Template.Tunnel(TunnelVariant.SECTION).variantName());
+
+        // Named overloads carry through.
+        assertEquals("custom_pillar",
+            new Template.Pillar(PillarSection.TOP, "custom_pillar").variantName());
+
+        // Part defaults to "default" too; named Part returns its name.
+        assertEquals("default",
+            new Template.Part(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR).variantName());
+        assertEquals("custom_floor",
+            new Template.Part(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR, "custom_floor").variantName());
+    }
+
+    @Test
+    @DisplayName("Phase 3: hasBundledTier() == canPromote() (default body keeps them in sync)")
+    void phase3_hasBundledTierDefault() {
+        // Custom carriage: no bundled tier (cannot promote).
+        Template custom = new Template.Carriage(CarriageVariant.custom("c"));
+        assertEquals(custom.canPromote(), custom.hasBundledTier());
+        assertFalse(custom.hasBundledTier());
+
+        // Built-in carriage: has bundled tier.
+        Template standard = new Template.Carriage(CarriageVariant.of(CarriageType.STANDARD));
+        assertTrue(standard.hasBundledTier());
+
+        // Contents and tunnel: no bundled tier today.
+        assertFalse(new Template.Contents(games.brennan.dungeontrain.train.CarriageContents.of(
+            games.brennan.dungeontrain.train.CarriageContents.ContentsType.DEFAULT)).hasBundledTier());
+        assertFalse(new Template.Tunnel(TunnelVariant.SECTION).hasBundledTier());
+
+        // Track / Pillar / Adjunct / Part: have a bundled tier.
+        assertTrue(new Template.Track().hasBundledTier());
+        assertTrue(new Template.Pillar(PillarSection.TOP).hasBundledTier());
+        assertTrue(new Template.Adjunct(PillarAdjunct.STAIRS).hasBundledTier());
+        assertTrue(new Template.Part(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR).hasBundledTier());
+    }
+
+    @Test
+    @DisplayName("Phase 3: restampPlot() default no-op leaves Part untouched (smoke test)")
+    void phase3_restampPlot_partIsNoOp() {
+        // Part.restampPlot should fall through the default no-op without throwing —
+        // exhaustive sealed-permits coverage means a future kind that forgets to
+        // override can still call this safely. We pass nulls because the no-op
+        // body never dereferences its args.
+        Template.Part p = new Template.Part(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR);
+        p.restampPlot(null, null); // must not throw
+    }
 }
