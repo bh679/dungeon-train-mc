@@ -15,8 +15,15 @@ public sealed interface CommandMenuEntry {
     /** Text shown on the primary / only button of this row. */
     String label();
 
-    /** Runs a slash command (no leading /) and closes the menu. */
-    record Run(String label, String command) implements CommandMenuEntry {}
+    /**
+     * Runs a slash command (no leading /) and closes the menu. The optional
+     * {@code highlighted} flag draws a persistent accent tint behind the row
+     * — used to mark "this is the option you're currently in" in selection
+     * lists (e.g. the active carriage variant in the templates drilldown).
+     */
+    record Run(String label, String command, boolean highlighted) implements CommandMenuEntry {
+        public Run(String label, String command) { this(label, command, false); }
+    }
 
     /**
      * Like {@link Run}, but keeps the menu open after dispatch. Use for
@@ -37,8 +44,15 @@ public sealed interface CommandMenuEntry {
      */
     record ClientAction(String label, Runnable action) implements CommandMenuEntry {}
 
-    /** Navigates into a nested {@link MenuScreen}. */
-    record DrillIn(String label, MenuScreen target) implements CommandMenuEntry {}
+    /**
+     * Navigates into a nested {@link MenuScreen}. The optional
+     * {@code highlighted} flag draws a persistent accent tint behind the row
+     * — used to mark "the player is already inside this category" in the
+     * category selector.
+     */
+    record DrillIn(String label, MenuScreen target, boolean highlighted) implements CommandMenuEntry {
+        public DrillIn(String label, MenuScreen target) { this(label, target, false); }
+    }
 
     /** Pops one level of the breadcrumb, or closes the menu at the top level. */
     record Back(String label) implements CommandMenuEntry {}
