@@ -127,6 +127,7 @@ public final class TrackEditor {
         eraseAt(overworld, origin, dims);
         stampNameAt(overworld, origin, name, dims);
         setOutline(overworld, origin, dims);
+        captureSnapshot(overworld, origin, name, dims);
     }
 
     /** Erase every track-tile plot — footprint + outline cage cleared to air. */
@@ -134,6 +135,7 @@ public final class TrackEditor {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
             BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
             eraseAt(overworld, origin, dims);
+            EditorPlotSnapshots.clear(snapshotKey(name));
         }
     }
 
@@ -141,6 +143,18 @@ public final class TrackEditor {
     public static void clearPlot(ServerLevel overworld, String name, CarriageDims dims) {
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         eraseAt(overworld, origin, dims);
+        EditorPlotSnapshots.clear(snapshotKey(name));
+    }
+
+    /** Snapshot the freshly-stamped {@code (length × height × width)} region for {@link EditorDirtyCheck}'s baseline. */
+    private static void captureSnapshot(ServerLevel overworld, BlockPos origin, String name, CarriageDims dims) {
+        EditorPlotSnapshots.capture(snapshotKey(name), overworld, origin,
+            TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+    }
+
+    /** Snapshot key shared by {@link EditorDirtyCheck} for track-tile rows. */
+    public static String snapshotKey(String name) {
+        return EditorPlotSnapshots.key("tracks", "track:" + name);
     }
 
     /**
@@ -160,6 +174,10 @@ public final class TrackEditor {
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         StructureTemplate template = captureTemplate(overworld, origin, dims);
         TrackVariantStore.save(TrackKind.TILE, name, template);
+
+        // Refresh the dirty-check baseline so the just-saved state reads as
+        // clean on the next /dt editor unsaved-list query.
+        captureSnapshot(overworld, origin, name, dims);
 
         LOGGER.info("[DungeonTrain] Track editor save: {} -> tile/{} ({}x{}x{})",
             player.getName().getString(), name,
@@ -188,6 +206,7 @@ public final class TrackEditor {
             eraseAt(overworld, origin, dims);
             stampNameAt(overworld, origin, name, dims);
             setOutline(overworld, origin, dims);
+            captureSnapshot(overworld, origin, name, dims);
         }
     }
 

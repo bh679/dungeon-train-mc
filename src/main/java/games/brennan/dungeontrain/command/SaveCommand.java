@@ -64,7 +64,140 @@ public final class SaveCommand {
             .then(Commands.literal("all")
                 .executes(ctx -> runSaveAll(ctx.getSource(), false))
                 .then(Commands.literal("default")
-                    .executes(ctx -> runSaveAll(ctx.getSource(), true))));
+                    .executes(ctx -> runSaveAll(ctx.getSource(), true))))
+            // `/dt save model <category> <id> [default]` — save a specific
+            // template by category+id without requiring the player to be
+            // standing in that plot. Used by the unsaved-changes confirmation
+            // screen so the per-row Save buttons work without teleporting.
+            .then(Commands.literal("model")
+                .then(Commands.argument("category", com.mojang.brigadier.arguments.StringArgumentType.word())
+                    .then(Commands.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
+                        .executes(ctx -> runSaveModel(ctx.getSource(),
+                            com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "category"),
+                            com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id"),
+                            false))
+                        .then(Commands.literal("default")
+                            .executes(ctx -> runSaveModel(ctx.getSource(),
+                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "category"),
+                                com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "id"),
+                                true))))));
+    }
+
+    /**
+     * Save a specific {@link EditorModel} by {@code (category, id)} without
+     * requiring the player to be inside that plot. Used by the worldspace
+     * menu's unsaved-changes confirmation screen so per-row Save buttons
+     * apply to any listed template, not just the one the player happens to
+     * be standing in.
+     *
+     * <p>{@code id} is the {@link EditorModel#id()} the entry was published
+     * under (e.g. {@code standard}, {@code default}, {@code track:default},
+     * {@code pillar_top}). For track-side rows the id may include a colon
+     * separating kind and variant name — split here before lookup.</p>
+     */
+    public static int runSaveModel(CommandSourceStack source, String categoryId, String id, boolean promoteDefault) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
+        if (categoryOpt.isEmpty()) {
+            source.sendFailure(Component.literal("Unknown category '" + categoryId + "'."));
+            return 0;
+        }
+        EditorCategory category = categoryOpt.get();
+
+        EditorModel model = findModel(category, id);
+        if (model == null) {
+            source.sendFailure(Component.literal(
+                "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
+            return 0;
+        }
+
+        try {
+            saveOne(source, player, model);
+            if (promoteDefault) promoteOne(source, model);
+            // Re-push the dirty list so the unsaved-changes screen picks up
+            // the newly-clean state and lets Continue switch to "Continue"
+            // when nothing is left outstanding.
+            ServerLevel overworld = source.getServer().overworld();
+            CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(
+                player,
+                new games.brennan.dungeontrain.net.EditorUnsavedListPacket(
+                    games.brennan.dungeontrain.editor.EditorDirtyCheck.findDirty(overworld, dims)
+                )
+            );
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] /dt save model {}:{} failed", categoryId, id, t);
+            source.sendFailure(Component.literal(
+                "save failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * Resolve {@code id} to the matching {@link EditorModel} inside
+     * {@code category}. The id format mirrors what
+     * {@link games.brennan.dungeontrain.editor.EditorDirtyCheck} publishes:
+     *
+     * <ul>
+     *   <li>{@code <variantId>} — carriages, contents</li>
+     *   <li>{@code track:<name>} — track tile variants</li>
+     *   <li>{@code pillar_<section>:<name>} — pillar section variants</li>
+     *   <li>{@code adjunct_<id>:<name>} — pillar adjunct variants</li>
+     *   <li>{@code tunnel_<variant>:<name>} — tunnel variants</li>
+     * </ul>
+     *
+     * Track-side {@code <kind>:<name>} ids construct a fresh
+     * {@link EditorModel} rather than scanning {@code category.models()},
+     * because the category's enumeration only includes default-named
+     * variants whereas the dirty list surfaces every name.
+     */
+    private static EditorModel findModel(EditorCategory category, String id) {
+        if (category == EditorCategory.TRACKS && id.contains(".")) {
+            int sep = id.indexOf('.');
+            String prefix = id.substring(0, sep);
+            String name = id.substring(sep + 1);
+            if ("track".equals(prefix)) {
+                return new EditorModel.TrackModel(name);
+            }
+            if (prefix.startsWith("pillar_")) {
+                games.brennan.dungeontrain.track.PillarSection sec;
+                try {
+                    sec = games.brennan.dungeontrain.track.PillarSection.valueOf(
+                        prefix.substring("pillar_".length()).toUpperCase(java.util.Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+                return new EditorModel.PillarModel(sec, name);
+            }
+            if (prefix.startsWith("adjunct_")) {
+                games.brennan.dungeontrain.track.PillarAdjunct adj;
+                try {
+                    adj = games.brennan.dungeontrain.track.PillarAdjunct.valueOf(
+                        prefix.substring("adjunct_".length()).toUpperCase(java.util.Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+                return new EditorModel.AdjunctModel(adj, name);
+            }
+            if (prefix.startsWith("tunnel_")) {
+                games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant tv;
+                try {
+                    tv = games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant.valueOf(
+                        prefix.substring("tunnel_".length()).toUpperCase(java.util.Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    return null;
+                }
+                return new EditorModel.TunnelModel(tv, name);
+            }
+        }
+        for (EditorModel m : category.models()) {
+            if (m.id().equals(id)) return m;
+        }
+        return null;
     }
 
     /**

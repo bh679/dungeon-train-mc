@@ -101,6 +101,10 @@ public final class CommandMenuRaycast {
 
             int subIdx = 0;
             CommandMenuEntry row = entries.get(i);
+            if (row instanceof CommandMenuEntry.Label) {
+                CommandMenuState.setHovered(-1, 0);
+                return;
+            }
             if (row instanceof CommandMenuEntry.Split split) {
                 double splitX = -halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
                 if (hitX > splitX) subIdx = 1;
@@ -109,6 +113,19 @@ public final class CommandMenuRaycast {
                 double rightBoundary = -halfW + triple.middleEnd() * CommandMenuLayout.PANEL_WIDTH;
                 if (hitX > rightBoundary) subIdx = 2;
                 else if (hitX > leftBoundary) subIdx = 1;
+                CommandMenuEntry cell = switch (subIdx) {
+                    case 1 -> triple.middleEntry();
+                    case 2 -> triple.rightEntry();
+                    default -> triple.leftEntry();
+                };
+                if (cell instanceof CommandMenuEntry.Label
+                    || (cell instanceof CommandMenuEntry.SaveAction sa && sa.saved())) {
+                    // Label cells and already-saved Save cells are not actionable;
+                    // drop the hover so the user doesn't see a highlight that
+                    // does nothing on click.
+                    CommandMenuState.setHovered(-1, 0);
+                    return;
+                }
             }
             CommandMenuState.setHovered(i, subIdx);
             return;

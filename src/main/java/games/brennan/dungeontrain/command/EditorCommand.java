@@ -427,6 +427,18 @@ public final class EditorCommand {
                 .then(Commands.literal("reset").executes(ctx -> runTrackReset(ctx.getSource())))
                 .then(Commands.literal("promote").executes(ctx -> runTrackPromote(ctx.getSource()))))
             .then(buildPartSubtree(buildContext))
+            // `/dt editor view <category> <id>` — teleport into the named
+            // plot WITHOUT re-stamping it from disk. The unsaved-changes
+            // confirmation screen calls this from its per-row View button so
+            // the player can inspect a dirty plot in-place before deciding
+            // whether to save. (The regular `enter` paths re-stamp on entry,
+            // which would wipe the unsaved edits we're about to ask about.)
+            .then(Commands.literal("view")
+                .then(Commands.argument("category", StringArgumentType.word())
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .executes(ctx -> runEditorView(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "category"),
+                            StringArgumentType.getString(ctx, "id"))))))
             .then(Commands.literal("weight")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -1145,6 +1157,135 @@ public final class EditorCommand {
         CarriageVariant v = parseVariant(source, raw);
         if (v == null) return 0;
         return runEnterCarriage(source, v);
+    }
+
+    /**
+     * View-only teleport: drop the player into the named plot without
+     * re-stamping or remembering a return position. Used by the worldspace
+     * menu's unsaved-changes confirmation screen so the View button doesn't
+     * destroy the in-world edits the user is being asked about.
+     *
+     * <p>Unlike {@link CarriageEditor#enter} / {@link CarriageContentsEditor#enter}
+     * etc., this does not call {@code rememberReturn} — the player is already
+     * inside the editor session ({@code runEnterCategory} sets up plots),
+     * so a separate return-position stash isn't appropriate here.</p>
+     */
+    private static int runEditorView(CommandSourceStack source, String categoryId, String id) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        java.util.Optional<EditorCategory> categoryOpt = EditorCategory.fromId(categoryId);
+        if (categoryOpt.isEmpty()) {
+            source.sendFailure(Component.literal("Unknown category '" + categoryId + "'."));
+            return 0;
+        }
+        EditorCategory category = categoryOpt.get();
+
+        BlockPos origin = null;
+        net.minecraft.core.Vec3i size = null;
+
+        // Track-side ids use a "kind.name" format mirroring EditorDirtyCheck:
+        //   "track.<name>"        — track tile variant
+        //   "pillar_<sec>.<name>" — pillar section variant
+        //   "adjunct_<id>.<name>" — pillar adjunct variant
+        //   "tunnel_<v>.<name>"   — tunnel variant
+        // Carriages and contents use the bare model id. Dot is used (not
+        // colon) so the id parses cleanly as a single Brigadier word()
+        // argument — colons aren't allowed in unquoted strings.
+        if (category == EditorCategory.TRACKS && id.contains(".")) {
+            int sep = id.indexOf('.');
+            String prefix = id.substring(0, sep);
+            String name = id.substring(sep + 1);
+            if ("track".equals(prefix)) {
+                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
+                    games.brennan.dungeontrain.track.variant.TrackKind.TILE, name, dims);
+                size = new net.minecraft.core.Vec3i(
+                    games.brennan.dungeontrain.track.TrackTemplate.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackTemplate.HEIGHT,
+                    dims.width());
+            } else if (prefix.startsWith("pillar_")) {
+                games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
+                if (sec == null) {
+                    source.sendFailure(Component.literal("Unknown pillar section in '" + id + "'."));
+                    return 0;
+                }
+                origin = PillarEditor.plotOrigin(sec, name, dims);
+                size = new net.minecraft.core.Vec3i(1, sec.height(), dims.width());
+            } else if (prefix.startsWith("adjunct_")) {
+                games.brennan.dungeontrain.track.PillarAdjunct adj = tryParseAdjunct(prefix.substring("adjunct_".length()));
+                if (adj == null) {
+                    source.sendFailure(Component.literal("Unknown adjunct in '" + id + "'."));
+                    return 0;
+                }
+                origin = PillarEditor.plotOriginAdjunct(adj, name, dims);
+                size = new net.minecraft.core.Vec3i(adj.xSize(), adj.ySize(), adj.zSize());
+            } else if (prefix.startsWith("tunnel_")) {
+                TunnelVariant tv;
+                try {
+                    tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException e) {
+                    source.sendFailure(Component.literal("Unknown tunnel variant in '" + id + "'."));
+                    return 0;
+                }
+                origin = TunnelEditor.plotOrigin(tv, name);
+                size = new net.minecraft.core.Vec3i(
+                    games.brennan.dungeontrain.tunnel.TunnelTemplate.LENGTH,
+                    games.brennan.dungeontrain.tunnel.TunnelTemplate.HEIGHT,
+                    games.brennan.dungeontrain.tunnel.TunnelTemplate.WIDTH);
+            } else {
+                source.sendFailure(Component.literal("Unrecognised track-side id '" + id + "'."));
+                return 0;
+            }
+        } else {
+            // Resolve the model by id within the category and read its plot
+            // footprint. The dispatch mirrors stampCategoryModel above —
+            // each editor's plotOrigin signature differs.
+            EditorModel model = null;
+            for (EditorModel m : category.models()) {
+                if (m.id().equals(id)) { model = m; break; }
+            }
+            if (model == null) {
+                source.sendFailure(Component.literal(
+                    "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
+                return 0;
+            }
+            if (model instanceof EditorModel.CarriageModel cm) {
+                origin = CarriageEditor.plotOrigin(cm.variant(), dims);
+                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
+            } else if (model instanceof EditorModel.ContentsModel cm) {
+                origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
+                size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
+            } else if (model instanceof EditorModel.PillarModel pm) {
+                origin = PillarEditor.plotOrigin(pm.section(), dims);
+                size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
+            } else if (model instanceof EditorModel.TrackModel) {
+                origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
+                    games.brennan.dungeontrain.track.variant.TrackKind.TILE,
+                    games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
+                size = new net.minecraft.core.Vec3i(
+                    games.brennan.dungeontrain.track.TrackTemplate.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackTemplate.HEIGHT,
+                    dims.width());
+            } else {
+                source.sendFailure(Component.literal(
+                    "View not supported for model '" + id + "'."));
+                return 0;
+            }
+        }
+
+        if (origin == null) {
+            source.sendFailure(Component.literal(
+                "No plot origin for '" + id + "' in '" + category.displayName() + "'."));
+            return 0;
+        }
+
+        double tx = origin.getX() + size.getX() / 2.0;
+        double ty = origin.getY() + 1.0;
+        double tz = origin.getZ() + size.getZ() / 2.0;
+        player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
+        return 1;
     }
 
     private static int runEnterCarriage(CommandSourceStack source, CarriageVariant variant) {

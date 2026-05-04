@@ -5,7 +5,13 @@ import java.util.List;
 /**
  * Category selector shown from inside an editor plot. Lets the player
  * jump to a different editor category — Carriages, Tracks, or
- * Architecture — via {@code /dt editor &lt;category&gt;}.
+ * Contents — via {@code /dt editor &lt;category&gt;}.
+ *
+ * <p>Each row drills into {@link UnsavedCheckScreen} which queries the
+ * server for dirty plots before dispatching the destructive switch. If
+ * the world has no unsaved changes the check screen auto-dispatches and
+ * closes, preserving the original one-click flow; otherwise it surfaces
+ * a per-row Save / View list so the player doesn't lose work.
  */
 public final class EnterCategoryMenuScreen implements MenuScreen {
 
@@ -13,12 +19,9 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Run("Tracks", "dungeontrain editor tracks"),
-            new CommandMenuEntry.Run("Carriages", "dungeontrain editor carriages"),
-            // Contents is now a full category — same one-click behaviour
-            // as Tracks / Carriages: stamps every contents plot and drops
-            // the player at the first one.
-            new CommandMenuEntry.Run("Contents", "dungeontrain editor contents"),
+            new CommandMenuEntry.DrillIn("Tracks", new UnsavedCheckScreen("tracks")),
+            new CommandMenuEntry.DrillIn("Carriages", new UnsavedCheckScreen("carriages")),
+            new CommandMenuEntry.DrillIn("Contents", new UnsavedCheckScreen("contents")),
             new CommandMenuEntry.Back("< Back")
         );
     }

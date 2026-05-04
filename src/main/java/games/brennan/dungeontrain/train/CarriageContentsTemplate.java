@@ -271,9 +271,39 @@ public final class CarriageContentsTemplate {
      */
     public static StructureTemplate captureTemplate(ServerLevel level, BlockPos carriageOrigin, CarriageDims dims) {
         Vec3i size = interiorSize(dims);
+        // Strip dropped-item entities from the capture region first. Door /
+        // parts overlay re-stamps can break supporting blocks underneath
+        // buttons (or other small attachments) during edit sessions, leaving
+        // the dropped-item form drifting on the floor; capturing those into
+        // the saved template bakes phantom items into every future spawn of
+        // this carriage's contents. Other entities (armor stands, paintings,
+        // item frames) are kept — they're legitimate decoration the author
+        // placed and wants to round-trip through save/load.
+        discardDroppedItemsIn(level, interiorOrigin(carriageOrigin), size);
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, interiorOrigin(carriageOrigin), size, true, Blocks.AIR);
         return template;
+    }
+
+    /**
+     * Remove every {@link net.minecraft.world.entity.item.ItemEntity}
+     * (a dropped item floating in the world) whose bounding box overlaps
+     * the given region. Leaves armor stands, item frames, paintings, and
+     * other non-item entities alone — those are the legitimate decoration
+     * the author wants captured.
+     */
+    private static void discardDroppedItemsIn(ServerLevel level, BlockPos origin, Vec3i size) {
+        AABB box = new AABB(
+            origin.getX(), origin.getY(), origin.getZ(),
+            origin.getX() + size.getX(),
+            origin.getY() + size.getY(),
+            origin.getZ() + size.getZ()
+        );
+        List<net.minecraft.world.entity.item.ItemEntity> drops =
+            level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box);
+        for (net.minecraft.world.entity.item.ItemEntity item : drops) {
+            item.discard();
+        }
     }
 
     /**
