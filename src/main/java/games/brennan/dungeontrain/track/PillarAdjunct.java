@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.track;
 
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateType;
+
 import java.util.Locale;
 
 /**
@@ -18,7 +21,7 @@ import java.util.Locale;
  * three-tier store (config → bundled → fallback) applies without risk of
  * cross-registering an adjunct as a section.</p>
  */
-public enum PillarAdjunct {
+public enum PillarAdjunct implements TemplateType {
     STAIRS(3, 8, 3);
 
     private final int xSize;
@@ -51,7 +54,17 @@ public enum PillarAdjunct {
      * with the {@code adjunct_} prefix by {@code PillarTemplateStore} to
      * keep adjuncts namespaced from section files in the same directory.
      */
+    @Override
     public String id() {
         return name().toLowerCase(Locale.ROOT);
+    }
+
+    @Override
+    public TemplateKind kind() {
+        // Stairs is the only adjunct today and the user-facing taxonomy
+        // treats it as its own template kind. Future non-stairs adjuncts
+        // would either get their own TemplateKind or revert this to a
+        // generic ADJUNCT kind.
+        return TemplateKind.STAIRS;
     }
 }

@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.track;
 
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateType;
+
 import java.util.Locale;
 
 /**
@@ -17,7 +20,7 @@ import java.util.Locale;
  * sizes, so changing the constants is a save-format change, not a template
  * change.</p>
  */
-public enum PillarSection {
+public enum PillarSection implements TemplateType {
     TOP(4),
     MIDDLE(1),
     BOTTOM(3);
@@ -39,7 +42,13 @@ public enum PillarSection {
      * {@code PillarTemplateStore} to keep the pillar files namespaced away
      * from the carriage templates in the same directory.
      */
+    @Override
     public String id() {
         return name().toLowerCase(Locale.ROOT);
+    }
+
+    @Override
+    public TemplateKind kind() {
+        return TemplateKind.PILLAR;
     }
 }

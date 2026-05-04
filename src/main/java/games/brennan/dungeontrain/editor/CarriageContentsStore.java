@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.core.HolderGetter;
@@ -9,6 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
@@ -295,4 +300,32 @@ public final class CarriageContentsStore {
         Path gameDir = FMLPaths.GAMEDIR.get();
         return gameDir.getParent();
     }
+
+    /**
+     * Phase-2 adapter — exposes contents save/promote through the unified
+     * {@link TemplateStore} surface. Contents have no separate bundled tier
+     * (write-through happens inside {@link CarriageContentsEditor#save}
+     * when devmode is on), so {@link #canPromote} returns false and
+     * {@link #promote} throws — mirrors the existing {@code SaveCommand}
+     * arm for {@code Template.ContentsModel}.
+     */
+    private static final TemplateStore<Template.ContentsModel> ADAPTER = new TemplateStore<>() {
+        @Override public TemplateKind kind() { return TemplateKind.CONTENTS; }
+
+        @Override
+        public SaveResult save(ServerPlayer player, Template.ContentsModel template) throws Exception {
+            CarriageContentsEditor.SaveResult r = CarriageContentsEditor.save(player, template.contents());
+            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+        }
+
+        @Override
+        public boolean canPromote(Template.ContentsModel template) { return false; }
+
+        @Override
+        public void promote(Template.ContentsModel template) throws Exception {
+            throw new IllegalStateException("Contents have no bundled tier — '/dt save default' does not apply.");
+        }
+    };
+
+    public static TemplateStore<Template.ContentsModel> adapter() { return ADAPTER; }
 }

@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateRegistry;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.minecraft.core.BlockPos;
@@ -324,4 +327,47 @@ public final class CarriageContentsRegistry {
     public static void onServerStopped(ServerStoppedEvent event) {
         clear();
     }
+
+    /**
+     * Phase-2 adapter — exposes the contents registry through the unified
+     * {@link TemplateRegistry} surface. Wraps each registered
+     * {@link CarriageContents} into a {@link Template.ContentsModel}.
+     */
+    private static final TemplateRegistry<Template.ContentsModel> ADAPTER = new TemplateRegistry<>() {
+        @Override public TemplateKind kind() { return TemplateKind.CONTENTS; }
+
+        @Override
+        public List<Template.ContentsModel> all() {
+            List<CarriageContents> all = allContents();
+            List<Template.ContentsModel> out = new ArrayList<>(all.size());
+            for (CarriageContents c : all) out.add(new Template.ContentsModel(c));
+            return out;
+        }
+
+        @Override
+        public List<Template.ContentsModel> builtins() {
+            List<CarriageContents> bs = CarriageContentsRegistry.builtins();
+            List<Template.ContentsModel> out = new ArrayList<>(bs.size());
+            for (CarriageContents c : bs) out.add(new Template.ContentsModel(c));
+            return out;
+        }
+
+        @Override
+        public List<Template.ContentsModel> customs() {
+            List<String> ids = customIds();
+            List<Template.ContentsModel> out = new ArrayList<>(ids.size());
+            for (String id : ids) out.add(new Template.ContentsModel(new CarriageContents.Custom(id)));
+            return out;
+        }
+
+        @Override
+        public Optional<Template.ContentsModel> find(String id) {
+            return CarriageContentsRegistry.find(id).map(Template.ContentsModel::new);
+        }
+
+        @Override public void reload() { CarriageContentsRegistry.reload(); }
+        @Override public void clear() { CarriageContentsRegistry.clear(); }
+    };
+
+    public static TemplateRegistry<Template.ContentsModel> adapter() { return ADAPTER; }
 }

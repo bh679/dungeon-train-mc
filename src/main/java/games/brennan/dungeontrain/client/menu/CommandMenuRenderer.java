@@ -362,6 +362,13 @@ public final class CommandMenuRenderer {
             // No backdrop — Label rows are pure text on the panel surface.
             return 0;
         }
+        if (entry instanceof CommandMenuEntry.Run r && r.highlighted()) {
+            // Soft amber accent — "this is the option you're currently in".
+            return 0x80FFAA33;
+        }
+        if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted()) {
+            return 0x80FFAA33;
+        }
         return 0;
     }
 

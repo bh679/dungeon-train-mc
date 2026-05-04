@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
@@ -52,11 +53,11 @@ final class EditorCategoryTest {
     @Test
     @DisplayName("CARRIAGES: includes all four built-in variants, first is standard")
     void carriages_containBuiltins() {
-        List<EditorModel> models = EditorCategory.CARRIAGES.models();
+        List<Template> models = EditorCategory.CARRIAGES.models();
         assertTrue(models.size() >= CarriageType.values().length,
             "expected at least " + CarriageType.values().length + " carriage models, got " + models.size());
-        EditorModel first = EditorCategory.CARRIAGES.firstModel().orElseThrow();
-        assertInstanceOf(EditorModel.CarriageModel.class, first);
+        Template first = EditorCategory.CARRIAGES.firstModel().orElseThrow();
+        assertInstanceOf(Template.CarriageModel.class, first);
         // First entry should be the STANDARD built-in (enum-ordered first).
         assertEquals("standard", first.id());
     }
@@ -64,27 +65,27 @@ final class EditorCategoryTest {
     @Test
     @DisplayName("TRACKS: track tile, then pillars ground-up, then adjuncts, then tunnels in enum order")
     void tracks_orderIsTrackThenPillarsThenAdjunctsThenTunnels() {
-        List<EditorModel> models = EditorCategory.TRACKS.models();
+        List<Template> models = EditorCategory.TRACKS.models();
         assertEquals(
             1 + PillarSection.values().length + PillarAdjunct.values().length + TunnelVariant.values().length,
             models.size());
-        assertInstanceOf(EditorModel.TrackModel.class, models.get(0));
-        assertInstanceOf(EditorModel.PillarModel.class, models.get(1));
-        assertEquals(PillarSection.BOTTOM, ((EditorModel.PillarModel) models.get(1)).section());
-        assertEquals(PillarSection.MIDDLE, ((EditorModel.PillarModel) models.get(2)).section());
-        assertEquals(PillarSection.TOP, ((EditorModel.PillarModel) models.get(3)).section());
-        assertInstanceOf(EditorModel.AdjunctModel.class, models.get(4));
-        assertEquals(PillarAdjunct.STAIRS, ((EditorModel.AdjunctModel) models.get(4)).adjunct());
+        assertInstanceOf(Template.TrackModel.class, models.get(0));
+        assertInstanceOf(Template.PillarModel.class, models.get(1));
+        assertEquals(PillarSection.BOTTOM, ((Template.PillarModel) models.get(1)).section());
+        assertEquals(PillarSection.MIDDLE, ((Template.PillarModel) models.get(2)).section());
+        assertEquals(PillarSection.TOP, ((Template.PillarModel) models.get(3)).section());
+        assertInstanceOf(Template.AdjunctModel.class, models.get(4));
+        assertEquals(PillarAdjunct.STAIRS, ((Template.AdjunctModel) models.get(4)).adjunct());
         int tunnelStart = 1 + PillarSection.values().length + PillarAdjunct.values().length;
-        assertInstanceOf(EditorModel.TunnelModel.class, models.get(tunnelStart));
-        assertEquals(TunnelVariant.SECTION, ((EditorModel.TunnelModel) models.get(tunnelStart)).variant());
-        assertEquals(TunnelVariant.PORTAL, ((EditorModel.TunnelModel) models.get(tunnelStart + 1)).variant());
+        assertInstanceOf(Template.TunnelModel.class, models.get(tunnelStart));
+        assertEquals(TunnelVariant.SECTION, ((Template.TunnelModel) models.get(tunnelStart)).variant());
+        assertEquals(TunnelVariant.PORTAL, ((Template.TunnelModel) models.get(tunnelStart + 1)).variant());
     }
 
     @Test
     @DisplayName("TRACKS firstModel: track tile (most-used track model)")
     void tracks_firstIsTrack() {
-        EditorModel first = EditorCategory.TRACKS.firstModel().orElseThrow();
+        Template first = EditorCategory.TRACKS.firstModel().orElseThrow();
         assertEquals("track", first.id());
     }
 

@@ -3,20 +3,17 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
-import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
-import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
-import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
-import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
-import games.brennan.dungeontrain.editor.TrackTemplateStore;
 import games.brennan.dungeontrain.editor.TunnelEditor;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Stores;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.TrackTemplate;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -46,6 +43,14 @@ import java.util.Optional;
  *       category, save plots that contain content, skip empty plots.</li>
  *   <li>{@code save all default} — iterate + save + promote per model.</li>
  * </ul>
+ *
+ * <p>Phase 2 of the Template OOP refactor (PR following #148) collapsed the
+ * per-kind {@code instanceof} dispatch in {@code saveOne} / {@code promoteOne}
+ * onto {@link Stores#save} / {@link Stores#promote} — every Template carries
+ * its own {@code store()} so the command no longer needs to enumerate kinds.
+ * The kind-specific failure messages for {@code /dt save default} (custom
+ * carriages, contents, tunnels) are preserved by
+ * {@link #promoteUnavailableMessage}.</p>
  */
 public final class SaveCommand {
 
@@ -84,13 +89,13 @@ public final class SaveCommand {
     }
 
     /**
-     * Save a specific {@link EditorModel} by {@code (category, id)} without
+     * Save a specific {@link Template} by {@code (category, id)} without
      * requiring the player to be inside that plot. Used by the worldspace
      * menu's unsaved-changes confirmation screen so per-row Save buttons
      * apply to any listed template, not just the one the player happens to
      * be standing in.
      *
-     * <p>{@code id} is the {@link EditorModel#id()} the entry was published
+     * <p>{@code id} is the {@link Template#id()} the entry was published
      * under (e.g. {@code standard}, {@code default}, {@code track:default},
      * {@code pillar_top}). For track-side rows the id may include a colon
      * separating kind and variant name — split here before lookup.</p>
@@ -106,7 +111,7 @@ public final class SaveCommand {
         }
         EditorCategory category = categoryOpt.get();
 
-        EditorModel model = findModel(category, id);
+        Template model = findModel(category, id);
         if (model == null) {
             source.sendFailure(Component.literal(
                 "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
@@ -138,7 +143,7 @@ public final class SaveCommand {
     }
 
     /**
-     * Resolve {@code id} to the matching {@link EditorModel} inside
+     * Resolve {@code id} to the matching {@link Template} inside
      * {@code category}. The id format mirrors what
      * {@link games.brennan.dungeontrain.editor.EditorDirtyCheck} publishes:
      *
@@ -151,17 +156,17 @@ public final class SaveCommand {
      * </ul>
      *
      * Track-side {@code <kind>:<name>} ids construct a fresh
-     * {@link EditorModel} rather than scanning {@code category.models()},
+     * {@link Template} rather than scanning {@code category.models()},
      * because the category's enumeration only includes default-named
      * variants whereas the dirty list surfaces every name.
      */
-    private static EditorModel findModel(EditorCategory category, String id) {
+    private static Template findModel(EditorCategory category, String id) {
         if (category == EditorCategory.TRACKS && id.contains(".")) {
             int sep = id.indexOf('.');
             String prefix = id.substring(0, sep);
             String name = id.substring(sep + 1);
             if ("track".equals(prefix)) {
-                return new EditorModel.TrackModel(name);
+                return new Template.TrackModel(name);
             }
             if (prefix.startsWith("pillar_")) {
                 games.brennan.dungeontrain.track.PillarSection sec;
@@ -171,7 +176,7 @@ public final class SaveCommand {
                 } catch (IllegalArgumentException e) {
                     return null;
                 }
-                return new EditorModel.PillarModel(sec, name);
+                return new Template.PillarModel(sec, name);
             }
             if (prefix.startsWith("adjunct_")) {
                 games.brennan.dungeontrain.track.PillarAdjunct adj;
@@ -181,7 +186,7 @@ public final class SaveCommand {
                 } catch (IllegalArgumentException e) {
                     return null;
                 }
-                return new EditorModel.AdjunctModel(adj, name);
+                return new Template.AdjunctModel(adj, name);
             }
             if (prefix.startsWith("tunnel_")) {
                 games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant tv;
@@ -191,10 +196,10 @@ public final class SaveCommand {
                 } catch (IllegalArgumentException e) {
                     return null;
                 }
-                return new EditorModel.TunnelModel(tv, name);
+                return new Template.TunnelModel(tv, name);
             }
         }
-        for (EditorModel m : category.models()) {
+        for (Template m : category.models()) {
             if (m.id().equals(id)) return m;
         }
         return null;
@@ -217,7 +222,7 @@ public final class SaveCommand {
             return 0;
         }
 
-        EditorModel model = located.get().model();
+        Template model = located.get().model();
         try {
             saveOne(source, player, model);
             if (promoteDefault) promoteOne(source, model);
@@ -251,7 +256,7 @@ public final class SaveCommand {
         }
 
         EditorCategory category = located.get().category();
-        List<EditorModel> models = category.models();
+        List<Template> models = category.models();
         if (models.isEmpty()) {
             source.sendFailure(Component.literal(
                 "Category '" + category.displayName() + "' has no models."));
@@ -263,7 +268,7 @@ public final class SaveCommand {
         int promoted = 0;
         StringBuilder promoteErrors = new StringBuilder();
 
-        for (EditorModel model : models) {
+        for (Template model : models) {
             if (isPlotEmpty(overworld, model, dims)) {
                 skipped++;
                 continue;
@@ -303,305 +308,160 @@ public final class SaveCommand {
         return s > 0 ? 1 : 0;
     }
 
-    /** Save one model. When {@code source} is non-null, report progress messages. */
-    private static void saveOne(CommandSourceStack source, ServerPlayer player, EditorModel model) throws Exception {
-        if (model instanceof EditorModel.CarriageModel carriage) {
-            CarriageEditor.SaveResult result = CarriageEditor.save(player, carriage.variant());
-            if (source != null) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + carriage.id() + "' template (config-dir)."), true);
-                if (result.sourceAttempted()) {
-                    if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled copy to source tree (devmode ON)."
-                        ).withStyle(ChatFormatting.GREEN), true);
-                    } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            }
-            return;
+    /**
+     * Save one model via its {@link Template#store()} and report progress.
+     * Phase 2 collapse: dispatch lives on {@link Stores#save}; the chat
+     * message uses the template's id so player-visible output matches the
+     * pre-Phase-2 per-kind arms byte-for-byte.
+     */
+    private static void saveOne(CommandSourceStack source, ServerPlayer player, Template model) throws Exception {
+        SaveResult result = Stores.save(player, model);
+        if (source == null) return;
+        source.sendSuccess(() -> Component.literal(
+            savedMessage(model)), true);
+        if (!result.sourceAttempted()) return;
+        if (result.sourceWritten()) {
+            source.sendSuccess(() -> Component.literal(
+                bundledWriteMessage(model)
+            ).withStyle(ChatFormatting.GREEN), true);
+        } else {
+            source.sendFailure(Component.literal(
+                bundledWriteFailMessage(model) + result.sourceError()
+            ).withStyle(ChatFormatting.YELLOW));
         }
-        if (model instanceof EditorModel.ContentsModel contentsModel) {
-            CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, contentsModel.contents());
-            if (source != null) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved contents '" + contentsModel.id() + "' template (config-dir)."), true);
-                if (result.sourceAttempted()) {
-                    if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled contents copy to source tree (devmode ON)."
-                        ).withStyle(ChatFormatting.GREEN), true);
-                    } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: contents source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            }
-            return;
-        }
-        if (model instanceof EditorModel.PillarModel pillar) {
-            PillarEditor.SaveResult result = PillarEditor.save(player, pillar.section());
-            if (source != null) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + pillar.id() + "' template (config-dir)."), true);
-                if (result.sourceAttempted()) {
-                    if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled pillar copy to source tree (devmode ON)."
-                        ).withStyle(ChatFormatting.GREEN), true);
-                    } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: pillar source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            }
-            return;
-        }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
-            PillarEditor.SaveResult result = PillarEditor.save(player, adjunct.adjunct());
-            if (source != null) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + adjunct.id() + "' template (config-dir)."), true);
-                if (result.sourceAttempted()) {
-                    if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled adjunct copy to source tree (devmode ON)."
-                        ).withStyle(ChatFormatting.GREEN), true);
-                    } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: adjunct source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            }
-            return;
-        }
-        if (model instanceof EditorModel.TunnelModel tunnel) {
-            TunnelEditor.SaveResult result = TunnelEditor.save(player, tunnel.variant());
-            if (source != null) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved '" + tunnel.id() + "' template (config-dir)."), true);
-                if (result.sourceAttempted()) {
-                    if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled tunnel copy to source tree (devmode ON)."
-                        ).withStyle(ChatFormatting.GREEN), true);
-                    } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: tunnel source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            }
-            return;
-        }
-        if (model instanceof EditorModel.TrackModel) {
-            TrackEditor.SaveResult result = TrackEditor.save(player);
-            if (source != null) {
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: saved 'track' template (config-dir)."), true);
-                if (result.sourceAttempted()) {
-                    if (result.sourceWritten()) {
-                        source.sendSuccess(() -> Component.literal(
-                            "Editor: also wrote bundled track copy to source tree (devmode ON)."
-                        ).withStyle(ChatFormatting.GREEN), true);
-                    } else {
-                        source.sendFailure(Component.literal(
-                            "Editor: track source-tree write failed: " + result.sourceError()
-                        ).withStyle(ChatFormatting.YELLOW));
-                    }
-                }
-            }
-            return;
-        }
-        throw new IllegalStateException("Unknown model type: " + model);
     }
 
-    /** Promote the given model to the source tree. Reports via {@code source}. */
-    private static void promoteOne(CommandSourceStack source, EditorModel model) {
-        if (model instanceof EditorModel.CarriageModel carriage) {
-            if (!(carriage.variant() instanceof CarriageVariant.Builtin builtin)) {
-                source.sendFailure(Component.literal(
-                    "Default save not supported for custom variants — only built-ins have a bundled tier."
-                ).withStyle(ChatFormatting.YELLOW));
-                return;
-            }
-            if (!CarriageTemplateStore.sourceTreeAvailable()) {
-                source.sendFailure(Component.literal(
-                    "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
-                ).withStyle(ChatFormatting.YELLOW));
-                return;
-            }
-            try {
-                CarriageTemplateStore.promote(builtin.type());
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: promoted '" + carriage.id() + "' to source tree (will ship with next build)."
-                ).withStyle(ChatFormatting.GREEN), true);
-            } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] promote {} failed", carriage.id(), e);
-                source.sendFailure(Component.literal(
-                    "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
-            }
-            return;
-        }
-        if (model instanceof EditorModel.ContentsModel) {
-            // Contents promote: source-tree write is handled inside the
-            // SaveResult pathway in CarriageContentsEditor.save() when
-            // devmode is on, so "save default" has no extra action here.
+    /** Promote {@code model} to source tree. Reports via {@code source}. */
+    private static void promoteOne(CommandSourceStack source, Template model) {
+        if (!model.canPromote()) {
             source.sendFailure(Component.literal(
-                "Contents templates have no separate bundled tier — '/dt save default' does not apply."
+                promoteUnavailableMessage(model)
             ).withStyle(ChatFormatting.YELLOW));
             return;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
-            if (!PillarTemplateStore.sourceTreeAvailable()) {
-                source.sendFailure(Component.literal(
-                    "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
-                ).withStyle(ChatFormatting.YELLOW));
-                return;
-            }
-            try {
-                PillarTemplateStore.promote(pillar.section());
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: promoted '" + pillar.id() + "' to source tree (will ship with next build)."
-                ).withStyle(ChatFormatting.GREEN), true);
-            } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] promote {} failed", pillar.id(), e);
-                source.sendFailure(Component.literal(
-                    "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
-            }
-            return;
-        }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
-            if (!PillarTemplateStore.sourceTreeAvailable()) {
-                source.sendFailure(Component.literal(
-                    "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
-                ).withStyle(ChatFormatting.YELLOW));
-                return;
-            }
-            try {
-                PillarTemplateStore.promoteAdjunct(adjunct.adjunct());
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: promoted '" + adjunct.id() + "' to source tree (will ship with next build)."
-                ).withStyle(ChatFormatting.GREEN), true);
-            } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] promote {} failed", adjunct.id(), e);
-                source.sendFailure(Component.literal(
-                    "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
-            }
-            return;
-        }
-        if (model instanceof EditorModel.TunnelModel) {
+        if (!Stores.canPromote(model)) {
             source.sendFailure(Component.literal(
-                "Tunnel templates have no bundled tier — '/dt save default' does not apply."
+                "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
             ).withStyle(ChatFormatting.YELLOW));
             return;
         }
-        if (model instanceof EditorModel.TrackModel) {
-            if (!TrackTemplateStore.sourceTreeAvailable()) {
-                source.sendFailure(Component.literal(
-                    "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
-                ).withStyle(ChatFormatting.YELLOW));
-                return;
-            }
-            try {
-                TrackTemplateStore.promote();
-                source.sendSuccess(() -> Component.literal(
-                    "Editor: promoted 'track' to source tree (will ship with next build)."
-                ).withStyle(ChatFormatting.GREEN), true);
-            } catch (Exception e) {
-                LOGGER.error("[DungeonTrain] promote track failed", e);
-                source.sendFailure(Component.literal(
-                    "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
-            }
-            return;
+        try {
+            Stores.promote(model);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: promoted '" + model.id() + "' to source tree (will ship with next build)."
+            ).withStyle(ChatFormatting.GREEN), true);
+        } catch (Exception e) {
+            LOGGER.error("[DungeonTrain] promote {} failed", model.id(), e);
+            source.sendFailure(Component.literal(
+                "Promote failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
         }
     }
 
     /**
      * Quiet promote for {@code save all default}. Returns true when a promote
      * was attempted and succeeded, false when the model has no bundled tier
-     * (custom carriages, tunnels). Throws on actual I/O failures.
+     * (custom carriages, contents, tunnels). Throws on actual I/O failures
+     * so the caller can append the message to the summary string.
      */
-    private static boolean promoteOneSilent(EditorModel model) throws Exception {
-        if (model instanceof EditorModel.CarriageModel carriage) {
-            if (!(carriage.variant() instanceof CarriageVariant.Builtin builtin)) return false;
-            if (!CarriageTemplateStore.sourceTreeAvailable()) {
-                throw new Exception("source tree not writable");
-            }
-            CarriageTemplateStore.promote(builtin.type());
-            return true;
-        }
-        if (model instanceof EditorModel.ContentsModel) {
-            // Contents write-through happens inside CarriageContentsEditor.save
-            // when devmode is on; there's no separate bundled tier to promote.
-            return false;
-        }
-        if (model instanceof EditorModel.PillarModel pillar) {
-            if (!PillarTemplateStore.sourceTreeAvailable()) {
-                throw new Exception("source tree not writable");
-            }
-            PillarTemplateStore.promote(pillar.section());
-            return true;
-        }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
-            if (!PillarTemplateStore.sourceTreeAvailable()) {
-                throw new Exception("source tree not writable");
-            }
-            PillarTemplateStore.promoteAdjunct(adjunct.adjunct());
-            return true;
-        }
-        if (model instanceof EditorModel.TrackModel) {
-            if (!TrackTemplateStore.sourceTreeAvailable()) {
-                throw new Exception("source tree not writable");
-            }
-            TrackTemplateStore.promote();
-            return true;
-        }
-        // Tunnel has no bundled tier.
-        return false;
+    private static boolean promoteOneSilent(Template model) throws Exception {
+        if (!model.canPromote()) return false;
+        if (!Stores.canPromote(model)) throw new Exception("source tree not writable");
+        Stores.promote(model);
+        return true;
     }
 
-    private static boolean isPlotEmpty(ServerLevel level, EditorModel model, CarriageDims dims) {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+    /**
+     * Per-kind chat string for the {@code "Editor: saved 'X' template"}
+     * line. Matches the pre-Phase-2 per-kind arms exactly so player-visible
+     * output is byte-identical to main; the only variation is the noun
+     * ("template" / "contents template").
+     */
+    private static String savedMessage(Template model) {
+        return switch (model.kind()) {
+            case CONTENTS -> "Editor: saved contents '" + model.id() + "' template (config-dir).";
+            case TRACK    -> "Editor: saved 'track' template (config-dir).";
+            default       -> "Editor: saved '" + model.id() + "' template (config-dir).";
+        };
+    }
+
+    /** Source-tree write success line, kind-specific noun preserved. */
+    private static String bundledWriteMessage(Template model) {
+        return switch (model.kind()) {
+            case CONTENTS -> "Editor: also wrote bundled contents copy to source tree (devmode ON).";
+            case PILLAR   -> "Editor: also wrote bundled pillar copy to source tree (devmode ON).";
+            case STAIRS   -> "Editor: also wrote bundled adjunct copy to source tree (devmode ON).";
+            case TUNNEL   -> "Editor: also wrote bundled tunnel copy to source tree (devmode ON).";
+            case TRACK    -> "Editor: also wrote bundled track copy to source tree (devmode ON).";
+            default       -> "Editor: also wrote bundled copy to source tree (devmode ON).";
+        };
+    }
+
+    /** Source-tree write failure prefix, kind-specific noun preserved. */
+    private static String bundledWriteFailMessage(Template model) {
+        return switch (model.kind()) {
+            case CONTENTS -> "Editor: contents source-tree write failed: ";
+            case PILLAR   -> "Editor: pillar source-tree write failed: ";
+            case STAIRS   -> "Editor: adjunct source-tree write failed: ";
+            case TUNNEL   -> "Editor: tunnel source-tree write failed: ";
+            case TRACK    -> "Editor: track source-tree write failed: ";
+            default       -> "Editor: source-tree write failed: ";
+        };
+    }
+
+    /**
+     * Reason {@code /dt save default} can't promote {@code model}. Three
+     * existing kind-specific messages are preserved: contents (no separate
+     * tier), tunnel (no bundled tier today), custom carriage (only built-ins
+     * have a bundled tier).
+     */
+    private static String promoteUnavailableMessage(Template model) {
+        return switch (model.kind()) {
+            case CONTENTS -> "Contents templates have no separate bundled tier — '/dt save default' does not apply.";
+            case TUNNEL   -> "Tunnel templates have no bundled tier — '/dt save default' does not apply.";
+            case CARRIAGE -> "Default save not supported for custom variants — only built-ins have a bundled tier.";
+            default       -> "'/dt save default' is not supported for this template kind.";
+        };
+    }
+
+    private static boolean isPlotEmpty(ServerLevel level, Template model, CarriageDims dims) {
+        if (model instanceof Template.CarriageModel carriage) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.ContentsModel contentsModel) {
+        if (model instanceof Template.ContentsModel contentsModel) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contentsModel.contents(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
             return countNonAir(level, origin, 1, pillar.section().height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunctModel) {
+        if (model instanceof Template.AdjunctModel adjunctModel) {
             PillarAdjunct a = adjunctModel.adjunct();
             BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
             return countNonAir(level, origin, a.xSize(), a.ySize(), a.zSize())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.TunnelModel tunnel) {
+        if (model instanceof Template.TunnelModel tunnel) {
             BlockPos origin = TunnelEditor.plotOrigin(tunnel.variant());
             if (origin == null) return true;
             return countNonAir(level, origin, TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH)
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             BlockPos origin = TrackEditor.plotOrigin(dims);
             return countNonAir(level, origin, TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
+        // PartModel reaches here because EditorCategory.models() doesn't
+        // include parts in the /dt save all iteration today. Treat as empty
+        // (the part plot is never a save-all target). Phase 3 may surface
+        // parts in the iteration alongside its model() rework.
         return true;
     }
 

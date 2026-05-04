@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.block.Mirror;
@@ -44,7 +46,7 @@ import java.util.Locale;
  * door NBT is 1-thick on X, the mirror pivot stays at the placement origin —
  * no {@code size-1} offset needed on the mirrored axis.</p>
  */
-public enum CarriagePartKind {
+public enum CarriagePartKind implements TemplateType {
     FLOOR,
     WALLS,
     ROOF,
@@ -61,8 +63,14 @@ public enum CarriagePartKind {
     /** Sentinel used in {@code <variant>.parts.json} to mean "stamp nothing for this kind". */
     public static final String NONE = "none";
 
+    @Override
     public String id() {
         return name().toLowerCase(Locale.ROOT);
+    }
+
+    @Override
+    public TemplateKind kind() {
+        return TemplateKind.PART;
     }
 
     /**

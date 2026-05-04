@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageTemplate;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
@@ -12,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -322,4 +327,38 @@ public final class CarriageTemplateStore {
     private static String name(CarriageType type) {
         return type.name().toLowerCase(Locale.ROOT);
     }
+
+    /**
+     * Phase-2 adapter — exposes carriage save/promote through the unified
+     * {@link TemplateStore} surface so {@code SaveCommand} can dispatch
+     * without an {@code instanceof} chain. Wraps the per-editor
+     * {@code CarriageEditor.SaveResult} into the shared
+     * {@link games.brennan.dungeontrain.template.SaveResult} record (same
+     * shape, just hoisted into the {@code template/} package).
+     */
+    private static final TemplateStore<Template.CarriageModel> ADAPTER = new TemplateStore<>() {
+        @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
+
+        @Override
+        public SaveResult save(ServerPlayer player, Template.CarriageModel template) throws Exception {
+            CarriageEditor.SaveResult r = CarriageEditor.save(player, template.variant());
+            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+        }
+
+        @Override
+        public boolean canPromote(Template.CarriageModel template) {
+            return template.variant() instanceof CarriageVariant.Builtin
+                && sourceTreeAvailable();
+        }
+
+        @Override
+        public void promote(Template.CarriageModel template) throws Exception {
+            if (!(template.variant() instanceof CarriageVariant.Builtin builtin)) {
+                throw new IllegalStateException("Custom carriages cannot promote — no bundled tier.");
+            }
+            CarriageTemplateStore.promote(builtin.type());
+        }
+    };
+
+    public static TemplateStore<Template.CarriageModel> adapter() { return ADAPTER; }
 }

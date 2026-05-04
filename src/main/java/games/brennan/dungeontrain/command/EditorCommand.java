@@ -20,8 +20,8 @@ import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
-import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -1076,7 +1076,7 @@ public final class EditorCommand {
             return 1;
         }
 
-        java.util.Optional<EditorModel> first = category.firstModel();
+        java.util.Optional<Template> first = category.firstModel();
         if (first.isEmpty()) {
             source.sendFailure(Component.literal(
                 "Category '" + category.displayName() + "' has no models."));
@@ -1091,7 +1091,7 @@ public final class EditorCommand {
         EditorCategory.clearAllPlots(overworld, dims);
 
         // Stamp every plot so the full list is visible at once.
-        for (EditorModel model : category.models()) {
+        for (Template model : category.models()) {
             stampCategoryModel(overworld, model, dims);
         }
 
@@ -1104,21 +1104,21 @@ public final class EditorCommand {
 
         // Teleport to the first via the existing enter path (also handles session + outline).
         try {
-            EditorModel head = first.get();
-            if (head instanceof EditorModel.CarriageModel cm) {
+            Template head = first.get();
+            if (head instanceof Template.CarriageModel cm) {
                 CarriageEditor.enter(player, cm.variant());
-            } else if (head instanceof EditorModel.ContentsModel cm) {
+            } else if (head instanceof Template.ContentsModel cm) {
                 CarriageContentsEditor.enter(player, cm.contents(), null);
-            } else if (head instanceof EditorModel.PillarModel pm) {
+            } else if (head instanceof Template.PillarModel pm) {
                 PillarEditor.enter(player, pm.section());
-            } else if (head instanceof EditorModel.AdjunctModel am) {
+            } else if (head instanceof Template.AdjunctModel am) {
                 PillarEditor.enter(player, am.adjunct());
-            } else if (head instanceof EditorModel.TunnelModel tm) {
+            } else if (head instanceof Template.TunnelModel tm) {
                 TunnelEditor.enter(player, tm.variant());
-            } else if (head instanceof EditorModel.TrackModel) {
+            } else if (head instanceof Template.TrackModel) {
                 TrackEditor.enter(player);
             }
-            final EditorModel firstModel = head;
+            final Template firstModel = head;
             source.sendSuccess(() -> Component.literal(
                 "Editor: entered '" + category.displayName() + "' at '" + firstModel.displayName() + "'."
             ), true);
@@ -1132,18 +1132,18 @@ public final class EditorCommand {
         }
     }
 
-    private static void stampCategoryModel(ServerLevel overworld, EditorModel model, CarriageDims dims) {
-        if (model instanceof EditorModel.CarriageModel cm) {
+    private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
+        if (model instanceof Template.CarriageModel cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
-        } else if (model instanceof EditorModel.ContentsModel cm) {
+        } else if (model instanceof Template.ContentsModel cm) {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
-        } else if (model instanceof EditorModel.PillarModel pm) {
+        } else if (model instanceof Template.PillarModel pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
-        } else if (model instanceof EditorModel.AdjunctModel am) {
+        } else if (model instanceof Template.AdjunctModel am) {
             PillarEditor.stampPlot(overworld, am.adjunct(), dims);
-        } else if (model instanceof EditorModel.TunnelModel tm) {
+        } else if (model instanceof Template.TunnelModel tm) {
             TunnelEditor.stampPlot(overworld, tm.variant());
-        } else if (model instanceof EditorModel.TrackModel) {
+        } else if (model instanceof Template.TrackModel) {
             TrackEditor.stampPlot(overworld, dims);
         }
     }
@@ -1242,8 +1242,8 @@ public final class EditorCommand {
             // Resolve the model by id within the category and read its plot
             // footprint. The dispatch mirrors stampCategoryModel above —
             // each editor's plotOrigin signature differs.
-            EditorModel model = null;
-            for (EditorModel m : category.models()) {
+            Template model = null;
+            for (Template m : category.models()) {
                 if (m.id().equals(id)) { model = m; break; }
             }
             if (model == null) {
@@ -1251,16 +1251,16 @@ public final class EditorCommand {
                     "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
                 return 0;
             }
-            if (model instanceof EditorModel.CarriageModel cm) {
+            if (model instanceof Template.CarriageModel cm) {
                 origin = CarriageEditor.plotOrigin(cm.variant(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof EditorModel.ContentsModel cm) {
+            } else if (model instanceof Template.ContentsModel cm) {
                 origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof EditorModel.PillarModel pm) {
+            } else if (model instanceof Template.PillarModel pm) {
                 origin = PillarEditor.plotOrigin(pm.section(), dims);
                 size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
-            } else if (model instanceof EditorModel.TrackModel) {
+            } else if (model instanceof Template.TrackModel) {
                 origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
                     games.brennan.dungeontrain.track.variant.TrackKind.TILE,
                     games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
