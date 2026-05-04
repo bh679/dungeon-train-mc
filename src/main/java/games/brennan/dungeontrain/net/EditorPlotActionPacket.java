@@ -2,12 +2,15 @@ package games.brennan.dungeontrain.net;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.command.ResetCommand;
+import games.brennan.dungeontrain.command.SaveCommand;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.editor.TunnelEditor;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -142,22 +145,8 @@ public record EditorPlotActionPacket(
             return;
         }
         switch (packet.action) {
-            case SAVE -> {
-                CarriageEditor.save(sender, variant);
-                sender.sendSystemMessage(Component.literal(
-                    "Editor: saved '" + variant.id() + "' template (config-dir).")
-                    .copy().withStyle(ChatFormatting.GREEN));
-            }
-            case RESET -> {
-                // Re-stamp from the saved (config-dir) template, restoring the
-                // last-saved state. Mirrors `/dt reset` semantics — does NOT
-                // delete the template (that was the pre-Phase-4 bug, now
-                // corrected to match the slash-command's reset behaviour).
-                CarriageEditor.stampPlot(overworld, variant, dims);
-                sender.sendSystemMessage(Component.literal(
-                    "Editor: reset '" + variant.id() + "' to last saved template.")
-                    .copy().withStyle(ChatFormatting.GREEN));
-            }
+            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Carriage(variant));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Carriage(variant));
             case CLEAR -> {
                 BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
                 if (origin != null) CarriagePlacer.eraseAt(overworld, origin, dims);
@@ -182,21 +171,8 @@ public record EditorPlotActionPacket(
         }
         CarriageContents contents = opt.get();
         switch (packet.action) {
-            case SAVE -> {
-                CarriageContentsEditor.save(sender, contents);
-                sender.sendSystemMessage(Component.literal(
-                    "Editor: saved contents '" + contents.id() + "' template (config-dir).")
-                    .copy().withStyle(ChatFormatting.GREEN));
-            }
-            case RESET -> {
-                // Re-stamp from the saved (config-dir) template — matches
-                // `/dt reset` semantics. Pre-Phase-4 this used to clear+delete
-                // the template, which was "remove" behaviour.
-                CarriageContentsEditor.stampPlot(overworld, contents, dims);
-                sender.sendSystemMessage(Component.literal(
-                    "Editor: reset contents '" + contents.id() + "' to last saved template.")
-                    .copy().withStyle(ChatFormatting.GREEN));
-            }
+            case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Contents(contents));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Contents(contents));
             case CLEAR -> {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 if (origin != null) {
@@ -229,22 +205,10 @@ public record EditorPlotActionPacket(
         // Pillar sections.
         for (games.brennan.dungeontrain.track.PillarSection s : games.brennan.dungeontrain.track.PillarSection.values()) {
             if (("pillar_" + s.id()).equals(modelId)) {
-                games.brennan.dungeontrain.template.PillarTemplateId id =
-                    new games.brennan.dungeontrain.template.PillarTemplateId(s, packet.modelName);
                 String label = "pillar_" + s.id() + " '" + packet.modelName + "'";
                 switch (packet.action) {
-                    case SAVE -> {
-                        PillarEditor.save(sender, id);
-                        sender.sendSystemMessage(Component.literal(
-                            "Editor: saved " + label + " template (config-dir).")
-                            .copy().withStyle(ChatFormatting.GREEN));
-                    }
-                    case RESET -> {
-                        PillarEditor.stampPlot(overworld, s, packet.modelName, dims);
-                        sender.sendSystemMessage(Component.literal(
-                            "Editor: reset " + label + " to last saved template.")
-                            .copy().withStyle(ChatFormatting.GREEN));
-                    }
+                    case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Pillar(s, packet.modelName));
+                    case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Pillar(s, packet.modelName));
                     case CLEAR -> {
                         PillarEditor.clearPlot(overworld, s, packet.modelName, dims);
                         sender.sendSystemMessage(Component.literal(
@@ -261,22 +225,10 @@ public record EditorPlotActionPacket(
         // Pillar adjuncts.
         for (games.brennan.dungeontrain.track.PillarAdjunct a : games.brennan.dungeontrain.track.PillarAdjunct.values()) {
             if (("adjunct_" + a.id()).equals(modelId)) {
-                games.brennan.dungeontrain.template.PillarAdjunctTemplateId id =
-                    new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(a, packet.modelName);
                 String label = "adjunct_" + a.id() + " '" + packet.modelName + "'";
                 switch (packet.action) {
-                    case SAVE -> {
-                        PillarEditor.save(sender, id);
-                        sender.sendSystemMessage(Component.literal(
-                            "Editor: saved " + label + " template (config-dir).")
-                            .copy().withStyle(ChatFormatting.GREEN));
-                    }
-                    case RESET -> {
-                        PillarEditor.stampPlotAdjunct(overworld, a, packet.modelName, dims);
-                        sender.sendSystemMessage(Component.literal(
-                            "Editor: reset " + label + " to last saved template.")
-                            .copy().withStyle(ChatFormatting.GREEN));
-                    }
+                    case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Adjunct(a, packet.modelName));
+                    case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Adjunct(a, packet.modelName));
                     case CLEAR -> {
                         PillarEditor.clearPlotAdjunct(overworld, a, packet.modelName, dims);
                         sender.sendSystemMessage(Component.literal(
@@ -297,18 +249,8 @@ public record EditorPlotActionPacket(
                     new games.brennan.dungeontrain.template.TunnelTemplateId(tv, packet.modelName);
                 String label = "tunnel_" + tv.name().toLowerCase(Locale.ROOT) + " '" + packet.modelName + "'";
                 switch (packet.action) {
-                    case SAVE -> {
-                        TunnelEditor.save(sender, id);
-                        sender.sendSystemMessage(Component.literal(
-                            "Editor: saved " + label + " template (config-dir).")
-                            .copy().withStyle(ChatFormatting.GREEN));
-                    }
-                    case RESET -> {
-                        TunnelEditor.stampPlot(overworld, tv, packet.modelName);
-                        sender.sendSystemMessage(Component.literal(
-                            "Editor: reset " + label + " to last saved template.")
-                            .copy().withStyle(ChatFormatting.GREEN));
-                    }
+                    case SAVE -> SaveCommand.saveOnePlayerVisible(sender, new Template.Tunnel(tv, packet.modelName));
+                    case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Tunnel(tv, packet.modelName));
                     case CLEAR -> {
                         BlockPos origin = TunnelEditor.plotOrigin(id);
                         TunnelPlacer.eraseAt(overworld, origin);

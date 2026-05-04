@@ -324,6 +324,41 @@ public final class SaveCommand {
         }
     }
 
+    /**
+     * Player-facing save helper for non-command callers (template label menu).
+     * Mirrors {@link #saveOne} but reports through {@link ServerPlayer#sendSystemMessage}
+     * instead of {@link CommandSourceStack#sendSuccess}, so the panel button
+     * produces byte-identical chat output to {@code /dt save} including the
+     * dev-mode source-tree promote line.
+     *
+     * @return true on success, false on save failure (the failure message is
+     *         already shown to the player).
+     */
+    public static boolean saveOnePlayerVisible(ServerPlayer player, Template model) {
+        try {
+            SaveResult result = Stores.save(player, model);
+            player.sendSystemMessage(Component.literal(savedMessage(model))
+                .copy().withStyle(ChatFormatting.GREEN));
+            if (result.sourceAttempted()) {
+                if (result.sourceWritten()) {
+                    player.sendSystemMessage(Component.literal(bundledWriteMessage(model))
+                        .copy().withStyle(ChatFormatting.GREEN));
+                } else {
+                    player.sendSystemMessage(Component.literal(
+                        bundledWriteFailMessage(model) + result.sourceError())
+                        .copy().withStyle(ChatFormatting.YELLOW));
+                }
+            }
+            return true;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] saveOnePlayerVisible {} failed", model.id(), t);
+            player.sendSystemMessage(Component.literal(
+                "save failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
+                .copy().withStyle(ChatFormatting.RED));
+            return false;
+        }
+    }
+
     /** Promote {@code model} to source tree. Reports via {@code source}. */
     private static void promoteOne(CommandSourceStack source, Template model) {
         if (!model.canPromote()) {

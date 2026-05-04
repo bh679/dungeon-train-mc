@@ -101,6 +101,32 @@ public final class ResetCommand {
     }
 
     /**
+     * Player-facing reset helper for non-command callers (template label menu's
+     * R button). Mirrors the {@code /dt reset} success-path output exactly so
+     * the panel button and the slash command produce byte-identical chat.
+     *
+     * @return true on success, false on reset failure (the failure message is
+     *         already shown to the player).
+     */
+    public static boolean resetToSavedPlayerVisible(ServerPlayer player, Template model) {
+        try {
+            ServerLevel overworld = player.getServer().overworld();
+            CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+            resetToSaved(overworld, model, dims);
+            player.sendSystemMessage(Component.literal(
+                "Editor: reset '" + model.id() + "' to last saved template.")
+                .copy().withStyle(ChatFormatting.GREEN));
+            return true;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] resetToSavedPlayerVisible {} failed", model.id(), t);
+            player.sendSystemMessage(Component.literal(
+                "reset failed: " + t.getClass().getSimpleName() + ": " + t.getMessage())
+                .copy().withStyle(ChatFormatting.RED));
+            return false;
+        }
+    }
+
+    /**
      * Re-stamp the plot from the bundled tier only. Errors when no bundled
      * copy exists. Contents and tunnels have no bundled tier today —
      * {@link Template#hasBundledTier()} is false for those, and the message
