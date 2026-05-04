@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -22,6 +25,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -197,5 +201,56 @@ public final class CarriagePartRegistry {
         CarriageVariantPartsStore.clearCache();
         CarriagePartVariantBlocks.clearCache();
         CarriagePartEditor.clearSessions();
+    }
+
+    /**
+     * Phase-2 adapter — exposes the parts registry through the unified
+     * {@link TemplateRegistry} surface. Cached per
+     * {@link CarriagePartKind} since each kind has its own
+     * {@code LinkedHashSet} of names (and the X-slot ordering depends on
+     * insertion order for that specific kind).
+     *
+     * <p>{@link TemplateRegistry#builtins()} is empty for parts because
+     * there are no shipped sentinel names today — every registered name
+     * is a user-authored variant. Mirrors
+     * {@link Template.PartModel#isBuiltin()} returning false.</p>
+     */
+    private static final EnumMap<CarriagePartKind, TemplateRegistry<Template.PartModel>> ADAPTERS
+        = new EnumMap<>(CarriagePartKind.class);
+    static {
+        for (CarriagePartKind k : CarriagePartKind.values()) ADAPTERS.put(k, makeAdapter(k));
+    }
+
+    private static TemplateRegistry<Template.PartModel> makeAdapter(CarriagePartKind kind) {
+        return new TemplateRegistry<>() {
+            @Override public TemplateKind kind() { return TemplateKind.PART; }
+
+            @Override
+            public List<Template.PartModel> all() {
+                List<String> names = registeredNames(kind);
+                List<Template.PartModel> out = new ArrayList<>(names.size());
+                for (String n : names) out.add(new Template.PartModel(kind, n));
+                return out;
+            }
+
+            @Override
+            public List<Template.PartModel> builtins() { return List.of(); }
+
+            @Override
+            public List<Template.PartModel> customs() { return all(); }
+
+            @Override
+            public Optional<Template.PartModel> find(String id) {
+                if (!isKnown(kind, id)) return Optional.empty();
+                return Optional.of(new Template.PartModel(kind, id));
+            }
+
+            @Override public void reload() { CarriagePartRegistry.reload(); }
+            @Override public void clear() { CarriagePartRegistry.clear(); }
+        };
+    }
+
+    public static TemplateRegistry<Template.PartModel> adapter(CarriagePartKind kind) {
+        return ADAPTERS.get(kind);
     }
 }

@@ -112,4 +112,24 @@ final class TemplateTest {
         assertThrows(NullPointerException.class,
             () -> new Template.PartModel(null));
     }
+
+    @Test
+    @DisplayName("Phase 2: every record returns a non-null store() with the right kind()")
+    void phase2_storeIsBound() {
+        assertTemplateBindings(new Template.CarriageModel(CarriageVariant.of(CarriageType.STANDARD)), TemplateKind.CARRIAGE);
+        assertTemplateBindings(new Template.ContentsModel(games.brennan.dungeontrain.train.CarriageContents.of(
+            games.brennan.dungeontrain.train.CarriageContents.ContentsType.DEFAULT)), TemplateKind.CONTENTS);
+        assertTemplateBindings(new Template.PartModel(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR), TemplateKind.PART);
+        assertTemplateBindings(new Template.TrackModel(), TemplateKind.TRACK);
+        assertTemplateBindings(new Template.PillarModel(PillarSection.TOP), TemplateKind.PILLAR);
+        assertTemplateBindings(new Template.AdjunctModel(PillarAdjunct.STAIRS), TemplateKind.STAIRS);
+        assertTemplateBindings(new Template.TunnelModel(TunnelVariant.SECTION), TemplateKind.TUNNEL);
+    }
+
+    private static void assertTemplateBindings(Template t, TemplateKind expected) {
+        assertEquals(expected, t.store().kind(),
+            "store().kind() must report the same kind as the template (" + t.id() + ")");
+        assertEquals(expected, t.registry().kind(),
+            "registry().kind() must report the same kind as the template (" + t.id() + ")");
+    }
 }
