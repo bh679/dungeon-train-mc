@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
@@ -133,9 +134,21 @@ public enum EditorCategory {
 
     private static List<Template> carriageModels() {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        List<Template> out = new ArrayList<>(variants.size());
+        List<Template> out = new ArrayList<>(variants.size() + 16);
+        // Shells first — preserves the existing landing-model behaviour
+        // (firstModel returns the first carriage variant, used by /dt editor
+        // carriages teleport).
         for (CarriageVariant v : variants) {
             out.add(new Template.Carriage(v));
+        }
+        // Phase-4 Goal 3: parts join the iteration so /dt save all from a
+        // carriage shell also covers the parts grid. Kind-major ordering
+        // (FLOOR all variants, then WALLS, etc.) mirrors the physical row
+        // layout in CarriagePartEditor's grid.
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            for (String name : CarriagePartRegistry.registeredNames(kind)) {
+                out.add(new Template.Part(kind, name));
+            }
         }
         return out;
     }
