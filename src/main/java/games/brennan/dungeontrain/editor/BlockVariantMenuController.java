@@ -253,8 +253,6 @@ public final class BlockVariantMenuController {
                     net.minecraft.world.item.component.CustomData heldData = held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
                     itemBeNbt = heldData == null ? null : heldData.copyTag();
                 }
-                VariantState newVariant = new VariantState(capturedState, itemBeNbt, 1);
-
                 if (wasEmpty) {
                     BlockPos worldPos = plot.origin().offset(localPos);
                     BlockState baseState = level.getBlockState(worldPos);
@@ -265,6 +263,14 @@ public final class BlockVariantMenuController {
                     VariantState baseVariant = captureBaseVariant(level, worldPos, baseState);
                     mutated.add(baseVariant);
                 }
+                // Orient newVariant against the (now-final) predecessor list:
+                // lock to the most recent existing entry whose state has a
+                // direction so adding more blocks to a cell defaults to
+                // matching what's already there.
+                RotationApplier.OrientedState oriented =
+                    RotationApplier.orientToPredecessors(capturedState, mutated);
+                VariantState newVariant = new VariantState(
+                    oriented.state(), itemBeNbt, 1, oriented.rotation());
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
                     return;
@@ -497,7 +503,7 @@ public final class BlockVariantMenuController {
             BlockEntity be = level.getBlockEntity(clicked);
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
-        return new VariantState(baseState, beNbt);
+        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
     }
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {

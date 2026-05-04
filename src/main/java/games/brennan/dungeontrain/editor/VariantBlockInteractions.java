@@ -348,7 +348,7 @@ public final class VariantBlockInteractions {
                 }
             }
         }
-        return new VariantState(newState, beNbt);
+        return new VariantState(newState, beNbt, 1, RotationApplier.lockToCurrent(newState));
     }
 
     /**
@@ -366,7 +366,7 @@ public final class VariantBlockInteractions {
             BlockEntity be = level.getBlockEntity(clicked);
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
-        return new VariantState(baseState, beNbt);
+        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
     }
 
     /**
@@ -389,7 +389,6 @@ public final class VariantBlockInteractions {
                 return null;
             }
             updated.add(baseVariant);
-            updated.add(newVariant);
         } else {
             if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
                 player.displayClientMessage(
@@ -399,8 +398,15 @@ public final class VariantBlockInteractions {
                 return null;
             }
             updated.addAll(existing);
-            updated.add(newVariant);
         }
+        // Orient the new entry against the predecessor list so its facing
+        // matches the most recent existing block with a direction. This
+        // matches the world-space block-variant menu's ADD behavior.
+        RotationApplier.OrientedState oriented =
+            RotationApplier.orientToPredecessors(newVariant.state(), updated);
+        updated.add(new VariantState(
+            oriented.state(), newVariant.blockEntityNbt(),
+            newVariant.weight(), oriented.rotation()));
         return updated;
     }
 
