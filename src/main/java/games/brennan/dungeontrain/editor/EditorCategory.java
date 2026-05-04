@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -19,7 +20,7 @@ import java.util.Optional;
 
 /**
  * Top-level grouping for the editor. Each category exposes an ordered list of
- * {@link EditorModel}s so commands like {@code /dt editor <category>} and
+ * {@link Template}s so commands like {@code /dt editor <category>} and
  * {@code /dt save all} can iterate without caring about the underlying
  * storage split between carriages, pillars, and tunnels.
  *
@@ -55,7 +56,7 @@ public enum EditorCategory {
     }
 
     /** Every model in this category, in the order a player walks through them. */
-    public List<EditorModel> models() {
+    public List<Template> models() {
         return switch (this) {
             case CARRIAGES -> carriageModels();
             case CONTENTS -> contentsModels();
@@ -65,8 +66,8 @@ public enum EditorCategory {
     }
 
     /** The landing model when a player runs {@code /dt editor <category>}. */
-    public Optional<EditorModel> firstModel() {
-        List<EditorModel> models = models();
+    public Optional<Template> firstModel() {
+        List<Template> models = models();
         return models.isEmpty() ? Optional.empty() : Optional.of(models.get(0));
     }
 
@@ -88,74 +89,74 @@ public enum EditorCategory {
         BlockPos pos = player.blockPosition();
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
-            return Optional.of(new Located(CARRIAGES, new EditorModel.CarriageModel(carriage)));
+            return Optional.of(new Located(CARRIAGES, new Template.CarriageModel(carriage)));
         }
         CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
         if (contents != null) {
-            return Optional.of(new Located(CONTENTS, new EditorModel.ContentsModel(contents)));
+            return Optional.of(new Located(CONTENTS, new Template.ContentsModel(contents)));
         }
         String trackName = TrackEditor.resolveName(pos, dims);
         if (trackName != null) {
-            return Optional.of(new Located(TRACKS, new EditorModel.TrackModel(trackName)));
+            return Optional.of(new Located(TRACKS, new Template.TrackModel(trackName)));
         }
         PillarEditor.SectionPlot pillarLoc = PillarEditor.plotContaining(pos, dims);
         if (pillarLoc != null) {
             return Optional.of(new Located(TRACKS,
-                new EditorModel.PillarModel(pillarLoc.section(), pillarLoc.name())));
+                new Template.PillarModel(pillarLoc.section(), pillarLoc.name())));
         }
         PillarEditor.AdjunctPlot adjunctLoc = PillarEditor.plotContainingAdjunct(pos, dims);
         if (adjunctLoc != null) {
             return Optional.of(new Located(TRACKS,
-                new EditorModel.AdjunctModel(adjunctLoc.adjunct(), adjunctLoc.name())));
+                new Template.AdjunctModel(adjunctLoc.adjunct(), adjunctLoc.name())));
         }
         TunnelEditor.TunnelPlot tunnelLoc = TunnelEditor.plotContainingNamed(pos);
         if (tunnelLoc != null) {
             return Optional.of(new Located(TRACKS,
-                new EditorModel.TunnelModel(tunnelLoc.variant(), tunnelLoc.name())));
+                new Template.TunnelModel(tunnelLoc.variant(), tunnelLoc.name())));
         }
         return Optional.empty();
     }
 
-    private static List<EditorModel> carriageModels() {
+    private static List<Template> carriageModels() {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        List<EditorModel> out = new ArrayList<>(variants.size());
+        List<Template> out = new ArrayList<>(variants.size());
         for (CarriageVariant v : variants) {
-            out.add(new EditorModel.CarriageModel(v));
+            out.add(new Template.CarriageModel(v));
         }
         return out;
     }
 
-    private static List<EditorModel> contentsModels() {
+    private static List<Template> contentsModels() {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
-        List<EditorModel> out = new ArrayList<>(all.size());
+        List<Template> out = new ArrayList<>(all.size());
         for (CarriageContents c : all) {
-            out.add(new EditorModel.ContentsModel(c));
+            out.add(new Template.ContentsModel(c));
         }
         return out;
     }
 
-    private static List<EditorModel> trackModels() {
-        List<EditorModel> out = new ArrayList<>(
+    private static List<Template> trackModels() {
+        List<Template> out = new ArrayList<>(
             1 + PillarSection.values().length + PillarAdjunct.values().length + TunnelVariant.values().length);
         // Track tile first — it's the "default" track model, most used.
-        out.add(new EditorModel.TrackModel());
+        out.add(new Template.TrackModel());
         // Ground-up pillar ordering mirrors physical stacking.
-        out.add(new EditorModel.PillarModel(PillarSection.BOTTOM));
-        out.add(new EditorModel.PillarModel(PillarSection.MIDDLE));
-        out.add(new EditorModel.PillarModel(PillarSection.TOP));
+        out.add(new Template.PillarModel(PillarSection.BOTTOM));
+        out.add(new Template.PillarModel(PillarSection.MIDDLE));
+        out.add(new Template.PillarModel(PillarSection.TOP));
         // Pillar adjuncts (stairs) sit alongside the pillar column physically;
         // expose them as their own row of variants right after the pillars.
         for (PillarAdjunct a : PillarAdjunct.values()) {
-            out.add(new EditorModel.AdjunctModel(a));
+            out.add(new Template.AdjunctModel(a));
         }
         for (TunnelVariant v : TunnelVariant.values()) {
-            out.add(new EditorModel.TunnelModel(v));
+            out.add(new Template.TunnelModel(v));
         }
         return out;
     }
 
     /** A category + which specific model the player is standing in. */
-    public record Located(EditorCategory category, EditorModel model) {}
+    public record Located(EditorCategory category, Template model) {}
 
     /**
      * Erase every known editor plot in every category — footprints + barrier

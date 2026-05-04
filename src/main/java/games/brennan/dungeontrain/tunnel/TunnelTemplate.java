@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.tunnel;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.ship.ShipFilterProcessor;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -36,9 +38,19 @@ import java.util.Optional;
  */
 public final class TunnelTemplate {
 
-    public enum TunnelVariant {
+    public enum TunnelVariant implements TemplateType {
         SECTION,
-        PORTAL
+        PORTAL;
+
+        @Override
+        public String id() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        @Override
+        public TemplateKind kind() {
+            return TemplateKind.TUNNEL;
+        }
     }
 
     /** X extent — aligns with {@code LAMP_SPACING} so stamps are lamp-station-aligned. */

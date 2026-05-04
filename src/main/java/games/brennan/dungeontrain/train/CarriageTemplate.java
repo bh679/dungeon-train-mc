@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
@@ -52,10 +54,20 @@ public final class CarriageTemplate {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public enum CarriageType {
+    public enum CarriageType implements TemplateType {
         STANDARD,
         WINDOWED,
-        FLATBED
+        FLATBED;
+
+        @Override
+        public String id() {
+            return name().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        @Override
+        public TemplateKind kind() {
+            return TemplateKind.CARRIAGE;
+        }
     }
 
     /**
