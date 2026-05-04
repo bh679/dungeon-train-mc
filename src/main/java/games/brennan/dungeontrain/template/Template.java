@@ -30,7 +30,10 @@ import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -182,6 +185,15 @@ public sealed interface Template
     BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims);
 
     /**
+     * Footprint of this template's editor plot — {@code (length, height,
+     * width)} as a {@link Vec3i}. Used by {@code SaveCommand.isPlotEmpty}
+     * to scan the plot region for non-air blocks; varies per kind because
+     * carriages / contents use full {@link CarriageDims}, pillars are
+     * 1-wide columns, tunnels have fixed dims, etc.
+     */
+    Vec3i plotSize(CarriageDims dims);
+
+    /**
      * Erase the editor plot before re-stamping the bundled default.
      * Default no-op; only carriages override (their hardcoded fallback
      * leaves stale air patches that the bundled stamp won't overwrite).
@@ -235,6 +247,9 @@ public sealed interface Template
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriageEditor.plotOrigin(variant, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(dims.length(), dims.height(), dims.width());
         }
         @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
             // Carriage hardcoded fallback leaves stale air patches that the
@@ -295,6 +310,9 @@ public sealed interface Template
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriageContentsEditor.plotOrigin(contents, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(dims.length(), dims.height(), dims.width());
         }
     }
 
@@ -371,6 +389,9 @@ public sealed interface Template
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriagePartEditor.plotOrigin(new CarriagePartTemplateId(partKind, name), dims);
         }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return partKind.dims(dims);
+        }
     }
 
     /**
@@ -425,6 +446,9 @@ public sealed interface Template
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return TrackEditor.plotOrigin(dims);
         }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
+        }
     }
 
     /**
@@ -478,13 +502,21 @@ public sealed interface Template
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            PillarEditor.stampPlot(level, section, dims);
+            // Pre-Phase-4 this dropped `name` and re-stamped every variant for
+            // the section via the (section, dims) overload. Now stamps just
+            // this variant's plot using the named (section, name, dims) form
+            // — fixes a silent bug where /dt reset on a custom pillar variant
+            // would re-stamp every default-named plot instead.
+            PillarEditor.stampPlot(level, section, name, dims);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundled(level, section, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOrigin(section, dims);
+            return PillarEditor.plotOrigin(new PillarTemplateId(section, name), dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(1, section.height(), dims.width());
         }
     }
 
@@ -553,6 +585,9 @@ public sealed interface Template
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return PillarEditor.plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
         }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
+        }
     }
 
     /**
@@ -607,14 +642,21 @@ public sealed interface Template
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            TunnelEditor.stampPlot(level, variant);
+            // Pre-Phase-4 this dropped `name` and re-stamped every variant for
+            // the tunnel kind via the (variant) overload. Now stamps just
+            // this variant's plot using the named (variant, name) form
+            // — fixes the same silent bug as Pillar.restampPlot.
+            TunnelEditor.stampPlot(level, variant, name);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Tunnel templates have no bundled tier today.
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return TunnelEditor.plotOrigin(variant);
+            return TunnelEditor.plotOrigin(new TunnelTemplateId(variant, name));
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
         }
     }
 }

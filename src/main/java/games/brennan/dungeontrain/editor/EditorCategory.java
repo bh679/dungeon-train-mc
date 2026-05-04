@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -148,21 +150,39 @@ public enum EditorCategory {
     }
 
     private static List<Template> trackModels() {
-        List<Template> out = new ArrayList<>(
-            1 + PillarSection.values().length + PillarAdjunct.values().length + TunnelVariant.values().length);
+        // Phase-4 Bug A fix: enumerate every registered name per kind, not
+        // just the synthetic default. Pre-Phase-4 only default-named variants
+        // appeared here, so /dt save all from the tracks editor silently
+        // skipped every custom-named pillar / adjunct / tunnel / track tile
+        // the player had authored. TrackVariantRegistry.namesFor guarantees
+        // DEFAULT_NAME is first, so the existing row order is preserved as a
+        // degenerate case (one entry per kind on a fresh install).
+        List<Template> out = new ArrayList<>();
         // Track tile first — it's the "default" track model, most used.
-        out.add(new Template.Track());
+        for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
+            out.add(new Template.Track(name));
+        }
         // Ground-up pillar ordering mirrors physical stacking.
-        out.add(new Template.Pillar(PillarSection.BOTTOM));
-        out.add(new Template.Pillar(PillarSection.MIDDLE));
-        out.add(new Template.Pillar(PillarSection.TOP));
+        for (PillarSection section : new PillarSection[]{
+                PillarSection.BOTTOM, PillarSection.MIDDLE, PillarSection.TOP}) {
+            TrackKind kind = PillarTemplateStore.pillarKind(section);
+            for (String name : TrackVariantRegistry.namesFor(kind)) {
+                out.add(new Template.Pillar(section, name));
+            }
+        }
         // Pillar adjuncts (stairs) sit alongside the pillar column physically;
         // expose them as their own row of variants right after the pillars.
         for (PillarAdjunct a : PillarAdjunct.values()) {
-            out.add(new Template.Adjunct(a));
+            TrackKind kind = PillarTemplateStore.adjunctKind(a);
+            for (String name : TrackVariantRegistry.namesFor(kind)) {
+                out.add(new Template.Adjunct(a, name));
+            }
         }
         for (TunnelVariant v : TunnelVariant.values()) {
-            out.add(new Template.Tunnel(v));
+            TrackKind kind = TunnelTemplateStore.tunnelKind(v);
+            for (String name : TrackVariantRegistry.namesFor(kind)) {
+                out.add(new Template.Tunnel(v, name));
+            }
         }
         return out;
     }

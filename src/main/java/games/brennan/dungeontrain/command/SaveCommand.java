@@ -2,24 +2,17 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.editor.CarriageContentsEditor;
-import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.EditorCategory;
-import games.brennan.dungeontrain.editor.PillarEditor;
-import games.brennan.dungeontrain.editor.TrackEditor;
-import games.brennan.dungeontrain.editor.TunnelEditor;
 import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Stores;
 import games.brennan.dungeontrain.template.Template;
-import games.brennan.dungeontrain.track.PillarAdjunct;
-import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -424,45 +417,16 @@ public final class SaveCommand {
     }
 
     private static boolean isPlotEmpty(ServerLevel level, Template model, CarriageDims dims) {
-        if (model instanceof Template.Carriage carriage) {
-            BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
-            if (origin == null) return true;
-            return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
-                < EMPTY_PLOT_THRESHOLD;
-        }
-        if (model instanceof Template.Contents contentsModel) {
-            BlockPos origin = CarriageContentsEditor.plotOrigin(contentsModel.contents(), dims);
-            if (origin == null) return true;
-            return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
-                < EMPTY_PLOT_THRESHOLD;
-        }
-        if (model instanceof Template.Pillar pillar) {
-            BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
-            return countNonAir(level, origin, 1, pillar.section().height(), dims.width())
-                < EMPTY_PLOT_THRESHOLD;
-        }
-        if (model instanceof Template.Adjunct adjunctModel) {
-            PillarAdjunct a = adjunctModel.adjunct();
-            BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
-            return countNonAir(level, origin, a.xSize(), a.ySize(), a.zSize())
-                < EMPTY_PLOT_THRESHOLD;
-        }
-        if (model instanceof Template.Tunnel tunnel) {
-            BlockPos origin = TunnelEditor.plotOrigin(tunnel.variant());
-            if (origin == null) return true;
-            return countNonAir(level, origin, TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH)
-                < EMPTY_PLOT_THRESHOLD;
-        }
-        if (model instanceof Template.Track) {
-            BlockPos origin = TrackEditor.plotOrigin(dims);
-            return countNonAir(level, origin, TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width())
-                < EMPTY_PLOT_THRESHOLD;
-        }
-        // Part reaches here because EditorCategory.models() doesn't
-        // include parts in the /dt save all iteration today. Treat as empty
-        // (the part plot is never a save-all target). Phase 3 may surface
-        // parts in the iteration alongside its model() rework.
-        return true;
+        // Phase-4 collapse: Template.editorPlotOrigin + Template.plotSize
+        // route the dispatch through the record's own knowledge of its plot
+        // shape. Replaces the 7-arm instanceof chain that pre-Phase-4 dropped
+        // the variant `name` for Pillar / Tunnel (silent bug — the wrong
+        // plot was scanned for custom variants).
+        BlockPos origin = model.editorPlotOrigin(level, dims);
+        if (origin == null) return true;
+        Vec3i size = model.plotSize(dims);
+        return countNonAir(level, origin, size.getX(), size.getY(), size.getZ())
+            < EMPTY_PLOT_THRESHOLD;
     }
 
     private static int countNonAir(ServerLevel level, BlockPos origin, int length, int height, int width) {
