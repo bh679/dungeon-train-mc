@@ -3,18 +3,18 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -127,7 +127,7 @@ public final class EditorDirtyCheck {
             // Snapshots for contents are keyed to the INTERIOR region so the
             // shell isn't part of the diff (matches the save's capture region).
             BlockPos interiorOrigin = origin.offset(1, 1, 1);
-            Vec3i interior = CarriageContentsTemplate.interiorSize(dims);
+            Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
             String key = EditorPlotSnapshots.key("contents", c.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
@@ -153,7 +153,7 @@ public final class EditorDirtyCheck {
             String key = TrackEditor.snapshotKey(name);
             java.util.Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
-            Vec3i fp = new Vec3i(TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+            Vec3i fp = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
             Set<BlockPos> skip = variantCellPositions(
                 TrackVariantBlocks.loadFor(TrackKind.TILE, name, fp).entries());
             boolean unsaved = snapshot != null
@@ -245,7 +245,7 @@ public final class EditorDirtyCheck {
                 String key = TunnelEditor.tunnelSnapshotKey(variant, name);
                 java.util.Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
-                Vec3i fp = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
+                Vec3i fp = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
                 Set<BlockPos> skip = variantCellPositions(
                     TrackVariantBlocks.loadFor(kind, name, fp).entries());
                 boolean unsaved = snapshot != null
@@ -319,7 +319,7 @@ public final class EditorDirtyCheck {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
             if (origin == null) return out;
             BlockPos interiorOrigin = origin.offset(1, 1, 1);
-            Vec3i interior = CarriageContentsTemplate.interiorSize(dims);
+            Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
             String key = EditorPlotSnapshots.key("contents", modelId);
             Set<BlockPos> skip = variantCellPositions(
                 CarriageContentsVariantBlocks.loadFor(contents, interior).entries());
@@ -333,7 +333,7 @@ public final class EditorDirtyCheck {
             String name = modelId.substring(sep + 1);
             if ("track".equals(prefix)) {
                 BlockPos origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
-                Vec3i fp = new Vec3i(TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+                Vec3i fp = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
                 Set<BlockPos> skip = variantCellPositions(TrackVariantBlocks.loadFor(TrackKind.TILE, name, fp).entries());
                 collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
                     EditorPlotSnapshots.get(TrackEditor.snapshotKey(name)), skip, out);
@@ -365,7 +365,7 @@ public final class EditorDirtyCheck {
                     tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(java.util.Locale.ROOT));
                 } catch (IllegalArgumentException e) { return out; }
                 BlockPos origin = TunnelEditor.plotOrigin(tv, name);
-                Vec3i fp = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
+                Vec3i fp = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
                 TrackKind kind = games.brennan.dungeontrain.editor.TunnelTemplateStore.tunnelKind(tv);
                 Set<BlockPos> skip = variantCellPositions(TrackVariantBlocks.loadFor(kind, name, fp).entries());
                 collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),

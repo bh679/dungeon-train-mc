@@ -149,7 +149,7 @@ public final class TrackEditor {
     /** Snapshot the freshly-stamped {@code (length × height × width)} region for {@link EditorDirtyCheck}'s baseline. */
     private static void captureSnapshot(ServerLevel overworld, BlockPos origin, String name, CarriageDims dims) {
         EditorPlotSnapshots.capture(snapshotKey(name), overworld, origin,
-            TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+            TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
     }
 
     /** Snapshot key shared by {@link EditorDirtyCheck} for track-tile rows. */

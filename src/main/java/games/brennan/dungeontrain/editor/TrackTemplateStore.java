@@ -211,26 +211,26 @@ public final class TrackTemplateStore {
      * Phase-2 adapter — exposes the track-tile store through the unified
      * {@link TemplateStore} surface. Track has only the synthetic
      * "default" name (per {@link TrackKind#DEFAULT_NAME}), so the
-     * {@link Template.TrackModel#name()} field isn't dispatched on yet —
+     * {@link Template.Track#name()} field isn't dispatched on yet —
      * the editor save still hits the single-tile flow.
      */
-    private static final TemplateStore<Template.TrackModel> ADAPTER = new TemplateStore<>() {
+    private static final TemplateStore<Template.Track> ADAPTER = new TemplateStore<>() {
         @Override public TemplateKind kind() { return TemplateKind.TRACK; }
 
         @Override
-        public SaveResult save(ServerPlayer player, Template.TrackModel template) throws Exception {
+        public SaveResult save(ServerPlayer player, Template.Track template) throws Exception {
             TrackEditor.SaveResult r = TrackEditor.save(player);
             return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
         }
 
         @Override
-        public boolean canPromote(Template.TrackModel template) { return sourceTreeAvailable(); }
+        public boolean canPromote(Template.Track template) { return sourceTreeAvailable(); }
 
         @Override
-        public void promote(Template.TrackModel template) throws Exception {
+        public void promote(Template.Track template) throws Exception {
             TrackTemplateStore.promote();
         }
     };
 
-    public static TemplateStore<Template.TrackModel> adapter() { return ADAPTER; }
+    public static TemplateStore<Template.Track> adapter() { return ADAPTER; }
 }

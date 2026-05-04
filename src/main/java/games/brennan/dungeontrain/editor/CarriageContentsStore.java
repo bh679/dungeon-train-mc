@@ -307,25 +307,25 @@ public final class CarriageContentsStore {
      * (write-through happens inside {@link CarriageContentsEditor#save}
      * when devmode is on), so {@link #canPromote} returns false and
      * {@link #promote} throws — mirrors the existing {@code SaveCommand}
-     * arm for {@code Template.ContentsModel}.
+     * arm for {@code Template.Contents}.
      */
-    private static final TemplateStore<Template.ContentsModel> ADAPTER = new TemplateStore<>() {
+    private static final TemplateStore<Template.Contents> ADAPTER = new TemplateStore<>() {
         @Override public TemplateKind kind() { return TemplateKind.CONTENTS; }
 
         @Override
-        public SaveResult save(ServerPlayer player, Template.ContentsModel template) throws Exception {
+        public SaveResult save(ServerPlayer player, Template.Contents template) throws Exception {
             CarriageContentsEditor.SaveResult r = CarriageContentsEditor.save(player, template.contents());
             return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
         }
 
         @Override
-        public boolean canPromote(Template.ContentsModel template) { return false; }
+        public boolean canPromote(Template.Contents template) { return false; }
 
         @Override
-        public void promote(Template.ContentsModel template) throws Exception {
+        public void promote(Template.Contents template) throws Exception {
             throw new IllegalStateException("Contents have no bundled tier — '/dt save default' does not apply.");
         }
     };
 
-    public static TemplateStore<Template.ContentsModel> adapter() { return ADAPTER; }
+    public static TemplateStore<Template.Contents> adapter() { return ADAPTER; }
 }

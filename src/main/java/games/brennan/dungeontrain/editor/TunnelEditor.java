@@ -181,7 +181,7 @@ public final class TunnelEditor {
     /** Snapshot the freshly-stamped tunnel region for {@link EditorDirtyCheck}'s baseline. */
     private static void captureTunnelSnapshot(ServerLevel overworld, BlockPos origin, TunnelVariant variant, String name) {
         EditorPlotSnapshots.capture(tunnelSnapshotKey(variant, name), overworld, origin,
-            TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
+            TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
     }
 
     /** Snapshot key shared with {@link EditorDirtyCheck} for tunnel rows. */

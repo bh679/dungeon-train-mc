@@ -96,35 +96,35 @@ public enum EditorCategory {
         BlockPos pos = player.blockPosition();
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
-            return Optional.of(new Located(CARRIAGES, new Template.CarriageModel(carriage)));
+            return Optional.of(new Located(CARRIAGES, new Template.Carriage(carriage)));
         }
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
         if (partLoc != null) {
             return Optional.of(new Located(CARRIAGES,
-                new Template.PartModel(partLoc.kind(), partLoc.name())));
+                new Template.Part(partLoc.kind(), partLoc.name())));
         }
         CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
         if (contents != null) {
-            return Optional.of(new Located(CONTENTS, new Template.ContentsModel(contents)));
+            return Optional.of(new Located(CONTENTS, new Template.Contents(contents)));
         }
         String trackName = TrackEditor.resolveName(pos, dims);
         if (trackName != null) {
-            return Optional.of(new Located(TRACKS, new Template.TrackModel(trackName)));
+            return Optional.of(new Located(TRACKS, new Template.Track(trackName)));
         }
         PillarEditor.SectionPlot pillarLoc = PillarEditor.plotContaining(pos, dims);
         if (pillarLoc != null) {
             return Optional.of(new Located(TRACKS,
-                new Template.PillarModel(pillarLoc.section(), pillarLoc.name())));
+                new Template.Pillar(pillarLoc.section(), pillarLoc.name())));
         }
         PillarEditor.AdjunctPlot adjunctLoc = PillarEditor.plotContainingAdjunct(pos, dims);
         if (adjunctLoc != null) {
             return Optional.of(new Located(TRACKS,
-                new Template.AdjunctModel(adjunctLoc.adjunct(), adjunctLoc.name())));
+                new Template.Adjunct(adjunctLoc.adjunct(), adjunctLoc.name())));
         }
         TunnelEditor.TunnelPlot tunnelLoc = TunnelEditor.plotContainingNamed(pos);
         if (tunnelLoc != null) {
             return Optional.of(new Located(TRACKS,
-                new Template.TunnelModel(tunnelLoc.variant(), tunnelLoc.name())));
+                new Template.Tunnel(tunnelLoc.variant(), tunnelLoc.name())));
         }
         return Optional.empty();
     }
@@ -133,7 +133,7 @@ public enum EditorCategory {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         List<Template> out = new ArrayList<>(variants.size());
         for (CarriageVariant v : variants) {
-            out.add(new Template.CarriageModel(v));
+            out.add(new Template.Carriage(v));
         }
         return out;
     }
@@ -142,7 +142,7 @@ public enum EditorCategory {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         List<Template> out = new ArrayList<>(all.size());
         for (CarriageContents c : all) {
-            out.add(new Template.ContentsModel(c));
+            out.add(new Template.Contents(c));
         }
         return out;
     }
@@ -151,18 +151,18 @@ public enum EditorCategory {
         List<Template> out = new ArrayList<>(
             1 + PillarSection.values().length + PillarAdjunct.values().length + TunnelVariant.values().length);
         // Track tile first — it's the "default" track model, most used.
-        out.add(new Template.TrackModel());
+        out.add(new Template.Track());
         // Ground-up pillar ordering mirrors physical stacking.
-        out.add(new Template.PillarModel(PillarSection.BOTTOM));
-        out.add(new Template.PillarModel(PillarSection.MIDDLE));
-        out.add(new Template.PillarModel(PillarSection.TOP));
+        out.add(new Template.Pillar(PillarSection.BOTTOM));
+        out.add(new Template.Pillar(PillarSection.MIDDLE));
+        out.add(new Template.Pillar(PillarSection.TOP));
         // Pillar adjuncts (stairs) sit alongside the pillar column physically;
         // expose them as their own row of variants right after the pillars.
         for (PillarAdjunct a : PillarAdjunct.values()) {
-            out.add(new Template.AdjunctModel(a));
+            out.add(new Template.Adjunct(a));
         }
         for (TunnelVariant v : TunnelVariant.values()) {
-            out.add(new Template.TunnelModel(v));
+            out.add(new Template.Tunnel(v));
         }
         return out;
     }

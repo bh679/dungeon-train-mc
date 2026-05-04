@@ -93,27 +93,27 @@ public final class ResetCommand {
 
     /** Re-stamp the plot via the normal tier resolution — same as {@code enter} does. */
     private static void resetToSaved(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel carriage) {
+        if (model instanceof Template.Carriage carriage) {
             CarriageEditor.stampPlot(overworld, carriage.variant(), dims);
             return;
         }
-        if (model instanceof Template.ContentsModel contentsModel) {
+        if (model instanceof Template.Contents contentsModel) {
             CarriageContentsEditor.stampPlot(overworld, contentsModel.contents(), dims);
             return;
         }
-        if (model instanceof Template.PillarModel pillar) {
+        if (model instanceof Template.Pillar pillar) {
             PillarEditor.stampPlot(overworld, pillar.section(), dims);
             return;
         }
-        if (model instanceof Template.AdjunctModel adjunct) {
+        if (model instanceof Template.Adjunct adjunct) {
             PillarEditor.stampPlot(overworld, adjunct.adjunct(), dims);
             return;
         }
-        if (model instanceof Template.TunnelModel tunnel) {
+        if (model instanceof Template.Tunnel tunnel) {
             TunnelEditor.stampPlot(overworld, tunnel.variant());
             return;
         }
-        if (model instanceof Template.TrackModel) {
+        if (model instanceof Template.Track) {
             TrackEditor.stampPlot(overworld, dims);
             return;
         }
@@ -125,7 +125,7 @@ public final class ResetCommand {
      */
     private static int resetToDefault(CommandSourceStack source, ServerLevel overworld,
                                       Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel carriage) {
+        if (model instanceof Template.Carriage carriage) {
             Optional<StructureTemplate> bundled =
                 CarriageTemplateStore.getBundled(overworld, carriage.variant(), dims);
             if (bundled.isEmpty()) {
@@ -149,7 +149,7 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
-        if (model instanceof Template.PillarModel pillar) {
+        if (model instanceof Template.Pillar pillar) {
             Optional<StructureTemplate> bundled =
                 PillarTemplateStore.getBundled(overworld, pillar.section(), dims);
             if (bundled.isEmpty()) {
@@ -166,7 +166,7 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
-        if (model instanceof Template.AdjunctModel adjunctModel) {
+        if (model instanceof Template.Adjunct adjunctModel) {
             PillarAdjunct a = adjunctModel.adjunct();
             Optional<StructureTemplate> bundled =
                 PillarTemplateStore.getBundledAdjunct(overworld, a);
@@ -184,19 +184,19 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
-        if (model instanceof Template.TunnelModel tunnel) {
+        if (model instanceof Template.Tunnel tunnel) {
             source.sendFailure(Component.literal(
                 "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '" + tunnel.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        if (model instanceof Template.ContentsModel contentsModel) {
+        if (model instanceof Template.Contents contentsModel) {
             source.sendFailure(Component.literal(
                 "Contents templates have no separate bundled tier — '/dt reset default' does not apply to '" + contentsModel.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        if (model instanceof Template.TrackModel) {
+        if (model instanceof Template.Track) {
             Optional<StructureTemplate> bundled =
                 TrackTemplateStore.getBundled(overworld, dims);
             if (bundled.isEmpty()) {

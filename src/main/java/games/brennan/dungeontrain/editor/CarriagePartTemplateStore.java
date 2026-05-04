@@ -251,38 +251,38 @@ public final class CarriagePartTemplateStore {
      * {@link TemplateStore} surface. Cached per
      * {@link CarriagePartKind} because each kind has its own physical
      * {@code (length × width × height)} footprint and the
-     * {@link Template.PartModel#partKind()} is the discriminator the
+     * {@link Template.Part#partKind()} is the discriminator the
      * underlying static methods key on.
      */
-    private static final EnumMap<CarriagePartKind, TemplateStore<Template.PartModel>> ADAPTERS
+    private static final EnumMap<CarriagePartKind, TemplateStore<Template.Part>> ADAPTERS
         = new EnumMap<>(CarriagePartKind.class);
     static {
         for (CarriagePartKind k : CarriagePartKind.values()) ADAPTERS.put(k, makeAdapter(k));
     }
 
-    private static TemplateStore<Template.PartModel> makeAdapter(CarriagePartKind kind) {
+    private static TemplateStore<Template.Part> makeAdapter(CarriagePartKind kind) {
         return new TemplateStore<>() {
             @Override public TemplateKind kind() { return TemplateKind.PART; }
 
             @Override
-            public SaveResult save(ServerPlayer player, Template.PartModel template) throws Exception {
+            public SaveResult save(ServerPlayer player, Template.Part template) throws Exception {
                 CarriagePartEditor.SaveResult r = CarriagePartEditor.save(player, kind, template.name());
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override
-            public boolean canPromote(Template.PartModel template) {
+            public boolean canPromote(Template.Part template) {
                 return sourceTreeAvailable() && exists(kind, template.name());
             }
 
             @Override
-            public void promote(Template.PartModel template) throws Exception {
+            public void promote(Template.Part template) throws Exception {
                 CarriagePartTemplateStore.promote(kind, template.name());
             }
         };
     }
 
-    public static TemplateStore<Template.PartModel> adapter(CarriagePartKind kind) {
+    public static TemplateStore<Template.Part> adapter(CarriagePartKind kind) {
         return ADAPTERS.get(kind);
     }
 
@@ -292,7 +292,7 @@ public final class CarriagePartTemplateStore {
      * record. The underlying EnumMap cache key stays the bare
      * {@link CarriagePartKind}; the id record is a callsite shape only.
      */
-    public static TemplateStore<Template.PartModel> adapter(games.brennan.dungeontrain.template.CarriagePartTemplateId id) {
+    public static TemplateStore<Template.Part> adapter(games.brennan.dungeontrain.template.CarriagePartTemplateId id) {
         return ADAPTERS.get(id.kind());
     }
 }

@@ -1105,17 +1105,17 @@ public final class EditorCommand {
         // Teleport to the first via the existing enter path (also handles session + outline).
         try {
             Template head = first.get();
-            if (head instanceof Template.CarriageModel cm) {
+            if (head instanceof Template.Carriage cm) {
                 CarriageEditor.enter(player, cm.variant());
-            } else if (head instanceof Template.ContentsModel cm) {
+            } else if (head instanceof Template.Contents cm) {
                 CarriageContentsEditor.enter(player, cm.contents(), null);
-            } else if (head instanceof Template.PillarModel pm) {
+            } else if (head instanceof Template.Pillar pm) {
                 PillarEditor.enter(player, pm.section());
-            } else if (head instanceof Template.AdjunctModel am) {
+            } else if (head instanceof Template.Adjunct am) {
                 PillarEditor.enter(player, am.adjunct());
-            } else if (head instanceof Template.TunnelModel tm) {
+            } else if (head instanceof Template.Tunnel tm) {
                 TunnelEditor.enter(player, tm.variant());
-            } else if (head instanceof Template.TrackModel) {
+            } else if (head instanceof Template.Track) {
                 TrackEditor.enter(player);
             }
             final Template firstModel = head;
@@ -1133,17 +1133,17 @@ public final class EditorCommand {
     }
 
     private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel cm) {
+        if (model instanceof Template.Carriage cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
-        } else if (model instanceof Template.ContentsModel cm) {
+        } else if (model instanceof Template.Contents cm) {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
-        } else if (model instanceof Template.PillarModel pm) {
+        } else if (model instanceof Template.Pillar pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
-        } else if (model instanceof Template.AdjunctModel am) {
+        } else if (model instanceof Template.Adjunct am) {
             PillarEditor.stampPlot(overworld, am.adjunct(), dims);
-        } else if (model instanceof Template.TunnelModel tm) {
+        } else if (model instanceof Template.Tunnel tm) {
             TunnelEditor.stampPlot(overworld, tm.variant());
-        } else if (model instanceof Template.TrackModel) {
+        } else if (model instanceof Template.Track) {
             TrackEditor.stampPlot(overworld, dims);
         }
     }
@@ -1202,8 +1202,8 @@ public final class EditorCommand {
                 origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
                     games.brennan.dungeontrain.track.variant.TrackKind.TILE, name, dims);
                 size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackTemplate.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackTemplate.HEIGHT,
+                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
                     dims.width());
             } else if (prefix.startsWith("pillar_")) {
                 games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
@@ -1231,9 +1231,9 @@ public final class EditorCommand {
                 }
                 origin = TunnelEditor.plotOrigin(tv, name);
                 size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.tunnel.TunnelTemplate.LENGTH,
-                    games.brennan.dungeontrain.tunnel.TunnelTemplate.HEIGHT,
-                    games.brennan.dungeontrain.tunnel.TunnelTemplate.WIDTH);
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
             } else {
                 source.sendFailure(Component.literal("Unrecognised track-side id '" + id + "'."));
                 return 0;
@@ -1251,22 +1251,22 @@ public final class EditorCommand {
                     "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
                 return 0;
             }
-            if (model instanceof Template.CarriageModel cm) {
+            if (model instanceof Template.Carriage cm) {
                 origin = CarriageEditor.plotOrigin(cm.variant(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof Template.ContentsModel cm) {
+            } else if (model instanceof Template.Contents cm) {
                 origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof Template.PillarModel pm) {
+            } else if (model instanceof Template.Pillar pm) {
                 origin = PillarEditor.plotOrigin(pm.section(), dims);
                 size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
-            } else if (model instanceof Template.TrackModel) {
+            } else if (model instanceof Template.Track) {
                 origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
                     games.brennan.dungeontrain.track.variant.TrackKind.TILE,
                     games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
                 size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackTemplate.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackTemplate.HEIGHT,
+                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
                     dims.width());
             } else {
                 source.sendFailure(Component.literal(

@@ -307,7 +307,7 @@ public final class VariantOverlayRenderer {
      * plots and the client renders nothing for it.
      */
     private static Set<String> excludedContentsFor(Template model) {
-        if (!(model instanceof Template.CarriageModel cm)) return Collections.emptySet();
+        if (!(model instanceof Template.Carriage cm)) return Collections.emptySet();
         CarriageContentsAllowList allow = CarriageVariantContentsAllowStore.get(cm.variant())
             .orElse(CarriageContentsAllowList.EMPTY);
         return allow.excluded();
@@ -323,24 +323,24 @@ public final class VariantOverlayRenderer {
      * weight pool, so no model returns the sentinel today.
      */
     private static int weightFor(Template model) {
-        if (model instanceof Template.CarriageModel cm) {
+        if (model instanceof Template.Carriage cm) {
             return CarriageWeights.current().weightFor(cm.variant().id());
         }
-        if (model instanceof Template.ContentsModel cm) {
+        if (model instanceof Template.Contents cm) {
             return CarriageContentsWeights.current().weightFor(cm.contents().id());
         }
-        if (model instanceof Template.TrackModel tm) {
+        if (model instanceof Template.Track tm) {
             return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
         }
-        if (model instanceof Template.PillarModel pm) {
+        if (model instanceof Template.Pillar pm) {
             return TrackVariantWeights.weightFor(
                 TrackPlotLocator.pillarKind(pm.section()), pm.name());
         }
-        if (model instanceof Template.AdjunctModel am) {
+        if (model instanceof Template.Adjunct am) {
             return TrackVariantWeights.weightFor(
                 PillarTemplateStore.adjunctKind(am.adjunct()), am.name());
         }
-        if (model instanceof Template.TunnelModel tm) {
+        if (model instanceof Template.Tunnel tm) {
             return TrackVariantWeights.weightFor(
                 TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
         }
@@ -357,22 +357,22 @@ public final class VariantOverlayRenderer {
      * NPE-safe.
      */
     private static String modelNameFor(Template model) {
-        if (model instanceof Template.CarriageModel cm) {
+        if (model instanceof Template.Carriage cm) {
             return cm.variant().id();
         }
-        if (model instanceof Template.ContentsModel cm) {
+        if (model instanceof Template.Contents cm) {
             return cm.contents().id();
         }
-        if (model instanceof Template.TrackModel tm) {
+        if (model instanceof Template.Track tm) {
             return tm.name();
         }
-        if (model instanceof Template.PillarModel pm) {
+        if (model instanceof Template.Pillar pm) {
             return pm.name();
         }
-        if (model instanceof Template.AdjunctModel am) {
+        if (model instanceof Template.Adjunct am) {
             return am.name();
         }
-        if (model instanceof Template.TunnelModel tm) {
+        if (model instanceof Template.Tunnel tm) {
             return tm.name();
         }
         return model.id();

@@ -336,23 +336,23 @@ public final class CarriageTemplateStore {
      * {@link games.brennan.dungeontrain.template.SaveResult} record (same
      * shape, just hoisted into the {@code template/} package).
      */
-    private static final TemplateStore<Template.CarriageModel> ADAPTER = new TemplateStore<>() {
+    private static final TemplateStore<Template.Carriage> ADAPTER = new TemplateStore<>() {
         @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
 
         @Override
-        public SaveResult save(ServerPlayer player, Template.CarriageModel template) throws Exception {
+        public SaveResult save(ServerPlayer player, Template.Carriage template) throws Exception {
             CarriageEditor.SaveResult r = CarriageEditor.save(player, template.variant());
             return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
         }
 
         @Override
-        public boolean canPromote(Template.CarriageModel template) {
+        public boolean canPromote(Template.Carriage template) {
             return template.variant() instanceof CarriageVariant.Builtin
                 && sourceTreeAvailable();
         }
 
         @Override
-        public void promote(Template.CarriageModel template) throws Exception {
+        public void promote(Template.Carriage template) throws Exception {
             if (!(template.variant() instanceof CarriageVariant.Builtin builtin)) {
                 throw new IllegalStateException("Custom carriages cannot promote — no bundled tier.");
             }
@@ -360,5 +360,5 @@ public final class CarriageTemplateStore {
         }
     };
 
-    public static TemplateStore<Template.CarriageModel> adapter() { return ADAPTER; }
+    public static TemplateStore<Template.Carriage> adapter() { return ADAPTER; }
 }

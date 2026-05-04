@@ -246,45 +246,45 @@ public final class CarriageVariantRegistry {
     /**
      * Phase-2 adapter — exposes the carriage variant registry through the
      * unified {@link TemplateRegistry} surface. Wraps each registered
-     * {@link CarriageVariant} into a {@link Template.CarriageModel} so
+     * {@link CarriageVariant} into a {@link Template.Carriage} so
      * callers can iterate templates without caring about the underlying
      * sealed-variant storage.
      */
-    private static final TemplateRegistry<Template.CarriageModel> ADAPTER = new TemplateRegistry<>() {
+    private static final TemplateRegistry<Template.Carriage> ADAPTER = new TemplateRegistry<>() {
         @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
 
         @Override
-        public List<Template.CarriageModel> all() {
+        public List<Template.Carriage> all() {
             List<CarriageVariant> variants = allVariants();
-            List<Template.CarriageModel> out = new ArrayList<>(variants.size());
-            for (CarriageVariant v : variants) out.add(new Template.CarriageModel(v));
+            List<Template.Carriage> out = new ArrayList<>(variants.size());
+            for (CarriageVariant v : variants) out.add(new Template.Carriage(v));
             return out;
         }
 
         @Override
-        public List<Template.CarriageModel> builtins() {
+        public List<Template.Carriage> builtins() {
             List<CarriageVariant> variants = CarriageVariantRegistry.builtins();
-            List<Template.CarriageModel> out = new ArrayList<>(variants.size());
-            for (CarriageVariant v : variants) out.add(new Template.CarriageModel(v));
+            List<Template.Carriage> out = new ArrayList<>(variants.size());
+            for (CarriageVariant v : variants) out.add(new Template.Carriage(v));
             return out;
         }
 
         @Override
-        public List<Template.CarriageModel> customs() {
+        public List<Template.Carriage> customs() {
             List<String> ids = customIds();
-            List<Template.CarriageModel> out = new ArrayList<>(ids.size());
-            for (String id : ids) out.add(new Template.CarriageModel(new CarriageVariant.Custom(id)));
+            List<Template.Carriage> out = new ArrayList<>(ids.size());
+            for (String id : ids) out.add(new Template.Carriage(new CarriageVariant.Custom(id)));
             return out;
         }
 
         @Override
-        public Optional<Template.CarriageModel> find(String id) {
-            return CarriageVariantRegistry.find(id).map(Template.CarriageModel::new);
+        public Optional<Template.Carriage> find(String id) {
+            return CarriageVariantRegistry.find(id).map(Template.Carriage::new);
         }
 
         @Override public void reload() { CarriageVariantRegistry.reload(); }
         @Override public void clear() { CarriageVariantRegistry.clear(); }
     };
 
-    public static TemplateRegistry<Template.CarriageModel> adapter() { return ADAPTER; }
+    public static TemplateRegistry<Template.Carriage> adapter() { return ADAPTER; }
 }

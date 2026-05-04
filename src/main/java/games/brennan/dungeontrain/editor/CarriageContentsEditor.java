@@ -85,7 +85,7 @@ public final class CarriageContentsEditor {
         // interior to a snapshot of just the interior keeps shell blocks
         // (which the contents save deliberately excludes) out of the diff.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interior = CarriageContentsTemplate.interiorSize(dims);
+        net.minecraft.core.Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
@@ -217,7 +217,7 @@ public final class CarriageContentsEditor {
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.
         BlockPos interiorOrigin = origin.offset(1, 1, 1);
-        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsTemplate.interiorSize(dims);
+        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsPlacer.interiorSize(dims);
         EditorPlotSnapshots.capture(
             EditorPlotSnapshots.key("contents", contents.id()),
             overworld, interiorOrigin,

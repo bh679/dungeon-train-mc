@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.client.menu;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ final class CategoryTemplatesScreenTest {
     @DisplayName("PillarModel teleport command uses bare section id, no pillar_ prefix")
     void pillar_top_usesBareId() {
         String command = CategoryTemplatesScreen.trackEnterCommandFor(
-            new Template.PillarModel(PillarSection.TOP));
+            new Template.Pillar(PillarSection.TOP));
         assertEquals("dungeontrain editor pillar enter top", command);
     }
 
@@ -37,7 +37,7 @@ final class CategoryTemplatesScreenTest {
     @DisplayName("PillarModel MIDDLE teleport command uses bare section id")
     void pillar_middle_usesBareId() {
         String command = CategoryTemplatesScreen.trackEnterCommandFor(
-            new Template.PillarModel(PillarSection.MIDDLE));
+            new Template.Pillar(PillarSection.MIDDLE));
         assertEquals("dungeontrain editor pillar enter middle", command);
     }
 
@@ -45,7 +45,7 @@ final class CategoryTemplatesScreenTest {
     @DisplayName("PillarModel BOTTOM teleport command uses bare section id")
     void pillar_bottom_usesBareId() {
         String command = CategoryTemplatesScreen.trackEnterCommandFor(
-            new Template.PillarModel(PillarSection.BOTTOM));
+            new Template.Pillar(PillarSection.BOTTOM));
         assertEquals("dungeontrain editor pillar enter bottom", command);
     }
 
@@ -53,7 +53,7 @@ final class CategoryTemplatesScreenTest {
     @DisplayName("AdjunctModel STAIRS teleport command uses bare adjunct id, no adjunct_ prefix")
     void adjunct_stairs_usesBareId() {
         String command = CategoryTemplatesScreen.trackEnterCommandFor(
-            new Template.AdjunctModel(PillarAdjunct.STAIRS));
+            new Template.Adjunct(PillarAdjunct.STAIRS));
         assertEquals("dungeontrain editor pillar enter stairs", command);
     }
 
@@ -62,7 +62,7 @@ final class CategoryTemplatesScreenTest {
     @Test
     @DisplayName("TrackModel still routes to /editor track enter (no argument)")
     void track_unchanged() {
-        String command = CategoryTemplatesScreen.trackEnterCommandFor(new Template.TrackModel());
+        String command = CategoryTemplatesScreen.trackEnterCommandFor(new Template.Track());
         assertEquals("dungeontrain editor track enter", command);
     }
 
@@ -70,7 +70,7 @@ final class CategoryTemplatesScreenTest {
     @DisplayName("TunnelModel SECTION still routes to /editor enter tunnel_<variant> (prefixed form)")
     void tunnel_section_keepsPrefixedForm() {
         String command = CategoryTemplatesScreen.trackEnterCommandFor(
-            new Template.TunnelModel(TunnelVariant.SECTION));
+            new Template.Tunnel(TunnelVariant.SECTION));
         assertEquals("dungeontrain editor enter tunnel_section", command);
     }
 
@@ -78,7 +78,7 @@ final class CategoryTemplatesScreenTest {
     @DisplayName("TunnelModel PORTAL still routes to /editor enter tunnel_<variant>")
     void tunnel_portal_keepsPrefixedForm() {
         String command = CategoryTemplatesScreen.trackEnterCommandFor(
-            new Template.TunnelModel(TunnelVariant.PORTAL));
+            new Template.Tunnel(TunnelVariant.PORTAL));
         assertEquals("dungeontrain editor enter tunnel_portal", command);
     }
 
@@ -87,7 +87,7 @@ final class CategoryTemplatesScreenTest {
     void unknownTemplate_returnsNull() {
         // PartModel is in the Template sealed hierarchy but isn't a track-side
         // model — trackEnterCommandFor falls through to the null return.
-        Template part = new Template.PartModel(
+        Template part = new Template.Part(
             games.brennan.dungeontrain.train.CarriagePartKind.FLOOR);
         assertNull(CategoryTemplatesScreen.trackEnterCommandFor(part));
     }

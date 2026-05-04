@@ -50,13 +50,13 @@ import java.util.Optional;
  * is purely additive.
  */
 public sealed interface Template
-    permits Template.CarriageModel,
-            Template.ContentsModel,
-            Template.PartModel,
-            Template.TrackModel,
-            Template.PillarModel,
-            Template.AdjunctModel,
-            Template.TunnelModel {
+    permits Template.Carriage,
+            Template.Contents,
+            Template.Part,
+            Template.Track,
+            Template.Pillar,
+            Template.Adjunct,
+            Template.Tunnel {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -114,8 +114,8 @@ public sealed interface Template
      */
     TemplateRegistry<? extends Template> registry();
 
-    record CarriageModel(CarriageVariant variant) implements Template {
-        public CarriageModel {
+    record Carriage(CarriageVariant variant) implements Template {
+        public Carriage {
             Objects.requireNonNull(variant, "variant");
         }
 
@@ -148,12 +148,12 @@ public sealed interface Template
             return variant.isBuiltin();
         }
 
-        @Override public TemplateStore<CarriageModel> store() { return CarriageTemplateStore.adapter(); }
-        @Override public TemplateRegistry<CarriageModel> registry() { return CarriageVariantRegistry.adapter(); }
+        @Override public TemplateStore<Carriage> store() { return CarriageTemplateStore.adapter(); }
+        @Override public TemplateRegistry<Carriage> registry() { return CarriageVariantRegistry.adapter(); }
     }
 
-    record ContentsModel(CarriageContents contents) implements Template {
-        public ContentsModel {
+    record Contents(CarriageContents contents) implements Template {
+        public Contents {
             Objects.requireNonNull(contents, "contents");
         }
 
@@ -187,8 +187,8 @@ public sealed interface Template
             return false;
         }
 
-        @Override public TemplateStore<ContentsModel> store() { return CarriageContentsStore.adapter(); }
-        @Override public TemplateRegistry<ContentsModel> registry() { return CarriageContentsRegistry.adapter(); }
+        @Override public TemplateStore<Contents> store() { return CarriageContentsStore.adapter(); }
+        @Override public TemplateRegistry<Contents> registry() { return CarriageContentsRegistry.adapter(); }
     }
 
     /**
@@ -203,13 +203,13 @@ public sealed interface Template
      * arguments directly — Phase 2 collapses it onto the unified Template
      * shape.</p>
      */
-    record PartModel(CarriagePartKind partKind, String name) implements Template {
-        public PartModel {
+    record Part(CarriagePartKind partKind, String name) implements Template {
+        public Part {
             Objects.requireNonNull(partKind, "partKind");
             Objects.requireNonNull(name, "name");
         }
 
-        public PartModel(CarriagePartKind partKind) { this(partKind, TrackKind.DEFAULT_NAME); }
+        public Part(CarriagePartKind partKind) { this(partKind, TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
@@ -245,8 +245,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<PartModel> store() { return CarriagePartTemplateStore.adapter(new CarriagePartTemplateId(partKind, name)); }
-        @Override public TemplateRegistry<PartModel> registry() { return CarriagePartRegistry.adapter(new CarriagePartTemplateId(partKind, name)); }
+        @Override public TemplateStore<Part> store() { return CarriagePartTemplateStore.adapter(new CarriagePartTemplateId(partKind, name)); }
+        @Override public TemplateRegistry<Part> registry() { return CarriagePartRegistry.adapter(new CarriagePartTemplateId(partKind, name)); }
     }
 
     /**
@@ -255,12 +255,12 @@ public sealed interface Template
      * {@code track / <name>} so the HUD shows the variant the player is
      * standing on.
      */
-    record TrackModel(String name) implements Template {
-        public TrackModel {
+    record Track(String name) implements Template {
+        public Track {
             Objects.requireNonNull(name, "name");
         }
 
-        public TrackModel() { this(TrackKind.DEFAULT_NAME); }
+        public Track() { this(TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
@@ -287,8 +287,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<TrackModel> store() { return TrackTemplateStore.adapter(); }
-        @Override public TemplateRegistry<TrackModel> registry() { return TrackVariantRegistry.adapterForTrack(); }
+        @Override public TemplateStore<Track> store() { return TrackTemplateStore.adapter(); }
+        @Override public TemplateRegistry<Track> registry() { return TrackVariantRegistry.adapterForTrack(); }
     }
 
     /**
@@ -296,13 +296,13 @@ public sealed interface Template
      * {@code pillar_<section>} for command dispatch; {@code displayName()}
      * is {@code pillar / <section> / <name>}.
      */
-    record PillarModel(PillarSection section, String name) implements Template {
-        public PillarModel {
+    record Pillar(PillarSection section, String name) implements Template {
+        public Pillar {
             Objects.requireNonNull(section, "section");
             Objects.requireNonNull(name, "name");
         }
 
-        public PillarModel(PillarSection section) { this(section, TrackKind.DEFAULT_NAME); }
+        public Pillar(PillarSection section) { this(section, TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
@@ -334,8 +334,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<PillarModel> store() { return PillarTemplateStore.adapter(new PillarTemplateId(section, name)); }
-        @Override public TemplateRegistry<PillarModel> registry() { return TrackVariantRegistry.adapterForPillar(new PillarTemplateId(section, name)); }
+        @Override public TemplateStore<Pillar> store() { return PillarTemplateStore.adapter(new PillarTemplateId(section, name)); }
+        @Override public TemplateRegistry<Pillar> registry() { return TrackVariantRegistry.adapterForPillar(new PillarTemplateId(section, name)); }
     }
 
     /**
@@ -346,13 +346,13 @@ public sealed interface Template
      * shows {@code Tracks / stairs / default} when standing in the
      * stairs default plot.
      */
-    record AdjunctModel(PillarAdjunct adjunct, String name) implements Template {
-        public AdjunctModel {
+    record Adjunct(PillarAdjunct adjunct, String name) implements Template {
+        public Adjunct {
             Objects.requireNonNull(adjunct, "adjunct");
             Objects.requireNonNull(name, "name");
         }
 
-        public AdjunctModel(PillarAdjunct adjunct) { this(adjunct, TrackKind.DEFAULT_NAME); }
+        public Adjunct(PillarAdjunct adjunct) { this(adjunct, TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
@@ -387,8 +387,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<AdjunctModel> store() { return PillarTemplateStore.adapterForAdjunct(new StairsTemplateId(name)); }
-        @Override public TemplateRegistry<AdjunctModel> registry() { return TrackVariantRegistry.adapterForAdjunct(new StairsTemplateId(name)); }
+        @Override public TemplateStore<Adjunct> store() { return PillarTemplateStore.adapterForAdjunct(new StairsTemplateId(name)); }
+        @Override public TemplateRegistry<Adjunct> registry() { return TrackVariantRegistry.adapterForAdjunct(new StairsTemplateId(name)); }
     }
 
     /**
@@ -396,13 +396,13 @@ public sealed interface Template
      * {@code tunnel_<variant>} for command dispatch; {@code displayName()}
      * is {@code tunnel / <variant> / <name>}.
      */
-    record TunnelModel(TunnelVariant variant, String name) implements Template {
-        public TunnelModel {
+    record Tunnel(TunnelVariant variant, String name) implements Template {
+        public Tunnel {
             Objects.requireNonNull(variant, "variant");
             Objects.requireNonNull(name, "name");
         }
 
-        public TunnelModel(TunnelVariant variant) { this(variant, TrackKind.DEFAULT_NAME); }
+        public Tunnel(TunnelVariant variant) { this(variant, TrackKind.DEFAULT_NAME); }
 
         @Override
         public String id() {
@@ -435,7 +435,7 @@ public sealed interface Template
             return false;
         }
 
-        @Override public TemplateStore<TunnelModel> store() { return TunnelTemplateStore.adapter(new TunnelTemplateId(variant, name)); }
-        @Override public TemplateRegistry<TunnelModel> registry() { return TrackVariantRegistry.adapterForTunnel(new TunnelTemplateId(variant, name)); }
+        @Override public TemplateStore<Tunnel> store() { return TunnelTemplateStore.adapter(new TunnelTemplateId(variant, name)); }
+        @Override public TemplateRegistry<Tunnel> registry() { return TrackVariantRegistry.adapterForTunnel(new TunnelTemplateId(variant, name)); }
     }
 }
