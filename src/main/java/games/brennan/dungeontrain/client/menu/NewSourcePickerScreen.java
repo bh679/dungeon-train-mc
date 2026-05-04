@@ -21,7 +21,7 @@ import java.util.List;
  */
 public final class NewSourcePickerScreen implements MenuScreen {
 
-    public enum Category { CARRIAGES, CONTENTS, PARTS }
+    public enum Category { CARRIAGES, CONTENTS, PARTS, TRACKS }
 
     private final Category category;
     private final String kind;
@@ -38,6 +38,11 @@ public final class NewSourcePickerScreen implements MenuScreen {
             case PARTS -> "New " + kind + " — source";
             case CONTENTS -> "New contents — source";
             case CARRIAGES -> "New carriage — source";
+            // Tracks have no source picker today — only a name. Title still
+            // matches the "New … — source" pattern so the screen reads
+            // consistently with its siblings; the entry list collapses to
+            // a single name TypeArg + Back below.
+            case TRACKS -> "New " + kind + " — name";
         };
     }
 
@@ -76,6 +81,14 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 }
                 out.add(new CommandMenuEntry.TypeArg(
                     "Standard", "name", prefix + " standard"));
+            }
+            case TRACKS -> {
+                // Tracks clone-from-current — single-row TypeArg matching
+                // EditorMenuScreen.newEntryFor(tracks). The kind tag the
+                // server expects (track / pillar_top / tunnel_section / …)
+                // is in {@code kind}.
+                out.add(new CommandMenuEntry.TypeArg(
+                    "New", "name", "dungeontrain editor tracks new " + kind));
             }
         }
         out.add(new CommandMenuEntry.Back("< Back"));

@@ -179,10 +179,12 @@ public final class EditorTypeMenuInputHandler {
     }
 
     /**
-     * Open the keyboard worldspace menu and drill / type into the matching
-     * "new variant" entry point for this menu's category. Mirrors what the
-     * keyboard menu's {@code EditorMenuScreen} "New" button does, so the
-     * floating panel and the keyboard menu share authoring flows.
+     * Open the keyboard worldspace menu directly at the matching "new
+     * variant" picker for this menu's category. Uses
+     * {@link CommandMenuState#openAt} so the picker is the only screen on
+     * the navigation stack — clicking Back inside the picker closes the
+     * menu rather than falling through to MainMenu / EditorMenu, keeping
+     * the flow self-contained from the floating panel's perspective.
      *
      * <p>Categories are read from {@code variants.get(0).category()} since
      * every variant in a single floating menu shares its category.</p>
@@ -199,37 +201,29 @@ public final class EditorTypeMenuInputHandler {
             ? activeId
             : first.modelId();
 
-        CommandMenuState.open();
-        switch (category) {
-            case "CARRIAGES" -> CommandMenuState.drillIn(
-                new NewSourcePickerScreen(
-                    NewSourcePickerScreen.Category.CARRIAGES, null, currentId));
-            case "CONTENTS" -> CommandMenuState.drillIn(
-                new NewSourcePickerScreen(
-                    NewSourcePickerScreen.Category.CONTENTS, null, currentId));
-            case "PARTS" -> {
-                // For PARTS the modelId is the kind tag (floor / walls / roof /
-                // doors); the picker's "Current" option is gated on a non-empty
-                // currentId, which we don't have a stable source for from a
-                // parts menu (the variant rows don't represent the player's
-                // current part variant), so leave currentId blank.
-                CommandMenuState.drillIn(
-                    new NewSourcePickerScreen(
-                        NewSourcePickerScreen.Category.PARTS, first.modelId(), ""));
-            }
-            case "TRACKS" -> {
-                // Tracks have no source picker — drop straight into typing
-                // mode against the same prefix EditorMenuScreen.newEntryFor
-                // builds. The track-side modelId is already the kind tag the
-                // server's parser expects (see EditorPlotTeleport).
-                CommandMenuState.beginTyping(
-                    "name",
-                    "dungeontrain editor tracks new " + first.modelId(),
-                    "");
-            }
-            default -> {
-                LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);
-            }
+        NewSourcePickerScreen picker = switch (category) {
+            case "CARRIAGES" -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.CARRIAGES, null, currentId);
+            case "CONTENTS" -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.CONTENTS, null, currentId);
+            // For PARTS the modelId is the kind tag (floor / walls / roof /
+            // doors); the picker's "Current" option needs a part variant id,
+            // which the variant rows don't represent for the floating-menu
+            // entry, so leave currentId blank.
+            case "PARTS" -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.PARTS, first.modelId(), "");
+            // Tracks have no source choice today — picker collapses to a
+            // single name TypeArg row. Kind tag is the variant's modelId
+            // (the server's track-new parser expects the prefixed forms,
+            // see EditorPlotTeleport).
+            case "TRACKS" -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.TRACKS, first.modelId(), "");
+            default -> null;
+        };
+        if (picker == null) {
+            LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);
+            return;
         }
+        CommandMenuState.openAt(picker);
     }
 }

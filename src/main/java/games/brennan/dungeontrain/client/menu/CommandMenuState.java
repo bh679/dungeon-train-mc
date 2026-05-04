@@ -113,6 +113,28 @@ public final class CommandMenuState {
      * screen based on whether the player is in an editor plot.
      */
     public static void open() {
+        if (EditorStatusHudOverlay.isActive()) {
+            openInternal(List.of(new MainMenuScreen(), new EditorMenuScreen()));
+        } else {
+            openInternal(List.of(new MainMenuScreen()));
+        }
+    }
+
+    /**
+     * Open the menu with a single screen as the entire navigation stack —
+     * Back from this screen closes the menu instead of falling through to
+     * a parent. Used by sibling worldspace menus (e.g. the floating
+     * template-type menu's "+ New" button) that want a self-contained
+     * pop-up flow rather than threading through MainMenu / EditorMenu.
+     *
+     * <p>Same anchor, basis, and crosshair-clobber side effects as
+     * {@link #open()}.</p>
+     */
+    public static void openAt(MenuScreen rootScreen) {
+        openInternal(List.of(rootScreen));
+    }
+
+    private static void openInternal(List<MenuScreen> initialStack) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) return;
@@ -135,10 +157,7 @@ public final class CommandMenuState {
         anchorRight = anchorUp.cross(anchorNormal).normalize();
 
         stack.clear();
-        stack.add(new MainMenuScreen());
-        if (EditorStatusHudOverlay.isActive()) {
-            stack.add(new EditorMenuScreen());
-        }
+        stack.addAll(initialStack);
 
         typingMode = false;
         typedBuffer = "";
