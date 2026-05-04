@@ -16,7 +16,9 @@ import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -140,15 +142,28 @@ public record EditorPlotActionPacket(
             return;
         }
         switch (packet.action) {
-            case SAVE -> CarriageEditor.save(sender, variant);
+            case SAVE -> {
+                CarriageEditor.save(sender, variant);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: saved '" + variant.id() + "' template (config-dir).")
+                    .copy().withStyle(ChatFormatting.GREEN));
+            }
             case RESET -> {
-                CarriageEditor.clearPlot(overworld, variant, dims);
-                CarriageTemplateStore.delete(variant);
-                if (!variant.isBuiltin()) CarriageVariantRegistry.unregister(variant.id());
+                // Re-stamp from the saved (config-dir) template, restoring the
+                // last-saved state. Mirrors `/dt reset` semantics — does NOT
+                // delete the template (that was the pre-Phase-4 bug, now
+                // corrected to match the slash-command's reset behaviour).
+                CarriageEditor.stampPlot(overworld, variant, dims);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: reset '" + variant.id() + "' to last saved template.")
+                    .copy().withStyle(ChatFormatting.GREEN));
             }
             case CLEAR -> {
                 BlockPos origin = CarriageEditor.plotOrigin(variant, dims);
                 if (origin != null) CarriagePlacer.eraseAt(overworld, origin, dims);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: cleared all blocks in '" + variant.id() + "'.")
+                    .copy().withStyle(ChatFormatting.GREEN));
             }
             case ENTER_INSIDE -> CarriageEditor.enter(sender, variant, false);
         }
@@ -167,19 +182,29 @@ public record EditorPlotActionPacket(
         }
         CarriageContents contents = opt.get();
         switch (packet.action) {
-            case SAVE -> CarriageContentsEditor.save(sender, contents);
+            case SAVE -> {
+                CarriageContentsEditor.save(sender, contents);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: saved contents '" + contents.id() + "' template (config-dir).")
+                    .copy().withStyle(ChatFormatting.GREEN));
+            }
             case RESET -> {
-                // Mirrors EditorCommand.runContentsReset: clear plot + delete
-                // template store entry. Custom contents also unregister.
-                CarriageContentsEditor.clearPlot(overworld, contents, dims);
-                games.brennan.dungeontrain.editor.CarriageContentsStore.delete(contents);
-                if (!contents.isBuiltin()) CarriageContentsRegistry.unregister(contents.id());
+                // Re-stamp from the saved (config-dir) template — matches
+                // `/dt reset` semantics. Pre-Phase-4 this used to clear+delete
+                // the template, which was "remove" behaviour.
+                CarriageContentsEditor.stampPlot(overworld, contents, dims);
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: reset contents '" + contents.id() + "' to last saved template.")
+                    .copy().withStyle(ChatFormatting.GREEN));
             }
             case CLEAR -> {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 if (origin != null) {
                     games.brennan.dungeontrain.train.CarriageContentsPlacer.eraseAt(overworld, origin, dims);
                 }
+                sender.sendSystemMessage(Component.literal(
+                    "Editor: cleared all blocks in contents '" + contents.id() + "'.")
+                    .copy().withStyle(ChatFormatting.GREEN));
             }
             case ENTER_INSIDE -> CarriageContentsEditor.enter(sender, contents, null, false);
         }
@@ -204,14 +229,29 @@ public record EditorPlotActionPacket(
         // Pillar sections.
         for (games.brennan.dungeontrain.track.PillarSection s : games.brennan.dungeontrain.track.PillarSection.values()) {
             if (("pillar_" + s.id()).equals(modelId)) {
-                if (packet.action == Action.SAVE) {
-                    // Phase-4 Bug fix: pass packet.modelName through the
-                    // explicit-name save so the template label menu's Save
-                    // button works without the player standing in this plot.
-                    PillarEditor.save(sender,
-                        new games.brennan.dungeontrain.template.PillarTemplateId(s, packet.modelName));
-                } else if (packet.action == Action.ENTER_INSIDE) {
-                    PillarEditor.enter(sender, s, false);
+                games.brennan.dungeontrain.template.PillarTemplateId id =
+                    new games.brennan.dungeontrain.template.PillarTemplateId(s, packet.modelName);
+                String label = "pillar_" + s.id() + " '" + packet.modelName + "'";
+                switch (packet.action) {
+                    case SAVE -> {
+                        PillarEditor.save(sender, id);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: saved " + label + " template (config-dir).")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case RESET -> {
+                        PillarEditor.stampPlot(overworld, s, packet.modelName, dims);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: reset " + label + " to last saved template.")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case CLEAR -> {
+                        PillarEditor.clearPlot(overworld, s, packet.modelName, dims);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: cleared all blocks in " + label + ".")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case ENTER_INSIDE -> PillarEditor.enter(sender, s, false);
                 }
                 LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} pillar '{}/{}'",
                     sender.getName().getString(), packet.action, s.id(), packet.modelName);
@@ -221,11 +261,29 @@ public record EditorPlotActionPacket(
         // Pillar adjuncts.
         for (games.brennan.dungeontrain.track.PillarAdjunct a : games.brennan.dungeontrain.track.PillarAdjunct.values()) {
             if (("adjunct_" + a.id()).equals(modelId)) {
-                if (packet.action == Action.SAVE) {
-                    PillarEditor.save(sender,
-                        new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(a, packet.modelName));
-                } else if (packet.action == Action.ENTER_INSIDE) {
-                    PillarEditor.enter(sender, a, false);
+                games.brennan.dungeontrain.template.PillarAdjunctTemplateId id =
+                    new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(a, packet.modelName);
+                String label = "adjunct_" + a.id() + " '" + packet.modelName + "'";
+                switch (packet.action) {
+                    case SAVE -> {
+                        PillarEditor.save(sender, id);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: saved " + label + " template (config-dir).")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case RESET -> {
+                        PillarEditor.stampPlotAdjunct(overworld, a, packet.modelName, dims);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: reset " + label + " to last saved template.")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case CLEAR -> {
+                        PillarEditor.clearPlotAdjunct(overworld, a, packet.modelName, dims);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: cleared all blocks in " + label + ".")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case ENTER_INSIDE -> PillarEditor.enter(sender, a, false);
                 }
                 LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} adjunct '{}/{}'",
                     sender.getName().getString(), packet.action, a.id(), packet.modelName);
@@ -235,20 +293,38 @@ public record EditorPlotActionPacket(
         // Tunnel variants.
         for (TunnelPlacer.TunnelVariant tv : TunnelPlacer.TunnelVariant.values()) {
             if (("tunnel_" + tv.name().toLowerCase(Locale.ROOT)).equals(modelId)) {
-                if (packet.action == Action.SAVE) {
-                    TunnelEditor.save(sender,
-                        new games.brennan.dungeontrain.template.TunnelTemplateId(tv, packet.modelName));
-                } else if (packet.action == Action.ENTER_INSIDE) {
-                    TunnelEditor.enter(sender, tv, false);
+                games.brennan.dungeontrain.template.TunnelTemplateId id =
+                    new games.brennan.dungeontrain.template.TunnelTemplateId(tv, packet.modelName);
+                String label = "tunnel_" + tv.name().toLowerCase(Locale.ROOT) + " '" + packet.modelName + "'";
+                switch (packet.action) {
+                    case SAVE -> {
+                        TunnelEditor.save(sender, id);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: saved " + label + " template (config-dir).")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case RESET -> {
+                        TunnelEditor.stampPlot(overworld, tv, packet.modelName);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: reset " + label + " to last saved template.")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case CLEAR -> {
+                        BlockPos origin = TunnelEditor.plotOrigin(id);
+                        TunnelPlacer.eraseAt(overworld, origin);
+                        sender.sendSystemMessage(Component.literal(
+                            "Editor: cleared all blocks in " + label + ".")
+                            .copy().withStyle(ChatFormatting.GREEN));
+                    }
+                    case ENTER_INSIDE -> TunnelEditor.enter(sender, tv, false);
                 }
                 LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} tunnel '{}/{}'",
                     sender.getName().getString(), packet.action, tv.name(), packet.modelName);
                 return;
             }
         }
-        // Track tile and reset/clear for tracks: not in iteration 1 — those
-        // require methods that today only operate on the player's current
-        // position. Logged for visibility so the missing wiring is obvious.
+        // Track tile arm not wired (track tile has only one variant; the
+        // action-bar /dt save flow covers it).
         LOGGER.info("[DungeonTrain] EditorPlotAction: tracks {} {} not yet wired (modelId='{}')",
             packet.action, "model", modelId);
     }
