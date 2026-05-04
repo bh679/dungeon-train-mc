@@ -157,10 +157,13 @@ public final class TrackSidePlots {
     }
 
     private static boolean containsWithMargin(BlockPos pos, BlockPos origin, Vec3i fp) {
+        // +2 Y headroom above cage top so a player who landed on top via the
+        // new on-top-by-default teleport still counts as inPlot — see
+        // CarriageEditor.plotContaining for the same pattern.
         return pos.getX() >= origin.getX() - 1
             && pos.getX() <= origin.getX() + fp.getX()
             && pos.getY() >= origin.getY() - 1
-            && pos.getY() <= origin.getY() + fp.getY()
+            && pos.getY() <= origin.getY() + fp.getY() + 2
             && pos.getZ() >= origin.getZ() - 1
             && pos.getZ() <= origin.getZ() + fp.getZ();
     }

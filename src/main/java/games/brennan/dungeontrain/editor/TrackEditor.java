@@ -93,6 +93,10 @@ public final class TrackEditor {
      * registered tile variant's plot first so the row is fully visible.
      */
     public static void enter(ServerPlayer player) {
+        enter(player, true);
+    }
+
+    public static void enter(ServerPlayer player, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -103,13 +107,16 @@ public final class TrackEditor {
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
         double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + TrackPlacer.HEIGHT + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered)",
+        LOGGER.info("[DungeonTrain] Track editor enter: {} -> default plot at {} ({} variants registered, {})",
             player.getName().getString(), origin,
-            TrackVariantRegistry.namesFor(TrackKind.TILE).size());
+            TrackVariantRegistry.namesFor(TrackKind.TILE).size(),
+            onTop ? "top" : "inside");
     }
 
     /**

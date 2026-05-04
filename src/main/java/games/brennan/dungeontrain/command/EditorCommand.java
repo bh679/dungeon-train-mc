@@ -20,6 +20,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
+import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
@@ -1101,6 +1102,12 @@ public final class EditorCommand {
         if (category == EditorCategory.CARRIAGES) {
             CarriagePartEditor.stampAllPlots(overworld, dims);
         }
+
+        // Remember which category is actively stamped so VariantOverlayRenderer
+        // can keep the floating plot labels visible for as long as the
+        // structures themselves are present — not just while the player is
+        // standing inside a cage.
+        EditorStampedCategoryState.set(category);
 
         // Teleport to the first via the existing enter path (also handles session + outline).
         try {

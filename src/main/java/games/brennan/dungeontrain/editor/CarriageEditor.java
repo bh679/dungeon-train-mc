@@ -121,8 +121,12 @@ public final class CarriageEditor {
         for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
             BlockPos o = plotOrigin(variant, dims);
             if (o == null) continue;
+            // Y upper bound includes a couple of blocks of headroom above the
+            // cage top so a player who teleported to "on top" via the new
+            // landing-on-top default still counts as inPlot — same panel
+            // controls (green border, action row, Enter button) stay visible.
             if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + dims.length()
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height()
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + dims.height() + 2
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + dims.width()) {
                 return variant;
             }
@@ -135,8 +139,18 @@ public final class CarriageEditor {
      * position, clear the footprint, stamp the current template (or fallback
      * geometry) so the player sees what would spawn today, then place the
      * barrier-block cage around the footprint.
+     *
+     * <p>Defaults to landing the player <b>on top</b> of the cage so they
+     * can see the template from above without immediately being inside it
+     * — use {@link #enter(ServerPlayer, CarriageVariant, boolean)} with
+     * {@code onTop=false} to land on the floor instead (the per-plot
+     * panel's "Enter" button uses that path).</p>
      */
     public static void enter(ServerPlayer player, CarriageVariant variant) {
+        enter(player, variant, true);
+    }
+
+    public static void enter(ServerPlayer player, CarriageVariant variant, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -151,12 +165,15 @@ public final class CarriageEditor {
         stampPlot(overworld, variant, dims);
 
         double tx = origin.getX() + dims.length() / 2.0;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + dims.height() + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{}",
-            player.getName().getString(), variant.id(), origin, dims.length(), dims.width(), dims.height());
+        LOGGER.info("[DungeonTrain] Editor enter: {} -> {} plot at {} dims={}x{}x{} ({})",
+            player.getName().getString(), variant.id(), origin,
+            dims.length(), dims.width(), dims.height(), onTop ? "top" : "inside");
     }
 
     /**

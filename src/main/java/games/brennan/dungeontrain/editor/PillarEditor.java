@@ -90,8 +90,9 @@ public final class PillarEditor {
             int w = dims.width();
             for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section))) {
                 BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(section), name, dims);
+                // +2 Y headroom — see CarriageEditor.plotContaining.
                 if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + 1
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + h
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + h + 2
                     && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
                     return new SectionPlot(section, name);
                 }
@@ -108,8 +109,9 @@ public final class PillarEditor {
         for (PillarAdjunct adjunct : PillarAdjunct.values()) {
             for (String name : TrackVariantRegistry.namesFor(PillarTemplateStore.adjunctKind(adjunct))) {
                 BlockPos o = TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);
+                // +2 Y headroom — see CarriageEditor.plotContaining.
                 if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + adjunct.xSize()
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + adjunct.ySize()
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + adjunct.ySize() + 2
                     && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + adjunct.zSize()) {
                     return new AdjunctPlot(adjunct, name);
                 }
@@ -124,6 +126,10 @@ public final class PillarEditor {
      * is fully visible.
      */
     public static void enter(ServerPlayer player, PillarSection section) {
+        enter(player, section, true);
+    }
+
+    public static void enter(ServerPlayer player, PillarSection section, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -134,13 +140,16 @@ public final class PillarEditor {
         stampAllSectionPlots(overworld, section, dims);
 
         double tx = origin.getX() + 0.5;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + section.height() + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants)",
+        LOGGER.info("[DungeonTrain] Pillar editor enter: {} -> {} default plot at {} ({} variants, {})",
             player.getName().getString(), section.id(), origin,
-            TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section)).size());
+            TrackVariantRegistry.namesFor(PillarTemplateStore.pillarKind(section)).size(),
+            onTop ? "top" : "inside");
     }
 
     /** Erase + restamp every variant for {@code section}. Idempotent. */
@@ -280,6 +289,10 @@ public final class PillarEditor {
      * Stamps every registered variant first.
      */
     public static void enter(ServerPlayer player, PillarAdjunct adjunct) {
+        enter(player, adjunct, true);
+    }
+
+    public static void enter(ServerPlayer player, PillarAdjunct adjunct, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -290,7 +303,9 @@ public final class PillarEditor {
         stampAllAdjunctPlots(overworld, adjunct, dims);
 
         double tx = origin.getX() + adjunct.xSize() / 2.0;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + adjunct.ySize() + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + adjunct.zSize() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
