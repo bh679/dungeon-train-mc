@@ -205,7 +205,11 @@ public record EditorPlotActionPacket(
         for (games.brennan.dungeontrain.track.PillarSection s : games.brennan.dungeontrain.track.PillarSection.values()) {
             if (("pillar_" + s.id()).equals(modelId)) {
                 if (packet.action == Action.SAVE) {
-                    PillarEditor.save(sender, s);
+                    // Phase-4 Bug fix: pass packet.modelName through the
+                    // explicit-name save so the template label menu's Save
+                    // button works without the player standing in this plot.
+                    PillarEditor.save(sender,
+                        new games.brennan.dungeontrain.template.PillarTemplateId(s, packet.modelName));
                 } else if (packet.action == Action.ENTER_INSIDE) {
                     PillarEditor.enter(sender, s, false);
                 }
@@ -218,7 +222,8 @@ public record EditorPlotActionPacket(
         for (games.brennan.dungeontrain.track.PillarAdjunct a : games.brennan.dungeontrain.track.PillarAdjunct.values()) {
             if (("adjunct_" + a.id()).equals(modelId)) {
                 if (packet.action == Action.SAVE) {
-                    PillarEditor.save(sender, a);
+                    PillarEditor.save(sender,
+                        new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(a, packet.modelName));
                 } else if (packet.action == Action.ENTER_INSIDE) {
                     PillarEditor.enter(sender, a, false);
                 }
@@ -231,7 +236,8 @@ public record EditorPlotActionPacket(
         for (TunnelPlacer.TunnelVariant tv : TunnelPlacer.TunnelVariant.values()) {
             if (("tunnel_" + tv.name().toLowerCase(Locale.ROOT)).equals(modelId)) {
                 if (packet.action == Action.SAVE) {
-                    TunnelEditor.save(sender, tv);
+                    TunnelEditor.save(sender,
+                        new games.brennan.dungeontrain.template.TunnelTemplateId(tv, packet.modelName));
                 } else if (packet.action == Action.ENTER_INSIDE) {
                     TunnelEditor.enter(sender, tv, false);
                 }
