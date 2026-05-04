@@ -7,6 +7,7 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import games.brennan.dungeontrain.net.CarriageNextSpawnPacket;
 import games.brennan.dungeontrain.net.CarriageSpawnCollisionPacket;
@@ -332,10 +333,11 @@ public final class CarriageGroupGapDebugRenderer {
             pose.transformPosition(local, world);
 
             String text = String.format(Locale.ROOT, "%.2f blocks", entry.distance());
+            float ws = (float) ClientDisplayConfig.getWorldspaceScale();
             ps.pushPose();
             ps.translate(world.x - cam.x, world.y - cam.y, world.z - cam.z);
             ps.mulPose(camera.rotation());
-            ps.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE);
+            ps.scale(-TEXT_SCALE * ws, -TEXT_SCALE * ws, TEXT_SCALE * ws);
             int textWidth = font.width(text);
             Matrix4f mat = ps.last().pose();
             // Pass 1: SEE_THROUGH with background quad — visible through walls,

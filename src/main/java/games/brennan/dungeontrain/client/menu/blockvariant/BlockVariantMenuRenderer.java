@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
@@ -114,6 +115,14 @@ public final class BlockVariantMenuRenderer {
             (float) normal.x, (float) normal.y, (float) normal.z
         );
         ps.mulPose(new Quaternionf().setFromNormalized(basis));
+
+        // Same world-space scale the X menu uses — applied to the whole panel
+        // (cells, labels, hover tints) so the editor menu shrinks/grows
+        // uniformly. Matched on the input side by {@link BlockVariantMenuRaycast}.
+        float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0f) {
+            ps.scale(worldScale, worldScale, worldScale);
+        }
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
