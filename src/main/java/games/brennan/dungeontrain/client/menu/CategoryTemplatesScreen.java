@@ -97,10 +97,10 @@ public final class CategoryTemplatesScreen implements MenuScreen {
             return "dungeontrain editor track enter";
         }
         if (model instanceof Template.PillarModel pm) {
-            return "dungeontrain editor pillar enter pillar_" + pm.section().id();
+            return "dungeontrain editor pillar enter " + pm.section().id();
         }
         if (model instanceof Template.AdjunctModel am) {
-            return "dungeontrain editor pillar enter adjunct_" + am.adjunct().id();
+            return "dungeontrain editor pillar enter " + am.adjunct().id();
         }
         if (model instanceof Template.TunnelModel tm) {
             return "dungeontrain editor enter tunnel_"
