@@ -68,7 +68,7 @@ public final class VersionHudOverlay {
             String text = carriagePresent
                 ? VersionInfo.DISPLAY + " — Carriage: " + formatSigned(carriageIndex)
                 : VersionInfo.DISPLAY;
-            graphics.drawString(mc.font, text, 4, 4, 0xFFFFFFFF, true);
+            HudText.drawScaled(graphics, mc.font, text, 4, 4, 0xFFFFFFFF, true);
 
             // Second line: distance from THIS group (the one the player is
             // standing in) to the next-higher-pIdx group in the same train.
@@ -79,7 +79,7 @@ public final class VersionHudOverlay {
                 if (gap != null) {
                     String gapText = String.format(Locale.ROOT,
                         "  Δx to next group: %.2f blocks", gap.distance());
-                    graphics.drawString(mc.font, gapText, 4, 4 + mc.font.lineHeight + 1,
+                    HudText.drawScaled(graphics, mc.font, gapText, 4, 4 + HudText.scaledLineHeight(mc.font) + 1,
                         0xFFCCFFCC, true);
                 }
             }

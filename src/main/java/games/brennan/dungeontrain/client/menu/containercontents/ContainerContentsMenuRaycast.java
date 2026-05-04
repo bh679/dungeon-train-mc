@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.containercontents;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.ContainerContentsSyncPacket;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -55,6 +56,14 @@ public final class ContainerContentsMenuRaycast {
         double dy = rayDir.dot(up);
         double hitX = ox + t * dx;
         double hitY = oy + t * dy;
+
+        // Match the world-space scale applied uniformly by
+        // {@link ContainerContentsMenuRenderer}.
+        double worldScale = ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0) {
+            hitX /= worldScale;
+            hitY /= worldScale;
+        }
 
         if (ContainerContentsMenu.screen() == ContainerContentsMenu.Screen.ROOT) {
             ContainerContentsMenu.setHovered(rootHit(hitX, hitY));

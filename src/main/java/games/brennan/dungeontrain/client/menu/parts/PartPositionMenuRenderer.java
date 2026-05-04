@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.client.Minecraft;
@@ -114,6 +115,15 @@ public final class PartPositionMenuRenderer {
             (float) normal.x, (float) normal.y, (float) normal.z
         );
         ps.mulPose(new Quaternionf().setFromNormalized(basis));
+
+        // Same world-space scale used by every other in-world menu — applied
+        // here so the parts panel shrinks/grows uniformly with the X menu
+        // and block variant menu. Matched on the input side by
+        // {@link PartPositionMenuRaycast}.
+        float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0f) {
+            ps.scale(worldScale, worldScale, worldScale);
+        }
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 

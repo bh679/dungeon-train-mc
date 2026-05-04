@@ -17,6 +17,7 @@ public final class MainMenuScreen implements MenuScreen {
         return List.of(
             new CommandMenuEntry.Run("Editor", "dungeontrain editor"),
             new CommandMenuEntry.DrillIn("Train", new TrainMenuScreen()),
+            new CommandMenuEntry.DrillIn("Options", new OptionsMenuScreen()),
             new CommandMenuEntry.DrillIn("Debug", new DebugMenuScreen())
         );
     }

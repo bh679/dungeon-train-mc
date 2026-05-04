@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
@@ -68,6 +69,17 @@ public final class CommandMenuRaycast {
 
         double hitX = ox + t * dx;
         double hitY = oy + t * dy;
+
+        // Bring the world-space hit back into the panel's logical space —
+        // the renderer applies a {@link ClientDisplayConfig#getWorldspaceScale()}
+        // uniform scale around every drawn primitive, so the visual half-width
+        // is {@code PANEL_WIDTH / 2 * scale}. Dividing here keeps the layout
+        // constants below untouched.
+        double worldScale = ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0) {
+            hitX /= worldScale;
+            hitY /= worldScale;
+        }
 
         List<CommandMenuEntry> entries = CommandMenuState.entries();
         if (entries.isEmpty()) {

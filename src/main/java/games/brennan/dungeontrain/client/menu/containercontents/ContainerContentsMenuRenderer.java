@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.ContainerContentsSyncPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -88,6 +89,13 @@ public final class ContainerContentsMenuRenderer {
             (float) normal.x, (float) normal.y, (float) normal.z
         );
         ps.mulPose(new Quaternionf().setFromNormalized(basis));
+
+        // Same world-space scale used by every other in-world menu —
+        // matched on the input side by {@link ContainerContentsMenuRaycast}.
+        float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0f) {
+            ps.scale(worldScale, worldScale, worldScale);
+        }
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 

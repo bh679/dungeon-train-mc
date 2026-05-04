@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
@@ -61,6 +62,15 @@ public final class BlockVariantMenuRaycast {
         double dy = rayDir.dot(up);
         double hitX = ox + t * dx;
         double hitY = oy + t * dy;
+
+        // Match the world-space scale applied uniformly by
+        // {@link BlockVariantMenuRenderer} — divide the hit point so the
+        // unscaled layout constants below still correspond to visible cells.
+        double worldScale = ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0) {
+            hitX /= worldScale;
+            hitY /= worldScale;
+        }
 
         if (BlockVariantMenu.screen() == BlockVariantMenu.Screen.ROOT) {
             BlockVariantMenu.setHovered(rootHit(hitX, hitY));

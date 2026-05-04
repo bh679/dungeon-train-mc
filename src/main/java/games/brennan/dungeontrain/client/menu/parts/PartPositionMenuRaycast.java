@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.parts;
 
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -62,6 +63,14 @@ public final class PartPositionMenuRaycast {
         double dy = rayDir.dot(up);
         double hitX = ox + t * dx;
         double hitY = oy + t * dy;
+
+        // Match the world-space scale applied uniformly by
+        // {@link PartPositionMenuRenderer}.
+        double worldScale = ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0) {
+            hitX /= worldScale;
+            hitY /= worldScale;
+        }
 
         if (PartPositionMenu.screen() == PartPositionMenu.Screen.ROOT) {
             PartPositionMenu.setHovered(rootHit(hitX, hitY));

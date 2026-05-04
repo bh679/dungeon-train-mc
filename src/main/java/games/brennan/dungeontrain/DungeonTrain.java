@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModItems;
@@ -37,6 +38,14 @@ public class DungeonTrain {
                 ModConfig.Type.SERVER,
                 DungeonTrainConfig.SPEC,
                 "dungeontrain-server.toml");
+
+        // Per-client display preferences (HUD / world-space text scale).
+        // Lives at <minecraft>/config/dungeontrain-client.toml so it follows
+        // the player across worlds rather than per-save like the server config.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                ClientDisplayConfig.SPEC,
+                "dungeontrain-client.toml");
 
         // No NeoForge.EVENT_BUS.register(this) — every game-bus listener in
         // this mod lives in its own @EventBusSubscriber class (event/*.java,

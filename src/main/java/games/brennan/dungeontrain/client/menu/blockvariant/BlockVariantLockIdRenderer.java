@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -148,6 +149,14 @@ public final class BlockVariantLockIdRenderer {
             (float) normal.x, (float) normal.y, (float) normal.z
         );
         ps.mulPose(new Quaternionf().setFromNormalized(basis));
+
+        // Same world-space scale used by the X menu / block-variant menu —
+        // applied here so the lock-ID badge (backdrop + digit) shrinks
+        // proportionally with the rest of the editor UI.
+        float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0f) {
+            ps.scale(worldScale, worldScale, worldScale);
+        }
 
         // Tinted backdrop so the digit reads against any block colour.
         drawQuad(ps, buffer, -BADGE_HALF, -BADGE_HALF, BADGE_HALF, BADGE_HALF, 0xC0202020);

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -123,6 +124,16 @@ public final class CommandMenuRenderer {
         );
         Quaternionf rot = new Quaternionf().setFromNormalized(basis);
         poseStack.mulPose(rot);
+
+        // Apply the world-space display-scale uniformly to the whole panel
+        // (backdrop quad, row tints, hover highlights, text, breadcrumb).
+        // Matched on the input side by {@link CommandMenuRaycast}, which
+        // divides its hit point by the same factor before comparing
+        // against the unscaled layout constants.
+        float worldScale = (float) ClientDisplayConfig.getWorldspaceScale();
+        if (worldScale != 1.0f) {
+            poseStack.scale(worldScale, worldScale, worldScale);
+        }
 
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 

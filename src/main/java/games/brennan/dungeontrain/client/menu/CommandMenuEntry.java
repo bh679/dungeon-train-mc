@@ -27,6 +27,16 @@ public sealed interface CommandMenuEntry {
      */
     record Stay(String label, String command) implements CommandMenuEntry {}
 
+    /**
+     * Like {@link Stay}, but invokes a Java {@link Runnable} directly
+     * instead of dispatching a slash command. Use for menu actions that
+     * mutate purely client-side state (e.g. cosmetic display preferences
+     * stored in client config) where round-tripping through a slash
+     * command would be unnecessary plumbing. Leaves the menu open so the
+     * next-tick rebuild reflects the new value in row labels.
+     */
+    record ClientAction(String label, Runnable action) implements CommandMenuEntry {}
+
     /** Navigates into a nested {@link MenuScreen}. */
     record DrillIn(String label, MenuScreen target) implements CommandMenuEntry {}
 
