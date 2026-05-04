@@ -2,6 +2,12 @@ package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateRegistry;
+import games.brennan.dungeontrain.track.PillarAdjunct;
+import games.brennan.dungeontrain.track.PillarSection;
+import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -15,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -24,6 +31,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 /**
@@ -245,5 +253,104 @@ public final class TrackVariantRegistry {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         clear();
+    }
+
+    /**
+     * Phase-2 adapter — exposes a slice of the per-{@link TrackKind}
+     * registry through the unified {@link TemplateRegistry} surface.
+     * Wraps each registered name (a bare {@code String} in the underlying
+     * map) into the appropriate {@link Template} subtype via the
+     * supplied {@code wrap} function.
+     *
+     * <p>{@link TemplateRegistry#builtins()} is the synthetic
+     * {@link TrackKind#DEFAULT_NAME} entry — every kind has a
+     * "default" sentinel even on a fresh install. {@link #customs()}
+     * is the rest, alphabetical.</p>
+     */
+    private static <T extends Template> TemplateRegistry<T> makeAdapter(
+        TrackKind backingKind, TemplateKind reportedKind, Function<String, T> wrap
+    ) {
+        return new TemplateRegistry<>() {
+            @Override public TemplateKind kind() { return reportedKind; }
+
+            @Override
+            public List<T> all() {
+                List<String> names = namesFor(backingKind);
+                List<T> out = new ArrayList<>(names.size());
+                for (String n : names) out.add(wrap.apply(n));
+                return out;
+            }
+
+            @Override
+            public List<T> builtins() {
+                return List.of(wrap.apply(TrackKind.DEFAULT_NAME));
+            }
+
+            @Override
+            public List<T> customs() {
+                List<String> all = namesFor(backingKind);
+                List<T> out = new ArrayList<>(Math.max(0, all.size() - 1));
+                for (String n : all) {
+                    if (TrackKind.DEFAULT_NAME.equals(n)) continue;
+                    out.add(wrap.apply(n));
+                }
+                return out;
+            }
+
+            @Override
+            public Optional<T> find(String id) {
+                return TrackVariantRegistry.find(backingKind, id).map(wrap);
+            }
+
+            @Override public void reload() { TrackVariantRegistry.reload(); }
+            @Override public void clear() { TrackVariantRegistry.clear(); }
+        };
+    }
+
+    private static final TemplateRegistry<Template.TrackModel> TRACK_ADAPTER =
+        makeAdapter(TrackKind.TILE, TemplateKind.TRACK, Template.TrackModel::new);
+
+    private static final EnumMap<PillarSection, TemplateRegistry<Template.PillarModel>> PILLAR_ADAPTERS
+        = new EnumMap<>(PillarSection.class);
+    static {
+        PILLAR_ADAPTERS.put(PillarSection.TOP,
+            makeAdapter(TrackKind.PILLAR_TOP, TemplateKind.PILLAR,
+                n -> new Template.PillarModel(PillarSection.TOP, n)));
+        PILLAR_ADAPTERS.put(PillarSection.MIDDLE,
+            makeAdapter(TrackKind.PILLAR_MIDDLE, TemplateKind.PILLAR,
+                n -> new Template.PillarModel(PillarSection.MIDDLE, n)));
+        PILLAR_ADAPTERS.put(PillarSection.BOTTOM,
+            makeAdapter(TrackKind.PILLAR_BOTTOM, TemplateKind.PILLAR,
+                n -> new Template.PillarModel(PillarSection.BOTTOM, n)));
+    }
+
+    private static final EnumMap<PillarAdjunct, TemplateRegistry<Template.AdjunctModel>> ADJUNCT_ADAPTERS
+        = new EnumMap<>(PillarAdjunct.class);
+    static {
+        ADJUNCT_ADAPTERS.put(PillarAdjunct.STAIRS,
+            makeAdapter(TrackKind.ADJUNCT_STAIRS, TemplateKind.STAIRS,
+                n -> new Template.AdjunctModel(PillarAdjunct.STAIRS, n)));
+    }
+
+    private static final EnumMap<TunnelVariant, TemplateRegistry<Template.TunnelModel>> TUNNEL_ADAPTERS
+        = new EnumMap<>(TunnelVariant.class);
+    static {
+        TUNNEL_ADAPTERS.put(TunnelVariant.SECTION,
+            makeAdapter(TrackKind.TUNNEL_SECTION, TemplateKind.TUNNEL,
+                n -> new Template.TunnelModel(TunnelVariant.SECTION, n)));
+        TUNNEL_ADAPTERS.put(TunnelVariant.PORTAL,
+            makeAdapter(TrackKind.TUNNEL_PORTAL, TemplateKind.TUNNEL,
+                n -> new Template.TunnelModel(TunnelVariant.PORTAL, n)));
+    }
+
+    public static TemplateRegistry<Template.TrackModel> adapterForTrack() { return TRACK_ADAPTER; }
+    public static TemplateRegistry<Template.PillarModel> adapterForPillar(PillarSection section) {
+        return PILLAR_ADAPTERS.get(section);
+    }
+    public static TemplateRegistry<Template.AdjunctModel> adapterForAdjunct(PillarAdjunct adjunct) {
+        return ADJUNCT_ADAPTERS.get(adjunct);
+    }
+    public static TemplateRegistry<Template.TunnelModel> adapterForTunnel(TunnelVariant variant) {
+        return TUNNEL_ADAPTERS.get(variant);
     }
 }

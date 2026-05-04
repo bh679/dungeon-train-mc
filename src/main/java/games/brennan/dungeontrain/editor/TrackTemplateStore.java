@@ -1,11 +1,16 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.TrackTemplate;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
@@ -201,4 +206,31 @@ public final class TrackTemplateStore {
         }
         return cells;
     }
+
+    /**
+     * Phase-2 adapter — exposes the track-tile store through the unified
+     * {@link TemplateStore} surface. Track has only the synthetic
+     * "default" name (per {@link TrackKind#DEFAULT_NAME}), so the
+     * {@link Template.TrackModel#name()} field isn't dispatched on yet —
+     * the editor save still hits the single-tile flow.
+     */
+    private static final TemplateStore<Template.TrackModel> ADAPTER = new TemplateStore<>() {
+        @Override public TemplateKind kind() { return TemplateKind.TRACK; }
+
+        @Override
+        public SaveResult save(ServerPlayer player, Template.TrackModel template) throws Exception {
+            TrackEditor.SaveResult r = TrackEditor.save(player);
+            return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+        }
+
+        @Override
+        public boolean canPromote(Template.TrackModel template) { return sourceTreeAvailable(); }
+
+        @Override
+        public void promote(Template.TrackModel template) throws Exception {
+            TrackTemplateStore.promote();
+        }
+    };
+
+    public static TemplateStore<Template.TrackModel> adapter() { return ADAPTER; }
 }

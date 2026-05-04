@@ -1,16 +1,22 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.EnumMap;
 import java.util.Optional;
 
 /**
@@ -100,5 +106,42 @@ public final class TunnelTemplateStore {
             case SECTION -> TrackKind.TUNNEL_SECTION;
             case PORTAL -> TrackKind.TUNNEL_PORTAL;
         };
+    }
+
+    /**
+     * Phase-2 adapter — exposes tunnel save/promote through the unified
+     * {@link TemplateStore} surface. Tunnels have no bundled tier today,
+     * so {@link TemplateStore#canPromote} returns false and
+     * {@link TemplateStore#promote} throws — mirrors the existing
+     * {@code SaveCommand} arm for {@code Template.TunnelModel}.
+     */
+    private static final EnumMap<TunnelVariant, TemplateStore<Template.TunnelModel>> ADAPTERS
+        = new EnumMap<>(TunnelVariant.class);
+    static {
+        for (TunnelVariant v : TunnelVariant.values()) ADAPTERS.put(v, makeAdapter(v));
+    }
+
+    private static TemplateStore<Template.TunnelModel> makeAdapter(TunnelVariant variant) {
+        return new TemplateStore<>() {
+            @Override public TemplateKind kind() { return TemplateKind.TUNNEL; }
+
+            @Override
+            public SaveResult save(ServerPlayer player, Template.TunnelModel template) throws Exception {
+                TunnelEditor.SaveResult r = TunnelEditor.save(player, variant);
+                return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+            }
+
+            @Override
+            public boolean canPromote(Template.TunnelModel template) { return false; }
+
+            @Override
+            public void promote(Template.TunnelModel template) throws Exception {
+                throw new IllegalStateException("Tunnel templates have no bundled tier — '/dt save default' does not apply.");
+            }
+        };
+    }
+
+    public static TemplateStore<Template.TunnelModel> adapter(TunnelVariant variant) {
+        return ADAPTERS.get(variant);
     }
 }

@@ -1,11 +1,21 @@
 package games.brennan.dungeontrain.template;
 
+import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.CarriagePartRegistry;
+import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
+import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.editor.TrackTemplateStore;
+import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
+import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
+import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
 
 import java.util.Locale;
@@ -85,6 +95,25 @@ public sealed interface Template
      */
     boolean canPromote();
 
+    /**
+     * Persistence handle for save/promote operations. Phase-2 dispatch
+     * sites ({@code SaveCommand}) call {@link Stores#save} /
+     * {@link Stores#promote} which forward to this store with the right
+     * type. Each record returns a per-discriminator singleton from the
+     * corresponding {@code *TemplateStore.adapter(...)} factory; the
+     * underlying static methods stay the source of truth for actual
+     * I/O — the adapter is a thin wrapper that reports a uniform
+     * {@link SaveResult}.
+     */
+    TemplateStore<? extends Template> store();
+
+    /**
+     * Discovery handle for built-ins / customs / lookup. Symmetric to
+     * {@link #store()}: each record returns a per-discriminator singleton
+     * from the corresponding {@code *Registry.adapter(...)} factory.
+     */
+    TemplateRegistry<? extends Template> registry();
+
     record CarriageModel(CarriageVariant variant) implements Template {
         public CarriageModel {
             Objects.requireNonNull(variant, "variant");
@@ -118,6 +147,9 @@ public sealed interface Template
             // Custom variants have no bundled tier — only built-ins can promote.
             return variant.isBuiltin();
         }
+
+        @Override public TemplateStore<CarriageModel> store() { return CarriageTemplateStore.adapter(); }
+        @Override public TemplateRegistry<CarriageModel> registry() { return CarriageVariantRegistry.adapter(); }
     }
 
     record ContentsModel(CarriageContents contents) implements Template {
@@ -154,6 +186,9 @@ public sealed interface Template
             // when devmode is on — there is no separate bundled tier to promote.
             return false;
         }
+
+        @Override public TemplateStore<ContentsModel> store() { return CarriageContentsStore.adapter(); }
+        @Override public TemplateRegistry<ContentsModel> registry() { return CarriageContentsRegistry.adapter(); }
     }
 
     /**
@@ -209,6 +244,9 @@ public sealed interface Template
             // wired in dev mode — Phase 2 surfaces it through SaveCommand.
             return true;
         }
+
+        @Override public TemplateStore<PartModel> store() { return CarriagePartTemplateStore.adapter(partKind); }
+        @Override public TemplateRegistry<PartModel> registry() { return CarriagePartRegistry.adapter(partKind); }
     }
 
     /**
@@ -248,6 +286,9 @@ public sealed interface Template
         public boolean canPromote() {
             return true;
         }
+
+        @Override public TemplateStore<TrackModel> store() { return TrackTemplateStore.adapter(); }
+        @Override public TemplateRegistry<TrackModel> registry() { return TrackVariantRegistry.adapterForTrack(); }
     }
 
     /**
@@ -292,6 +333,9 @@ public sealed interface Template
         public boolean canPromote() {
             return true;
         }
+
+        @Override public TemplateStore<PillarModel> store() { return PillarTemplateStore.adapter(section); }
+        @Override public TemplateRegistry<PillarModel> registry() { return TrackVariantRegistry.adapterForPillar(section); }
     }
 
     /**
@@ -342,6 +386,9 @@ public sealed interface Template
         public boolean canPromote() {
             return true;
         }
+
+        @Override public TemplateStore<AdjunctModel> store() { return PillarTemplateStore.adapterForAdjunct(adjunct); }
+        @Override public TemplateRegistry<AdjunctModel> registry() { return TrackVariantRegistry.adapterForAdjunct(adjunct); }
     }
 
     /**
@@ -387,5 +434,8 @@ public sealed interface Template
             // Tunnel templates have no bundled tier today.
             return false;
         }
+
+        @Override public TemplateStore<TunnelModel> store() { return TunnelTemplateStore.adapter(variant); }
+        @Override public TemplateRegistry<TunnelModel> registry() { return TrackVariantRegistry.adapterForTunnel(variant); }
     }
 }

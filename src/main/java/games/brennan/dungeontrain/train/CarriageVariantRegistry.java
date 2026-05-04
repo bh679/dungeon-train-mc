@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateRegistry;
 import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
@@ -239,4 +242,49 @@ public final class CarriageVariantRegistry {
     public static void onServerStopped(ServerStoppedEvent event) {
         clear();
     }
+
+    /**
+     * Phase-2 adapter — exposes the carriage variant registry through the
+     * unified {@link TemplateRegistry} surface. Wraps each registered
+     * {@link CarriageVariant} into a {@link Template.CarriageModel} so
+     * callers can iterate templates without caring about the underlying
+     * sealed-variant storage.
+     */
+    private static final TemplateRegistry<Template.CarriageModel> ADAPTER = new TemplateRegistry<>() {
+        @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
+
+        @Override
+        public List<Template.CarriageModel> all() {
+            List<CarriageVariant> variants = allVariants();
+            List<Template.CarriageModel> out = new ArrayList<>(variants.size());
+            for (CarriageVariant v : variants) out.add(new Template.CarriageModel(v));
+            return out;
+        }
+
+        @Override
+        public List<Template.CarriageModel> builtins() {
+            List<CarriageVariant> variants = CarriageVariantRegistry.builtins();
+            List<Template.CarriageModel> out = new ArrayList<>(variants.size());
+            for (CarriageVariant v : variants) out.add(new Template.CarriageModel(v));
+            return out;
+        }
+
+        @Override
+        public List<Template.CarriageModel> customs() {
+            List<String> ids = customIds();
+            List<Template.CarriageModel> out = new ArrayList<>(ids.size());
+            for (String id : ids) out.add(new Template.CarriageModel(new CarriageVariant.Custom(id)));
+            return out;
+        }
+
+        @Override
+        public Optional<Template.CarriageModel> find(String id) {
+            return CarriageVariantRegistry.find(id).map(Template.CarriageModel::new);
+        }
+
+        @Override public void reload() { CarriageVariantRegistry.reload(); }
+        @Override public void clear() { CarriageVariantRegistry.clear(); }
+    };
+
+    public static TemplateRegistry<Template.CarriageModel> adapter() { return ADAPTER; }
 }

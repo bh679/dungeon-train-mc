@@ -1,6 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.SaveResult;
+import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import net.minecraft.core.HolderGetter;
@@ -9,6 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.neoforged.fml.loading.FMLPaths;
@@ -19,6 +24,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -238,5 +244,45 @@ public final class CarriagePartTemplateStore {
     private static Path projectRootOrNull() {
         Path gameDir = FMLPaths.GAMEDIR.get();
         return gameDir.getParent();
+    }
+
+    /**
+     * Phase-2 adapter — exposes part save/promote through the unified
+     * {@link TemplateStore} surface. Cached per
+     * {@link CarriagePartKind} because each kind has its own physical
+     * {@code (length × width × height)} footprint and the
+     * {@link Template.PartModel#partKind()} is the discriminator the
+     * underlying static methods key on.
+     */
+    private static final EnumMap<CarriagePartKind, TemplateStore<Template.PartModel>> ADAPTERS
+        = new EnumMap<>(CarriagePartKind.class);
+    static {
+        for (CarriagePartKind k : CarriagePartKind.values()) ADAPTERS.put(k, makeAdapter(k));
+    }
+
+    private static TemplateStore<Template.PartModel> makeAdapter(CarriagePartKind kind) {
+        return new TemplateStore<>() {
+            @Override public TemplateKind kind() { return TemplateKind.PART; }
+
+            @Override
+            public SaveResult save(ServerPlayer player, Template.PartModel template) throws Exception {
+                CarriagePartEditor.SaveResult r = CarriagePartEditor.save(player, kind, template.name());
+                return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
+            }
+
+            @Override
+            public boolean canPromote(Template.PartModel template) {
+                return sourceTreeAvailable() && exists(kind, template.name());
+            }
+
+            @Override
+            public void promote(Template.PartModel template) throws Exception {
+                CarriagePartTemplateStore.promote(kind, template.name());
+            }
+        };
+    }
+
+    public static TemplateStore<Template.PartModel> adapter(CarriagePartKind kind) {
+        return ADAPTERS.get(kind);
     }
 }
