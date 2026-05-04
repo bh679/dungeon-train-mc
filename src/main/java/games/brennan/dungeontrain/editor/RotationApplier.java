@@ -100,6 +100,96 @@ public final class RotationApplier {
         return r == null ? VariantRotation.ALL_DIRS_MASK : r.validDirMask;
     }
 
+    /**
+     * Build a {@link VariantRotation} that LOCKs to the facing the supplied
+     * {@link BlockState} already carries. Used as the fallback for the
+     * variant-add flow when no predecessor entry has a usable direction —
+     * the freshly captured block keeps the direction it was placed with
+     * rather than spawning with a random facing.
+     *
+     * <p>Property probe order matches {@link #findRotatable}:
+     * FACING → HORIZONTAL_FACING → AXIS → HORIZONTAL_AXIS. For axis
+     * properties the direction encoding is arbitrary (both ends of the axis
+     * round-trip to the same {@link BlockState} via {@code applyTo}); we
+     * pick the positive direction (X→EAST, Y→UP, Z→SOUTH) so the menu's
+     * rotation-mode cell reads naturally for the author.</p>
+     *
+     * <p>Returns {@link VariantRotation#NONE} when the block exposes none of
+     * these properties — locking would be a no-op since {@link #canRotate}
+     * already returns {@code false} and the menu hides the rotation cells.</p>
+     */
+    public static VariantRotation lockToCurrent(BlockState base) {
+        Direction d = directionOf(base);
+        return d == null ? VariantRotation.NONE : VariantRotation.lock(d);
+    }
+
+    /**
+     * Result of {@link #orientToPredecessors}: the (possibly rotated)
+     * {@link BlockState} together with the LOCK rotation that matches it.
+     * Returned as a record so callers can apply both at once when building
+     * a fresh {@link VariantState} — keeping state and rotation aligned
+     * means the menu UI and dedup check stay consistent with spawn-time
+     * behavior.
+     */
+    public record OrientedState(BlockState state, VariantRotation rotation) {}
+
+    /**
+     * Orient {@code newState} to match the most recent predecessor entry
+     * whose state carries a usable direction. Walks {@code predecessors}
+     * from last to first, skipping any predecessor that either lacks a
+     * directional property or whose direction isn't valid for
+     * {@code newState}'s rotation property. Returns {@code (newState
+     * rotated to that direction, LOCK at that direction)} for the first
+     * predecessor that satisfies both checks.
+     *
+     * <p>Falls back to {@code (newState, lockToCurrent(newState))} when no
+     * predecessor offers a valid direction. Authors can still cycle the
+     * rotation cell to RANDOM / OPTIONS after the fact.</p>
+     */
+    public static OrientedState orientToPredecessors(BlockState newState,
+                                                     List<VariantState> predecessors) {
+        if (newState == null) return new OrientedState(null, VariantRotation.NONE);
+        if (predecessors != null) {
+            int newValidMask = validDirMask(newState);
+            for (int i = predecessors.size() - 1; i >= 0; i--) {
+                VariantState prev = predecessors.get(i);
+                if (prev == null) continue;
+                Direction d = directionOf(prev.state());
+                if (d == null) continue;
+                if ((newValidMask & VariantRotation.maskOf(d)) == 0) continue;
+                return new OrientedState(applyDirection(newState, d),
+                                         VariantRotation.lock(d));
+            }
+        }
+        return new OrientedState(newState, lockToCurrent(newState));
+    }
+
+    @Nullable
+    private static Direction directionOf(BlockState state) {
+        if (state == null) return null;
+        if (state.hasProperty(BlockStateProperties.FACING)) {
+            return state.getValue(BlockStateProperties.FACING);
+        }
+        if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+            return state.getValue(BlockStateProperties.HORIZONTAL_FACING);
+        }
+        if (state.hasProperty(BlockStateProperties.AXIS)) {
+            return positiveDirectionForAxis(state.getValue(BlockStateProperties.AXIS));
+        }
+        if (state.hasProperty(BlockStateProperties.HORIZONTAL_AXIS)) {
+            return positiveDirectionForAxis(state.getValue(BlockStateProperties.HORIZONTAL_AXIS));
+        }
+        return null;
+    }
+
+    private static Direction positiveDirectionForAxis(Direction.Axis axis) {
+        return switch (axis) {
+            case X -> Direction.EAST;
+            case Y -> Direction.UP;
+            case Z -> Direction.SOUTH;
+        };
+    }
+
     // ---------- Internals ----------
 
     /**
