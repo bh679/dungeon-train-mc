@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,6 +17,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import org.slf4j.Logger;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -63,6 +65,21 @@ public final class EditorStatusHudOverlay {
      */
     private static Set<String> excludedContents = Collections.emptySet();
 
+    /**
+     * Server-pushed dirty/unpromoted list rendered by
+     * {@link games.brennan.dungeontrain.client.menu.UnsavedCheckScreen}. Null
+     * means "no response received yet" (the screen renders a Loading row).
+     * An empty list (non-null, size 0) means "scan complete, nothing dirty"
+     * which the screen interprets as: bypass and dispatch the original
+     * category-switch command.
+     */
+    private static List<EditorDirtyCheck.DirtyEntry> unsavedList = null;
+
+    /** Server-pushed per-template diff for the changes drilldown. Keyed by (categoryId, modelId) of the latest request. */
+    private static String changesCategory = "";
+    private static String changesModel = "";
+    private static List<EditorDirtyCheck.DiffEntry> changesList = null;
+
     /** Distance from the top of the screen in GUI pixels. */
     private static final int OFFSET_FROM_TOP = 8;
     /** Padding around the label text for the backdrop. */
@@ -97,6 +114,8 @@ public final class EditorStatusHudOverlay {
         weight = NO_WEIGHT;
         partMenuEnabled = true;
         excludedContents = Collections.emptySet();
+        unsavedList = null;
+        clearChangesList();
     }
 
     /**
@@ -149,6 +168,52 @@ public final class EditorStatusHudOverlay {
      */
     public static Set<String> excludedContents() {
         return excludedContents;
+    }
+
+    /**
+     * Latest server-pushed dirty list, or {@code null} if no response has
+     * been received yet (e.g. immediately after the request packet was
+     * sent). The unsaved-changes screen polls this every tick rebuild.
+     */
+    public static List<EditorDirtyCheck.DirtyEntry> unsavedList() {
+        return unsavedList;
+    }
+
+    /** Replace the dirty list. Mutated on the main client thread from {@code EditorUnsavedListPacket.handle}. */
+    public static void setUnsavedList(List<EditorDirtyCheck.DirtyEntry> rows) {
+        unsavedList = rows == null ? List.of() : List.copyOf(rows);
+    }
+
+    /** Clear the dirty list back to "not yet requested" state — called when the screen drills out. */
+    public static void clearUnsavedList() {
+        unsavedList = null;
+    }
+
+    /**
+     * Latest per-template diff response. Returns the list iff the cached
+     * {@code (category, model)} matches the requested pair — otherwise the
+     * caller drilled into a different template before this response
+     * landed and the data is stale.
+     */
+    public static List<EditorDirtyCheck.DiffEntry> changesListFor(String categoryId, String modelId) {
+        if (categoryId.equals(changesCategory) && modelId.equals(changesModel)) {
+            return changesList;
+        }
+        return null;
+    }
+
+    /** Replace the changes list — called from {@code EditorChangesListPacket.handle}. */
+    public static void setChangesList(String categoryId, String modelId, List<EditorDirtyCheck.DiffEntry> rows) {
+        changesCategory = categoryId == null ? "" : categoryId;
+        changesModel = modelId == null ? "" : modelId;
+        changesList = rows == null ? List.of() : List.copyOf(rows);
+    }
+
+    /** Reset cache so a re-drill always re-requests instead of showing stale data. */
+    public static void clearChangesList() {
+        changesCategory = "";
+        changesModel = "";
+        changesList = null;
     }
 
     /**

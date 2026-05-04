@@ -225,6 +225,17 @@ public final class CommandMenuState {
             CommandRunner.run(stay.command());
             // Stay open so the player can click again. The next tick's
             // rebuild picks up any label change driven by server state.
+        } else if (entry instanceof CommandMenuEntry.SaveAction save) {
+            // Already-saved rows are no-ops — the cell is rendered greyed
+            // and the raycast filters them out, but defensive double-check.
+            if (save.saved()) return;
+            save.onClick().run();
+            // Stay open so the user can save other rows or click Continue.
+            // The screen's onClick closure mutates its own local saved set
+            // so the next tick's rebuild greys out the row.
+        } else if (entry instanceof CommandMenuEntry.Label) {
+            // Non-clickable. Reaching here means the raycast let a click
+            // through somehow — silently ignore.
         } else if (entry instanceof CommandMenuEntry.ClientAction ca) {
             ca.action().run();
             // Same UX as Stay — keep the menu open so the player sees the

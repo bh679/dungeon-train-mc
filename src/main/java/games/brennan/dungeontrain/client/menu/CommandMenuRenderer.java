@@ -326,20 +326,41 @@ public final class CommandMenuRenderer {
         float xStart, float xEnd, float cy, float halfH, float padY,
         boolean hovered
     ) {
-        int tint = hovered ? 0xB0FFCC33 : 0x30FFFFFF;
-        drawQuad(poseStack, buffer,
-            xStart, cy - halfH + padY,
-            xEnd,   cy + halfH - padY,
-            tint);
+        boolean isLabel = entry instanceof CommandMenuEntry.Label;
+        int baseTint = baseTintFor(entry);
+        int tint;
+        if (hovered && !isLabel) {
+            tint = 0xB0FFCC33;
+        } else if (baseTint != 0) {
+            tint = baseTint;
+        } else if (isLabel) {
+            tint = 0;
+        } else {
+            tint = 0x30FFFFFF;
+        }
+        if (tint != 0) {
+            drawQuad(poseStack, buffer,
+                xStart, cy - halfH + padY,
+                xEnd,   cy + halfH - padY,
+                tint);
+        }
         float centerX = (xStart + xEnd) / 2f;
         drawCenteredText(poseStack, buffer, font, labelFor(entry),
-            centerX, cy, hovered ? 0xFF000000 : 0xFFFFFFFF);
+            centerX, cy, hovered && !isLabel ? 0xFF000000 : 0xFFFFFFFF);
     }
 
     private static int baseTintFor(CommandMenuEntry entry) {
         if (entry instanceof CommandMenuEntry.Toggle t) {
             // Green when on, grey when off — state is immediately legible.
             return t.state() ? 0x8040AA40 : 0x40FFFFFF;
+        }
+        if (entry instanceof CommandMenuEntry.SaveAction s) {
+            // Green when actionable, grey when already saved.
+            return s.saved() ? 0x40808080 : 0x8040AA40;
+        }
+        if (entry instanceof CommandMenuEntry.Label) {
+            // No backdrop — Label rows are pure text on the panel surface.
+            return 0;
         }
         if (entry instanceof CommandMenuEntry.Run r && r.highlighted()) {
             // Soft amber accent — "this is the option you're currently in".

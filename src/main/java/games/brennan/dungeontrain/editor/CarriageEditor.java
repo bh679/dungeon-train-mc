@@ -178,6 +178,16 @@ public final class CarriageEditor {
         CarriageTemplate.eraseAt(overworld, origin, dims);
         CarriageTemplate.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+
+        // Snapshot the freshly-stamped state so EditorDirtyCheck has a
+        // baseline to compare against. The stamp pass composes base NBT +
+        // parts overlay + sidecar variants — comparing live to saved NBT
+        // misses the parts/sidecar contributions, so we record the actual
+        // post-composition state here.
+        EditorPlotSnapshots.capture(
+            EditorPlotSnapshots.key("carriages", variant.id()),
+            overworld, origin, dims.length(), dims.height(), dims.width()
+        );
     }
 
     /**
@@ -191,6 +201,10 @@ public final class CarriageEditor {
         if (origin == null) return;
         CarriageTemplate.eraseAt(overworld, origin, dims);
         setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
+        // Drop the dirty-check baseline — the plot is no longer stamped, so
+        // comparing a future live read (all air) to a stamped snapshot would
+        // report every carriage as dirty when the player switches categories.
+        EditorPlotSnapshots.clear(EditorPlotSnapshots.key("carriages", variant.id()));
     }
 
     /**
@@ -218,6 +232,13 @@ public final class CarriageEditor {
         // entry doesn't leave a stale sidecar on disk.
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
         sidecar.save(variant);
+
+        // Refresh the dirty-check baseline so the just-saved state reads as
+        // clean on the next /dt editor unsaved-list query.
+        EditorPlotSnapshots.capture(
+            EditorPlotSnapshots.key("carriages", variant.id()),
+            overworld, origin, dims.length(), dims.height(), dims.width()
+        );
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> {} template dims={}x{}x{} ({} variant entries)",
             player.getName().getString(), variant.id(), dims.length(), dims.width(), dims.height(),

@@ -78,6 +78,18 @@ public final class CarriageContentsEditor {
         CarriageTemplate.placeAt(overworld, origin, DEFAULT_SHELL, dims);
         CarriageContentsTemplate.placeAt(overworld, origin, contents, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
+
+        // Snapshot the freshly-stamped INTERIOR for the dirty-check baseline.
+        // Save's captureTemplate captures only the interior (size = dims-2),
+        // so the snapshot must use the same region — comparing the live
+        // interior to a snapshot of just the interior keeps shell blocks
+        // (which the contents save deliberately excludes) out of the diff.
+        BlockPos interiorOrigin = origin.offset(1, 1, 1);
+        net.minecraft.core.Vec3i interior = CarriageContentsTemplate.interiorSize(dims);
+        EditorPlotSnapshots.capture(
+            EditorPlotSnapshots.key("contents", contents.id()),
+            overworld, interiorOrigin, interior.getX(), interior.getY(), interior.getZ()
+        );
     }
 
     /**
@@ -90,6 +102,8 @@ public final class CarriageContentsEditor {
         if (origin == null) return;
         CarriageTemplate.eraseAt(overworld, origin, dims);
         CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+        // Drop the dirty-check baseline — same reasoning as CarriageEditor.clearPlot.
+        EditorPlotSnapshots.clear(EditorPlotSnapshots.key("contents", contents.id()));
         setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
     }
 
@@ -199,6 +213,16 @@ public final class CarriageContentsEditor {
 
         StructureTemplate template = CarriageContentsTemplate.captureTemplate(overworld, origin, dims);
         CarriageContentsStore.save(contents, template);
+
+        // Refresh the dirty-check baseline so the just-saved state reads as
+        // clean on the next /dt editor unsaved-list query.
+        BlockPos interiorOrigin = origin.offset(1, 1, 1);
+        net.minecraft.core.Vec3i interiorSnapshotSize = CarriageContentsTemplate.interiorSize(dims);
+        EditorPlotSnapshots.capture(
+            EditorPlotSnapshots.key("contents", contents.id()),
+            overworld, interiorOrigin,
+            interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ()
+        );
 
         LOGGER.info("[DungeonTrain] Contents editor save: {} -> {} template interior={}x{}x{}",
             player.getName().getString(), contents.id(),

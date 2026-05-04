@@ -157,6 +157,7 @@ public final class TunnelEditor {
         TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
         LegacyTunnelPaint.fillCornersWithVoid(overworld, origin.getX(), tg);
         setOutline(overworld, origin, OUTLINE_BLOCK);
+        captureTunnelSnapshot(overworld, origin, variant, name);
     }
 
     /** Erase every variant plot for {@code variant}. */
@@ -165,6 +166,7 @@ public final class TunnelEditor {
             BlockPos origin = plotOrigin(variant, name);
             TunnelTemplate.eraseAt(overworld, origin);
             setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
+            EditorPlotSnapshots.clear(tunnelSnapshotKey(variant, name));
         }
     }
 
@@ -173,6 +175,19 @@ public final class TunnelEditor {
         BlockPos origin = plotOrigin(variant, name);
         TunnelTemplate.eraseAt(overworld, origin);
         setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
+        EditorPlotSnapshots.clear(tunnelSnapshotKey(variant, name));
+    }
+
+    /** Snapshot the freshly-stamped tunnel region for {@link EditorDirtyCheck}'s baseline. */
+    private static void captureTunnelSnapshot(ServerLevel overworld, BlockPos origin, TunnelVariant variant, String name) {
+        EditorPlotSnapshots.capture(tunnelSnapshotKey(variant, name), overworld, origin,
+            TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
+    }
+
+    /** Snapshot key shared with {@link EditorDirtyCheck} for tunnel rows. */
+    public static String tunnelSnapshotKey(TunnelVariant variant, String name) {
+        return EditorPlotSnapshots.key("tracks",
+            "tunnel_" + variant.name().toLowerCase(java.util.Locale.ROOT) + ":" + name);
     }
 
     /**
@@ -202,6 +217,9 @@ public final class TunnelEditor {
 
         TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
         TrackVariantStore.save(kind, name, template);
+
+        // Refresh the dirty-check baseline.
+        captureTunnelSnapshot(overworld, origin, variant, name);
 
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{}/{} template",
             player.getName().getString(),
