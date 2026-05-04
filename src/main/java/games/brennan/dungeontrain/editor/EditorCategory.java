@@ -83,13 +83,25 @@ public enum EditorCategory {
 
     /**
      * Resolve which category + model the player's block position falls inside.
-     * Checks carriage plots first, then track tile, then pillars, then tunnels.
+     * Checks carriage plots first, then carriage parts (which sit inside the
+     * CARRIAGES Z range), then contents, then track tile, then pillars, then
+     * tunnels.
+     *
+     * <p>Phase 2 added the parts arm — before it, walking into a part plot
+     * and running {@code /dt save} fell through to the "Not in an editor
+     * plot" failure or the carriage-shell save (depending on Z), neither
+     * correct.</p>
      */
     public static Optional<Located> locate(ServerPlayer player, CarriageDims dims) {
         BlockPos pos = player.blockPosition();
         CarriageVariant carriage = CarriageEditor.plotContaining(pos, dims);
         if (carriage != null) {
             return Optional.of(new Located(CARRIAGES, new Template.CarriageModel(carriage)));
+        }
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
+        if (partLoc != null) {
+            return Optional.of(new Located(CARRIAGES,
+                new Template.PartModel(partLoc.kind(), partLoc.name())));
         }
         CarriageContents contents = CarriageContentsEditor.plotContaining(pos, dims);
         if (contents != null) {
