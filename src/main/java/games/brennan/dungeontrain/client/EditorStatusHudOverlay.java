@@ -182,22 +182,23 @@ public final class EditorStatusHudOverlay {
     private static void drawBar(GuiGraphics graphics, Font font, String categoryText, String modelText,
                                 boolean devmodeOn, int weightValue, int screenWidth) {
         Component label = Component.literal("Editor: " + categoryText + " / " + modelText);
-        int textWidth = font.width(label);
+        int textWidth = HudText.scaledWidth(font, label);
+        int lineHeight = HudText.scaledLineHeight(font);
         int x = (screenWidth - textWidth) / 2;
         int y = OFFSET_FROM_TOP;
 
         // Dark translucent backdrop so the text reads against any sky colour.
-        graphics.fill(x - PAD, y - PAD, x + textWidth + PAD, y + font.lineHeight + PAD, 0x80000000);
-        graphics.drawString(font, label, x, y, 0xFFFFFF, true);
+        graphics.fill(x - PAD, y - PAD, x + textWidth + PAD, y + lineHeight + PAD, 0x80000000);
+        HudText.drawScaled(graphics, font, label, x, y, 0xFFFFFF, true);
 
         if (devmodeOn) {
             // Yellow [DEV] badge to the right of the status — visually obvious
             // that saves will also write-through to the source tree.
             Component devBadge = Component.literal("[DEV]");
-            int badgeWidth = font.width(devBadge);
+            int badgeWidth = HudText.scaledWidth(font, devBadge);
             int bx = x + textWidth + PAD + 4;
-            graphics.fill(bx - PAD, y - PAD, bx + badgeWidth + PAD, y + font.lineHeight + PAD, 0x80000000);
-            graphics.drawString(font, devBadge, bx, y, 0xFFFF55, true);
+            graphics.fill(bx - PAD, y - PAD, bx + badgeWidth + PAD, y + lineHeight + PAD, 0x80000000);
+            HudText.drawScaled(graphics, font, devBadge, bx, y, 0xFFFF55, true);
         }
 
         if (weightValue >= 0) {
@@ -205,13 +206,13 @@ public final class EditorStatusHudOverlay {
             // weight (0..100). Updates live as `/dt editor weight <id> <n>`
             // runs and the server pushes a new packet.
             Component weightLine = Component.literal("weight = " + weightValue);
-            int ww = font.width(weightLine);
+            int ww = HudText.scaledWidth(font, weightLine);
             int wx = (screenWidth - ww) / 2;
-            int wy = y + font.lineHeight + PAD + LINE_GAP;
-            graphics.fill(wx - PAD, wy - PAD, wx + ww + PAD, wy + font.lineHeight + PAD, 0x80000000);
+            int wy = y + lineHeight + PAD + LINE_GAP;
+            graphics.fill(wx - PAD, wy - PAD, wx + ww + PAD, wy + lineHeight + PAD, 0x80000000);
             // Weight 0 is "excluded" — tint it orange so the state is visually obvious.
             int color = weightValue == 0 ? 0xFFAA55 : 0xDDDDDD;
-            graphics.drawString(font, weightLine, wx, wy, color, true);
+            HudText.drawScaled(graphics, font, weightLine, wx, wy, color, true);
         }
     }
 }

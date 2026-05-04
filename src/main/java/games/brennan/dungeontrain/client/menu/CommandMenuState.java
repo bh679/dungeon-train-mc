@@ -225,6 +225,11 @@ public final class CommandMenuState {
             CommandRunner.run(stay.command());
             // Stay open so the player can click again. The next tick's
             // rebuild picks up any label change driven by server state.
+        } else if (entry instanceof CommandMenuEntry.ClientAction ca) {
+            ca.action().run();
+            // Same UX as Stay — keep the menu open so the player sees the
+            // value tick up, but skip the slash-command round-trip for
+            // pure client-side state.
         } else if (entry instanceof CommandMenuEntry.DrillIn drill) {
             drillIn(drill.target());
         } else if (entry instanceof CommandMenuEntry.Back) {
