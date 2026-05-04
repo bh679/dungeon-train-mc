@@ -4,7 +4,7 @@ import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 
@@ -63,7 +63,7 @@ public final class TrackSidePlots {
      */
     public static final int X_TRACK = 0;
     public static final int X_TUNNELS = X_TRACK + 4 + EditorLayout.GAP;          // 4 = TILE_LENGTH
-    public static final int X_STAIRS = X_TUNNELS + TunnelTemplate.LENGTH + EditorLayout.GAP; // +10+5 = 19
+    public static final int X_STAIRS = X_TUNNELS + TunnelPlacer.LENGTH + EditorLayout.GAP; // +10+5 = 19
     public static final int X_PILLARS = X_STAIRS + 3 + EditorLayout.GAP;         // +3+5 = 27 (stairs xSize=3)
 
     private TrackSidePlots() {}
@@ -136,7 +136,7 @@ public final class TrackSidePlots {
         return switch (kind) {
             case TILE -> Y_BASELINE;
             case TUNNEL_SECTION -> Y_BASELINE;
-            case TUNNEL_PORTAL -> Y_BASELINE + TunnelTemplate.HEIGHT + EditorLayout.GAP;
+            case TUNNEL_PORTAL -> Y_BASELINE + TunnelPlacer.HEIGHT + EditorLayout.GAP;
             case ADJUNCT_STAIRS -> Y_BASELINE;
             case PILLAR_BOTTOM -> Y_BASELINE;
             case PILLAR_MIDDLE -> Y_BASELINE + PillarSection.BOTTOM.height() + EditorLayout.GAP;

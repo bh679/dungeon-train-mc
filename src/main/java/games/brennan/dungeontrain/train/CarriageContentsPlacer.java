@@ -31,9 +31,9 @@ import java.util.UUID;
 /**
  * Interior-contents blueprint — stamps the {@link CarriageContents} template
  * into the interior volume of a carriage at a given origin. Parallel to
- * {@link CarriageTemplate} but scoped to the {@code (length-2) × (height-2) × (width-2)}
+ * {@link CarriagePlacer} but scoped to the {@code (length-2) × (height-2) × (width-2)}
  * interior region; the shell floor/walls/ceiling are placed separately by
- * {@link CarriageTemplate#placeAt} and are not affected.
+ * {@link CarriagePlacer#placeAt} and are not affected.
  *
  * <p>{@link #placeAt(ServerLevel, BlockPos, CarriageContents, CarriageDims)}
  * first tries an NBT-backed template from {@link CarriageContentsStore}; if
@@ -42,11 +42,11 @@ import java.util.UUID;
  * generator that places a single stone pressure plate at the interior floor
  * centre, and custom contents place nothing.
  */
-public final class CarriageContentsTemplate {
+public final class CarriageContentsPlacer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private CarriageContentsTemplate() {}
+    private CarriageContentsPlacer() {}
 
     /**
      * Interior size (x=length-2, y=height-2, z=width-2) as a {@link Vec3i}.
@@ -75,7 +75,7 @@ public final class CarriageContentsTemplate {
      * Stamp the interior contents for {@code contents} at the given carriage
      * {@code carriageOrigin} (shell's min corner). Only places blocks inside
      * the interior volume — the shell's floor/walls/ceiling placed by
-     * {@link CarriageTemplate#placeAt} are untouched.
+     * {@link CarriagePlacer#placeAt} are untouched.
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents, CarriageDims dims) {
         Vec3i size = interiorSize(dims);
@@ -332,7 +332,7 @@ public final class CarriageContentsTemplate {
      * {@code carriageOrigin}. Used by the rolling-window spawn path (before
      * stamping new contents) so leftover armor stands / paintings from a
      * previous carriage at this shipyard position don't accumulate. The
-     * block-only erase in {@link CarriageTemplate#eraseAt} already handles
+     * block-only erase in {@link CarriagePlacer#eraseAt} already handles
      * stale interior blocks.
      */
     public static void discardEntitiesAt(ServerLevel level, BlockPos carriageOrigin, CarriageDims dims) {

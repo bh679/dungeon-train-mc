@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ import java.util.Optional;
  * Three-tier store for {@code <variant-id>.parts.json} sidecars — the
  * per-carriage-variant mapping of {@link games.brennan.dungeontrain.train.CarriagePartKind}
  * → part template name that tells
- * {@link games.brennan.dungeontrain.train.CarriageTemplate#placeAt(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos, CarriageVariant, games.brennan.dungeontrain.train.CarriageDims)}
+ * {@link games.brennan.dungeontrain.train.CarriagePlacer#placeAt(net.minecraft.server.level.ServerLevel, net.minecraft.core.BlockPos, CarriageVariant, games.brennan.dungeontrain.train.CarriageDims)}
  * to compose the carriage from parts instead of stamping the monolithic NBT.
  *
  * <ol>

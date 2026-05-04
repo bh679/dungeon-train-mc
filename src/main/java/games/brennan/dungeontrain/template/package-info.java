@@ -25,7 +25,7 @@
  *
  * <p>Note: this package owns identity and metadata only. Block-placement
  * logic continues to live in the per-subsystem {@code *Template} static
- * helpers ({@code train.CarriageTemplate}, {@code tunnel.TunnelTemplate},
+ * helpers ({@code train.CarriagePlacer}, {@code tunnel.TunnelPlacer},
  * etc.) — Phase 3 renames those to {@code *Placer} to free the natural
  * names.
  */

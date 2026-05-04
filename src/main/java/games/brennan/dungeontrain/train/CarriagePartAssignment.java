@@ -15,7 +15,7 @@ import java.util.Random;
  * names with per-entry pick weights. Stored as a sidecar
  * {@code <variant-id>.parts.json} next to the carriage NBT; when present
  * with at least one resolvable part, it takes precedence over the
- * monolithic NBT at spawn time and {@code CarriageTemplate.placeAt}
+ * monolithic NBT at spawn time and {@code CarriagePlacer.placeAt}
  * composes the carriage from parts.
  *
  * <p>Each slot is a <b>list</b> of {@link WeightedName} entries. At
@@ -53,7 +53,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     public static final int MIN_WEIGHT = 1;
     public static final int MAX_WEIGHT = 100;
 
-    /** Mixer constant — same as {@code CarriageTemplate.seededPick}. Adjacent indices don't correlate. */
+    /** Mixer constant — same as {@code CarriagePlacer.seededPick}. Adjacent indices don't correlate. */
     private static final long MIX = 0x9E3779B97F4A7C15L;
 
     /**

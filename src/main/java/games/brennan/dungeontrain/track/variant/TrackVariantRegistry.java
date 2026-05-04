@@ -7,7 +7,7 @@ import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateRegistry;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -207,7 +207,7 @@ public final class TrackVariantRegistry {
      * name across server restarts and rolling-window re-renders. If every name
      * in the pool has weight 0 the function falls back to a uniform pick.
      *
-     * <p>Mirrors {@code CarriageTemplate.weightedSeededPick} but with kind-id
+     * <p>Mirrors {@code CarriagePlacer.weightedSeededPick} but with kind-id
      * mixed into the seed so the same tile index in two adjacent kinds
      * (e.g. tunnel section vs portal at the same X) doesn't pick correlated
      * names.</p>
@@ -307,50 +307,65 @@ public final class TrackVariantRegistry {
         };
     }
 
-    private static final TemplateRegistry<Template.TrackModel> TRACK_ADAPTER =
-        makeAdapter(TrackKind.TILE, TemplateKind.TRACK, Template.TrackModel::new);
+    private static final TemplateRegistry<Template.Track> TRACK_ADAPTER =
+        makeAdapter(TrackKind.TILE, TemplateKind.TRACK, Template.Track::new);
 
-    private static final EnumMap<PillarSection, TemplateRegistry<Template.PillarModel>> PILLAR_ADAPTERS
+    private static final EnumMap<PillarSection, TemplateRegistry<Template.Pillar>> PILLAR_ADAPTERS
         = new EnumMap<>(PillarSection.class);
     static {
         PILLAR_ADAPTERS.put(PillarSection.TOP,
             makeAdapter(TrackKind.PILLAR_TOP, TemplateKind.PILLAR,
-                n -> new Template.PillarModel(PillarSection.TOP, n)));
+                n -> new Template.Pillar(PillarSection.TOP, n)));
         PILLAR_ADAPTERS.put(PillarSection.MIDDLE,
             makeAdapter(TrackKind.PILLAR_MIDDLE, TemplateKind.PILLAR,
-                n -> new Template.PillarModel(PillarSection.MIDDLE, n)));
+                n -> new Template.Pillar(PillarSection.MIDDLE, n)));
         PILLAR_ADAPTERS.put(PillarSection.BOTTOM,
             makeAdapter(TrackKind.PILLAR_BOTTOM, TemplateKind.PILLAR,
-                n -> new Template.PillarModel(PillarSection.BOTTOM, n)));
+                n -> new Template.Pillar(PillarSection.BOTTOM, n)));
     }
 
-    private static final EnumMap<PillarAdjunct, TemplateRegistry<Template.AdjunctModel>> ADJUNCT_ADAPTERS
+    private static final EnumMap<PillarAdjunct, TemplateRegistry<Template.Adjunct>> ADJUNCT_ADAPTERS
         = new EnumMap<>(PillarAdjunct.class);
     static {
         ADJUNCT_ADAPTERS.put(PillarAdjunct.STAIRS,
             makeAdapter(TrackKind.ADJUNCT_STAIRS, TemplateKind.STAIRS,
-                n -> new Template.AdjunctModel(PillarAdjunct.STAIRS, n)));
+                n -> new Template.Adjunct(PillarAdjunct.STAIRS, n)));
     }
 
-    private static final EnumMap<TunnelVariant, TemplateRegistry<Template.TunnelModel>> TUNNEL_ADAPTERS
+    private static final EnumMap<TunnelVariant, TemplateRegistry<Template.Tunnel>> TUNNEL_ADAPTERS
         = new EnumMap<>(TunnelVariant.class);
     static {
         TUNNEL_ADAPTERS.put(TunnelVariant.SECTION,
             makeAdapter(TrackKind.TUNNEL_SECTION, TemplateKind.TUNNEL,
-                n -> new Template.TunnelModel(TunnelVariant.SECTION, n)));
+                n -> new Template.Tunnel(TunnelVariant.SECTION, n)));
         TUNNEL_ADAPTERS.put(TunnelVariant.PORTAL,
             makeAdapter(TrackKind.TUNNEL_PORTAL, TemplateKind.TUNNEL,
-                n -> new Template.TunnelModel(TunnelVariant.PORTAL, n)));
+                n -> new Template.Tunnel(TunnelVariant.PORTAL, n)));
     }
 
-    public static TemplateRegistry<Template.TrackModel> adapterForTrack() { return TRACK_ADAPTER; }
-    public static TemplateRegistry<Template.PillarModel> adapterForPillar(PillarSection section) {
+    public static TemplateRegistry<Template.Track> adapterForTrack() { return TRACK_ADAPTER; }
+    public static TemplateRegistry<Template.Pillar> adapterForPillar(PillarSection section) {
         return PILLAR_ADAPTERS.get(section);
     }
-    public static TemplateRegistry<Template.AdjunctModel> adapterForAdjunct(PillarAdjunct adjunct) {
+    public static TemplateRegistry<Template.Adjunct> adapterForAdjunct(PillarAdjunct adjunct) {
         return ADJUNCT_ADAPTERS.get(adjunct);
     }
-    public static TemplateRegistry<Template.TunnelModel> adapterForTunnel(TunnelVariant variant) {
+    public static TemplateRegistry<Template.Tunnel> adapterForTunnel(TunnelVariant variant) {
         return TUNNEL_ADAPTERS.get(variant);
+    }
+
+    // ─── Phase-3 record-shaped overloads ────────────────────────────────
+    // Underlying EnumMap cache keys stay the bare enums; the id record is a
+    // callsite shape only, so the per-discriminator singleton instances are
+    // reused.
+
+    public static TemplateRegistry<Template.Pillar> adapterForPillar(games.brennan.dungeontrain.template.PillarTemplateId id) {
+        return PILLAR_ADAPTERS.get(id.section());
+    }
+    public static TemplateRegistry<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
+    }
+    public static TemplateRegistry<Template.Tunnel> adapterForTunnel(games.brennan.dungeontrain.template.TunnelTemplateId id) {
+        return TUNNEL_ADAPTERS.get(id.variant());
     }
 }

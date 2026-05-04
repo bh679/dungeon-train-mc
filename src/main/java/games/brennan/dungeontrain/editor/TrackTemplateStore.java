@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateStore;
-import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -110,8 +110,8 @@ public final class TrackTemplateStore {
         if (cached != null) {
             if (cached.isEmpty()) return cached;
             BlockState[][][] c = cached.get();
-            if (c.length == TrackTemplate.TILE_LENGTH
-                && c[0].length == TrackTemplate.HEIGHT
+            if (c.length == TrackPlacer.TILE_LENGTH
+                && c[0].length == TrackPlacer.HEIGHT
                 && c[0][0].length == dims.width()) {
                 return cached;
             }
@@ -176,7 +176,7 @@ public final class TrackTemplateStore {
      * field is private and we don't ship an access transformer.</p>
      */
     private static BlockState[][][] extractCells(StructureTemplate template, int width) {
-        BlockState[][][] cells = new BlockState[TrackTemplate.TILE_LENGTH][TrackTemplate.HEIGHT][width];
+        BlockState[][][] cells = new BlockState[TrackPlacer.TILE_LENGTH][TrackPlacer.HEIGHT][width];
         try {
             Field field = palettesField;
             if (field == null) {
@@ -192,8 +192,8 @@ public final class TrackTemplateStore {
                 int x = info.pos().getX();
                 int y = info.pos().getY();
                 int z = info.pos().getZ();
-                if (x >= 0 && x < TrackTemplate.TILE_LENGTH
-                    && y >= 0 && y < TrackTemplate.HEIGHT
+                if (x >= 0 && x < TrackPlacer.TILE_LENGTH
+                    && y >= 0 && y < TrackPlacer.HEIGHT
                     && z >= 0 && z < width) {
                     cells[x][y][z] = info.state();
                 }
@@ -211,26 +211,26 @@ public final class TrackTemplateStore {
      * Phase-2 adapter — exposes the track-tile store through the unified
      * {@link TemplateStore} surface. Track has only the synthetic
      * "default" name (per {@link TrackKind#DEFAULT_NAME}), so the
-     * {@link Template.TrackModel#name()} field isn't dispatched on yet —
+     * {@link Template.Track#name()} field isn't dispatched on yet —
      * the editor save still hits the single-tile flow.
      */
-    private static final TemplateStore<Template.TrackModel> ADAPTER = new TemplateStore<>() {
+    private static final TemplateStore<Template.Track> ADAPTER = new TemplateStore<>() {
         @Override public TemplateKind kind() { return TemplateKind.TRACK; }
 
         @Override
-        public SaveResult save(ServerPlayer player, Template.TrackModel template) throws Exception {
+        public SaveResult save(ServerPlayer player, Template.Track template) throws Exception {
             TrackEditor.SaveResult r = TrackEditor.save(player);
             return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
         }
 
         @Override
-        public boolean canPromote(Template.TrackModel template) { return sourceTreeAvailable(); }
+        public boolean canPromote(Template.Track template) { return sourceTreeAvailable(); }
 
         @Override
-        public void promote(Template.TrackModel template) throws Exception {
+        public void promote(Template.Track template) throws Exception {
             TrackTemplateStore.promote();
         }
     };
 
-    public static TemplateStore<Template.TrackModel> adapter() { return ADAPTER; }
+    public static TemplateStore<Template.Track> adapter() { return ADAPTER; }
 }

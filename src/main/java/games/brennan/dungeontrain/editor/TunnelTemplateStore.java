@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -113,35 +113,45 @@ public final class TunnelTemplateStore {
      * {@link TemplateStore} surface. Tunnels have no bundled tier today,
      * so {@link TemplateStore#canPromote} returns false and
      * {@link TemplateStore#promote} throws — mirrors the existing
-     * {@code SaveCommand} arm for {@code Template.TunnelModel}.
+     * {@code SaveCommand} arm for {@code Template.Tunnel}.
      */
-    private static final EnumMap<TunnelVariant, TemplateStore<Template.TunnelModel>> ADAPTERS
+    private static final EnumMap<TunnelVariant, TemplateStore<Template.Tunnel>> ADAPTERS
         = new EnumMap<>(TunnelVariant.class);
     static {
         for (TunnelVariant v : TunnelVariant.values()) ADAPTERS.put(v, makeAdapter(v));
     }
 
-    private static TemplateStore<Template.TunnelModel> makeAdapter(TunnelVariant variant) {
+    private static TemplateStore<Template.Tunnel> makeAdapter(TunnelVariant variant) {
         return new TemplateStore<>() {
             @Override public TemplateKind kind() { return TemplateKind.TUNNEL; }
 
             @Override
-            public SaveResult save(ServerPlayer player, Template.TunnelModel template) throws Exception {
+            public SaveResult save(ServerPlayer player, Template.Tunnel template) throws Exception {
                 TunnelEditor.SaveResult r = TunnelEditor.save(player, variant);
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override
-            public boolean canPromote(Template.TunnelModel template) { return false; }
+            public boolean canPromote(Template.Tunnel template) { return false; }
 
             @Override
-            public void promote(Template.TunnelModel template) throws Exception {
+            public void promote(Template.Tunnel template) throws Exception {
                 throw new IllegalStateException("Tunnel templates have no bundled tier — '/dt save default' does not apply.");
             }
         };
     }
 
-    public static TemplateStore<Template.TunnelModel> adapter(TunnelVariant variant) {
+    public static TemplateStore<Template.Tunnel> adapter(TunnelVariant variant) {
         return ADAPTERS.get(variant);
+    }
+
+    /**
+     * Phase-3 record-shaped overload: {@link #adapter(TunnelVariant)} keyed
+     * via the {@link games.brennan.dungeontrain.template.TunnelTemplateId}
+     * record. Underlying EnumMap cache key stays the bare
+     * {@link TunnelVariant}.
+     */
+    public static TemplateStore<Template.Tunnel> adapter(games.brennan.dungeontrain.template.TunnelTemplateId id) {
+        return ADAPTERS.get(id.variant());
     }
 }

@@ -6,7 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -521,7 +521,7 @@ public final class CarriageVariantBlocks {
      * without constructing {@link VariantState} instances. New callers
      * should use {@link #pickIndexWeighted}.
      *
-     * <p>Mirrors {@code CarriageTemplate.seededPick}'s golden-ratio mix,
+     * <p>Mirrors {@code CarriagePlacer.seededPick}'s golden-ratio mix,
      * with an additional {@code 0xBF58476D1CE4E5B9L} multiplier folding the
      * block position so two adjacent positions at the same carriage index
      * aren't correlated.</p>

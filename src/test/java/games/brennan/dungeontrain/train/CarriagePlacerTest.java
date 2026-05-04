@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.train;
 
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for {@link CarriageTemplate}'s pure-logic functions —
+ * Unit tests for {@link CarriagePlacer}'s pure-logic functions —
  * the deterministic carriage-variant selector
- * {@link CarriageTemplate#variantForIndex(int, CarriageGenerationConfig)},
+ * {@link CarriagePlacer#variantForIndex(int, CarriageGenerationConfig)},
  * the {@link CarriageType} enum contract, {@link CarriageVariant} validation,
  * the {@link CarriageDims} invariants + clamp helper, and the
  * {@link CarriageGenerationConfig} clamp semantics.
@@ -32,12 +32,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * tests tracked separately on Project #16.</p>
  *
  * <p>These tests run in plain JUnit without a Forge/MC runtime. The class is
- * designed so {@code CarriageTemplate}'s own static init does not trigger
+ * designed so {@code CarriagePlacer}'s own static init does not trigger
  * {@code Blocks.*} registry access — the {@code BlockState} fields are held
  * inside a lazy-init holder class that only loads when {@code placeAt} /
  * {@code eraseAt} are called from a live server path.</p>
  */
-final class CarriageTemplateTest {
+final class CarriagePlacerTest {
 
     private static final CarriageGenerationConfig LOOP = CarriageGenerationConfig.LOOPING;
 
@@ -55,31 +55,31 @@ final class CarriageTemplateTest {
     @Test
     @DisplayName("LOOPING: variantForIndex(0) returns STANDARD")
     void loop_zero_returnsStandard() {
-        assertEquals("standard", CarriageTemplate.variantForIndex(0, LOOP).id());
+        assertEquals("standard", CarriagePlacer.variantForIndex(0, LOOP).id());
     }
 
     @Test
     @DisplayName("LOOPING: variantForIndex(1) returns WINDOWED")
     void loop_one_returnsWindowed() {
-        assertEquals("windowed", CarriageTemplate.variantForIndex(1, LOOP).id());
+        assertEquals("windowed", CarriagePlacer.variantForIndex(1, LOOP).id());
     }
 
     @Test
     @DisplayName("LOOPING: variantForIndex(2) returns FLATBED")
     void loop_two_returnsFlatbed() {
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(2, LOOP).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(2, LOOP).id());
     }
 
     @Test
     @DisplayName("LOOPING: variantForIndex(3) wraps back to STANDARD — cycle of 3 with no customs")
     void loop_three_wrapsToStandard() {
-        assertEquals("standard", CarriageTemplate.variantForIndex(3, LOOP).id());
+        assertEquals("standard", CarriagePlacer.variantForIndex(3, LOOP).id());
     }
 
     @Test
     @DisplayName("LOOPING: variantForIndex(4) returns WINDOWED — cycle of 3 wraps")
     void loop_four_returnsWindowed() {
-        assertEquals("windowed", CarriageTemplate.variantForIndex(4, LOOP).id());
+        assertEquals("windowed", CarriagePlacer.variantForIndex(4, LOOP).id());
     }
 
     @Test
@@ -89,19 +89,19 @@ final class CarriageTemplateTest {
         // but Math.floorMod(-1, 3) == 2. The rolling-window manager depends
         // on negative indices wrapping forward (carriage index -1 is behind
         // the spawner), so this test pins the contract explicitly.
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(-1, LOOP).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(-1, LOOP).id());
     }
 
     @Test
     @DisplayName("LOOPING: variantForIndex(-4) returns FLATBED — Math.floorMod(-4, 3) == 2")
     void loop_negativeFour_returnsFlatbed() {
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(-4, LOOP).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(-4, LOOP).id());
     }
 
     @Test
     @DisplayName("LOOPING: variantForIndex(399) returns STANDARD — large multiples of cycle length still wrap")
     void loop_largeMultipleOfThree_returnsStandard() {
-        assertEquals("standard", CarriageTemplate.variantForIndex(399, LOOP).id());
+        assertEquals("standard", CarriagePlacer.variantForIndex(399, LOOP).id());
     }
 
     @Test
@@ -112,12 +112,12 @@ final class CarriageTemplateTest {
         CarriageVariantRegistry.register((CarriageVariant.Custom) CarriageVariant.custom("aaa_custom"));
         CarriageVariantRegistry.register((CarriageVariant.Custom) CarriageVariant.custom("zzz_custom"));
 
-        assertEquals("standard",    CarriageTemplate.variantForIndex(0, LOOP).id());
-        assertEquals("windowed",    CarriageTemplate.variantForIndex(1, LOOP).id());
-        assertEquals("flatbed",     CarriageTemplate.variantForIndex(2, LOOP).id());
-        assertEquals("aaa_custom",  CarriageTemplate.variantForIndex(3, LOOP).id());
-        assertEquals("zzz_custom",  CarriageTemplate.variantForIndex(4, LOOP).id());
-        assertEquals("standard",    CarriageTemplate.variantForIndex(5, LOOP).id()); // wraps
+        assertEquals("standard",    CarriagePlacer.variantForIndex(0, LOOP).id());
+        assertEquals("windowed",    CarriagePlacer.variantForIndex(1, LOOP).id());
+        assertEquals("flatbed",     CarriagePlacer.variantForIndex(2, LOOP).id());
+        assertEquals("aaa_custom",  CarriagePlacer.variantForIndex(3, LOOP).id());
+        assertEquals("zzz_custom",  CarriagePlacer.variantForIndex(4, LOOP).id());
+        assertEquals("standard",    CarriagePlacer.variantForIndex(5, LOOP).id()); // wraps
     }
 
     // ---- variantForIndex RANDOM: deterministic, covers all variants ----
@@ -126,9 +126,9 @@ final class CarriageTemplateTest {
     @DisplayName("RANDOM: same (seed, index) returns the same variant across repeated calls")
     void random_isDeterministic() {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 123456789L);
-        String first = CarriageTemplate.variantForIndex(42, cfg).id();
+        String first = CarriagePlacer.variantForIndex(42, cfg).id();
         for (int i = 0; i < 100; i++) {
-            assertEquals(first, CarriageTemplate.variantForIndex(42, cfg).id(), "call " + i);
+            assertEquals(first, CarriagePlacer.variantForIndex(42, cfg).id(), "call " + i);
         }
     }
 
@@ -138,7 +138,7 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xDEADBEEFL);
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < 10_000; i++) {
-            seen.add(CarriageTemplate.variantForIndex(i, cfg).id());
+            seen.add(CarriagePlacer.variantForIndex(i, cfg).id());
         }
         assertEquals(3, seen.size(), "expected all three built-in variants in a 10k-index sweep, saw: " + seen);
     }
@@ -152,8 +152,8 @@ final class CarriageTemplateTest {
         // between two distinct seeds. P(all match) ≤ (1/4)^100.
         boolean anyDifferent = false;
         for (int i = 0; i < 100; i++) {
-            if (!CarriageTemplate.variantForIndex(i, a).id()
-                    .equals(CarriageTemplate.variantForIndex(i, b).id())) {
+            if (!CarriagePlacer.variantForIndex(i, a).id()
+                    .equals(CarriagePlacer.variantForIndex(i, b).id())) {
                 anyDifferent = true;
                 break;
             }
@@ -168,7 +168,7 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 13L);
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < 500; i++) {
-            seen.add(CarriageTemplate.variantForIndex(i, cfg).id());
+            seen.add(CarriagePlacer.variantForIndex(i, cfg).id());
         }
         assertTrue(seen.contains("mycustom"),
                 "registered custom variant never drawn in 500 RANDOM picks, saw: " + seen);
@@ -184,7 +184,7 @@ final class CarriageTemplateTest {
         int cycleLen = groupSize + 1;
         for (int cycle = 0; cycle < 5; cycle++) {
             int separatorIdx = cycle * cycleLen + groupSize;
-            assertEquals("flatbed", CarriageTemplate.variantForIndex(separatorIdx, cfg).id(),
+            assertEquals("flatbed", CarriagePlacer.variantForIndex(separatorIdx, cfg).id(),
                     "separator at idx " + separatorIdx);
         }
     }
@@ -198,7 +198,7 @@ final class CarriageTemplateTest {
         for (int cycle = 0; cycle < 3; cycle++) {
             int base = cycle * cycleLen;
             for (int offset = 0; offset < groupSize; offset++) {
-                String id = CarriageTemplate.variantForIndex(base + offset, cfg).id();
+                String id = CarriagePlacer.variantForIndex(base + offset, cfg).id();
                 assertNotEquals("flatbed", id,
                         "group member at idx " + (base + offset) + " should not be flatbed");
             }
@@ -211,10 +211,10 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, 1, 7L);
         for (int i = 0; i < 20; i++) {
             if (i % 2 == 0) {
-                assertNotEquals("flatbed", CarriageTemplate.variantForIndex(i, cfg).id(),
+                assertNotEquals("flatbed", CarriagePlacer.variantForIndex(i, cfg).id(),
                         "group member at idx " + i);
             } else {
-                assertEquals("flatbed", CarriageTemplate.variantForIndex(i, cfg).id(),
+                assertEquals("flatbed", CarriagePlacer.variantForIndex(i, cfg).id(),
                         "separator at idx " + i);
             }
         }
@@ -224,9 +224,9 @@ final class CarriageTemplateTest {
     @DisplayName("RANDOM_GROUPED: same (seed, index, groupSize) returns the same variant repeatedly")
     void grouped_isDeterministic() {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, 4, 42L);
-        String first = CarriageTemplate.variantForIndex(13, cfg).id();
+        String first = CarriagePlacer.variantForIndex(13, cfg).id();
         for (int i = 0; i < 100; i++) {
-            assertEquals(first, CarriageTemplate.variantForIndex(13, cfg).id());
+            assertEquals(first, CarriagePlacer.variantForIndex(13, cfg).id());
         }
     }
 
@@ -237,8 +237,8 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, groupSize, 0L);
         int cycleLen = groupSize + 1;
         // floorMod(-1, 4) == 3 == groupSize, so index -1 is a separator in a 3-group layout.
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(-1, cfg).id());
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(-1 - cycleLen, cfg).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(-1, cfg).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(-1 - cycleLen, cfg).id());
     }
 
     @Test
@@ -248,15 +248,15 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, 3, 55L);
 
         // Separator slots are always flatbed, even with customs registered.
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(3, cfg).id());
-        assertEquals("flatbed", CarriageTemplate.variantForIndex(7, cfg).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(3, cfg).id());
+        assertEquals("flatbed", CarriagePlacer.variantForIndex(7, cfg).id());
 
         // Custom should appear in some group slot across a moderately-sized sweep.
         Set<String> groupSlotIds = new HashSet<>();
         for (int cycle = 0; cycle < 200; cycle++) {
             int base = cycle * 4;
             for (int offset = 0; offset < 3; offset++) {
-                groupSlotIds.add(CarriageTemplate.variantForIndex(base + offset, cfg).id());
+                groupSlotIds.add(CarriagePlacer.variantForIndex(base + offset, cfg).id());
             }
         }
         assertTrue(groupSlotIds.contains("mycustom"),
@@ -424,8 +424,8 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xCAFEBABEL);
         for (int i = 0; i < 500; i++) {
             assertEquals(
-                CarriageTemplate.variantForIndex(i, cfg, CarriageWeights.EMPTY).id(),
-                CarriageTemplate.variantForIndex(i, cfg).id(),
+                CarriagePlacer.variantForIndex(i, cfg, CarriageWeights.EMPTY).id(),
+                CarriagePlacer.variantForIndex(i, cfg).id(),
                 "EMPTY weights should match default behaviour at index " + i
             );
         }
@@ -438,7 +438,7 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 13L);
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < 10_000; i++) {
-            seen.add(CarriageTemplate.variantForIndex(i, cfg, weights).id());
+            seen.add(CarriagePlacer.variantForIndex(i, cfg, weights).id());
         }
         assertFalse(seen.contains("windowed"),
                 "weight=0 variant should never be picked, saw: " + seen);
@@ -462,7 +462,7 @@ final class CarriageTemplateTest {
         int total = 20_000;
         Map<String, Integer> counts = new HashMap<>();
         for (int i = 0; i < total; i++) {
-            counts.merge(CarriageTemplate.variantForIndex(i, cfg, weights).id(), 1, Integer::sum);
+            counts.merge(CarriagePlacer.variantForIndex(i, cfg, weights).id(), 1, Integer::sum);
         }
         double standardShare = counts.getOrDefault("standard", 0) / (double) total;
         assertTrue(standardShare > 0.45 && standardShare < 0.55,
@@ -482,7 +482,7 @@ final class CarriageTemplateTest {
         for (int cycle = 0; cycle < 10; cycle++) {
             int separatorIdx = cycle * cycleLen + groupSize;
             assertEquals("flatbed",
-                    CarriageTemplate.variantForIndex(separatorIdx, cfg, weights).id(),
+                    CarriagePlacer.variantForIndex(separatorIdx, cfg, weights).id(),
                     "separator at idx " + separatorIdx + " must stay flatbed regardless of weight");
         }
     }
@@ -499,7 +499,7 @@ final class CarriageTemplateTest {
         for (int cycle = 0; cycle < 200; cycle++) {
             int base = cycle * cycleLen;
             for (int offset = 0; offset < 3; offset++) {
-                String id = CarriageTemplate.variantForIndex(base + offset, cfg, weights).id();
+                String id = CarriagePlacer.variantForIndex(base + offset, cfg, weights).id();
                 assertNotEquals("windowed", id,
                         "weight=0 variant should not appear in group slot at idx " + (base + offset));
             }
@@ -517,7 +517,7 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 42L);
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < 10_000; i++) {
-            seen.add(CarriageTemplate.variantForIndex(i, cfg, weights).id());
+            seen.add(CarriagePlacer.variantForIndex(i, cfg, weights).id());
         }
         assertEquals(3, seen.size(),
                 "all-zero pool should fall back to uniform, covering every built-in. Saw: " + seen);
@@ -528,9 +528,9 @@ final class CarriageTemplateTest {
     void weighted_isDeterministic() {
         CarriageWeights weights = new CarriageWeights(Map.of("standard", 5, "flatbed", 3));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 999L);
-        String first = CarriageTemplate.variantForIndex(17, cfg, weights).id();
+        String first = CarriagePlacer.variantForIndex(17, cfg, weights).id();
         for (int i = 0; i < 100; i++) {
-            assertEquals(first, CarriageTemplate.variantForIndex(17, cfg, weights).id(), "call " + i);
+            assertEquals(first, CarriagePlacer.variantForIndex(17, cfg, weights).id(), "call " + i);
         }
     }
 
@@ -544,8 +544,8 @@ final class CarriageTemplateTest {
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xABCL);
         for (int i = 0; i < 200; i++) {
             assertEquals(
-                CarriageTemplate.variantForIndex(i, cfg, CarriageWeights.EMPTY).id(),
-                CarriageTemplate.variantForIndex(i, cfg, weights).id(),
+                CarriagePlacer.variantForIndex(i, cfg, CarriageWeights.EMPTY).id(),
+                CarriagePlacer.variantForIndex(i, cfg, weights).id(),
                 "unknown-id weight should not change output at idx " + i
             );
         }
@@ -561,7 +561,7 @@ final class CarriageTemplateTest {
         int total = 5_000;
         int standardCount = 0;
         for (int i = 0; i < total; i++) {
-            if ("standard".equals(CarriageTemplate.variantForIndex(i, cfg, weights).id())) {
+            if ("standard".equals(CarriagePlacer.variantForIndex(i, cfg, weights).id())) {
                 standardCount++;
             }
         }

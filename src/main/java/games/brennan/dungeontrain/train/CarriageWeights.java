@@ -29,7 +29,7 @@ import java.util.TreeMap;
 
 /**
  * Per-variant weight map that biases the seeded random pick in
- * {@link CarriageTemplate#variantForIndex}. Higher weight = more likely to be
+ * {@link CarriagePlacer#variantForIndex}. Higher weight = more likely to be
  * drawn; weight 0 removes the variant from the eligible pool entirely.
  *
  * <p>Loaded from two tiers at {@link ServerStartingEvent}:

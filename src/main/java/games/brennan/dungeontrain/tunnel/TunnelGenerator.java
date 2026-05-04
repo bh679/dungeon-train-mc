@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Worldgen-only tunnel placement. Two-pass per chunk: Pass A qualifies each
  * of the 16 X columns as underground (plus cross-chunk terrain probes at
  * chunkMinX-1 / chunkMaxX+1 to detect run boundaries accurately); Pass B
- * walks those qualifications and stamps {@link TunnelTemplate#LENGTH}-col
+ * walks those qualifications and stamps {@link TunnelPlacer#LENGTH}-col
  * section NBTs (interior) or portal NBTs (run boundaries that pass
  * {@link #airAboveOk}). Pyramid facing outward, connecting side flush against
  * the run interior. Adjacent stamps tile flush along X.
@@ -64,7 +64,7 @@ public final class TunnelGenerator {
     /**
      * Maximum number of 10-col tunnel-section extensions to try when the
      * air-above check fails at a run boundary. Each extension moves the
-     * candidate portal location {@link TunnelTemplate#LENGTH} blocks
+     * candidate portal location {@link TunnelPlacer#LENGTH} blocks
      * further into the open-end direction. The chain stops earlier if
      * the next candidate would exceed the worldgen 3×3 chunk write window.
      */
@@ -76,7 +76,7 @@ public final class TunnelGenerator {
      * Worldgen-time tunnel placement. For each X column in this chunk that
      * qualifies as underground (probe at {@code (worldX, ceilingY+1, centerZ)},
      * see {@link #isColumnUndergroundWorldgen}), stamp the full section NBT at
-     * that column via {@link TunnelTemplate#placeSectionAtWorldgen}. On NBT
+     * that column via {@link TunnelPlacer#placeSectionAtWorldgen}. On NBT
      * miss (or when the tunnel Z extent exceeds the 3×3 worldgen window for
      * very wide corridors), fall back to
      * {@link LegacyTunnelPaint#paintTunnelColumnWorldgen}.
@@ -111,7 +111,7 @@ public final class TunnelGenerator {
         // legacy paint per-column for the whole chunk.
         int stampOriginZ = tg.wallMinZ() + 1;
         int stampMinChunkZ = stampOriginZ >> 4;
-        int stampMaxChunkZ = (stampOriginZ + TunnelTemplate.WIDTH - 1) >> 4;
+        int stampMaxChunkZ = (stampOriginZ + TunnelPlacer.WIDTH - 1) >> 4;
         boolean canStampSection = stampMinChunkZ >= chunkZ - 1 && stampMaxChunkZ <= chunkZ + 1;
 
         // ext starts true if either X-neighbour at this chunkZ has already
@@ -145,7 +145,7 @@ public final class TunnelGenerator {
         boolean prevX_qualified = isColumnUndergroundWorldgen(level, chunkMinX - 1, tg, ext);
         boolean nextX_qualified = isColumnUndergroundWorldgen(level, chunkMaxX + 1, tg, ext);
 
-        int stampLen = TunnelTemplate.LENGTH;
+        int stampLen = TunnelPlacer.LENGTH;
         int lastStampEndX = Integer.MIN_VALUE;  // exclusive lower bound for next non-exit stamp
         int stamped = 0;
         int portals = 0;
@@ -209,7 +209,7 @@ public final class TunnelGenerator {
                     }
                 }
                 BlockPos origin = new BlockPos(worldX, tg.floorY(), stampOriginZ);
-                if (TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, origin)) {
+                if (TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, origin)) {
                     stamped++;
                     lastStampEndX = worldX + stampLen - 1;
                     continue;
@@ -249,7 +249,7 @@ public final class TunnelGenerator {
         int extensions = 0;
         while (!airAboveOk(level, tg, currentBoundary, false)) {
             if (extensions >= MAX_PORTAL_EXTENSIONS) return -1;
-            int next = currentBoundary - TunnelTemplate.LENGTH;
+            int next = currentBoundary - TunnelPlacer.LENGTH;
             // Stay within the worldgen 3×3 chunk write window on -X.
             if (next < chunkMinX - 16) return -1;
             currentBoundary = next;
@@ -260,14 +260,14 @@ public final class TunnelGenerator {
         // currentBoundary..currentBoundary+9; intermediates are at
         // worldX - LENGTH * e for e in [1, extensions - 1].
         for (int e = 1; e < extensions; e++) {
-            int sectionOriginX = worldX - TunnelTemplate.LENGTH * e;
+            int sectionOriginX = worldX - TunnelPlacer.LENGTH * e;
             BlockPos sectionOrigin = new BlockPos(sectionOriginX, tg.floorY(), stampOriginZ);
-            if (!TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
+            if (!TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
                 return -1;
             }
         }
         BlockPos portalOrigin = new BlockPos(currentBoundary, tg.floorY(), stampOriginZ);
-        if (!TunnelTemplate.placePortalAtWorldgen(level, serverLevel, portalOrigin, false)) {
+        if (!TunnelPlacer.placePortalAtWorldgen(level, serverLevel, portalOrigin, false)) {
             return -1;
         }
         // For extensions > 0 the portal stamp doesn't reach the original
@@ -275,9 +275,9 @@ public final class TunnelGenerator {
         // run has continuous tunnel from the portal forward.
         if (extensions > 0) {
             BlockPos origSection = new BlockPos(worldX, tg.floorY(), stampOriginZ);
-            TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, origSection);
+            TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, origSection);
         }
-        return worldX + TunnelTemplate.LENGTH - 1;
+        return worldX + TunnelPlacer.LENGTH - 1;
     }
 
     /**
@@ -299,7 +299,7 @@ public final class TunnelGenerator {
         int extensions = 0;
         while (!airAboveOk(level, tg, currentBoundary, true)) {
             if (extensions >= MAX_PORTAL_EXTENSIONS) return -1;
-            int next = currentBoundary + TunnelTemplate.LENGTH;
+            int next = currentBoundary + TunnelPlacer.LENGTH;
             // Stay within the worldgen 3×3 chunk write window on +X. The
             // section/portal stamp covers up to currentBoundary, so the
             // rightmost write is currentBoundary itself.
@@ -310,16 +310,16 @@ public final class TunnelGenerator {
         // Intermediate sections: e in [1, extensions - 1], section at
         // origin = worldX + LENGTH * e - (LENGTH - 1) = worldX + 10*e - 9.
         for (int e = 1; e < extensions; e++) {
-            int sectionOriginX = worldX + TunnelTemplate.LENGTH * e - (TunnelTemplate.LENGTH - 1);
+            int sectionOriginX = worldX + TunnelPlacer.LENGTH * e - (TunnelPlacer.LENGTH - 1);
             BlockPos sectionOrigin = new BlockPos(sectionOriginX, tg.floorY(), stampOriginZ);
-            if (!TunnelTemplate.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
+            if (!TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
                 return -1;
             }
         }
         // Exit portal: mirrorX=true puts pyramid at originX + 9, so origin
         // = currentBoundary - 9 lands the pyramid AT currentBoundary.
-        BlockPos portalOrigin = new BlockPos(currentBoundary - (TunnelTemplate.LENGTH - 1), tg.floorY(), stampOriginZ);
-        if (!TunnelTemplate.placePortalAtWorldgen(level, serverLevel, portalOrigin, true)) {
+        BlockPos portalOrigin = new BlockPos(currentBoundary - (TunnelPlacer.LENGTH - 1), tg.floorY(), stampOriginZ);
+        if (!TunnelPlacer.placePortalAtWorldgen(level, serverLevel, portalOrigin, true)) {
             return -1;
         }
         return currentBoundary;

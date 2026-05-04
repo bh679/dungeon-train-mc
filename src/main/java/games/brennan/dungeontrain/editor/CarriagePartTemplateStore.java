@@ -44,7 +44,7 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/parts/<kind>/<name>.nbt}
  *       on the classpath. Optional; shipped defaults only exist for parts the
  *       mod wants to guarantee are available on a fresh install.</li>
- *   <li><b>Empty</b> — missing in both tiers. {@code CarriagePartTemplate.placeAt}
+ *   <li><b>Empty</b> — missing in both tiers. {@code CarriagePartPlacer.placeAt}
  *       silently skips this stamp (same no-op semantics as the {@code "none"}
  *       sentinel).</li>
  * </ol>
@@ -251,38 +251,48 @@ public final class CarriagePartTemplateStore {
      * {@link TemplateStore} surface. Cached per
      * {@link CarriagePartKind} because each kind has its own physical
      * {@code (length × width × height)} footprint and the
-     * {@link Template.PartModel#partKind()} is the discriminator the
+     * {@link Template.Part#partKind()} is the discriminator the
      * underlying static methods key on.
      */
-    private static final EnumMap<CarriagePartKind, TemplateStore<Template.PartModel>> ADAPTERS
+    private static final EnumMap<CarriagePartKind, TemplateStore<Template.Part>> ADAPTERS
         = new EnumMap<>(CarriagePartKind.class);
     static {
         for (CarriagePartKind k : CarriagePartKind.values()) ADAPTERS.put(k, makeAdapter(k));
     }
 
-    private static TemplateStore<Template.PartModel> makeAdapter(CarriagePartKind kind) {
+    private static TemplateStore<Template.Part> makeAdapter(CarriagePartKind kind) {
         return new TemplateStore<>() {
             @Override public TemplateKind kind() { return TemplateKind.PART; }
 
             @Override
-            public SaveResult save(ServerPlayer player, Template.PartModel template) throws Exception {
+            public SaveResult save(ServerPlayer player, Template.Part template) throws Exception {
                 CarriagePartEditor.SaveResult r = CarriagePartEditor.save(player, kind, template.name());
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override
-            public boolean canPromote(Template.PartModel template) {
+            public boolean canPromote(Template.Part template) {
                 return sourceTreeAvailable() && exists(kind, template.name());
             }
 
             @Override
-            public void promote(Template.PartModel template) throws Exception {
+            public void promote(Template.Part template) throws Exception {
                 CarriagePartTemplateStore.promote(kind, template.name());
             }
         };
     }
 
-    public static TemplateStore<Template.PartModel> adapter(CarriagePartKind kind) {
+    public static TemplateStore<Template.Part> adapter(CarriagePartKind kind) {
         return ADAPTERS.get(kind);
+    }
+
+    /**
+     * Phase-3 record-shaped overload: {@link #adapter(CarriagePartKind)}
+     * keyed via the {@link games.brennan.dungeontrain.template.CarriagePartTemplateId}
+     * record. The underlying EnumMap cache key stays the bare
+     * {@link CarriagePartKind}; the id record is a callsite shape only.
+     */
+    public static TemplateStore<Template.Part> adapter(games.brennan.dungeontrain.template.CarriagePartTemplateId id) {
+        return ADAPTERS.get(id.kind());
     }
 }

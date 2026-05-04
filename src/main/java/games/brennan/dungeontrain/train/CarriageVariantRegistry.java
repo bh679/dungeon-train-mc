@@ -7,7 +7,7 @@ import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateRegistry;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -67,7 +67,7 @@ public final class CarriageVariantRegistry {
         List<CarriageVariant> list = new ArrayList<>();
         // Half-flatbeds are no longer carriage variants — they're
         // sub-level boundary pads placed directly by TrainAssembler via
-        // CarriageTemplate.placeHalfFlatbedPad (Gate B.2 pad refactor).
+        // CarriagePlacer.placeHalfFlatbedPad (Gate B.2 pad refactor).
         // Every CarriageType enum value is a valid mid-train carriage.
         for (CarriageType t : CarriageType.values()) {
             list.add(CarriageVariant.of(t));
@@ -246,45 +246,45 @@ public final class CarriageVariantRegistry {
     /**
      * Phase-2 adapter — exposes the carriage variant registry through the
      * unified {@link TemplateRegistry} surface. Wraps each registered
-     * {@link CarriageVariant} into a {@link Template.CarriageModel} so
+     * {@link CarriageVariant} into a {@link Template.Carriage} so
      * callers can iterate templates without caring about the underlying
      * sealed-variant storage.
      */
-    private static final TemplateRegistry<Template.CarriageModel> ADAPTER = new TemplateRegistry<>() {
+    private static final TemplateRegistry<Template.Carriage> ADAPTER = new TemplateRegistry<>() {
         @Override public TemplateKind kind() { return TemplateKind.CARRIAGE; }
 
         @Override
-        public List<Template.CarriageModel> all() {
+        public List<Template.Carriage> all() {
             List<CarriageVariant> variants = allVariants();
-            List<Template.CarriageModel> out = new ArrayList<>(variants.size());
-            for (CarriageVariant v : variants) out.add(new Template.CarriageModel(v));
+            List<Template.Carriage> out = new ArrayList<>(variants.size());
+            for (CarriageVariant v : variants) out.add(new Template.Carriage(v));
             return out;
         }
 
         @Override
-        public List<Template.CarriageModel> builtins() {
+        public List<Template.Carriage> builtins() {
             List<CarriageVariant> variants = CarriageVariantRegistry.builtins();
-            List<Template.CarriageModel> out = new ArrayList<>(variants.size());
-            for (CarriageVariant v : variants) out.add(new Template.CarriageModel(v));
+            List<Template.Carriage> out = new ArrayList<>(variants.size());
+            for (CarriageVariant v : variants) out.add(new Template.Carriage(v));
             return out;
         }
 
         @Override
-        public List<Template.CarriageModel> customs() {
+        public List<Template.Carriage> customs() {
             List<String> ids = customIds();
-            List<Template.CarriageModel> out = new ArrayList<>(ids.size());
-            for (String id : ids) out.add(new Template.CarriageModel(new CarriageVariant.Custom(id)));
+            List<Template.Carriage> out = new ArrayList<>(ids.size());
+            for (String id : ids) out.add(new Template.Carriage(new CarriageVariant.Custom(id)));
             return out;
         }
 
         @Override
-        public Optional<Template.CarriageModel> find(String id) {
-            return CarriageVariantRegistry.find(id).map(Template.CarriageModel::new);
+        public Optional<Template.Carriage> find(String id) {
+            return CarriageVariantRegistry.find(id).map(Template.Carriage::new);
         }
 
         @Override public void reload() { CarriageVariantRegistry.reload(); }
         @Override public void clear() { CarriageVariantRegistry.clear(); }
     };
 
-    public static TemplateRegistry<Template.CarriageModel> adapter() { return ADAPTER; }
+    public static TemplateRegistry<Template.Carriage> adapter() { return ADAPTER; }
 }

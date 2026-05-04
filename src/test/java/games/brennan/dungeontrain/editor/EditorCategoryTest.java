@@ -3,8 +3,8 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +57,7 @@ final class EditorCategoryTest {
         assertTrue(models.size() >= CarriageType.values().length,
             "expected at least " + CarriageType.values().length + " carriage models, got " + models.size());
         Template first = EditorCategory.CARRIAGES.firstModel().orElseThrow();
-        assertInstanceOf(Template.CarriageModel.class, first);
+        assertInstanceOf(Template.Carriage.class, first);
         // First entry should be the STANDARD built-in (enum-ordered first).
         assertEquals("standard", first.id());
     }
@@ -69,17 +69,17 @@ final class EditorCategoryTest {
         assertEquals(
             1 + PillarSection.values().length + PillarAdjunct.values().length + TunnelVariant.values().length,
             models.size());
-        assertInstanceOf(Template.TrackModel.class, models.get(0));
-        assertInstanceOf(Template.PillarModel.class, models.get(1));
-        assertEquals(PillarSection.BOTTOM, ((Template.PillarModel) models.get(1)).section());
-        assertEquals(PillarSection.MIDDLE, ((Template.PillarModel) models.get(2)).section());
-        assertEquals(PillarSection.TOP, ((Template.PillarModel) models.get(3)).section());
-        assertInstanceOf(Template.AdjunctModel.class, models.get(4));
-        assertEquals(PillarAdjunct.STAIRS, ((Template.AdjunctModel) models.get(4)).adjunct());
+        assertInstanceOf(Template.Track.class, models.get(0));
+        assertInstanceOf(Template.Pillar.class, models.get(1));
+        assertEquals(PillarSection.BOTTOM, ((Template.Pillar) models.get(1)).section());
+        assertEquals(PillarSection.MIDDLE, ((Template.Pillar) models.get(2)).section());
+        assertEquals(PillarSection.TOP, ((Template.Pillar) models.get(3)).section());
+        assertInstanceOf(Template.Adjunct.class, models.get(4));
+        assertEquals(PillarAdjunct.STAIRS, ((Template.Adjunct) models.get(4)).adjunct());
         int tunnelStart = 1 + PillarSection.values().length + PillarAdjunct.values().length;
-        assertInstanceOf(Template.TunnelModel.class, models.get(tunnelStart));
-        assertEquals(TunnelVariant.SECTION, ((Template.TunnelModel) models.get(tunnelStart)).variant());
-        assertEquals(TunnelVariant.PORTAL, ((Template.TunnelModel) models.get(tunnelStart + 1)).variant());
+        assertInstanceOf(Template.Tunnel.class, models.get(tunnelStart));
+        assertEquals(TunnelVariant.SECTION, ((Template.Tunnel) models.get(tunnelStart)).variant());
+        assertEquals(TunnelVariant.PORTAL, ((Template.Tunnel) models.get(tunnelStart + 1)).variant());
     }
 
     @Test

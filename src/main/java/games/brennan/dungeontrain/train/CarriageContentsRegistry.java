@@ -140,7 +140,7 @@ public final class CarriageContentsRegistry {
      * falls back to a uniform pick over the full registry (and warns once
      * per server lifetime so the misconfiguration surfaces).
      *
-     * <p>Mirrors {@link games.brennan.dungeontrain.train.CarriageTemplate}'s
+     * <p>Mirrors {@link games.brennan.dungeontrain.train.CarriagePlacer}'s
      * {@code weightedSeededPick} shape (cumulative array + threshold draw)
      * with a position-free seed mixing constant so a contents pick and a
      * variant-block pick for the same carriage are not correlated.</p>
@@ -331,43 +331,43 @@ public final class CarriageContentsRegistry {
     /**
      * Phase-2 adapter — exposes the contents registry through the unified
      * {@link TemplateRegistry} surface. Wraps each registered
-     * {@link CarriageContents} into a {@link Template.ContentsModel}.
+     * {@link CarriageContents} into a {@link Template.Contents}.
      */
-    private static final TemplateRegistry<Template.ContentsModel> ADAPTER = new TemplateRegistry<>() {
+    private static final TemplateRegistry<Template.Contents> ADAPTER = new TemplateRegistry<>() {
         @Override public TemplateKind kind() { return TemplateKind.CONTENTS; }
 
         @Override
-        public List<Template.ContentsModel> all() {
+        public List<Template.Contents> all() {
             List<CarriageContents> all = allContents();
-            List<Template.ContentsModel> out = new ArrayList<>(all.size());
-            for (CarriageContents c : all) out.add(new Template.ContentsModel(c));
+            List<Template.Contents> out = new ArrayList<>(all.size());
+            for (CarriageContents c : all) out.add(new Template.Contents(c));
             return out;
         }
 
         @Override
-        public List<Template.ContentsModel> builtins() {
+        public List<Template.Contents> builtins() {
             List<CarriageContents> bs = CarriageContentsRegistry.builtins();
-            List<Template.ContentsModel> out = new ArrayList<>(bs.size());
-            for (CarriageContents c : bs) out.add(new Template.ContentsModel(c));
+            List<Template.Contents> out = new ArrayList<>(bs.size());
+            for (CarriageContents c : bs) out.add(new Template.Contents(c));
             return out;
         }
 
         @Override
-        public List<Template.ContentsModel> customs() {
+        public List<Template.Contents> customs() {
             List<String> ids = customIds();
-            List<Template.ContentsModel> out = new ArrayList<>(ids.size());
-            for (String id : ids) out.add(new Template.ContentsModel(new CarriageContents.Custom(id)));
+            List<Template.Contents> out = new ArrayList<>(ids.size());
+            for (String id : ids) out.add(new Template.Contents(new CarriageContents.Custom(id)));
             return out;
         }
 
         @Override
-        public Optional<Template.ContentsModel> find(String id) {
-            return CarriageContentsRegistry.find(id).map(Template.ContentsModel::new);
+        public Optional<Template.Contents> find(String id) {
+            return CarriageContentsRegistry.find(id).map(Template.Contents::new);
         }
 
         @Override public void reload() { CarriageContentsRegistry.reload(); }
         @Override public void clear() { CarriageContentsRegistry.clear(); }
     };
 
-    public static TemplateRegistry<Template.ContentsModel> adapter() { return ADAPTER; }
+    public static TemplateRegistry<Template.Contents> adapter() { return ADAPTER; }
 }

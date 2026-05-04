@@ -36,18 +36,18 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.train.CarriagePartTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
@@ -875,7 +875,7 @@ public final class EditorCommand {
             return 0;
         }
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-        Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
             source.sendFailure(Component.literal(
@@ -924,7 +924,7 @@ public final class EditorCommand {
 
         CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (contentsPlot != null) {
-            Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
             CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
             sendVariantsListing(source,
                 "contents '" + contentsPlot.id() + "'",
@@ -1105,17 +1105,17 @@ public final class EditorCommand {
         // Teleport to the first via the existing enter path (also handles session + outline).
         try {
             Template head = first.get();
-            if (head instanceof Template.CarriageModel cm) {
+            if (head instanceof Template.Carriage cm) {
                 CarriageEditor.enter(player, cm.variant());
-            } else if (head instanceof Template.ContentsModel cm) {
+            } else if (head instanceof Template.Contents cm) {
                 CarriageContentsEditor.enter(player, cm.contents(), null);
-            } else if (head instanceof Template.PillarModel pm) {
+            } else if (head instanceof Template.Pillar pm) {
                 PillarEditor.enter(player, pm.section());
-            } else if (head instanceof Template.AdjunctModel am) {
+            } else if (head instanceof Template.Adjunct am) {
                 PillarEditor.enter(player, am.adjunct());
-            } else if (head instanceof Template.TunnelModel tm) {
+            } else if (head instanceof Template.Tunnel tm) {
                 TunnelEditor.enter(player, tm.variant());
-            } else if (head instanceof Template.TrackModel) {
+            } else if (head instanceof Template.Track) {
                 TrackEditor.enter(player);
             }
             final Template firstModel = head;
@@ -1133,17 +1133,17 @@ public final class EditorCommand {
     }
 
     private static void stampCategoryModel(ServerLevel overworld, Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel cm) {
+        if (model instanceof Template.Carriage cm) {
             CarriageEditor.stampPlot(overworld, cm.variant(), dims);
-        } else if (model instanceof Template.ContentsModel cm) {
+        } else if (model instanceof Template.Contents cm) {
             CarriageContentsEditor.stampPlot(overworld, cm.contents(), dims);
-        } else if (model instanceof Template.PillarModel pm) {
+        } else if (model instanceof Template.Pillar pm) {
             PillarEditor.stampPlot(overworld, pm.section(), dims);
-        } else if (model instanceof Template.AdjunctModel am) {
+        } else if (model instanceof Template.Adjunct am) {
             PillarEditor.stampPlot(overworld, am.adjunct(), dims);
-        } else if (model instanceof Template.TunnelModel tm) {
+        } else if (model instanceof Template.Tunnel tm) {
             TunnelEditor.stampPlot(overworld, tm.variant());
-        } else if (model instanceof Template.TrackModel) {
+        } else if (model instanceof Template.Track) {
             TrackEditor.stampPlot(overworld, dims);
         }
     }
@@ -1202,8 +1202,8 @@ public final class EditorCommand {
                 origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
                     games.brennan.dungeontrain.track.variant.TrackKind.TILE, name, dims);
                 size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackTemplate.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackTemplate.HEIGHT,
+                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
                     dims.width());
             } else if (prefix.startsWith("pillar_")) {
                 games.brennan.dungeontrain.track.PillarSection sec = tryParseSection(prefix.substring("pillar_".length()));
@@ -1231,9 +1231,9 @@ public final class EditorCommand {
                 }
                 origin = TunnelEditor.plotOrigin(tv, name);
                 size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.tunnel.TunnelTemplate.LENGTH,
-                    games.brennan.dungeontrain.tunnel.TunnelTemplate.HEIGHT,
-                    games.brennan.dungeontrain.tunnel.TunnelTemplate.WIDTH);
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
+                    games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
             } else {
                 source.sendFailure(Component.literal("Unrecognised track-side id '" + id + "'."));
                 return 0;
@@ -1251,22 +1251,22 @@ public final class EditorCommand {
                     "Unknown model '" + id + "' in category '" + category.displayName() + "'."));
                 return 0;
             }
-            if (model instanceof Template.CarriageModel cm) {
+            if (model instanceof Template.Carriage cm) {
                 origin = CarriageEditor.plotOrigin(cm.variant(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof Template.ContentsModel cm) {
+            } else if (model instanceof Template.Contents cm) {
                 origin = CarriageContentsEditor.plotOrigin(cm.contents(), dims);
                 size = new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width());
-            } else if (model instanceof Template.PillarModel pm) {
+            } else if (model instanceof Template.Pillar pm) {
                 origin = PillarEditor.plotOrigin(pm.section(), dims);
                 size = new net.minecraft.core.Vec3i(1, pm.section().height(), dims.width());
-            } else if (model instanceof Template.TrackModel) {
+            } else if (model instanceof Template.Track) {
                 origin = games.brennan.dungeontrain.editor.TrackSidePlots.plotOrigin(
                     games.brennan.dungeontrain.track.variant.TrackKind.TILE,
                     games.brennan.dungeontrain.track.variant.TrackKind.DEFAULT_NAME, dims);
                 size = new net.minecraft.core.Vec3i(
-                    games.brennan.dungeontrain.track.TrackTemplate.TILE_LENGTH,
-                    games.brennan.dungeontrain.track.TrackTemplate.HEIGHT,
+                    games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                    games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
                     dims.width());
             } else {
                 source.sendFailure(Component.literal(
@@ -1594,7 +1594,7 @@ public final class EditorCommand {
         if (partLoc != null) {
             try {
                 BlockPos origin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
-                CarriagePartTemplate.eraseAt(overworld, origin, partLoc.kind(), dims);
+                CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
                 final String id = partLoc.kind().id() + ":" + partLoc.name();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."
@@ -1614,10 +1614,10 @@ public final class EditorCommand {
             try {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 // Interior-only erase — preserves the carriage shell stamped
-                // around it as visual context. CarriageContentsTemplate.eraseAt
+                // around it as visual context. CarriageContentsPlacer.eraseAt
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
                 // ceiling stay put for the author to keep building inside.
-                CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+                CarriageContentsPlacer.eraseAt(overworld, origin, dims);
                 final String id = contents.id();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."
@@ -1636,7 +1636,7 @@ public final class EditorCommand {
         if (carriage != null) {
             try {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
-                CarriageTemplate.eraseAt(overworld, origin, dims);
+                CarriagePlacer.eraseAt(overworld, origin, dims);
                 final String id = carriage.id();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."

@@ -304,34 +304,44 @@ public final class PillarTemplateStore {
      * correct section into {@code TrackVariantStore} via the existing
      * {@code save(section, template)} static.
      */
-    private static final EnumMap<PillarSection, TemplateStore<Template.PillarModel>> SECTION_ADAPTERS
+    private static final EnumMap<PillarSection, TemplateStore<Template.Pillar>> SECTION_ADAPTERS
         = new EnumMap<>(PillarSection.class);
     static {
         for (PillarSection s : PillarSection.values()) SECTION_ADAPTERS.put(s, makeSectionAdapter(s));
     }
 
-    private static TemplateStore<Template.PillarModel> makeSectionAdapter(PillarSection section) {
+    private static TemplateStore<Template.Pillar> makeSectionAdapter(PillarSection section) {
         return new TemplateStore<>() {
             @Override public TemplateKind kind() { return TemplateKind.PILLAR; }
 
             @Override
-            public SaveResult save(ServerPlayer player, Template.PillarModel template) throws Exception {
+            public SaveResult save(ServerPlayer player, Template.Pillar template) throws Exception {
                 PillarEditor.SaveResult r = PillarEditor.save(player, section);
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override
-            public boolean canPromote(Template.PillarModel template) { return sourceTreeAvailable(); }
+            public boolean canPromote(Template.Pillar template) { return sourceTreeAvailable(); }
 
             @Override
-            public void promote(Template.PillarModel template) throws Exception {
+            public void promote(Template.Pillar template) throws Exception {
                 PillarTemplateStore.promote(section);
             }
         };
     }
 
-    public static TemplateStore<Template.PillarModel> adapter(PillarSection section) {
+    public static TemplateStore<Template.Pillar> adapter(PillarSection section) {
         return SECTION_ADAPTERS.get(section);
+    }
+
+    /**
+     * Phase-3 record-shaped overload: {@link #adapter(PillarSection)} keyed
+     * via the {@link games.brennan.dungeontrain.template.PillarTemplateId}
+     * record. Underlying EnumMap cache key stays the bare
+     * {@link PillarSection}.
+     */
+    public static TemplateStore<Template.Pillar> adapter(games.brennan.dungeontrain.template.PillarTemplateId id) {
+        return SECTION_ADAPTERS.get(id.section());
     }
 
     /**
@@ -341,34 +351,45 @@ public final class PillarTemplateStore {
      * {@code saveAdjunct} / {@code promoteAdjunct} statics so the storage
      * path stays {@code config/dungeontrain/pillars/adjunct_stairs/}.
      */
-    private static final EnumMap<PillarAdjunct, TemplateStore<Template.AdjunctModel>> ADJUNCT_ADAPTERS
+    private static final EnumMap<PillarAdjunct, TemplateStore<Template.Adjunct>> ADJUNCT_ADAPTERS
         = new EnumMap<>(PillarAdjunct.class);
     static {
         for (PillarAdjunct a : PillarAdjunct.values()) ADJUNCT_ADAPTERS.put(a, makeAdjunctAdapter(a));
     }
 
-    private static TemplateStore<Template.AdjunctModel> makeAdjunctAdapter(PillarAdjunct adjunct) {
+    private static TemplateStore<Template.Adjunct> makeAdjunctAdapter(PillarAdjunct adjunct) {
         return new TemplateStore<>() {
             @Override public TemplateKind kind() { return TemplateKind.STAIRS; }
 
             @Override
-            public SaveResult save(ServerPlayer player, Template.AdjunctModel template) throws Exception {
+            public SaveResult save(ServerPlayer player, Template.Adjunct template) throws Exception {
                 PillarEditor.SaveResult r = PillarEditor.save(player, adjunct);
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
             @Override
-            public boolean canPromote(Template.AdjunctModel template) { return sourceTreeAvailable(); }
+            public boolean canPromote(Template.Adjunct template) { return sourceTreeAvailable(); }
 
             @Override
-            public void promote(Template.AdjunctModel template) throws Exception {
+            public void promote(Template.Adjunct template) throws Exception {
                 PillarTemplateStore.promoteAdjunct(adjunct);
             }
         };
     }
 
-    public static TemplateStore<Template.AdjunctModel> adapterForAdjunct(PillarAdjunct adjunct) {
+    public static TemplateStore<Template.Adjunct> adapterForAdjunct(PillarAdjunct adjunct) {
         return ADJUNCT_ADAPTERS.get(adjunct);
+    }
+
+    /**
+     * Phase-3 record-shaped overload for adjunct (stairs) adapters. The
+     * {@link games.brennan.dungeontrain.template.StairsTemplateId} record
+     * doesn't carry a {@link PillarAdjunct} discriminator (only one
+     * adjunct kind exists today), so this resolves to the STAIRS adapter
+     * unconditionally.
+     */
+    public static TemplateStore<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
     }
 
     private static BlockState[][] extractColumn(StructureTemplate template, int height, int width) {

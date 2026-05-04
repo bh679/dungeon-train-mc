@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * <p>The reserved name {@link CarriagePartKind#NONE} is never registered — it
- * is a sentinel handled by {@link games.brennan.dungeontrain.train.CarriagePartTemplate#placeAt}
+ * is a sentinel handled by {@link games.brennan.dungeontrain.train.CarriagePartPlacer#placeAt}
  * as "stamp nothing for this kind". {@link #names(CarriagePartKind)} prepends
  * it so it always appears in completions regardless of disk state.</p>
  *
@@ -213,36 +213,36 @@ public final class CarriagePartRegistry {
      * <p>{@link TemplateRegistry#builtins()} is empty for parts because
      * there are no shipped sentinel names today — every registered name
      * is a user-authored variant. Mirrors
-     * {@link Template.PartModel#isBuiltin()} returning false.</p>
+     * {@link Template.Part#isBuiltin()} returning false.</p>
      */
-    private static final EnumMap<CarriagePartKind, TemplateRegistry<Template.PartModel>> ADAPTERS
+    private static final EnumMap<CarriagePartKind, TemplateRegistry<Template.Part>> ADAPTERS
         = new EnumMap<>(CarriagePartKind.class);
     static {
         for (CarriagePartKind k : CarriagePartKind.values()) ADAPTERS.put(k, makeAdapter(k));
     }
 
-    private static TemplateRegistry<Template.PartModel> makeAdapter(CarriagePartKind kind) {
+    private static TemplateRegistry<Template.Part> makeAdapter(CarriagePartKind kind) {
         return new TemplateRegistry<>() {
             @Override public TemplateKind kind() { return TemplateKind.PART; }
 
             @Override
-            public List<Template.PartModel> all() {
+            public List<Template.Part> all() {
                 List<String> names = registeredNames(kind);
-                List<Template.PartModel> out = new ArrayList<>(names.size());
-                for (String n : names) out.add(new Template.PartModel(kind, n));
+                List<Template.Part> out = new ArrayList<>(names.size());
+                for (String n : names) out.add(new Template.Part(kind, n));
                 return out;
             }
 
             @Override
-            public List<Template.PartModel> builtins() { return List.of(); }
+            public List<Template.Part> builtins() { return List.of(); }
 
             @Override
-            public List<Template.PartModel> customs() { return all(); }
+            public List<Template.Part> customs() { return all(); }
 
             @Override
-            public Optional<Template.PartModel> find(String id) {
+            public Optional<Template.Part> find(String id) {
                 if (!isKnown(kind, id)) return Optional.empty();
-                return Optional.of(new Template.PartModel(kind, id));
+                return Optional.of(new Template.Part(kind, id));
             }
 
             @Override public void reload() { CarriagePartRegistry.reload(); }
@@ -250,7 +250,17 @@ public final class CarriagePartRegistry {
         };
     }
 
-    public static TemplateRegistry<Template.PartModel> adapter(CarriagePartKind kind) {
+    public static TemplateRegistry<Template.Part> adapter(CarriagePartKind kind) {
         return ADAPTERS.get(kind);
+    }
+
+    /**
+     * Phase-3 record-shaped overload: {@link #adapter(CarriagePartKind)}
+     * keyed via the
+     * {@link games.brennan.dungeontrain.template.CarriagePartTemplateId}
+     * record.
+     */
+    public static TemplateRegistry<Template.Part> adapter(games.brennan.dungeontrain.template.CarriagePartTemplateId id) {
+        return ADAPTERS.get(id.kind());
     }
 }

@@ -12,9 +12,9 @@ import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Stores;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
-import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -166,7 +166,7 @@ public final class SaveCommand {
             String prefix = id.substring(0, sep);
             String name = id.substring(sep + 1);
             if ("track".equals(prefix)) {
-                return new Template.TrackModel(name);
+                return new Template.Track(name);
             }
             if (prefix.startsWith("pillar_")) {
                 games.brennan.dungeontrain.track.PillarSection sec;
@@ -176,7 +176,7 @@ public final class SaveCommand {
                 } catch (IllegalArgumentException e) {
                     return null;
                 }
-                return new Template.PillarModel(sec, name);
+                return new Template.Pillar(sec, name);
             }
             if (prefix.startsWith("adjunct_")) {
                 games.brennan.dungeontrain.track.PillarAdjunct adj;
@@ -186,17 +186,17 @@ public final class SaveCommand {
                 } catch (IllegalArgumentException e) {
                     return null;
                 }
-                return new Template.AdjunctModel(adj, name);
+                return new Template.Adjunct(adj, name);
             }
             if (prefix.startsWith("tunnel_")) {
-                games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant tv;
+                games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant tv;
                 try {
-                    tv = games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant.valueOf(
+                    tv = games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant.valueOf(
                         prefix.substring("tunnel_".length()).toUpperCase(java.util.Locale.ROOT));
                 } catch (IllegalArgumentException e) {
                     return null;
                 }
-                return new Template.TunnelModel(tv, name);
+                return new Template.Tunnel(tv, name);
             }
         }
         for (Template m : category.models()) {
@@ -424,41 +424,41 @@ public final class SaveCommand {
     }
 
     private static boolean isPlotEmpty(ServerLevel level, Template model, CarriageDims dims) {
-        if (model instanceof Template.CarriageModel carriage) {
+        if (model instanceof Template.Carriage carriage) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof Template.ContentsModel contentsModel) {
+        if (model instanceof Template.Contents contentsModel) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contentsModel.contents(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof Template.PillarModel pillar) {
+        if (model instanceof Template.Pillar pillar) {
             BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
             return countNonAir(level, origin, 1, pillar.section().height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof Template.AdjunctModel adjunctModel) {
+        if (model instanceof Template.Adjunct adjunctModel) {
             PillarAdjunct a = adjunctModel.adjunct();
             BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
             return countNonAir(level, origin, a.xSize(), a.ySize(), a.zSize())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof Template.TunnelModel tunnel) {
+        if (model instanceof Template.Tunnel tunnel) {
             BlockPos origin = TunnelEditor.plotOrigin(tunnel.variant());
             if (origin == null) return true;
-            return countNonAir(level, origin, TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH)
+            return countNonAir(level, origin, TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH)
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof Template.TrackModel) {
+        if (model instanceof Template.Track) {
             BlockPos origin = TrackEditor.plotOrigin(dims);
-            return countNonAir(level, origin, TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
+            return countNonAir(level, origin, TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        // PartModel reaches here because EditorCategory.models() doesn't
+        // Part reaches here because EditorCategory.models() doesn't
         // include parts in the /dt save all iteration today. Treat as empty
         // (the part plot is never a save-all target). Phase 3 may surface
         // parts in the iteration alongside its model() rework.

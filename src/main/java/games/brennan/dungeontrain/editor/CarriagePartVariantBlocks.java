@@ -34,7 +34,7 @@ import java.util.Map;
  * the part template's local analogue of {@link CarriageVariantBlocks}. Enables
  * {@code shift-right-click} variant authoring inside part editor plots and
  * deterministic per-carriage-index randomisation when
- * {@link games.brennan.dungeontrain.train.CarriagePartTemplate#placeAt}
+ * {@link games.brennan.dungeontrain.train.CarriagePartPlacer#placeAt}
  * stamps the part at spawn time.
  *
  * <p>Storage: {@code config/dungeontrain/parts/<kind>/<name>.variants.json}
