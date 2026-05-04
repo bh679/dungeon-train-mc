@@ -1,10 +1,14 @@
 package games.brennan.dungeontrain.editor;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
+import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.template.Template;
+import org.slf4j.Logger;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -49,6 +53,8 @@ import java.util.UUID;
  */
 public final class VariantOverlayRenderer {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /** Raycast distance for the hover action bar. */
     private static final double HOVER_REACH = 8.0;
 
@@ -87,6 +93,24 @@ public final class VariantOverlayRenderer {
      */
     private static final Map<UUID, String> LAST_OUTLINE_SNAPSHOT_KEY = new HashMap<>();
 
+    /**
+     * Per-player dedup key for the editor plot labels push — encodes the
+     * category plus each label's {@code worldPos|name|weight} tuple in the
+     * order they're built. {@code null} or absent means "last sent was empty
+     * (or none yet)", so a fresh category enter always pushes on first tick.
+     * Refreshes whenever any label name or weight changes (e.g. after
+     * {@code /dt editor weight ...}).
+     */
+    private static final Map<UUID, String> LAST_PLOT_LABELS_KEY = new HashMap<>();
+
+    /**
+     * Per-player dedup key for the template-type menus push — encodes the
+     * category plus each menu's anchor and the variant list inside it. Same
+     * lifecycle as {@link #LAST_PLOT_LABELS_KEY}: refreshes on any name /
+     * weight change so the floating menus stay current.
+     */
+    private static final Map<UUID, String> LAST_TYPE_MENUS_KEY = new HashMap<>();
+
     private VariantOverlayRenderer() {}
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
@@ -117,6 +141,8 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player, BlockVariantLockIdsPacket.empty());
         }
         clearOutlineIfStale(player);
+        clearPlotLabelsIfStale(player);
+        clearTypeMenusIfStale(player);
     }
 
     /**
@@ -133,6 +159,8 @@ public final class VariantOverlayRenderer {
         for (ServerPlayer player : players) {
             updateEditorStatus(player, dims);
             pushLockIdSnapshot(player);
+            pushPlotLabelsSnapshot(player, dims);
+            pushTypeMenusSnapshot(player, dims);
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
@@ -461,6 +489,236 @@ public final class VariantOverlayRenderer {
                 games.brennan.dungeontrain.net.BlockVariantOutlinePacket.empty());
         }
     }
+
+    /**
+     * Push an {@link EditorPlotLabelsPacket} carrying every plot's name +
+     * weight in the currently-stamped editor category. Driven by
+     * {@link EditorStampedCategoryState} (set on category enter, cleared on
+     * {@link EditorCategory#clearAllPlots}) so the labels persist for as long
+     * as the structures themselves are present — the player can wander
+     * outside the cages, fly above the row, or stand 50 blocks away and the
+     * labels still float above each template.
+     *
+     * <p>Dedup against {@link #LAST_PLOT_LABELS_KEY} so steady-state
+     * generates zero packets after the first tick.</p>
+     */
+    private static void pushPlotLabelsSnapshot(ServerPlayer player, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        EditorCategory category = EditorStampedCategoryState.current().orElse(null);
+        if (category == null) {
+            clearPlotLabelsIfStale(player);
+            return;
+        }
+        java.util.List<EditorPlotLabels.Label> labels = EditorPlotLabels.forCategory(category, dims);
+
+        // Resolve which (modelId, modelName) the player is currently standing
+        // inside, if any. Two cases:
+        //   - Parts plot inside the CARRIAGES view: synthesise a "kind:name" id
+        //     that matches what EditorPlotLabels.addPartLabels emits.
+        //   - Any other category model: use the EditorCategory.locate path,
+        //     mapping its Template to the same (id, name) pair the per-
+        //     category builders use.
+        String currentId = "";
+        String currentName = "";
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(
+            player.blockPosition(), dims);
+        if (partLoc != null) {
+            // Parts entries store {@code (modelId=kind.id(), modelName=name)}
+            // — see EditorPlotLabels.addPartLabels — so match against that
+            // pair rather than the colon-joined display label.
+            currentId = partLoc.kind().id();
+            currentName = partLoc.name();
+        } else {
+            java.util.Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
+            if (located.isPresent()) {
+                Template model = located.get().model();
+                currentId = model.id();
+                currentName = modelNameFor(model);
+            }
+        }
+
+        // Patch the matching label to inPlot=true so the renderer shows
+        // interactive controls + green border on it.
+        if (!currentId.isEmpty()) {
+            for (int i = 0; i < labels.size(); i++) {
+                EditorPlotLabels.Label l = labels.get(i);
+                if (currentId.equals(l.modelId()) && currentName.equals(l.modelName())) {
+                    labels.set(i, l.withInPlot(true));
+                    break;
+                }
+            }
+        }
+
+        StringBuilder keyBuf = new StringBuilder(64);
+        keyBuf.append(category.name()).append('|');
+        for (EditorPlotLabels.Label l : labels) {
+            BlockPos p = l.worldPos();
+            keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
+                .append(':').append(l.name()).append('=').append(l.weight())
+                .append(l.inPlot() ? "*" : "").append(';');
+        }
+        String snapshotKey = keyBuf.toString();
+        String prev = LAST_PLOT_LABELS_KEY.get(uuid);
+        if (snapshotKey.equals(prev)) return;
+
+        LAST_PLOT_LABELS_KEY.put(uuid, snapshotKey);
+        if (labels.isEmpty()) {
+            LOGGER.info("[DungeonTrain] EditorPlotLabels: clear (category {}, player {})",
+                category, player.getName().getString());
+            DungeonTrainNet.sendTo(player, EditorPlotLabelsPacket.empty());
+            return;
+        }
+        java.util.List<EditorPlotLabelsPacket.Entry> entries = new java.util.ArrayList<>(labels.size());
+        for (EditorPlotLabels.Label l : labels) {
+            entries.add(new EditorPlotLabelsPacket.Entry(
+                l.worldPos(), l.name(), l.weight(),
+                l.category(), l.modelId(), l.modelName(), l.inPlot()));
+        }
+        EditorPlotLabels.Label first = labels.get(0);
+        LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
+            entries.size(), category, first.name(), first.weight(), first.worldPos(),
+            player.getName().getString());
+        DungeonTrainNet.sendTo(player, new EditorPlotLabelsPacket(entries));
+    }
+
+    /** Send the empty plot-labels packet if the player previously had a non-empty snapshot. */
+    private static void clearPlotLabelsIfStale(ServerPlayer player) {
+        if (LAST_PLOT_LABELS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorPlotLabelsPacket.empty());
+        }
+    }
+
+    /**
+     * Push an {@link EditorTypeMenusPacket} carrying every visible
+     * template-type menu in the currently-stamped editor category. Driven by
+     * {@link EditorStampedCategoryState} so the menus persist for as long as
+     * the stamped plots themselves are present, just like
+     * {@link #pushPlotLabelsSnapshot}.
+     *
+     * <p>Dedup against {@link #LAST_TYPE_MENUS_KEY} — steady-state generates
+     * zero packets after the first tick.</p>
+     */
+    private static void pushTypeMenusSnapshot(ServerPlayer player, CarriageDims dims) {
+        UUID uuid = player.getUUID();
+        EditorCategory category = EditorStampedCategoryState.current().orElse(null);
+        if (category == null) {
+            clearTypeMenusIfStale(player);
+            return;
+        }
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus = EditorTypeMenus.forCategory(category, dims);
+
+        // Companion menu: when the player is standing inside a plot, append a
+        // duplicate of that plot's type menu floating above the per-plot
+        // panel — so an author editing 'standard' can immediately jump to
+        // another carriage variant without flying back to the row's start.
+        java.util.List<EditorTypeMenusPacket.Menu> menus = appendCompanionMenu(
+            baseMenus, player, dims, category);
+
+        StringBuilder keyBuf = new StringBuilder(64);
+        keyBuf.append(category.name()).append('|');
+        for (EditorTypeMenusPacket.Menu m : menus) {
+            BlockPos p = m.worldPos();
+            keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
+                .append(':').append(m.typeName()).append('[');
+            for (EditorTypeMenusPacket.Variant v : m.variants()) {
+                keyBuf.append(v.name()).append('=').append(v.weight()).append(',');
+            }
+            keyBuf.append("];");
+        }
+        String snapshotKey = keyBuf.toString();
+        String prev = LAST_TYPE_MENUS_KEY.get(uuid);
+        if (snapshotKey.equals(prev)) return;
+
+        LAST_TYPE_MENUS_KEY.put(uuid, snapshotKey);
+        if (menus.isEmpty()) {
+            LOGGER.info("[DungeonTrain] EditorTypeMenus: clear (category {}, player {})",
+                category, player.getName().getString());
+            DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
+            return;
+        }
+        EditorTypeMenusPacket.Menu first = menus.get(0);
+        LOGGER.info("[DungeonTrain] EditorTypeMenus: send {} menus (category {}, first '{}' with {} variants @ {}) to {}",
+            menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
+            player.getName().getString());
+        DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(menus));
+    }
+
+    /** Send the empty type-menus packet if the player previously had a non-empty snapshot. */
+    private static void clearTypeMenusIfStale(ServerPlayer player) {
+        if (LAST_TYPE_MENUS_KEY.remove(player.getUUID()) != null) {
+            DungeonTrainNet.sendTo(player, EditorTypeMenusPacket.empty());
+        }
+    }
+
+    /**
+     * If the player is standing in a plot, return a copy of {@code baseMenus}
+     * with one extra menu appended — a duplicate of the matching menu, anchored
+     * a few blocks above the per-plot panel. Otherwise returns {@code baseMenus}
+     * unchanged.
+     *
+     * <p>Anchor lookup reuses {@link EditorPlotLabels#forCategory} so the
+     * companion sits exactly above the existing per-plot label panel — same
+     * X / Z, lifted on Y by {@link #COMPANION_LIFT}. Match key is
+     * {@code (modelId, modelName)} which is what both the labels and the type
+     * menu variants carry.</p>
+     */
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendCompanionMenu(
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus,
+        ServerPlayer player, CarriageDims dims, EditorCategory category
+    ) {
+        String currentId = "";
+        String currentName = "";
+        CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(
+            player.blockPosition(), dims);
+        if (partLoc != null) {
+            currentId = partLoc.kind().id();
+            currentName = partLoc.name();
+        } else {
+            java.util.Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
+            if (located.isPresent()) {
+                Template model = located.get().model();
+                currentId = model.id();
+                currentName = modelNameFor(model);
+            }
+        }
+        if (currentId.isEmpty()) return baseMenus;
+
+        // Find the per-plot label's worldPos for the variant the player is
+        // standing in — reuses the same anchor calculation so the companion
+        // lines up exactly with the per-plot panel below it.
+        BlockPos perPlotAnchor = null;
+        for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(category, dims)) {
+            if (currentId.equals(l.modelId()) && currentName.equals(l.modelName())) {
+                perPlotAnchor = l.worldPos();
+                break;
+            }
+        }
+        if (perPlotAnchor == null) return baseMenus;
+
+        // Find the type menu containing a variant with the matching ids.
+        EditorTypeMenusPacket.Menu source = null;
+        for (EditorTypeMenusPacket.Menu m : baseMenus) {
+            for (EditorTypeMenusPacket.Variant v : m.variants()) {
+                if (currentId.equals(v.modelId()) && currentName.equals(v.modelName())) {
+                    source = m;
+                    break;
+                }
+            }
+            if (source != null) break;
+        }
+        if (source == null) return baseMenus;
+
+        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
+        out.addAll(baseMenus);
+        // Companion shares the per-plot panel's world anchor and is flagged
+        // {@code isCompanion=true} — the renderer translates it sideways in
+        // panel-local space (after the cylindrical billboard basis) so the
+        // two panels share orientation and read as one extended UI.
+        out.add(new EditorTypeMenusPacket.Menu(
+            perPlotAnchor, source.typeName(), source.variants(), true));
+        return out;
+    }
+
 
     /**
      * Raycast the player's eye, figure out which variant-flagged position

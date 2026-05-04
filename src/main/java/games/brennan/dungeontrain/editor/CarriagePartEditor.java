@@ -159,8 +159,9 @@ public final class CarriagePartEditor {
                 BlockPos o = plotOrigin(kind, name, dims);
                 if (o == null) continue;
                 Vec3i size = kind.dims(dims);
+                // +2 Y headroom above cage top — see CarriageEditor.plotContaining.
                 if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + size.getX()
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + size.getY()
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + size.getY() + 2
                     && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + size.getZ()) {
                     return new PlotLocation(kind, name);
                 }
@@ -199,6 +200,10 @@ public final class CarriagePartEditor {
      * (or a stone-brick starter if nothing's on disk yet) and wraps the cage.
      */
     public static void enter(ServerPlayer player, CarriagePartKind kind, String name) {
+        enter(player, kind, name, true);
+    }
+
+    public static void enter(ServerPlayer player, CarriagePartKind kind, String name, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -221,13 +226,15 @@ public final class CarriagePartEditor {
 
         Vec3i size = kind.dims(dims);
         double tx = origin.getX() + size.getX() / 2.0;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + size.getY() + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + size.getZ() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Part editor enter: {} -> {}:{} plot at {} size={}x{}x{}",
+        LOGGER.info("[DungeonTrain] Part editor enter: {} -> {}:{} plot at {} size={}x{}x{} ({})",
             player.getName().getString(), kind.id(), name, origin,
-            size.getX(), size.getY(), size.getZ());
+            size.getX(), size.getY(), size.getZ(), onTop ? "top" : "inside");
     }
 
     /**

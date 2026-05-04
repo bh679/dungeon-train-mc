@@ -95,8 +95,9 @@ public final class TunnelEditor {
         for (TunnelVariant variant : TunnelVariant.values()) {
             for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
                 BlockPos o = plotOrigin(variant, name);
+                // +2 Y headroom — see CarriageEditor.plotContaining.
                 if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TunnelPlacer.LENGTH
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TunnelPlacer.HEIGHT
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TunnelPlacer.HEIGHT + 2
                     && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + TunnelPlacer.WIDTH) {
                     return new TunnelPlot(variant, name);
                 }
@@ -107,6 +108,10 @@ public final class TunnelEditor {
 
     /** Teleport to the default plot for {@code variant}, stamping every variant first. */
     public static void enter(ServerPlayer player, TunnelVariant variant) {
+        enter(player, variant, true);
+    }
+
+    public static void enter(ServerPlayer player, TunnelVariant variant, boolean onTop) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerLevel overworld = server.overworld();
@@ -129,13 +134,16 @@ public final class TunnelEditor {
         stampPlot(overworld, variant);
 
         double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
-        double ty = origin.getY() + 1.0;
+        double ty = onTop
+            ? origin.getY() + TunnelPlacer.HEIGHT + 1.0
+            : origin.getY() + 1.0;
         double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
-        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} default plot at {} ({} variants)",
+        LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} default plot at {} ({} variants, {})",
             player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin,
-            TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant)).size());
+            TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant)).size(),
+            onTop ? "top" : "inside");
     }
 
     /** Erase + restamp every registered variant for {@code variant}. Idempotent. */

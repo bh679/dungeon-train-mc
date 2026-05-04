@@ -34,12 +34,8 @@
   ],
   "roof": [
     {
-      "name": "standard",
+      "name": "none",
       "weight": 1
-    },
-    {
-      "name": "windowed",
-      "weight": 2
     }
   ],
   "doors": [
