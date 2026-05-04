@@ -193,4 +193,81 @@ final class TemplateTest {
         Template.Part p = new Template.Part(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR);
         p.restampPlot(null, null); // must not throw
     }
+
+    @Test
+    @DisplayName("Phase 4 Goal 2: placeAt() default no-op — Track / Pillar / Adjunct don't override")
+    void phase4_placeAt_defaultNoOp() {
+        // Track / Pillar / Adjunct placement happens via TrackGenerator (outside
+        // editor scope); their Template.placeAt falls through the default no-op.
+        // Verify no exception when called with null world args (the default body
+        // never dereferences them).
+        new Template.Track().placeAt(null, null, null, PlaceContext.EMPTY);
+        new Template.Pillar(PillarSection.TOP).placeAt(null, null, null, PlaceContext.EMPTY);
+        new Template.Adjunct(PillarAdjunct.STAIRS).placeAt(null, null, null, PlaceContext.EMPTY);
+    }
+
+    @Test
+    @DisplayName("Phase 4 Goal 2: PlaceContext convenience constructors")
+    void phase4_placeContext() {
+        assertEquals(0L, PlaceContext.EMPTY.seed());
+        assertEquals(0, PlaceContext.EMPTY.carriageIndex());
+        assertFalse(PlaceContext.EMPTY.mirrorX());
+
+        PlaceContext partsCtx = PlaceContext.forParts(42L, 7);
+        assertEquals(42L, partsCtx.seed());
+        assertEquals(7, partsCtx.carriageIndex());
+        assertFalse(partsCtx.mirrorX());
+
+        PlaceContext portalCtx = PlaceContext.forPortal(true);
+        assertEquals(0L, portalCtx.seed());
+        assertEquals(0, portalCtx.carriageIndex());
+        assertTrue(portalCtx.mirrorX());
+    }
+
+    @Test
+    @DisplayName("Phase 4: plotSize() returns the per-kind footprint for SaveCommand.isPlotEmpty scan")
+    void phase4_plotSize() {
+        games.brennan.dungeontrain.train.CarriageDims dims =
+            games.brennan.dungeontrain.train.CarriageDims.clamp(20, 7, 5);
+
+        // Carriage / Contents == full carriage shell dims.
+        assertEquals(new net.minecraft.core.Vec3i(20, 5, 7),
+            new Template.Carriage(CarriageVariant.of(CarriageType.STANDARD)).plotSize(dims));
+        assertEquals(new net.minecraft.core.Vec3i(20, 5, 7),
+            new Template.Contents(games.brennan.dungeontrain.train.CarriageContents.of(
+                games.brennan.dungeontrain.train.CarriageContents.ContentsType.DEFAULT)).plotSize(dims));
+
+        // Track tile is fixed length × height × dims.width (4 × 2 × N).
+        assertEquals(new net.minecraft.core.Vec3i(
+                games.brennan.dungeontrain.track.TrackPlacer.TILE_LENGTH,
+                games.brennan.dungeontrain.track.TrackPlacer.HEIGHT,
+                dims.width()),
+            new Template.Track().plotSize(dims));
+
+        // Pillar is a 1-block-wide column at the section's height × dims.width.
+        for (PillarSection section : PillarSection.values()) {
+            assertEquals(new net.minecraft.core.Vec3i(1, section.height(), dims.width()),
+                new Template.Pillar(section).plotSize(dims));
+        }
+
+        // Adjunct uses the per-adjunct fixed dims.
+        assertEquals(new net.minecraft.core.Vec3i(
+                PillarAdjunct.STAIRS.xSize(),
+                PillarAdjunct.STAIRS.ySize(),
+                PillarAdjunct.STAIRS.zSize()),
+            new Template.Adjunct(PillarAdjunct.STAIRS).plotSize(dims));
+
+        // Tunnel is fixed at LENGTH × HEIGHT × WIDTH for both section and portal.
+        net.minecraft.core.Vec3i tunnelSize = new net.minecraft.core.Vec3i(
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
+        assertEquals(tunnelSize, new Template.Tunnel(TunnelVariant.SECTION).plotSize(dims));
+        assertEquals(tunnelSize, new Template.Tunnel(TunnelVariant.PORTAL).plotSize(dims));
+
+        // Part delegates to CarriagePartKind.dims.
+        Template.Part part = new Template.Part(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR);
+        assertEquals(games.brennan.dungeontrain.train.CarriagePartKind.FLOOR.dims(dims),
+            part.plotSize(dims));
+    }
 }

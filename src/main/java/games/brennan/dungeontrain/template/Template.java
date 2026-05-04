@@ -21,16 +21,21 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -182,11 +187,41 @@ public sealed interface Template
     BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims);
 
     /**
+     * Footprint of this template's editor plot — {@code (length, height,
+     * width)} as a {@link Vec3i}. Used by {@code SaveCommand.isPlotEmpty}
+     * to scan the plot region for non-air blocks; varies per kind because
+     * carriages / contents use full {@link CarriageDims}, pillars are
+     * 1-wide columns, tunnels have fixed dims, etc.
+     */
+    Vec3i plotSize(CarriageDims dims);
+
+    /**
      * Erase the editor plot before re-stamping the bundled default.
      * Default no-op; only carriages override (their hardcoded fallback
      * leaves stale air patches that the bundled stamp won't overwrite).
      */
     default void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {}
+
+    /**
+     * Place this template into the world at {@code origin}. For carriages /
+     * contents / parts the origin is the carriage shell anchor; for tunnels
+     * it's the tunnel section / portal corner.
+     *
+     * <p>Each record's override delegates to the existing per-subsystem static
+     * placer ({@link CarriagePlacer#placeAt}, etc.) — this method is the
+     * dispatch surface only, so callers ({@code TrainAssembler}, future
+     * placement consumers) can route through {@code Template} without
+     * {@code instanceof}-ing the model first.</p>
+     *
+     * <p>The runtime context bundle ({@link PlaceContext}) carries optional
+     * per-call inputs (seed, carriage index, mirror flag) that vary by kind.
+     * Records that don't need a field ignore it; pass
+     * {@link PlaceContext#EMPTY} if you have nothing to supply. The default
+     * is a no-op so kinds whose placement happens outside editor scope
+     * (track / pillar / adjunct via {@code TrackGenerator}) don't need to
+     * override.</p>
+     */
+    default void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {}
 
     record Carriage(CarriageVariant variant) implements Template {
         public Carriage {
@@ -236,11 +271,17 @@ public sealed interface Template
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriageEditor.plotOrigin(variant, dims);
         }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(dims.length(), dims.height(), dims.width());
+        }
         @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
             // Carriage hardcoded fallback leaves stale air patches that the
             // bundled stamp won't overwrite — explicit eraseAt before the
             // bundled placeInWorld preserves /dt reset default's fidelity.
             CarriagePlacer.eraseAt(level, origin, dims);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriagePlacer.placeAt(level, origin, variant, dims);
         }
     }
 
@@ -295,6 +336,12 @@ public sealed interface Template
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return CarriageContentsEditor.plotOrigin(contents, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(dims.length(), dims.height(), dims.width());
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriageContentsPlacer.placeAt(level, origin, contents, dims);
         }
     }
 
@@ -369,7 +416,13 @@ public sealed interface Template
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return CarriagePartEditor.plotOrigin(partKind, name, dims);
+            return CarriagePartEditor.plotOrigin(new CarriagePartTemplateId(partKind, name), dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return partKind.dims(dims);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            CarriagePartPlacer.placeAt(level, origin, partKind, name, dims, ctx.seed(), ctx.carriageIndex());
         }
     }
 
@@ -425,6 +478,9 @@ public sealed interface Template
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
             return TrackEditor.plotOrigin(dims);
         }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
+        }
     }
 
     /**
@@ -478,13 +534,21 @@ public sealed interface Template
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            PillarEditor.stampPlot(level, section, dims);
+            // Pre-Phase-4 this dropped `name` and re-stamped every variant for
+            // the section via the (section, dims) overload. Now stamps just
+            // this variant's plot using the named (section, name, dims) form
+            // — fixes a silent bug where /dt reset on a custom pillar variant
+            // would re-stamp every default-named plot instead.
+            PillarEditor.stampPlot(level, section, name, dims);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             return PillarTemplateStore.getBundled(level, section, dims);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOrigin(section, dims);
+            return PillarEditor.plotOrigin(new PillarTemplateId(section, name), dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(1, section.height(), dims.width());
         }
     }
 
@@ -537,8 +601,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<Adjunct> store() { return PillarTemplateStore.adapterForAdjunct(new StairsTemplateId(name)); }
-        @Override public TemplateRegistry<Adjunct> registry() { return TrackVariantRegistry.adapterForAdjunct(new StairsTemplateId(name)); }
+        @Override public TemplateStore<Adjunct> store() { return PillarTemplateStore.adapterForAdjunct(new PillarAdjunctTemplateId(adjunct, name)); }
+        @Override public TemplateRegistry<Adjunct> registry() { return TrackVariantRegistry.adapterForAdjunct(new PillarAdjunctTemplateId(adjunct, name)); }
 
         @Override public int weight() {
             return TrackVariantWeights.weightFor(PillarTemplateStore.adjunctKind(adjunct), name);
@@ -551,7 +615,10 @@ public sealed interface Template
             return PillarTemplateStore.getBundledAdjunct(level, adjunct);
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return PillarEditor.plotOriginAdjunct(adjunct, name, dims);
+            return PillarEditor.plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(adjunct.xSize(), adjunct.ySize(), adjunct.zSize());
         }
     }
 
@@ -607,14 +674,30 @@ public sealed interface Template
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
-            TunnelEditor.stampPlot(level, variant);
+            // Pre-Phase-4 this dropped `name` and re-stamped every variant for
+            // the tunnel kind via the (variant) overload. Now stamps just
+            // this variant's plot using the named (variant, name) form
+            // — fixes the same silent bug as Pillar.restampPlot.
+            TunnelEditor.stampPlot(level, variant, name);
         }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Tunnel templates have no bundled tier today.
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
-            return TunnelEditor.plotOrigin(variant);
+            return TunnelEditor.plotOrigin(new TunnelTemplateId(variant, name));
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            // Section vs portal pick the matching placer; portal also honours
+            // the mirror flag so the exit orientation lands correctly.
+            if (variant == TunnelVariant.SECTION) {
+                TunnelPlacer.placeSectionNamed(level, origin, name);
+            } else {
+                TunnelPlacer.placePortalNamed(level, origin, ctx.mirrorX(), name);
+            }
         }
     }
 }

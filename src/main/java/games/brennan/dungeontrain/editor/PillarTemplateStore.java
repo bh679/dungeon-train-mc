@@ -316,7 +316,11 @@ public final class PillarTemplateStore {
 
             @Override
             public SaveResult save(ServerPlayer player, Template.Pillar template) throws Exception {
-                PillarEditor.SaveResult r = PillarEditor.save(player, section);
+                // Phase-4 Bug fix: use the explicit-name save so Stores.save
+                // works for non-default-named pillar variants (template label
+                // menu, save-all iteration, save-model command).
+                PillarEditor.SaveResult r = PillarEditor.save(player,
+                    new games.brennan.dungeontrain.template.PillarTemplateId(section, template.name()));
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
@@ -363,7 +367,10 @@ public final class PillarTemplateStore {
 
             @Override
             public SaveResult save(ServerPlayer player, Template.Adjunct template) throws Exception {
-                PillarEditor.SaveResult r = PillarEditor.save(player, adjunct);
+                // Phase-4 Bug fix: pass template.name() through so non-default
+                // adjunct variants save correctly via Stores.save.
+                PillarEditor.SaveResult r = PillarEditor.save(player,
+                    new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adjunct, template.name()));
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 
@@ -382,14 +389,13 @@ public final class PillarTemplateStore {
     }
 
     /**
-     * Phase-3 record-shaped overload for adjunct (stairs) adapters. The
-     * {@link games.brennan.dungeontrain.template.StairsTemplateId} record
-     * doesn't carry a {@link PillarAdjunct} discriminator (only one
-     * adjunct kind exists today), so this resolves to the STAIRS adapter
-     * unconditionally.
+     * Record-shaped overload for adjunct adapters. The
+     * {@link games.brennan.dungeontrain.template.PillarAdjunctTemplateId}
+     * record carries the {@link PillarAdjunct} discriminator, so this
+     * resolves to the matching per-adjunct adapter.
      */
-    public static TemplateStore<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
-        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
+    public static TemplateStore<Template.Adjunct> adapterForAdjunct(games.brennan.dungeontrain.template.PillarAdjunctTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(id.adjunct());
     }
 
     private static BlockState[][] extractColumn(StructureTemplate template, int height, int width) {

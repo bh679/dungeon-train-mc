@@ -177,7 +177,7 @@ public final class EditorDirtyCheck {
         for (PillarSection section : PillarSection.values()) {
             TrackKind kind = PillarTemplateStore.pillarKind(section);
             for (String name : TrackVariantRegistry.namesFor(kind)) {
-                BlockPos origin = PillarEditor.plotOrigin(section, name, dims);
+                BlockPos origin = PillarEditor.plotOrigin(new games.brennan.dungeontrain.template.PillarTemplateId(section, name), dims);
                 String key = PillarEditor.sectionSnapshotKey(section, name);
                 java.util.Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
@@ -209,7 +209,7 @@ public final class EditorDirtyCheck {
         for (PillarAdjunct adjunct : PillarAdjunct.values()) {
             TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
             for (String name : TrackVariantRegistry.namesFor(kind)) {
-                BlockPos origin = PillarEditor.plotOriginAdjunct(adjunct, name, dims);
+                BlockPos origin = PillarEditor.plotOriginAdjunct(new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adjunct, name), dims);
                 String key = PillarEditor.adjunctSnapshotKey(adjunct, name);
                 java.util.Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
@@ -241,7 +241,7 @@ public final class EditorDirtyCheck {
         for (TunnelVariant variant : TunnelVariant.values()) {
             TrackKind kind = games.brennan.dungeontrain.editor.TunnelTemplateStore.tunnelKind(variant);
             for (String name : TrackVariantRegistry.namesFor(kind)) {
-                BlockPos origin = TunnelEditor.plotOrigin(variant, name);
+                BlockPos origin = TunnelEditor.plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(variant, name));
                 String key = TunnelEditor.tunnelSnapshotKey(variant, name);
                 java.util.Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
 
@@ -342,7 +342,7 @@ public final class EditorDirtyCheck {
                 try {
                     sec = PillarSection.valueOf(prefix.substring("pillar_".length()).toUpperCase(java.util.Locale.ROOT));
                 } catch (IllegalArgumentException e) { return out; }
-                BlockPos origin = PillarEditor.plotOrigin(sec, name, dims);
+                BlockPos origin = PillarEditor.plotOrigin(new games.brennan.dungeontrain.template.PillarTemplateId(sec, name), dims);
                 Vec3i fp = new Vec3i(1, sec.height(), dims.width());
                 TrackKind kind = PillarTemplateStore.pillarKind(sec);
                 Set<BlockPos> skip = variantCellPositions(TrackVariantBlocks.loadFor(kind, name, fp).entries());
@@ -353,7 +353,7 @@ public final class EditorDirtyCheck {
                 try {
                     adj = PillarAdjunct.valueOf(prefix.substring("adjunct_".length()).toUpperCase(java.util.Locale.ROOT));
                 } catch (IllegalArgumentException e) { return out; }
-                BlockPos origin = PillarEditor.plotOriginAdjunct(adj, name, dims);
+                BlockPos origin = PillarEditor.plotOriginAdjunct(new games.brennan.dungeontrain.template.PillarAdjunctTemplateId(adj, name), dims);
                 Vec3i fp = new Vec3i(adj.xSize(), adj.ySize(), adj.zSize());
                 TrackKind kind = PillarTemplateStore.adjunctKind(adj);
                 Set<BlockPos> skip = variantCellPositions(TrackVariantBlocks.loadFor(kind, name, fp).entries());
@@ -364,7 +364,7 @@ public final class EditorDirtyCheck {
                 try {
                     tv = TunnelVariant.valueOf(prefix.substring("tunnel_".length()).toUpperCase(java.util.Locale.ROOT));
                 } catch (IllegalArgumentException e) { return out; }
-                BlockPos origin = TunnelEditor.plotOrigin(tv, name);
+                BlockPos origin = TunnelEditor.plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(tv, name));
                 Vec3i fp = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
                 TrackKind kind = games.brennan.dungeontrain.editor.TunnelTemplateStore.tunnelKind(tv);
                 Set<BlockPos> skip = variantCellPositions(TrackVariantBlocks.loadFor(kind, name, fp).entries());

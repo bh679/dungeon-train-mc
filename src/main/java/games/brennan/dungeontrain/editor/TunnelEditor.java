@@ -69,11 +69,16 @@ public final class TunnelEditor {
         return TrackSidePlots.plotOriginDefault(TunnelTemplateStore.tunnelKind(variant), dims);
     }
 
-    /** Plot origin for {@code (variant, name)}. Tunnel dims are fixed; CarriageDims is ignored. */
-    public static BlockPos plotOrigin(TunnelVariant variant, String name) {
+    /** Plot origin for an id-record-shaped tunnel template. Tunnel dims are fixed; CarriageDims is computed internally. */
+    public static BlockPos plotOrigin(games.brennan.dungeontrain.template.TunnelTemplateId id) {
         CarriageDims dims = CarriageDims.clamp(
             CarriageDims.MIN_LENGTH, CarriageDims.MIN_WIDTH, CarriageDims.MIN_HEIGHT);
-        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(variant), name, dims);
+        return TrackSidePlots.plotOrigin(TunnelTemplateStore.tunnelKind(id.variant()), id.name(), dims);
+    }
+
+    /** Plot origin for {@code (variant, name)} — bare-tuple wrapper over the id-record form. */
+    public static BlockPos plotOrigin(TunnelVariant variant, String name) {
+        return plotOrigin(new games.brennan.dungeontrain.template.TunnelTemplateId(variant, name));
     }
 
     /** Returns the variant whose plot contains {@code pos}, or null. Legacy entry point. */
@@ -207,17 +212,33 @@ public final class TunnelEditor {
      * {@link TrackEditor#save} and {@link PillarEditor#save}.
      */
     public static SaveResult save(ServerPlayer player, TunnelVariant variant) throws IOException {
+        // Player-position-resolved overload — see save(player, TunnelTemplateId)
+        // for the explicit-name version used by the template label menu and
+        // save-all iteration.
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
-        ServerLevel overworld = server.overworld();
 
         TunnelPlot loc = plotContainingNamed(player.blockPosition());
         if (loc == null || loc.variant() != variant) {
             throw new IOException("Player is not inside any tunnel_"
                 + variant.name().toLowerCase(java.util.Locale.ROOT) + " plot.");
         }
-        String name = loc.name();
-        BlockPos origin = plotOrigin(variant, name);
+        return save(player, new games.brennan.dungeontrain.template.TunnelTemplateId(variant, loc.name()));
+    }
+
+    /**
+     * Save the captured template for the explicitly-named tunnel variant.
+     * Does NOT consult player position — the caller has already resolved
+     * the {@code (variant, name)} pair.
+     */
+    public static SaveResult save(ServerPlayer player, games.brennan.dungeontrain.template.TunnelTemplateId id) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+
+        TunnelVariant variant = id.variant();
+        String name = id.name();
+        BlockPos origin = plotOrigin(id);
 
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);

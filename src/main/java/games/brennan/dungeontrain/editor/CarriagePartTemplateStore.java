@@ -266,7 +266,8 @@ public final class CarriagePartTemplateStore {
 
             @Override
             public SaveResult save(ServerPlayer player, Template.Part template) throws Exception {
-                CarriagePartEditor.SaveResult r = CarriagePartEditor.save(player, kind, template.name());
+                CarriagePartEditor.SaveResult r = CarriagePartEditor.save(player,
+                    new games.brennan.dungeontrain.template.CarriagePartTemplateId(kind, template.name()));
                 return new SaveResult(r.sourceAttempted(), r.sourceWritten(), r.sourceError());
             }
 

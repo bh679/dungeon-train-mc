@@ -95,4 +95,36 @@ final class EditorCategoryTest {
         assertTrue(EditorCategory.ARCHITECTURE.models().isEmpty());
         assertFalse(EditorCategory.ARCHITECTURE.firstModel().isPresent());
     }
+
+    @Test
+    @DisplayName("Phase 4 Goal 3: CARRIAGES.models() includes Part rows when parts are registered")
+    void carriages_includesParts_whenRegistered() {
+        // Test environment may have no parts registered (CarriagePartRegistry
+        // populates at server start); register a synthetic one and confirm
+        // it appears in CARRIAGES.models() after every carriage shell.
+        String testName = "phase4_goal3_test_part";
+        try {
+            games.brennan.dungeontrain.editor.CarriagePartRegistry.register(
+                games.brennan.dungeontrain.train.CarriagePartKind.FLOOR, testName);
+            List<Template> models = EditorCategory.CARRIAGES.models();
+            // Find our part in the list.
+            boolean found = false;
+            for (int i = 0; i < models.size(); i++) {
+                Template m = models.get(i);
+                if (m instanceof Template.Part p
+                        && p.partKind() == games.brennan.dungeontrain.train.CarriagePartKind.FLOOR
+                        && testName.equals(p.name())) {
+                    found = true;
+                    // Parts must follow shells (kind-major ordering).
+                    assertTrue(i >= games.brennan.dungeontrain.train.CarriageVariantRegistry.allVariants().size(),
+                        "Part rows should appear after all carriage shells, got index " + i);
+                    break;
+                }
+            }
+            assertTrue(found, "Registered Part(FLOOR, " + testName + ") not in CARRIAGES.models()");
+        } finally {
+            games.brennan.dungeontrain.editor.CarriagePartRegistry.unregister(
+                games.brennan.dungeontrain.train.CarriagePartKind.FLOOR, testName);
+        }
+    }
 }

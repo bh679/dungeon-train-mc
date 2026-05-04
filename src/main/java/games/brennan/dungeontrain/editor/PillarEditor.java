@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.PillarAdjunctTemplateId;
+import games.brennan.dungeontrain.template.PillarTemplateId;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPalette;
@@ -64,9 +66,14 @@ public final class PillarEditor {
         return TrackSidePlots.plotOriginDefault(PillarTemplateStore.pillarKind(section), dims);
     }
 
-    /** Plot origin for {@code (section, name)}. */
+    /** Plot origin for an id-record-shaped pillar template. */
+    public static BlockPos plotOrigin(PillarTemplateId id, CarriageDims dims) {
+        return TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(id.section()), id.name(), dims);
+    }
+
+    /** Plot origin for {@code (section, name)} — bare-tuple wrapper over the id-record form. */
     public static BlockPos plotOrigin(PillarSection section, String name, CarriageDims dims) {
-        return TrackSidePlots.plotOrigin(PillarTemplateStore.pillarKind(section), name, dims);
+        return plotOrigin(new PillarTemplateId(section, name), dims);
     }
 
     /** Plot origin for {@code (adjunct, default)}. */
@@ -74,9 +81,14 @@ public final class PillarEditor {
         return TrackSidePlots.plotOriginDefault(PillarTemplateStore.adjunctKind(adjunct), dims);
     }
 
-    /** Plot origin for {@code (adjunct, name)}. */
+    /** Plot origin for an id-record-shaped pillar-adjunct template. */
+    public static BlockPos plotOriginAdjunct(PillarAdjunctTemplateId id, CarriageDims dims) {
+        return TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(id.adjunct()), id.name(), dims);
+    }
+
+    /** Plot origin for {@code (adjunct, name)} — bare-tuple wrapper over the id-record form. */
     public static BlockPos plotOriginAdjunct(PillarAdjunct adjunct, String name, CarriageDims dims) {
-        return TrackSidePlots.plotOrigin(PillarTemplateStore.adjunctKind(adjunct), name, dims);
+        return plotOriginAdjunct(new PillarAdjunctTemplateId(adjunct, name), dims);
     }
 
     /**
@@ -195,7 +207,12 @@ public final class PillarEditor {
 
     /**
      * Save the captured template for the {@code (section, name)} the player
-     * is currently standing in.
+     * is currently standing in. Player-position-resolved overload — used by
+     * the action-bar {@code /dt save} flow where the player explicitly stands
+     * in the plot they want to save. For callers that already know the
+     * variant (template label menu, save-all iteration, save-model command)
+     * use {@link #save(ServerPlayer, PillarTemplateId)} which doesn't
+     * consult player position.
      */
     public static SaveResult save(ServerPlayer player, PillarSection section) throws IOException {
         MinecraftServer server = player.getServer();
@@ -207,8 +224,24 @@ public final class PillarEditor {
         if (loc == null || loc.section() != section) {
             throw new IOException("Player is not inside any " + section.id() + " plot.");
         }
-        String name = loc.name();
-        BlockPos origin = plotOrigin(section, name, dims);
+        return save(player, new PillarTemplateId(section, loc.name()));
+    }
+
+    /**
+     * Save the captured template for the explicitly-named pillar variant.
+     * Does NOT consult player position — the caller has already resolved
+     * the {@code (section, name)} pair (template label menu's plot-action
+     * packet, save-all iteration over registry, save-model command).
+     */
+    public static SaveResult save(ServerPlayer player, PillarTemplateId id) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        PillarSection section = id.section();
+        String name = id.name();
+        BlockPos origin = plotOrigin(id, dims);
 
         StructureTemplate template = captureTemplate(overworld, origin, section, dims);
         TrackKind kind = PillarTemplateStore.pillarKind(section);
@@ -358,7 +391,10 @@ public final class PillarEditor {
 
     /**
      * Save the captured adjunct template for the {@code (adjunct, name)}
-     * the player is currently standing in.
+     * the player is currently standing in. Player-position-resolved overload —
+     * see {@link #save(ServerPlayer, PillarAdjunctTemplateId)} for the
+     * explicit-name version used by the template label menu and save-all
+     * iteration.
      */
     public static SaveResult save(ServerPlayer player, PillarAdjunct adjunct) throws IOException {
         MinecraftServer server = player.getServer();
@@ -370,8 +406,23 @@ public final class PillarEditor {
         if (loc == null || loc.adjunct() != adjunct) {
             throw new IOException("Player is not inside any " + adjunct.id() + " plot.");
         }
-        String name = loc.name();
-        BlockPos origin = plotOriginAdjunct(adjunct, name, dims);
+        return save(player, new PillarAdjunctTemplateId(adjunct, loc.name()));
+    }
+
+    /**
+     * Save the captured adjunct template for the explicitly-named adjunct
+     * variant. Does NOT consult player position — the caller has already
+     * resolved the {@code (adjunct, name)} pair.
+     */
+    public static SaveResult save(ServerPlayer player, PillarAdjunctTemplateId id) throws IOException {
+        MinecraftServer server = player.getServer();
+        if (server == null) throw new IOException("No server context.");
+        ServerLevel overworld = server.overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+        PillarAdjunct adjunct = id.adjunct();
+        String name = id.name();
+        BlockPos origin = plotOriginAdjunct(id, dims);
 
         StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
         TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);

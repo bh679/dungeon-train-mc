@@ -148,7 +148,8 @@ public interface BlockVariantPlot {
         }
         CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(pos, dims);
         if (partLoc != null) {
-            BlockPos origin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
+            BlockPos origin = CarriagePartEditor.plotOrigin(
+                new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
             if (origin == null) return null;
             Vec3i partSize = partLoc.kind().dims(dims);
             return new PartPlot(partLoc.kind(), partLoc.name(), origin, partSize);

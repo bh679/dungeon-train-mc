@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.CarriagePartTemplateId;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriagePartPlacer;
@@ -109,6 +110,11 @@ public final class CarriagePartEditor {
             PLOT_Y,
             rowStartZ(kind, dims)
         );
+    }
+
+    /** Plot origin for an id-record-shaped part template. Returns {@code null} when the name isn't registered. */
+    public static BlockPos plotOrigin(CarriagePartTemplateId id, CarriageDims dims) {
+        return plotOrigin(id.kind(), id.name(), dims);
     }
 
     /**
@@ -338,7 +344,9 @@ public final class CarriagePartEditor {
      * completions and the category-stamp pass include it. When
      * {@link EditorDevMode} is on, also writes through to the source tree.
      */
-    public static SaveResult save(ServerPlayer player, CarriagePartKind kind, String name) throws IOException {
+    public static SaveResult save(ServerPlayer player, CarriagePartTemplateId id) throws IOException {
+        CarriagePartKind kind = id.kind();
+        String name = id.name();
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
@@ -388,7 +396,14 @@ public final class CarriagePartEditor {
      *                     write fails. Source-tree write/delete failures are
      *                     reported via the returned {@link SaveResult}.
      */
-    public static SaveResult saveAs(ServerPlayer player, CarriagePartKind kind, String oldName, String newName) throws IOException {
+    public static SaveResult saveAs(ServerPlayer player, CarriagePartTemplateId from, CarriagePartTemplateId to) throws IOException {
+        if (from.kind() != to.kind()) {
+            throw new IOException("Cannot rename across part kinds: '" + from.kind().id()
+                + ":" + from.name() + "' -> '" + to.kind().id() + ":" + to.name() + "'.");
+        }
+        CarriagePartKind kind = from.kind();
+        String oldName = from.name();
+        String newName = to.name();
         MinecraftServer server = player.getServer();
         if (server == null) throw new IOException("No server context.");
         ServerLevel overworld = server.overworld();
