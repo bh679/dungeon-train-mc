@@ -55,8 +55,13 @@ public final class EditorTypeMenuRenderer {
      * <p>{@link #HEADER} represents the top row (the type-name banner).
      * Clicking it teleports to the first variant in the menu — useful as a
      * quick "go to the start of this row" jump.</p>
+     *
+     * <p>{@link #NEW} is the bottom-row "+ New" button — clicking opens the
+     * keyboard worldspace menu pre-positioned at the source picker / typing
+     * prompt for this menu's category, so authoring a new variant of the
+     * type the player is looking at is one click away.</p>
      */
-    public enum CellKind { NONE, HEADER, NAME, WEIGHT }
+    public enum CellKind { NONE, HEADER, NAME, WEIGHT, NEW }
 
     /**
      * Where the player's crosshair is currently pointing. {@code variantIdx}
@@ -99,10 +104,16 @@ public final class EditorTypeMenuRenderer {
     private static final int HEADER_BG = 0x60FFEEBB;
     /** Persistent green tint behind the row matching the player's current plot — same green family as the in-plot panel border. */
     private static final int ACTIVE_ROW_COLOR = 0x6055FF55;
+    /** Faint green band behind the bottom "+ New" row. Lower alpha than {@link #ACTIVE_ROW_COLOR} so the two never read as the same row. */
+    private static final int NEW_ROW_BG = 0x4055FF55;
 
     private static final int HEADER_COLOR = 0xFFFFEEBB;
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
+    /** Bright green text for the "+ New" label so it stands out from variant rows. */
+    private static final int NEW_COLOR = 0xFFAAFFAA;
+    /** Label rendered in the bottom-row New button. */
+    private static final String NEW_LABEL = "+ New";
 
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
     private static volatile Hovered HOVERED = Hovered.NONE;
@@ -169,6 +180,7 @@ public final class EditorTypeMenuRenderer {
      */
     public static double halfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
+        double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
@@ -180,13 +192,15 @@ public final class EditorTypeMenuRenderer {
         // of the panel; size the panel so the longest name fits in that fraction.
         double nameSpaceFraction = anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0;
         double scaledForName = maxNameW / nameSpaceFraction;
-        double w = Math.max(MIN_HALF_W * 2.0, Math.max(headerW, scaledForName));
+        double w = Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, newW), scaledForName));
         return w / 2.0;
     }
 
     public static int rowCount(EditorTypeMenusPacket.Menu menu) {
-        // header + N variants
-        return 1 + menu.variants().size();
+        // header + N variants + "+ New" footer (skip footer for empty menus,
+        // which shouldn't appear in practice but guard so the click target
+        // doesn't dispatch with no category context).
+        return 1 + menu.variants().size() + (menu.variants().isEmpty() ? 0 : 1);
     }
 
     public static double halfHeight(EditorTypeMenusPacket.Menu menu) {
@@ -237,7 +251,12 @@ public final class EditorTypeMenuRenderer {
         if (rowFromTop == 0) return new Hovered(menuIdx, -1, CellKind.HEADER);
 
         int variantIdx = rowFromTop - 1;
-        if (variantIdx >= menu.variants().size()) return Hovered.NONE;
+        // Last row beyond the variant list is the "+ New" footer (only present
+        // when the menu has variants — see rowCount).
+        if (variantIdx == menu.variants().size()) {
+            return new Hovered(menuIdx, -1, CellKind.NEW);
+        }
+        if (variantIdx > menu.variants().size()) return Hovered.NONE;
         EditorTypeMenusPacket.Variant variant = menu.variants().get(variantIdx);
 
         boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
@@ -367,6 +386,23 @@ public final class EditorTypeMenuRenderer {
                 drawCenteredText(ps, buffer, font, "×" + variant.weight(),
                     weightCX, rowCY, WEIGHT_COLOR);
             }
+        }
+
+        // "+ New" footer row — single full-width cell with a faint green
+        // backdrop, drawn only when the menu has variants (matches rowCount).
+        // Clicking opens the keyboard worldspace menu's source picker / typing
+        // prompt for this menu's category (see EditorTypeMenuInputHandler).
+        if (!menu.variants().isEmpty()) {
+            double newRowTop = topY - (menu.variants().size() + 1) * ROW_H;
+            double newRowBottom = newRowTop - ROW_H;
+            double newRowCY = (newRowTop + newRowBottom) / 2.0;
+            drawQuad(ps, buffer, -halfW, newRowTop - 0.005, halfW, newRowTop + 0.005, ROW_SEP_COLOR);
+            drawQuad(ps, buffer, -halfW, newRowBottom, halfW, newRowTop, NEW_ROW_BG);
+            if (hovered.cell == CellKind.NEW) {
+                drawQuad(ps, buffer, -halfW + 0.005, newRowBottom + 0.005,
+                    halfW - 0.005, newRowTop - 0.005, HOVER_COLOR);
+            }
+            drawCenteredText(ps, buffer, font, NEW_LABEL, 0, newRowCY, NEW_COLOR);
         }
 
         ps.popPose();
