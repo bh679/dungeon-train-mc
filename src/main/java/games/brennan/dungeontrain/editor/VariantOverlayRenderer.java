@@ -11,14 +11,10 @@ import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsTemplate;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriagePartAssignment;
-import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.minecraft.ChatFormatting;
 import net.minecraft.core.Vec3i;
-import net.minecraft.network.chat.Component;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -47,9 +43,9 @@ import java.util.UUID;
  * standing inside an editor plot whose overlay toggle is on (default on
  * {@link CarriageEditor#enter}), this renderer raycasts the player's eye
  * every tick; if the target is a variant-flagged block it pushes a hover
- * packet so the client HUD can render the candidate-block icons, and if
- * the target is a part block it shows an action-bar string listing the
- * part's candidate names.
+ * packet so the client HUD can render the candidate-block icons, and on
+ * carriage plots it also drives the part-position menu controller and
+ * lock-id / outline snapshot pushes.
  *
  * <p>Everything is per-player, so a dedicated server with multiple editors
  * only bills each player for their own plot.</p>
@@ -76,12 +72,6 @@ public final class VariantOverlayRenderer {
      * "the last packet we sent was the empty-clear (or we haven't sent one)".
      */
     private static final Map<UUID, String> LAST_STATUS = new HashMap<>();
-
-    /** Per-player last-shown part-hover label and the tick we sent it on — keeps the action bar refreshed while the crosshair holds on a part. */
-    private static final Map<UUID, String> LAST_PART_HOVER = new HashMap<>();
-    private static final Map<UUID, Long> LAST_PART_HOVER_TICK = new HashMap<>();
-    /** Re-emit the action-bar message at this cadence so Minecraft's ~60-tick fade never wins while hovering. */
-    private static final int PART_HOVER_RESEND_TICKS = 10;
 
     /**
      * Per-player dedup key for the lock-id snapshot push — encodes
@@ -124,8 +114,6 @@ public final class VariantOverlayRenderer {
         if (lastStatus != null) {
             DungeonTrainNet.sendTo(player, EditorStatusPacket.empty());
         }
-        LAST_PART_HOVER.remove(player.getUUID());
-        LAST_PART_HOVER_TICK.remove(player.getUUID());
         PartPositionMenuController.forget(player);
         // Clear the client lock-id overlay too — player has left every plot.
         if (LAST_LOCK_SNAPSHOT_KEY.remove(player.getUUID()) != null) {
@@ -140,8 +128,6 @@ public final class VariantOverlayRenderer {
      * via {@link CarriageEditor#plotContaining}.
      */
     public static void onLevelTick(ServerLevel level) {
-        long tick = level.getGameTime();
-
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
 
@@ -153,7 +139,6 @@ public final class VariantOverlayRenderer {
 
             if (!isEnabled(player)) {
                 clearHoverIfStale(player);
-                clearPartHoverIfStale(player);
                 clearOutlineIfStale(player);
                 continue;
             }
@@ -161,16 +146,14 @@ public final class VariantOverlayRenderer {
 
             BlockPos playerPos = player.blockPosition();
 
-            // Carriage plot takes first priority — runs both the parts-list
-            // action bar (which describes the carriage's part assignment at
-            // the hovered kind) and the variant-blocks icon HUD.
+            // Carriage plot takes first priority — drives the parts menu
+            // controller and the variant-blocks icon HUD.
             CarriageVariant plotVariant = CarriageEditor.plotContaining(playerPos, dims);
             if (plotVariant != null) {
                 BlockPos plotOrigin = CarriageEditor.plotOrigin(plotVariant, dims);
                 if (plotOrigin == null) continue;
 
                 PartPositionMenuController.update(player, plotVariant, plotOrigin, dims);
-                updatePartHover(tick, player, plotVariant, plotOrigin, dims);
 
                 CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(plotVariant, dims);
                 if (sidecar.isEmpty()) {
@@ -188,7 +171,6 @@ public final class VariantOverlayRenderer {
             // each shell wall).
             CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(playerPos, dims);
             if (contentsPlot != null) {
-                clearPartHoverIfStale(player);
                 BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
                 if (carriageOrigin == null) continue;
                 BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
@@ -206,11 +188,9 @@ public final class VariantOverlayRenderer {
             }
 
             // Part plot next — icon HUD for the part's own variant
-            // sidecar. Parts-list action bar doesn't apply here (the
-            // player is editing one part, not inspecting an assignment).
+            // sidecar.
             CarriagePartEditor.PlotLocation partLoc = CarriagePartEditor.plotContaining(playerPos, dims);
             if (partLoc != null) {
-                clearPartHoverIfStale(player);
                 BlockPos plotOrigin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
                 if (plotOrigin == null) continue;
                 Vec3i partSize = partLoc.kind().dims(dims);
@@ -234,7 +214,6 @@ public final class VariantOverlayRenderer {
             // unchanged.
             TrackPlotLocator.PlotInfo trackLoc = TrackPlotLocator.locate(player, dims);
             if (trackLoc != null) {
-                clearPartHoverIfStale(player);
                 games.brennan.dungeontrain.track.variant.TrackVariantBlocks trackSidecar =
                     games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(
                         trackLoc.kind(), trackLoc.name(), trackLoc.footprint());
@@ -251,7 +230,6 @@ public final class VariantOverlayRenderer {
 
             // Outside every plot — clear any stale HUD state.
             clearHoverIfStale(player);
-            clearPartHoverIfStale(player);
         }
     }
 
@@ -606,68 +584,5 @@ public final class VariantOverlayRenderer {
         return p.getX() >= 0 && p.getX() < dims.length()
             && p.getY() >= 0 && p.getY() < dims.height()
             && p.getZ() >= 0 && p.getZ() < dims.width();
-    }
-
-    /**
-     * Raycast the player's eye against the carriage plot; if the crosshair
-     * lands on a block owned by one of the part kinds (floor / walls / roof /
-     * doors), push an action-bar message listing every candidate name the
-     * variant's {@code parts.json} holds for that kind. Refreshes every
-     * {@link #PART_HOVER_RESEND_TICKS} so the message persists while the
-     * crosshair stays on the part.
-     *
-     * <p>No {@code parts.json} for the variant → no message (the kind still
-     * renders via the monolithic NBT, there's nothing to list).</p>
-     */
-    private static void updatePartHover(long tick, ServerPlayer player, CarriageVariant variant,
-                                         BlockPos plotOrigin, CarriageDims dims) {
-        UUID uuid = player.getUUID();
-        Optional<CarriagePartAssignment> opt = CarriageVariantPartsStore.get(variant);
-        if (opt.isEmpty()) {
-            clearPartHoverIfStale(player);
-            return;
-        }
-
-        HitResult hit = player.pick(HOVER_REACH, 1.0f, false);
-        String newKey = null;
-        Component message = null;
-        if (hit instanceof BlockHitResult bhr && bhr.getType() != HitResult.Type.MISS) {
-            BlockPos local = bhr.getBlockPos().subtract(plotOrigin);
-            if (inBounds(local, dims)) {
-                CarriagePartKind kind = CarriagePartKind.kindAtLocalPos(
-                    local.getX(), local.getY(), local.getZ(), dims);
-                if (kind != null) {
-                    List<String> names = opt.get().names(kind);
-                    String joined = String.join(", ", names);
-                    newKey = variant.id() + "|" + kind.id() + "|" + joined;
-                    message = Component.literal(kind.id() + ": " + joined)
-                        .withStyle(ChatFormatting.AQUA);
-                }
-            }
-        }
-
-        if (newKey == null) {
-            clearPartHoverIfStale(player);
-            return;
-        }
-
-        String prev = LAST_PART_HOVER.get(uuid);
-        Long lastTick = LAST_PART_HOVER_TICK.get(uuid);
-        boolean due = lastTick == null || tick - lastTick >= PART_HOVER_RESEND_TICKS;
-        if (newKey.equals(prev) && !due) return;
-
-        LAST_PART_HOVER.put(uuid, newKey);
-        LAST_PART_HOVER_TICK.put(uuid, tick);
-        player.displayClientMessage(message, true);
-    }
-
-    private static void clearPartHoverIfStale(ServerPlayer player) {
-        UUID uuid = player.getUUID();
-        if (LAST_PART_HOVER.remove(uuid) != null) {
-            LAST_PART_HOVER_TICK.remove(uuid);
-            // No explicit clear — the action-bar message fades naturally in
-            // ~3s once we stop re-sending, and a follow-up variant-hover push
-            // (or any other action-bar writer) will replace it if needed.
-        }
     }
 }
