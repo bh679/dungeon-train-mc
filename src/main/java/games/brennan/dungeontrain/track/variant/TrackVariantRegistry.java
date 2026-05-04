@@ -353,4 +353,19 @@ public final class TrackVariantRegistry {
     public static TemplateRegistry<Template.TunnelModel> adapterForTunnel(TunnelVariant variant) {
         return TUNNEL_ADAPTERS.get(variant);
     }
+
+    // ─── Phase-3 record-shaped overloads ────────────────────────────────
+    // Underlying EnumMap cache keys stay the bare enums; the id record is a
+    // callsite shape only, so the per-discriminator singleton instances are
+    // reused.
+
+    public static TemplateRegistry<Template.PillarModel> adapterForPillar(games.brennan.dungeontrain.template.PillarTemplateId id) {
+        return PILLAR_ADAPTERS.get(id.section());
+    }
+    public static TemplateRegistry<Template.AdjunctModel> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
+    }
+    public static TemplateRegistry<Template.TunnelModel> adapterForTunnel(games.brennan.dungeontrain.template.TunnelTemplateId id) {
+        return TUNNEL_ADAPTERS.get(id.variant());
+    }
 }

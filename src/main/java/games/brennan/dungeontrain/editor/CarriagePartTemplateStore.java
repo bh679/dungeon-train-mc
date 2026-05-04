@@ -285,4 +285,14 @@ public final class CarriagePartTemplateStore {
     public static TemplateStore<Template.PartModel> adapter(CarriagePartKind kind) {
         return ADAPTERS.get(kind);
     }
+
+    /**
+     * Phase-3 record-shaped overload: {@link #adapter(CarriagePartKind)}
+     * keyed via the {@link games.brennan.dungeontrain.template.CarriagePartTemplateId}
+     * record. The underlying EnumMap cache key stays the bare
+     * {@link CarriagePartKind}; the id record is a callsite shape only.
+     */
+    public static TemplateStore<Template.PartModel> adapter(games.brennan.dungeontrain.template.CarriagePartTemplateId id) {
+        return ADAPTERS.get(id.kind());
+    }
 }

@@ -245,8 +245,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<PartModel> store() { return CarriagePartTemplateStore.adapter(partKind); }
-        @Override public TemplateRegistry<PartModel> registry() { return CarriagePartRegistry.adapter(partKind); }
+        @Override public TemplateStore<PartModel> store() { return CarriagePartTemplateStore.adapter(new CarriagePartTemplateId(partKind, name)); }
+        @Override public TemplateRegistry<PartModel> registry() { return CarriagePartRegistry.adapter(new CarriagePartTemplateId(partKind, name)); }
     }
 
     /**
@@ -334,8 +334,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<PillarModel> store() { return PillarTemplateStore.adapter(section); }
-        @Override public TemplateRegistry<PillarModel> registry() { return TrackVariantRegistry.adapterForPillar(section); }
+        @Override public TemplateStore<PillarModel> store() { return PillarTemplateStore.adapter(new PillarTemplateId(section, name)); }
+        @Override public TemplateRegistry<PillarModel> registry() { return TrackVariantRegistry.adapterForPillar(new PillarTemplateId(section, name)); }
     }
 
     /**
@@ -387,8 +387,8 @@ public sealed interface Template
             return true;
         }
 
-        @Override public TemplateStore<AdjunctModel> store() { return PillarTemplateStore.adapterForAdjunct(adjunct); }
-        @Override public TemplateRegistry<AdjunctModel> registry() { return TrackVariantRegistry.adapterForAdjunct(adjunct); }
+        @Override public TemplateStore<AdjunctModel> store() { return PillarTemplateStore.adapterForAdjunct(new StairsTemplateId(name)); }
+        @Override public TemplateRegistry<AdjunctModel> registry() { return TrackVariantRegistry.adapterForAdjunct(new StairsTemplateId(name)); }
     }
 
     /**
@@ -435,7 +435,7 @@ public sealed interface Template
             return false;
         }
 
-        @Override public TemplateStore<TunnelModel> store() { return TunnelTemplateStore.adapter(variant); }
-        @Override public TemplateRegistry<TunnelModel> registry() { return TrackVariantRegistry.adapterForTunnel(variant); }
+        @Override public TemplateStore<TunnelModel> store() { return TunnelTemplateStore.adapter(new TunnelTemplateId(variant, name)); }
+        @Override public TemplateRegistry<TunnelModel> registry() { return TrackVariantRegistry.adapterForTunnel(new TunnelTemplateId(variant, name)); }
     }
 }

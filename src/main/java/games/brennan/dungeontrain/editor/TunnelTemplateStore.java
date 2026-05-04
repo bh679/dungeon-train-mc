@@ -144,4 +144,14 @@ public final class TunnelTemplateStore {
     public static TemplateStore<Template.TunnelModel> adapter(TunnelVariant variant) {
         return ADAPTERS.get(variant);
     }
+
+    /**
+     * Phase-3 record-shaped overload: {@link #adapter(TunnelVariant)} keyed
+     * via the {@link games.brennan.dungeontrain.template.TunnelTemplateId}
+     * record. Underlying EnumMap cache key stays the bare
+     * {@link TunnelVariant}.
+     */
+    public static TemplateStore<Template.TunnelModel> adapter(games.brennan.dungeontrain.template.TunnelTemplateId id) {
+        return ADAPTERS.get(id.variant());
+    }
 }

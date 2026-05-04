@@ -335,6 +335,16 @@ public final class PillarTemplateStore {
     }
 
     /**
+     * Phase-3 record-shaped overload: {@link #adapter(PillarSection)} keyed
+     * via the {@link games.brennan.dungeontrain.template.PillarTemplateId}
+     * record. Underlying EnumMap cache key stays the bare
+     * {@link PillarSection}.
+     */
+    public static TemplateStore<Template.PillarModel> adapter(games.brennan.dungeontrain.template.PillarTemplateId id) {
+        return SECTION_ADAPTERS.get(id.section());
+    }
+
+    /**
      * Phase-2 adapter — exposes adjunct (stairs) save/promote through the
      * unified {@link TemplateStore} surface. Cached per
      * {@link PillarAdjunct}; delegates to the existing
@@ -369,6 +379,17 @@ public final class PillarTemplateStore {
 
     public static TemplateStore<Template.AdjunctModel> adapterForAdjunct(PillarAdjunct adjunct) {
         return ADJUNCT_ADAPTERS.get(adjunct);
+    }
+
+    /**
+     * Phase-3 record-shaped overload for adjunct (stairs) adapters. The
+     * {@link games.brennan.dungeontrain.template.StairsTemplateId} record
+     * doesn't carry a {@link PillarAdjunct} discriminator (only one
+     * adjunct kind exists today), so this resolves to the STAIRS adapter
+     * unconditionally.
+     */
+    public static TemplateStore<Template.AdjunctModel> adapterForAdjunct(games.brennan.dungeontrain.template.StairsTemplateId id) {
+        return ADJUNCT_ADAPTERS.get(PillarAdjunct.STAIRS);
     }
 
     private static BlockState[][] extractColumn(StructureTemplate template, int height, int width) {
