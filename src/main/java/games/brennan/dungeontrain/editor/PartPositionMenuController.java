@@ -7,7 +7,7 @@ import games.brennan.dungeontrain.net.PartAssignmentSyncPacket;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.train.CarriagePartTemplate;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -296,7 +296,7 @@ public final class PartPositionMenuController {
      * Re-stamp {@code name}'s template at the placement under the player's
      * crosshair. The other placements (for two-placement kinds) are passed
      * the {@link CarriagePartKind#NONE} sentinel so
-     * {@link CarriagePartTemplate#placeAtPerPlacement} skips them and
+     * {@link CarriagePartPlacer#placeAtPerPlacement} skips them and
      * leaves the existing stamp in place.
      *
      * <p>Seed 0 / carriageIndex 0 matches
@@ -332,7 +332,7 @@ public final class PartPositionMenuController {
         for (int i = 0; i < placements.size(); i++) {
             names.add(i == targetIndex ? name : CarriagePartKind.NONE);
         }
-        CarriagePartTemplate.placeAtPerPlacement(level, plotOrigin, kind, names, dims, 0L, 0);
+        CarriagePartPlacer.placeAtPerPlacement(level, plotOrigin, kind, names, dims, 0L, 0);
     }
 
     /**

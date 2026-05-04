@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTemplate;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -175,8 +175,8 @@ public final class CarriageEditor {
         // the freshly-loaded map; `editor save` persists the result.
         CarriageVariantBlocks.invalidate(variant.id());
 
-        CarriageTemplate.eraseAt(overworld, origin, dims);
-        CarriageTemplate.placeAt(overworld, origin, variant, dims);
+        CarriagePlacer.eraseAt(overworld, origin, dims);
+        CarriagePlacer.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
 
         // Snapshot the freshly-stamped state so EditorDirtyCheck has a
@@ -199,7 +199,7 @@ public final class CarriageEditor {
     public static void clearPlot(ServerLevel overworld, CarriageVariant variant, CarriageDims dims) {
         BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) return;
-        CarriageTemplate.eraseAt(overworld, origin, dims);
+        CarriagePlacer.eraseAt(overworld, origin, dims);
         setOutline(overworld, origin, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(), dims);
         // Drop the dirty-check baseline — the plot is no longer stamped, so
         // comparing a future live read (all air) to a stamped snapshot would
@@ -287,7 +287,7 @@ public final class CarriageEditor {
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
 
         StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
         CarriageTemplateStore.save(target, template);
@@ -315,8 +315,8 @@ public final class CarriageEditor {
             throw new IOException("Failed to allocate plot for '" + target.id() + "'.");
         }
 
-        CarriageTemplate.eraseAt(overworld, targetOrigin, dims);
-        CarriageTemplate.placeAt(overworld, targetOrigin, source, dims);
+        CarriagePlacer.eraseAt(overworld, targetOrigin, dims);
+        CarriagePlacer.placeAt(overworld, targetOrigin, source, dims);
 
         StructureTemplate template = captureTemplate(overworld, targetOrigin, dims);
         if (template.getSize().equals(Vec3i.ZERO)) {

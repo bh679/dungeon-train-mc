@@ -101,7 +101,7 @@ public final class WorldLifecycleEvents {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         CarriageTemplateStore.clearCache();
-        games.brennan.dungeontrain.train.CarriageTemplate.clearHalfFlatbedCache();
+        games.brennan.dungeontrain.train.CarriagePlacer.clearHalfFlatbedCache();
         games.brennan.dungeontrain.train.Trains.clearRegistry();
         games.brennan.dungeontrain.train.TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();

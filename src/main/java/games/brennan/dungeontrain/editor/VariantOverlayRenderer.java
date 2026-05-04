@@ -9,7 +9,7 @@ import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -175,7 +175,7 @@ public final class VariantOverlayRenderer {
                 BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contentsPlot, dims);
                 if (carriageOrigin == null) continue;
                 BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-                Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
                 CarriageContentsVariantBlocks contentsSidecar = CarriageContentsVariantBlocks.loadFor(
                     contentsPlot, interiorSize);
                 if (contentsSidecar.isEmpty()) {

@@ -16,7 +16,7 @@ import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -32,7 +32,7 @@ import java.util.Optional;
  * editor flows can treat all kinds exhaustively without caring about the
  * underlying storage split. Records are immutable identifiers — placement
  * code lives in the per-subsystem static helpers
- * ({@code train.CarriageTemplate}, {@code tunnel.TunnelTemplate}, etc.) and
+ * ({@code train.CarriagePlacer}, {@code tunnel.TunnelPlacer}, etc.) and
  * persistence lives in the corresponding {@code *TemplateStore} /
  * {@code *VariantStore} classes.
  *

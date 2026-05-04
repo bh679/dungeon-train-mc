@@ -17,7 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
  *   - {@code trainY} — world Y where new trains spawn, [-64, 320]
  *   - {@code generateTracks} — auto-place world-block tracks under the train
  *   - {@code generateTunnels} — auto-place stone-brick tunnels through thick rock
- *   - {@code generationMode} — how {@link games.brennan.dungeontrain.train.CarriageTemplate#typeForIndex}
+ *   - {@code generationMode} — how {@link games.brennan.dungeontrain.train.CarriagePlacer#typeForIndex}
  *       picks a carriage variant (RANDOM, RANDOM_GROUPED, LOOPING)
  *   - {@code groupSize} — non-flatbed run length for RANDOM_GROUPED, [1, 16]
  */

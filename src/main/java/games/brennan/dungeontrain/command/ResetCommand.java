@@ -141,7 +141,7 @@ public final class ResetCommand {
                 ).withStyle(ChatFormatting.RED));
                 return 0;
             }
-            games.brennan.dungeontrain.train.CarriageTemplate.eraseAt(overworld, origin, dims);
+            games.brennan.dungeontrain.train.CarriagePlacer.eraseAt(overworld, origin, dims);
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             bundled.get().placeInWorld(overworld, origin, origin, settings, overworld.getRandom(), 3);
             source.sendSuccess(() -> Component.literal(

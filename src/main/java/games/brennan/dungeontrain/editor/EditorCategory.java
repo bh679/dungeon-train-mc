@@ -8,7 +8,7 @@ import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;

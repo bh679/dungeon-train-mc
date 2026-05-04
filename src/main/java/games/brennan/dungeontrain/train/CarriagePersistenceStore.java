@@ -76,7 +76,7 @@ public final class CarriagePersistenceStore {
 
     /**
      * Capture the current shipyard-space carriage footprint and write it
-     * to disk. Called just before {@link CarriageTemplate#eraseAt} so the
+     * to disk. Called just before {@link CarriagePlacer#eraseAt} so the
      * snapshot includes any player edits accumulated since the carriage
      * was placed. Silently logs-and-continues on I/O failure — a lost
      * snapshot downgrades the feature from "player edits preserved" to

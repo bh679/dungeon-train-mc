@@ -7,7 +7,7 @@ import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateRegistry;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -67,7 +67,7 @@ public final class CarriageVariantRegistry {
         List<CarriageVariant> list = new ArrayList<>();
         // Half-flatbeds are no longer carriage variants — they're
         // sub-level boundary pads placed directly by TrainAssembler via
-        // CarriageTemplate.placeHalfFlatbedPad (Gate B.2 pad refactor).
+        // CarriagePlacer.placeHalfFlatbedPad (Gate B.2 pad refactor).
         // Every CarriageType enum value is a valid mid-train carriage.
         for (CarriageType t : CarriageType.values()) {
             list.add(CarriageVariant.of(t));

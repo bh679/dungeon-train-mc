@@ -29,17 +29,17 @@ import java.util.Optional;
  * {@code VSShipFilterProcessor} — a carriage is spawned into the shipyard
  * (Valkyrien Skies ship territory), so filtering out "positions on a VS ship"
  * would drop every single block and produce an empty carriage. Monolithic
- * {@code CarriageTemplate.stampTemplate} follows the same rule.
+ * {@code CarriagePlacer.stampTemplate} follows the same rule.
  *
  * <p>The reserved name {@link CarriagePartKind#NONE} is a no-op: the stamp is
  * skipped entirely so FLATBED-style carriages can declare {@code walls=none}
  * etc. without needing an empty NBT on disk.
  */
-public final class CarriagePartTemplate {
+public final class CarriagePartPlacer {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
-    private CarriagePartTemplate() {}
+    private CarriagePartPlacer() {}
 
     /**
      * Stamp {@code kind}'s named template at every placement for a carriage

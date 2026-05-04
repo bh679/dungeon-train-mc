@@ -349,7 +349,7 @@ public final class TrainCarriageAppender {
         // 2×halfPadLen for groupSize > 1, just length for groupSize == 1.
         int groupSize = provider.getGroupSize();
         CarriageDims pdims = provider.dims();
-        int halfPadLen = CarriageTemplate.halfPadLen(pdims);
+        int halfPadLen = CarriagePlacer.halfPadLen(pdims);
         int subLevelStride = (groupSize > 1)
             ? (groupSize * pdims.length() + 2 * halfPadLen)
             : pdims.length();
@@ -596,7 +596,7 @@ public final class TrainCarriageAppender {
             // and 0 for groupSize == 1. Subtract this offset before
             // dividing by length so pIdx 0's enclosed carriage maps to
             // (local.x − shipyardOrigin − enclosedStartOffset) ∈ [0, length).
-            int halfPadLen = CarriageTemplate.halfPadLen(dims);
+            int halfPadLen = CarriagePlacer.halfPadLen(dims);
             int enclosedStartOffset = (groupSize > 1) ? halfPadLen : 0;
             Vector3d local = new Vector3d(player.getX(), player.getY(), player.getZ());
             leadShip.worldToShip(local);
@@ -974,7 +974,7 @@ public final class TrainCarriageAppender {
         int refAnchor = reference.provider().getPIdx();
         UUID refTrainId = reference.provider().getTrainId();
         int length = dims.length();
-        int halfPadLen = CarriageTemplate.halfPadLen(dims);
+        int halfPadLen = CarriagePlacer.halfPadLen(dims);
 
         int subLevelStride = (groupSize > 1) ? (groupSize * length + 2 * halfPadLen) : length;
 

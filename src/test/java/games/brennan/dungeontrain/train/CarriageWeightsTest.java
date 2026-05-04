@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Unit tests for the {@link CarriageWeights} value type — clamp, default lookup,
  * defensive copy. The disk-loader path is covered indirectly via
- * {@link CarriageTemplateTest}'s weighted-distribution tests and the in-game
+ * {@link CarriagePlacerTest}'s weighted-distribution tests and the in-game
  * Gate 2 verification; testing it directly would require a Forge {@code FMLPaths}
  * bootstrap which these plain JUnit tests deliberately avoid.
  */

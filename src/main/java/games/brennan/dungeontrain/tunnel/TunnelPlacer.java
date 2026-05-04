@@ -36,7 +36,7 @@ import java.util.Optional;
  * so the pre-refactor geometry still shows up when the player hasn't saved a
  * custom template.</p>
  */
-public final class TunnelTemplate {
+public final class TunnelPlacer {
 
     public enum TunnelVariant implements TemplateType {
         SECTION,
@@ -67,7 +67,7 @@ public final class TunnelTemplate {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
-    private TunnelTemplate() {}
+    private TunnelPlacer() {}
 
     /**
      * Editor-facing — stamp the named section variant at {@code origin}

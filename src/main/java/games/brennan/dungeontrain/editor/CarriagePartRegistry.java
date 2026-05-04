@@ -45,7 +45,7 @@ import java.util.regex.Pattern;
  * </ol>
  *
  * <p>The reserved name {@link CarriagePartKind#NONE} is never registered — it
- * is a sentinel handled by {@link games.brennan.dungeontrain.train.CarriagePartTemplate#placeAt}
+ * is a sentinel handled by {@link games.brennan.dungeontrain.train.CarriagePartPlacer#placeAt}
  * as "stamp nothing for this kind". {@link #names(CarriagePartKind)} prepends
  * it so it always appears in completions regardless of disk state.</p>
  *

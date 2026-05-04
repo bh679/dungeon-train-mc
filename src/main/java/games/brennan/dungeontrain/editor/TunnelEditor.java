@@ -8,8 +8,8 @@ import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.LegacyTunnelPaint;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -90,9 +90,9 @@ public final class TunnelEditor {
         for (TunnelVariant variant : TunnelVariant.values()) {
             for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
                 BlockPos o = plotOrigin(variant, name);
-                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TunnelTemplate.LENGTH
-                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TunnelTemplate.HEIGHT
-                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + TunnelTemplate.WIDTH) {
+                if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TunnelPlacer.LENGTH
+                    && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TunnelPlacer.HEIGHT
+                    && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + TunnelPlacer.WIDTH) {
                     return new TunnelPlot(variant, name);
                 }
             }
@@ -123,9 +123,9 @@ public final class TunnelEditor {
 
         stampPlot(overworld, variant);
 
-        double tx = origin.getX() + TunnelTemplate.LENGTH / 2.0;
+        double tx = origin.getX() + TunnelPlacer.LENGTH / 2.0;
         double ty = origin.getY() + 1.0;
-        double tz = origin.getZ() + TunnelTemplate.WIDTH / 2.0;
+        double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
         LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} default plot at {} ({} variants)",
@@ -143,14 +143,14 @@ public final class TunnelEditor {
     /** Erase + restamp the single plot for {@code (variant, name)}. */
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant, String name) {
         BlockPos origin = plotOrigin(variant, name);
-        TunnelTemplate.eraseAt(overworld, origin);
+        TunnelPlacer.eraseAt(overworld, origin);
         if (variant == TunnelVariant.SECTION) {
-            TunnelTemplate.placeSectionNamed(overworld, origin, name);
+            TunnelPlacer.placeSectionNamed(overworld, origin, name);
         } else {
             // Always render the unmirrored (entrance) orientation in the editor;
             // the exit variant at world paint time is the same template with
             // StructurePlaceSettings.setMirror(Mirror.FRONT_BACK).
-            TunnelTemplate.placePortalNamed(overworld, origin, false, name);
+            TunnelPlacer.placePortalNamed(overworld, origin, false, name);
         }
         // STRUCTURE_VOID corner-wedge overlay so saved templates strip those
         // positions and in-world stamps leave the surrounding rock alone.
@@ -164,7 +164,7 @@ public final class TunnelEditor {
     public static void clearPlot(ServerLevel overworld, TunnelVariant variant) {
         for (String name : TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant))) {
             BlockPos origin = plotOrigin(variant, name);
-            TunnelTemplate.eraseAt(overworld, origin);
+            TunnelPlacer.eraseAt(overworld, origin);
             setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
             EditorPlotSnapshots.clear(tunnelSnapshotKey(variant, name));
         }
@@ -173,7 +173,7 @@ public final class TunnelEditor {
     /** Erase a single named variant plot for {@code variant} — interior + outline cleared to air. */
     public static void clearPlot(ServerLevel overworld, TunnelVariant variant, String name) {
         BlockPos origin = plotOrigin(variant, name);
-        TunnelTemplate.eraseAt(overworld, origin);
+        TunnelPlacer.eraseAt(overworld, origin);
         setOutline(overworld, origin, Blocks.AIR.defaultBlockState());
         EditorPlotSnapshots.clear(tunnelSnapshotKey(variant, name));
     }
@@ -212,7 +212,7 @@ public final class TunnelEditor {
         BlockPos origin = plotOrigin(variant, name);
 
         StructureTemplate template = new StructureTemplate();
-        Vec3i size = new Vec3i(TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH);
+        Vec3i size = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
         template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
 
         TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
@@ -268,9 +268,9 @@ public final class TunnelEditor {
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
         int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + TunnelTemplate.LENGTH;
-        int y1 = origin.getY() + TunnelTemplate.HEIGHT;
-        int z1 = origin.getZ() + TunnelTemplate.WIDTH;
+        int x1 = origin.getX() + TunnelPlacer.LENGTH;
+        int y1 = origin.getY() + TunnelPlacer.HEIGHT;
+        int z1 = origin.getZ() + TunnelPlacer.WIDTH;
 
         for (int x = x0; x <= x1; x++) {
             for (int y = y0; y <= y1; y++) {

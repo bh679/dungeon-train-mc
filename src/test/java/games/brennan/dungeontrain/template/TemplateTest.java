@@ -2,9 +2,9 @@ package games.brennan.dungeontrain.template;
 
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

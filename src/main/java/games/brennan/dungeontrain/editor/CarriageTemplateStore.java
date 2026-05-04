@@ -6,8 +6,8 @@ import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.train.CarriageTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
@@ -41,7 +41,7 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.nbt} on the
  *       classpath. Ships inside the mod jar and represents the mod's defaults.
  *       Only built-ins have bundled copies.</li>
- *   <li><b>Hardcoded fallback</b> — {@link CarriageTemplate#placeAt} drops to its
+ *   <li><b>Hardcoded fallback</b> — {@link CarriagePlacer#placeAt} drops to its
  *       legacy generator when both above tiers miss. Only built-ins fall back;
  *       custom variants with no config-dir file place nothing.</li>
  * </ol>
@@ -145,7 +145,7 @@ public final class CarriageTemplateStore {
      */
     private static Optional<StructureTemplate> filterForDims(CarriageVariant variant, Optional<StructureTemplate> cached, CarriageDims dims) {
         if (cached.isEmpty()) return cached;
-        if (CarriageTemplate.sizeMatches(cached.get().getSize(), dims)) return cached;
+        if (CarriagePlacer.sizeMatches(cached.get().getSize(), dims)) return cached;
         LOGGER.warn(
             "[DungeonTrain] Cached template {} no longer matches dims {}x{}x{} — falling back.",
             variant.id(), dims.length(), dims.width(), dims.height());
@@ -285,7 +285,7 @@ public final class CarriageTemplateStore {
         template.load(blocks, tag);
 
         Vec3i size = template.getSize();
-        if (!CarriageTemplate.sizeMatches(size, dims)) {
+        if (!CarriagePlacer.sizeMatches(size, dims)) {
             LOGGER.warn(
                 "[DungeonTrain] Template {} ({}) has bounds {}x{}x{}, expected {}x{}x{} — ignoring.",
                 id, origin, size.getX(), size.getY(), size.getZ(),

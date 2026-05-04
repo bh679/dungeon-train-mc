@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link #legacyPlaceAt}, while custom variants place nothing (their blocks
  * only exist on disk, never in fallback).
  */
-public final class CarriageTemplate {
+public final class CarriagePlacer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -106,7 +106,7 @@ public final class CarriageTemplate {
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
-     * {@code Blocks.*} access off {@link CarriageTemplate}'s own static init
+     * {@code Blocks.*} access off {@link CarriagePlacer}'s own static init
      * means plain JUnit tests can call
      * {@link #variantForIndex(int, CarriageGenerationConfig)} without
      * requiring a Forge/Minecraft {@code Bootstrap}. The holder is only
@@ -120,7 +120,7 @@ public final class CarriageTemplate {
         static final BlockState WINDOW = Blocks.GLASS.defaultBlockState();
     }
 
-    private CarriageTemplate() {}
+    private CarriagePlacer() {}
 
     /**
      * Place a single carriage of the given variant + dims at origin (= minimum
@@ -208,7 +208,7 @@ public final class CarriageTemplate {
 
         // Contents apply on any source (stored / legacy / parts overlay) —
         // the interior volume at (1..L-2, 1..H-2, 1..W-2) is identical across
-        // shell variants, so CarriageContentsTemplate doesn't care which one
+        // shell variants, so CarriageContentsPlacer doesn't care which one
         // it lands inside. finishPlace's collectFootprint re-reads the region
         // afterwards so contents blocks are included in the returned set.
         if (applyContents && (base != null || overlay != null)) {
@@ -256,8 +256,8 @@ public final class CarriageTemplate {
             // TrainAssembler doesn't discard entities, so armor stands and
             // paintings from prior contents at this index would otherwise
             // accumulate each rolling-window cycle.
-            CarriageContentsTemplate.discardEntitiesAt(level, origin, dims);
-            CarriageContentsTemplate.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
+            CarriageContentsPlacer.discardEntitiesAt(level, origin, dims);
+            CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
                 origin, carriageIndex, t.toString());
@@ -425,7 +425,7 @@ public final class CarriageTemplate {
      * carriage). To keep the FRONT pad's footprint at
      * {@code [origin.x, origin.x + padLen - 1]}, the stamp position is
      * pre-shifted by {@code padLen − 1} on X (same trick as
-     * {@link games.brennan.dungeontrain.tunnel.TunnelTemplate#placePortalNamed}).</p>
+     * {@link games.brennan.dungeontrain.tunnel.TunnelPlacer#placePortalNamed}).</p>
      *
      * <p>If FLATBED has no NBT, falls back to a hardcoded stone-bricks
      * floor over the pad footprint via {@link #legacyHalfFlatbedFloor}.</p>
@@ -518,7 +518,7 @@ public final class CarriageTemplate {
                 }
             }
             if (!stamped) continue;
-            CarriagePartTemplate.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex);
+            CarriagePartPlacer.placeAtPerPlacement(level, origin, kind, picks, dims, seed, carriageIndex);
             if (desc.length() > 0) desc.append(",");
             desc.append(kind.id()).append("=");
             if (picks.size() == 1 || picks.get(0).equals(picks.get(picks.size() - 1))) {
@@ -674,7 +674,7 @@ public final class CarriageTemplate {
      * <p>If every variant in the pool has weight 0 the function falls back to
      * a uniform pick so the carriage placer never has to deal with a degenerate
      * empty pool. The fallback logs a warning once per server session via
-     * {@link CarriageTemplate#warnAllZeroOnce}.</p>
+     * {@link CarriagePlacer#warnAllZeroOnce}.</p>
      */
     private static CarriageVariant weightedSeededPick(long seed, int index, List<CarriageVariant> pool, CarriageWeights weights) {
         int n = pool.size();
@@ -779,7 +779,7 @@ public final class CarriageTemplate {
      * for a given type + dims. Returns {@code null} for air — makes the
      * iteration loops skip without placing.
      *
-     * <p>Package-private so {@link games.brennan.dungeontrain.train.CarriageTemplateTest}
+     * <p>Package-private so {@link games.brennan.dungeontrain.train.CarriagePlacerTest}
      * can pin the perimeter/door/window geometry at non-default dims
      * (e.g. 5×5×5).</p>
      */

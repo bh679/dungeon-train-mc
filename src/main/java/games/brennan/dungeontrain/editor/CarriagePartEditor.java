@@ -3,7 +3,7 @@ package games.brennan.dungeontrain.editor;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.train.CarriagePartTemplate;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -209,7 +209,7 @@ public final class CarriagePartEditor {
         // rebuilds from disk, so an unsaved name drops naturally.
         CarriagePartRegistry.register(kind, name);
 
-        CarriagePartTemplate.eraseAt(overworld, origin, kind, dims);
+        CarriagePartPlacer.eraseAt(overworld, origin, kind, dims);
         stampCurrent(overworld, origin, kind, name, dims);
         setOutline(overworld, origin, kind, dims);
 
@@ -285,7 +285,7 @@ public final class CarriagePartEditor {
         BlockPos targetOrigin = nextFreePlotOrigin(kind, dims);
         CarriagePartRegistry.register(kind, name);
 
-        CarriagePartTemplate.eraseAt(overworld, targetOrigin, kind, dims);
+        CarriagePartPlacer.eraseAt(overworld, targetOrigin, kind, dims);
         if (seed != null) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             seed.placeInWorld(overworld, targetOrigin, targetOrigin, settings, overworld.getRandom(), 3);
@@ -401,7 +401,7 @@ public final class CarriagePartEditor {
 
         BlockPos newOrigin = plotOrigin(kind, newName, dims);
         if (newOrigin != null) {
-            CarriagePartTemplate.eraseAt(overworld, newOrigin, kind, dims);
+            CarriagePartPlacer.eraseAt(overworld, newOrigin, kind, dims);
             stampCurrent(overworld, newOrigin, kind, newName, dims);
             setOutline(overworld, newOrigin, kind, dims);
 
@@ -456,7 +456,7 @@ public final class CarriagePartEditor {
     public static void stampPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
         BlockPos origin = plotOrigin(kind, name, dims);
         if (origin == null) return;
-        CarriagePartTemplate.eraseAt(level, origin, kind, dims);
+        CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         stampCurrent(level, origin, kind, name, dims);
         setOutline(level, origin, kind, dims);
     }
@@ -482,7 +482,7 @@ public final class CarriagePartEditor {
     public static void clearPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
         BlockPos origin = plotOrigin(kind, name, dims);
         if (origin == null) return;
-        CarriagePartTemplate.eraseAt(level, origin, kind, dims);
+        CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         clearOutline(level, origin, kind, dims);
     }
 

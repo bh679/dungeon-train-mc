@@ -44,7 +44,7 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/parts/<kind>/<name>.nbt}
  *       on the classpath. Optional; shipped defaults only exist for parts the
  *       mod wants to guarantee are available on a fresh install.</li>
- *   <li><b>Empty</b> — missing in both tiers. {@code CarriagePartTemplate.placeAt}
+ *   <li><b>Empty</b> — missing in both tiers. {@code CarriagePartPlacer.placeAt}
  *       silently skips this stamp (same no-op semantics as the {@code "none"}
  *       sentinel).</li>
  * </ol>

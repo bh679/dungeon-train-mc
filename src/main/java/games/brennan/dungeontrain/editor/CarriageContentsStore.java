@@ -42,7 +42,7 @@ import java.util.Optional;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/contents/<id>.nbt}
  *       on the classpath. Ships inside the mod jar and represents the mod's
  *       defaults.</li>
- *   <li><b>Hardcoded fallback</b> — {@link games.brennan.dungeontrain.train.CarriageContentsTemplate#placeAt}
+ *   <li><b>Hardcoded fallback</b> — {@link games.brennan.dungeontrain.train.CarriageContentsPlacer#placeAt}
  *       drops to a legacy generator (single stone pressure plate at floor
  *       centre) when both above tiers miss. Only the {@code default} built-in
  *       falls back; custom contents with no config-dir file place nothing.</li>
@@ -118,7 +118,7 @@ public final class CarriageContentsStore {
      * only for reuse of the record; the shell minimums ({@code length>=4},
      * {@code width>=3}, {@code height>=3}) guarantee interior dims stay above
      * the {@link CarriageDims} floors of 4×3×3… except when width=3 (interior
-     * width=1) — see the helper in {@link games.brennan.dungeontrain.train.CarriageContentsTemplate}
+     * width=1) — see the helper in {@link games.brennan.dungeontrain.train.CarriageContentsPlacer}
      * which uses a raw {@link Vec3i} instead of {@link CarriageDims} to avoid
      * the invariant.</p>
      */

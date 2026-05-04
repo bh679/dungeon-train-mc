@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.train;
 
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 
 import java.util.Locale;
 import java.util.Objects;

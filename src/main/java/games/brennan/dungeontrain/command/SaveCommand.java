@@ -12,9 +12,9 @@ import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Stores;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
-import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -450,12 +450,12 @@ public final class SaveCommand {
         if (model instanceof Template.TunnelModel tunnel) {
             BlockPos origin = TunnelEditor.plotOrigin(tunnel.variant());
             if (origin == null) return true;
-            return countNonAir(level, origin, TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH)
+            return countNonAir(level, origin, TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH)
                 < EMPTY_PLOT_THRESHOLD;
         }
         if (model instanceof Template.TrackModel) {
             BlockPos origin = TrackEditor.plotOrigin(dims);
-            return countNonAir(level, origin, TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
+            return countNonAir(level, origin, TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
         // PartModel reaches here because EditorCategory.models() doesn't

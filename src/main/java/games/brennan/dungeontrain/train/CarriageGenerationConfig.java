@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 /**
- * Immutable tuple passed to {@link CarriageTemplate#typeForIndex} describing
+ * Immutable tuple passed to {@link CarriagePlacer#typeForIndex} describing
  * how to pick a carriage for index {@code i}. {@code mode} + {@code groupSize}
  * live in {@code DungeonTrainConfig} (runtime-editable); {@code seed} lives in
  * {@code DungeonTrainWorldData} and is fixed per-world.

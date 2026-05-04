@@ -36,18 +36,18 @@ import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.train.CarriagePartKind;
-import games.brennan.dungeontrain.train.CarriagePartTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate;
-import games.brennan.dungeontrain.train.CarriageTemplate.CarriageType;
+import games.brennan.dungeontrain.train.CarriagePartPlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer;
+import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandBuildContext;
@@ -875,7 +875,7 @@ public final class EditorCommand {
             return 0;
         }
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-        Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
         BlockPos local = hit.subtract(interiorOrigin);
         if (!inBounds(local, interiorSize)) {
             source.sendFailure(Component.literal(
@@ -924,7 +924,7 @@ public final class EditorCommand {
 
         CarriageContents contentsPlot = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
         if (contentsPlot != null) {
-            Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+            Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
             CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contentsPlot, interiorSize);
             sendVariantsListing(source,
                 "contents '" + contentsPlot.id() + "'",
@@ -1594,7 +1594,7 @@ public final class EditorCommand {
         if (partLoc != null) {
             try {
                 BlockPos origin = CarriagePartEditor.plotOrigin(partLoc.kind(), partLoc.name(), dims);
-                CarriagePartTemplate.eraseAt(overworld, origin, partLoc.kind(), dims);
+                CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
                 final String id = partLoc.kind().id() + ":" + partLoc.name();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."
@@ -1614,10 +1614,10 @@ public final class EditorCommand {
             try {
                 BlockPos origin = CarriageContentsEditor.plotOrigin(contents, dims);
                 // Interior-only erase — preserves the carriage shell stamped
-                // around it as visual context. CarriageContentsTemplate.eraseAt
+                // around it as visual context. CarriageContentsPlacer.eraseAt
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
                 // ceiling stay put for the author to keep building inside.
-                CarriageContentsTemplate.eraseAt(overworld, origin, dims);
+                CarriageContentsPlacer.eraseAt(overworld, origin, dims);
                 final String id = contents.id();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."
@@ -1636,7 +1636,7 @@ public final class EditorCommand {
         if (carriage != null) {
             try {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
-                CarriageTemplate.eraseAt(overworld, origin, dims);
+                CarriagePlacer.eraseAt(overworld, origin, dims);
                 final String id = carriage.id();
                 source.sendSuccess(() -> Component.literal(
                     "Editor: cleared all blocks in '" + id + "'."

@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.track.TrackPalette;
-import games.brennan.dungeontrain.track.TrackTemplate;
+import games.brennan.dungeontrain.track.TrackPlacer;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -79,8 +79,8 @@ public final class TrackEditor {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.TILE)) {
             BlockPos o = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
             int w = dims.width();
-            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackTemplate.TILE_LENGTH
-                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackTemplate.HEIGHT
+            if (pos.getX() >= o.getX() - 1 && pos.getX() <= o.getX() + TrackPlacer.TILE_LENGTH
+                && pos.getY() >= o.getY() - 1 && pos.getY() <= o.getY() + TrackPlacer.HEIGHT
                 && pos.getZ() >= o.getZ() - 1 && pos.getZ() <= o.getZ() + w) {
                 return name;
             }
@@ -102,7 +102,7 @@ public final class TrackEditor {
         stampAllPlots(overworld, dims);
 
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, TrackKind.DEFAULT_NAME, dims);
-        double tx = origin.getX() + TrackTemplate.TILE_LENGTH / 2.0;
+        double tx = origin.getX() + TrackPlacer.TILE_LENGTH / 2.0;
         double ty = origin.getY() + 1.0;
         double tz = origin.getZ() + dims.width() / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
@@ -181,7 +181,7 @@ public final class TrackEditor {
 
         LOGGER.info("[DungeonTrain] Track editor save: {} -> tile/{} ({}x{}x{})",
             player.getName().getString(), name,
-            TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+            TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
         try {
@@ -213,9 +213,9 @@ public final class TrackEditor {
     private static void eraseAt(ServerLevel level, BlockPos origin, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
         int w = dims.width();
-        for (int dx = -1; dx <= TrackTemplate.TILE_LENGTH; dx++) {
+        for (int dx = -1; dx <= TrackPlacer.TILE_LENGTH; dx++) {
             for (int dz = -1; dz <= w; dz++) {
-                for (int dy = -1; dy <= TrackTemplate.HEIGHT; dy++) {
+                for (int dy = -1; dy <= TrackPlacer.HEIGHT; dy++) {
                     level.setBlock(origin.offset(dx, dy, dz), air, 3);
                 }
             }
@@ -231,7 +231,7 @@ public final class TrackEditor {
         }
         // Fallback for unauthored "default" — hardcoded bed + 2-rail stamp.
         int w = dims.width();
-        for (int dx = 0; dx < TrackTemplate.TILE_LENGTH; dx++) {
+        for (int dx = 0; dx < TrackPlacer.TILE_LENGTH; dx++) {
             for (int dz = 0; dz < w; dz++) {
                 level.setBlock(origin.offset(dx, 0, dz), TrackPalette.BED, 3);
                 if (dz == 1 || dz == w - 2) {
@@ -243,7 +243,7 @@ public final class TrackEditor {
 
     private static StructureTemplate captureTemplate(ServerLevel level, BlockPos origin, CarriageDims dims) {
         StructureTemplate template = new StructureTemplate();
-        Vec3i size = new Vec3i(TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width());
+        Vec3i size = new Vec3i(TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
         template.fillFromWorld(level, origin, size, false, Blocks.AIR);
         return template;
     }
@@ -253,8 +253,8 @@ public final class TrackEditor {
         int x0 = origin.getX() - 1;
         int y0 = origin.getY() - 1;
         int z0 = origin.getZ() - 1;
-        int x1 = origin.getX() + TrackTemplate.TILE_LENGTH;
-        int y1 = origin.getY() + TrackTemplate.HEIGHT;
+        int x1 = origin.getX() + TrackPlacer.TILE_LENGTH;
+        int y1 = origin.getY() + TrackPlacer.HEIGHT;
         int z1 = origin.getZ() + w;
 
         for (int x = x0; x <= x1; x++) {

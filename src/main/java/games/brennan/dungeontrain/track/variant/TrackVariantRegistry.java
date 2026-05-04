@@ -7,7 +7,7 @@ import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateRegistry;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
-import games.brennan.dungeontrain.tunnel.TunnelTemplate.TunnelVariant;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.util.BundledNbtScanner;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -207,7 +207,7 @@ public final class TrackVariantRegistry {
      * name across server restarts and rolling-window re-renders. If every name
      * in the pool has weight 0 the function falls back to a uniform pick.
      *
-     * <p>Mirrors {@code CarriageTemplate.weightedSeededPick} but with kind-id
+     * <p>Mirrors {@code CarriagePlacer.weightedSeededPick} but with kind-id
      * mixed into the seed so the same tile index in two adjacent kinds
      * (e.g. tunnel section vs portal at the same X) doesn't pick correlated
      * names.</p>

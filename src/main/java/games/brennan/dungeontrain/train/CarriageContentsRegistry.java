@@ -140,7 +140,7 @@ public final class CarriageContentsRegistry {
      * falls back to a uniform pick over the full registry (and warns once
      * per server lifetime so the misconfiguration surfaces).
      *
-     * <p>Mirrors {@link games.brennan.dungeontrain.train.CarriageTemplate}'s
+     * <p>Mirrors {@link games.brennan.dungeontrain.train.CarriagePlacer}'s
      * {@code weightedSeededPick} shape (cumulative array + threshold draw)
      * with a position-free seed mixing constant so a contents pick and a
      * variant-block pick for the same carriage are not correlated.</p>

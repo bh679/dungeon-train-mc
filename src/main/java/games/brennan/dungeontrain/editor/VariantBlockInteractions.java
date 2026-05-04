@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageContents;
-import games.brennan.dungeontrain.train.CarriageContentsTemplate;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
 import games.brennan.dungeontrain.train.CarriageVariant;
@@ -226,7 +226,7 @@ public final class VariantBlockInteractions {
         BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(contents, dims);
         if (carriageOrigin == null) return;
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
-        Vec3i interiorSize = CarriageContentsTemplate.interiorSize(dims);
+        Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
 
         BlockPos local = clicked.subtract(interiorOrigin);
         if (local.getX() < 0 || local.getX() >= interiorSize.getX()
