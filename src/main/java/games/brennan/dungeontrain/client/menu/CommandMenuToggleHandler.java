@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -50,6 +51,9 @@ public final class CommandMenuToggleHandler {
                 CommandMenuState.close();
                 continue;
             }
+            // Plain X opens only in creative; Shift+X overrides for any mode.
+            boolean creative = mc.player != null && mc.player.isCreative();
+            if (!creative && !Screen.hasShiftDown()) continue;
             tryOpen(mc);
         }
 

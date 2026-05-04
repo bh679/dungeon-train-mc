@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -46,7 +47,7 @@ public final class TunnelEditor {
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch) {}
+    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType) {}
 
     /** Resolved variant + name pair for a player position. */
     public record TunnelPlot(TunnelVariant variant, String name) {}
@@ -106,12 +107,19 @@ public final class TunnelEditor {
         ServerLevel overworld = server.overworld();
         BlockPos origin = plotOrigin(variant, TrackKind.DEFAULT_NAME);
 
-        SESSIONS.putIfAbsent(player.getUUID(), new Session(
-            player.level().dimension(),
-            player.position(),
-            player.getYRot(),
-            player.getXRot()
-        ));
+        if (!SESSIONS.containsKey(player.getUUID())) {
+            GameType previous = player.gameMode.getGameModeForPlayer();
+            SESSIONS.put(player.getUUID(), new Session(
+                player.level().dimension(),
+                player.position(),
+                player.getYRot(),
+                player.getXRot(),
+                previous
+            ));
+            if (previous != GameType.CREATIVE) {
+                player.setGameMode(GameType.CREATIVE);
+            }
+        }
 
         stampPlot(overworld, variant);
 
@@ -219,8 +227,8 @@ public final class TunnelEditor {
     }
 
     /**
-     * Restore player to pre-enter position/dimension. Returns false if no
-     * session — caller should then try {@link CarriageEditor#exit}.
+     * Restore player to pre-enter position/dimension/game mode. Returns false
+     * if no session — caller should then try {@link CarriageEditor#exit}.
      */
     public static boolean exit(ServerPlayer player) {
         Session session = SESSIONS.remove(player.getUUID());
@@ -231,6 +239,9 @@ public final class TunnelEditor {
         if (dim == null) return false;
         player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
             session.yaw(), session.pitch());
+        if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
+            player.setGameMode(session.previousGameType());
+        }
         return true;
     }
 

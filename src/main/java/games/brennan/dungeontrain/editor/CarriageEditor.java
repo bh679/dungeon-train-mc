@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,28 +46,35 @@ public final class CarriageEditor {
 
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
-    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch) {}
+    public record Session(ResourceKey<Level> dimension, Vec3 pos, float yaw, float pitch, GameType previousGameType) {}
 
     private static final Map<UUID, Session> SESSIONS = new HashMap<>();
 
     private CarriageEditor() {}
 
     /**
-     * Record {@code player}'s current dimension + position + look as the
-     * return-to location for {@code /dungeontrain editor exit}. No-op if the
-     * player already has a saved session, so re-entering an editor plot (even
-     * across carriage and pillar editors) keeps the first entry as the anchor.
+     * Record {@code player}'s current dimension + position + look + game mode
+     * as the return-to state for {@code /dungeontrain editor exit}, then
+     * switch the player to creative for editing. No-op if the player already
+     * has a saved session, so re-entering an editor plot (even across carriage
+     * and pillar editors) keeps the first entry as the anchor.
      *
      * <p>Package-private so {@link PillarEditor} can share the session map
      * without duplicating the exit plumbing.</p>
      */
     static void rememberReturn(ServerPlayer player) {
-        SESSIONS.putIfAbsent(player.getUUID(), new Session(
+        if (SESSIONS.containsKey(player.getUUID())) return;
+        GameType previous = player.gameMode.getGameModeForPlayer();
+        SESSIONS.put(player.getUUID(), new Session(
             player.level().dimension(),
             player.position(),
             player.getYRot(),
-            player.getXRot()
+            player.getXRot(),
+            previous
         ));
+        if (previous != GameType.CREATIVE) {
+            player.setGameMode(GameType.CREATIVE);
+        }
     }
 
     /**
@@ -359,7 +367,7 @@ public final class CarriageEditor {
         return renamed;
     }
 
-    /** Restore player to pre-enter position/dimension. Returns false if no session. */
+    /** Restore player to pre-enter position/dimension/game mode. Returns false if no session. */
     public static boolean exit(ServerPlayer player) {
         Session session = SESSIONS.remove(player.getUUID());
         if (session == null) return false;
@@ -369,6 +377,9 @@ public final class CarriageEditor {
         if (dim == null) return false;
         player.teleportTo(dim, session.pos().x, session.pos().y, session.pos().z,
             session.yaw(), session.pitch());
+        if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
+            player.setGameMode(session.previousGameType());
+        }
         VariantOverlayRenderer.forget(player);
         return true;
     }
