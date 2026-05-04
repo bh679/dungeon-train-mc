@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.template.TemplateKind;
+import games.brennan.dungeontrain.template.TemplateType;
+
 import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -25,8 +28,18 @@ public sealed interface CarriageContents permits CarriageContents.Builtin, Carri
     Pattern NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,32}$");
 
     /** Built-in contents variants that always exist regardless of user authoring. */
-    enum ContentsType {
-        DEFAULT
+    enum ContentsType implements TemplateType {
+        DEFAULT;
+
+        @Override
+        public String id() {
+            return name().toLowerCase(Locale.ROOT);
+        }
+
+        @Override
+        public TemplateKind kind() {
+            return TemplateKind.CONTENTS;
+        }
     }
 
     String id();

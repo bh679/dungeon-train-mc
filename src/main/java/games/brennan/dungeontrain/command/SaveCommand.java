@@ -7,8 +7,8 @@ import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
-import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -84,7 +84,7 @@ public final class SaveCommand {
             return 0;
         }
 
-        EditorModel model = located.get().model();
+        Template model = located.get().model();
         try {
             saveOne(source, player, model);
             if (promoteDefault) promoteOne(source, model);
@@ -118,7 +118,7 @@ public final class SaveCommand {
         }
 
         EditorCategory category = located.get().category();
-        List<EditorModel> models = category.models();
+        List<Template> models = category.models();
         if (models.isEmpty()) {
             source.sendFailure(Component.literal(
                 "Category '" + category.displayName() + "' has no models."));
@@ -130,7 +130,7 @@ public final class SaveCommand {
         int promoted = 0;
         StringBuilder promoteErrors = new StringBuilder();
 
-        for (EditorModel model : models) {
+        for (Template model : models) {
             if (isPlotEmpty(overworld, model, dims)) {
                 skipped++;
                 continue;
@@ -171,8 +171,8 @@ public final class SaveCommand {
     }
 
     /** Save one model. When {@code source} is non-null, report progress messages. */
-    private static void saveOne(CommandSourceStack source, ServerPlayer player, EditorModel model) throws Exception {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+    private static void saveOne(CommandSourceStack source, ServerPlayer player, Template model) throws Exception {
+        if (model instanceof Template.CarriageModel carriage) {
             CarriageEditor.SaveResult result = CarriageEditor.save(player, carriage.variant());
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
@@ -191,7 +191,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.ContentsModel contentsModel) {
+        if (model instanceof Template.ContentsModel contentsModel) {
             CarriageContentsEditor.SaveResult result = CarriageContentsEditor.save(player, contentsModel.contents());
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
@@ -210,7 +210,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             PillarEditor.SaveResult result = PillarEditor.save(player, pillar.section());
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
@@ -229,7 +229,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
+        if (model instanceof Template.AdjunctModel adjunct) {
             PillarEditor.SaveResult result = PillarEditor.save(player, adjunct.adjunct());
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
@@ -248,7 +248,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.TunnelModel tunnel) {
+        if (model instanceof Template.TunnelModel tunnel) {
             TunnelEditor.SaveResult result = TunnelEditor.save(player, tunnel.variant());
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
@@ -267,7 +267,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             TrackEditor.SaveResult result = TrackEditor.save(player);
             if (source != null) {
                 source.sendSuccess(() -> Component.literal(
@@ -290,8 +290,8 @@ public final class SaveCommand {
     }
 
     /** Promote the given model to the source tree. Reports via {@code source}. */
-    private static void promoteOne(CommandSourceStack source, EditorModel model) {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+    private static void promoteOne(CommandSourceStack source, Template model) {
+        if (model instanceof Template.CarriageModel carriage) {
             if (!(carriage.variant() instanceof CarriageVariant.Builtin builtin)) {
                 source.sendFailure(Component.literal(
                     "Default save not supported for custom variants — only built-ins have a bundled tier."
@@ -316,7 +316,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.ContentsModel) {
+        if (model instanceof Template.ContentsModel) {
             // Contents promote: source-tree write is handled inside the
             // SaveResult pathway in CarriageContentsEditor.save() when
             // devmode is on, so "save default" has no extra action here.
@@ -325,7 +325,7 @@ public final class SaveCommand {
             ).withStyle(ChatFormatting.YELLOW));
             return;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             if (!PillarTemplateStore.sourceTreeAvailable()) {
                 source.sendFailure(Component.literal(
                     "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
@@ -344,7 +344,7 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
+        if (model instanceof Template.AdjunctModel adjunct) {
             if (!PillarTemplateStore.sourceTreeAvailable()) {
                 source.sendFailure(Component.literal(
                     "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
@@ -363,13 +363,13 @@ public final class SaveCommand {
             }
             return;
         }
-        if (model instanceof EditorModel.TunnelModel) {
+        if (model instanceof Template.TunnelModel) {
             source.sendFailure(Component.literal(
                 "Tunnel templates have no bundled tier — '/dt save default' does not apply."
             ).withStyle(ChatFormatting.YELLOW));
             return;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             if (!TrackTemplateStore.sourceTreeAvailable()) {
                 source.sendFailure(Component.literal(
                     "Source tree not writable — '/dt save default' requires dev environment (./gradlew runClient). Config-dir save still succeeded."
@@ -395,8 +395,8 @@ public final class SaveCommand {
      * was attempted and succeeded, false when the model has no bundled tier
      * (custom carriages, tunnels). Throws on actual I/O failures.
      */
-    private static boolean promoteOneSilent(EditorModel model) throws Exception {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+    private static boolean promoteOneSilent(Template model) throws Exception {
+        if (model instanceof Template.CarriageModel carriage) {
             if (!(carriage.variant() instanceof CarriageVariant.Builtin builtin)) return false;
             if (!CarriageTemplateStore.sourceTreeAvailable()) {
                 throw new Exception("source tree not writable");
@@ -404,26 +404,26 @@ public final class SaveCommand {
             CarriageTemplateStore.promote(builtin.type());
             return true;
         }
-        if (model instanceof EditorModel.ContentsModel) {
+        if (model instanceof Template.ContentsModel) {
             // Contents write-through happens inside CarriageContentsEditor.save
             // when devmode is on; there's no separate bundled tier to promote.
             return false;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             if (!PillarTemplateStore.sourceTreeAvailable()) {
                 throw new Exception("source tree not writable");
             }
             PillarTemplateStore.promote(pillar.section());
             return true;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
+        if (model instanceof Template.AdjunctModel adjunct) {
             if (!PillarTemplateStore.sourceTreeAvailable()) {
                 throw new Exception("source tree not writable");
             }
             PillarTemplateStore.promoteAdjunct(adjunct.adjunct());
             return true;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             if (!TrackTemplateStore.sourceTreeAvailable()) {
                 throw new Exception("source tree not writable");
             }
@@ -434,37 +434,37 @@ public final class SaveCommand {
         return false;
     }
 
-    private static boolean isPlotEmpty(ServerLevel level, EditorModel model, CarriageDims dims) {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+    private static boolean isPlotEmpty(ServerLevel level, Template model, CarriageDims dims) {
+        if (model instanceof Template.CarriageModel carriage) {
             BlockPos origin = CarriageEditor.plotOrigin(carriage.variant(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.ContentsModel contentsModel) {
+        if (model instanceof Template.ContentsModel contentsModel) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(contentsModel.contents(), dims);
             if (origin == null) return true;
             return countNonAir(level, origin, dims.length(), dims.height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             BlockPos origin = PillarEditor.plotOrigin(pillar.section(), dims);
             return countNonAir(level, origin, 1, pillar.section().height(), dims.width())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunctModel) {
+        if (model instanceof Template.AdjunctModel adjunctModel) {
             PillarAdjunct a = adjunctModel.adjunct();
             BlockPos origin = PillarEditor.plotOriginAdjunct(a, adjunctModel.name(), dims);
             return countNonAir(level, origin, a.xSize(), a.ySize(), a.zSize())
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.TunnelModel tunnel) {
+        if (model instanceof Template.TunnelModel tunnel) {
             BlockPos origin = TunnelEditor.plotOrigin(tunnel.variant());
             if (origin == null) return true;
             return countNonAir(level, origin, TunnelTemplate.LENGTH, TunnelTemplate.HEIGHT, TunnelTemplate.WIDTH)
                 < EMPTY_PLOT_THRESHOLD;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             BlockPos origin = TrackEditor.plotOrigin(dims);
             return countNonAir(level, origin, TrackTemplate.TILE_LENGTH, TrackTemplate.HEIGHT, dims.width())
                 < EMPTY_PLOT_THRESHOLD;

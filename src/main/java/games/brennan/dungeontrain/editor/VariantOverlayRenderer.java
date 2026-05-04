@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -270,7 +271,7 @@ public final class VariantOverlayRenderer {
         UUID uuid = player.getUUID();
         String prev = LAST_STATUS.get(uuid);
 
-        // Part plot first — parts aren't in the EditorModel sealed hierarchy
+        // Part plot first — parts aren't in the Template sealed hierarchy
         // (would ripple into SaveCommand / ResetCommand dispatchers), so we
         // build a synthetic status packet with category="Parts" and
         // model="<kind>:<name>". The client menu (EditorMenuScreen) reads
@@ -327,8 +328,8 @@ public final class VariantOverlayRenderer {
      * non-carriage model — the field is meaningless outside carriage editor
      * plots and the client renders nothing for it.
      */
-    private static Set<String> excludedContentsFor(EditorModel model) {
-        if (!(model instanceof EditorModel.CarriageModel cm)) return Collections.emptySet();
+    private static Set<String> excludedContentsFor(Template model) {
+        if (!(model instanceof Template.CarriageModel cm)) return Collections.emptySet();
         CarriageContentsAllowList allow = CarriageVariantContentsAllowStore.get(cm.variant())
             .orElse(CarriageContentsAllowList.EMPTY);
         return allow.excluded();
@@ -340,28 +341,28 @@ public final class VariantOverlayRenderer {
      * sections, tunnel kinds) pull from {@link TrackVariantWeights}; contents
      * models pull from {@link CarriageContentsWeights}. The HUD uses
      * {@link EditorStatusPacket#NO_WEIGHT} as the sentinel for "don't render
-     * the weight line" — currently every {@link EditorModel} variant has a
+     * the weight line" — currently every {@link Template} variant has a
      * weight pool, so no model returns the sentinel today.
      */
-    private static int weightFor(EditorModel model) {
-        if (model instanceof EditorModel.CarriageModel cm) {
+    private static int weightFor(Template model) {
+        if (model instanceof Template.CarriageModel cm) {
             return CarriageWeights.current().weightFor(cm.variant().id());
         }
-        if (model instanceof EditorModel.ContentsModel cm) {
+        if (model instanceof Template.ContentsModel cm) {
             return CarriageContentsWeights.current().weightFor(cm.contents().id());
         }
-        if (model instanceof EditorModel.TrackModel tm) {
+        if (model instanceof Template.TrackModel tm) {
             return TrackVariantWeights.weightFor(TrackKind.TILE, tm.name());
         }
-        if (model instanceof EditorModel.PillarModel pm) {
+        if (model instanceof Template.PillarModel pm) {
             return TrackVariantWeights.weightFor(
                 TrackPlotLocator.pillarKind(pm.section()), pm.name());
         }
-        if (model instanceof EditorModel.AdjunctModel am) {
+        if (model instanceof Template.AdjunctModel am) {
             return TrackVariantWeights.weightFor(
                 PillarTemplateStore.adjunctKind(am.adjunct()), am.name());
         }
-        if (model instanceof EditorModel.TunnelModel tm) {
+        if (model instanceof Template.TunnelModel tm) {
             return TrackVariantWeights.weightFor(
                 TrackPlotLocator.tunnelKind(tm.variant()), tm.name());
         }
@@ -373,27 +374,27 @@ public final class VariantOverlayRenderer {
      * splices into commands like {@code /dt editor tracks weight <kind>
      * <name> ...}. For carriages and contents this equals the model id; for
      * track-side models it's the trailing name segment of the display path.
-     * Falls back to {@link EditorModel#id()} for any future model type that
+     * Falls back to {@link Template#id()} for any future model type that
      * forgets to override this — never returns null so menu wiring is
      * NPE-safe.
      */
-    private static String modelNameFor(EditorModel model) {
-        if (model instanceof EditorModel.CarriageModel cm) {
+    private static String modelNameFor(Template model) {
+        if (model instanceof Template.CarriageModel cm) {
             return cm.variant().id();
         }
-        if (model instanceof EditorModel.ContentsModel cm) {
+        if (model instanceof Template.ContentsModel cm) {
             return cm.contents().id();
         }
-        if (model instanceof EditorModel.TrackModel tm) {
+        if (model instanceof Template.TrackModel tm) {
             return tm.name();
         }
-        if (model instanceof EditorModel.PillarModel pm) {
+        if (model instanceof Template.PillarModel pm) {
             return pm.name();
         }
-        if (model instanceof EditorModel.AdjunctModel am) {
+        if (model instanceof Template.AdjunctModel am) {
             return am.name();
         }
-        if (model instanceof EditorModel.TunnelModel tm) {
+        if (model instanceof Template.TunnelModel tm) {
             return tm.name();
         }
         return model.id();

@@ -6,8 +6,8 @@ import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
-import games.brennan.dungeontrain.editor.EditorModel;
 import games.brennan.dungeontrain.editor.PillarEditor;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -72,7 +72,7 @@ public final class ResetCommand {
             return 0;
         }
 
-        EditorModel model = located.get().model();
+        Template model = located.get().model();
         try {
             if (defaultOnly) {
                 return resetToDefault(source, overworld, model, dims);
@@ -92,28 +92,28 @@ public final class ResetCommand {
     }
 
     /** Re-stamp the plot via the normal tier resolution — same as {@code enter} does. */
-    private static void resetToSaved(ServerLevel overworld, EditorModel model, CarriageDims dims) {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+    private static void resetToSaved(ServerLevel overworld, Template model, CarriageDims dims) {
+        if (model instanceof Template.CarriageModel carriage) {
             CarriageEditor.stampPlot(overworld, carriage.variant(), dims);
             return;
         }
-        if (model instanceof EditorModel.ContentsModel contentsModel) {
+        if (model instanceof Template.ContentsModel contentsModel) {
             CarriageContentsEditor.stampPlot(overworld, contentsModel.contents(), dims);
             return;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             PillarEditor.stampPlot(overworld, pillar.section(), dims);
             return;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunct) {
+        if (model instanceof Template.AdjunctModel adjunct) {
             PillarEditor.stampPlot(overworld, adjunct.adjunct(), dims);
             return;
         }
-        if (model instanceof EditorModel.TunnelModel tunnel) {
+        if (model instanceof Template.TunnelModel tunnel) {
             TunnelEditor.stampPlot(overworld, tunnel.variant());
             return;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             TrackEditor.stampPlot(overworld, dims);
             return;
         }
@@ -124,8 +124,8 @@ public final class ResetCommand {
      * copy exists. Tunnels have no bundled tier today and will always error.
      */
     private static int resetToDefault(CommandSourceStack source, ServerLevel overworld,
-                                      EditorModel model, CarriageDims dims) {
-        if (model instanceof EditorModel.CarriageModel carriage) {
+                                      Template model, CarriageDims dims) {
+        if (model instanceof Template.CarriageModel carriage) {
             Optional<StructureTemplate> bundled =
                 CarriageTemplateStore.getBundled(overworld, carriage.variant(), dims);
             if (bundled.isEmpty()) {
@@ -149,7 +149,7 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
-        if (model instanceof EditorModel.PillarModel pillar) {
+        if (model instanceof Template.PillarModel pillar) {
             Optional<StructureTemplate> bundled =
                 PillarTemplateStore.getBundled(overworld, pillar.section(), dims);
             if (bundled.isEmpty()) {
@@ -166,7 +166,7 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
-        if (model instanceof EditorModel.AdjunctModel adjunctModel) {
+        if (model instanceof Template.AdjunctModel adjunctModel) {
             PillarAdjunct a = adjunctModel.adjunct();
             Optional<StructureTemplate> bundled =
                 PillarTemplateStore.getBundledAdjunct(overworld, a);
@@ -184,19 +184,19 @@ public final class ResetCommand {
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         }
-        if (model instanceof EditorModel.TunnelModel tunnel) {
+        if (model instanceof Template.TunnelModel tunnel) {
             source.sendFailure(Component.literal(
                 "Tunnel templates have no bundled tier — '/dt reset default' does not apply to '" + tunnel.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        if (model instanceof EditorModel.ContentsModel contentsModel) {
+        if (model instanceof Template.ContentsModel contentsModel) {
             source.sendFailure(Component.literal(
                 "Contents templates have no separate bundled tier — '/dt reset default' does not apply to '" + contentsModel.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        if (model instanceof EditorModel.TrackModel) {
+        if (model instanceof Template.TrackModel) {
             Optional<StructureTemplate> bundled =
                 TrackTemplateStore.getBundled(overworld, dims);
             if (bundled.isEmpty()) {
