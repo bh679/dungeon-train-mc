@@ -4,9 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovered;
+import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -142,6 +144,17 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
 
+        // "+ New" footer click → open the keyboard menu's source picker /
+        // typing prompt for this menu's category. variantIdx is -1 for NEW
+        // hits so the variant lookup below would short-circuit; handle here
+        // before that branch.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.NEW) {
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu New: category '{}'",
+                menu.variants().isEmpty() ? "<empty>" : menu.variants().get(0).category());
+            dispatchNew(menu);
+            return;
+        }
+
         if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return;
         EditorTypeMenusPacket.Variant variant = menu.variants().get(hit.variantIdx());
 
@@ -162,6 +175,61 @@ public final class EditorTypeMenuInputHandler {
                 CommandRunner.run(cmd);
             }
             default -> {}
+        }
+    }
+
+    /**
+     * Open the keyboard worldspace menu and drill / type into the matching
+     * "new variant" entry point for this menu's category. Mirrors what the
+     * keyboard menu's {@code EditorMenuScreen} "New" button does, so the
+     * floating panel and the keyboard menu share authoring flows.
+     *
+     * <p>Categories are read from {@code variants.get(0).category()} since
+     * every variant in a single floating menu shares its category.</p>
+     */
+    private static void dispatchNew(EditorTypeMenusPacket.Menu menu) {
+        if (menu.variants().isEmpty()) return;
+        EditorTypeMenusPacket.Variant first = menu.variants().get(0);
+        String category = first.category();
+        // Prefer the player's currently active model id (the one tinted green
+        // in the floating menu) so "Current (<id>)" in the picker clones from
+        // the variant the player is standing in. Fall back to the first row.
+        String activeId = EditorStatusHudOverlay.modelId();
+        String currentId = (activeId != null && !activeId.isEmpty())
+            ? activeId
+            : first.modelId();
+
+        CommandMenuState.open();
+        switch (category) {
+            case "CARRIAGES" -> CommandMenuState.drillIn(
+                new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CARRIAGES, null, currentId));
+            case "CONTENTS" -> CommandMenuState.drillIn(
+                new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CONTENTS, null, currentId));
+            case "PARTS" -> {
+                // For PARTS the modelId is the kind tag (floor / walls / roof /
+                // doors); the picker's "Current" option is gated on a non-empty
+                // currentId, which we don't have a stable source for from a
+                // parts menu (the variant rows don't represent the player's
+                // current part variant), so leave currentId blank.
+                CommandMenuState.drillIn(
+                    new NewSourcePickerScreen(
+                        NewSourcePickerScreen.Category.PARTS, first.modelId(), ""));
+            }
+            case "TRACKS" -> {
+                // Tracks have no source picker — drop straight into typing
+                // mode against the same prefix EditorMenuScreen.newEntryFor
+                // builds. The track-side modelId is already the kind tag the
+                // server's parser expects (see EditorPlotTeleport).
+                CommandMenuState.beginTyping(
+                    "name",
+                    "dungeontrain editor tracks new " + first.modelId(),
+                    "");
+            }
+            default -> {
+                LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);
+            }
         }
     }
 }
