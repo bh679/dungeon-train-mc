@@ -171,18 +171,42 @@ tasks.named('test', Test).configure {
 
 // Resolve the current git branch at configuration time so it can be baked into
 // the jar via processResources. Falls back to the short SHA on detached HEAD.
+//
+// Special-case: if HEAD's commit equals local `main`'s commit, bake `main`
+// regardless of which branch ref is checked out. Worktrees built straight
+// off main share commits with main and would otherwise look like dev branches,
+// flipping the title-screen default (see DevQuickWorldHandler). Compares
+// against the *local* `main` ref only — divergence between local and origin/main
+// is rare and falls through to the branch-name path (treated as dev).
 def gitBranch = { ->
     try {
+        def headProc = ['git', 'rev-parse', 'HEAD']
+                .execute(null, project.projectDir)
+        headProc.waitForOrKill(5000)
+        def headSha = headProc.in.text.trim()
+
+        if (!headSha.isEmpty()) {
+            try {
+                def mainProc = ['git', 'rev-parse', 'main']
+                        .execute(null, project.projectDir)
+                mainProc.waitForOrKill(5000)
+                def mainSha = mainProc.in.text.trim()
+                if (!mainSha.isEmpty() && headSha == mainSha) {
+                    return 'main'
+                }
+            } catch (Exception ignored) {
+                // No local `main` ref — fall through to branch-name detection.
+            }
+        }
+
         def proc = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
                 .execute(null, project.projectDir)
         proc.waitForOrKill(5000)
         def name = proc.in.text.trim()
         if (name == 'HEAD' || name.isEmpty()) {
-            def p2 = ['git', 'rev-parse', '--short', 'HEAD']
-                    .execute(null, project.projectDir)
-            p2.waitForOrKill(5000)
-            def sha = p2.in.text.trim()
-            return sha ?: 'unknown'
+            return headSha.isEmpty()
+                    ? 'unknown'
+                    : headSha.substring(0, Math.min(7, headSha.length()))
         }
         return name
     } catch (Exception e) {
