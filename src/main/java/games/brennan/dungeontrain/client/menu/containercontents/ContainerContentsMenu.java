@@ -40,7 +40,11 @@ public final class ContainerContentsMenu {
         ENTRY_REMOVE_X,
         SEARCH_FIELD,
         SEARCH_RESULT,
-        SEARCH_BACK
+        SEARCH_BACK,
+        /** Whole link sub-row hover (informational). */
+        LINK_INDICATOR,
+        /** The 'X' on the link sub-row — click to unlink. */
+        LINK_UNLINK
     }
 
     public record Hit(CellKind kind, int index) {
@@ -60,6 +64,7 @@ public final class ContainerContentsMenu {
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
     private static Vec3 anchorNormal = new Vec3(0, 0, 1);
+    @Nullable private static String linkedPrefabId;
 
     private static Screen screen = Screen.ROOT;
     private static String searchBuffer = "";
@@ -78,6 +83,7 @@ public final class ContainerContentsMenu {
     public static Vec3 anchorRight() { return anchorRight; }
     public static Vec3 anchorUp() { return anchorUp; }
     public static Vec3 anchorNormal() { return anchorNormal; }
+    @Nullable public static String linkedPrefabId() { return linkedPrefabId; }
     public static Screen screen() { return screen; }
     public static String searchBuffer() { return searchBuffer; }
     public static Hit hovered() { return hovered; }
@@ -89,6 +95,7 @@ public final class ContainerContentsMenu {
             active = false;
             localPos = null;
             entries = Collections.emptyList();
+            linkedPrefabId = null;
             screen = Screen.ROOT;
             searchBuffer = "";
             hovered = Hit.NONE;
@@ -107,6 +114,7 @@ public final class ContainerContentsMenu {
         anchorRight = packet.anchorRight();
         anchorUp = packet.anchorUp();
         anchorNormal = anchorRight.cross(anchorUp).normalize();
+        linkedPrefabId = packet.linkedPrefabId();
         if (newCell) {
             screen = Screen.ROOT;
             searchBuffer = "";

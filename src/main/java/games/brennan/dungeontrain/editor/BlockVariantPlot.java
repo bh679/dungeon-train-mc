@@ -125,6 +125,72 @@ public interface BlockVariantPlot {
     // ---------- Resolution ----------
 
     /**
+     * Resolve a plot directly by its stable {@link #key()} string. Used by
+     * background propagators (e.g.
+     * {@link ContainerContentsLinkPropagator}) that need plot origins
+     * without a player context.
+     *
+     * <p>Returns {@code null} if the key doesn't parse, the registered
+     * template no longer exists, or the plot's origin can't be resolved.</p>
+     */
+    static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {
+        if (key == null) return null;
+        if (key.startsWith("carriage:")) {
+            String id = key.substring("carriage:".length());
+            return games.brennan.dungeontrain.train.CarriageVariantRegistry.find(id)
+                .map(v -> {
+                    BlockPos origin = CarriageEditor.plotOrigin(v, dims);
+                    if (origin == null) return (BlockVariantPlot) null;
+                    return new CarriagePlot(v, origin,
+                        new net.minecraft.core.Vec3i(dims.length(), dims.height(), dims.width()), dims);
+                })
+                .orElse(null);
+        }
+        if (key.startsWith("contents:")) {
+            String id = key.substring("contents:".length());
+            return games.brennan.dungeontrain.train.CarriageContentsRegistry.find(id)
+                .map(c -> {
+                    BlockPos carriageOrigin = CarriageContentsEditor.plotOrigin(c, dims);
+                    if (carriageOrigin == null) return (BlockVariantPlot) null;
+                    BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
+                    net.minecraft.core.Vec3i interiorSize =
+                        games.brennan.dungeontrain.train.CarriageContentsPlacer.interiorSize(dims);
+                    return new ContentsPlot(c, interiorOrigin, interiorSize);
+                })
+                .orElse(null);
+        }
+        if (key.startsWith("part:")) {
+            String rest = key.substring("part:".length());
+            int sep = rest.indexOf(':');
+            if (sep < 0) return null;
+            String kindId = rest.substring(0, sep);
+            String name = rest.substring(sep + 1);
+            games.brennan.dungeontrain.train.CarriagePartKind kind =
+                games.brennan.dungeontrain.train.CarriagePartKind.fromId(kindId);
+            if (kind == null) return null;
+            BlockPos origin = CarriagePartEditor.plotOrigin(kind, name, dims);
+            if (origin == null) return null;
+            net.minecraft.core.Vec3i partSize = kind.dims(dims);
+            return new PartPlot(kind, name, origin, partSize);
+        }
+        if (key.startsWith("track:")) {
+            String rest = key.substring("track:".length());
+            int sep = rest.indexOf(':');
+            if (sep < 0) return null;
+            String kindId = rest.substring(0, sep);
+            String name = rest.substring(sep + 1);
+            games.brennan.dungeontrain.track.variant.TrackKind kind =
+                games.brennan.dungeontrain.track.variant.TrackKind.fromId(kindId);
+            if (kind == null) return null;
+            BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
+            if (origin == null) return null;
+            net.minecraft.core.Vec3i footprint = kind.dims(dims);
+            return new TrackPlot(kind, name, origin, footprint);
+        }
+        return null;
+    }
+
+    /**
      * Resolve the plot the player is currently standing in. Cascade
      * matches {@link VariantOverlayRenderer#onLevelTick} — carriage,
      * then contents, then part, then track-side. Returns {@code null} if
