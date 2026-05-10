@@ -473,7 +473,13 @@ public final class BlockVariantMenuController {
         }
     }
 
-    /** COPY: build a clipboard ItemStack capturing the cell's states + lockId. */
+    /**
+     * COPY: build a clipboard ItemStack capturing the cell's states + lockId
+     * + (when authored) the cell's container contents pool. The pool snapshot
+     * is read from the same {@link ContainerContentsStore} the loot menu writes
+     * to, so a chest cell's hand-tuned drop pool round-trips through paste
+     * instead of resetting to empty on the new cell.
+     */
     private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         List<VariantState> current = plot.statesAt(localPos);
         if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
@@ -483,13 +489,18 @@ public final class BlockVariantMenuController {
             return;
         }
         int lockId = plot.lockIdAt(localPos);
+        ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
+        boolean poolCaptured = !pool.isEmpty() || !pool.isDefaultRange();
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId);
+        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
+            poolCaptured ? pool : null);
         VariantClipboardItem.writeClipboardTag(stack, tag);
         boolean placed = player.getInventory().add(stack);
         if (!placed) player.drop(stack, false);
-        String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
-        actionBar(player, "Copied " + current.size() + " variants" + suffix, ChatFormatting.GREEN);
+        String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
+        String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
+        actionBar(player, "Copied " + current.size() + " variants" + lockSuffix + poolSuffix,
+            ChatFormatting.GREEN);
     }
 
     /**
