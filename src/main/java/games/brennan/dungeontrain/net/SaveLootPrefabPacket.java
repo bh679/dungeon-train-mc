@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.net;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.ContainerContentsLinkPropagator;
+import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorDevMode;
@@ -93,10 +95,25 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
             try {
                 boolean isNew = LootPrefabStore.save(packet.name(), pool, sourceBlock);
                 String suffix = writeToSourceTreeIfDevMode(packet.name(), pool, sourceBlock);
+                // Auto-link: saving as 'foo' declares this container's contents
+                // are template 'foo'. Future saves use this name without
+                // re-prompting via PrefabNameScreen.
+                store.setLink(packet.localPos(), packet.name());
+                try {
+                    store.save();
+                } catch (IOException linkErr) {
+                    LOGGER.warn("[DungeonTrain] Could not persist container link for {}: {}",
+                        plot.key(), linkErr.toString());
+                }
                 actionBar(player,
-                    (isNew ? "Saved loot '" : "Overwrote loot '") + packet.name() + "'" + suffix,
+                    (isNew ? "Saved loot '" : "Overwrote loot '") + packet.name() + "' (linked)" + suffix,
                     ChatFormatting.GREEN);
                 broadcastSync();
+                // Propagate to all linked containers across all editor plots
+                // so every chest tied to this template re-rolls with the new
+                // pool. Cheap — bounded by the number of linked containers.
+                ContainerContentsLinkPropagator.propagate(level, packet.name());
+                ContainerContentsMenuController.resyncIfOpen(player, plot.key(), packet.localPos());
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] SaveLootPrefab failed: {}", e.toString());
                 actionBar(player, "Save failed: " + e.getClass().getSimpleName(),

@@ -55,12 +55,20 @@ public final class ContainerContentsMenuRenderer {
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
+    static final double LINK_ROW_HEIGHT = 0.26;
+    /** Width of the unlink 'X' on the link sub-row. */
+    static final double LINK_UNLINK_WIDTH = 0.30;
     static final double COLUMN_WIDTH = 1.9;
     static final double MIN_PANEL_WIDTH = 2.4;
     static final double X_CELL_WIDTH = 0.30;
     static final double COUNT_CELL_WIDTH = 0.40;
     static final double WEIGHT_CELL_WIDTH = 0.40;
     static final double TEXT_SCALE = 0.012;
+
+    /** True when the menu currently has a link sub-row to draw. */
+    static boolean hasLinkRow() {
+        return ContainerContentsMenu.linkedPrefabId() != null;
+    }
 
     private ContainerContentsMenuRenderer() {}
 
@@ -117,7 +125,8 @@ public final class ContainerContentsMenuRenderer {
         int displayedRows = Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * ROW_HEIGHT;
-        double panelH = HEADER_HEIGHT + TOOLBAR_HEIGHT + gridH;
+        double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
+        double panelH = HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + gridH;
         double halfW = panelW / 2.0;
         double halfH = panelH / 2.0;
         ContainerContentsMenu.Hit hovered = ContainerContentsMenu.hovered();
@@ -134,8 +143,35 @@ public final class ContainerContentsMenuRenderer {
             : "Container Contents @ " + local.getX() + "," + local.getY() + "," + local.getZ();
         drawCenteredText(ps, buffer, font, headerLabel, 0, headerCY, 0xFF99CCFF);
 
+        // Link sub-row (only when linked) — informational left, [X] unlink right.
+        if (hasLinkRow()) {
+            String linkId = ContainerContentsMenu.linkedPrefabId();
+            double linkTop = halfH - HEADER_HEIGHT;
+            double linkBottom = linkTop - LINK_ROW_HEIGHT;
+            double linkCY = (linkTop + linkBottom) / 2.0;
+            boolean rowHover = hovered.kind() == ContainerContentsMenu.CellKind.LINK_INDICATOR;
+            // Soft gold tint to read as a status row, not a clickable button.
+            int rowTint = rowHover ? 0x6099CCFF : 0x40B38B40;
+            drawQuad(ps, buffer, -halfW + 0.01, linkBottom + 0.005,
+                halfW - LINK_UNLINK_WIDTH - 0.005, linkTop - 0.005, rowTint);
+            drawLeftText(ps, buffer, font,
+                "Linked: " + linkId,
+                -halfW + 0.06, linkCY,
+                0xFFFFE07A);
+
+            // Unlink cell.
+            boolean unlinkHover = hovered.kind() == ContainerContentsMenu.CellKind.LINK_UNLINK;
+            double unlinkL = halfW - LINK_UNLINK_WIDTH;
+            double unlinkR = halfW;
+            int unlinkTint = unlinkHover ? 0xC0FF4040 : 0x80AA2020;
+            drawQuad(ps, buffer, unlinkL + 0.005, linkBottom + 0.005,
+                unlinkR - 0.005, linkTop - 0.005, unlinkTint);
+            drawCenteredText(ps, buffer, font, "X",
+                (unlinkL + unlinkR) / 2.0, linkCY, 0xFFFFFFFF);
+        }
+
         // Toolbar — 6 cells: Add | Save | FillMin | FillMax | Clear | X
-        double toolbarTop = halfH - HEADER_HEIGHT;
+        double toolbarTop = halfH - HEADER_HEIGHT - linkH;
         double toolbarBottom = toolbarTop - TOOLBAR_HEIGHT;
         double toolbarCY = (toolbarTop + toolbarBottom) / 2.0;
         double cellW = panelW / 6.0;
