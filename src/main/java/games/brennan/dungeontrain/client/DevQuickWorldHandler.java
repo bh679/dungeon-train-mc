@@ -35,13 +35,21 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Dev-only TitleScreen shortcut: on dev branches the Singleplayer button is
- * replaced by "New World" by default, which immediately spins up a fresh
- * creative-mode world using the Dungeon Train default preset. Hold Shift to
- * swap back to the vanilla Singleplayer button (world-select screen).
+ * TitleScreen quick-world shortcut. The "New World" button is always installed
+ * alongside Singleplayer; the branch only decides which is the default-visible
+ * one, and Shift swaps the pair.
  *
- * <p>Gated on {@link VersionInfo#BRANCH} != "main" so release jars are unaffected.
- * Mirrors the dev-only pattern used by {@link VersionMenuOverlay}.</p>
+ * <p>Default visibility, by {@link VersionInfo#BRANCH}:</p>
+ * <ul>
+ *     <li>{@code main} (release-equivalent commits — see {@code build.gradle}'s
+ *         {@code gitBranch}): Singleplayer visible by default; Shift reveals New World.</li>
+ *     <li>any other branch: New World visible by default; Shift reveals Singleplayer.</li>
+ * </ul>
+ *
+ * <p>"main" is determined at build time by commit-hash equivalence with the
+ * local {@code main} ref, so worktrees built straight off main also register
+ * as release. New World launches a fresh creative-mode world using the
+ * Dungeon Train default preset.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DevQuickWorldHandler {
@@ -62,16 +70,13 @@ public final class DevQuickWorldHandler {
 
     @SubscribeEvent
     public static void onScreenInitPost(ScreenEvent.Init.Post event) {
-        if (!isDevBuild()) {
-            return;
-        }
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
             return;
         }
 
         Button singleplayer = findSingleplayerButton(event);
         if (singleplayer == null) {
-            LOGGER.warn("Dev quick-world: singleplayer button not found on TitleScreen; skipping.");
+            LOGGER.warn("Quick-world: singleplayer button not found on TitleScreen; skipping.");
             singleplayerRef = new WeakReference<>(null);
             newWorldRef = new WeakReference<>(null);
             screenRef = new WeakReference<>(null);
@@ -83,8 +88,9 @@ public final class DevQuickWorldHandler {
                 .bounds(singleplayer.getX(), singleplayer.getY(),
                         singleplayer.getWidth(), singleplayer.getHeight())
                 .build();
-        newWorld.visible = true;
-        singleplayer.visible = false;
+        boolean defaultNW = defaultsToNewWorld();
+        newWorld.visible = defaultNW;
+        singleplayer.visible = !defaultNW;
 
         event.addListener(newWorld);
 
@@ -95,9 +101,6 @@ public final class DevQuickWorldHandler {
 
     @SubscribeEvent
     public static void onScreenRenderPre(ScreenEvent.Render.Pre event) {
-        if (!isDevBuild()) {
-            return;
-        }
         if (event.getScreen() != screenRef.get()) {
             return;
         }
@@ -107,8 +110,9 @@ public final class DevQuickWorldHandler {
             return;
         }
         boolean shift = Screen.hasShiftDown();
-        sp.visible = shift;
-        nw.visible = !shift;
+        boolean showNewWorld = defaultsToNewWorld() != shift;
+        nw.visible = showNewWorld;
+        sp.visible = !showNewWorld;
     }
 
     private static Button findSingleplayerButton(ScreenEvent.Init.Post event) {
@@ -147,7 +151,7 @@ public final class DevQuickWorldHandler {
         flows.createFreshLevel(name, settings, options, dims, lastScreen);
     }
 
-    private static boolean isDevBuild() {
+    private static boolean defaultsToNewWorld() {
         return !"main".equals(VersionInfo.BRANCH);
     }
 }
