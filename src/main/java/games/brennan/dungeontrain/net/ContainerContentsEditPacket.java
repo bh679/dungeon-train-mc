@@ -23,6 +23,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *   <li>{@link Op#CLEAR} — drop the whole pool.</li>
  *   <li>{@link Op#BUMP_WEIGHT} / {@link Op#BUMP_COUNT} — adjust by
  *       {@code delta} (signed; clamped server-side).</li>
+ *   <li>{@link Op#UNLINK} — clear the loot-prefab link at this cell. No
+ *       payload fields used.</li>
  * </ul>
  *
  * <p>Server validates OP + plot membership before mutating.</p>
@@ -30,7 +32,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
                                           int entryIndex, String itemId, int delta) implements CustomPacketPayload {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX, UNLINK }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "container_contents_edit"));

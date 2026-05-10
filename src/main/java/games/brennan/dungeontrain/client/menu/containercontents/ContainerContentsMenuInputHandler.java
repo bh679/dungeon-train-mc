@@ -137,10 +137,28 @@ public final class ContainerContentsMenuInputHandler {
                 // the held stack's item + count. Mirrors the block-variant
                 // ADD behaviour: hold an item, click Add.
                 ContainerContentsEditPacket.Op.ADD, plotKey, local, -1, "", 0));
-            case SAVE -> net.minecraft.client.Minecraft.getInstance().setScreen(
-                new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
-                    games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.LOOT,
-                    local));
+            case SAVE -> {
+                // Linked containers route every menu edit straight to the
+                // template, so SAVE has no work to do — show a hint instead
+                // of re-prompting for a name. First-time save (no link yet)
+                // opens the name screen.
+                String linked = ContainerContentsMenu.linkedPrefabId();
+                if (linked != null) {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player != null) {
+                        mc.player.displayClientMessage(
+                            net.minecraft.network.chat.Component.literal(
+                                "Linked to '" + linked + "' — edits save automatically")
+                                .withStyle(net.minecraft.ChatFormatting.AQUA),
+                            true);
+                    }
+                } else {
+                    Minecraft.getInstance().setScreen(
+                        new games.brennan.dungeontrain.client.menu.PrefabNameScreen(
+                            games.brennan.dungeontrain.client.menu.PrefabNameScreen.Kind.LOOT,
+                            local));
+                }
+            }
             case FILL_MIN -> {
                 int delta = shift ? -1 : 1;
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
@@ -171,6 +189,9 @@ public final class ContainerContentsMenuInputHandler {
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.REMOVE, plotKey, local, hit.index(), "", 0));
             }
+            case LINK_UNLINK -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                ContainerContentsEditPacket.Op.UNLINK, plotKey, local, -1, "", 0));
+            // LINK_INDICATOR is informational — no click action.
             default -> {}
         }
     }

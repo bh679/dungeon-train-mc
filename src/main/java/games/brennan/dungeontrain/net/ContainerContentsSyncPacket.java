@@ -19,7 +19,9 @@ import java.util.List;
  *
  * <p>Active packet ({@code localPos != null}): render the menu anchored at
  * {@code anchorPos} with axes {@code anchorRight}/{@code anchorUp},
- * showing {@code entries} as the pool for the targeted container.</p>
+ * showing {@code entries} as the pool for the targeted container. When
+ * {@code linkedPrefabId != null}, the menu also draws a link sub-row that
+ * names the linked loot prefab and offers an unlink action.</p>
  *
  * <p>Inactive packet ({@code localPos == null}): close the menu.</p>
  */
@@ -32,7 +34,8 @@ public record ContainerContentsSyncPacket(
     int containerSize,
     Vec3 anchorPos,
     Vec3 anchorRight,
-    Vec3 anchorUp
+    Vec3 anchorUp,
+    @Nullable String linkedPrefabId
 ) implements CustomPacketPayload {
 
     /**
@@ -53,7 +56,7 @@ public record ContainerContentsSyncPacket(
     public static ContainerContentsSyncPacket empty() {
         return new ContainerContentsSyncPacket(
             "", null, Collections.emptyList(), 0, -1, 0,
-            Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
+            Vec3.ZERO, Vec3.ZERO, Vec3.ZERO, null);
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -78,6 +81,12 @@ public record ContainerContentsSyncPacket(
             buf.writeVarInt(e.count());
             buf.writeVarInt(e.weight());
         }
+        if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
+            buf.writeBoolean(false);
+        } else {
+            buf.writeBoolean(true);
+            buf.writeUtf(linkedPrefabId, 64);
+        }
     }
 
     public static ContainerContentsSyncPacket decode(FriendlyByteBuf buf) {
@@ -86,7 +95,7 @@ public record ContainerContentsSyncPacket(
         if (!active) {
             return new ContainerContentsSyncPacket(
                 key, null, Collections.emptyList(), 0, -1, 0,
-                Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
+                Vec3.ZERO, Vec3.ZERO, Vec3.ZERO, null);
         }
         BlockPos local = new BlockPos(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         int fillMin = buf.readInt();
@@ -103,7 +112,8 @@ public record ContainerContentsSyncPacket(
             int weight = buf.readVarInt();
             entries.add(new Entry(id, count, weight));
         }
-        return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up);
+        String link = buf.readBoolean() ? buf.readUtf(64) : null;
+        return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link);
     }
 
     @Override

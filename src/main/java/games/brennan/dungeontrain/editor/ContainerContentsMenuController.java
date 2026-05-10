@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -133,15 +134,17 @@ public final class ContainerContentsMenuController {
                                  Direction face, Vec3 up) {
         ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
         ContainerContentsPool pool = store.poolAt(localPos);
+        String link = store.linkAt(localPos);
         BlockState state = player.serverLevel().getBlockState(worldPos);
         int containerSize = ContainerContentsRoller.slotsForContainer(state);
         DungeonTrainNet.sendTo(player,
-            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize));
+            buildSyncPacket(plot, localPos, worldPos, face, up, pool, containerSize, link));
     }
 
     private static ContainerContentsSyncPacket buildSyncPacket(
         BlockVariantPlot plot, BlockPos localPos, BlockPos worldPos,
-        Direction face, Vec3 up, ContainerContentsPool pool, int containerSize
+        Direction face, Vec3 up, ContainerContentsPool pool, int containerSize,
+        String link
     ) {
         Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
         Vec3 faceCentre = new Vec3(
@@ -157,7 +160,27 @@ public final class ContainerContentsMenuController {
                 e.itemId().toString(), e.count(), e.weight()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
-            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up);
+            pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
+    }
+
+    /**
+     * Re-send the open menu's sync packet for {@code player} if the menu is
+     * currently anchored at {@code (plotKey, localPos)}. Used by
+     * {@link games.brennan.dungeontrain.net.SaveLootPrefabPacket} and
+     * {@link games.brennan.dungeontrain.event.PrefabUseHandler} after they
+     * mutate the link state behind the controller's back.
+     */
+    public static void resyncIfOpen(ServerPlayer player, String plotKey, BlockPos localPos) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        if (open == null) return;
+        if (!open.plotKey().equals(plotKey)) return;
+        if (!open.localPos().equals(localPos)) return;
+        ServerLevel level = player.serverLevel();
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null || !plot.key().equals(plotKey)) return;
+        BlockPos worldPos = plot.origin().offset(localPos);
+        sendSync(player, plot, localPos, worldPos, open.face(), open.up());
     }
 
     public static void applyEdit(ServerPlayer player, ContainerContentsEditPacket packet) {
@@ -288,9 +311,62 @@ public final class ContainerContentsMenuController {
                 next = current.withFillMax(next0).withFillMin(newMin);
                 dirty = true;
             }
+            case UNLINK -> {
+                String prev = store.linkAt(localPos);
+                if (prev == null) return;
+                store.clearLink(localPos);
+                try {
+                    store.save();
+                } catch (IOException e) {
+                    LOGGER.error("[DungeonTrain] ContainerContentsStore unlink save failed for {}: {}",
+                        plot.key(), e.toString());
+                    actionBar(player, "Unlink save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+                    return;
+                }
+                actionBar(player, "Unlinked container from '" + prev + "'", ChatFormatting.GREEN);
+                resyncSameFace(player, plot, localPos);
+                return;
+            }
         }
 
         if (!dirty) return;
+
+        // If this position is linked, route the mutation to the template
+        // instead of writing a local pool. The store's link map already
+        // dropped the local pool when the link was set, so writing local
+        // here would re-introduce duplication and fight the live-reference
+        // model.
+        String linked = store.linkAt(localPos);
+        if (linked != null) {
+            Optional<LootPrefabStore.Data> templ = LootPrefabStore.load(linked);
+            if (templ.isEmpty()) {
+                actionBar(player, "Linked template '" + linked + "' missing — unlink first",
+                    ChatFormatting.YELLOW);
+                return;
+            }
+            try {
+                LootPrefabStore.save(linked, next, templ.get().sourceBlock());
+                ContainerContentsLinkPropagator.propagate(level, linked);
+                net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
+                    games.brennan.dungeontrain.net.PrefabRegistrySyncPacket.fromRegistries());
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] Linked template save failed for {}: {}",
+                    linked, e.toString());
+                actionBar(player, "Template save failed: " + e.getClass().getSimpleName(),
+                    ChatFormatting.RED);
+                return;
+            }
+            // CLEAR on a linked container empties the template — close the
+            // menu since the pool is now empty.
+            if (next.isEmpty() && packet.op() == ContainerContentsEditPacket.Op.CLEAR) {
+                OPEN.remove(player.getUUID());
+                DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
+                return;
+            }
+            resyncSameFace(player, plot, localPos);
+            return;
+        }
+
         store.putPool(localPos, next);
         try {
             store.save();
