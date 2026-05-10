@@ -1,0 +1,9 @@
+# git-crypt — encrypt third-party audio assets at rest in the public repo.
+#
+# The OGG below is Sound Ideas SFX library content licensed for end-product
+# use only; its EULA disallows redistribution of the raw asset. git-crypt
+# encrypts it with AES-256 using a symmetric key held in 1Password and stored
+# as the GIT_CRYPT_KEY GitHub Actions secret. Cloners without the key see an
+# encrypted blob; CI decrypts before `./gradlew build` so release jars carry
+# the audio. See BUILD.md for the dev-machine unlock procedure.
+src/main/resources/assets/dungeontrain/sounds/train_engine.ogg filter=git-crypt diff=git-crypt
