@@ -53,6 +53,22 @@ jobs:
             echo "Release type: beta (tag $RELEASE_TAG, MAJOR=$MAJOR — pre-1.0)"
           fi
 
+      # Decrypt third-party audio assets (Sound Ideas SFX, see .gitattributes).
+      # Releases MUST have working audio, so missing key is a hard fail rather
+      # than the soft-skip used in build.yml.
+      - name: Decrypt audio assets
+        env:
+          GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
+        run: |
+          if [ -z "$GIT_CRYPT_KEY" ]; then
+            echo "::error::GIT_CRYPT_KEY secret is missing — release jar would ship without train_engine.ogg. Aborting."
+            exit 1
+          fi
+          sudo apt-get update -y && sudo apt-get install -y git-crypt
+          echo "$GIT_CRYPT_KEY" | base64 -d > /tmp/git-crypt.key
+          git-crypt unlock /tmp/git-crypt.key
+          shred -u /tmp/git-crypt.key
+
       - run: ./gradlew build --no-daemon
 
       - name: Create GitHub Release

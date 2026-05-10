@@ -35,5 +35,6 @@
   "gui.dungeontrain.prefab_save.title.loot": "Save Loot Prefab",
   "gui.dungeontrain.prefab_save.name_label": "Name (a-z, 0-9, _)",
   "gui.dungeontrain.prefab_save.save": "Save",
-  "gui.dungeontrain.prefab_save.cancel": "Cancel"
+  "gui.dungeontrain.prefab_save.cancel": "Cancel",
+  "subtitles.dungeontrain.train_engine": "Train engine chugs"
 }

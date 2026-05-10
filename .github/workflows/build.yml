@@ -29,6 +29,28 @@ jobs:
         # cleanup is skipped; the cache grows slightly over time but the
         # build never fails on a transient cache-save outage.
 
+      # Decrypt third-party audio assets (Sound Ideas SFX, see .gitattributes).
+      # Skipped when the secret is unavailable — true for PRs from forks,
+      # where GitHub deliberately withholds secrets. Such builds will fail
+      # at gradle's verifyEncryptedAssetsUnlocked task, which is the desired
+      # signal: the build doesn't silently ship a broken jar to the artifact.
+      # The secret check lives inside `run:` rather than `if:` because GitHub
+      # evaluates step-level `if:` against the workflow context BEFORE the
+      # step's `env:` is populated, so referencing env.GIT_CRYPT_KEY in the
+      # condition always sees an empty string.
+      - name: Decrypt audio assets
+        env:
+          GIT_CRYPT_KEY: ${{ secrets.GIT_CRYPT_KEY }}
+        run: |
+          if [ -z "$GIT_CRYPT_KEY" ]; then
+            echo "::warning::GIT_CRYPT_KEY secret unavailable (likely a fork PR) — train_engine.ogg will stay encrypted; build will fail at verifyEncryptedAssetsUnlocked unless the asset is removed."
+            exit 0
+          fi
+          sudo apt-get update -y && sudo apt-get install -y git-crypt
+          echo "$GIT_CRYPT_KEY" | base64 -d > /tmp/git-crypt.key
+          git-crypt unlock /tmp/git-crypt.key
+          shred -u /tmp/git-crypt.key
+
       - run: ./gradlew build --no-daemon
 
       - name: Upload jar
