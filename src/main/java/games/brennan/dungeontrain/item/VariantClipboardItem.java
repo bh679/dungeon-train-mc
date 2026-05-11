@@ -87,6 +87,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_WEIGHT = "w";
     private static final String NBT_ROT_MODE = "rm";
     private static final String NBT_ROT_DIRS = "rd";
+    /** Per-entry loot-prefab link id (v6 schema). Absent when the entry has no link. */
+    private static final String NBT_LOOT_PREFAB = "lp";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -248,6 +250,9 @@ public final class VariantClipboardItem extends Item {
                 entry.putByte(NBT_ROT_MODE, (byte) rot.mode().ordinal());
                 entry.putByte(NBT_ROT_DIRS, (byte) rot.dirMask());
             }
+            if (s.linkedLootPrefabId() != null) {
+                entry.putString(NBT_LOOT_PREFAB, s.linkedLootPrefabId());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -349,7 +354,12 @@ public final class VariantClipboardItem extends Item {
                     rotation = new VariantRotation(modes[ord], mask);
                 }
             }
-            out.add(new VariantState(state, beNbt, weight, rotation));
+            String lootPrefab = null;
+            if (entry.contains(NBT_LOOT_PREFAB, Tag.TAG_STRING)) {
+                String raw = entry.getString(NBT_LOOT_PREFAB);
+                if (!raw.isEmpty()) lootPrefab = raw;
+            }
+            out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab));
         }
         return out;
     }
