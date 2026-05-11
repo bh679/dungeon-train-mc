@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "variants": [
+    {
+      "id": "enchant",
+      "weight": 1
+    },
+    {
+      "id": "kitchen",
+      "weight": 1
+    },
+    {
+      "id": "smelt",
+      "weight": 1
+    },
+    {
+      "id": "upgrade",
+      "weight": 1
+    }
+  ]
+}

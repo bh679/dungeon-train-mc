@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.TrackPlacer;
@@ -410,6 +411,42 @@ public final class EditorDirtyCheck {
             net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String path = rl == null ? state.getBlock().toString() : rl.getPath();
         return path;
+    }
+
+    /**
+     * Unsaved-only modelIds within {@code category}, keyed the same way
+     * {@link DirtyEntry#modelId()} keys are produced by the scan passes.
+     * Lets save-all consult one set per category rather than scanning
+     * the dirty list once per template. Skips entries flagged purely as
+     * {@link DirtyEntry#isUnpromoted()} — those reflect a config-vs-source
+     * mismatch, not an in-world edit, and shouldn't expand the save set.
+     */
+    public static Set<String> unsavedModelIds(ServerLevel overworld, CarriageDims dims,
+                                              String categoryId) {
+        Set<String> out = new HashSet<>();
+        for (DirtyEntry e : findDirty(overworld, dims)) {
+            if (!e.isUnsaved()) continue;
+            if (!e.categoryId().equals(categoryId)) continue;
+            out.add(e.modelId());
+        }
+        return out;
+    }
+
+    /**
+     * Translate a {@link Template} into the {@link DirtyEntry#modelId()}
+     * key the dirty scan produces — so save-all can membership-test
+     * {@link #unsavedModelIds} directly. Returns {@code null} for
+     * {@link games.brennan.dungeontrain.template.TemplateKind#PART}: the
+     * scan passes don't cover parts, so callers must keep their existing
+     * filter (e.g. empty-plot) for that kind.
+     */
+    public static String dirtyKeyFor(Template model) {
+        return switch (model.kind()) {
+            case CARRIAGE, CONTENTS -> model.id();
+            case TRACK -> "track." + model.variantName();
+            case PILLAR, STAIRS, TUNNEL -> model.id() + "." + model.variantName();
+            case PART -> null;
+        };
     }
 
     private static Set<BlockPos> variantCellPositions(List<CarriageVariantBlocks.Entry> entries) {

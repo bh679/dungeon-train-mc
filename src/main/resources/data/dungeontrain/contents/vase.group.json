@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "variants": [
+    {
+      "id": "barrels",
+      "weight": 1
+    },
+    {
+      "id": "chest",
+      "weight": 1
+    }
+  ]
+}

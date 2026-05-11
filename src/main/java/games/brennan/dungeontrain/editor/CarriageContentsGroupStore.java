@@ -33,8 +33,14 @@ import java.util.TreeSet;
  *
  * <p>Tier order mirrors {@link CarriageVariantContentsAllowStore}:
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/contents/<id>.group.json}.
- *       Per-install override; editor commands write here.</li>
+ *   <li><b>Active package's working dir</b> —
+ *       {@code <active-package>/contents/<id>.group.json}. Editor commands
+ *       write here; reads fall back across every enabled package's
+ *       {@code contents/} dir via {@link UserContentPaths#findFile} so a
+ *       group shipped in an imported package still resolves when that
+ *       package is enabled. Mirrors the routing
+ *       {@link CarriageContentsStore} uses for {@code .nbt} files so the
+ *       sidecar always travels alongside its parent's content NBT.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/contents/<id>.group.json}
  *       on the classpath. Shipped defaults.</li>
  *   <li><b>Absent</b> — neither tier has a file. Parent id is a normal leaf
@@ -56,7 +62,10 @@ import java.util.TreeSet;
 public final class CarriageContentsGroupStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/contents";
+    // Matches CarriageContentsStore.SUBDIR so group sidecars share the
+    // package-routed contents/ directory with their parent's .nbt file —
+    // moving a package moves them together.
+    private static final String SUBDIR = CarriageContentsStore.SUBDIR;
     private static final String EXT = ".group.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/contents/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/contents";
@@ -79,10 +88,20 @@ public final class CarriageContentsGroupStore {
 
     private CarriageContentsGroupStore() {}
 
+    /**
+     * Active-package write target — {@code <active-package>/contents/}.
+     * Routes through {@link UserContentPaths#dir(String)} so a package
+     * switch immediately redirects subsequent writes.
+     */
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return UserContentPaths.dir(SUBDIR);
     }
 
+    /**
+     * Write path for {@code id} — the file lands in the active package's
+     * {@code contents/}. Reads use {@link UserContentPaths#findFile} so an
+     * imported package's group sidecar is still resolvable.
+     */
     public static Path fileForId(String id) {
         return directory().resolve(id.toLowerCase(Locale.ROOT) + EXT);
     }
@@ -293,8 +312,12 @@ public final class CarriageContentsGroupStore {
     }
 
     private static Optional<CarriageContentsGroup> loadFromConfig(String key) {
-        Path file = fileForId(key);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        // Walks active package + every enabled package's contents/ dir
+        // (active-first precedence). Same routing CarriageContentsStore uses
+        // for .nbt files, so a group sidecar always resolves alongside its
+        // parent's NBT regardless of which package it came from.
+        Path file = UserContentPaths.findFile(SUBDIR, key + EXT);
+        if (file == null) return Optional.empty();
         try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             JsonElement root = JsonParser.parseReader(r);
             if (!root.isJsonObject()) {

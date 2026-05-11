@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "variants": [
+    {
+      "id": "seating",
+      "weight": 1
+    }
+  ]
+}
