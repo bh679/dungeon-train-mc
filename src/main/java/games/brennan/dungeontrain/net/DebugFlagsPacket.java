@@ -29,12 +29,17 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * vice versa).</p>
  *
  * <p>Wire field order is fixed and append-only: writer and reader lambdas
- * must consume the eight booleans in the same sequence ({@code gapCubes},
+ * must consume the nine booleans in the same sequence ({@code gapCubes},
  * {@code gapLine}, {@code nextSpawn}, {@code collision}, {@code hudDistance},
- * {@code manualSpawnMode}, {@code chatTrainSpawn}, {@code chatCollision}).
- * Mismatched order would silently scramble client-side state. New flags
- * MUST be appended at the end (never inserted) so existing clients see
- * a consistent prefix.</p>
+ * {@code manualSpawnMode}, {@code chatTrainSpawn}, {@code chatCollision},
+ * {@code logContentsEntities}). Mismatched order would silently scramble
+ * client-side state. New flags MUST be appended at the end (never inserted)
+ * so existing clients see a consistent prefix.</p>
+ *
+ * <p>{@code logContentsEntities} gates the verbose carriage-contents
+ * entity lifecycle logging (per-entity JOIN/LEAVE with stack trace, plus
+ * per-entity spawn lines with UUID + tag). Off by default — useful only
+ * when investigating entity-disappearance regressions.</p>
  */
 public record DebugFlagsPacket(
     boolean gapCubes,
@@ -44,7 +49,8 @@ public record DebugFlagsPacket(
     boolean hudDistance,
     boolean manualSpawnMode,
     boolean chatTrainSpawn,
-    boolean chatCollision
+    boolean chatCollision,
+    boolean logContentsEntities
 ) implements CustomPacketPayload {
 
     public static final Type<DebugFlagsPacket> TYPE =
@@ -61,8 +67,10 @@ public record DebugFlagsPacket(
                 buf.writeBoolean(packet.manualSpawnMode);
                 buf.writeBoolean(packet.chatTrainSpawn);
                 buf.writeBoolean(packet.chatCollision);
+                buf.writeBoolean(packet.logContentsEntities);
             },
             buf -> new DebugFlagsPacket(
+                buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),
