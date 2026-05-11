@@ -2006,11 +2006,17 @@ public final class EditorCommand {
 
     /**
      * {@code /dungeontrain editor clear} — wipes every interior block of the
-     * plot the player is currently standing in to air. The barrier-cage
-     * outline is preserved (it sits one block outside the footprint, which
+     * plot the player is currently standing in to air, and clears every
+     * block-variant entry attached to that plot. The barrier-cage outline is
+     * preserved (it sits one block outside the footprint, which
      * {@code eraseAt} doesn't touch), so the player keeps editing in place
-     * and can re-author from a clean slab. Disk template is unchanged until
-     * the player explicitly hits {@code save}.
+     * and can re-author from a clean slab.
+     *
+     * <p>For parts and contents the cleared variants sidecar is persisted
+     * immediately — matching {@code /editor variant clear} for those plot
+     * kinds. For carriages the variants are cleared in memory only; the
+     * carriage's NBT template + sidecar are written together when the
+     * player runs {@code /editor save}.</p>
      *
      * <p>Scope matches the editor menu's New / Remove gating: carriages,
      * contents, and parts. Tracks / pillars / tunnels / architecture have no
@@ -2038,9 +2044,25 @@ public final class EditorCommand {
                 BlockPos origin = CarriagePartEditor.plotOrigin(
                     new games.brennan.dungeontrain.template.CarriagePartTemplateId(partLoc.kind(), partLoc.name()), dims);
                 CarriagePartPlacer.eraseAt(overworld, origin, partLoc.kind(), dims);
+                Vec3i partSize = partLoc.kind().dims(dims);
+                CarriagePartVariantBlocks partSidecar = CarriagePartVariantBlocks.loadFor(
+                    partLoc.kind(), partLoc.name(), partSize);
+                int cleared = partSidecar.clearAll();
+                if (cleared > 0) {
+                    try {
+                        partSidecar.save(partLoc.kind(), partLoc.name());
+                    } catch (IOException e) {
+                        source.sendFailure(Component.literal(
+                            "Variant save failed: " + e.getMessage()
+                        ).withStyle(ChatFormatting.RED));
+                        return 0;
+                    }
+                }
                 final String id = partLoc.kind().id() + ":" + partLoc.name();
+                final int n = cleared;
                 source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in '" + id + "'."
+                    "Editor: cleared all blocks in '" + id + "'"
+                        + (n > 0 ? " (and " + n + " variant entr" + (n == 1 ? "y" : "ies") + ")." : ".")
                 ).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
@@ -2061,9 +2083,25 @@ public final class EditorCommand {
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
                 // ceiling stay put for the author to keep building inside.
                 CarriageContentsPlacer.eraseAt(overworld, origin, dims);
+                Vec3i interiorSize = CarriageContentsPlacer.interiorSize(dims);
+                CarriageContentsVariantBlocks contentsSidecar =
+                    CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+                int cleared = contentsSidecar.clearAll();
+                if (cleared > 0) {
+                    try {
+                        contentsSidecar.save(contents);
+                    } catch (IOException e) {
+                        source.sendFailure(Component.literal(
+                            "Variant save failed: " + e.getMessage()
+                        ).withStyle(ChatFormatting.RED));
+                        return 0;
+                    }
+                }
                 final String id = contents.id();
+                final int n = cleared;
                 source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in '" + id + "'."
+                    "Editor: cleared all blocks in '" + id + "'"
+                        + (n > 0 ? " (and " + n + " variant entr" + (n == 1 ? "y" : "ies") + ")." : ".")
                 ).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {
@@ -2080,9 +2118,16 @@ public final class EditorCommand {
             try {
                 BlockPos origin = CarriageEditor.plotOrigin(carriage, dims);
                 CarriagePlacer.eraseAt(overworld, origin, dims);
+                CarriageVariantBlocks carriageSidecar = CarriageVariantBlocks.loadFor(carriage, dims);
+                int cleared = carriageSidecar.clearAll();
                 final String id = carriage.id();
+                final int n = cleared;
                 source.sendSuccess(() -> Component.literal(
-                    "Editor: cleared all blocks in '" + id + "'."
+                    "Editor: cleared all blocks in '" + id + "'"
+                        + (n > 0
+                            ? " (and " + n + " variant entr" + (n == 1 ? "y" : "ies")
+                                + "). Run '/dungeontrain editor save' to persist."
+                            : ".")
                 ).withStyle(ChatFormatting.GREEN), true);
                 return 1;
             } catch (Throwable t) {

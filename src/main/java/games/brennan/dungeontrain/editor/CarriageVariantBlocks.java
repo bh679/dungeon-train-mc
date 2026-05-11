@@ -444,6 +444,18 @@ public final class CarriageVariantBlocks {
         return entries.remove(localPos) != null;
     }
 
+    /**
+     * Wipe every entry and every lock-id. Returns the number of entries that
+     * were present before the call. Used by {@code /editor clear} so a plot
+     * wipe doesn't leave orphaned variant metadata pointing at now-air cells.
+     */
+    public synchronized int clearAll() {
+        int n = entries.size();
+        entries.clear();
+        lockIds.clear();
+        return n;
+    }
+
     /** Lock-id at {@code localPos}; 0 if unlocked or no entry. */
     public synchronized int lockIdAt(BlockPos localPos) {
         return lockIds.getOrDefault(localPos, 0);
