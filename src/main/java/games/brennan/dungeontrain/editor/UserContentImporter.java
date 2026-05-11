@@ -208,6 +208,20 @@ public final class UserContentImporter {
                     try (OutputStream out = Files.newOutputStream(dest)) {
                         zf.getInputStream(entry).transferTo(out);
                     }
+                    // Record provenance so the editor menus can paint the
+                    // freshly-imported variant orange instead of blue. The
+                    // mtime is read AFTER the write so a subsequent
+                    // player-edit naturally trips the index's mtime-mismatch
+                    // check and promotes the file to user-authored.
+                    String relPath = userRootNorm.relativize(dest).toString()
+                        .replace('\\', '/');
+                    try {
+                        ImportedContentIndex.recordImported(relPath,
+                            Files.getLastModifiedTime(dest));
+                    } catch (IOException mtimeFail) {
+                        LOGGER.warn("[DungeonTrain] Imported {} but couldn't stamp "
+                            + "provenance: {}", relPath, mtimeFail.toString());
+                    }
                     imported++;
                 } catch (IOException io) {
                     rejected++;

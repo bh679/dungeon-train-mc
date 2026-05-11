@@ -61,11 +61,13 @@ public final class EditorPlotLabels {
         String modelId,
         String modelName,
         boolean inPlot,
-        boolean isUser
+        boolean isUser,
+        boolean isImported
     ) {
         /** Construct a Label flagged as out-of-plot — the per-category builders use this; the per-player snapshot patches the matching one to inPlot=true. */
         public Label withInPlot(boolean newInPlot) {
-            return new Label(worldPos, name, weight, category, modelId, modelName, newInPlot, isUser);
+            return new Label(worldPos, name, weight, category, modelId, modelName,
+                newInPlot, isUser, isImported);
         }
     }
 
@@ -103,9 +105,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageEditor.plotOrigin(v, dims);
             if (origin == null) continue;
             int w = weights.weightFor(v.id());
-            boolean isUser = java.nio.file.Files.isRegularFile(CarriageTemplateStore.fileForId(v.id()));
+            Provenance p = provenanceOf(CarriageTemplateStore.fileForId(v.id()));
             out.add(new Label(anchorAbove(origin, carriageFootprint),
-                v.id(), w, category, v.id(), v.id(), false, isUser));
+                v.id(), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
         }
 
         addPartLabels(out, CarriagePartKind.FLOOR, floors, dims);
@@ -130,10 +132,10 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriagePartEditor.plotOrigin(kind, name, dims);
             if (origin == null) continue;
             String label = kind.id() + ":" + name;
-            boolean isUser = java.nio.file.Files.isRegularFile(
-                CarriagePartTemplateStore.fileFor(kind, name));
+            Provenance p = provenanceOf(CarriagePartTemplateStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint), label,
-                EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name, false, isUser));
+                EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name,
+                false, p.isUser, p.isImported));
         }
     }
 
@@ -147,9 +149,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
             int w = weights.weightFor(c.id());
-            boolean isUser = java.nio.file.Files.isRegularFile(CarriageContentsStore.fileForId(c.id()));
+            Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                c.id(), w, category, c.id(), c.id(), false, isUser));
+                c.id(), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
         }
         return out;
     }
@@ -188,12 +190,43 @@ public final class EditorPlotLabels {
         for (String name : TrackVariantRegistry.namesFor(kind)) {
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             int w = TrackVariantWeights.weightFor(kind, name);
-            boolean isUser = java.nio.file.Files.isRegularFile(
+            Provenance p = provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint),
-                name, w, category, modelId, name, false, isUser));
+                name, w, category, modelId, name, false, p.isUser, p.isImported));
         }
     }
+
+    /**
+     * Resolve the {@code (isUser, isImported)} provenance pair for the
+     * variant whose per-install file is {@code file}. Both fields default
+     * to {@code false} when the file is missing (bundled-only).
+     *
+     * <p>The relative path passed to {@link ImportedContentIndex} is
+     * computed from the user-content root so the index key matches what
+     * the importer recorded at extract time. Forward slashes only — Windows
+     * backslashes are converted so the cross-platform check works.</p>
+     */
+    static Provenance provenanceOf(java.nio.file.Path file) {
+        if (!java.nio.file.Files.isRegularFile(file)) {
+            return new Provenance(false, false);
+        }
+        java.nio.file.Path userRoot = UserContentPaths.root();
+        java.nio.file.Path relPath;
+        try {
+            relPath = userRoot.relativize(file);
+        } catch (IllegalArgumentException unrelated) {
+            // file lives outside user-root (e.g. dev-mode source-tree write) —
+            // not a candidate for the imported tint.
+            return new Provenance(true, false);
+        }
+        String key = relPath.toString().replace('\\', '/');
+        boolean imported = ImportedContentIndex.isImported(key);
+        return new Provenance(true, imported);
+    }
+
+    /** Lightweight pair returned by {@link #provenanceOf(java.nio.file.Path)}. Lives here so the call sites stay one line each. */
+    record Provenance(boolean isUser, boolean isImported) {}
 
     /**
      * Centre of the footprint top, lifted one block above the bedrock cage.

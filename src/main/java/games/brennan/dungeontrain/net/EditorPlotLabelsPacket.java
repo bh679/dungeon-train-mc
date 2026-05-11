@@ -54,6 +54,14 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
      * themselves. The renderer swaps the border colour from green to blue so
      * the player can tell at a glance which templates they authored vs which
      * ship with the mod jar.</p>
+     *
+     * <p>{@code isImported} is true when the template's on-disk file is
+     * recorded in {@link games.brennan.dungeontrain.editor.ImportedContentIndex}
+     * AND the file's modification time still matches what was captured at
+     * import — i.e. the variant came from an import package and the player
+     * hasn't edited it locally yet. Takes precedence over {@code isUser}
+     * for rendering: imported variants get an orange tint, user-saved
+     * variants get blue, bundled variants stay green.</p>
      */
     public record Entry(
         BlockPos worldPos,
@@ -63,7 +71,8 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         String modelId,
         String modelName,
         boolean inPlot,
-        boolean isUser
+        boolean isUser,
+        boolean isImported
     ) {}
 
     public static final Type<EditorPlotLabelsPacket> TYPE =
@@ -94,6 +103,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeUtf(e.modelName(), 64);
             buf.writeBoolean(e.inPlot());
             buf.writeBoolean(e.isUser());
+            buf.writeBoolean(e.isImported());
         }
     }
 
@@ -110,7 +120,9 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             String modelName = buf.readUtf(64);
             boolean inPlot = buf.readBoolean();
             boolean isUser = buf.readBoolean();
-            out.add(new Entry(pos, name, weight, category, modelId, modelName, inPlot, isUser));
+            boolean isImported = buf.readBoolean();
+            out.add(new Entry(pos, name, weight, category, modelId, modelName,
+                inPlot, isUser, isImported));
         }
         return new EditorPlotLabelsPacket(out);
     }

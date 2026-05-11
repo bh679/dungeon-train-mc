@@ -121,6 +121,8 @@ public final class EditorPlotLabelsRenderer {
     private static final int BORDER_COLOR_BUNDLED = 0xFF55FF55;
     /** Blue border drawn around the panel when the player is inside a user-authored plot. */
     private static final int BORDER_COLOR_USER = 0xFF5599FF;
+    /** Orange border drawn around the panel when the player is inside an imported plot (file came from a package extracted into the user folder and not yet edited locally). */
+    private static final int BORDER_COLOR_IMPORTED = 0xFFFF9933;
     /**
      * Border thickness in world units. Sits OUTSIDE the panel's
      * {@code ±halfW / ±halfH} bounding rectangle so it never overlaps the
@@ -378,7 +380,18 @@ public final class EditorPlotLabelsRenderer {
         // them so the four quads don't double up at the corners.
         if (entry.inPlot()) {
             double t = BORDER_THICKNESS;
-            int borderColor = entry.isUser() ? BORDER_COLOR_USER : BORDER_COLOR_BUNDLED;
+            // Provenance priority: imported (orange) > user-saved (blue) > bundled (green).
+            // Imported wins because the file is still on the "as you received it"
+            // mtime — once the player edits, isImported flips false and the
+            // panel naturally falls through to the blue user tint.
+            int borderColor;
+            if (entry.isImported()) {
+                borderColor = BORDER_COLOR_IMPORTED;
+            } else if (entry.isUser()) {
+                borderColor = BORDER_COLOR_USER;
+            } else {
+                borderColor = BORDER_COLOR_BUNDLED;
+            }
             // top (full width incl. corners)
             drawQuad(ps, buffer, -halfW - t, halfH, halfW + t, halfH + t, borderColor);
             // bottom (full width incl. corners)

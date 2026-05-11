@@ -79,10 +79,11 @@ public final class EditorTypeMenus {
                 CarriageWeights weights = CarriageWeights.current();
                 List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(variants.size());
                 for (CarriageVariant v : variants) {
-                    boolean isUser = java.nio.file.Files.isRegularFile(
+                    EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                         CarriageTemplateStore.fileForId(v.id()));
                     rows.add(new EditorTypeMenusPacket.Variant(
-                        v.id(), weights.weightFor(v.id()), cat, v.id(), v.id(), isUser));
+                        v.id(), weights.weightFor(v.id()), cat, v.id(), v.id(),
+                        p.isUser(), p.isImported()));
                 }
                 out.add(new EditorTypeMenusPacket.Menu(anchor, "Carriages", rows));
             }
@@ -110,10 +111,11 @@ public final class EditorTypeMenus {
         // renderer omits the weight cell and lets the name fill the row.
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {
-            boolean isUser = java.nio.file.Files.isRegularFile(
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 CarriagePartTemplateStore.fileFor(kind, name));
             rows.add(new EditorTypeMenusPacket.Variant(
-                name, EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name, isUser));
+                name, EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name,
+                p.isUser(), p.isImported()));
         }
         out.add(new EditorTypeMenusPacket.Menu(anchor, typeName, rows));
     }
@@ -130,10 +132,11 @@ public final class EditorTypeMenus {
         CarriageContentsWeights weights = CarriageContentsWeights.current();
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(all.size());
         for (CarriageContents c : all) {
-            boolean isUser = java.nio.file.Files.isRegularFile(
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 CarriageContentsStore.fileForId(c.id()));
             rows.add(new EditorTypeMenusPacket.Variant(
-                c.id(), weights.weightFor(c.id()), cat, c.id(), c.id(), isUser));
+                c.id(), weights.weightFor(c.id()), cat, c.id(), c.id(),
+                p.isUser(), p.isImported()));
         }
         return List.of(new EditorTypeMenusPacket.Menu(anchor, "Contents", rows));
     }
@@ -168,10 +171,11 @@ public final class EditorTypeMenus {
         String modelId = kind.id();
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {
-            boolean isUser = java.nio.file.Files.isRegularFile(
+            EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             rows.add(new EditorTypeMenusPacket.Variant(
-                name, TrackVariantWeights.weightFor(kind, name), cat, modelId, name, isUser));
+                name, TrackVariantWeights.weightFor(kind, name), cat, modelId, name,
+                p.isUser(), p.isImported()));
         }
         out.add(new EditorTypeMenusPacket.Menu(anchor, typeName, rows));
     }
