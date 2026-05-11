@@ -201,6 +201,18 @@ public final class EditorTypeMenuInputHandler {
             ? activeId
             : first.modelId();
 
+        // Sub-variants companion has a special typeName marker; route + New to
+        // the CONTENTS_SUB_VARIANT picker (single-row name TypeArg) with the
+        // parent id (= first row's modelId, the "default" sub-variant) as
+        // currentId.
+        if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+                .equals(menu.typeName())) {
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu New: sub-variant of parent '{}'", first.modelId());
+            CommandMenuState.openAt(new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.CONTENTS_SUB_VARIANT, null, first.modelId()));
+            return;
+        }
+
         NewSourcePickerScreen picker = switch (category) {
             case "CARRIAGES" -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.CARRIAGES, null, currentId);

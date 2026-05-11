@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "variants": [
+    {
+      "id": "chickens",
+      "weight": 1
+    }
+  ]
+}

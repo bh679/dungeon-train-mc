@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
 import games.brennan.dungeontrain.template.Template;
@@ -29,6 +30,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Ordered list of all carriage-contents variants available for spawning and
@@ -166,31 +168,49 @@ public final class CarriageContentsRegistry {
     /**
      * Pure overload: weighted deterministic pick filtered by the supplied
      * allow-list. Excluded ids are dropped from the candidate pool before the
-     * weighted draw. Safety net: if the allow-list excludes every registered
-     * content, the function falls back to the {@link ContentsType#DEFAULT}
-     * built-in so the carriage still spawns with a coherent interior. Visible
-     * for testing — no filesystem state, no Forge bootstrap needed.
+     * weighted draw. Group-member ids are also excluded from the top-level
+     * pool — a child only ever spawns by being picked through its parent's
+     * group, never as a sibling of it. Safety net: if the allow-list excludes
+     * every registered content, the function falls back to the
+     * {@link ContentsType#DEFAULT} built-in so the carriage still spawns with
+     * a coherent interior. Visible for testing — no filesystem state, no
+     * Forge bootstrap needed.
+     *
+     * <p>Two-phase: the synchronised top-level pick produces a parent id
+     * deterministically; the unsynchronised resolve step looks up
+     * {@link CarriageContentsGroupStore} and, if the picked id is a group
+     * parent, draws a child from its weighted member list. The child rng is
+     * derived via {@code new Random(parentRng.nextLong())} so adding/removing
+     * group definitions does not shift the parent-pick distribution for
+     * unrelated ids.</p>
      */
-    public static synchronized CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow) {
-        List<CarriageContents> all = allContents();
-        int n = all.size();
-        if (n == 0) {
+    public static CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow) {
+        CarriageContentsAllowList safeAllow = (allow == null) ? CarriageContentsAllowList.EMPTY : allow;
+        PickContext ctx = buildPickContext(worldSeed, carriageIndex, safeAllow);
+        if (ctx.fallbackToDefault) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
-        if (allow == null) allow = CarriageContentsAllowList.EMPTY;
-        List<CarriageContents> pool;
-        if (allow.excluded().isEmpty()) {
-            pool = all;
-        } else {
-            pool = new ArrayList<>(n);
-            for (CarriageContents c : all) {
-                if (allow.isAllowed(c.id())) pool.add(c);
-            }
-            if (pool.isEmpty()) {
-                // Author excluded everything — fall back to DEFAULT so spawns don't break.
-                return CarriageContents.of(ContentsType.DEFAULT);
-            }
+        return resolveGroup(ctx.picked, ctx.parentRng, safeAllow);
+    }
+
+    /** Synchronised pool snapshot + top-level weighted pick. */
+    private static synchronized PickContext buildPickContext(
+        long worldSeed, int carriageIndex, CarriageContentsAllowList allow
+    ) {
+        List<CarriageContents> all = allContents();
+        if (all.isEmpty()) return PickContext.fallback();
+
+        Set<String> childIds = CarriageContentsGroupStore.allChildIds();
+        List<CarriageContents> pool = new ArrayList<>(all.size());
+        for (CarriageContents c : all) {
+            if (childIds.contains(c.id())) continue;
+            if (!allow.isAllowed(c.id())) continue;
+            pool.add(c);
         }
+        if (pool.isEmpty()) {
+            return PickContext.fallback();
+        }
+
         int m = pool.size();
         CarriageContentsWeights weights = CarriageContentsWeights.current();
         int[] cumulative = new int[m];
@@ -201,16 +221,104 @@ public final class CarriageContentsRegistry {
         }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
         Random rng = new Random(seed);
+        CarriageContents picked;
         if (total <= 0) {
             warnAllZeroOnce();
-            return pool.get(rng.nextInt(m));
+            picked = pool.get(rng.nextInt(m));
+        } else {
+            int r = rng.nextInt(total);
+            CarriageContents tail = pool.get(m - 1);
+            CarriageContents found = tail;
+            for (int i = 0; i < m; i++) {
+                if (r < cumulative[i]) { found = pool.get(i); break; }
+            }
+            picked = found;
         }
-        int r = rng.nextInt(total);
-        for (int i = 0; i < m; i++) {
-            if (r < cumulative[i]) return pool.get(i);
+        return new PickContext(picked, rng, false);
+    }
+
+    /**
+     * Weight assigned to the synthetic self-entry in a group's resolution pool.
+     * The parent's own {@code .nbt} is always a candidate alongside its
+     * explicit members — this mirrors the "the original variant is the default
+     * sub-variant" model and matches the editor UI's first row.
+     *
+     * <p>Fixed at 1 in this phase. Editable weights for self are a future
+     * extension (would require a schema field on the group sidecar).</p>
+     */
+    public static final int SELF_WEIGHT = 1;
+
+    /** Sentinel id used internally to mark the synthetic-self entry in the resolution pool. */
+    private static final String SELF_TOKEN = "<self>";
+
+    /**
+     * If {@code picked} has a group sidecar, draw one of its weighted members.
+     * The pool is the synthetic self ({@link #SELF_WEIGHT}) + every explicit
+     * member. The per-carriage-variant allow-list is NOT consulted at this
+     * level — it operates only on parents at top-level pick time, by
+     * design. Once a parent passes the allow-list and gets picked, its full
+     * sub-variant pool runs unfiltered.
+     */
+    @SuppressWarnings("unused") // allow-list intentionally not used inside group resolution
+    private static CarriageContents resolveGroup(
+        CarriageContents picked, Random parentRng, CarriageContentsAllowList allow
+    ) {
+        Optional<CarriageContentsGroup> groupOpt = CarriageContentsGroupStore.get(picked.id());
+        if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
+        CarriageContentsGroup group = groupOpt.get();
+
+        // Pool: synthetic self + every explicit member, no allow-list filter.
+        List<PoolEntry> pool = new ArrayList<>(group.members().size() + 1);
+        pool.add(new PoolEntry(SELF_TOKEN, SELF_WEIGHT));
+        for (CarriageContentsGroup.Member m : group.members()) {
+            pool.add(new PoolEntry(m.id(), m.weight()));
         }
-        // Unreachable: r < total and cumulative[m-1] == total. Defensive tail.
-        return pool.get(m - 1);
+
+        Random childRng = new Random(parentRng.nextLong());
+        int total = 0;
+        for (PoolEntry e : pool) total += e.weight;
+        PoolEntry chosen;
+        if (total <= 0) {
+            chosen = pool.get(childRng.nextInt(pool.size()));
+        } else {
+            int r = childRng.nextInt(total);
+            PoolEntry found = pool.get(pool.size() - 1);
+            int cumulative = 0;
+            for (PoolEntry e : pool) {
+                cumulative += e.weight;
+                if (r < cumulative) { found = e; break; }
+            }
+            chosen = found;
+        }
+
+        // Synthetic self → return parent unchanged. Placer handles the rest
+        // (parent's .nbt if present, else its own warning path for empty leaves).
+        if (SELF_TOKEN.equals(chosen.id)) {
+            return picked;
+        }
+
+        Optional<CarriageContents> childOpt = find(chosen.id);
+        if (childOpt.isEmpty()) {
+            warnMissingChild(picked.id(), chosen.id);
+            return CarriageContents.of(ContentsType.DEFAULT);
+        }
+        if (CarriageContentsGroupStore.exists(chosen.id)) {
+            // Defensive: nested groups should be rejected at write time. If
+            // one slipped through (e.g. authored by hand), treat as a leaf —
+            // do NOT recurse.
+            warnNestedGroup(picked.id(), chosen.id);
+        }
+        return childOpt.get();
+    }
+
+    /** Internal pool entry — one of: synthetic self (id={@link #SELF_TOKEN}) or a real group member. */
+    private record PoolEntry(String id, int weight) {}
+
+    /** Internal envelope for the synchronised pick phase. */
+    private record PickContext(CarriageContents picked, Random parentRng, boolean fallbackToDefault) {
+        static PickContext fallback() {
+            return new PickContext(null, null, true);
+        }
     }
 
     /** One-shot warning when every registered contents has weight 0 — once per server lifetime. */
@@ -225,14 +333,59 @@ public final class CarriageContentsRegistry {
         }
     }
 
+    /** De-duped per-(parent, child) warning when a group member id no longer resolves. */
+    private static final Set<String> MISSING_CHILD_WARNED = ConcurrentHashMap.newKeySet();
+    private static void warnMissingChild(String parentId, String childId) {
+        if (MISSING_CHILD_WARNED.add(parentId + "->" + childId)) {
+            LOGGER.warn("[DungeonTrain] Contents group '{}' references unknown child '{}' — falling back to DEFAULT for this pick.",
+                parentId, childId);
+        }
+    }
+
+    /** De-duped per-(parent, child) error when a group's member is itself a group parent. */
+    private static final Set<String> NESTED_GROUP_WARNED = ConcurrentHashMap.newKeySet();
+    private static void warnNestedGroup(String parentId, String childId) {
+        if (NESTED_GROUP_WARNED.add(parentId + "->" + childId)) {
+            LOGGER.error("[DungeonTrain] Contents group '{}' has nested-group member '{}' — nested groups are NOT resolved. Treating as leaf.",
+                parentId, childId);
+        }
+    }
+
     /** Reload custom contents from the bundled classpath scan + the per-install config dir. */
     public static synchronized void reload() {
         CUSTOMS.clear();
         int bundled = loadBundledScan();
         int config = loadConfigDir();
+        validateGroups();
 
         LOGGER.info("[DungeonTrain] Carriage contents registry loaded — {} built-in + {} custom ({} bundled, {} config)",
             BUILTINS.size(), CUSTOMS.size(), bundled, config);
+    }
+
+    /**
+     * Walk every loaded group sidecar and log:
+     * <ul>
+     *   <li>WARN: members whose id no longer resolves to a registered content
+     *       (they're skipped at resolution time, not auto-removed from the file
+     *       — author intent is preserved).</li>
+     *   <li>ERROR: members that are themselves group parents (nested groups
+     *       are not supported; resolution treats them as leaves).</li>
+     * </ul>
+     */
+    private static void validateGroups() {
+        for (String parentId : CarriageContentsGroupStore.knownParentIds()) {
+            Optional<CarriageContentsGroup> opt = CarriageContentsGroupStore.get(parentId);
+            if (opt.isEmpty()) continue;
+            for (CarriageContentsGroup.Member m : opt.get().members()) {
+                if (find(m.id()).isEmpty()) {
+                    LOGGER.warn("[DungeonTrain] Contents group '{}' references unknown member '{}' — member will be skipped at resolution.",
+                        parentId, m.id());
+                } else if (CarriageContentsGroupStore.exists(m.id())) {
+                    LOGGER.error("[DungeonTrain] Contents group '{}' has nested-group member '{}' — nested groups are NOT resolved. Fix the configuration.",
+                        parentId, m.id());
+                }
+            }
+        }
     }
 
     /**
@@ -244,12 +397,22 @@ public final class CarriageContentsRegistry {
      * legacy {@code customs.json}.
      */
     private static int loadBundledScan() {
-        Set<String> scanned = BundledNbtScanner.scanBasenames(
+        Set<String> nbtScanned = BundledNbtScanner.scanBasenames(
             CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER);
+        Set<String> groupScanned = BundledNbtScanner.scanBasenames(
+            CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER, ".group.json");
         TreeSet<String> customsScanned = new TreeSet<>();
-        for (String id : scanned) {
+        for (String id : nbtScanned) {
             if (CarriageContents.isReservedBuiltinName(id)) continue;
             customsScanned.add(id);
+        }
+        for (String id : groupScanned) {
+            if (CarriageContents.isReservedBuiltinName(id)) {
+                LOGGER.warn("[DungeonTrain] Ignoring bundled group sidecar for built-in '{}' — group parents must be custom.", id);
+                continue;
+            }
+            customsScanned.add(id);
+            CarriageContentsGroupStore.preload(id);
         }
         Set<String> manifest = BundledNbtScanner.readManifestBasenames(
             CarriageContentsRegistry.class, BUNDLED_RESOURCE_PREFIX, "customs.json", LOGGER);
@@ -276,6 +439,23 @@ public final class CarriageContentsRegistry {
             if (!acceptCustomId(basename, "user/ + imports")) continue;
             if (CUSTOMS.add(basename)) added++;
         }
+        // Group-only parents (no .nbt) are discovered through a parallel scan
+        // for *.group.json files across the same search dirs (user/ + imports).
+        // Children of groups remain regular customs and are picked up by the
+        // .nbt scan above.
+        java.util.Set<String> groupIds = games.brennan.dungeontrain.editor.UserContentPaths
+            .listBasenamesAcrossSearchDirs(
+                games.brennan.dungeontrain.editor.CarriageContentsStore.SUBDIR, ".group.json");
+        for (String basename : groupIds) {
+            if (CarriageContents.isReservedBuiltinName(basename)) {
+                LOGGER.warn("[DungeonTrain] Ignoring group sidecar for built-in '{}' — group parents must be custom.",
+                    basename);
+                continue;
+            }
+            if (!acceptCustomId(basename, "user/ + imports (group)")) continue;
+            CarriageContentsGroupStore.preload(basename);
+            if (CUSTOMS.add(basename)) added++;
+        }
         return added;
     }
 
@@ -294,7 +474,10 @@ public final class CarriageContentsRegistry {
     public static synchronized void clear() {
         CUSTOMS.clear();
         CarriageVariantContentsAllowStore.clearCache();
+        CarriageContentsGroupStore.clearCache();
         ZERO_WARNED = false;
+        MISSING_CHILD_WARNED.clear();
+        NESTED_GROUP_WARNED.clear();
     }
 
     public static synchronized List<String> customIds() {

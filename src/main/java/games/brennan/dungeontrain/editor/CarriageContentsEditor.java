@@ -51,6 +51,9 @@ public final class CarriageContentsEditor {
     private static final int PLOT_Z = EditorLayout.CONTENTS_FIRST_Z;
     private static final int FIRST_PLOT_X = 0;
 
+    /** Alias kept for readability — the Z-axis tight gap used inside a sub-variant column. */
+    private static final int SUB_VARIANT_GAP = EditorLayout.SUB_VARIANT_GAP;
+
     private static final BlockState OUTLINE_BLOCK = Blocks.BEDROCK.defaultBlockState();
 
     /** Fallback shell variant stamped as context when the user doesn't specify one. */
@@ -132,25 +135,81 @@ public final class CarriageContentsEditor {
     }
 
     /**
-     * Plot origin for {@code contents}. Step along {@code +X} is
-     * {@code dims.length() + EditorLayout.GAP} so adjacent plots have a
-     * uniform {@link EditorLayout#GAP}-block air gap, matching every other
-     * editor.
+     * Plot origin for {@code contents}. Two-axis layout:
+     *
+     * <ul>
+     *   <li><b>Top-level variants</b> sit in a single +X row at
+     *       {@code z = PLOT_Z}, separated by
+     *       {@code dims.length() + EditorLayout.GAP} (3 air blocks between
+     *       cages). Group children are excluded from this row — they don't
+     *       claim a +X slot.</li>
+     *   <li><b>Sub-variants</b> stack along +Z from their parent's slot,
+     *       sharing the parent's X. Each member sits at
+     *       {@code z = PLOT_Z + (memberIndex + 1) * (dims.width() + SUB_VARIANT_GAP)}
+     *       so the first member is one row +Z from the parent, the second
+     *       two rows down, etc.</li>
+     * </ul>
+     *
+     * <p>The CONTENTS view's reserved Z extent
+     * ({@link EditorLayout#CONTENTS_VIEW_MAX_Z}) bounds sub-variant columns
+     * so they don't overflow into the TRACKS view at typical group sizes —
+     * see {@link EditorLayout#MAX_SUB_VARIANTS_PER_PARENT}.</p>
      */
     public static BlockPos plotOrigin(CarriageContents contents, CarriageDims dims) {
-        List<CarriageContents> all = CarriageContentsRegistry.allContents();
         String target = contents.id();
-        int index = -1;
-        for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).id().equals(target)) {
-                index = i;
-                break;
-            }
+        // Is the target a member of some group? If so, position relative to
+        // its parent's slot.
+        java.util.Optional<String> parentOf = CarriageContentsGroupStore.findParentOf(target);
+        if (parentOf.isPresent()) {
+            String parentId = parentOf.get();
+            int memberIndex = memberIndexIn(parentId, target);
+            if (memberIndex < 0) return null;
+            BlockPos parentOrigin = topLevelPlotOrigin(parentId, dims);
+            if (parentOrigin == null) return null;
+            int zStep = dims.width() + SUB_VARIANT_GAP;
+            return new BlockPos(
+                parentOrigin.getX(),
+                parentOrigin.getY(),
+                parentOrigin.getZ() + (memberIndex + 1) * zStep
+            );
         }
-        if (index < 0) return null;
-        int step = dims.length() + EditorLayout.GAP;
-        return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
+        return topLevelPlotOrigin(target, dims);
     }
+
+    /**
+     * Top-level variants only — children of any group are excluded from this
+     * row so their parent's slot stays at the position it would have had
+     * without them. Walks {@link CarriageContentsRegistry#allContents} in
+     * registry order, skipping any id in
+     * {@link CarriageContentsGroupStore#allChildIds}.
+     */
+    private static BlockPos topLevelPlotOrigin(String targetId, CarriageDims dims) {
+        java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        int step = dims.length() + EditorLayout.GAP;
+        int index = 0;
+        for (CarriageContents c : all) {
+            if (children.contains(c.id())) continue;
+            if (c.id().equals(targetId)) {
+                return new BlockPos(FIRST_PLOT_X + index * step, PLOT_Y, PLOT_Z);
+            }
+            index++;
+        }
+        return null;
+    }
+
+    /** Index of {@code memberId} in {@code parentId}'s group, or {@code -1} if absent. */
+    private static int memberIndexIn(String parentId, String memberId) {
+        java.util.Optional<games.brennan.dungeontrain.train.CarriageContentsGroup> g =
+            CarriageContentsGroupStore.get(parentId);
+        if (g.isEmpty()) return -1;
+        java.util.List<games.brennan.dungeontrain.train.CarriageContentsGroup.Member> members = g.get().members();
+        for (int i = 0; i < members.size(); i++) {
+            if (members.get(i).id().equals(memberId)) return i;
+        }
+        return -1;
+    }
+
 
     /**
      * Returns the contents whose plot contains {@code pos} (within the

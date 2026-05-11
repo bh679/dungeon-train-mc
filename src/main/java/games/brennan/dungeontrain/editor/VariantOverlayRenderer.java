@@ -608,12 +608,17 @@ public final class VariantOverlayRenderer {
         }
         java.util.List<EditorTypeMenusPacket.Menu> baseMenus = EditorTypeMenus.forCategory(category, dims);
 
-        // Companion menu: when the player is standing inside a plot, append a
-        // duplicate of that plot's type menu floating above the per-plot
-        // panel — so an author editing 'standard' can immediately jump to
-        // another carriage variant without flying back to the row's start.
-        java.util.List<EditorTypeMenusPacket.Menu> menus = appendCompanionMenu(
+        // Companion menus appended in render order (closest to per-plot panel
+        // first). Multiple companions sequence along panel-local +X in the
+        // client renderer — first added sits next to the per-plot panel,
+        // subsequent ones shift past their predecessor.
+        //
+        // Sub-variants companion is appended FIRST (slots adjacent to per-plot
+        // panel) so the player's "list of sub-variants for the variant I'm
+        // editing" is the closest companion. The type companion follows.
+        java.util.List<EditorTypeMenusPacket.Menu> menus = appendSubVariantsCompanion(
             baseMenus, player, dims, category);
+        menus = appendCompanionMenu(menus, player, dims, category);
 
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
@@ -717,6 +722,85 @@ public final class VariantOverlayRenderer {
         // two panels share orientation and read as one extended UI.
         out.add(new EditorTypeMenusPacket.Menu(
             perPlotAnchor, source.typeName(), source.variants(), true));
+        return out;
+    }
+
+    /** Marker typeName for the sub-variants companion menu. Input handler keys off this to route + New differently. */
+    public static final String SUB_VARIANTS_TYPE_NAME = "Sub-Variants";
+
+    /**
+     * If the player is standing inside a CONTENTS editor plot, return a copy
+     * of {@code baseMenus} with a sub-variants companion appended — listing
+     * the active variant's group context (parent as the default sub-variant +
+     * explicit members). Otherwise returns {@code baseMenus} unchanged.
+     *
+     * <p>When the active contents id is itself a group member, the menu
+     * reflects the parent group's full sibling list (per the user-confirmed
+     * UX: editing {@code container_wooden} shows
+     * {@code [container (default), container_wooden, container_metal]}).</p>
+     *
+     * <p>When the active contents id is a leaf with no group context, the
+     * menu still appears with just one row (active = default) plus the
+     * {@code + New} footer — so authors can spawn the first sub-variant
+     * without leaving the plot.</p>
+     */
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendSubVariantsCompanion(
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus,
+        ServerPlayer player, CarriageDims dims, EditorCategory category
+    ) {
+        if (category != EditorCategory.CONTENTS) return baseMenus;
+        CarriageContents active = CarriageContentsEditor.plotContaining(player.blockPosition(), dims);
+        if (active == null) return baseMenus;
+
+        // Determine the effective "parent" for the sub-variants menu:
+        // - If active is a group parent itself, use active.
+        // - Else if active is a member of some group, use that parent.
+        // - Else fall back to active (leaf — menu shows just self).
+        String parentId;
+        if (CarriageContentsGroupStore.exists(active.id())) {
+            parentId = active.id();
+        } else {
+            parentId = CarriageContentsGroupStore.findParentOf(active.id()).orElse(active.id());
+        }
+
+        // Build the rows. Default (parent self) row always first. Provenance
+        // tints (user/imported) flow through the same Variant fields the rest
+        // of the type menu uses — read from the contents store's file path.
+        String cat = EditorCategory.CONTENTS.name();
+        List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
+        EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
+            games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(parentId));
+        rows.add(new EditorTypeMenusPacket.Variant(
+            parentId + " (default)",
+            games.brennan.dungeontrain.train.CarriageContentsRegistry.SELF_WEIGHT,
+            cat, parentId, parentId,
+            parentProv.isUser(), parentProv.isImported()));
+        Optional<games.brennan.dungeontrain.train.CarriageContentsGroup> groupOpt =
+            CarriageContentsGroupStore.get(parentId);
+        if (groupOpt.isPresent()) {
+            for (var m : groupOpt.get().members()) {
+                EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(
+                    games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
+                rows.add(new EditorTypeMenusPacket.Variant(
+                    m.id(), m.weight(), cat, m.id(), m.id(),
+                    memberProv.isUser(), memberProv.isImported()));
+            }
+        }
+
+        // Anchor: same as the per-plot label panel for the active variant.
+        BlockPos perPlotAnchor = null;
+        for (EditorPlotLabels.Label l : EditorPlotLabels.forCategory(category, dims)) {
+            if (active.id().equals(l.modelId())) {
+                perPlotAnchor = l.worldPos();
+                break;
+            }
+        }
+        if (perPlotAnchor == null) return baseMenus;
+
+        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
+        out.addAll(baseMenus);
+        out.add(new EditorTypeMenusPacket.Menu(
+            perPlotAnchor, SUB_VARIANTS_TYPE_NAME, rows, true));
         return out;
     }
 
