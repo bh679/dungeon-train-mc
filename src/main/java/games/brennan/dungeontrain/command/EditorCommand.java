@@ -321,6 +321,7 @@ public final class EditorCommand {
                         return runPromote(ctx.getSource(), type);
                     })))
             .then(ExportCommand.build())
+            .then(ImportCommand.build())
             .then(Commands.literal("contents")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CONTENTS))
                 .then(Commands.literal("enter")

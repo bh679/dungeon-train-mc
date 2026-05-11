@@ -26,10 +26,12 @@ import java.util.List;
  *       player can inspect or hand-edit the saved templates.</li>
  *   <li><b>Open Package Folder</b> — opens {@code <game>/exports/} so
  *       previously-exported zips are easy to find for sharing.</li>
- *   <li><b>Open Import Folder</b> — opens {@code <game>/imports/}, the
- *       drop-zone that {@link UserContentImporter} scans on every server
- *       start. Drop a friend's package zip here and it auto-extracts into
- *       the user-content folder on next launch.</li>
+ *   <li><b>Open Import Folder | Reload</b> — split row. The left side opens
+ *       {@code <game>/imports/}, the drop-zone that {@link UserContentImporter}
+ *       scans on every server start. The right side dispatches
+ *       {@code /dungeontrain editor import}, which runs the same scan now
+ *       and refreshes every editor registry so newly-dropped zips become
+ *       visible without a restart.</li>
  * </ul>
  *
  * <p>The folder-open rows use {@link CommandMenuEntry.ClientAction} +
@@ -50,7 +52,11 @@ public final class PackageMenuScreen implements MenuScreen {
             new CommandMenuEntry.Run("Export Package", "dungeontrain editor export"),
             new CommandMenuEntry.ClientAction("Contents Folder", PackageMenuScreen::openUserContentFolder),
             new CommandMenuEntry.ClientAction("Open Package Folder", PackageMenuScreen::openExportFolder),
-            new CommandMenuEntry.ClientAction("Open Import Folder", PackageMenuScreen::openImportFolder),
+            new CommandMenuEntry.Split(
+                new CommandMenuEntry.ClientAction("Open Import Folder", PackageMenuScreen::openImportFolder),
+                new CommandMenuEntry.Stay("Reload", "dungeontrain editor import"),
+                0.70
+            ),
             new CommandMenuEntry.Back("< Back")
         );
     }

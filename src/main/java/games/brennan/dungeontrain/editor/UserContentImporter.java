@@ -279,6 +279,76 @@ public final class UserContentImporter {
         return FMLPaths.GAMEDIR.get().resolve(IMPORTS_SUBDIR);
     }
 
+    /**
+     * Run a full import + registry-refresh cycle now, without waiting for a
+     * server restart. Used by the Package menu's Reload button and the
+     * {@code /dungeontrain editor import} slash command.
+     *
+     * <p>Order mirrors the per-handler {@code ServerStartingEvent} sequence:
+     * <ol>
+     *   <li>Run the importer — extracts any new zips in
+     *       {@code <game>/imports/} into the user-content root.</li>
+     *   <li>Clear every editor template / sidecar cache so the next get/load
+     *       re-reads from disk.</li>
+     *   <li>Reload every variant registry so newly-extracted templates
+     *       become addressable by id.</li>
+     *   <li>Reload weights last, since weight lookups index on registry
+     *       ids that the previous step just rebuilt.</li>
+     * </ol>
+     *
+     * <p>Synchronous. Caller surfaces the {@link Summary} in chat or logs.</p>
+     */
+    public static synchronized Summary reloadAll() {
+        List<ZipResult> imports = importAll();
+
+        // Clear caches first so the registry reloads don't read through to
+        // stale unpacked-cell or sidecar state.
+        games.brennan.dungeontrain.editor.CarriageTemplateStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriageContentsStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriageVariantBlocks.clearCache();
+        games.brennan.dungeontrain.editor.CarriageVariantPartsStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriagePartTemplateStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriagePartVariantBlocks.clearCache();
+        games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.clearCache();
+        games.brennan.dungeontrain.editor.PillarTemplateStore.clearCache();
+        games.brennan.dungeontrain.editor.ContainerContentsStore.clearCache();
+        games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
+
+        // Registries — order matches the order they fire on ServerStartingEvent.
+        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.reload();
+        games.brennan.dungeontrain.train.CarriageVariantRegistry.reload();
+        games.brennan.dungeontrain.train.CarriageContentsRegistry.reload();
+        games.brennan.dungeontrain.editor.CarriagePartRegistry.reload();
+        games.brennan.dungeontrain.editor.CarriageTemplateStore.reload();
+        games.brennan.dungeontrain.editor.CarriageContentsStore.reload();
+        games.brennan.dungeontrain.editor.LootPrefabStore.reload();
+        games.brennan.dungeontrain.editor.BlockVariantPrefabStore.reload();
+
+        // Weights last — they look up registered ids to decide whether to
+        // log warnings about unknown entries.
+        games.brennan.dungeontrain.train.CarriageWeights.reload();
+        games.brennan.dungeontrain.train.CarriageContentsWeights.reload();
+        games.brennan.dungeontrain.track.variant.TrackVariantWeights.reload();
+
+        int imported = 0;
+        int skipped = 0;
+        int rejected = 0;
+        for (ZipResult r : imports) {
+            imported += r.imported();
+            skipped += r.skipped();
+            rejected += r.rejected();
+        }
+        LOGGER.info(
+            "[DungeonTrain] Reload complete — {} package(s) processed, {} new file(s), {} skipped, {} rejected.",
+            imports.size(), imported, skipped, rejected);
+        return new Summary(imports.size(), imported, skipped, rejected);
+    }
+
+    /** Aggregate counts returned by {@link #reloadAll()}. */
+    public record Summary(int packagesProcessed, int filesImported, int filesSkipped, int filesRejected) {}
+
     /** Lowercase the locale-insensitive helper a couple of call sites need. */
     @SuppressWarnings("unused")
     private static String lc(String s) {
