@@ -132,10 +132,57 @@ Per global versioning rule: SemVer in `gradle.properties` `mod_version` field.
 > **Note:** The shipped versioning hook is npm-only (`package.json`). It is NOT installed in
 > this repo. Bump `gradle.properties` `mod_version` manually before each commit.
 
-Tag every MINOR/MAJOR bump:
-```bash
-git tag v1.1.0 && git push origin v1.1.0
-```
+**Tagging is NOT done manually.** Tags exist only when a release is shipped — see
+"Releasing (post-Gate 3)" below. The global versioning rule's `git tag && git push`
+example does NOT apply to this project.
+
+---
+
+## Releasing (post-Gate 3)
+
+Not every Gate 3 merge ships a public release. Tags exist only for releases — there is
+no `push: tags` trigger on `release.yml`; the workflow is dispatch-only and creates the
+tag itself.
+
+### When to suggest releasing
+
+At Gate 3, after the merge lands, suggest "tag for release" if the change is
+**significant**:
+- New player-facing content (mobs, blocks, items, mechanics, world gen)
+- New gameplay system or mechanic
+- Compatibility update (Forge/VS/MC/NeoForge version bump, Sable update, etc.)
+- Fix affecting many users (crashes, multiplayer breakage, save corruption)
+
+**Skip** for: internal refactors, editor-only tweaks, CI/tooling/build changes,
+dev-only changes, minor cosmetic fixes. When in doubt, ask the user.
+
+### When the user says "tag for release"
+
+1. Confirm `mod_version` on main:
+   ```bash
+   grep '^mod_version=' gradle.properties | cut -d= -f2
+   ```
+2. Show the user: "Release v<version>? This will publish to GitHub Releases +
+   Modrinth + CurseForge + Discord."
+3. On confirmation:
+   ```bash
+   gh workflow run release.yml -f tag=v<version>
+   ```
+4. Watch the run:
+   ```bash
+   gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')
+   ```
+5. On success, share the release URL:
+   ```bash
+   gh release view v<version> --json url --jq .url
+   ```
+
+### Tag discipline
+
+Tags are created exclusively by `release.yml`. **Never run `git tag` or
+`git push origin v<x>` manually.** Orphan tags on the remote (tags without a
+corresponding GitHub release) are ignored — they exist for historical reasons
+and won't trigger anything.
 
 ---
 
