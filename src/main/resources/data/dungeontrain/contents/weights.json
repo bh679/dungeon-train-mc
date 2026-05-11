@@ -1,8 +1,9 @@
 {
   "armor": 2,
   "books": 4,
-  "cows": 8,
+  "cows": 15,
   "craft": 8,
+  "default": 1,
   "dirt": 2,
   "enchant": 2,
   "ender": 1,

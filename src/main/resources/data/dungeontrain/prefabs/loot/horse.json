@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:barrel",
+  "entries": [
+    { "id": "minecraft:lead", "count": 1, "weight": 1 },
+    { "id": "minecraft:hay_block", "count": 1, "weight": 1 },
+    { "id": "minecraft:wheat", "count": 1, "weight": 1 },
+    { "id": "minecraft:apple", "count": 1, "weight": 1 },
+    { "id": "minecraft:golden_apple", "count": 1, "weight": 1 },
+    { "id": "minecraft:saddle", "count": 1, "weight": 1 },
+    { "id": "minecraft:chest", "count": 1, "weight": 1 }
+  ]
+}
