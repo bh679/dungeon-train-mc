@@ -415,6 +415,23 @@ public final class EditorCommand {
                                         StringArgumentType.getString(ctx, "parent"),
                                         StringArgumentType.getString(ctx, "child"),
                                         IntegerArgumentType.getInteger(ctx, "weight")))))))
+                    .then(Commands.literal("set-weight")
+                        .then(Commands.argument("parent", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .then(Commands.argument("child", StringArgumentType.word())
+                                .suggests(CONTENTS_SUGGESTIONS)
+                                .then(Commands.literal("inc").executes(ctx -> runContentsGroupWeightAdjust(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "parent"),
+                                    StringArgumentType.getString(ctx, "child"), +1)))
+                                .then(Commands.literal("dec").executes(ctx -> runContentsGroupWeightAdjust(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "parent"),
+                                    StringArgumentType.getString(ctx, "child"), -1)))
+                                .then(Commands.argument("value",
+                                        IntegerArgumentType.integer(CarriageContentsGroup.MIN_WEIGHT, CarriageContentsGroup.MAX_WEIGHT))
+                                    .executes(ctx -> runContentsGroupWeightSet(ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "parent"),
+                                        StringArgumentType.getString(ctx, "child"),
+                                        IntegerArgumentType.getInteger(ctx, "value")))))))
                     .then(Commands.literal("remove")
                         .then(Commands.argument("parent", StringArgumentType.word())
                             .suggests(CONTENTS_SUGGESTIONS)
@@ -804,6 +821,94 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
+    }
+
+    /**
+     * {@code /dt editor contents group set-weight <parent> <child> <value>}
+     * — set the weight of an existing group member and persist to the parent's
+     * {@code .group.json} sidecar. Mirrors {@link #runContentsWeightSet} but
+     * targets the per-member weight pool that group resolution actually reads.
+     *
+     * <p>When {@code parent == child}, the value is applied to the parent's
+     * own {@code selfWeight} (the weight of its synthetic self-entry in the
+     * resolution pool) via {@link CarriageContentsGroup#withSelfWeight}.</p>
+     */
+    private static int runContentsGroupWeightSet(CommandSourceStack source, String parentRaw, String childRaw, int value) {
+        CarriageContents parent = parseContents(source, parentRaw);
+        if (parent == null) return 0;
+        CarriageContents child = parseContents(source, childRaw);
+        if (child == null) return 0;
+        java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "No contents group defined for '" + parent.id() + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        boolean isSelf = parent.id().equals(child.id());
+        if (!isSelf && existing.get().members().stream().noneMatch(m -> m.id().equals(child.id()))) {
+            source.sendFailure(Component.literal(
+                "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        CarriageContentsGroup updated;
+        final int stored;
+        if (isSelf) {
+            // Canonical constructor clamps to [MIN_WEIGHT, MAX_WEIGHT].
+            updated = existing.get().withSelfWeight(value);
+            stored = updated.selfWeight();
+        } else {
+            // Member constructor clamps to [MIN_WEIGHT, MAX_WEIGHT]; withMember replaces in place.
+            CarriageContentsGroup.Member updatedMember = new CarriageContentsGroup.Member(child.id(), value);
+            updated = existing.get().withMember(updatedMember);
+            stored = updatedMember.weight();
+        }
+        try {
+            CarriageContentsGroupStore.save(parent.id(), updated);
+            final String label = isSelf ? "selfWeight" : "'" + child.id() + "' weight";
+            source.sendSuccess(() -> Component.literal(
+                "Editor: group '" + parent.id() + "' → " + label + "=" + stored + "."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor contents group set-weight failed", e);
+            source.sendFailure(Component.literal("group set-weight failed: " + e.toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /** Read-modify-write nudge for a group member's weight (or the parent's selfWeight when {@code parent == child}). Bounds clamp via {@link CarriageContentsGroup#clampWeight}. */
+    private static int runContentsGroupWeightAdjust(CommandSourceStack source, String parentRaw, String childRaw, int delta) {
+        CarriageContents parent = parseContents(source, parentRaw);
+        if (parent == null) return 0;
+        CarriageContents child = parseContents(source, childRaw);
+        if (child == null) return 0;
+        java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parent.id());
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "No contents group defined for '" + parent.id() + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        int current;
+        if (parent.id().equals(child.id())) {
+            current = existing.get().selfWeight();
+        } else {
+            current = existing.get().members().stream()
+                .filter(m -> m.id().equals(child.id()))
+                .mapToInt(CarriageContentsGroup.Member::weight)
+                .findFirst()
+                .orElse(-1);
+            if (current < 0) {
+                source.sendFailure(Component.literal(
+                    "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
+                ).withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+        }
+        return runContentsGroupWeightSet(source, parentRaw, childRaw, current + delta);
     }
 
     /**

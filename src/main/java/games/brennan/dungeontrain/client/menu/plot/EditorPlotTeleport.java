@@ -51,6 +51,18 @@ public final class EditorPlotTeleport {
         };
     }
 
+    /**
+     * Build the slash command that bumps the per-member weight of {@code memberId}
+     * within {@code parentId}'s contents group, in {@code dir} ({@code "inc"} or
+     * {@code "dec"}). Used by the Sub-Variants companion menu's weight cell —
+     * its rows reference group-member weights (per-member entries in the
+     * parent's {@code .group.json} sidecar), which the top-level
+     * {@link #weightCommandFor} pool does not target.
+     */
+    public static String groupMemberWeightCommandFor(String parentId, String memberId, String dir) {
+        return "dungeontrain editor contents group set-weight " + parentId + " " + memberId + " " + dir;
+    }
+
     private static String trackTeleportCommand(String modelId) {
         // The track tile's per-plot label uses {@code TrackKind.TILE.id() == "tile"};
         // {@code Template.TrackModel.id()} (used by the keyboard menu) returns "track".

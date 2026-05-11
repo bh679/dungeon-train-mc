@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "selfWeight": 5,
   "variants": [
     {
       "id": "enchant",
@@ -7,11 +8,11 @@
     },
     {
       "id": "kitchen",
-      "weight": 1
+      "weight": 5
     },
     {
       "id": "smelt",
-      "weight": 1
+      "weight": 5
     },
     {
       "id": "upgrade",
