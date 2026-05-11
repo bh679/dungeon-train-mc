@@ -306,6 +306,14 @@ public final class CommandMenuState {
                 default -> triple.leftEntry();
             };
             dispatchEntry(target, 0);
+        } else if (entry instanceof CommandMenuEntry.Quad quad) {
+            CommandMenuEntry target = switch (subIdx) {
+                case 1 -> quad.e2();
+                case 2 -> quad.e3();
+                case 3 -> quad.e4();
+                default -> quad.e1();
+            };
+            dispatchEntry(target, 0);
         }
         // Loading — no-op.
     }

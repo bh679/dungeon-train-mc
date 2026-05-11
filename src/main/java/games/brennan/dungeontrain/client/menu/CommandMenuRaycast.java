@@ -138,6 +138,23 @@ public final class CommandMenuRaycast {
             if (row instanceof CommandMenuEntry.Split split) {
                 double splitX = -halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
                 if (localX > splitX) subIdx = 1;
+            } else if (row instanceof CommandMenuEntry.Quad quad) {
+                double b1 = -halfW + quad.boundary1() * CommandMenuLayout.PANEL_WIDTH;
+                double b2 = -halfW + quad.boundary2() * CommandMenuLayout.PANEL_WIDTH;
+                double b3 = -halfW + quad.boundary3() * CommandMenuLayout.PANEL_WIDTH;
+                if (localX > b3) subIdx = 3;
+                else if (localX > b2) subIdx = 2;
+                else if (localX > b1) subIdx = 1;
+                CommandMenuEntry cell = switch (subIdx) {
+                    case 1 -> quad.e2();
+                    case 2 -> quad.e3();
+                    case 3 -> quad.e4();
+                    default -> quad.e1();
+                };
+                if (cell instanceof CommandMenuEntry.Label
+                    || (cell instanceof CommandMenuEntry.SaveAction sa && sa.saved())) {
+                    return false;
+                }
             } else if (row instanceof CommandMenuEntry.Triple triple) {
                 double leftBoundary = -halfW + triple.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
                 double rightBoundary = -halfW + triple.middleEnd() * CommandMenuLayout.PANEL_WIDTH;

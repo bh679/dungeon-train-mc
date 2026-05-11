@@ -69,7 +69,8 @@ public final class TrainCommand {
             .then(EditorCommand.build(buildContext))
             .then(SaveCommand.build())
             .then(ResetCommand.build())
-            .then(DebugCommand.build());
+            .then(DebugCommand.build())
+            .then(PackageCommand.build());
 
         LiteralCommandNode<CommandSourceStack> registered = dispatcher.register(root);
 

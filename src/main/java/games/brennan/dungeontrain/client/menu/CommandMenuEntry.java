@@ -132,4 +132,21 @@ public sealed interface CommandMenuEntry {
                   double leftFraction, double middleEnd) implements CommandMenuEntry {
         @Override public String label() { return middleEntry.label(); }
     }
+
+    /**
+     * Four buttons side-by-side in one row. {@link #boundary1},
+     * {@link #boundary2}, {@link #boundary3} are panel-relative
+     * fractions (0..1) marking the three dividers between the four
+     * cells. The raycast produces {@code subIdx} 0 / 1 / 2 / 3 for
+     * left-most through right-most.
+     *
+     * <p>Used by the package list — each package row needs Name |
+     * Save | Open | Enable. Activating the leftmost cell flips the
+     * highlight without closing the menu so the player can immediately
+     * see which package became active.</p>
+     */
+    record Quad(CommandMenuEntry e1, CommandMenuEntry e2, CommandMenuEntry e3, CommandMenuEntry e4,
+                double boundary1, double boundary2, double boundary3) implements CommandMenuEntry {
+        @Override public String label() { return e1.label(); }
+    }
 }

@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import org.slf4j.Logger;
 
@@ -15,7 +14,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -23,80 +21,65 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Auto-import companion to {@link UserContentExporter}. On every server
- * start, walks {@code <game>/imports/*.zip} and extracts each archive into
- * {@link UserContentPaths#root()} so a player can share content just by
- * dropping the zip into a watched folder.
+ * Auto-extract companion for the dtpacks workflow. On every server start,
+ * walks {@code <gameDir>/dtpacks/*.zip} and extracts each archive into a
+ * sibling working folder {@code dtpacks/<name>/} when one doesn't already
+ * exist. Zips stay in place after extraction — they're the saved snapshot
+ * of the corresponding working folder and the player keeps them around
+ * for sharing or rollback.
  *
  * <p>Lifecycle per launch:
  * <ol>
- *   <li>Ensure the {@code <game>/imports/} drop-zone exists (creates it
- *       with a {@code README.txt} on first run so the player can find
- *       it).</li>
- *   <li>For each {@code *.zip} at the top level of the folder:
+ *   <li>Ensure {@code <gameDir>/dtpacks/} exists (created by
+ *       {@link DtpacksMigration} on the very first launch; created with a
+ *       README on every launch otherwise).</li>
+ *   <li>For each {@code *.zip} at the top level of {@code dtpacks/}:
  *       <ol type="a">
- *         <li>Open the zip read-only.</li>
- *         <li>For every entry:
- *           <ul>
- *             <li>Skip the top-level {@code manifest.json} (metadata, not
- *                 content).</li>
- *             <li>Reject entries whose normalised path escapes the
- *                 destination root (zip-slip guard).</li>
- *             <li>Skip entries whose destination file already exists —
- *                 the importer never overwrites existing user content. The
- *                 player can move the conflicting file aside and re-import
- *                 if they want the package's version.</li>
- *             <li>Otherwise copy the bytes to
- *                 {@code <config>/dungeontrain/user/<entry-path>},
- *                 creating intermediate directories as needed.</li>
- *           </ul>
- *         </li>
- *         <li>On success, move the zip to {@code <game>/imports/installed/}
- *             so the next launch doesn't re-import it.</li>
- *         <li>On failure (corrupt zip, IO error mid-extract), leave the
- *             zip in {@code imports/} and log the cause — the player can
- *             inspect or retry.</li>
+ *         <li>If the sibling {@code dtpacks/<name>/} folder already
+ *             exists, skip — the working copy is authoritative.</li>
+ *         <li>Otherwise open the zip read-only and extract every entry
+ *             into {@code dtpacks/<name>/<entry-path>}. Entries are
+ *             zip-slip guarded; the {@code manifest.json} top-level
+ *             metadata entry is skipped.</li>
  *       </ol>
  *   </li>
+ *   <li>Invalidate {@link PackageRegistry} so the next read picks up the
+ *       newly-extracted package folders.</li>
  * </ol>
  *
  * <p>Fires on {@link ServerStartingEvent} at {@link EventPriority#HIGH} so
- * it runs <i>after</i> {@link UserContentMigration} (HIGHEST) — pre-0.125
- * legacy files have already been moved into the user-content root by the
- * time we extract — and <i>before</i> the per-store {@code reload()}
- * handlers (NORMAL) so the newly-imported templates are visible to the
- * registry scan that follows.</p>
+ * it runs <i>after</i> {@link UserContentMigration} (HIGHEST, legacy file
+ * moves) and {@link DtpacksMigration} (HIGH, layout migration), and
+ * <i>before</i> the per-store {@code reload()} handlers (NORMAL) so any
+ * newly-extracted templates are visible to the registry scan that
+ * follows.</p>
  *
- * <p>Conflict policy is "skip, don't overwrite" because the importer can't
- * tell whether the existing file represents the player's own edits or a
- * stale leftover. Erring on the side of preserving in-place work means a
- * player who has been authoring locally never has their changes silently
- * clobbered by an imported package with overlapping ids.</p>
+ * <p>Conflict policy is "skip if working folder exists, don't overwrite".
+ * The working folder is truth during play; the zip is only a snapshot
+ * (rewritten by an explicit Save). When a player wants to revert to the
+ * zip, they delete the working folder first; the next launch (or a
+ * Reload) re-extracts.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class UserContentImporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Drop-zone for zips that should be auto-extracted into the user folder on launch. */
-    static final String IMPORTS_SUBDIR = "imports";
-
-    /** Sub-folder of {@link #IMPORTS_SUBDIR} where successfully-imported zips are moved. */
-    static final String INSTALLED_SUBDIR = "installed";
-
-    /** Filename for the README written into a freshly-created imports folder. */
+    /** Filename for the README written into a freshly-created dtpacks folder. */
     private static final String README_FILENAME = "README.txt";
 
     private static final String README_BODY =
-        "Drop Dungeon Train package zips (exports/dungeontrain-export-*.zip) into\n"
-            + "this folder. On the next server start the mod will:\n"
-            + "  1. Extract every template inside the zip into\n"
-            + "     <minecraft>/config/dungeontrain/user/\n"
-            + "  2. Move the zip into the 'installed/' sub-folder so it isn't\n"
-            + "     re-imported on subsequent launches.\n"
+        "Dungeon Train packages folder.\n"
             + "\n"
-            + "Existing files under config/dungeontrain/user/ are NEVER overwritten —\n"
-            + "if the import skips a file, the on-disk copy you already had wins.\n";
+            + "Each .zip in here is a saved package snapshot. Its sibling folder\n"
+            + "(same basename, no .zip) is the working copy that gameplay reads from.\n"
+            + "\n"
+            + "Drop a .zip in here from another player and the next server start (or\n"
+            + "an in-game Reload) will extract it into a folder of the same name. The\n"
+            + "zip stays put — the folder is the live, editable copy.\n"
+            + "\n"
+            + "To revert a package to its saved snapshot, delete the folder and\n"
+            + "Reload; the zip re-extracts to a fresh folder.\n";
 
     /** Skipped on import — it's metadata about the package, not a template payload. */
     private static final String MANIFEST_ENTRY = "manifest.json";
@@ -118,65 +101,42 @@ public final class UserContentImporter {
 
     /**
      * Public entry point so tests + manual {@code /dt} commands can drive
-     * the scan without waiting for a server restart. Iterates the import
-     * folder and returns one {@link ZipResult} per zip processed (empty
-     * list when the folder is empty or absent).
+     * the scan without waiting for a server restart. Walks
+     * {@code <gameDir>/dtpacks/*.zip} and extracts any zip whose sibling
+     * working folder is missing, returning one {@link ZipResult} per
+     * extraction performed. Empty result when every zip already has a
+     * companion folder (the common case).
+     *
+     * <p>Side effect: invalidates {@link PackageRegistry} when at least
+     * one extraction happens, so the next registry read re-scans
+     * {@code dtpacks/} and picks up the new package(s).</p>
      */
     public static synchronized List<ZipResult> importAll() {
-        Path importsDir = FMLPaths.GAMEDIR.get().resolve(IMPORTS_SUBDIR);
-        ensureReadme(importsDir);
+        Path dtpacks = PackageRegistry.dtpacksRoot();
+        ensureReadme(dtpacks);
 
-        if (!Files.isDirectory(importsDir)) return List.of();
+        if (!Files.isDirectory(dtpacks)) return List.of();
 
-        Path installedDir = importsDir.resolve(INSTALLED_SUBDIR);
-        Path importedRoot = UserContentPaths.importedRoot();
-        try {
-            Files.createDirectories(importedRoot);
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to ensure imported-content root {}: {}",
-                importedRoot, e.toString());
-            return List.of();
-        }
-
-        // Process zips from BOTH the top-level drop-zone AND the installed/
-        // subfolder. Previously-installed zips get reprocessed when their
-        // imported/<package>/ folder is missing (auto-recovery path: e.g.
-        // the player deleted the package dir to revert, or the layout
-        // changed in a mod upgrade and the old install needs re-extraction).
-        // Per-file skip-if-exists in importOne() keeps it cheap when the
-        // package is already extracted — every file is a no-op skip.
-        List<Path> inboxZips = listZipsAtTopLevel(importsDir);
-        List<Path> archivedZips = listZipsAtTopLevel(installedDir);
-        if (inboxZips.isEmpty() && archivedZips.isEmpty()) return List.of();
-
-        java.util.Comparator<Path> byName = (a, b) -> a.getFileName().toString()
-            .compareToIgnoreCase(b.getFileName().toString());
-        inboxZips.sort(byName);
-        archivedZips.sort(byName);
+        List<Path> zips = listZipsAtTopLevel(dtpacks);
+        if (zips.isEmpty()) return List.of();
+        zips.sort((a, b) -> a.getFileName().toString().compareToIgnoreCase(b.getFileName().toString()));
 
         List<ZipResult> results = new ArrayList<>();
-        // Inbox zips first — they're the canonical "new arrivals", and on
-        // success they move into installed/. Archived zips next — those
-        // already live in installed/, so we only re-extract when their
-        // imported/<package>/ folder is missing.
-        for (Path zip : inboxZips) {
-            ZipResult r = importOne(zip, importedRoot);
-            results.add(r);
-            if (r.imported() > 0 || r.skipped() > 0) {
-                moveToInstalled(zip, installedDir);
-            }
-        }
-        for (Path zip : archivedZips) {
+        for (Path zip : zips) {
             String packageName = packageNameFor(zip);
-            Path packageDir = importedRoot.resolve(packageName);
-            if (Files.isDirectory(packageDir)) {
-                // Already extracted; nothing to recover. Don't reprocess —
-                // the player intentionally moved it here.
+            Path workingDir = dtpacks.resolve(packageName);
+            if (Files.isDirectory(workingDir)) {
+                // Working folder already present — it's authoritative during
+                // play. Don't re-extract; that would shadow user edits with
+                // the stale snapshot.
                 continue;
             }
-            LOGGER.info("[DungeonTrain] Recovering archived package {} — extracted folder missing",
-                zip.getFileName());
-            results.add(importOne(zip, importedRoot));
+            results.add(importOne(zip, dtpacks));
+        }
+        if (!results.isEmpty()) {
+            // Brand-new package folders appeared — make the registry pick them
+            // up on the next read.
+            PackageRegistry.invalidate();
         }
         return results;
     }
@@ -307,56 +267,32 @@ public final class UserContentImporter {
     }
 
     /**
-     * Move {@code zip} into {@code installedDir} so the next launch's scan
-     * doesn't re-process it. On collision (an earlier import of the same
-     * filename), append a numeric suffix until the destination is free —
-     * preserves the original name as the primary so the player can still
-     * find their packages.
+     * Create the dtpacks directory + README on first run. Quiet no-op
+     * when the README already exists, so we don't keep stomping a
+     * player's customised note. Failures here don't block the rest of
+     * import — the folder might already exist but be unwritable, in
+     * which case the normal scan will skip it gracefully.
      */
-    private static void moveToInstalled(Path zip, Path installedDir) {
+    private static void ensureReadme(Path dtpacks) {
         try {
-            Files.createDirectories(installedDir);
-            Path target = installedDir.resolve(zip.getFileName().toString());
-            int suffix = 2;
-            while (Files.exists(target)) {
-                String name = zip.getFileName().toString();
-                int dot = name.lastIndexOf('.');
-                String stem = dot > 0 ? name.substring(0, dot) : name;
-                String ext = dot > 0 ? name.substring(dot) : "";
-                target = installedDir.resolve(stem + "-" + suffix + ext);
-                suffix++;
+            Files.createDirectories(dtpacks);
+            Path readme = dtpacks.resolve(README_FILENAME);
+            if (!Files.exists(readme)) {
+                Files.writeString(readme, README_BODY, StandardCharsets.UTF_8);
+                LOGGER.info("[DungeonTrain] Created dtpacks folder at {}", dtpacks);
             }
-            Files.move(zip, target, StandardCopyOption.ATOMIC_MOVE);
-            LOGGER.info("[DungeonTrain] Moved imported zip {} -> {}", zip.getFileName(), target);
         } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Couldn't move imported zip {} to installed/: {} (next launch will reprocess)",
-                zip.getFileName(), e.toString());
+            LOGGER.warn("[DungeonTrain] Couldn't initialise dtpacks dir {}: {}", dtpacks, e.toString());
         }
     }
 
     /**
-     * Create the imports directory + README on first run. Quiet no-op when
-     * the README already exists, so we don't keep stomping a player's
-     * customised note. Failures here don't block the rest of import — the
-     * folder might already exist but be unwritable, in which case the
-     * normal scan will skip it gracefully.
+     * Path accessor for menu "Open Folder" entries. Returns the unified
+     * {@code <gameDir>/dtpacks/} folder — the single source of truth for
+     * both archived snapshots and working copies.
      */
-    private static void ensureReadme(Path importsDir) {
-        try {
-            Files.createDirectories(importsDir);
-            Path readme = importsDir.resolve(README_FILENAME);
-            if (!Files.exists(readme)) {
-                Files.writeString(readme, README_BODY, StandardCharsets.UTF_8);
-                LOGGER.info("[DungeonTrain] Created imports drop-zone at {}", importsDir);
-            }
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Couldn't initialise imports dir {}: {}", importsDir, e.toString());
-        }
-    }
-
-    /** Path accessor for the menu's "Open Import Folder" entry. */
     public static Path directory() {
-        return FMLPaths.GAMEDIR.get().resolve(IMPORTS_SUBDIR);
+        return PackageRegistry.dtpacksRoot();
     }
 
     /**
@@ -364,74 +300,20 @@ public final class UserContentImporter {
      * server restart. Used by the Package menu's Reload button and the
      * {@code /dungeontrain editor import} slash command.
      *
-     * <p>Order mirrors the per-handler {@code ServerStartingEvent} sequence:
-     * <ol>
-     *   <li>Run the importer — extracts any new zips in
-     *       {@code <game>/imports/} into the user-content root.</li>
-     *   <li>Clear every editor template / sidecar cache so the next get/load
-     *       re-reads from disk.</li>
-     *   <li>Reload every variant registry so newly-extracted templates
-     *       become addressable by id.</li>
-     *   <li>Reload weights last, since weight lookups index on registry
-     *       ids that the previous step just rebuilt.</li>
-     * </ol>
-     *
-     * <p>Synchronous. Caller surfaces the {@link Summary} in chat or logs.</p>
+     * <p>Delegates to
+     * {@link games.brennan.dungeontrain.template.TemplateStores#reloadAll(boolean)}
+     * which owns the full pipeline — importer, cache clears, registry
+     * reloads, weights, and editor-plot-snapshot reset. Kept here as a
+     * legacy entry point so existing call sites
+     * ({@code dungeontrain editor import} command, Reload button) don't
+     * need to change.</p>
      */
     public static synchronized Summary reloadAll() {
-        List<ZipResult> imports = importAll();
-
-        // Clear caches first so the registry reloads don't read through to
-        // stale unpacked-cell or sidecar state.
-        games.brennan.dungeontrain.editor.CarriageTemplateStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriageContentsStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriageVariantBlocks.clearCache();
-        games.brennan.dungeontrain.editor.CarriageVariantPartsStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriagePartTemplateStore.clearCache();
-        games.brennan.dungeontrain.editor.CarriagePartVariantBlocks.clearCache();
-        games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.clearCache();
-        games.brennan.dungeontrain.editor.PillarTemplateStore.clearCache();
-        games.brennan.dungeontrain.editor.ContainerContentsStore.clearCache();
-        games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
-        games.brennan.dungeontrain.track.variant.TrackVariantBlocks.clearCache();
-
-        // Registries — order matches the order they fire on ServerStartingEvent.
-        games.brennan.dungeontrain.track.variant.TrackVariantRegistry.reload();
-        games.brennan.dungeontrain.train.CarriageVariantRegistry.reload();
-        games.brennan.dungeontrain.train.CarriageContentsRegistry.reload();
-        games.brennan.dungeontrain.editor.CarriagePartRegistry.reload();
-        games.brennan.dungeontrain.editor.CarriageTemplateStore.reload();
-        games.brennan.dungeontrain.editor.CarriageContentsStore.reload();
-        games.brennan.dungeontrain.editor.LootPrefabStore.reload();
-        games.brennan.dungeontrain.editor.BlockVariantPrefabStore.reload();
-
-        // Weights last — they look up registered ids to decide whether to
-        // log warnings about unknown entries.
-        games.brennan.dungeontrain.train.CarriageWeights.reload();
-        games.brennan.dungeontrain.train.CarriageContentsWeights.reload();
-        games.brennan.dungeontrain.track.variant.TrackVariantWeights.reload();
-
-        int imported = 0;
-        int skipped = 0;
-        int rejected = 0;
-        for (ZipResult r : imports) {
-            imported += r.imported();
-            skipped += r.skipped();
-            rejected += r.rejected();
-        }
-        LOGGER.info(
-            "[DungeonTrain] Reload complete — {} package(s) processed, {} new file(s), {} skipped, {} rejected.",
-            imports.size(), imported, skipped, rejected);
-        return new Summary(imports.size(), imported, skipped, rejected);
+        games.brennan.dungeontrain.template.TemplateStores.Summary s =
+            games.brennan.dungeontrain.template.TemplateStores.reloadAll(true);
+        return new Summary(s.packagesProcessed(), s.filesImported(), s.filesSkipped(), s.filesRejected());
     }
 
     /** Aggregate counts returned by {@link #reloadAll()}. */
     public record Summary(int packagesProcessed, int filesImported, int filesSkipped, int filesRejected) {}
-
-    /** Lowercase the locale-insensitive helper a couple of call sites need. */
-    @SuppressWarnings("unused")
-    private static String lc(String s) {
-        return s.toLowerCase(Locale.ROOT);
-    }
 }

@@ -210,6 +210,10 @@ public final class CommandMenuRenderer {
             drawSplitRow(poseStack, buffer, font, split, rowIndex, count, hovered, hoveredSub);
             return;
         }
+        if (entry instanceof CommandMenuEntry.Quad quad) {
+            drawQuadRow(poseStack, buffer, font, quad, rowIndex, count, hovered, hoveredSub);
+            return;
+        }
         if (entry instanceof CommandMenuEntry.Triple triple) {
             drawTripleRow(poseStack, buffer, font, triple, rowIndex, count, hovered, hoveredSub);
             return;
@@ -357,6 +361,36 @@ public final class CommandMenuRenderer {
         drawTripleCell(poseStack, buffer, font, triple.rightEntry(),
             rightBoundary + gap / 2f, halfW - padX, cy, halfH, padY,
             hovered && hoveredSub == 2);
+    }
+
+    private static void drawQuadRow(
+        PoseStack poseStack, MultiBufferSource buffer, Font font,
+        CommandMenuEntry.Quad quad, int rowIndex, int count,
+        boolean hovered, int hoveredSub
+    ) {
+        float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
+        float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
+        float cy = (float) CommandMenuLayout.rowCenterY(rowIndex, count);
+        float padX = 0.02f;
+        float padY = 0.005f;
+        float gap = 0.012f;
+
+        float b1 = (float) (-halfW + quad.boundary1() * CommandMenuLayout.PANEL_WIDTH);
+        float b2 = (float) (-halfW + quad.boundary2() * CommandMenuLayout.PANEL_WIDTH);
+        float b3 = (float) (-halfW + quad.boundary3() * CommandMenuLayout.PANEL_WIDTH);
+
+        drawTripleCell(poseStack, buffer, font, quad.e1(),
+            -halfW + padX, b1 - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 0);
+        drawTripleCell(poseStack, buffer, font, quad.e2(),
+            b1 + gap / 2f, b2 - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 1);
+        drawTripleCell(poseStack, buffer, font, quad.e3(),
+            b2 + gap / 2f, b3 - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 2);
+        drawTripleCell(poseStack, buffer, font, quad.e4(),
+            b3 + gap / 2f, halfW - padX, cy, halfH, padY,
+            hovered && hoveredSub == 3);
     }
 
     private static void drawTripleCell(
