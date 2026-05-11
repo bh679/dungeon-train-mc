@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 4,
   "variants": {
     "0,0,0": [{"state": "minecraft:stone_bricks", "weight": 7}, {"state": "minecraft:cracked_stone_bricks", "weight": 2}, "minecraft:stone_brick_slab[type=bottom,waterlogged=false]", "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"],
     "0,1,0": [{"state": "minecraft:stone_bricks", "weight": 7}, {"state": "minecraft:cracked_stone_bricks", "weight": 2}, "minecraft:stone_brick_slab[type=bottom,waterlogged=false]", "minecraft:stone_brick_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"],

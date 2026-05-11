@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 5,
   "variants": {
     "6,0,0": [{"state": "minecraft:mud", "weight": 10}, "minecraft:dirt_path"],
     "6,0,1": [{"state": "minecraft:mud", "weight": 10}, "minecraft:dirt_path"],
