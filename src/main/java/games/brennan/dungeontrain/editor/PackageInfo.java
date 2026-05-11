@@ -32,8 +32,16 @@ public record PackageInfo(String name, Path workingDir, Path zipPath, Provenance
      * Reserved id for the unsaved pseudo-package. Treated specially by the
      * registry: it's always present, always enabled, and represents
      * {@code user/} rather than a folder under {@code dtpacks/}.
+     *
+     * <p>Plain {@code "unsaved"} (no surrounding parens or other
+     * punctuation) so the slash-command argument set
+     * ({@link com.mojang.brigadier.arguments.StringArgumentType#word()})
+     * accepts it verbatim — Brigadier's word parser rejects
+     * non-alphanumeric characters, which would have made
+     * {@code dungeontrain package activate (unsaved)} an unparseable
+     * command.</p>
      */
-    public static final String UNSAVED_NAME = "(unsaved)";
+    public static final String UNSAVED_NAME = "unsaved";
 
     /** Factory for the unsaved pseudo-package — {@code workingDir = user/}, no zip. */
     public static PackageInfo unsaved(Path userRoot) {

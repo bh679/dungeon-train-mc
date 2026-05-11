@@ -169,6 +169,13 @@ public final class PackageRegistry {
         // 2. Read state file (active name + disabled set). Absent → defaults are fine.
         readStateFile();
 
+        // Backwards-compat: pre-rename state files persisted active="(unsaved)"
+        // when that was the sentinel. Normalise to the new bare-word form so
+        // the registry / slash commands don't trip over the parens.
+        if ("(unsaved)".equalsIgnoreCase(activeName)) {
+            activeName = PackageInfo.UNSAVED_NAME;
+        }
+
         // 3. Scan dtpacks/ for working folders + zips. Pair them up.
         Map<String, ScanEntry> found = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         scanDtpacks(found);
