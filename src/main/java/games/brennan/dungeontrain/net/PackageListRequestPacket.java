@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.PackageInfo;
 import games.brennan.dungeontrain.editor.PackageRegistry;
@@ -9,6 +10,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -29,6 +31,8 @@ import java.util.Map;
  * {@link IPayloadContext#player()}.</p>
  */
 public record PackageListRequestPacket() implements CustomPacketPayload {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     public static final Type<PackageListRequestPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "package_list_request"));
@@ -53,9 +57,18 @@ public record PackageListRequestPacket() implements CustomPacketPayload {
      */
     public static void handle(PackageListRequestPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer player)) return;
-            if (!player.hasPermissions(2)) return;
+            if (!(ctx.player() instanceof ServerPlayer player)) {
+                LOGGER.debug("[DungeonTrain] PackageListRequest: dropping — no ServerPlayer in context");
+                return;
+            }
+            if (!player.hasPermissions(2)) {
+                LOGGER.debug("[DungeonTrain] PackageListRequest: dropping non-OP request from {}",
+                    player.getName().getString());
+                return;
+            }
             PackageListSyncPacket sync = build();
+            LOGGER.debug("[DungeonTrain] PackageListRequest: sending sync to {} ({} packages)",
+                player.getName().getString(), sync.entries().size());
             DungeonTrainNet.sendTo(player, sync);
         });
     }

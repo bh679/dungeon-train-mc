@@ -1,12 +1,15 @@
 package games.brennan.dungeontrain.client;
 
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.PackageInfo;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PackageListRequestPacket;
 import games.brennan.dungeontrain.net.PackageListSyncPacket;
+import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -26,6 +29,8 @@ import java.util.Optional;
  */
 public final class PackageListClient {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /** Min ticks between consecutive throttled refreshes (~250ms at 20 TPS). */
     private static final long THROTTLE_TICKS = 5L;
 
@@ -35,11 +40,22 @@ public final class PackageListClient {
     private static volatile PackageListSyncPacket SNAPSHOT;
     private static long lastRequestTick = Long.MIN_VALUE;
 
+    /**
+     * Synthetic placeholder used when the server snapshot hasn't arrived
+     * yet. Always represents the unsaved pseudo-package — without it the
+     * menu would render an empty list (or just "Loading...") on first
+     * open, which looks broken even though the unsaved package's
+     * existence is a client-side invariant.
+     */
+    private static final PackageListSyncPacket.Entry UNSAVED_PLACEHOLDER =
+        new PackageListSyncPacket.Entry(PackageInfo.UNSAVED_NAME, false, true, true, Map.of());
+
     private PackageListClient() {}
 
     /** Replace the cached snapshot. Called by {@link PackageListSyncPacket#handle}. */
     public static void setSnapshot(PackageListSyncPacket packet) {
         SNAPSHOT = packet;
+        LOGGER.debug("[DungeonTrain] PackageListClient: snapshot updated, {} packages", packet.entries().size());
     }
 
     /** Drop the cached snapshot — used when the player leaves a world / server. */
@@ -53,18 +69,37 @@ public final class PackageListClient {
         return Optional.ofNullable(SNAPSHOT);
     }
 
-    /** Just the entries list (empty when no snapshot). */
+    /**
+     * Entries to render. Falls back to a single synthetic
+     * {@code (unsaved)} entry when the server snapshot hasn't arrived
+     * yet — that way the menu always looks "alive" on first open, and
+     * if the sync is slow or fails (e.g. permission-rejected on a
+     * dedicated server, network hiccup) the player still sees the
+     * unsaved package they can Save into.
+     */
     public static List<PackageListSyncPacket.Entry> entries() {
         PackageListSyncPacket snap = SNAPSHOT;
-        return snap == null ? Collections.emptyList() : snap.entries();
+        if (snap == null || snap.entries().isEmpty()) {
+            return List.of(UNSAVED_PLACEHOLDER);
+        }
+        return snap.entries();
     }
 
-    /** Locate the entry currently flagged as active (Optional.empty if no snapshot). */
+    /**
+     * The entry currently flagged active. Falls back to the synthetic
+     * unsaved entry when no snapshot exists yet, so the contents pane
+     * has something coherent to render on first open.
+     */
     public static Optional<PackageListSyncPacket.Entry> activeEntry() {
-        for (PackageListSyncPacket.Entry e : entries()) {
+        PackageListSyncPacket snap = SNAPSHOT;
+        if (snap == null || snap.entries().isEmpty()) {
+            return Optional.of(UNSAVED_PLACEHOLDER);
+        }
+        for (PackageListSyncPacket.Entry e : snap.entries()) {
             if (e.isActive()) return Optional.of(e);
         }
-        return Optional.empty();
+        // Snapshot exists but flagged nothing active — defensive fallback.
+        return Optional.of(snap.entries().get(0));
     }
 
     /** Look up an entry by name. */
@@ -84,6 +119,7 @@ public final class PackageListClient {
     public static void requestRefresh() {
         DungeonTrainNet.sendToServer(new PackageListRequestPacket());
         lastRequestTick = currentTick();
+        LOGGER.debug("[DungeonTrain] PackageListClient: sent immediate refresh request");
     }
 
     /**
@@ -93,8 +129,12 @@ public final class PackageListClient {
     public static void requestRefreshThrottled() {
         long now = currentTick();
         if (now - lastRequestTick < THROTTLE_TICKS) return;
+        boolean firstRequest = lastRequestTick == Long.MIN_VALUE;
         lastRequestTick = now;
         DungeonTrainNet.sendToServer(new PackageListRequestPacket());
+        if (firstRequest) {
+            LOGGER.debug("[DungeonTrain] PackageListClient: sent initial refresh request");
+        }
     }
 
     /**
