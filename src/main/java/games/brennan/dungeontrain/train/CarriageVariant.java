@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
  * in {@link CarriageVariantRegistry}.
  *
  * <p>The {@link #id()} is the canonical lowercase token used as the template
- * filename under {@code config/dungeontrain/templates/} and as the argument
+ * filename under {@code config/dungeontrain/user/templates/} and as the argument
  * token on {@code /dungeontrain editor ...} subcommands. Built-in ids are the
  * lowercased enum names; custom ids are validated against {@link #NAME_PATTERN}.
  */

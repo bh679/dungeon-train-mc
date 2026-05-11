@@ -45,8 +45,8 @@ import java.util.TreeSet;
  *       shipped customs (same id is deduplicated by the underlying TreeSet).</li>
  * </ol>
  * Only carriage-sized {@code .nbt} files belong in that directory. Pillar
- * templates live under {@code config/dungeontrain/pillars/} ({@link PillarTemplateStore})
- * and tunnel templates under {@code config/dungeontrain/tunnels/}
+ * templates live under {@code config/dungeontrain/user/pillars/} ({@link PillarTemplateStore})
+ * and tunnel templates under {@code config/dungeontrain/user/tunnels/}
  * ({@link games.brennan.dungeontrain.editor.TunnelTemplateStore}) so this scan
  * can't misinterpret their footprints as carriages and leave gaps in the train.
  * The registry holds only the identifiers — the template bytes stay in
@@ -183,27 +183,25 @@ public final class CarriageVariantRegistry {
     }
 
     /**
-     * Scan the per-install config directory for {@code .nbt} files and add
-     * their basenames as customs. Returns the count of ids added that weren't
-     * already present (duplicates from the bundled manifest are fine — same id
-     * already resolves to the config-dir copy first in {@code CarriageTemplateStore}).
+     * Scan the per-install user dir AND every imported package dir for
+     * {@code .nbt} files, adding their basenames as customs. Returns the
+     * count of ids newly added.
+     *
+     * <p>Resolution at load time still prefers {@code user/} over
+     * imported/<pkg>/ — see {@link games.brennan.dungeontrain.editor.UserContentPaths#findFile}
+     * — so a user-edited variant with the same id as one from a package
+     * stays user-authored. The registry only needs to know "this id
+     * exists somewhere"; precedence is the load-time concern.</p>
      */
     private static int loadConfigDir() {
-        Path dir = CarriageTemplateStore.directory();
-        if (!Files.isDirectory(dir)) return 0;
-
+        java.util.Set<String> ids = games.brennan.dungeontrain.editor.UserContentPaths
+            .listBasenamesAcrossSearchDirs(
+                games.brennan.dungeontrain.editor.CarriageTemplateStore.SUBDIR, ".nbt");
         int added = 0;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.nbt")) {
-            for (Path file : stream) {
-                String name = file.getFileName().toString();
-                if (!name.endsWith(".nbt")) continue;
-                String basename = name.substring(0, name.length() - 4).toLowerCase(Locale.ROOT);
-                if (CarriageVariant.isReservedBuiltinName(basename)) continue;
-                if (!acceptCustomId(basename, "config dir " + file.getFileName())) continue;
-                if (CUSTOMS.add(basename)) added++;
-            }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to scan templates directory {}: {}", dir, e.toString());
+        for (String basename : ids) {
+            if (CarriageVariant.isReservedBuiltinName(basename)) continue;
+            if (!acceptCustomId(basename, "user/ + imports")) continue;
+            if (CUSTOMS.add(basename)) added++;
         }
         return added;
     }

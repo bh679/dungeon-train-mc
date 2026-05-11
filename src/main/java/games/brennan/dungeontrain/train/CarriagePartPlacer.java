@@ -138,7 +138,8 @@ public final class CarriagePartPlacer {
                 BlockState toPlace = rotated.mirror(p.mirror());
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                     level, world, toPlace, picked.blockEntityNbt(),
-                    "part:" + kind.id() + ":" + name, entry.localPos(), seed, carriageIndex);
+                    "part:" + kind.id() + ":" + name, entry.localPos(), seed, carriageIndex,
+                    picked.linkedLootPrefabId());
             }
         }
     }

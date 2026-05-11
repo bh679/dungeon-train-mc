@@ -29,7 +29,8 @@ import java.util.Optional;
  * {@link games.brennan.dungeontrain.tunnel.TunnelGenerator} when it picks a
  * registry-weighted name per tunnel index.
  *
- * <p>Legacy {@code config/dungeontrain/tunnels/section.nbt} →
+ * <p>New layout: {@code config/dungeontrain/user/tunnels/<variant>/<name>.nbt}.
+ * Legacy {@code config/dungeontrain/tunnels/section.nbt} →
  * {@code tunnels/section/default.nbt} migration (and {@code portal}) lives
  * in {@link TrackVariantStore#migrateLegacyPaths()}, called from the variant
  * registry's server-start hook before this store ever sees a request.</p>

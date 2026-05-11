@@ -1,0 +1,12 @@
+{
+  "train_engine": {
+    "category": "ambient",
+    "subtitle": "subtitles.dungeontrain.train_engine",
+    "sounds": [
+      {
+        "name": "dungeontrain:train_engine",
+        "stream": true
+      }
+    ]
+  }
+}

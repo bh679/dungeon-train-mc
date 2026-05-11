@@ -31,7 +31,7 @@ import java.util.Optional;
  * to compose the carriage from parts instead of stamping the monolithic NBT.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/templates/<id>.parts.json}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/templates/<id>.parts.json}.
  *       Per-install override; the editor's {@code part set/clear} commands
  *       write here.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.parts.json}
@@ -51,7 +51,7 @@ import java.util.Optional;
 public final class CarriageVariantPartsStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/templates";
+    static final String SUBDIR = "templates";
     private static final String EXT = ".parts.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
@@ -63,7 +63,7 @@ public final class CarriageVariantPartsStore {
     private CarriageVariantPartsStore() {}
 
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return UserContentPaths.dir(SUBDIR);
     }
 
     public static Path fileFor(CarriageVariant variant) {
@@ -185,8 +185,8 @@ public final class CarriageVariantPartsStore {
     }
 
     private static Optional<CarriagePartAssignment> loadFromConfig(CarriageVariant variant) {
-        Path file = fileFor(variant);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        Path file = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        if (file == null) return Optional.empty();
         try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             JsonElement root = JsonParser.parseReader(r);
             if (!root.isJsonObject()) {

@@ -572,7 +572,8 @@ public final class VariantOverlayRenderer {
         for (EditorPlotLabels.Label l : labels) {
             entries.add(new EditorPlotLabelsPacket.Entry(
                 l.worldPos(), l.name(), l.weight(),
-                l.category(), l.modelId(), l.modelName(), l.inPlot()));
+                l.category(), l.modelId(), l.modelName(),
+                l.inPlot(), l.isUser(), l.isImported()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
@@ -762,19 +763,27 @@ public final class VariantOverlayRenderer {
             parentId = CarriageContentsGroupStore.findParentOf(active.id()).orElse(active.id());
         }
 
-        // Build the rows. Default (parent self) row always first.
+        // Build the rows. Default (parent self) row always first. Provenance
+        // tints (user/imported) flow through the same Variant fields the rest
+        // of the type menu uses — read from the contents store's file path.
         String cat = EditorCategory.CONTENTS.name();
         List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
+        EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
+            games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(parentId));
         rows.add(new EditorTypeMenusPacket.Variant(
             parentId + " (default)",
             games.brennan.dungeontrain.train.CarriageContentsRegistry.SELF_WEIGHT,
-            cat, parentId, parentId));
+            cat, parentId, parentId,
+            parentProv.isUser(), parentProv.isImported()));
         Optional<games.brennan.dungeontrain.train.CarriageContentsGroup> groupOpt =
             CarriageContentsGroupStore.get(parentId);
         if (groupOpt.isPresent()) {
             for (var m : groupOpt.get().members()) {
+                EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(
+                    games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(m.id()));
                 rows.add(new EditorTypeMenusPacket.Variant(
-                    m.id(), m.weight(), cat, m.id(), m.id()));
+                    m.id(), m.weight(), cat, m.id(), m.id(),
+                    memberProv.isUser(), memberProv.isImported()));
             }
         }
 

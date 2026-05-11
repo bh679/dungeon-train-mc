@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  * <ol>
  *   <li><b>Bundled manifests</b> — {@code /data/dungeontrain/parts/<kind>/manifest.json}
  *       (optional JSON array of names) lists part NBTs that ship with the jar.</li>
- *   <li><b>Config directories</b> — {@code config/dungeontrain/parts/<kind>/*.nbt}
+ *   <li><b>Config directories</b> — {@code config/dungeontrain/user/parts/<kind>/*.nbt}
  *       scanned for filenames (minus the {@code .nbt} suffix).</li>
  * </ol>
  *
@@ -164,24 +164,14 @@ public final class CarriagePartRegistry {
     private static int loadConfigDirs() {
         int added = 0;
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            Path dir = CarriagePartTemplateStore.directory(kind);
-            if (!Files.isDirectory(dir)) continue;
-            // Collect filenames first and sort alphabetically — DirectoryStream
-            // is filesystem-ordered (APFS by inode, ext4 by hash), so without
-            // an explicit sort the registry ordering — and therefore the parts
-            // grid's X slot assignments — would differ between machines and
-            // even between sessions on the same machine.
-            List<String> ids = new ArrayList<>();
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.nbt")) {
-                for (Path file : stream) {
-                    String fn = file.getFileName().toString();
-                    if (!fn.endsWith(".nbt")) continue;
-                    ids.add(fn.substring(0, fn.length() - 4).toLowerCase(Locale.ROOT));
-                }
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] Failed to scan parts directory {}: {}", dir, e.toString());
-            }
-            Collections.sort(ids);
+            // Walks user/parts/<kind>/ + every imported/<pkg>/parts/<kind>/.
+            // UserContentPaths.listBasenamesAcrossSearchDirs returns a
+            // TreeSet so iteration order is alphabetical — keeps the parts
+            // grid's X slot assignments deterministic across launches and
+            // across machines.
+            java.util.Set<String> ids = games.brennan.dungeontrain.editor.UserContentPaths
+                .listBasenamesAcrossSearchDirs(
+                    CarriagePartTemplateStore.SUBDIR_BASE + "/" + kind.id(), ".nbt");
             for (String id : ids) {
                 if (register(kind, id)) added++;
             }

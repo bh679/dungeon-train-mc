@@ -208,6 +208,38 @@ public final class CarriageEditor {
     }
 
     /**
+     * Erase + re-stamp the dirty slice of the +X row after a variant has been
+     * removed from {@link CarriageVariantRegistry}. {@code oldDeletedIndex} is
+     * the registry index the variant occupied <b>before</b> {@code unregister},
+     * and {@code oldCount} is the registry size before {@code unregister}.
+     *
+     * <p>Erases every slot from {@code oldDeletedIndex} through
+     * {@code oldCount - 1} (the dirty range — these positions either hold
+     * stale blocks from variants that just shifted left, or are the now-
+     * vacated tail slot the row no longer reaches), then re-stamps each
+     * variant whose <b>new</b> index ≥ {@code oldDeletedIndex} so its blocks
+     * land at the freshly-computed position.</p>
+     *
+     * <p>Must be called <b>after</b> {@link CarriageVariantRegistry#unregister}
+     * so {@code plotOrigin} resolves shifted indices to their new positions.
+     * Caller must capture {@code oldDeletedIndex} and {@code oldCount} from
+     * the pre-unregister registry snapshot.</p>
+     */
+    public static void restampRowAfterDeletion(ServerLevel level, int oldDeletedIndex, int oldCount, CarriageDims dims) {
+        int step = dims.length() + EditorLayout.GAP;
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int i = oldDeletedIndex; i < oldCount; i++) {
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * step, PLOT_Y, PLOT_Z);
+            CarriagePlacer.eraseAt(level, pos, dims);
+            setOutline(level, pos, air, dims);
+        }
+        List<CarriageVariant> remaining = CarriageVariantRegistry.allVariants();
+        for (int i = oldDeletedIndex; i < remaining.size(); i++) {
+            stampPlot(level, remaining.get(i), dims);
+        }
+    }
+
+    /**
      * Erase the plot for {@code variant} — footprint cleared to air and the
      * barrier cage around it removed. Used when switching categories (leaves
      * no stale carriages visible once the player moves on to tracks) and on

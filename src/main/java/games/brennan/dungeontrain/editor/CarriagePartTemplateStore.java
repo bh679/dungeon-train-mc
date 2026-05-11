@@ -38,7 +38,7 @@ import java.util.Optional;
  * stores use).
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/parts/<kind>/<name>.nbt}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/parts/<kind>/<name>.nbt}.
  *       Per-install override; the editor writes here via
  *       {@link games.brennan.dungeontrain.editor.CarriagePartEditor#save}.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/parts/<kind>/<name>.nbt}
@@ -57,7 +57,7 @@ import java.util.Optional;
 public final class CarriagePartTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR_BASE = "dungeontrain/parts";
+    public static final String SUBDIR_BASE = "parts";
     private static final String EXT = ".nbt";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
@@ -68,7 +68,7 @@ public final class CarriagePartTemplateStore {
     private CarriagePartTemplateStore() {}
 
     public static Path directory(CarriagePartKind kind) {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR_BASE).resolve(kind.id());
+        return UserContentPaths.dir(SUBDIR_BASE).resolve(kind.id());
     }
 
     public static Path fileFor(CarriagePartKind kind, String name) {
@@ -159,8 +159,9 @@ public final class CarriagePartTemplateStore {
     private static Optional<StructureTemplate> loadFromConfig(
         ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims
     ) {
-        Path file = fileFor(kind, name);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        // Search user/parts/<kind>/ first, then imported/<pkg>/parts/<kind>/.
+        Path file = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
+        if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "config " + file);

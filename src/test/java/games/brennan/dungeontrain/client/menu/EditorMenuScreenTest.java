@@ -6,9 +6,11 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pins the command strings produced by {@link EditorMenuScreen#newEntryFor}
@@ -23,6 +25,32 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * {@code model} string for user-facing labels.</p>
  */
 final class EditorMenuScreenTest {
+
+    // ---- DevMode visibility (hidden on main, visible everywhere else) ----
+
+    @Test
+    @DisplayName("DevMode toggle is hidden on release builds (branch == main)")
+    void devmode_hiddenOnMainBranch() {
+        assertFalse(EditorMenuScreen.shouldShowDevModeToggle("main"));
+    }
+
+    @Test
+    @DisplayName("DevMode toggle is visible on a feature branch")
+    void devmode_visibleOnFeatureBranch() {
+        assertTrue(EditorMenuScreen.shouldShowDevModeToggle("claude/focused-swartz-159fbc"));
+    }
+
+    @Test
+    @DisplayName("DevMode toggle is visible when build-time git detection failed (branch == '?')")
+    void devmode_visibleOnUnknownBranchFallback() {
+        assertTrue(EditorMenuScreen.shouldShowDevModeToggle("?"));
+    }
+
+    @Test
+    @DisplayName("DevMode toggle is visible when branch is null (defensive — should never happen in practice)")
+    void devmode_visibleOnNullBranch() {
+        assertTrue(EditorMenuScreen.shouldShowDevModeToggle(null));
+    }
 
     // ---- Remove (the originally reported bug) ----
 

@@ -173,8 +173,15 @@ public final class BlockVariantMenuInputHandler {
             }
             case ENTRY_NAME -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                // A linked variant row routes to the container menu so the
+                // user can edit the loot template directly. Unlinked rows
+                // keep the original preview-in-world behaviour.
+                BlockVariantEditPacket.Op op = e.linkedLootPrefabId() != null
+                    ? BlockVariantEditPacket.Op.OPEN_LINKED_CONTAINER
+                    : BlockVariantEditPacket.Op.PREVIEW_ENTRY;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.PREVIEW_ENTRY, variantId, local, hit.index(), "", 0));
+                    op, variantId, local, hit.index(), "", 0));
             }
             case ENTRY_ROT_MODE -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;

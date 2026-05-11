@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import games.brennan.dungeontrain.net.BlockVariantEditPacket;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
@@ -184,7 +185,8 @@ public final class BlockVariantMenuController {
             VariantRotation rot = s.rotation();
             entries.add(new BlockVariantSyncPacket.Entry(
                 stateStr, beNbt, s.weight(),
-                (byte) rot.mode().ordinal(), (byte) rot.dirMask()));
+                (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
+                s.linkedLootPrefabId()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -225,6 +227,10 @@ public final class BlockVariantMenuController {
             previewEntry(level, plot, localPos, packet.entryIndex());
             return;
         }
+        if (packet.op() == BlockVariantEditPacket.Op.OPEN_LINKED_CONTAINER) {
+            openLinkedContainer(player, level, plot, localPos, packet.entryIndex());
+            return;
+        }
 
         List<VariantState> current = plot.statesAt(localPos);
         boolean wasEmpty = (current == null);
@@ -237,6 +243,7 @@ public final class BlockVariantMenuController {
                 ItemStack held = player.getMainHandItem();
                 BlockState capturedState;
                 CompoundTag itemBeNbt;
+                String linkedPrefabId = null;
                 if (held.isEmpty()) {
                     // Empty hand → add the empty-placeholder sentinel.
                     // CarriageVariantBlocks.isEmptyPlaceholder translates this
@@ -252,6 +259,18 @@ public final class BlockVariantMenuController {
                     capturedState = blockItem.getBlock().defaultBlockState();
                     net.minecraft.world.item.component.CustomData heldData = held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
                     itemBeNbt = heldData == null ? null : heldData.copyTag();
+                    // Loot-prefab discriminator lives in CUSTOM_DATA (set by
+                    // ModCreativeTabs.buildPrefabStack); capture it so the
+                    // variant remembers which template it came from.
+                    net.minecraft.world.item.component.CustomData custom =
+                        held.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                    if (custom != null) {
+                        CompoundTag customTag = custom.copyTag();
+                        if (customTag.contains(PrefabUseHandler.NBT_LOOT_PREFAB_ID, net.minecraft.nbt.Tag.TAG_STRING)) {
+                            String id = customTag.getString(PrefabUseHandler.NBT_LOOT_PREFAB_ID);
+                            if (!id.isEmpty()) linkedPrefabId = id;
+                        }
+                    }
                 }
                 if (wasEmpty) {
                     BlockPos worldPos = plot.origin().offset(localPos);
@@ -270,14 +289,18 @@ public final class BlockVariantMenuController {
                 RotationApplier.OrientedState oriented =
                     RotationApplier.orientToPredecessors(capturedState, mutated);
                 VariantState newVariant = new VariantState(
-                    oriented.state(), itemBeNbt, 1, oriented.rotation());
+                    oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId);
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
                     return;
                 }
                 for (VariantState existing : mutated) {
+                    // Two rows linked to different loot prefabs are distinct
+                    // even if their state + beNbt match — the link makes them
+                    // semantically different variants.
                     if (existing.state().equals(newVariant.state())
-                        && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())) {
+                        && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())
+                        && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())) {
                         actionBar(player, "Variant already in this cell", ChatFormatting.YELLOW);
                         return;
                     }
@@ -473,7 +496,63 @@ public final class BlockVariantMenuController {
         }
     }
 
-    /** COPY: build a clipboard ItemStack capturing the cell's states + lockId. */
+    /**
+     * OPEN_LINKED_CONTAINER: previewing the linked variant's barrel/chest
+     * at the cell, then opening the container-contents menu on top of it.
+     *
+     * <p>Aligns the cell-level container link with the variant's
+     * {@code linkedLootPrefabId} so the menu reads + writes through the
+     * intended template. If the cell already had a different link, this
+     * action overwrites it — the variant's row is the user's most recent
+     * authoritative statement about what loot lives here.</p>
+     */
+    private static void openLinkedContainer(ServerPlayer player, ServerLevel level,
+                                            BlockVariantPlot plot, BlockPos localPos,
+                                            int entryIndex) {
+        List<VariantState> current = plot.statesAt(localPos);
+        if (current == null || entryIndex < 0 || entryIndex >= current.size()) return;
+        VariantState picked = current.get(entryIndex);
+        String prefabId = picked.linkedLootPrefabId();
+        if (prefabId == null) return;
+        if (LootPrefabStore.load(prefabId).isEmpty()) {
+            actionBar(player, "Loot template '" + prefabId + "' is missing — cannot open",
+                ChatFormatting.YELLOW);
+            return;
+        }
+        // Place the variant block at the cell so the container menu has a
+        // real container to anchor on. Lock-group siblings stay in sync.
+        previewEntry(level, plot, localPos, entryIndex);
+
+        ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
+        String existing = store.linkAt(localPos);
+        if (!java.util.Objects.equals(existing, prefabId)) {
+            store.setLink(localPos, prefabId);
+            try {
+                store.save();
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] OpenLinkedContainer link save failed for {}: {}",
+                    plot.key(), e.toString());
+                actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+                return;
+            }
+        }
+
+        OpenMenu open = OPEN.get(player.getUUID());
+        Direction face = open != null ? open.face() : Direction.UP;
+        Vec3 up = open != null ? open.up() : computeUp(face, player);
+        // Close the block-variant menu — the container menu takes over.
+        OPEN.remove(player.getUUID());
+        DungeonTrainNet.sendTo(player, BlockVariantSyncPacket.empty());
+        ContainerContentsMenuController.openAt(player, plot, localPos, face, up);
+    }
+
+    /**
+     * COPY: build a clipboard ItemStack capturing the cell's states + lockId
+     * + (when authored) the cell's container contents pool. The pool snapshot
+     * is read from the same {@link ContainerContentsStore} the loot menu writes
+     * to, so a chest cell's hand-tuned drop pool round-trips through paste
+     * instead of resetting to empty on the new cell.
+     */
     private static void handleCopy(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         List<VariantState> current = plot.statesAt(localPos);
         if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
@@ -483,13 +562,18 @@ public final class BlockVariantMenuController {
             return;
         }
         int lockId = plot.lockIdAt(localPos);
+        ContainerContentsPool pool = ContainerContentsStore.loadFor(plot.key()).poolAt(localPos);
+        boolean poolCaptured = !pool.isEmpty() || !pool.isDefaultRange();
         ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
-        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId);
+        CompoundTag tag = VariantClipboardItem.encodeStates(current, lockId,
+            poolCaptured ? pool : null);
         VariantClipboardItem.writeClipboardTag(stack, tag);
         boolean placed = player.getInventory().add(stack);
         if (!placed) player.drop(stack, false);
-        String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
-        actionBar(player, "Copied " + current.size() + " variants" + suffix, ChatFormatting.GREEN);
+        String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
+        String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
+        actionBar(player, "Copied " + current.size() + " variants" + lockSuffix + poolSuffix,
+            ChatFormatting.GREEN);
     }
 
     /**

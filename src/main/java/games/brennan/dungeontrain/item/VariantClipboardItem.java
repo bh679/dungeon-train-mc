@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.item;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsEntry;
+import games.brennan.dungeontrain.editor.ContainerContentsPool;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.editor.VariantState;
@@ -17,6 +20,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -69,12 +73,30 @@ public final class VariantClipboardItem extends Item {
     /** Top-level NBT key carrying the cell-level lock-id (≥1) — absent / 0 means unlocked. */
     public static final String NBT_LOCK_ID = "dt_lockId";
 
+    /**
+     * Top-level NBT key carrying the source cell's container contents pool
+     * (chest / barrel / dispenser loot, fillMin/fillMax). Absent → cell had no
+     * authored pool → paste skips the pool write (back-compat with clipboards
+     * created before this key existed).
+     */
+    public static final String NBT_POOL = "dt_pool";
+
     /** Per-entry sub-keys, kept short for compact NBT. */
     private static final String NBT_STATE = "s";
     private static final String NBT_BENBT = "n";
     private static final String NBT_WEIGHT = "w";
     private static final String NBT_ROT_MODE = "rm";
     private static final String NBT_ROT_DIRS = "rd";
+    /** Per-entry loot-prefab link id (v6 schema). Absent when the entry has no link. */
+    private static final String NBT_LOOT_PREFAB = "lp";
+
+    /** Pool sub-keys, kept short for compact NBT. */
+    private static final String NBT_POOL_FILL_MIN = "fmin";
+    private static final String NBT_POOL_FILL_MAX = "fmax";
+    private static final String NBT_POOL_ENTRIES = "e";
+    private static final String NBT_POOL_ENTRY_ID = "id";
+    private static final String NBT_POOL_ENTRY_COUNT = "c";
+    private static final String NBT_POOL_ENTRY_WEIGHT = "w";
 
     public VariantClipboardItem(Properties properties) {
         super(properties);
@@ -113,6 +135,7 @@ public final class VariantClipboardItem extends Item {
         CompoundTag tag = readClipboardTag(stack);
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
+        ContainerContentsPool pool = decodePool(tag);
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
             sendActionBar(player, "Clipboard needs at least "
                 + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants", ChatFormatting.YELLOW);
@@ -164,9 +187,29 @@ public final class VariantClipboardItem extends Item {
             VariantOverlayRenderer.pushLockIdSnapshot(player);
         }
 
-        String suffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
+        // Pool write happens after variants so a pool-save IOException doesn't
+        // roll back the (already-persisted) variant write. Failure is degraded
+        // — variants pasted, pool didn't.
+        boolean poolPasted = false;
+        if (pool != null) {
+            ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
+            store.putPool(localPos, pool);
+            try {
+                store.save();
+                poolPasted = true;
+            } catch (IOException e) {
+                LOGGER.error("[DungeonTrain] VariantClipboard pool save failed for {}: {}",
+                    plot.key(), e.toString());
+                sendActionBar(player, "Pasted variants but pool save failed: "
+                    + e.getClass().getSimpleName(), ChatFormatting.YELLOW);
+            }
+        }
+
+        String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
+        String poolSuffix = poolPasted ? " +pool(" + pool.size() + ")" : "";
         sendActionBar(player, "Pasted " + states.size() + " variants at " + localPos.getX()
-            + "," + localPos.getY() + "," + localPos.getZ() + suffix, ChatFormatting.GREEN);
+            + "," + localPos.getY() + "," + localPos.getZ() + lockSuffix + poolSuffix,
+            ChatFormatting.GREEN);
 
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
@@ -176,9 +219,21 @@ public final class VariantClipboardItem extends Item {
 
     /**
      * Encode a variant list + cell lock-id into a fresh {@link CompoundTag}
-     * ready for {@link ItemStack#setTag}.
+     * ready for {@link ItemStack#setTag}. No pool captured.
      */
     public static CompoundTag encodeStates(List<VariantState> states, int lockId) {
+        return encodeStates(states, lockId, null);
+    }
+
+    /**
+     * Encode a variant list + cell lock-id + container contents pool into a
+     * fresh {@link CompoundTag}. The pool is written under {@link #NBT_POOL}
+     * only when non-trivial (entries present or fillRange non-default), so
+     * cells that were never authored stay clipboard-compatible with the
+     * pre-pool format.
+     */
+    public static CompoundTag encodeStates(List<VariantState> states, int lockId,
+                                           @Nullable ContainerContentsPool pool) {
         CompoundTag root = new CompoundTag();
         ListTag list = new ListTag();
         for (VariantState s : states) {
@@ -195,13 +250,75 @@ public final class VariantClipboardItem extends Item {
                 entry.putByte(NBT_ROT_MODE, (byte) rot.mode().ordinal());
                 entry.putByte(NBT_ROT_DIRS, (byte) rot.dirMask());
             }
+            if (s.linkedLootPrefabId() != null) {
+                entry.putString(NBT_LOOT_PREFAB, s.linkedLootPrefabId());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
         if (lockId > 0) {
             root.putInt(NBT_LOCK_ID, lockId);
         }
+        if (pool != null && (!pool.isEmpty() || !pool.isDefaultRange())) {
+            root.put(NBT_POOL, encodePool(pool));
+        }
         return root;
+    }
+
+    /**
+     * Encode a {@link ContainerContentsPool} into a sub-compound. Default-range
+     * fields are omitted from the NBT to keep clipboard-item NBT compact.
+     */
+    public static CompoundTag encodePool(ContainerContentsPool pool) {
+        CompoundTag tag = new CompoundTag();
+        if (pool.fillMin() != 0) {
+            tag.putInt(NBT_POOL_FILL_MIN, pool.fillMin());
+        }
+        if (pool.fillMax() != ContainerContentsPool.FILL_ALL) {
+            tag.putInt(NBT_POOL_FILL_MAX, pool.fillMax());
+        }
+        ListTag entries = new ListTag();
+        for (ContainerContentsEntry e : pool.entries()) {
+            CompoundTag et = new CompoundTag();
+            et.putString(NBT_POOL_ENTRY_ID, e.itemId().toString());
+            et.putInt(NBT_POOL_ENTRY_COUNT, e.count());
+            et.putInt(NBT_POOL_ENTRY_WEIGHT, e.weight());
+            entries.add(et);
+        }
+        tag.put(NBT_POOL_ENTRIES, entries);
+        return tag;
+    }
+
+    /**
+     * Decode the container contents pool from a clipboard tag. Returns
+     * {@code null} when the source clipboard never carried a pool — paste
+     * preserves the destination's existing pool in that case (back-compat
+     * with clipboards created before the pool field existed).
+     */
+    public static @Nullable ContainerContentsPool decodePool(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(NBT_POOL, Tag.TAG_COMPOUND)) return null;
+        CompoundTag pt = tag.getCompound(NBT_POOL);
+        int fillMin = pt.contains(NBT_POOL_FILL_MIN, Tag.TAG_INT)
+            ? pt.getInt(NBT_POOL_FILL_MIN) : 0;
+        int fillMax = pt.contains(NBT_POOL_FILL_MAX, Tag.TAG_INT)
+            ? pt.getInt(NBT_POOL_FILL_MAX) : ContainerContentsPool.FILL_ALL;
+        List<ContainerContentsEntry> entries = new ArrayList<>();
+        if (pt.contains(NBT_POOL_ENTRIES, Tag.TAG_LIST)) {
+            ListTag list = pt.getList(NBT_POOL_ENTRIES, Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag et = list.getCompound(i);
+                String idStr = et.getString(NBT_POOL_ENTRY_ID);
+                if (idStr == null || idStr.isEmpty()) continue;
+                ResourceLocation id = ResourceLocation.tryParse(idStr);
+                if (id == null) continue;
+                int count = et.contains(NBT_POOL_ENTRY_COUNT, Tag.TAG_INT)
+                    ? et.getInt(NBT_POOL_ENTRY_COUNT) : 1;
+                int weight = et.contains(NBT_POOL_ENTRY_WEIGHT, Tag.TAG_INT)
+                    ? et.getInt(NBT_POOL_ENTRY_WEIGHT) : 1;
+                entries.add(new ContainerContentsEntry(id, count, weight));
+            }
+        }
+        return new ContainerContentsPool(entries, fillMin, fillMax);
     }
 
     /** Decode the variant list from an ItemStack's NBT. Empty list when malformed. */
@@ -237,7 +354,12 @@ public final class VariantClipboardItem extends Item {
                     rotation = new VariantRotation(modes[ord], mask);
                 }
             }
-            out.add(new VariantState(state, beNbt, weight, rotation));
+            String lootPrefab = null;
+            if (entry.contains(NBT_LOOT_PREFAB, Tag.TAG_STRING)) {
+                String raw = entry.getString(NBT_LOOT_PREFAB);
+                if (!raw.isEmpty()) lootPrefab = raw;
+            }
+            out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab));
         }
         return out;
     }
@@ -276,10 +398,12 @@ public final class VariantClipboardItem extends Item {
         CompoundTag tag = readClipboardTag(stack);
         List<VariantState> states = decodeStates(tag);
         int lockId = decodeLockId(tag);
+        ContainerContentsPool pool = decodePool(tag);
         if (states.isEmpty()) return super.getName(stack);
-        String suffix = lockId > 0
-            ? " (" + states.size() + ", lock " + lockId + ")"
-            : " (" + states.size() + ")";
+        StringBuilder suffix = new StringBuilder(" (").append(states.size());
+        if (lockId > 0) suffix.append(", lock ").append(lockId);
+        if (pool != null && !pool.isEmpty()) suffix.append(", pool ").append(pool.size());
+        suffix.append(")");
         return Component.literal(super.getName(stack).getString() + suffix);
     }
 }

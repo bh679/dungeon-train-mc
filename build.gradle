@@ -171,6 +171,12 @@ tasks.named('test', Test).configure {
 
 // Resolve the current git branch at configuration time so it can be baked into
 // the jar via processResources. Falls back to the short SHA on detached HEAD.
+//
+// Strict branch-ref detection: only the literal `main` ref counts as a release
+// build. Worktrees / feature branches that sit at main's tip with no extra
+// commits still bake their own branch name and therefore show the dev title
+// screen (see DevQuickWorldHandler). The branch ref — not the commit hash — is
+// the dev-vs-release signal.
 def gitBranch = { ->
     try {
         def proc = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']

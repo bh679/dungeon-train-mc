@@ -5,7 +5,9 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -222,8 +224,36 @@ public final class PrefabUseHandler {
         be.loadCustomOnly(rolled, serverLevel.registryAccess());
         be.setChanged();
 
+        // Editor-plot integration: if the player is standing in an editor plot,
+        // record the link to the prefab. The pool itself is fetched from
+        // LootPrefabStore on every read, so we don't duplicate pool data into
+        // the store — the link alone makes the menu, save-over, and template
+        // propagation all work.
+        boolean linkedInEditor = false;
         if (player instanceof ServerPlayer sp) {
-            actionBar(sp, "Placed loot prefab '" + prefabId + "'", ChatFormatting.GREEN);
+            CarriageDims dims = DungeonTrainWorldData.get(serverLevel).dims();
+            BlockVariantPlot plot = BlockVariantPlot.resolveAt(sp, dims);
+            if (plot != null) {
+                BlockPos localPos = pos.subtract(plot.origin());
+                if (plot.inBoundsTolerant(localPos)) {
+                    ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
+                    store.setLink(localPos, prefabId);
+                    try {
+                        store.save();
+                        linkedInEditor = true;
+                        ContainerContentsMenuController.resyncIfOpen(sp, plot.key(), localPos);
+                    } catch (IOException e) {
+                        LOGGER.warn("[DungeonTrain] PrefabUseHandler: link save failed for {}: {}",
+                            plot.key(), e.toString());
+                    }
+                }
+            }
+        }
+
+        if (player instanceof ServerPlayer sp) {
+            actionBar(sp,
+                "Placed loot prefab '" + prefabId + "'" + (linkedInEditor ? " (linked)" : ""),
+                ChatFormatting.GREEN);
         }
     }
 
