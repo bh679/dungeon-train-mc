@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "variants": [
+    {
+      "id": "2ndlevel",
+      "weight": 1
+    }
+  ]
+}
