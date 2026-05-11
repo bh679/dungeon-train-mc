@@ -328,6 +328,11 @@ public final class CarriageContentsEditor {
             CarriageContentsVariantBlocks sidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
             sidecar.saveToSource(contents);
+            // Promote the container-contents sidecar (per-position links and
+            // pools). Without this, chest→loot-prefab references authored in
+            // the plot stay in run/config and are lost when the template
+            // ships in the next build.
+            ContainerContentsStore.loadFor("contents:" + contents.id()).saveToSource();
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Contents editor save: source write failed for {}: {}", contents.id(), e.toString());

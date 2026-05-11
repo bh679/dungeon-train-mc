@@ -374,6 +374,10 @@ public final class CarriagePartEditor {
             Vec3i partSize = kind.dims(dims);
             CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
             sidecar.saveToSource(kind, name);
+            // Promote the container-contents sidecar (per-position links and
+            // pools). Without this, chest→loot-prefab references authored in
+            // the plot stay in run/config and are lost when the part ships.
+            ContainerContentsStore.loadFor("part:" + kind.id() + ":" + name).saveToSource();
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Part editor save: source write failed for {}:{}: {}",

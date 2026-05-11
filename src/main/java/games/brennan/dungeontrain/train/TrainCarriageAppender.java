@@ -230,6 +230,22 @@ public final class TrainCarriageAppender {
      */
     private static final double COLLISION_SHIFT_BLOCKS = 0.5;
 
+    /**
+     * If a not-yet-placed carriage's X-axis gap to its train-facing neighbour
+     * exceeds this many blocks, the per-tick placement tracker shifts the
+     * carriage TOWARD that neighbour by {@link #COLLISION_SHIFT_BLOCKS} this
+     * tick and resets the clean-tick counter. Symmetric dual of the
+     * collision-pushback branch: collisions push apart, big gaps pull together.
+     * Both branches feed the same dead-band [MIN_GAP_BLOCKS, MAX_GAP_BLOCKS]
+     * that the carriage must rest inside for {@link #CLEAN_TICKS_FOR_SUCCESS}
+     * consecutive ticks before {@code placedSuccessfully} fires.
+     *
+     * <p>Closes a 3-block gap in ~6 ticks at 0.5/tick — finishes well inside
+     * the 60-tick clean window so spawn-time placement overshoot never
+     * permanently strands a carriage at the wrong distance.</p>
+     */
+    private static final double MAX_GAP_BLOCKS = 3.0;
+
     /** Snapshot of the most recent post-spawn collision check per train. */
     public static Map<UUID, SpawnCollisionCheck> snapshotSpawnCollisionChecks() {
         return new HashMap<>(LAST_SPAWN_COLLISION_CHECK);
@@ -295,29 +311,223 @@ public final class TrainCarriageAppender {
                 SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
                 if (check == null) continue;
 
-                if (check.colliding()) {
-                    // Direction-aware shift: push self AWAY from the
-                    // offender. Offender at higher pIdx (forward of us)
-                    // → shift -X; offender at lower pIdx (behind us)
-                    // → shift +X. Equal pIdx is impossible (collision
-                    // check skips self), so the ternary is exhaustive.
-                    double dx = (check.collidingPIdx() > check.selfPIdx())
-                        ? -COLLISION_SHIFT_BLOCKS
-                        : +COLLISION_SHIFT_BLOCKS;
+                // Three branches:
+                //   colliding             → shift AWAY from offender (existing)
+                //   gap > MAX_GAP_BLOCKS  → shift TOWARD train-facing sibling (new)
+                //   otherwise             → clean tick, eventually placedSuccessfully
+                double gap = check.colliding()
+                    ? 0.0
+                    : gapToTrainFacingSibling(trainId, carriage, train);
+                double dx = placementTrackerShiftDx(
+                    check.colliding(),
+                    check.selfPIdx(),
+                    check.collidingPIdx(),
+                    gap,
+                    provider.isSpawnedBackward());
+
+                if (dx != 0.0) {
                     provider.shiftSpawnPosition(dx, 0.0, 0.0);
                     provider.resetConsecutiveCleanTicks();
-                    LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} colliding (overlaps pIdx={}) — shifted {} X, timer reset",
-                        provider.getPIdx(), check.collidingPIdx(),
-                        String.format("%+.1f", dx));
+                    if (check.colliding()) {
+                        LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} colliding (overlaps pIdx={}) — shifted {} X, timer reset",
+                            provider.getPIdx(), check.collidingPIdx(),
+                            String.format("%+.1f", dx));
+                    } else {
+                        LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} too-far (gap={} blocks > {}) — shifted {} X, timer reset",
+                            provider.getPIdx(),
+                            String.format("%.2f", gap),
+                            MAX_GAP_BLOCKS,
+                            String.format("%+.1f", dx));
+                    }
                 } else {
                     provider.incrementConsecutiveCleanTicks();
                     if (provider.getConsecutiveCleanTicks() >= CLEAN_TICKS_FOR_SUCCESS) {
                         provider.markPlacedSuccessfully();
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} placed successfully after {} clean ticks (ticksSinceSpawn={})",
                             provider.getPIdx(), CLEAN_TICKS_FOR_SUCCESS, check.ticksSinceSpawn());
+                        // Fire any deferred contents-entity spawns now that
+                        // the carriage group has stopped shifting. Each slot
+                        // record was stashed by TrainAssembler.spawnGroup
+                        // after the blocks-only contents pass.
+                        firePendingContentsEntitySpawns(level, provider);
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Spawn the contents entities for every enclosed carriage in this
+     * group, using the pending records stashed by
+     * {@code TrainAssembler.spawnGroup}. Fired exactly once per group, at
+     * the moment {@link TrainTransformProvider#markPlacedSuccessfully} flips.
+     *
+     * <p>Why now: by this point the placement-collision tracker has run
+     * {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive non-colliding ticks, so
+     * the carriage's {@code spawnWorldPos} (and consequently the world-space
+     * position of its shipyard chunks) is stable. Any shipyard-entity mixin
+     * binding done by VS at {@code addFreshEntity} time will see the same
+     * ship-transform on subsequent ticks — no shift mid-attachment.</p>
+     *
+     * <p>Race-free: {@code takePendingContentsEntitySpawns} atomically nulls
+     * the array on the provider, so a follow-up tick that somehow re-enters
+     * the success branch (shouldn't, but defensive) sees null and skips.
+     * {@code null} slots in the returned array correspond to FLATBED slots —
+     * those have no contents and are skipped without a log line.</p>
+     */
+    private static void firePendingContentsEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
+        PendingContentsEntitySpawn[] pending = provider.takePendingContentsEntitySpawns();
+        if (pending == null) return;
+        int fired = 0;
+        for (PendingContentsEntitySpawn p : pending) {
+            if (p == null) continue;
+            try {
+                CarriagePlacer.applyContentsEntitiesAt(level,
+                    p.shipyardOrigin(), p.variant(), p.dims(), p.config(), p.carriageIndex());
+                fired++;
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Deferred contents-entity spawn failed for pIdx={} origin={}: {}",
+                    p.carriageIndex(), p.shipyardOrigin(), t.toString());
+            }
+        }
+        LOGGER.info("[DungeonTrain] Placement tracker: fired deferred contents-entity spawn for group anchorPIdx={} ({} of {} slots had pending entities)",
+            provider.getPIdx(), fired, pending.length);
+    }
+
+    /**
+     * Pure decision helper for {@link #runPlacementCollisionTracker}. Package-private
+     * for unit tests. Returns the X-axis shift to apply this tick:
+     * <ul>
+     *   <li>{@code colliding == true} → push AWAY from offender. Offender at
+     *       higher pIdx (in front of us) → return {@code -COLLISION_SHIFT_BLOCKS};
+     *       offender at lower pIdx (behind us) → return {@code +COLLISION_SHIFT_BLOCKS}.
+     *       Equal pIdx is impossible (the collision check skips self), so the
+     *       ternary is exhaustive.</li>
+     *   <li>{@code colliding == false}, {@code gapToFacingSibling} finite and
+     *       {@code > MAX_GAP_BLOCKS} → pull TOWARD the train. Forward-spawn
+     *       (train at -X) → return {@code -COLLISION_SHIFT_BLOCKS}; backward-
+     *       spawn (train at +X) → return {@code +COLLISION_SHIFT_BLOCKS}.</li>
+     *   <li>otherwise → return {@code 0.0} (clean tick; caller increments the
+     *       consecutive-clean counter).</li>
+     * </ul>
+     * {@code gapToFacingSibling} is {@link Double#POSITIVE_INFINITY} when no
+     * sibling is on the train-facing side (e.g. seed carriage of a fresh
+     * train) — falls into the clean branch by the finite-check guard.
+     */
+    static double placementTrackerShiftDx(
+        boolean colliding,
+        int selfPIdx,
+        int collidingPIdx,
+        double gapToFacingSibling,
+        boolean spawnedBackward
+    ) {
+        if (colliding) {
+            return (collidingPIdx > selfPIdx)
+                ? -COLLISION_SHIFT_BLOCKS
+                : +COLLISION_SHIFT_BLOCKS;
+        }
+        if (Double.isFinite(gapToFacingSibling) && gapToFacingSibling > MAX_GAP_BLOCKS) {
+            return spawnedBackward
+                ? +COLLISION_SHIFT_BLOCKS
+                : -COLLISION_SHIFT_BLOCKS;
+        }
+        return 0.0;
+    }
+
+    /**
+     * X-axis gap from this carriage's train-facing face to the nearest sibling
+     * AABB on that side, in world blocks. Forward spawns measure the LOW-X face
+     * (carriage faces train at -X); backward spawns measure the HIGH-X face.
+     * Y/Z must overlap (siblings on the same lane).
+     *
+     * <p>Returns {@link Double#POSITIVE_INFINITY} when no sibling sits on the
+     * train-facing side — e.g. the seed carriage of a fresh train, where any
+     * pull-toward action would be meaningless. The caller's
+     * {@code gap > MAX_GAP_BLOCKS} check short-circuits on infinity via
+     * {@link Double#isFinite}.</p>
+     *
+     * <p>Sibling set: visible train ∪ {@link Trains#knownGroups} registry,
+     * deduped by ship id, skipping zero-AABB ships and self. Mirrors
+     * {@link #checkOneCarriage} so the gap loop and collision loop draw from
+     * the same neighbour set.</p>
+     */
+    private static double gapToTrainFacingSibling(
+        UUID trainId,
+        Trains.Carriage self,
+        List<Trains.Carriage> train
+    ) {
+        AABBdc selfAabb = self.ship().worldAABB();
+        if (isZeroAabb(selfAabb)) return Double.POSITIVE_INFINITY;
+        boolean spawnedBackward = self.provider().isSpawnedBackward();
+        double selfMinX = selfAabb.minX(), selfMaxX = selfAabb.maxX();
+        double selfMinY = selfAabb.minY(), selfMaxY = selfAabb.maxY();
+        double selfMinZ = selfAabb.minZ(), selfMaxZ = selfAabb.maxZ();
+
+        long selfId = self.ship().id();
+        Set<Long> seen = new HashSet<>();
+        seen.add(selfId);
+
+        double best = Double.POSITIVE_INFINITY;
+        for (Trains.Carriage other : train) {
+            if (!seen.add(other.ship().id())) continue;
+            AABBdc o = other.ship().worldAABB();
+            if (isZeroAabb(o)) continue;
+            double g = facingGapBetween(
+                selfMinX, selfMaxX, selfMinY, selfMaxY, selfMinZ, selfMaxZ,
+                o.minX(), o.maxX(), o.minY(), o.maxY(), o.minZ(), o.maxZ(),
+                spawnedBackward);
+            if (g < best) best = g;
+        }
+        Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+        for (ManagedShip ship : registry.values()) {
+            if (!seen.add(ship.id())) continue;
+            AABBdc o = ship.worldAABB();
+            if (isZeroAabb(o)) continue;
+            double g = facingGapBetween(
+                selfMinX, selfMaxX, selfMinY, selfMaxY, selfMinZ, selfMaxZ,
+                o.minX(), o.maxX(), o.minY(), o.maxY(), o.minZ(), o.maxZ(),
+                spawnedBackward);
+            if (g < best) best = g;
+        }
+        return best;
+    }
+
+    /**
+     * X-axis gap from {@code self}'s train-facing face to {@code other}'s
+     * nearest face on that side, in world blocks. Pure primitive-arg helper
+     * so it stays testable — {@code AABBdc} lives on
+     * {@code additionalRuntimeClasspath} only and isn't on the test classpath.
+     *
+     * <p>Returns {@link Double#POSITIVE_INFINITY} when {@code other} sits on
+     * the wrong side (doesn't qualify as a train-facing neighbour) or doesn't
+     * overlap self on Y or Z (not on the same lane).</p>
+     *
+     * <p>Forward-spawn ({@code spawnedBackward=false}): self.minX is
+     * train-facing; candidate must sit with maxX ≤ self.minX. Gap =
+     * {@code self.minX − other.maxX}.</p>
+     * <p>Backward-spawn ({@code spawnedBackward=true}): self.maxX is
+     * train-facing; candidate must sit with minX ≥ self.maxX. Gap =
+     * {@code other.minX − self.maxX}.</p>
+     */
+    static double facingGapBetween(
+        double selfMinX, double selfMaxX,
+        double selfMinY, double selfMaxY,
+        double selfMinZ, double selfMaxZ,
+        double otherMinX, double otherMaxX,
+        double otherMinY, double otherMaxY,
+        double otherMinZ, double otherMaxZ,
+        boolean spawnedBackward
+    ) {
+        // Y/Z lane filter — different vertical or lateral lane carriages do
+        // NOT count as neighbours even if they're nearby on X.
+        if (!(selfMaxY > otherMinY && selfMinY < otherMaxY)) return Double.POSITIVE_INFINITY;
+        if (!(selfMaxZ > otherMinZ && selfMinZ < otherMaxZ)) return Double.POSITIVE_INFINITY;
+        if (spawnedBackward) {
+            if (otherMinX < selfMaxX) return Double.POSITIVE_INFINITY;
+            return otherMinX - selfMaxX;
+        } else {
+            if (otherMaxX > selfMinX) return Double.POSITIVE_INFINITY;
+            return selfMinX - otherMaxX;
         }
     }
 

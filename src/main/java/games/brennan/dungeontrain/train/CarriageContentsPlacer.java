@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -16,6 +17,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -45,6 +47,33 @@ import java.util.UUID;
 public final class CarriageContentsPlacer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * Diagnostic tag prefix. Combined with a carriage pIdx as
+     * {@code DT_CONTENTS_TAG_PREFIX + pIdx}, e.g.
+     * {@code "dungeontrain_contents_pidx_42"}. Read by
+     * {@code ContentsEntityDiagnostics} to filter lifecycle events.
+     */
+    public static final String DT_CONTENTS_TAG_PREFIX = "dungeontrain_contents_pidx_";
+
+    /**
+     * Returns the tag string used to mark contents-entities for the given pIdx.
+     */
+    public static String contentsTagFor(int carriagePIdx) {
+        return DT_CONTENTS_TAG_PREFIX + carriagePIdx;
+    }
+
+    /**
+     * NBT keys stamped on every spawned contents entity so the diagnostic
+     * sampler can compare current position against original spawn pos.
+     * All four are absolute world coords in shipyard space.
+     */
+    public static final String NBT_SPAWN_SHIPYARD_X = "DungeonTrainSpawnShipyardX";
+    public static final String NBT_SPAWN_SHIPYARD_Y = "DungeonTrainSpawnShipyardY";
+    public static final String NBT_SPAWN_SHIPYARD_Z = "DungeonTrainSpawnShipyardZ";
+    public static final String NBT_SPAWN_GAME_TICK = "DungeonTrainSpawnGameTick";
+    /** Carriage pIdx the entity was spawned for. Redundant with the tag but cheap. */
+    public static final String NBT_SPAWN_CARRIAGE_PIDX = "DungeonTrainSpawnPIdx";
 
     private CarriageContentsPlacer() {}
 
@@ -76,8 +105,98 @@ public final class CarriageContentsPlacer {
      * {@code carriageOrigin} (shell's min corner). Only places blocks inside
      * the interior volume — the shell's floor/walls/ceiling placed by
      * {@link CarriagePlacer#placeAt} are untouched.
+     *
+     * <p>This 4-arg overload is used by editor preview / template flows and
+     * runs the contents pass synchronously: blocks AND entities together. The
+     * carriagePIdx is unknown in these contexts (no train), so the entities
+     * are spawned with the sentinel pIdx {@link #EDITOR_SENTINEL_PIDX}.</p>
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents, CarriageDims dims) {
+        placeAtInternal(level, carriageOrigin, contents, dims, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true);
+    }
+
+    /**
+     * Spawn-time variant-aware overload — stamps the base contents, then
+     * overlays the per-position variants picked deterministically from
+     * {@code (seed, carriageIndex, localPos)}. Editor calls go through the
+     * 4-arg {@link #placeAt(ServerLevel, BlockPos, CarriageContents, CarriageDims)}
+     * overload above so the author always sees the deterministic base, never
+     * the random-pick view.
+     *
+     * <p>This 6-arg overload runs blocks AND entities together — kept for any
+     * caller that needs the legacy combined pass. The train-spawn path uses
+     * the split {@link #placeBlocksOnly} / {@link #placeEntitiesOnly} pair
+     * instead, so the entity portion can be deferred until the carriage's
+     * collision tracker confirms it's settled in place.</p>
+     */
+    public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                               CarriageDims dims, long seed, int carriageIndex) {
+        placeAtInternal(level, carriageOrigin, contents, dims, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
+        applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+    }
+
+    /**
+     * Sentinel passed as {@code carriagePIdx} when the spawn context is the
+     * editor / template preview rather than a real train carriage. Entities
+     * tagged with this pIdx are still tagged so the diagnostics subscriber
+     * can see them, but the value signals "not a train entity, ignore
+     * placement-tracker correlation logic."
+     */
+    public static final int EDITOR_SENTINEL_PIDX = -1;
+
+    /**
+     * Train-spawn helper — stamp the contents BLOCKS at {@code carriageOrigin}
+     * but skip the entity-spawn pass. Pair with {@link #placeEntitiesOnly}
+     * fired after the placement-collision tracker confirms the carriage has
+     * stopped shifting.
+     *
+     * <p>Why split: when a runtime-spawned carriage overlaps an existing
+     * sibling, the appender's {@code runPlacementCollisionTracker} nudges its
+     * {@code spawnWorldPos} every tick for up to {@code CLEAN_TICKS_FOR_SUCCESS}
+     * ticks until placement is clean. The blocks live in shipyard chunks and
+     * track that shift transparently; entities, by contrast, are added to the
+     * level via {@code level.addFreshEntity()} and their attachment to the
+     * ship is mediated by VS's shipyard-entity mixin — that mixin's timing
+     * relative to the placement-tracker shifts is the suspected root cause of
+     * the "entities stop showing up after a while" bug. Spawning entities
+     * after the shifts complete eliminates that timing race entirely.</p>
+     */
+    public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                                        CarriageDims dims, long seed, int carriageIndex) {
+        placeAtInternal(level, carriageOrigin, contents, dims, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
+        applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+    }
+
+    /**
+     * Train-spawn helper — spawn ONLY the entities from the contents template
+     * at {@code carriageOrigin}, without re-stamping blocks. Looks up the same
+     * {@code (contents, dims)} template that {@link #placeBlocksOnly} used so
+     * entity positions match the blocks the player can see. Tags every
+     * spawned entity with {@link #contentsTagFor}{@code (carriagePIdx)} +
+     * persistence flag + NBT spawn-coords for diagnostics.
+     *
+     * <p>Called by the placement-collision tracker once the carriage has
+     * accumulated {@code CLEAN_TICKS_FOR_SUCCESS} consecutive collision-free
+     * ticks (i.e. all shifts are done). Each pending spawn fires exactly
+     * once — the appender clears the pending record before this call so a
+     * double-shift can't double-spawn.</p>
+     */
+    public static void placeEntitiesOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                                          CarriageDims dims, int carriagePIdx) {
+        placeAtInternal(level, carriageOrigin, contents, dims, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true);
+    }
+
+    /**
+     * Shared internal that resolves the template once and runs whichever of
+     * {blocks, entities} the caller asked for. Centralising the template
+     * lookup ensures {@link #placeBlocksOnly} and {@link #placeEntitiesOnly}
+     * always agree on which template was used — they share the same
+     * deterministic {@link CarriageContentsStore#get} result so entity local
+     * coords match the placed blocks.
+     */
+    private static void placeAtInternal(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                                         CarriageDims dims, int carriagePIdx,
+                                         boolean placeBlocks, boolean spawnEntities) {
         Vec3i size = interiorSize(dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             // Carriage at its minimum dims has zero or negative interior
@@ -88,32 +207,36 @@ public final class CarriageContentsPlacer {
 
         Optional<StructureTemplate> stored = CarriageContentsStore.get(level, contents, size);
         if (stored.isPresent()) {
-            stampTemplate(level, origin, stored.get());
-            LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored", contents.id(), origin);
+            StructureTemplate template = stored.get();
+            if (placeBlocks) {
+                stampTemplateBlocks(level, origin, template);
+            }
+            if (spawnEntities) {
+                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx);
+            }
+            if (placeBlocks) {
+                LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
+                    contents.id(), origin, carriagePIdx,
+                    placeBlocks ? "blocks" : "",
+                    spawnEntities ? "+entities" : "");
+            }
             return;
         }
         if (contents instanceof CarriageContents.Builtin b && b.type() == ContentsType.DEFAULT) {
-            legacyPlaceDefault(level, origin, size);
-            LOGGER.info("[DungeonTrain] Placed contents {} at {} source=legacy", contents.id(), origin);
+            if (placeBlocks) {
+                legacyPlaceDefault(level, origin, size);
+                LOGGER.info("[DungeonTrain] Placed contents {} at {} source=legacy pIdx={}",
+                    contents.id(), origin, carriagePIdx);
+            }
+            // No entities in the legacy fallback — placeEntitiesOnly is a no-op
+            // for a contents-pick that resolves to the hardcoded default.
             return;
         }
-        LOGGER.warn("[DungeonTrain] No contents placed — contents={} origin={} reason=no-nbt-no-fallback. Check {} exists and matches interior size {}x{}x{}.",
-            contents.id(), origin, CarriageContentsStore.fileFor(contents),
-            size.getX(), size.getY(), size.getZ());
-    }
-
-    /**
-     * Spawn-time variant-aware overload — stamps the base contents, then
-     * overlays the per-position variants picked deterministically from
-     * {@code (seed, carriageIndex, localPos)}. Editor calls go through the
-     * 4-arg {@link #placeAt(ServerLevel, BlockPos, CarriageContents, CarriageDims)}
-     * overload above so the author always sees the deterministic base, never
-     * the random-pick view.
-     */
-    public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
-                               CarriageDims dims, long seed, int carriageIndex) {
-        placeAt(level, carriageOrigin, contents, dims);
-        applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        if (placeBlocks) {
+            LOGGER.warn("[DungeonTrain] No contents placed — contents={} origin={} reason=no-nbt-no-fallback. Check {} exists and matches interior size {}x{}x{}.",
+                contents.id(), origin, CarriageContentsStore.fileFor(contents),
+                size.getX(), size.getY(), size.getZ());
+        }
     }
 
     /**
@@ -170,14 +293,19 @@ public final class CarriageContentsPlacer {
         SilentBlockOps.setBlockSilent(level, pos, plate);
     }
 
-    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
-        // Place BLOCKS only — StructureTemplate's built-in entity placement
-        // was unreliable in shipyard chunks (possibly due to VS's entity
-        // section mixin timing), so we parse the entity list ourselves and
-        // spawn each entity manually below.
+    /**
+     * Stamp ONLY the blocks from {@code template} into the level at
+     * {@code origin}. Entity spawning is the caller's responsibility — see
+     * {@link #spawnEntitiesFromTemplate}.
+     *
+     * <p>StructureTemplate's built-in entity placement was unreliable in
+     * shipyard chunks (possibly due to VS's entity section mixin timing), so
+     * we always parse the entity list ourselves. {@code setIgnoreEntities(true)}
+     * tells {@code placeInWorld} to skip its own entity pass.</p>
+     */
+    private static void stampTemplateBlocks(ServerLevel level, BlockPos origin, StructureTemplate template) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
-        spawnEntitiesFromTemplate(level, origin, template);
     }
 
     /**
@@ -187,14 +315,29 @@ public final class CarriageContentsPlacer {
      * coordinates. Each entity's UUID is cleared before deserialisation so MC
      * assigns a fresh one — otherwise every carriage would try to spawn the
      * same-UUID armor stand and all but the first would drop silently.
+     *
+     * <p>Every spawned entity gets:
+     * <ul>
+     *   <li>The tag {@code dungeontrain_contents_pidx_<carriagePIdx>} so the
+     *       diagnostics subscriber can identify it across save/load and
+     *       chunk reload.</li>
+     *   <li>NBT fields recording the original spawn shipyard coords + game
+     *       tick, so the per-20-tick position sampler can detect drift.</li>
+     *   <li>{@code PersistenceRequired=true} on {@code Mob} instances so the
+     *       vanilla despawn rules don't silently remove animals/villagers
+     *       inside shipyard chunks (despawn caps look at world-loaded mobs,
+     *       which inside-the-ship entities count toward by accident).</li>
+     * </ul>
      */
-    private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
+    private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template, int carriagePIdx) {
         CompoundTag saved = template.save(new CompoundTag());
         if (!saved.contains("entities", Tag.TAG_LIST)) {
             return;
         }
         ListTag entries = saved.getList("entities", Tag.TAG_COMPOUND);
         if (entries.isEmpty()) return;
+        long spawnTick = level.getGameTime();
+        String tag = contentsTagFor(carriagePIdx);
         int spawned = 0;
         for (int i = 0; i < entries.size(); i++) {
             CompoundTag entry = entries.getCompound(i);
@@ -229,6 +372,18 @@ public final class CarriageContentsPlacer {
                     entityNbt.putInt("TileZ", origin.getZ() + localBlock[2]);
                 }
             }
+            // Persistent vanilla tag — survives save/load and chunk reload.
+            // The CompoundTag "Tags" list is the NBT-side form of
+            // {@code Entity.getTags()} and is read back by Entity.load.
+            ListTag tagList = entityNbt.contains("Tags", Tag.TAG_LIST)
+                ? entityNbt.getList("Tags", Tag.TAG_STRING)
+                : new ListTag();
+            tagList.add(net.minecraft.nbt.StringTag.valueOf(tag));
+            entityNbt.put("Tags", tagList);
+            // Force-persistence on mobs so vanilla despawn (which kicks in
+            // for animals/villagers under certain conditions) can't silently
+            // eat our carriage entities.
+            entityNbt.putBoolean("PersistenceRequired", true);
 
             try {
                 Optional<Entity> created = EntityType.create(entityNbt, level);
@@ -239,20 +394,47 @@ public final class CarriageContentsPlacer {
                 }
                 Entity entity = created.get();
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
+                // Diagnostic spawn-coords + tick on the persistent-data
+                // subtree (the standard cross-mod-safe location for custom
+                // per-entity state — survives save/load via NeoForge's
+                // entity-save mixin). Written AFTER EntityType.create so it
+                // doesn't conflict with vanilla NBT field handling.
+                CompoundTag persistent = entity.getPersistentData();
+                persistent.putDouble(NBT_SPAWN_SHIPYARD_X, worldX);
+                persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, worldY);
+                persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, worldZ);
+                persistent.putLong(NBT_SPAWN_GAME_TICK, spawnTick);
+                persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
+                // Belt + braces for PersistenceRequired — the NBT-time set
+                // covers EntityType.create's path, this covers Mob subclasses
+                // that override readAdditional and might re-read the flag.
+                if (entity instanceof Mob mob) {
+                    mob.setPersistenceRequired();
+                }
                 if (level.addFreshEntity(entity)) {
                     spawned++;
+                    // Per-entity verbose log gated on the diagnostic flag —
+                    // bounded log volume in production, full detail when
+                    // investigating disappearance regressions.
+                    if (DebugFlags.logContentsEntities()) {
+                        LOGGER.info("[DungeonTrain] Contents: spawned entity type={} uuid={} pos=({},{},{}) pIdx={} tag={}",
+                            entity.getType().getDescriptionId(), entity.getUUID(),
+                            worldX, worldY, worldZ, carriagePIdx, tag);
+                    }
                 } else {
-                    LOGGER.warn("[DungeonTrain] Contents: addFreshEntity rejected {} at ({},{},{})",
-                        entity.getType().getDescriptionId(), worldX, worldY, worldZ);
+                    // Always log rejections — those are real failures, not
+                    // routine bookkeeping.
+                    LOGGER.warn("[DungeonTrain] Contents: addFreshEntity rejected {} at ({},{},{}) pIdx={}",
+                        entity.getType().getDescriptionId(), worldX, worldY, worldZ, carriagePIdx);
                 }
             } catch (Throwable t) {
-                LOGGER.warn("[DungeonTrain] Contents: entity spawn threw for id={}: {}",
-                    entityNbt.getString("id"), t.toString());
+                LOGGER.warn("[DungeonTrain] Contents: entity spawn threw for id={} pIdx={}: {}",
+                    entityNbt.getString("id"), carriagePIdx, t.toString());
             }
         }
         if (spawned > 0) {
-            LOGGER.info("[DungeonTrain] Contents: spawned {} entities at origin={} (template listed {})",
-                spawned, origin, entries.size());
+            LOGGER.info("[DungeonTrain] Contents: spawned {} entities at origin={} (template listed {}) pIdx={} tag={}",
+                spawned, origin, entries.size(), carriagePIdx, tag);
         }
     }
 

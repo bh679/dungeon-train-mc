@@ -47,6 +47,16 @@ public final class DebugFlags {
     private static volatile boolean hudDistance = false;
     private static volatile boolean chatTrainSpawn = false;
     private static volatile boolean chatCollision = false;
+    /**
+     * Verbose lifecycle logging for carriage-contents entities (per-entity
+     * JOIN / LEAVE log lines with stack traces, plus per-entity spawn lines
+     * with UUID + tag). Off by default — the kill-ahead fix that depended
+     * on the diagnostics is now load-bearing on the tag alone, so these
+     * logs are pure observability. Flip on with
+     * {@code /dungeontrain debug contents-entities on} when investigating
+     * entity-disappearance regressions.
+     */
+    private static volatile boolean logContentsEntities = false;
 
     private DebugFlags() {}
 
@@ -57,6 +67,7 @@ public final class DebugFlags {
     public static boolean hudDistance() { return hudDistance; }
     public static boolean chatTrainSpawn() { return chatTrainSpawn; }
     public static boolean chatCollision() { return chatCollision; }
+    public static boolean logContentsEntities() { return logContentsEntities; }
 
     public static boolean manualSpawnMode() {
         return TrainCarriageAppender.MANUAL_MODE;
@@ -114,6 +125,11 @@ public final class DebugFlags {
         broadcastTo(server);
     }
 
+    public static void setLogContentsEntities(MinecraftServer server, boolean value) {
+        logContentsEntities = value;
+        broadcastTo(server);
+    }
+
     /** Toggle manual-spawn mode server-side and broadcast to all connected clients. */
     public static void setManualSpawnMode(MinecraftServer server, boolean value) {
         TrainCarriageAppender.MANUAL_MODE = value;
@@ -140,7 +156,8 @@ public final class DebugFlags {
         return new DebugFlagsPacket(
             gapCubes, gapLine, nextSpawn, collision, hudDistance,
             TrainCarriageAppender.MANUAL_MODE,
-            chatTrainSpawn, chatCollision
+            chatTrainSpawn, chatCollision,
+            logContentsEntities
         );
     }
 }

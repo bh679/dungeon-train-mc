@@ -133,6 +133,12 @@ public final class CarriagePartTemplateStore {
         Files.createDirectories(dst.getParent());
         Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
         LOGGER.info("[DungeonTrain] Promoted part template {}:{} from {} to {}", kind.id(), name, src, dst);
+        try {
+            ContainerContentsStore.promoteFor("part:" + kind.id() + ":" + name);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Promoted part template {}:{} but failed to promote container sidecar: {}",
+                kind.id(), name, e.toString());
+        }
     }
 
     public static synchronized boolean delete(CarriagePartKind kind, String name) throws IOException {
