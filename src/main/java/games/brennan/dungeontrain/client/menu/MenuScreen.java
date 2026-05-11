@@ -35,4 +35,20 @@ public interface MenuScreen {
 
     /** Current list of entries, in top-to-bottom render order. */
     List<CommandMenuEntry> entries();
+
+    /**
+     * Optional companion panel that renders to the right of the main panel
+     * for the lifetime of this screen. Use for read-mostly summaries that
+     * shouldn't crowd the main action list — e.g. a list of saved user
+     * templates next to the Package menu. Returning {@code null} (the
+     * default) means no side panel is drawn.
+     *
+     * <p>The side panel is rendered with the same row primitives as the
+     * main panel and is fully click-capable through the same raycast +
+     * dispatch path. Side-panel screens themselves should return
+     * {@code null} from this method — nested side panels aren't supported.</p>
+     */
+    default MenuScreen sidePanel() {
+        return null;
+    }
 }

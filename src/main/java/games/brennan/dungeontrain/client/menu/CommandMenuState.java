@@ -56,6 +56,13 @@ public final class CommandMenuState {
     private static int hoveredIdx = -1;
     private static int hoveredSubIdx = 0;
 
+    // Side-panel state — populated each rebuild from the current screen's
+    // sidePanel(). Null/empty when the active screen has no companion panel.
+    private static MenuScreen sideScreen = null;
+    private static List<CommandMenuEntry> sideEntries = List.of();
+    private static int sideHoveredIdx = -1;
+    private static int sideHoveredSubIdx = 0;
+
     private static boolean typingMode;
     private static String typedBuffer = "";
     private static String typingArgName = "";
@@ -86,6 +93,16 @@ public final class CommandMenuState {
     public static List<CommandMenuEntry> entries() { return entries; }
     public static int hoveredIdx() { return hoveredIdx; }
     public static int hoveredSubIdx() { return hoveredSubIdx; }
+    public static MenuScreen sideScreen() { return sideScreen; }
+    public static List<CommandMenuEntry> sideEntries() { return sideEntries; }
+    public static int sideHoveredIdx() { return sideHoveredIdx; }
+    public static int sideHoveredSubIdx() { return sideHoveredSubIdx; }
+    public static boolean hasSidePanel() { return sideScreen != null && !sideEntries.isEmpty(); }
+
+    public static void setSideHovered(int idx, int subIdx) {
+        sideHoveredIdx = idx;
+        sideHoveredSubIdx = subIdx;
+    }
     public static boolean typingMode() { return typingMode; }
     public static String typedBuffer() { return typedBuffer; }
     public static String typingArgName() { return typingArgName; }
@@ -190,6 +207,10 @@ public final class CommandMenuState {
         typedBuffer = "";
         hoveredIdx = -1;
         hoveredSubIdx = 0;
+        sideHoveredIdx = -1;
+        sideHoveredSubIdx = 0;
+        sideScreen = null;
+        sideEntries = List.of();
         typingOriginRowIdx = -1;
         typingOriginSubIdx = 0;
         anchorOffset = Vec3.ZERO;
@@ -203,6 +224,8 @@ public final class CommandMenuState {
         stack.add(screen);
         hoveredIdx = -1;
         hoveredSubIdx = 0;
+        sideHoveredIdx = -1;
+        sideHoveredSubIdx = 0;
         rebuildEntries();
     }
 
@@ -218,6 +241,8 @@ public final class CommandMenuState {
         stack.remove(stack.size() - 1);
         hoveredIdx = -1;
         hoveredSubIdx = 0;
+        sideHoveredIdx = -1;
+        sideHoveredSubIdx = 0;
         rebuildEntries();
     }
 
@@ -382,7 +407,36 @@ public final class CommandMenuState {
 
     public static void rebuildEntries() {
         if (!open || stack.isEmpty()) return;
-        entries = stack.get(stack.size() - 1).entries();
+        MenuScreen top = stack.get(stack.size() - 1);
+        entries = top.entries();
+        MenuScreen side = top.sidePanel();
+        if (side != null) {
+            sideScreen = side;
+            sideEntries = side.entries();
+        } else {
+            sideScreen = null;
+            sideEntries = List.of();
+            sideHoveredIdx = -1;
+            sideHoveredSubIdx = 0;
+        }
+    }
+
+    /**
+     * Activate the click target on the side panel. Mirrors
+     * {@link #activate(int, int)} for the main panel but dispatches against
+     * the side-panel entries — same routing rules (Run → command + close,
+     * ClientAction → runnable, DrillIn → push). Drill-ins push onto the
+     * shared stack, replacing the active screen + its side panel until the
+     * player backs out.
+     */
+    public static void activateSide(int idx, int subIdx) {
+        if (idx < 0 || idx >= sideEntries.size()) return;
+        CommandMenuEntry entry = sideEntries.get(idx);
+        LOGGER.info("Menu activate (side) idx={} subIdx={} entry={}", idx, subIdx, entry);
+        typingOriginRowIdx = idx;
+        typingOriginSubIdx = subIdx;
+        playClickSound();
+        dispatchEntry(entry, subIdx);
     }
 
     private static void playClickSound() {

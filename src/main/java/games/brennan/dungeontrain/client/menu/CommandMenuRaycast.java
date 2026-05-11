@@ -82,16 +82,47 @@ public final class CommandMenuRaycast {
         }
 
         List<CommandMenuEntry> entries = CommandMenuState.entries();
-        if (entries.isEmpty()) {
-            CommandMenuState.setHovered(-1, 0);
-            return;
-        }
 
-        double halfW = CommandMenuLayout.PANEL_WIDTH / 2.0;
-        if (hitX < -halfW || hitX > halfW) {
-            CommandMenuState.setHovered(-1, 0);
+        // Main panel hit-test first. If miss, fall through to the optional
+        // side panel — keeps the main panel taking precedence when the
+        // bounding rectangles overlap in screen space.
+        if (!entries.isEmpty()
+            && testPanelHit(entries, hitX, hitY, /*panelCenterX=*/0.0,
+                CommandMenuState::setHovered)) {
+            CommandMenuState.setSideHovered(-1, 0);
             return;
         }
+        CommandMenuState.setHovered(-1, 0);
+
+        if (CommandMenuState.hasSidePanel()) {
+            double sideOffset = CommandMenuLayout.PANEL_WIDTH
+                + CommandMenuRenderer.SIDE_PANEL_GAP;
+            if (testPanelHit(CommandMenuState.sideEntries(), hitX, hitY, sideOffset,
+                    CommandMenuState::setSideHovered)) {
+                return;
+            }
+        }
+        CommandMenuState.setSideHovered(-1, 0);
+    }
+
+    /**
+     * Test {@code (hitX, hitY)} against the panel whose centre sits at
+     * {@code panelCenterX} on the panel-local X axis. On hit, calls
+     * {@code setHover.accept(rowIdx, subIdx)} and returns true. On miss,
+     * returns false and leaves the consumer untouched. Used twice from
+     * {@link #updateHovered} — once for the main panel (offset 0) and once
+     * for the optional side panel.
+     */
+    private static boolean testPanelHit(
+        List<CommandMenuEntry> entries,
+        double hitX, double hitY,
+        double panelCenterX,
+        java.util.function.BiConsumer<Integer, Integer> setHover
+    ) {
+        if (entries.isEmpty()) return false;
+        double halfW = CommandMenuLayout.PANEL_WIDTH / 2.0;
+        double localX = hitX - panelCenterX;
+        if (localX < -halfW || localX > halfW) return false;
 
         int count = entries.size();
         double halfH = CommandMenuLayout.ROW_HEIGHT / 2.0;
@@ -102,17 +133,16 @@ public final class CommandMenuRaycast {
             int subIdx = 0;
             CommandMenuEntry row = entries.get(i);
             if (row instanceof CommandMenuEntry.Label) {
-                CommandMenuState.setHovered(-1, 0);
-                return;
+                return false;
             }
             if (row instanceof CommandMenuEntry.Split split) {
                 double splitX = -halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
-                if (hitX > splitX) subIdx = 1;
+                if (localX > splitX) subIdx = 1;
             } else if (row instanceof CommandMenuEntry.Triple triple) {
                 double leftBoundary = -halfW + triple.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
                 double rightBoundary = -halfW + triple.middleEnd() * CommandMenuLayout.PANEL_WIDTH;
-                if (hitX > rightBoundary) subIdx = 2;
-                else if (hitX > leftBoundary) subIdx = 1;
+                if (localX > rightBoundary) subIdx = 2;
+                else if (localX > leftBoundary) subIdx = 1;
                 CommandMenuEntry cell = switch (subIdx) {
                     case 1 -> triple.middleEntry();
                     case 2 -> triple.rightEntry();
@@ -120,16 +150,12 @@ public final class CommandMenuRaycast {
                 };
                 if (cell instanceof CommandMenuEntry.Label
                     || (cell instanceof CommandMenuEntry.SaveAction sa && sa.saved())) {
-                    // Label cells and already-saved Save cells are not actionable;
-                    // drop the hover so the user doesn't see a highlight that
-                    // does nothing on click.
-                    CommandMenuState.setHovered(-1, 0);
-                    return;
+                    return false;
                 }
             }
-            CommandMenuState.setHovered(i, subIdx);
-            return;
+            setHover.accept(i, subIdx);
+            return true;
         }
-        CommandMenuState.setHovered(-1, 0);
+        return false;
     }
 }
