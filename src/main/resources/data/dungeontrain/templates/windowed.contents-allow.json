@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "excluded": [
     "cows",
+    "dirt",
     "ender",
     "pigs",
     "sheep"
