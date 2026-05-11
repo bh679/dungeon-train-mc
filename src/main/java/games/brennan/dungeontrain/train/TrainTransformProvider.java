@@ -311,6 +311,25 @@ public final class TrainTransformProvider implements KinematicDriver {
     // resets {@code consecutiveCleanTicks} to 0.
     private volatile boolean placedSuccessfully = false;
     private volatile int consecutiveCleanTicks = 0;
+
+    /**
+     * Pending contents-entity spawn records, one per enclosed carriage in
+     * this group. Stashed by {@code TrainAssembler.spawnGroup} after the
+     * blocks-only contents pass; fired by the appender's placement-collision
+     * tracker once this carriage transitions to {@code placedSuccessfully}.
+     *
+     * <p>Why deferred: the placement tracker can shift {@code spawnWorldPos}
+     * every tick for up to {@code CLEAN_TICKS_FOR_SUCCESS} ticks while
+     * resolving collisions. Spawning entities AFTER that period guarantees
+     * the carriage's shipyard chunks are stable when entities are attached,
+     * sidestepping any timing race between VS's shipyard-entity mixin and
+     * the per-tick shifts.</p>
+     *
+     * <p>Volatile to match the existing placement-state field-visibility
+     * pattern — write from the assembly thread, read from the appender's
+     * server-tick handler.</p>
+     */
+    private volatile PendingContentsEntitySpawn[] pendingContentsEntitySpawns = null;
     /**
      * {@code true} iff this carriage was spawned BEHIND the existing
      * train (newAnchor &lt; existing trainMinAnchor). Read by the
@@ -328,6 +347,35 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public void markPlacedSuccessfully() {
         this.placedSuccessfully = true;
+    }
+
+    /**
+     * Stash the per-carriage pending entity-spawn records captured by
+     * {@code TrainAssembler.spawnGroup}. Each slot in the array corresponds
+     * to one enclosed carriage in this group. A {@code null} entry means
+     * that slot was a FLATBED (no contents) and never needs an entity
+     * spawn pass.
+     *
+     * <p>The array reference is held volatile so the appender's tick
+     * handler observes the post-assembly write without any extra
+     * synchronisation.</p>
+     */
+    public void setPendingContentsEntitySpawns(PendingContentsEntitySpawn[] pending) {
+        this.pendingContentsEntitySpawns = pending;
+    }
+
+    /**
+     * Atomically take the pending entity spawns, returning the previously
+     * stashed array (or {@code null} if already taken / never set). Used by
+     * the appender so the {@code markPlacedSuccessfully()} branch fires the
+     * spawns exactly once — a second tick that re-enters the branch (which
+     * shouldn't happen since {@code placedSuccessfully} flips one-way, but
+     * defensive) sees {@code null} and skips.
+     */
+    public PendingContentsEntitySpawn[] takePendingContentsEntitySpawns() {
+        PendingContentsEntitySpawn[] snapshot = pendingContentsEntitySpawns;
+        pendingContentsEntitySpawns = null;
+        return snapshot;
     }
 
     public int getConsecutiveCleanTicks() {
