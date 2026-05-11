@@ -164,6 +164,29 @@ public final class ContainerContentsMenuController {
     }
 
     /**
+     * Open the container menu at {@code (plot, localPos)} anchored on
+     * {@code face}/{@code up} without doing a raycast. Used by the
+     * block-variant menu's "click linked row" flow: the caller already
+     * knows the cell + face from the block-variant menu's own anchor.
+     *
+     * <p>Caller's responsibility: the target cell must contain a
+     * container-state block (chest/barrel/etc) — usually arranged by
+     * doing a {@code PREVIEW_ENTRY} immediately before calling this so
+     * the variant's barrel is placed at the cell.</p>
+     */
+    public static void openAt(ServerPlayer player, BlockVariantPlot plot,
+                              BlockPos localPos, Direction face, Vec3 up) {
+        if (!player.hasPermissions(2)) {
+            actionBar(player, "Container contents menu requires OP", ChatFormatting.RED);
+            return;
+        }
+        BlockPos clamped = clampToFootprint(localPos, plot);
+        BlockPos worldPos = plot.origin().offset(clamped);
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clamped, face, up));
+        sendSync(player, plot, clamped, worldPos, face, up);
+    }
+
+    /**
      * Re-send the open menu's sync packet for {@code player} if the menu is
      * currently anchored at {@code (plotKey, localPos)}. Used by
      * {@link games.brennan.dungeontrain.net.SaveLootPrefabPacket} and

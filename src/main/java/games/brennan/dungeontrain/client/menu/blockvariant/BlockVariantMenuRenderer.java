@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.MenuRenderStates;
+import games.brennan.dungeontrain.client.menu.PrefabTabState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
@@ -270,9 +271,27 @@ public final class BlockVariantMenuRenderer {
                     nameCellR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
             drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY);
-            drawLeftText(ps, buffer, font, shortenStateLabel(entry.stateString()),
-                nameCellL + NAME_TEXT_LEFT_OFFSET, rowCY,
-                nameHover ? 0xFF000000 : 0xFFFFFFFF);
+            // Linked rows show the loot-prefab id instead of the block path
+            // so two rows backed by the same block (e.g. two barrels linked
+            // to different templates) read distinctly. Dangling links — the
+            // prefab is gone from the registry — render red as a warning.
+            String linkedId = entry.linkedLootPrefabId();
+            String label;
+            int labelColour;
+            if (linkedId != null) {
+                label = linkedId;
+                boolean dangling = !PrefabTabState.findLootItems(linkedId).isPresent();
+                if (dangling) {
+                    labelColour = nameHover ? 0xFF660000 : 0xFFFF5555;
+                } else {
+                    labelColour = nameHover ? 0xFF000000 : 0xFFFFD477;
+                }
+            } else {
+                label = shortenStateLabel(entry.stateString());
+                labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
+            }
+            drawLeftText(ps, buffer, font, label,
+                nameCellL + NAME_TEXT_LEFT_OFFSET, rowCY, labelColour);
 
             // Rotation cells
             if (rotatable) {

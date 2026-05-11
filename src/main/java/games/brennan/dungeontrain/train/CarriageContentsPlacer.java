@@ -147,7 +147,8 @@ public final class CarriageContentsPlacer {
                         sidecar.lockIdAt(entry.localPos()));
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                     level, world, rotated, picked.blockEntityNbt(),
-                    "contents:" + contents.id(), entry.localPos(), seed, carriageIndex);
+                    "contents:" + contents.id(), entry.localPos(), seed, carriageIndex,
+                    picked.linkedLootPrefabId());
             }
         }
     }

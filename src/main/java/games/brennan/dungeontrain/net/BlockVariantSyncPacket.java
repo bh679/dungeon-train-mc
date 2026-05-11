@@ -54,9 +54,21 @@ public record BlockVariantSyncPacket(
      * <p>{@code rotDirMask} is the same 6-bit mask over
      * {@link net.minecraft.core.Direction#ordinal()} as the JSON sidecar
      * uses.</p>
+     *
+     * <p>{@code linkedLootPrefabId} is non-null when this candidate was
+     * added from a saved loot-prefab item; the editor renders it as the
+     * row label and the spawn pipeline rolls contents from the linked
+     * pool (see {@code LootPrefabStore}).</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
-                        byte rotMode, byte rotDirMask) {}
+                        byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId) {
+
+        /** Backward-compat constructor for call sites that don't carry a loot link. */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, null);
+        }
+    }
 
     public static final Type<BlockVariantSyncPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_sync"));
@@ -96,6 +108,9 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.weight());
             buf.writeByte(e.rotMode());
             buf.writeByte(e.rotDirMask());
+            boolean hasLink = e.linkedLootPrefabId() != null && !e.linkedLootPrefabId().isEmpty();
+            buf.writeBoolean(hasLink);
+            if (hasLink) buf.writeUtf(e.linkedLootPrefabId(), 128);
         }
     }
 
@@ -121,7 +136,9 @@ public record BlockVariantSyncPacket(
             int weight = buf.readVarInt();
             byte rotMode = buf.readByte();
             byte rotDirMask = buf.readByte();
-            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask));
+            boolean hasLink = buf.readBoolean();
+            String linkedLootPrefabId = hasLink ? buf.readUtf(128) : null;
+            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask, linkedLootPrefabId));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }

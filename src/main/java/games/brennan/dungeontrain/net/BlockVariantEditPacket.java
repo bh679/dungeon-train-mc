@@ -50,6 +50,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       mask. {@code entryIndex} = row, {@code delta} = new dirMask
  *       (6-bit). Mode is preserved (LOCK collapses multi-bit to lowest;
  *       OPTIONS with mask 0 falls back to RANDOM).</li>
+ *   <li>{@link Op#OPEN_LINKED_CONTAINER} — click on a linked variant's
+ *       row name. {@code entryIndex} = row. Server previews the variant
+ *       at the cell, sets the cell-level container link to the variant's
+ *       linked loot-prefab id, closes the block-variant menu, and opens
+ *       the container-contents menu anchored on the same face. Edits in
+ *       that menu route to {@code LootPrefabStore.save} as usual for a
+ *       linked cell, propagating to every linked container.</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -60,7 +67,8 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                                      int entryIndex, String stateString, int delta) implements CustomPacketPayload {
 
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
-                     PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS }
+                     PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
+                     OPEN_LINKED_CONTAINER }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
