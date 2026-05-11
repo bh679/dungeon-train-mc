@@ -68,12 +68,31 @@ public final class EditorLayout {
     public static final int CONTENTS_FIRST_Z = CARRIAGES_VIEW_MAX_Z + GAP;
 
     /**
-     * Maximum Z occupied by the CONTENTS view at max dims — contents row
-     * footprint depth equals {@code dims.width()}, capped at
-     * {@link CarriageDims#MAX_WIDTH}. Drives the {@link #TRACKS_FIRST_Z}
-     * baseline.
+     * Tighter inter-plot gap used inside a contents-group column (parent →
+     * its sub-variants stacked along +Z). Yields {@code (GAP - 2)} air blocks
+     * between bedrock cages.
      */
-    public static final int CONTENTS_VIEW_MAX_Z = CONTENTS_FIRST_Z + CarriageDims.MAX_WIDTH;
+    public static final int SUB_VARIANT_GAP = 4;
+
+    /**
+     * Maximum sub-variants reserved per contents group. The CONTENTS view's
+     * +Z extent is sized so a group of this many members fits inside the
+     * region without overlapping the TRACKS view that follows. Authors who
+     * exceed this cap will see the deepest sub-variants' cages bleed into
+     * the TRACKS region — soft cap, not enforced at command time.
+     */
+    public static final int MAX_SUB_VARIANTS_PER_PARENT = 8;
+
+    /**
+     * Maximum Z occupied by the CONTENTS view at max dims — the parent's own
+     * row footprint plus {@link #MAX_SUB_VARIANTS_PER_PARENT} reserved
+     * sub-variant rows separated by {@link #SUB_VARIANT_GAP}. Drives the
+     * {@link #TRACKS_FIRST_Z} baseline so sub-variant columns don't collide
+     * with track-side plots.
+     */
+    public static final int CONTENTS_VIEW_MAX_Z = CONTENTS_FIRST_Z
+        + CarriageDims.MAX_WIDTH
+        + MAX_SUB_VARIANTS_PER_PARENT * (CarriageDims.MAX_WIDTH + SUB_VARIANT_GAP);
 
     /** First Z slot of the track-side row (TRACKS view). */
     public static final int TRACKS_FIRST_Z = CONTENTS_VIEW_MAX_Z + GAP;

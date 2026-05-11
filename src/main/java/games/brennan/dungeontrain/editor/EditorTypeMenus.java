@@ -117,15 +117,26 @@ public final class EditorTypeMenus {
     private static List<EditorTypeMenusPacket.Menu> contentsMenus(CarriageDims dims) {
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         if (all.isEmpty()) return Collections.emptyList();
-        CarriageContents first = all.get(0);
+        // Sub-variants live in their parent's +Z column, not in the top-level
+        // +X row. Filter them out of this menu — the per-plot sub-variants
+        // companion (see VariantOverlayRenderer.appendSubVariantsCompanion)
+        // lists them for the variant the player is editing.
+        java.util.Set<String> children = games.brennan.dungeontrain.editor.CarriageContentsGroupStore.allChildIds();
+        List<CarriageContents> topLevel = new ArrayList<>(all.size());
+        for (CarriageContents c : all) {
+            if (children.contains(c.id())) continue;
+            topLevel.add(c);
+        }
+        if (topLevel.isEmpty()) return Collections.emptyList();
+        CarriageContents first = topLevel.get(0);
         BlockPos firstOrigin = CarriageContentsEditor.plotOrigin(first, dims);
         if (firstOrigin == null) return Collections.emptyList();
         Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);
         String cat = EditorCategory.CONTENTS.name();
         CarriageContentsWeights weights = CarriageContentsWeights.current();
-        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(all.size());
-        for (CarriageContents c : all) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(topLevel.size());
+        for (CarriageContents c : topLevel) {
             rows.add(new EditorTypeMenusPacket.Variant(
                 c.id(), weights.weightFor(c.id()), cat, c.id(), c.id()));
         }

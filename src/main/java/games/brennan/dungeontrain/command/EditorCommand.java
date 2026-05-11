@@ -6,6 +6,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageEditor;
@@ -36,6 +37,7 @@ import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
+import games.brennan.dungeontrain.train.CarriageContentsGroup;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
@@ -371,7 +373,48 @@ public final class EditorCommand {
                                 IntegerArgumentType.integer(CarriageContentsWeights.MIN, CarriageContentsWeights.MAX))
                             .executes(ctx -> runContentsWeightSet(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
-                                IntegerArgumentType.getInteger(ctx, "value")))))))
+                                IntegerArgumentType.getInteger(ctx, "value"))))))
+                .then(Commands.literal("group")
+                    .then(Commands.literal("new")
+                        .then(Commands.argument("parent", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .then(Commands.argument("name", StringArgumentType.word())
+                                .executes(ctx -> runContentsGroupNew(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "parent"),
+                                    StringArgumentType.getString(ctx, "name"))))))
+                    .then(Commands.literal("add")
+                        .then(Commands.argument("parent", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .then(Commands.argument("child", StringArgumentType.word())
+                                .suggests(CONTENTS_SUGGESTIONS)
+                                .executes(ctx -> runContentsGroupAdd(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "parent"),
+                                    StringArgumentType.getString(ctx, "child"),
+                                    CarriageContentsGroup.DEFAULT_WEIGHT))
+                                .then(Commands.argument("weight",
+                                        IntegerArgumentType.integer(CarriageContentsGroup.MIN_WEIGHT, CarriageContentsGroup.MAX_WEIGHT))
+                                    .executes(ctx -> runContentsGroupAdd(ctx.getSource(),
+                                        StringArgumentType.getString(ctx, "parent"),
+                                        StringArgumentType.getString(ctx, "child"),
+                                        IntegerArgumentType.getInteger(ctx, "weight")))))))
+                    .then(Commands.literal("remove")
+                        .then(Commands.argument("parent", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .then(Commands.argument("child", StringArgumentType.word())
+                                .suggests(CONTENTS_SUGGESTIONS)
+                                .executes(ctx -> runContentsGroupRemove(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "parent"),
+                                    StringArgumentType.getString(ctx, "child"))))))
+                    .then(Commands.literal("list")
+                        .then(Commands.argument("parent", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .executes(ctx -> runContentsGroupList(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "parent")))))
+                    .then(Commands.literal("clear")
+                        .then(Commands.argument("parent", StringArgumentType.word())
+                            .suggests(CONTENTS_SUGGESTIONS)
+                            .executes(ctx -> runContentsGroupClear(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "parent")))))))
             .then(Commands.literal("pillar")
                 .then(Commands.literal("enter")
                     .then(Commands.argument("target", StringArgumentType.word())
@@ -650,6 +693,17 @@ public final class EditorCommand {
     private static int runContentsWeightSet(CommandSourceStack source, String rawContents, int value) {
         CarriageContents contents = parseContents(source, rawContents);
         if (contents == null) return 0;
+        // If the target is a group member, this weight is dead — picks happen
+        // via group resolution, not the top-level weights table. Warn but
+        // proceed so the value is still persisted (useful if the user later
+        // removes the id from the group).
+        if (CarriageContentsGroupStore.allChildIds().contains(contents.id())) {
+            source.sendSuccess(() -> Component.literal(
+                "Note: '" + contents.id() + "' is a member of a contents group — top-level weight "
+                    + "is IGNORED at spawn time (group resolution uses per-member weights). "
+                    + "Value will still be saved in case you ungroup later."
+            ).withStyle(ChatFormatting.YELLOW), false);
+        }
         try {
             int stored = CarriageContentsWeights.set(contents.id(), value);
             source.sendSuccess(() -> Component.literal(
@@ -673,6 +727,246 @@ public final class EditorCommand {
         if (contents == null) return 0;
         int current = CarriageContentsWeights.current().weightFor(contents.id());
         return runContentsWeightSet(source, rawContents, current + delta);
+    }
+
+    /**
+     * {@code /dt editor contents group add <parent> <child> [weight]} — add
+     * or update a member in the parent's group. Validates: both ids are
+     * registered, parent isn't a built-in (built-ins have hardcoded NBT
+     * fallback that conflicts with group semantics), child isn't itself a
+     * group parent (single-hop only), parent isn't a member of another group
+     * (no cycles). If the parent has a stored {@code .nbt}, warn that the
+     * block layout will be ignored at spawn time.
+     */
+    private static int runContentsGroupAdd(CommandSourceStack source, String parentRaw, String childRaw, int weight) {
+        CarriageContents parent = parseContents(source, parentRaw);
+        if (parent == null) return 0;
+        CarriageContents child = parseContents(source, childRaw);
+        if (child == null) return 0;
+        if (parent.isBuiltin()) {
+            source.sendFailure(Component.literal(
+                "Built-in contents '" + parent.id() + "' cannot be a group parent — built-ins have hardcoded fallback behaviour."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (parent.id().equals(child.id())) {
+            source.sendFailure(Component.literal(
+                "Cannot add '" + parent.id() + "' as a member of itself."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (CarriageContentsGroupStore.exists(child.id())) {
+            source.sendFailure(Component.literal(
+                "'" + child.id() + "' is itself a contents group — nested groups are not supported (single-hop only)."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        // Cycle guard: parent must not already be a member of another group.
+        if (CarriageContentsGroupStore.allChildIds().contains(parent.id())) {
+            source.sendFailure(Component.literal(
+                "'" + parent.id() + "' is already a member of another group — making it a parent would create a cycle."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        CarriageContentsGroup existing = CarriageContentsGroupStore.get(parent.id())
+            .orElse(CarriageContentsGroup.EMPTY);
+        CarriageContentsGroup updated = existing.withMember(new CarriageContentsGroup.Member(child.id(), weight));
+        try {
+            CarriageContentsGroupStore.save(parent.id(), updated);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: group '" + parent.id() + "' → added '" + child.id() + "' (weight=" + weight + ", "
+                    + updated.members().size() + " explicit member" + (updated.members().size() == 1 ? "" : "s")
+                    + " + parent self as default)."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor contents group add failed", e);
+            source.sendFailure(Component.literal("group add failed: " + e.toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * {@code /dt editor contents group remove <parent> <child>} — remove a
+     * member from the parent's group. If the resulting member list is empty,
+     * delete the group sidecar so the parent reverts to a normal leaf.
+     */
+    private static int runContentsGroupRemove(CommandSourceStack source, String parentRaw, String childRaw) {
+        String parentId = parentRaw.toLowerCase(Locale.ROOT);
+        String childId = childRaw.toLowerCase(Locale.ROOT);
+        java.util.Optional<CarriageContentsGroup> existing = CarriageContentsGroupStore.get(parentId);
+        if (existing.isEmpty()) {
+            source.sendFailure(Component.literal(
+                "No contents group defined for '" + parentId + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        CarriageContentsGroup updated = existing.get().withoutMember(childId);
+        if (updated.members().size() == existing.get().members().size()) {
+            source.sendFailure(Component.literal(
+                "Group '" + parentId + "' has no member '" + childId + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        try {
+            if (updated.members().isEmpty()) {
+                CarriageContentsGroupStore.delete(parentId);
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: group '" + parentId + "' → removed '" + childId + "' (last member; group file deleted, parent reverts to leaf)."
+                ).withStyle(ChatFormatting.GREEN), true);
+            } else {
+                CarriageContentsGroupStore.save(parentId, updated);
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: group '" + parentId + "' → removed '" + childId + "' (" + updated.members().size() + " member"
+                        + (updated.members().size() == 1 ? "" : "s") + " remaining)."
+                ).withStyle(ChatFormatting.GREEN), true);
+            }
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor contents group remove failed", e);
+            source.sendFailure(Component.literal("group remove failed: " + e.toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /** {@code /dt editor contents group list <parent>} — print members + weights. */
+    private static int runContentsGroupList(CommandSourceStack source, String parentRaw) {
+        String parentId = parentRaw.toLowerCase(Locale.ROOT);
+        java.util.Optional<CarriageContentsGroup> opt = CarriageContentsGroupStore.get(parentId);
+        if (opt.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "'" + parentId + "' is not a contents group (no .group.json sidecar)."
+            ), false);
+            return 1;
+        }
+        CarriageContentsGroup group = opt.get();
+        if (group.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                "Group '" + parentId + "' has no members."
+            ).withStyle(ChatFormatting.YELLOW), false);
+            return 1;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Group '" + parentId + "' members (" + group.members().size() + "):"
+        ), false);
+        for (CarriageContentsGroup.Member m : group.members()) {
+            boolean resolved = CarriageContentsRegistry.find(m.id()).isPresent();
+            String suffix = resolved ? "" : " (UNKNOWN — will be skipped)";
+            source.sendSuccess(() -> Component.literal(
+                "  " + m.id() + " weight=" + m.weight() + suffix
+            ).withStyle(resolved ? ChatFormatting.GRAY : ChatFormatting.YELLOW), false);
+        }
+        return 1;
+    }
+
+    /**
+     * {@code /dt editor contents group new <parent> <name>} — atomic
+     * create + add-to-group + teleport. Used by the editor's sub-variant
+     * menu "+ New" button: one click → one keyboard prompt → fully wired
+     * sub-variant ready to author.
+     */
+    private static int runContentsGroupNew(CommandSourceStack source, String parentRaw, String rawName) {
+        ServerPlayer player = requirePlayer(source);
+        if (player == null) return 0;
+
+        // 1. Validate parent (registered, not built-in, not a member of another group).
+        CarriageContents parent = parseContents(source, parentRaw);
+        if (parent == null) return 0;
+        if (parent.isBuiltin()) {
+            source.sendFailure(Component.literal(
+                "Built-in contents '" + parent.id() + "' cannot be a group parent — built-ins have hardcoded fallback behaviour."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (CarriageContentsGroupStore.allChildIds().contains(parent.id())) {
+            source.sendFailure(Component.literal(
+                "'" + parent.id() + "' is already a member of another group — making it a parent would create a cycle."
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
+        // 2. Validate name.
+        String name = rawName.toLowerCase(Locale.ROOT);
+        if (!CarriageContents.NAME_PATTERN.matcher(name).matches()) {
+            source.sendFailure(Component.literal(
+                "Invalid name '" + rawName + "'. Use lowercase letters, digits or underscore (1-32 chars)."
+            ));
+            return 0;
+        }
+        if (CarriageContents.isReservedBuiltinName(name)) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is reserved for a built-in."
+            ));
+            return 0;
+        }
+        if (CarriageContentsRegistry.find(name).isPresent()) {
+            source.sendFailure(Component.literal(
+                "Name '" + name + "' is already taken."
+            ));
+            return 0;
+        }
+
+        try {
+            // 3. Create blank contents and register it.
+            CarriageContents.Custom target = (CarriageContents.Custom) CarriageContents.custom(name);
+            var origin = CarriageContentsEditor.createBlank(player, target);
+
+            // 4. Append to parent's group (creates the group sidecar if missing).
+            CarriageContentsGroup existing = CarriageContentsGroupStore.get(parent.id())
+                .orElse(CarriageContentsGroup.EMPTY);
+            CarriageContentsGroup updated = existing.withMember(
+                new CarriageContentsGroup.Member(target.id(), CarriageContentsGroup.DEFAULT_WEIGHT));
+            CarriageContentsGroupStore.save(parent.id(), updated);
+
+            // 5. Teleport into the new plot (now positioned adjacent to parent
+            // because the plot layout is flattened-by-group).
+            CarriageContentsEditor.enter(player, target, null);
+
+            source.sendSuccess(() -> Component.literal(
+                "Editor: created sub-variant '" + target.id() + "' of '" + parent.id()
+                    + "' at plot " + origin + " (" + updated.members().size()
+                    + " member" + (updated.members().size() == 1 ? "" : "s") + " in group)."
+            ).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] editor contents group new failed", t);
+            source.sendFailure(Component.literal("group new failed: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage()
+            ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /** {@code /dt editor contents group clear <parent>} — delete the group sidecar. */
+    private static int runContentsGroupClear(CommandSourceStack source, String parentRaw) {
+        String parentId = parentRaw.toLowerCase(Locale.ROOT);
+        if (!CarriageContentsGroupStore.exists(parentId)) {
+            source.sendFailure(Component.literal(
+                "No contents group defined for '" + parentId + "'."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
+        try {
+            boolean removed = CarriageContentsGroupStore.delete(parentId);
+            if (removed) {
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: cleared contents group '" + parentId + "' (parent reverts to leaf)."
+                ).withStyle(ChatFormatting.GREEN), true);
+            } else {
+                source.sendSuccess(() -> Component.literal(
+                    "Editor: '" + parentId + "' had only a bundled group definition (no per-install override deleted)."
+                ).withStyle(ChatFormatting.YELLOW), true);
+            }
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor contents group clear failed", e);
+            source.sendFailure(Component.literal("group clear failed: " + e.toString())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 
     /**
@@ -2066,6 +2360,10 @@ public final class EditorCommand {
         if (player == null) return 0;
         CarriageContents contents = parseContents(source, contentsRaw);
         if (contents == null) return 0;
+        // NOTE: group parents are now enterable — the parent's own .nbt is the
+        // "default" sub-variant of its group (Phase 2 semantic). The synthetic
+        // self entry in CarriageContentsRegistry.resolveGroup keeps the parent
+        // in rotation alongside explicit members.
         CarriageVariant shell = shellRaw == null
             ? null
             : CarriageVariantRegistry.find(shellRaw.toLowerCase(Locale.ROOT)).orElse(null);

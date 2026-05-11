@@ -44,10 +44,27 @@ public final class EditorTypeMenuRaycast {
         Hovered closest = Hovered.NONE;
         double closestT = Double.POSITIVE_INFINITY;
 
+        // Mirror the renderer's per-anchor companion sequencing — accumulate
+        // prior companion widths so multi-companion hit detection lines up
+        // with the visible panel positions.
+        BlockPos lastCompanionAnchor = null;
+        double priorCompanionWidth = 0;
         for (int i = 0; i < menus.size(); i++) {
             EditorTypeMenusPacket.Menu menu = menus.get(i);
             BlockPos pos = menu.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+            double menuPriorCompanionWidth;
+            if (menu.isCompanion()) {
+                if (lastCompanionAnchor == null || !lastCompanionAnchor.equals(pos)) {
+                    priorCompanionWidth = 0;
+                    lastCompanionAnchor = pos;
+                }
+                menuPriorCompanionWidth = priorCompanionWidth;
+                priorCompanionWidth += EditorTypeMenuRenderer.halfWidth(menu, font) * 2
+                    + EditorTypeMenuRenderer.COMPANION_GAP;
+            } else {
+                menuPriorCompanionWidth = 0;
+            }
 
             Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
             Vec3 right = basis[0], up = basis[1], normal = basis[2];
@@ -76,7 +93,7 @@ public final class EditorTypeMenuRaycast {
             // the basis + scale (see EditorTypeMenuRenderer.drawMenu) — undo
             // that shift here so the cell rects line up with the visible
             // panel.
-            double shiftX = EditorTypeMenuRenderer.companionShiftX(menu, font);
+            double shiftX = EditorTypeMenuRenderer.companionShiftX(menu, font, menuPriorCompanionWidth);
             if (shiftX != 0) {
                 hitX -= shiftX;
             }

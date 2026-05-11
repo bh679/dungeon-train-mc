@@ -161,12 +161,28 @@ public final class EditorTypeMenuRenderer {
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         Hovered hovered = HOVERED;
+        // Accumulator: each companion sharing a per-plot anchor shifts past
+        // its predecessors. Reset when the per-plot anchor changes (different
+        // BlockPos in worldPos) so unrelated companions don't stack.
+        BlockPos lastCompanionAnchor = null;
+        double priorCompanionWidth = 0;
         for (int i = 0; i < snapshot.size(); i++) {
             EditorTypeMenusPacket.Menu menu = snapshot.get(i);
             BlockPos pos = menu.worldPos();
             Vec3 anchor = new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
             Hovered local = (hovered.menuIdx == i) ? hovered : Hovered.NONE;
-            drawMenu(ps, buffer, font, cam, anchor, menu, local);
+            double shiftIn;
+            if (menu.isCompanion()) {
+                if (lastCompanionAnchor == null || !lastCompanionAnchor.equals(pos)) {
+                    priorCompanionWidth = 0;
+                    lastCompanionAnchor = pos;
+                }
+                shiftIn = priorCompanionWidth;
+                priorCompanionWidth += halfWidth(menu, font) * 2 + COMPANION_GAP;
+            } else {
+                shiftIn = 0;
+            }
+            drawMenu(ps, buffer, font, cam, anchor, menu, local, shiftIn);
         }
 
         buffer.endBatch(PANEL_QUAD);
@@ -212,13 +228,20 @@ public final class EditorTypeMenuRenderer {
      * sits just past the per-plot panel's right edge (with {@link #COMPANION_GAP}
      * of visible space). Returns 0 for non-companion menus.
      *
+     * <p>When multiple companions are present (e.g. sub-variants + type
+     * companion both anchored at the per-plot panel), each subsequent
+     * companion shifts past its predecessor by that predecessor's full
+     * width + one {@link #COMPANION_GAP}. The list iteration in
+     * {@link #onRenderLevelStage} preserves insertion order so the server's
+     * append order controls visual sequencing.</p>
+     *
      * <p>The per-plot panel's half-width is looked up from the matching
      * inPlot label so the gap stays tight regardless of which template the
      * player is in. Falls back to {@link EditorPlotLabelsRenderer#MIN_HALF_W *
      * 2} if no inPlot entry is cached (shouldn't happen in normal flow but
      * keeps the renderer crash-free).</p>
      */
-    public static double companionShiftX(EditorTypeMenusPacket.Menu menu, Font font) {
+    public static double companionShiftX(EditorTypeMenusPacket.Menu menu, Font font, double priorCompanionWidth) {
         if (!menu.isCompanion()) return 0;
         double perPlotHalfW = EditorPlotLabelsRenderer.MIN_HALF_W;
         for (EditorPlotLabelsPacket.Entry e : EditorPlotLabelsRenderer.entries()) {
@@ -227,7 +250,15 @@ public final class EditorTypeMenuRenderer {
                 break;
             }
         }
-        return perPlotHalfW + COMPANION_GAP + halfWidth(menu, font);
+        return perPlotHalfW + COMPANION_GAP + priorCompanionWidth + halfWidth(menu, font);
+    }
+
+    /**
+     * Convenience overload for single-companion call sites that don't track
+     * a running sum.
+     */
+    public static double companionShiftX(EditorTypeMenusPacket.Menu menu, Font font) {
+        return companionShiftX(menu, font, 0);
     }
 
     /**
@@ -274,7 +305,8 @@ public final class EditorTypeMenuRenderer {
     private static void drawMenu(
         PoseStack ps, MultiBufferSource buffer, Font font,
         Vec3 cam, Vec3 anchor,
-        EditorTypeMenusPacket.Menu menu, Hovered hovered
+        EditorTypeMenusPacket.Menu menu, Hovered hovered,
+        double priorCompanionWidth
     ) {
         Vec3[] b = EditorPlotLabelsRenderer.basis(anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
@@ -299,9 +331,10 @@ public final class EditorTypeMenuRenderer {
 
         // Companion menus share the per-plot panel's anchor + basis; shift
         // them in panel-local +X so they sit beside the panel like a second
-        // column of a single extended UI. Non-companions render at
-        // panel-local origin.
-        double shiftX = companionShiftX(menu, font);
+        // column of a single extended UI. When multiple companions share an
+        // anchor, each shifts past its predecessors (priorCompanionWidth
+        // accumulated by the caller).
+        double shiftX = companionShiftX(menu, font, priorCompanionWidth);
         if (shiftX != 0) {
             ps.translate(shiftX, 0, 0);
         }

@@ -341,11 +341,20 @@ public final class CommandMenuState {
      * screen's own {@link MenuTypingScreen#removed()} also calls
      * {@link #cancelTyping}; the {@code typingMode} guard there prevents
      * recursion when the cancel originates from this side.
+     *
+     * <p>{@link Minecraft#setScreen} throws {@link IllegalStateException}
+     * when called during world disconnect ("Trying to return to in-game GUI
+     * during disconnection"). The screen is being torn down by MC anyway in
+     * that case, so swallow the exception — our cleanup completed via the
+     * typingMode reset before this call.</p>
      */
     private static void dismissTypingScreen() {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof MenuTypingScreen) {
+        if (!(mc.screen instanceof MenuTypingScreen)) return;
+        try {
             mc.setScreen(null);
+        } catch (IllegalStateException disconnectRace) {
+            // Disconnect-in-progress; MC will clear the screen itself.
         }
     }
 

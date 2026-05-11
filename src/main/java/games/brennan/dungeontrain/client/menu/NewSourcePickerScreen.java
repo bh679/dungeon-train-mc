@@ -21,7 +21,16 @@ import java.util.List;
  */
 public final class NewSourcePickerScreen implements MenuScreen {
 
-    public enum Category { CARRIAGES, CONTENTS, PARTS, TRACKS }
+    public enum Category {
+        CARRIAGES, CONTENTS, PARTS, TRACKS,
+        /**
+         * Sub-variant of a contents group. {@code currentId} carries the parent
+         * id. Picker collapses to a single "name" TypeArg that dispatches
+         * {@code editor contents group new <parent> <name>} — atomic create +
+         * add-to-group + teleport.
+         */
+        CONTENTS_SUB_VARIANT
+    }
 
     private final Category category;
     private final String kind;
@@ -43,6 +52,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
             // consistently with its siblings; the entry list collapses to
             // a single name TypeArg + Back below.
             case TRACKS -> "New " + kind + " — name";
+            case CONTENTS_SUB_VARIANT -> "New sub-variant of " + currentId + " — name";
         };
     }
 
@@ -89,6 +99,13 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 // is in {@code kind}.
                 out.add(new CommandMenuEntry.TypeArg(
                     "New", "name", "dungeontrain editor tracks new " + kind));
+            }
+            case CONTENTS_SUB_VARIANT -> {
+                // Single row — type the name, dispatch the atomic create+add+
+                // teleport command. Parent id is baked into the prefix from
+                // {@code currentId}.
+                out.add(new CommandMenuEntry.TypeArg(
+                    "New", "name", "dungeontrain editor contents group new " + currentId));
             }
         }
         out.add(new CommandMenuEntry.Back("< Back"));
