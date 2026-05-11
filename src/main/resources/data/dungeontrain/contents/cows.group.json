@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "chickens",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "pigs",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "sheep",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "rabbits",
-      "weight": 5
+      "weight": 2
     },
     {
       "id": "armadillo",
