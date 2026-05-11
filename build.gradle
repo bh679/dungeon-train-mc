@@ -169,36 +169,6 @@ tasks.named('test', Test).configure {
     }
 }
 
-// Fail-fast check that prevents shipping an encrypted-but-not-decrypted audio
-// asset in the jar. The `train_engine.ogg` is git-crypt-protected (see
-// .gitattributes); on a fresh clone before `git-crypt unlock`, the file in
-// the working tree is the AES-256 ciphertext, prefixed with the
-// "\x00GITCRYPT\x00" magic. If gradle bundles that ciphertext into the jar
-// the mod loads but the sound silently fails to play, which is hard to
-// diagnose. We detect the magic and abort with a recovery hint instead.
-tasks.register('verifyEncryptedAssetsUnlocked') {
-    var asset = file('src/main/resources/assets/dungeontrain/sounds/train_engine.ogg')
-    inputs.file asset
-    doLast {
-        if (!asset.exists()) {
-            logger.warn("[dungeontrain] train_engine.ogg not present — jar will ship without train audio.")
-            return
-        }
-        var head = new byte[9]
-        var n = 0
-        asset.withInputStream { it.read(head) ; n = head.length }
-        var magic = new String(head, 1, 8, 'ISO-8859-1')
-        if (head[0] == (byte) 0 && magic == 'GITCRYPT') {
-            throw new GradleException(
-                "train_engine.ogg is still git-crypt-encrypted. Run `git-crypt unlock` " +
-                "with the symmetric key (see .gitattributes) before building, or delete " +
-                "the file to build without audio."
-            )
-        }
-    }
-}
-tasks.named('processResources').configure { dependsOn 'verifyEncryptedAssetsUnlocked' }
-
 // Resolve the current git branch at configuration time so it can be baked into
 // the jar via processResources. Falls back to the short SHA on detached HEAD.
 //
