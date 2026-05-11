@@ -192,6 +192,12 @@ public final class CarriageContentsStore {
         Files.createDirectories(dst.getParent());
         Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
         LOGGER.info("[DungeonTrain] Promoted contents template {} from {} to {}", contents.id(), src, dst);
+        try {
+            ContainerContentsStore.promoteFor("contents:" + contents.id());
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Promoted contents template {} but failed to promote container sidecar: {}",
+                contents.id(), e.toString());
+        }
     }
 
     public static synchronized boolean delete(CarriageContents contents) throws IOException {
