@@ -56,12 +56,22 @@ public final class UserContentPaths {
     }
 
     /**
-     * {@code <config>/dungeontrain/user/<subSlug>} where {@code subSlug} is
-     * a kind-specific sub-path like {@code "templates"},
-     * {@code "prefabs/loot"}, or {@code "parts/cab"}.
+     * Write target for {@code subSlug} — the active package's
+     * {@code <workingDir>/<subSlug>}. Defaults to the legacy
+     * {@code <config>/dungeontrain/user/<subSlug>} when the active package
+     * is the synthetic {@code (unsaved)} entry, so pre-V2 behaviour is
+     * unchanged for installs that haven't yet saved a named package.
+     *
+     * <p>Every template store's {@code directory()} accessor flows
+     * through here, which means switching active package immediately
+     * redirects all subsequent reads / writes to the new working folder.
+     * Stale per-store caches built before the switch are cleared by the
+     * reload barrier in {@link games.brennan.dungeontrain.template.TemplateStores}
+     * so callers never observe stale (cached-id → wrong-folder)
+     * resolutions.</p>
      */
     public static Path dir(String subSlug) {
-        return root().resolve(subSlug);
+        return PackageRegistry.activeSubDir(subSlug);
     }
 
     /**
@@ -133,23 +143,51 @@ public final class UserContentPaths {
 
     /**
      * Directories to search for {@code subSlug}, in priority order:
-     * {@code user/<subSlug>/} first, then each
-     * {@code imported/<pkg>/<subSlug>/} alphabetically. Used by per-store
-     * loads (first existing wins) and registry scans (union of basenames).
+     * the active package's working folder first, then each remaining
+     * <i>enabled</i> package's working folder in scan order. Used by
+     * per-store loads (first existing wins) and registry scans (union of
+     * basenames).
      *
-     * <p>The user folder is always element 0 even when it doesn't exist —
-     * callers can iterate the result and ignore non-directories. Keeping
-     * the slot stable means the caller doesn't have to special-case
-     * "what if user/ is empty" separately from "what if no packages
-     * exist".</p>
+     * <p>The active package's slot is always element 0 even when its
+     * directory doesn't exist — callers iterate the result and ignore
+     * non-directories. Keeping the slot stable means the caller doesn't
+     * have to special-case "what if active is empty" separately from
+     * "what if no packages exist".</p>
+     *
+     * <p>Disabled packages are excluded entirely. Toggling a package's
+     * enabled state therefore takes effect on the next {@code searchDirs}
+     * call, which is exactly what
+     * {@link games.brennan.dungeontrain.template.TemplateStores#reloadCachesOnly()}
+     * forces after a state mutation.</p>
      */
     public static List<Path> searchDirs(String subSlug) {
         List<Path> out = new ArrayList<>();
-        out.add(dir(subSlug));
-        for (Path pkg : importedPackageDirs()) {
-            out.add(pkg.resolve(subSlug));
+        // Active package wins first. If the registry hasn't been populated yet
+        // (e.g. very early server start before DtpacksMigration has run), the
+        // active fallback is the legacy user/ folder.
+        out.add(PackageRegistry.activeSubDir(subSlug));
+        for (PackageInfo pkg : PackageRegistry.enabledPackages()) {
+            if (pkg.isUnsaved()) continue; // already added as active fallback when active = unsaved
+            // Skip the active one — it's already at position 0.
+            if (pkg.name().equals(PackageRegistry.active().name())) continue;
+            out.add(pkg.workingDir().resolve(subSlug));
         }
         return out;
+    }
+
+    /**
+     * Active write target — where freshly-saved content should land.
+     * Equivalent to {@code PackageRegistry.activeWriteDir()} but exposed
+     * here so per-store save paths can call a single helper rather than
+     * importing the registry directly.
+     */
+    public static Path activeWriteDir() {
+        return PackageRegistry.activeWriteDir();
+    }
+
+    /** Convenience: {@code activeWriteDir().resolve(subSlug)} — where {@code subSlug} saves should write. */
+    public static Path activeSubDir(String subSlug) {
+        return PackageRegistry.activeSubDir(subSlug);
     }
 
     /**
@@ -226,15 +264,53 @@ public final class UserContentPaths {
      * </ul>
      */
     public static Provenance provenanceOf(String subSlug, String basenameWithExt) {
-        if (Files.isRegularFile(dir(subSlug).resolve(basenameWithExt))) {
+        // The active package's working dir maps onto the legacy USER tier —
+        // it's where edits land and what the variant menus tint as "yours".
+        if (Files.isRegularFile(activeSubDir(subSlug).resolve(basenameWithExt))) {
             return Provenance.USER;
         }
+        for (PackageInfo pkg : PackageRegistry.enabledPackages()) {
+            if (pkg.name().equals(PackageRegistry.active().name())) continue;
+            if (Files.isRegularFile(pkg.workingDir().resolve(subSlug).resolve(basenameWithExt))) {
+                return Provenance.IMPORTED;
+            }
+        }
+        // Also walk the legacy imported/ tier so files that haven't yet been
+        // moved into dtpacks/ by DtpacksMigration still classify correctly.
         for (Path pkg : importedPackageDirs()) {
             if (Files.isRegularFile(pkg.resolve(subSlug).resolve(basenameWithExt))) {
                 return Provenance.IMPORTED;
             }
         }
         return Provenance.BUNDLED;
+    }
+
+    /**
+     * Which package backs the file at {@code <searchDir>/<subSlug>/<basenameWithExt>}.
+     *
+     * <p>Returns {@code Optional.empty()} when no enabled package has the
+     * file (i.e. the variant resolves to a bundled classpath asset). When
+     * multiple enabled packages have the same basename, the first hit in
+     * {@link #searchDirs(String)} order wins — same precedence as
+     * {@link #findFile}.</p>
+     *
+     * <p>Distinct from {@link #provenanceOf} in that this returns the
+     * actual {@link PackageInfo} (with name, working dir, etc.) rather
+     * than just the USER/IMPORTED/BUNDLED enum. Use this when the UI
+     * wants to show <i>which</i> package a variant came from.</p>
+     */
+    public static java.util.Optional<PackageInfo> packageOf(String subSlug, String basenameWithExt) {
+        PackageInfo active = PackageRegistry.active();
+        if (Files.isRegularFile(active.workingDir().resolve(subSlug).resolve(basenameWithExt))) {
+            return java.util.Optional.of(active);
+        }
+        for (PackageInfo pkg : PackageRegistry.enabledPackages()) {
+            if (pkg.name().equals(active.name())) continue;
+            if (Files.isRegularFile(pkg.workingDir().resolve(subSlug).resolve(basenameWithExt))) {
+                return java.util.Optional.of(pkg);
+            }
+        }
+        return java.util.Optional.empty();
     }
 
     /** Three-way provenance classification for the variant menus + plot-label panel. */

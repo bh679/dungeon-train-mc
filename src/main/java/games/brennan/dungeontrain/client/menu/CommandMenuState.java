@@ -94,6 +94,22 @@ public final class CommandMenuState {
     public static int hoveredIdx() { return hoveredIdx; }
     public static int hoveredSubIdx() { return hoveredSubIdx; }
     public static MenuScreen sideScreen() { return sideScreen; }
+
+    /** Top of the navigation stack, or {@code null} when the menu is closed. */
+    public static MenuScreen mainScreen() {
+        return stack.isEmpty() ? null : stack.get(stack.size() - 1);
+    }
+
+    /** Width of the main panel — pulled from {@link MenuScreen#panelWidth()}, default otherwise. */
+    public static double mainPanelWidth() {
+        MenuScreen s = mainScreen();
+        return s != null ? s.panelWidth() : CommandMenuLayout.PANEL_WIDTH;
+    }
+
+    /** Width of the side panel — pulled from {@link MenuScreen#panelWidth()}, default otherwise. */
+    public static double sidePanelWidth() {
+        return sideScreen != null ? sideScreen.panelWidth() : CommandMenuLayout.PANEL_WIDTH;
+    }
     public static List<CommandMenuEntry> sideEntries() { return sideEntries; }
     public static int sideHoveredIdx() { return sideHoveredIdx; }
     public static int sideHoveredSubIdx() { return sideHoveredSubIdx; }
@@ -304,6 +320,14 @@ public final class CommandMenuState {
                 case 1 -> triple.middleEntry();
                 case 2 -> triple.rightEntry();
                 default -> triple.leftEntry();
+            };
+            dispatchEntry(target, 0);
+        } else if (entry instanceof CommandMenuEntry.Quad quad) {
+            CommandMenuEntry target = switch (subIdx) {
+                case 1 -> quad.e2();
+                case 2 -> quad.e3();
+                case 3 -> quad.e4();
+                default -> quad.e1();
             };
             dispatchEntry(target, 0);
         }
