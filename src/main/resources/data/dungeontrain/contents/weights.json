@@ -1,5 +1,13 @@
 {
-  "craft": 4,
+  "armor": 2,
+  "books": 4,
+  "cows": 8,
+  "craft": 8,
+  "dirt": 2,
   "enchant": 2,
-  "sand": 0
+  "ender": 2,
+  "maze": 2,
+  "sand": 0,
+  "shop": 2,
+  "vase": 2
 }
