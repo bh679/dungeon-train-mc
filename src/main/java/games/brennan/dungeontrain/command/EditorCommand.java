@@ -1552,10 +1552,27 @@ public final class EditorCommand {
         try {
             ServerLevel overworld = source.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+            // Capture the +X row state BEFORE registry mutation so the
+            // restamp pass knows which positions are dirty (the deleted
+            // variant's slot plus every slot to the right that just shifted
+            // left by one).
+            List<CarriageVariant> rowBefore = CarriageVariantRegistry.allVariants();
+            int oldIdx = -1;
+            for (int i = 0; i < rowBefore.size(); i++) {
+                if (rowBefore.get(i).id().equals(variant.id())) { oldIdx = i; break; }
+            }
+            int oldCount = rowBefore.size();
+
             CarriageEditor.clearPlot(overworld, variant, dims);
             boolean deleted = CarriageTemplateStore.delete(variant);
             boolean wasCustom = !variant.isBuiltin();
-            if (wasCustom) CarriageVariantRegistry.unregister(variant.id());
+            if (wasCustom) {
+                CarriageVariantRegistry.unregister(variant.id());
+                if (oldIdx >= 0) {
+                    CarriageEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+                }
+            }
             source.sendSuccess(() -> Component.literal(
                 deleted
                     ? ("Editor: deleted '" + variant.id() + "' template"
@@ -2205,10 +2222,23 @@ public final class EditorCommand {
         try {
             ServerLevel overworld = source.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+            List<CarriageContents> rowBefore = CarriageContentsRegistry.allContents();
+            int oldIdx = -1;
+            for (int i = 0; i < rowBefore.size(); i++) {
+                if (rowBefore.get(i).id().equals(contents.id())) { oldIdx = i; break; }
+            }
+            int oldCount = rowBefore.size();
+
             CarriageContentsEditor.clearPlot(overworld, contents, dims);
             boolean deleted = CarriageContentsStore.delete(contents);
             boolean wasCustom = !contents.isBuiltin();
-            if (wasCustom) CarriageContentsRegistry.unregister(contents.id());
+            if (wasCustom) {
+                CarriageContentsRegistry.unregister(contents.id());
+                if (oldIdx >= 0) {
+                    CarriageContentsEditor.restampRowAfterDeletion(overworld, oldIdx, oldCount, dims);
+                }
+            }
             source.sendSuccess(() -> Component.literal(
                 deleted
                     ? ("Editor: deleted contents '" + contents.id() + "' template"
@@ -2839,10 +2869,20 @@ public final class EditorCommand {
         try {
             ServerLevel overworld = source.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+
+            List<String> rowBefore = CarriagePartRegistry.registeredNames(kind);
+            int oldIdx = rowBefore.indexOf(name);
+            int oldCount = rowBefore.size();
+
             CarriagePartEditor.clearPlot(overworld, kind, name, dims);
             boolean deleted = CarriagePartTemplateStore.delete(kind, name);
             boolean stillBundled = CarriagePartTemplateStore.bundled(kind, name);
-            if (!stillBundled) CarriagePartRegistry.unregister(kind, name);
+            if (!stillBundled) {
+                CarriagePartRegistry.unregister(kind, name);
+                if (oldIdx >= 0) {
+                    CarriagePartEditor.restampRowAfterDeletion(overworld, kind, oldIdx, oldCount, dims);
+                }
+            }
             final String msg = deleted
                 ? ("Editor: deleted part '" + kind.id() + ":" + name + "' (config-dir copy)"
                     + (stillBundled ? " — bundled default remains." : " — no bundled fallback, registry entry removed."))
