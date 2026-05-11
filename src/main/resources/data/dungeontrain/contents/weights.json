@@ -1,5 +1,8 @@
 {
+  "books": 2,
+  "cows": 2,
   "craft": 4,
   "enchant": 2,
-  "sand": 0
+  "sand": 0,
+  "vase": 1
 }
