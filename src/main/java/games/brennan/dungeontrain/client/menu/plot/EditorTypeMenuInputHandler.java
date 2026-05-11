@@ -168,6 +168,27 @@ public final class EditorTypeMenuInputHandler {
             }
             case WEIGHT -> {
                 String dir = shift ? "dec" : "inc";
+                // Sub-variants companion menu: weight cells reference per-member
+                // weights inside the parent's .group.json sidecar — route to
+                // the group-member weight command, not the top-level contents
+                // weight pool (which the spawn pipeline ignores for members).
+                // The parent (default) row at variantIdx == 0 holds the
+                // hardcoded SELF_WEIGHT; clicking it is a no-op until the
+                // group schema gains an editable self-weight field.
+                boolean isSubVariants = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+                    .equals(menu.typeName());
+                if (isSubVariants) {
+                    if (hit.variantIdx() == 0) {
+                        LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: sub-variants default row — no-op");
+                        return;
+                    }
+                    String parentId = menu.variants().get(0).modelId();
+                    String cmd = EditorPlotTeleport.groupMemberWeightCommandFor(
+                        parentId, variant.modelId(), dir);
+                    LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (group member): {}", cmd);
+                    CommandRunner.run(cmd);
+                    return;
+                }
                 String cmd = EditorPlotTeleport.weightCommandFor(
                     variant.category(), variant.modelId(), variant.modelName(), dir);
                 if (cmd == null) return;
