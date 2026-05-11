@@ -30,10 +30,21 @@ import org.slf4j.Logger;
 import java.util.List;
 
 /**
- * Client-side renderer for the floating template-type menus that float at
- * the start of every variant row in the active editor category. Each menu
- * lists every variant in its row with a name cell (left, teleport on click)
- * and a weight cell ({@code ×N} on the right, click=+1 / shift-click=-1).
+ * Client-side renderer for the floating template-type menus that anchor at
+ * the start of every variant row in the active editor category.
+ *
+ * <p>Row-start menus ({@link EditorTypeMenusPacket.Menu#isNavMenu()}) render
+ * a wide <b>template navigation panel</b>: a category bar across the top,
+ * a type-tab strip immediately below, and the variant list of the menu's
+ * own type expanded inside its column while every other tab collapses to
+ * just its type-name header. The collapsed tabs remain clickable so a
+ * player at the floor row can jump to the walls row without typing a
+ * command. The expanded column also hosts the {@code + New} footer
+ * (unchanged dispatch).</p>
+ *
+ * <p>Companion menus ({@code isCompanion=true}, e.g. the sub-variants
+ * column anchored next to a per-plot panel) keep their pre-nav single
+ * column layout — no category bar, no tab strip.</p>
  *
  * <p>Same world-space billboarded panel chrome as
  * {@link EditorPlotLabelsRenderer} — backdrop quad, cylindrical billboard
@@ -52,24 +63,46 @@ public final class EditorTypeMenuRenderer {
     /**
      * Cell kinds the raycast / input handler need to identify.
      *
-     * <p>{@link #HEADER} represents the top row (the type-name banner).
-     * Clicking it teleports to the first variant in the menu — useful as a
-     * quick "go to the start of this row" jump.</p>
+     * <p>{@link #HEADER} represents the top row of a companion menu (the
+     * type-name banner); clicking it teleports to the first variant in the
+     * menu. Nav menus do not use HEADER — the equivalent action is a click
+     * on the expanded {@link #TYPE_TAB} (same target, just expressed through
+     * the tab strip).</p>
      *
      * <p>{@link #NEW} is the bottom-row "+ New" button — clicking opens the
      * keyboard worldspace menu pre-positioned at the source picker / typing
-     * prompt for this menu's category, so authoring a new variant of the
-     * type the player is looking at is one click away.</p>
+     * prompt for this menu's category.</p>
+     *
+     * <p>{@link #CATEGORY} is one of the category-bar buttons on a nav menu;
+     * click dispatch runs {@code /dt editor <id>}.</p>
+     *
+     * <p>{@link #TYPE_TAB} is one of the tab cells in the strip below the
+     * category bar on a nav menu; click dispatch teleports to the first
+     * variant of that type (collapsed tabs jump to a different row, the
+     * expanded tab repeats the current row's first variant).</p>
+     *
+     * <p>{@link #SUB_VARIANT} is one of the horizontal cells drawn to the
+     * right of the active variant's row on a CONTENTS nav menu — inlines
+     * the sub-variants list that used to render as a separate floating
+     * companion. Click dispatch teleports to the sub-variant.</p>
      */
-    public enum CellKind { NONE, HEADER, NAME, WEIGHT, NEW }
+    public enum CellKind { NONE, HEADER, NAME, WEIGHT, NEW, CATEGORY, TYPE_TAB, SUB_VARIANT }
 
     /**
      * Where the player's crosshair is currently pointing. {@code variantIdx}
-     * is {@code -1} when the hit is on the header row (which is not a
-     * per-variant cell).
+     * is {@code -1} when the hit is on a non-variant cell. {@code slotIdx}
+     * carries the index into {@link EditorTypeMenusPacket.Menu#categoryBar()}
+     * for {@link CellKind#CATEGORY} hits and the index into
+     * {@link EditorTypeMenusPacket.Menu#typeStrip()} for
+     * {@link CellKind#TYPE_TAB} hits; {@code -1} otherwise.
      */
-    public record Hovered(int menuIdx, int variantIdx, CellKind cell) {
-        public static final Hovered NONE = new Hovered(-1, -1, CellKind.NONE);
+    public record Hovered(int menuIdx, int variantIdx, CellKind cell, int slotIdx) {
+        public static final Hovered NONE = new Hovered(-1, -1, CellKind.NONE, -1);
+
+        /** Convenience constructor for non-slot cells (NAME, WEIGHT, HEADER, NEW). */
+        public Hovered(int menuIdx, int variantIdx, CellKind cell) {
+            this(menuIdx, variantIdx, cell, -1);
+        }
     }
 
     /** Same composite as the per-plot panel — alpha-blend, depth-test, no cull, no depth-write. */
@@ -97,11 +130,30 @@ public final class EditorTypeMenuRenderer {
     static final double WEIGHT_CELL_FRACTION = 0.25;
     /** Visible gap (panel-local units) between the per-plot panel and a companion type menu. */
     static final double COMPANION_GAP = 0.15;
+    /** Minimum width of a collapsed tab column — keeps single-character type names readable. */
+    static final double COLLAPSED_TAB_MIN_W = 0.55;
+    /** Faint vertical line between adjacent type-tab columns for visual structure. */
+    private static final double COLUMN_DIVIDER_W = 0.01;
+    /** Reserved minimum width of the right-hand sub-variant area on every nav menu — keeps the panel wide enough that the sub-variants row reads as part of the menu, not as overflow. */
+    static final double SUB_VARIANT_AREA_MIN_W = 2.20;
+    /** Minimum width of a single sub-variant cell — keeps short ids readable next to the variant row. */
+    private static final double SUB_VARIANT_CELL_MIN_W = 0.70;
+    /** Horizontal gap between the expanded column and the first sub-variant cell. */
+    private static final double SUB_VARIANT_GAP = 0.10;
 
     private static final int BACKDROP_COLOR = 0xC8000000;
     private static final int HOVER_COLOR = 0x60FFCC33;
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
+    private static final int COLUMN_SEP_COLOR = 0x30FFFFFF;
     private static final int HEADER_BG = 0x60FFEEBB;
+    /** Stronger green band behind the active category button — distinct from active-row tint. */
+    private static final int ACTIVE_CATEGORY_BG = 0x8055FF55;
+    /** Dim band behind every collapsed tab so they read as inactive columns. */
+    private static final int COLLAPSED_TAB_BG = 0x60303030;
+    /** Dim band behind every sub-variant cell so the horizontal row reads as a distinct affordance. */
+    private static final int SUB_VARIANT_CELL_BG = 0x60303030;
+    /** Faint tint behind the empty sub-variant area when no children exist — same dim grey as a collapsed tab but lower alpha. */
+    private static final int SUB_VARIANT_AREA_BG = 0x30303030;
     /** Persistent green tint behind the row matching the player's current plot — same green family as the in-plot panel border. */
     private static final int ACTIVE_ROW_COLOR = 0x6055FF55;
     /** Subtle blue band behind every row whose variant has a user-authored file under {@code config/dungeontrain/user/...}. Drawn below the active-row tint so the active blue-and-green merge reads as "active user variant". */
@@ -116,6 +168,12 @@ public final class EditorTypeMenuRenderer {
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
     /** Bright green text for the "+ New" label so it stands out from variant rows. */
     private static final int NEW_COLOR = 0xFFAAFFAA;
+    /** Slightly dimmed text for collapsed tabs so the expanded tab reads as primary. */
+    private static final int COLLAPSED_TAB_COLOR = 0xFFCCCCCC;
+    /** Bright white text on the active category button — boosted contrast over the green backdrop. */
+    private static final int ACTIVE_CATEGORY_COLOR = 0xFFFFFFFF;
+    /** Slightly dimmed text on inactive category buttons. */
+    private static final int CATEGORY_COLOR = 0xFFCCCCCC;
     /** Label rendered in the bottom-row New button. */
     private static final String NEW_LABEL = "+ New";
 
@@ -194,11 +252,23 @@ public final class EditorTypeMenuRenderer {
     }
 
     /**
-     * Half-width of the menu panel in world units. Scales to fit the longest
-     * variant name plus its weight cell, clamped to {@link #MIN_HALF_W} so
-     * short lists still read with comfortable padding.
+     * Half-width of the menu panel in world units. Branches on
+     * {@link EditorTypeMenusPacket.Menu#isNavMenu()} — companion menus keep
+     * the legacy single-column sizing; nav menus size the panel to fit the
+     * full category bar plus the expanded column plus every collapsed tab.
      */
     public static double halfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        if (menu.isNavMenu()) return navHalfWidth(menu, font);
+        return companionHalfWidth(menu, font);
+    }
+
+    /**
+     * Single-column variant of {@link #halfWidth} used by companion menus —
+     * scales to fit the longest variant name plus its weight cell, clamped
+     * to {@link #MIN_HALF_W} so short lists still read with comfortable
+     * padding.
+     */
+    private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
         double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
@@ -216,15 +286,256 @@ public final class EditorTypeMenuRenderer {
         return w / 2.0;
     }
 
-    public static int rowCount(EditorTypeMenusPacket.Menu menu) {
-        // header + N variants + "+ New" footer (skip footer for empty menus,
-        // which shouldn't appear in practice but guard so the click target
-        // doesn't dispatch with no category context).
+    /**
+     * Width of the expanded column on a nav menu — sized to fit the longest
+     * variant name (plus weight cell allowance), clamped to
+     * {@link #MIN_HALF_W} so short lists still read with comfortable
+     * padding. Matches the legacy single-column sizing for the expanded
+     * column so a nav menu reads like the old per-row menu inside its own
+     * column.
+     */
+    private static double expandedColumnWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double headerW = font.width(menu.typeName()) * TEXT_SCALE + 2 * PAD_X;
+        double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
+        double maxNameW = 0;
+        boolean anyWeight = false;
+        for (EditorTypeMenusPacket.Variant v : menu.variants()) {
+            double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
+            if (w > maxNameW) maxNameW = w;
+            if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
+        }
+        double nameSpaceFraction = anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0;
+        double scaledForName = maxNameW / nameSpaceFraction;
+        return Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, newW), scaledForName));
+    }
+
+    /**
+     * Width of a single collapsed tab column — fits its type name plus
+     * padding, clamped to {@link #COLLAPSED_TAB_MIN_W}.
+     */
+    private static double collapsedTabWidth(String typeName, Font font) {
+        double w = font.width(typeName) * TEXT_SCALE + 2 * PAD_X;
+        return Math.max(w, COLLAPSED_TAB_MIN_W);
+    }
+
+    /**
+     * Total minimum width needed for the category bar — every button
+     * sized to fit its display name plus padding. Buttons are drawn at
+     * equal width so the bar's actual rendered width is the larger of
+     * this minimum and the rest-of-panel width.
+     */
+    private static double categoryBarMinWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double total = 0;
+        for (EditorTypeMenusPacket.CategoryButton b : menu.categoryBar()) {
+            total += font.width(b.displayName()) * TEXT_SCALE + 2 * PAD_X;
+        }
+        return total;
+    }
+
+    /** Maximum growth factor for accommodating wide sub-variant rows — beyond this the sub-variant row wraps to a new line. */
+    private static final double NAV_WIDTH_GROWTH_CAP = 2.25;
+    /** Hard cap on how many lines a single variant's sub-variants can wrap to. Overflow beyond this is truncated. */
+    private static final int SUB_VARIANT_MAX_LINES = 2;
+
+    /**
+     * Half-width of a nav menu. Two-step sizing:
+     *
+     * <ol>
+     *   <li><b>Base</b> = tabs + {@link #SUB_VARIANT_AREA_MIN_W} (or the
+     *       category bar minimum, whichever is larger). This is the panel
+     *       size when no variant has sub-variants beyond the reserved
+     *       minimum.</li>
+     *   <li><b>Needed</b> = tabs + the widest single sub-variant row (no
+     *       wrap). Lets the panel grow to fit cell rows that would
+     *       otherwise wrap.</li>
+     * </ol>
+     *
+     * <p>Final width = {@code min(needed, base * NAV_WIDTH_GROWTH_CAP)}.
+     * If a sub-variant row is wider than the cap allows, the renderer
+     * wraps the overflow onto extra lines below the variant row (see
+     * {@link #subVariantLines}).</p>
+     */
+    private static double navHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double tabsTotal = tabStripTotalWidth(menu, font);
+        double catBarMin = categoryBarMinWidth(menu, font);
+        double base = Math.max(catBarMin, Math.max(tabsTotal + SUB_VARIANT_AREA_MIN_W, MIN_HALF_W * 2.0));
+        double needed = Math.max(catBarMin, Math.max(tabsTotal + subVariantAreaWidth(menu, font), MIN_HALF_W * 2.0));
+        double maxAllowed = base * NAV_WIDTH_GROWTH_CAP;
+        double actual = Math.min(needed, maxAllowed);
+        return actual / 2.0;
+    }
+
+    /**
+     * Sum of every tab column's width — expanded col plus each collapsed
+     * tab's width. Order-independent; used to size the panel and lay out
+     * tab edges.
+     */
+    private static double tabStripTotalWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double total = 0;
+        int expandedIdx = expandedTabIdx(menu);
+        for (int i = 0; i < menu.typeStrip().size(); i++) {
+            if (i == expandedIdx) {
+                total += expandedColumnWidth(menu, font);
+            } else {
+                total += collapsedTabWidth(menu.typeStrip().get(i).typeName(), font);
+            }
+        }
+        return total;
+    }
+
+    /**
+     * Width of the right-hand sub-variant area on a nav menu. Sized to fit
+     * the widest sub-variant row across every variant in the menu, clamped
+     * to {@link #SUB_VARIANT_AREA_MIN_W} so the panel reads as having "room
+     * for" sub-variants even when none exist.
+     *
+     * <p>Sub-variants come from each {@code Variant#subVariants()} — the
+     * server populates this per-variant (currently CONTENTS only), so
+     * CARRIAGES menus just get the minimum reserved width.</p>
+     */
+    private static double subVariantAreaWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double maxW = SUB_VARIANT_AREA_MIN_W;
+        for (EditorTypeMenusPacket.Variant v : menu.variants()) {
+            if (v.subVariants().isEmpty()) continue;
+            double rowW = SUB_VARIANT_GAP;
+            for (EditorTypeMenusPacket.Variant sv : v.subVariants()) {
+                rowW += subVariantCellWidth(sv.name(), font);
+            }
+            if (rowW > maxW) maxW = rowW;
+        }
+        return maxW;
+    }
+
+    /**
+     * Width of one sub-variant cell — fits the variant name plus padding,
+     * clamped to {@link #SUB_VARIANT_CELL_MIN_W}.
+     */
+    private static double subVariantCellWidth(String name, Font font) {
+        double w = font.width(name) * TEXT_SCALE + 2 * PAD_X;
+        return Math.max(w, SUB_VARIANT_CELL_MIN_W);
+    }
+
+    /**
+     * Greedy line-break of a variant's sub-variants into rows that fit
+     * inside {@code available} panel-local units. Cells overflow onto a
+     * new line below the variant row when the panel can't grow wider.
+     * Always returns at least one line for a non-empty input.
+     *
+     * <p>Hard-capped at {@link #SUB_VARIANT_MAX_LINES} — once the cap is
+     * reached, any further children that won't fit on the current line
+     * are silently dropped. The panel is already at its growth cap by
+     * the time wrap happens, so spilling onto a third line would push
+     * the menu vertically beyond the design budget.</p>
+     */
+    private static List<List<EditorTypeMenusPacket.Variant>> subVariantLines(
+        List<EditorTypeMenusPacket.Variant> children, double available, Font font
+    ) {
+        List<List<EditorTypeMenusPacket.Variant>> lines = new java.util.ArrayList<>();
+        if (children.isEmpty()) return lines;
+        List<EditorTypeMenusPacket.Variant> current = new java.util.ArrayList<>();
+        double currentW = 0;
+        for (EditorTypeMenusPacket.Variant c : children) {
+            double cellW = subVariantCellWidth(c.name(), font);
+            if (currentW + cellW > available && !current.isEmpty()) {
+                // Would overflow current line — if we're already at the
+                // last allowed line, drop the rest of the children.
+                if (lines.size() + 1 >= SUB_VARIANT_MAX_LINES) {
+                    lines.add(current);
+                    return lines;
+                }
+                lines.add(current);
+                current = new java.util.ArrayList<>();
+                currentW = 0;
+            }
+            current.add(c);
+            currentW += cellW;
+        }
+        if (!current.isEmpty()) lines.add(current);
+        return lines;
+    }
+
+    /**
+     * Panel-local horizontal space available for sub-variant cells per
+     * line on a nav menu — the portion to the right of the expanded
+     * column (minus the gap before the first cell).
+     */
+    private static double availableSubVariantWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        double panelW = navHalfWidth(menu, font) * 2.0;
+        return panelW - expandedColumnWidth(menu, font) - SUB_VARIANT_GAP;
+    }
+
+    /**
+     * Number of {@link #ROW_H}-tall rows a variant occupies in the nav
+     * menu — 1 by default, more when the variant's sub-variants wrap to
+     * multiple lines.
+     */
+    private static int variantRowSpan(
+        EditorTypeMenusPacket.Variant variant, double availableSubW, Font font
+    ) {
+        if (variant.subVariants().isEmpty()) return 1;
+        int lines = subVariantLines(variant.subVariants(), availableSubW, font).size();
+        return Math.max(1, lines);
+    }
+
+    /**
+     * Children of the active variant in this menu's expanded column —
+     * pulled from the sub-variants companion in the snapshot cache.
+     * Returns an empty list when no companion is present, when the
+     * companion's parent doesn't match {@link #activeModelId()}, or when
+     * the parent has no children beyond itself.
+     *
+     * <p>The companion's first variant is always the parent's "default"
+     * row (modelId = parent id) — skipped so the inline list only carries
+     * the proper children. See
+     * {@link games.brennan.dungeontrain.editor.VariantOverlayRenderer#SUB_VARIANTS_TYPE_NAME}.</p>
+     */
+
+    /**
+     * Map a display position (0 = expanded leftmost) to the canonical
+     * index inside {@link EditorTypeMenusPacket.Menu#typeStrip()}. Displays
+     * the expanded tab first; the remaining tabs follow in their original
+     * order with the expanded one skipped.
+     */
+    private static int displayPosToCanonical(int displayPos, int expandedIdx, int n) {
+        if (displayPos <= 0) return expandedIdx;
+        int canonical = displayPos - 1;
+        if (canonical >= expandedIdx) canonical++;
+        return canonical;
+    }
+
+    /**
+     * Index of the tab whose {@code typeName} matches the menu's outer
+     * {@code typeName} — the column rendered expanded. Returns 0 when the
+     * menu has a non-empty strip but no match (shouldn't happen for
+     * server-built menus); {@code -1} for empty strips.
+     */
+    static int expandedTabIdx(EditorTypeMenusPacket.Menu menu) {
+        List<EditorTypeMenusPacket.TypeTab> strip = menu.typeStrip();
+        if (strip.isEmpty()) return -1;
+        for (int i = 0; i < strip.size(); i++) {
+            if (strip.get(i).typeName().equals(menu.typeName())) return i;
+        }
+        return 0;
+    }
+
+    public static int rowCount(EditorTypeMenusPacket.Menu menu, Font font) {
+        // Companion: header + N variants + "+ New" footer (skip footer for empty menus).
+        // Nav: category bar + tab strip + total variant rows (1 per variant
+        // plus extra rows for wrapped sub-variants) + "+ New" footer.
+        if (menu.isNavMenu()) {
+            int total = 2;
+            double availableSubW = availableSubVariantWidth(menu, font);
+            for (EditorTypeMenusPacket.Variant v : menu.variants()) {
+                total += variantRowSpan(v, availableSubW, font);
+            }
+            if (!menu.variants().isEmpty()) total += 1;
+            return total;
+        }
         return 1 + menu.variants().size() + (menu.variants().isEmpty() ? 0 : 1);
     }
 
-    public static double halfHeight(EditorTypeMenusPacket.Menu menu) {
-        return rowCount(menu) * ROW_H / 2.0;
+    public static double halfHeight(EditorTypeMenusPacket.Menu menu, Font font) {
+        return rowCount(menu, font) * ROW_H / 2.0;
     }
 
     /**
@@ -267,16 +578,26 @@ public final class EditorTypeMenuRenderer {
 
     /**
      * Map a panel-local hit at {@code (hitX, hitY)} to a {@link Hovered}
-     * pair. Returns {@link Hovered#NONE} if the hit lies outside any
-     * clickable cell or is on the header row.
+     * pair. Branches on {@link EditorTypeMenusPacket.Menu#isNavMenu()} —
+     * companion menus retain their pre-nav hit logic; nav menus add the
+     * category bar (row 0) and type-tab strip (row 1) hit regions and
+     * restrict variant hits to the expanded column's horizontal span.
      */
     public static Hovered hitFor(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
                                  double hitX, double hitY) {
+        if (menu.isNavMenu()) {
+            return hitForNav(menuIdx, menu, font, hitX, hitY);
+        }
+        return hitForCompanion(menuIdx, menu, font, hitX, hitY);
+    }
+
+    private static Hovered hitForCompanion(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
+                                            double hitX, double hitY) {
         double halfW = halfWidth(menu, font);
-        double halfH = halfHeight(menu);
+        double halfH = halfHeight(menu, font);
         if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) return Hovered.NONE;
 
-        int rows = rowCount(menu);
+        int rows = rowCount(menu, font);
         int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
         if (rowFromTop < 0 || rowFromTop >= rows) return Hovered.NONE;
 
@@ -303,6 +624,117 @@ public final class EditorTypeMenuRenderer {
         }
         return new Hovered(menuIdx, variantIdx, CellKind.NAME);
     }
+
+    private static Hovered hitForNav(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
+                                      double hitX, double hitY) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) return Hovered.NONE;
+
+        int rows = rowCount(menu, font);
+        int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
+        if (rowFromTop < 0 || rowFromTop >= rows) return Hovered.NONE;
+
+        // Row 0 — category bar. Equal-width buttons across the full panel.
+        if (rowFromTop == 0) {
+            int n = menu.categoryBar().size();
+            if (n == 0) return Hovered.NONE;
+            double buttonW = (halfW * 2.0) / n;
+            int slot = (int) Math.floor((hitX + halfW) / buttonW);
+            if (slot < 0) slot = 0;
+            if (slot >= n) slot = n - 1;
+            return new Hovered(menuIdx, -1, CellKind.CATEGORY, slot);
+        }
+
+        // Row 1 — type tab strip. Expanded leftmost; collapsed tabs follow.
+        if (rowFromTop == 1) {
+            int n = menu.typeStrip().size();
+            if (n == 0) return Hovered.NONE;
+            int expandedIdx = expandedTabIdx(menu);
+            double xCursor = -halfW;
+            for (int displayPos = 0; displayPos < n; displayPos++) {
+                int canonical = displayPosToCanonical(displayPos, expandedIdx, n);
+                EditorTypeMenusPacket.TypeTab tab = menu.typeStrip().get(canonical);
+                double w = (canonical == expandedIdx)
+                    ? expandedColumnWidth(menu, font)
+                    : collapsedTabWidth(tab.typeName(), font);
+                if (hitX >= xCursor && hitX < xCursor + w) {
+                    return new Hovered(menuIdx, -1, CellKind.TYPE_TAB, canonical);
+                }
+                xCursor += w;
+            }
+            return Hovered.NONE;
+        }
+
+        // Rows 2..end — variant rows + wrapped sub-variant lines + +New.
+        // Each variant occupies {@link #variantRowSpan} consecutive rows;
+        // walk through variants accumulating spans until rowFromTop lands
+        // inside one (or past the last one = +New footer).
+        double colLeft = -halfW;
+        double colRight = -halfW + expandedColumnWidth(menu, font);
+        double availableSubW = availableSubVariantWidth(menu, font);
+
+        int rowAfterChrome = rowFromTop - 2;
+        int variantIdx = -1;
+        int spanOffset = 0;
+        int cursor = 0;
+        for (int vi = 0; vi < menu.variants().size(); vi++) {
+            int span = variantRowSpan(menu.variants().get(vi), availableSubW, font);
+            if (rowAfterChrome < cursor + span) {
+                variantIdx = vi;
+                spanOffset = rowAfterChrome - cursor;
+                break;
+            }
+            cursor += span;
+        }
+
+        if (variantIdx < 0) {
+            // Past the last variant — must be +New footer.
+            if (rowAfterChrome == cursor && !menu.variants().isEmpty()) {
+                if (hitX < colLeft || hitX > colRight) return Hovered.NONE;
+                return new Hovered(menuIdx, -1, CellKind.NEW);
+            }
+            return Hovered.NONE;
+        }
+
+        EditorTypeMenusPacket.Variant variant = menu.variants().get(variantIdx);
+
+        // Sub-variant cells — locate the line within this variant's span,
+        // then the cell inside that line. Sub-variants always live to the
+        // right of the expanded column, including on wrapped lines.
+        if (!variant.subVariants().isEmpty() && hitX >= colRight + SUB_VARIANT_GAP) {
+            List<List<EditorTypeMenusPacket.Variant>> lines =
+                subVariantLines(variant.subVariants(), availableSubW, font);
+            if (spanOffset < lines.size()) {
+                List<EditorTypeMenusPacket.Variant> line = lines.get(spanOffset);
+                int slotBase = 0;
+                for (int li = 0; li < spanOffset; li++) slotBase += lines.get(li).size();
+                double subCursor = colRight + SUB_VARIANT_GAP;
+                for (int ci = 0; ci < line.size(); ci++) {
+                    double w = subVariantCellWidth(line.get(ci).name(), font);
+                    if (hitX >= subCursor && hitX < subCursor + w) {
+                        return new Hovered(menuIdx, variantIdx, CellKind.SUB_VARIANT, slotBase + ci);
+                    }
+                    subCursor += w;
+                }
+            }
+        }
+
+        // NAME / WEIGHT cells only live on the variant's first row
+        // (spanOffset == 0). Below that is sub-variant overflow territory.
+        if (spanOffset != 0) return Hovered.NONE;
+        if (hitX < colLeft || hitX > colRight) return Hovered.NONE;
+        boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
+        double colW = colRight - colLeft;
+        if (hasWeight) {
+            double weightCellLeft = colRight - colW * WEIGHT_CELL_FRACTION;
+            if (hitX >= weightCellLeft) {
+                return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
+            }
+        }
+        return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+    }
+
 
     // ---------- rendering ----------
 
@@ -343,15 +775,26 @@ public final class EditorTypeMenuRenderer {
             ps.translate(shiftX, 0, 0);
         }
 
+        if (menu.isNavMenu()) {
+            drawNavMenu(ps, buffer, font, menu, hovered);
+        } else {
+            drawCompanionMenu(ps, buffer, font, menu, hovered);
+        }
+
+        ps.popPose();
+    }
+
+    private static void drawCompanionMenu(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        EditorTypeMenusPacket.Menu menu, Hovered hovered
+    ) {
         double halfW = halfWidth(menu, font);
-        double halfH = halfHeight(menu);
+        double halfH = halfHeight(menu, font);
 
         // Whole-panel backdrop.
         drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
 
-        // Header row — yellow tint band + type name centred. Adds the
-        // hover-tint overlay when the player aims at the header (whole row
-        // is the click target — teleport-to-first-variant shortcut).
+        // Header row — yellow tint band + type name centred.
         double topY = halfH;
         double headerTop = topY;
         double headerBottom = headerTop - ROW_H;
@@ -363,19 +806,8 @@ public final class EditorTypeMenuRenderer {
         }
         drawCenteredText(ps, buffer, font, menu.typeName(), 0, headerCY, HEADER_COLOR);
 
-        // Identify the player's currently active template (the per-plot
-        // label flagged inPlot=true) so the matching variant row can be
-        // highlighted with the same green family used by the in-plot panel
-        // border. Empty when the player is outside every plot.
-        String activeModelId = "";
-        String activeModelName = "";
-        for (EditorPlotLabelsPacket.Entry e : EditorPlotLabelsRenderer.entries()) {
-            if (e.inPlot()) {
-                activeModelId = e.modelId();
-                activeModelName = e.modelName();
-                break;
-            }
-        }
+        String activeModelId = activeModelId();
+        String activeModelName = activeModelName();
 
         // Variant rows.
         for (int vi = 0; vi < menu.variants().size(); vi++) {
@@ -384,64 +816,20 @@ public final class EditorTypeMenuRenderer {
             double rowBottom = rowTop - ROW_H;
             double rowCY = (rowTop + rowBottom) / 2.0;
 
-            // Row separator (top edge).
             drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
 
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
             double weightCellLeft = halfW - (halfW * 2.0) * WEIGHT_CELL_FRACTION;
             double nameRight = hasWeight ? weightCellLeft : halfW;
 
-            // Provenance tint — orange for imported variants (highest
-            // priority), blue for user-authored, no tint for bundled. Drawn
-            // before the active-row green tint so the active row reads as
-            // green-over-{orange|blue|nothing} — players still see the
-            // provenance even when the variant is selected.
-            if (variant.isImported()) {
-                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
-                    halfW - 0.005, rowTop - 0.005, IMPORTED_ROW_BG);
-            } else if (variant.isUser()) {
-                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
-                    halfW - 0.005, rowTop - 0.005, USER_ROW_BG);
-            }
-
-            // Active-row tint for the variant matching the player's current
-            // plot — drawn before hover so a hover-targeted active row shows
-            // the yellow hover on top.
-            boolean isActive = !activeModelId.isEmpty()
-                && activeModelId.equals(variant.modelId())
-                && activeModelName.equals(variant.modelName());
-            if (isActive) {
-                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
-                    halfW - 0.005, rowTop - 0.005, ACTIVE_ROW_COLOR);
-            }
-
-            // Hover highlight on the active cell.
-            boolean nameHover = hovered.variantIdx == vi && hovered.cell == CellKind.NAME;
-            boolean weightHover = hovered.variantIdx == vi && hovered.cell == CellKind.WEIGHT;
-            if (nameHover) {
-                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
-                    nameRight - 0.005, rowTop - 0.005, HOVER_COLOR);
-            }
-            if (weightHover) {
-                drawQuad(ps, buffer, weightCellLeft + 0.005, rowBottom + 0.005,
-                    halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
-            }
-
-            // Name (left-aligned within its cell).
-            double nameCX = (-halfW + nameRight) / 2.0;
-            drawCenteredText(ps, buffer, font, variant.name(), nameCX, rowCY, NAME_COLOR);
-
-            if (hasWeight) {
-                double weightCX = (weightCellLeft + halfW) / 2.0;
-                drawCenteredText(ps, buffer, font, "×" + variant.weight(),
-                    weightCX, rowCY, WEIGHT_COLOR);
-            }
+            drawVariantRow(ps, buffer, font, variant, -halfW, rowBottom, halfW, rowTop,
+                rowCY, weightCellLeft, nameRight, hasWeight,
+                hovered.variantIdx == vi && hovered.cell == CellKind.NAME,
+                hovered.variantIdx == vi && hovered.cell == CellKind.WEIGHT,
+                activeModelId, activeModelName);
         }
 
-        // "+ New" footer row — single full-width cell with a faint green
-        // backdrop, drawn only when the menu has variants (matches rowCount).
-        // Clicking opens the keyboard worldspace menu's source picker / typing
-        // prompt for this menu's category (see EditorTypeMenuInputHandler).
+        // "+ New" footer row.
         if (!menu.variants().isEmpty()) {
             double newRowTop = topY - (menu.variants().size() + 1) * ROW_H;
             double newRowBottom = newRowTop - ROW_H;
@@ -454,8 +842,291 @@ public final class EditorTypeMenuRenderer {
             }
             drawCenteredText(ps, buffer, font, NEW_LABEL, 0, newRowCY, NEW_COLOR);
         }
+    }
 
-        ps.popPose();
+    private static void drawNavMenu(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        EditorTypeMenusPacket.Menu menu, Hovered hovered
+    ) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        double topY = halfH;
+        double panelW = halfW * 2.0;
+
+        // Whole-panel backdrop.
+        drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
+
+        // --- Row 0: category bar (equal-width buttons across the panel). ---
+        double catTop = topY;
+        double catBottom = topY - ROW_H;
+        double catCY = (catTop + catBottom) / 2.0;
+        int catN = menu.categoryBar().size();
+        if (catN > 0) {
+            double buttonW = panelW / catN;
+            for (int i = 0; i < catN; i++) {
+                EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(i);
+                double btnLeft = -halfW + i * buttonW;
+                double btnRight = btnLeft + buttonW;
+                boolean isActive = btn.id().equals(menu.activeCategoryId());
+                boolean isHover = hovered.cell == CellKind.CATEGORY && hovered.slotIdx == i;
+                if (isActive) {
+                    drawQuad(ps, buffer, btnLeft, catBottom, btnRight, catTop, ACTIVE_CATEGORY_BG);
+                }
+                if (isHover) {
+                    drawQuad(ps, buffer, btnLeft + 0.005, catBottom + 0.005,
+                        btnRight - 0.005, catTop - 0.005, HOVER_COLOR);
+                }
+                int color = isActive ? ACTIVE_CATEGORY_COLOR : CATEGORY_COLOR;
+                drawCenteredText(ps, buffer, font, btn.displayName(),
+                    (btnLeft + btnRight) / 2.0, catCY, color);
+                if (i + 1 < catN) {
+                    drawQuad(ps, buffer, btnRight - COLUMN_DIVIDER_W / 2.0, catBottom,
+                        btnRight + COLUMN_DIVIDER_W / 2.0, catTop, COLUMN_SEP_COLOR);
+                }
+            }
+        }
+        // Row separator below the category bar.
+        drawQuad(ps, buffer, -halfW, catBottom - 0.005, halfW, catBottom + 0.005, ROW_SEP_COLOR);
+
+        // --- Row 1: type tab strip — expanded leftmost, others follow. ---
+        double tabTop = catBottom;
+        double tabBottom = tabTop - ROW_H;
+        double tabCY = (tabTop + tabBottom) / 2.0;
+        int tabN = menu.typeStrip().size();
+        int expandedIdx = expandedTabIdx(menu);
+        double tabCursor = -halfW;
+        // Expanded column bounds — captured during the tab walk so the
+        // variant body uses the exact pixels under the expanded tab.
+        double expColLeft = -halfW;
+        double expColRight = -halfW;
+        for (int displayPos = 0; displayPos < tabN; displayPos++) {
+            int canonical = displayPosToCanonical(displayPos, expandedIdx, tabN);
+            EditorTypeMenusPacket.TypeTab tab = menu.typeStrip().get(canonical);
+            boolean isExpanded = (canonical == expandedIdx);
+            double tabW = isExpanded
+                ? expandedColumnWidth(menu, font)
+                : collapsedTabWidth(tab.typeName(), font);
+            double tabLeft = tabCursor;
+            double tabRight = tabCursor + tabW;
+            boolean isHover = hovered.cell == CellKind.TYPE_TAB && hovered.slotIdx == canonical;
+
+            if (isExpanded) {
+                drawQuad(ps, buffer, tabLeft, tabBottom, tabRight, tabTop, HEADER_BG);
+            } else {
+                drawQuad(ps, buffer, tabLeft, tabBottom, tabRight, tabTop, COLLAPSED_TAB_BG);
+            }
+            if (isHover) {
+                drawQuad(ps, buffer, tabLeft + 0.005, tabBottom + 0.005,
+                    tabRight - 0.005, tabTop - 0.005, HOVER_COLOR);
+            }
+            int color = isExpanded ? HEADER_COLOR : COLLAPSED_TAB_COLOR;
+            drawCenteredText(ps, buffer, font, tab.typeName(),
+                (tabLeft + tabRight) / 2.0, tabCY, color);
+
+            if (isExpanded) {
+                expColLeft = tabLeft;
+                expColRight = tabRight;
+            }
+
+            if (displayPos + 1 < tabN) {
+                drawQuad(ps, buffer, tabRight - COLUMN_DIVIDER_W / 2.0, tabBottom,
+                    tabRight + COLUMN_DIVIDER_W / 2.0, tabTop, COLUMN_SEP_COLOR);
+            }
+            tabCursor = tabRight;
+        }
+        // Row separator below the tab strip.
+        drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
+
+        // Faint tint behind the entire right-of-expanded area so the
+        // reserved sub-variant region reads as part of the menu instead of
+        // an unused gap. Drawn under the variant rows so it doesn't
+        // obscure the row separators / sub-variant cells. Height includes
+        // every wrapped sub-variant line — derived from the total row
+        // count below the tab strip.
+        int variantBodyRows = rowCount(menu, font) - 2;
+        double rightAreaLeft = expColRight;
+        double rightAreaRight = halfW;
+        double varBodyTop = tabBottom;
+        double varBodyBottom = tabBottom - variantBodyRows * ROW_H;
+        if (rightAreaRight > rightAreaLeft + 0.001) {
+            drawQuad(ps, buffer, rightAreaLeft, varBodyBottom, rightAreaRight, varBodyTop, SUB_VARIANT_AREA_BG);
+        }
+
+        // --- Variant rows: drawn only within the expanded column. ---
+        String activeModelId = activeModelId();
+        String activeModelName = activeModelName();
+        double expColW = expColRight - expColLeft;
+        double weightCellLeft = expColRight - expColW * WEIGHT_CELL_FRACTION;
+
+        double availableSubW = availableSubVariantWidth(menu, font);
+        // Cumulative top of the next variant — shifts down by the variant's
+        // row span (1 + wrapped sub-variant lines).
+        double rowCursor = tabBottom;
+        for (int vi = 0; vi < menu.variants().size(); vi++) {
+            EditorTypeMenusPacket.Variant variant = menu.variants().get(vi);
+            int span = variantRowSpan(variant, availableSubW, font);
+
+            // Variant row sits on the first line of its span.
+            double rowTop = rowCursor;
+            double rowBottom = rowTop - ROW_H;
+            double rowCY = (rowTop + rowBottom) / 2.0;
+
+            drawQuad(ps, buffer, expColLeft, rowTop - 0.005, expColRight, rowTop + 0.005, ROW_SEP_COLOR);
+
+            boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
+            double nameRight = hasWeight ? weightCellLeft : expColRight;
+
+            drawVariantRow(ps, buffer, font, variant, expColLeft, rowBottom, expColRight, rowTop,
+                rowCY, weightCellLeft, nameRight, hasWeight,
+                hovered.variantIdx == vi && hovered.cell == CellKind.NAME,
+                hovered.variantIdx == vi && hovered.cell == CellKind.WEIGHT,
+                activeModelId, activeModelName);
+
+            // Sub-variants — horizontal cells across one or more lines.
+            // Line 0 sits next to the variant row; additional lines stack
+            // below within this variant's row span.
+            List<EditorTypeMenusPacket.Variant> children = variant.subVariants();
+            if (!children.isEmpty()) {
+                List<List<EditorTypeMenusPacket.Variant>> lines =
+                    subVariantLines(children, availableSubW, font);
+                int slotBase = 0;
+                for (int li = 0; li < lines.size(); li++) {
+                    List<EditorTypeMenusPacket.Variant> line = lines.get(li);
+                    double lineTop = rowTop - li * ROW_H;
+                    double lineBottom = lineTop - ROW_H;
+                    double lineCY = (lineTop + lineBottom) / 2.0;
+                    double subCursor = expColRight + SUB_VARIANT_GAP;
+                    for (int ci = 0; ci < line.size(); ci++) {
+                        EditorTypeMenusPacket.Variant child = line.get(ci);
+                        double cellW = subVariantCellWidth(child.name(), font);
+                        double cellLeft = subCursor;
+                        double cellRight = subCursor + cellW;
+                        int flatIdx = slotBase + ci;
+                        boolean isChildActive = !activeModelId.isEmpty()
+                            && activeModelId.equals(child.modelId())
+                            && activeModelName.equals(child.modelName());
+                        boolean isChildHover = hovered.cell == CellKind.SUB_VARIANT
+                            && hovered.variantIdx == vi && hovered.slotIdx == flatIdx;
+                        drawQuad(ps, buffer, cellLeft, lineBottom, cellRight, lineTop, SUB_VARIANT_CELL_BG);
+                        if (child.isImported()) {
+                            drawQuad(ps, buffer, cellLeft + 0.005, lineBottom + 0.005,
+                                cellRight - 0.005, lineTop - 0.005, IMPORTED_ROW_BG);
+                        } else if (child.isUser()) {
+                            drawQuad(ps, buffer, cellLeft + 0.005, lineBottom + 0.005,
+                                cellRight - 0.005, lineTop - 0.005, USER_ROW_BG);
+                        }
+                        if (isChildActive) {
+                            drawQuad(ps, buffer, cellLeft + 0.005, lineBottom + 0.005,
+                                cellRight - 0.005, lineTop - 0.005, ACTIVE_ROW_COLOR);
+                        }
+                        if (isChildHover) {
+                            drawQuad(ps, buffer, cellLeft + 0.005, lineBottom + 0.005,
+                                cellRight - 0.005, lineTop - 0.005, HOVER_COLOR);
+                        }
+                        drawCenteredText(ps, buffer, font, child.name(),
+                            (cellLeft + cellRight) / 2.0, lineCY, NAME_COLOR);
+                        if (ci + 1 < line.size()) {
+                            drawQuad(ps, buffer, cellRight - COLUMN_DIVIDER_W / 2.0, lineBottom,
+                                cellRight + COLUMN_DIVIDER_W / 2.0, lineTop, COLUMN_SEP_COLOR);
+                        }
+                        subCursor += cellW;
+                    }
+                    slotBase += line.size();
+                }
+            }
+
+            rowCursor -= span * ROW_H;
+        }
+
+        // "+ New" footer row — drawn only within the expanded column.
+        // Position is rowCursor (the Y after every variant + its wrapped
+        // sub-variant lines have shifted down).
+        if (!menu.variants().isEmpty()) {
+            double newRowTop = rowCursor;
+            double newRowBottom = newRowTop - ROW_H;
+            double newRowCY = (newRowTop + newRowBottom) / 2.0;
+            drawQuad(ps, buffer, expColLeft, newRowTop - 0.005, expColRight, newRowTop + 0.005, ROW_SEP_COLOR);
+            drawQuad(ps, buffer, expColLeft, newRowBottom, expColRight, newRowTop, NEW_ROW_BG);
+            if (hovered.cell == CellKind.NEW) {
+                drawQuad(ps, buffer, expColLeft + 0.005, newRowBottom + 0.005,
+                    expColRight - 0.005, newRowTop - 0.005, HOVER_COLOR);
+            }
+            drawCenteredText(ps, buffer, font, NEW_LABEL,
+                (expColLeft + expColRight) / 2.0, newRowCY, NEW_COLOR);
+        }
+    }
+
+    /**
+     * Shared variant-row drawing for both companion and nav layouts.
+     * {@code rowLeft}/{@code rowRight} are the row's horizontal bounds
+     * (panel-local) — companion menus pass the full panel width, nav menus
+     * pass the expanded column's bounds.
+     */
+    private static void drawVariantRow(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        EditorTypeMenusPacket.Variant variant,
+        double rowLeft, double rowBottom, double rowRight, double rowTop,
+        double rowCY, double weightCellLeft, double nameRight,
+        boolean hasWeight, boolean nameHover, boolean weightHover,
+        String activeModelId, String activeModelName
+    ) {
+        // Provenance tint — orange for imported variants (highest priority),
+        // blue for user-authored, no tint for bundled.
+        if (variant.isImported()) {
+            drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                rowRight - 0.005, rowTop - 0.005, IMPORTED_ROW_BG);
+        } else if (variant.isUser()) {
+            drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                rowRight - 0.005, rowTop - 0.005, USER_ROW_BG);
+        }
+
+        // Active-row tint for the variant matching the player's current plot.
+        boolean isActive = !activeModelId.isEmpty()
+            && activeModelId.equals(variant.modelId())
+            && activeModelName.equals(variant.modelName());
+        if (isActive) {
+            drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                rowRight - 0.005, rowTop - 0.005, ACTIVE_ROW_COLOR);
+        }
+
+        // Hover highlight.
+        if (nameHover) {
+            drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                nameRight - 0.005, rowTop - 0.005, HOVER_COLOR);
+        }
+        if (weightHover) {
+            drawQuad(ps, buffer, weightCellLeft + 0.005, rowBottom + 0.005,
+                rowRight - 0.005, rowTop - 0.005, HOVER_COLOR);
+        }
+
+        // Name (centred within its cell).
+        double nameCX = (rowLeft + nameRight) / 2.0;
+        drawCenteredText(ps, buffer, font, variant.name(), nameCX, rowCY, NAME_COLOR);
+
+        if (hasWeight) {
+            double weightCX = (weightCellLeft + rowRight) / 2.0;
+            drawCenteredText(ps, buffer, font, "×" + variant.weight(),
+                weightCX, rowCY, WEIGHT_COLOR);
+        }
+    }
+
+    /**
+     * The player's currently active template's modelId — pulled from the
+     * per-plot label that's flagged {@code inPlot=true}. Empty string when
+     * the player is outside every plot.
+     */
+    private static String activeModelId() {
+        for (EditorPlotLabelsPacket.Entry e : EditorPlotLabelsRenderer.entries()) {
+            if (e.inPlot()) return e.modelId();
+        }
+        return "";
+    }
+
+    private static String activeModelName() {
+        for (EditorPlotLabelsPacket.Entry e : EditorPlotLabelsRenderer.entries()) {
+            if (e.inPlot()) return e.modelName();
+        }
+        return "";
     }
 
     private static void drawCenteredText(

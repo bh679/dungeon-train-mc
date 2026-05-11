@@ -129,9 +129,57 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
+        // Category bar click → run "dt editor <id>" (CommandRunner expects
+        // bare command text, no leading slash — the chat path adds it).
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.CATEGORY) {
+            int slot = hit.slotIdx();
+            if (slot < 0 || slot >= menu.categoryBar().size()) return;
+            EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(slot);
+            String cmd = "dt editor " + btn.id();
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu category click: {}", cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
+
+        // Type-tab click → teleport to the first variant of that type.
+        // Collapsed tabs jump to a different row; clicking the expanded tab
+        // repeats the current row's first-variant teleport (harmless, same
+        // behaviour as the legacy HEADER click).
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.TYPE_TAB) {
+            int slot = hit.slotIdx();
+            if (slot < 0 || slot >= menu.typeStrip().size()) return;
+            EditorTypeMenusPacket.TypeTab tab = menu.typeStrip().get(slot);
+            String cmd = EditorPlotTeleport.commandFor(
+                tab.category(), tab.modelId(), tab.modelName());
+            if (cmd == null) return;
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu type-tab teleport ({}): {}",
+                tab.typeName(), cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
+
+        // Sub-variant cell click → teleport to that sub-variant. Cells
+        // live on a specific variant row, so variantIdx picks the parent
+        // and slotIdx picks the child inside {@code variant.subVariants()}.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.SUB_VARIANT) {
+            if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return;
+            EditorTypeMenusPacket.Variant parent = menu.variants().get(hit.variantIdx());
+            int slot = hit.slotIdx();
+            if (slot < 0 || slot >= parent.subVariants().size()) return;
+            EditorTypeMenusPacket.Variant child = parent.subVariants().get(slot);
+            String cmd = EditorPlotTeleport.commandFor(
+                child.category(), child.modelId(), child.modelName());
+            if (cmd == null) return;
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu sub-variant teleport ({}): {}",
+                child.name(), cmd);
+            CommandRunner.run(cmd);
+            return;
+        }
+
         // Header click → teleport to the first variant in the menu (the one
         // closest to the menu's row-start anchor, useful as a "go to start
-        // of this row" shortcut).
+        // of this row" shortcut). Only emitted by companion menus now; nav
+        // menus replace this with the expanded TYPE_TAB.
         if (hit.cell() == EditorTypeMenuRenderer.CellKind.HEADER) {
             if (menu.variants().isEmpty()) return;
             EditorTypeMenusPacket.Variant first = menu.variants().get(0);
