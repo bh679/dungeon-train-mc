@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.client.VersionInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,9 +9,11 @@ import java.util.Locale;
 
 /**
  * Menu shown when the player is inside an editor plot. DevMode is a live
- * toggle driven by {@link EditorStatusHudOverlay}. Enter drills into
- * category selection. Save has an "All" companion for category-wide saves.
- * New / Remove act on the model the player is currently standing in —
+ * toggle driven by {@link EditorStatusHudOverlay} and is only surfaced on
+ * non-{@code main} builds (see {@link #shouldShowDevModeToggle(String)} —
+ * release jars built from {@code main} hide the row entirely). Enter drills
+ * into category selection. Save has an "All" companion for category-wide
+ * saves. New / Remove act on the model the player is currently standing in —
  * New duplicates it under a typed name, Remove deletes the model after a
  * confirmation prompt. Exit runs {@code /dungeontrain editor exit} —
  * unwinds the active editor session, clears the editor plots, and
@@ -36,11 +39,13 @@ public final class EditorMenuScreen implements MenuScreen {
         int currentWeight = EditorStatusHudOverlay.weight();
 
         List<CommandMenuEntry> out = new ArrayList<>();
-        out.add(new CommandMenuEntry.Toggle(
-            "DevMode", devmode,
-            "dungeontrain editor devmode on",
-            "dungeontrain editor devmode off"
-        ));
+        if (shouldShowDevModeToggle(VersionInfo.BRANCH)) {
+            out.add(new CommandMenuEntry.Toggle(
+                "DevMode", devmode,
+                "dungeontrain editor devmode on",
+                "dungeontrain editor devmode off"
+            ));
+        }
         out.add(new CommandMenuEntry.DrillIn("Enter", new EnterCategoryMenuScreen()));
 
         // Parts have their own Save / Reset commands — `dungeontrain save`
@@ -143,6 +148,19 @@ public final class EditorMenuScreen implements MenuScreen {
 
         out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;
+    }
+
+    /**
+     * Returns {@code true} when the DevMode toggle row should be added to the
+     * editor menu. Hidden on release builds (jar built from {@code main}); any
+     * other branch — feature branches, detached-HEAD short SHAs, the {@code "?"}
+     * fallback when git detection failed at build time, or {@code null} — shows
+     * the toggle so devs aren't locked out when build metadata is missing.
+     * Extracted as a pure predicate so the unit test can pin behavior without
+     * having to mutate {@link VersionInfo}'s static initializer.
+     */
+    static boolean shouldShowDevModeToggle(String branch) {
+        return !"main".equals(branch);
     }
 
     /**
