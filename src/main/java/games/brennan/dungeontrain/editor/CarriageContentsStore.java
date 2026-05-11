@@ -55,7 +55,7 @@ import java.util.Optional;
 public final class CarriageContentsStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String SUBDIR = "contents";
+    public static final String SUBDIR = "contents";
     private static final String EXT = ".nbt";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/contents/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/contents";
@@ -227,8 +227,8 @@ public final class CarriageContentsStore {
     }
 
     private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageContents contents, Vec3i interiorSize) {
-        Path file = fileFor(contents);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        Path file = UserContentPaths.findFile(SUBDIR, contents.id() + EXT);
+        if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, contents.id(), interiorSize, tag, "config " + file);

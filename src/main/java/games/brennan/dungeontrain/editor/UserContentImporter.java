@@ -140,11 +140,12 @@ public final class UserContentImporter {
         if (zips.isEmpty()) return List.of();
 
         Path installedDir = importsDir.resolve(INSTALLED_SUBDIR);
-        Path userRoot = UserContentPaths.root();
+        Path importedRoot = UserContentPaths.importedRoot();
         try {
-            Files.createDirectories(userRoot);
+            Files.createDirectories(importedRoot);
         } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to ensure user-content root {}: {}", userRoot, e.toString());
+            LOGGER.error("[DungeonTrain] Failed to ensure imported-content root {}: {}",
+                importedRoot, e.toString());
             return List.of();
         }
 
@@ -153,7 +154,7 @@ public final class UserContentImporter {
 
         List<ZipResult> results = new ArrayList<>();
         for (Path zip : zips) {
-            ZipResult r = importOne(zip, userRoot);
+            ZipResult r = importOne(zip, importedRoot);
             results.add(r);
             if (r.imported() > 0 || r.skipped() > 0) {
                 moveToInstalled(zip, installedDir);
@@ -163,21 +164,44 @@ public final class UserContentImporter {
     }
 
     /**
-     * Extract a single zip into {@code userRoot}, skipping any entry whose
-     * destination already exists. Returns a count breakdown that the caller
-     * logs and surfaces.
+     * Extract a single zip into its own subdirectory under
+     * {@code importedRoot}: every package gets its own
+     * {@code imported/<packageName>/...} tree so a player can compare
+     * versions side by side and (eventually) prune individual packages
+     * without affecting the rest. The package name is derived from the
+     * zip's filename minus the {@code .zip} suffix and sanitised against
+     * filesystem-illegal characters.
+     *
+     * <p>Files that already exist <i>inside this package's directory</i>
+     * are skipped — that lets the same zip be reprocessed safely (e.g.
+     * after the player moves a copy back from {@code installed/} for
+     * testing). Files that exist in {@code user/} are <b>not</b> the
+     * concern of this method; the load-order in
+     * {@link UserContentPaths#findFile} already prefers user/ over
+     * imports, so a player-edited file naturally shadows the imported
+     * copy without needing a per-file conflict check here.</p>
      *
      * <p>Open-on-read with {@link ZipFile} so we don't materialise the
      * whole archive in memory — useful for the rare large package and
      * required for the zip-slip canonicalisation check, which needs the
      * destination path before any bytes are streamed.</p>
      */
-    private static ZipResult importOne(Path zip, Path userRoot) {
-        Path userRootNorm = userRoot.toAbsolutePath().normalize();
+    private static ZipResult importOne(Path zip, Path importedRoot) {
+        String packageName = packageNameFor(zip);
+        Path packageRoot = importedRoot.resolve(packageName);
+        Path packageRootNorm = packageRoot.toAbsolutePath().normalize();
         int imported = 0;
         int skipped = 0;
         int rejected = 0;
         List<String> warnings = new ArrayList<>();
+
+        try {
+            Files.createDirectories(packageRoot);
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to create package dir {}: {}",
+                packageRoot, e.toString());
+            return new ZipResult(zip, 0, 0, 0, List.of("mkdir-failed: " + e.getMessage()));
+        }
 
         try (ZipFile zf = new ZipFile(zip.toFile(), StandardCharsets.UTF_8)) {
             var entries = zf.entries();
@@ -188,11 +212,11 @@ public final class UserContentImporter {
                 String name = entry.getName();
                 if (MANIFEST_ENTRY.equalsIgnoreCase(name)) continue;
 
-                Path dest = userRootNorm.resolve(name).normalize();
-                if (!dest.startsWith(userRootNorm)) {
+                Path dest = packageRootNorm.resolve(name).normalize();
+                if (!dest.startsWith(packageRootNorm)) {
                     rejected++;
                     warnings.add("path-escape: " + name);
-                    LOGGER.warn("[DungeonTrain] Rejected zip entry '{}' from {} — path escapes user root",
+                    LOGGER.warn("[DungeonTrain] Rejected zip entry '{}' from {} — path escapes package root",
                         name, zip.getFileName());
                     continue;
                 }
@@ -208,20 +232,6 @@ public final class UserContentImporter {
                     try (OutputStream out = Files.newOutputStream(dest)) {
                         zf.getInputStream(entry).transferTo(out);
                     }
-                    // Record provenance so the editor menus can paint the
-                    // freshly-imported variant orange instead of blue. The
-                    // mtime is read AFTER the write so a subsequent
-                    // player-edit naturally trips the index's mtime-mismatch
-                    // check and promotes the file to user-authored.
-                    String relPath = userRootNorm.relativize(dest).toString()
-                        .replace('\\', '/');
-                    try {
-                        ImportedContentIndex.recordImported(relPath,
-                            Files.getLastModifiedTime(dest));
-                    } catch (IOException mtimeFail) {
-                        LOGGER.warn("[DungeonTrain] Imported {} but couldn't stamp "
-                            + "provenance: {}", relPath, mtimeFail.toString());
-                    }
                     imported++;
                 } catch (IOException io) {
                     rejected++;
@@ -235,9 +245,34 @@ public final class UserContentImporter {
             return new ZipResult(zip, 0, 0, 0, List.of("open-failed: " + e.getMessage()));
         }
 
-        LOGGER.info("[DungeonTrain] Imported package {} — {} new file(s), {} skipped, {} rejected",
-            zip.getFileName(), imported, skipped, rejected);
+        LOGGER.info("[DungeonTrain] Imported package {} as '{}' — {} new file(s), {} skipped, {} rejected",
+            zip.getFileName(), packageName, imported, skipped, rejected);
         return new ZipResult(zip, imported, skipped, rejected, warnings);
+    }
+
+    /**
+     * Derive a safe package directory name from the zip's filename.
+     * Strips the {@code .zip} extension and replaces filesystem-unfriendly
+     * characters with underscores so we don't end up with a directory
+     * Windows refuses to open.
+     *
+     * <p>Empty result after sanitising (very unlikely — the zip would
+     * have to be named something like just {@code "?"}) falls back to a
+     * timestamp-based name so we still get a unique directory.</p>
+     */
+    static String packageNameFor(Path zip) {
+        String filename = zip.getFileName().toString();
+        int dot = filename.toLowerCase(Locale.ROOT).lastIndexOf(".zip");
+        String stem = dot > 0 ? filename.substring(0, dot) : filename;
+        // Replace whitespace + filesystem-unsafe characters with underscores.
+        String sanitised = stem.replaceAll("[\\\\/:*?\"<>|\\s]+", "_");
+        // Collapse repeats and strip leading/trailing underscores for tidiness.
+        sanitised = sanitised.replaceAll("_{2,}", "_")
+            .replaceAll("^_+", "").replaceAll("_+$", "");
+        if (sanitised.isEmpty()) {
+            sanitised = "package-" + System.currentTimeMillis();
+        }
+        return sanitised;
     }
 
     /**

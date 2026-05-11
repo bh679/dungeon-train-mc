@@ -185,8 +185,8 @@ public final class CarriageVariantPartsStore {
     }
 
     private static Optional<CarriagePartAssignment> loadFromConfig(CarriageVariant variant) {
-        Path file = fileFor(variant);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        Path file = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        if (file == null) return Optional.empty();
         try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             JsonElement root = JsonParser.parseReader(r);
             if (!root.isJsonObject()) {

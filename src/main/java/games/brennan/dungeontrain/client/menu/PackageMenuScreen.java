@@ -49,9 +49,12 @@ public final class PackageMenuScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         return List.of(
-            new CommandMenuEntry.Run("Export Package", "dungeontrain editor export"),
+            new CommandMenuEntry.Split(
+                new CommandMenuEntry.Run("Export Package", "dungeontrain editor export"),
+                new CommandMenuEntry.ClientAction("Open Package Folder", PackageMenuScreen::openExportFolder),
+                0.55
+            ),
             new CommandMenuEntry.ClientAction("Contents Folder", PackageMenuScreen::openUserContentFolder),
-            new CommandMenuEntry.ClientAction("Open Package Folder", PackageMenuScreen::openExportFolder),
             new CommandMenuEntry.Split(
                 new CommandMenuEntry.ClientAction("Open Import Folder", PackageMenuScreen::openImportFolder),
                 new CommandMenuEntry.Stay("Reload", "dungeontrain editor import"),

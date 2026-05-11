@@ -222,8 +222,10 @@ public final class TrackVariantStore {
     private static Optional<StructureTemplate> loadFromConfig(
         ServerLevel level, TrackKind kind, String name, CarriageDims dims
     ) {
-        Path file = fileFor(kind, name);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        // Search user/<kind.subdir>/ first, then each imported/<pkg>/<kind.subdir>/.
+        Path file = games.brennan.dungeontrain.editor.UserContentPaths.findFile(
+            kind.subdir(), name + TrackKind.NBT_EXT);
+        if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "config " + file);

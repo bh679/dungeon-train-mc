@@ -98,8 +98,9 @@ public final class TrackVariantBlocks {
     }
 
     private static TrackVariantBlocks loadFromDisk(TrackKind kind, String name, Vec3i size) {
-        Path cfg = configPathFor(kind, name);
-        if (Files.isRegularFile(cfg)) {
+        Path cfg = games.brennan.dungeontrain.editor.UserContentPaths.findFile(
+            kind.subdir(), name + TrackKind.VARIANTS_EXT);
+        if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, kind, name, "config " + cfg, size);
             } catch (IOException e) {

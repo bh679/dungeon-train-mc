@@ -211,8 +211,8 @@ public final class CarriageVariantBlocks {
     }
 
     private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant, CarriageDims dims) {
-        Path cfg = configPathFor(variant);
-        if (Files.isRegularFile(cfg)) {
+        Path cfg = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, variant.id(), "config " + cfg, dims);
             } catch (IOException e) {

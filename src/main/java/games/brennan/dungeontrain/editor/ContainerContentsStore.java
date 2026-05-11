@@ -354,8 +354,8 @@ public final class ContainerContentsStore {
     }
 
     private static ContainerContentsStore loadFromDisk(String plotKey) {
-        Path file = configPathFor(plotKey);
-        if (Files.isRegularFile(file)) {
+        Path file = UserContentPaths.findFile(SUBDIR, safeFilename(plotKey) + EXT);
+        if (file != null) {
             try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 return parseFromReader(r, plotKey, file.toString());
             } catch (IOException e) {

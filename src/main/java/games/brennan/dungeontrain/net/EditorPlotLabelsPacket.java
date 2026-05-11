@@ -55,13 +55,15 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
      * the player can tell at a glance which templates they authored vs which
      * ship with the mod jar.</p>
      *
-     * <p>{@code isImported} is true when the template's on-disk file is
-     * recorded in {@link games.brennan.dungeontrain.editor.ImportedContentIndex}
-     * AND the file's modification time still matches what was captured at
-     * import — i.e. the variant came from an import package and the player
-     * hasn't edited it locally yet. Takes precedence over {@code isUser}
-     * for rendering: imported variants get an orange tint, user-saved
-     * variants get blue, bundled variants stay green.</p>
+     * <p>{@code isImported} is true when the variant's file lives under
+     * {@code <config>/dungeontrain/imported/<package>/...} and no
+     * shadowing copy exists in {@code user/}. The player can revert from
+     * imported to bundled by deleting the package directory, or edit-and-
+     * save through the editor to create a user-folder copy that shadows
+     * the imported one (flipping the variant from orange to blue).
+     * Takes precedence over {@code isUser} for rendering: imported
+     * variants get an orange tint, user-saved variants get blue, bundled
+     * variants stay green.</p>
      */
     public record Entry(
         BlockPos worldPos,

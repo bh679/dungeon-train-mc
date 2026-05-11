@@ -108,8 +108,8 @@ public final class CarriagePartVariantBlocks {
     }
 
     private static CarriagePartVariantBlocks loadFromDisk(CarriagePartKind kind, String name, Vec3i partSize) {
-        Path cfg = configPathFor(kind, name);
-        if (Files.isRegularFile(cfg)) {
+        Path cfg = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
+        if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, kind, name, "config " + cfg, partSize);
             } catch (IOException e) {

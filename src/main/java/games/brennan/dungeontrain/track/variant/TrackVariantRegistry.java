@@ -173,25 +173,20 @@ public final class TrackVariantRegistry {
     }
 
     private static int scanDir(TrackKind kind, TreeSet<String> into) {
-        Path dir = FMLPaths.CONFIGDIR.get().resolve(kind.configSubdir());
-        if (!Files.isDirectory(dir)) return 0;
+        // Walks user/<kind.subdir>/ + every imported/<pkg>/<kind.subdir>/.
+        // Load-time resolution prefers user/ first via UserContentPaths.findFile,
+        // so a player-edited variant with the same id as an imported one
+        // still wins on read — registry just needs to know the id exists.
+        java.util.Set<String> ids = games.brennan.dungeontrain.editor.UserContentPaths
+            .listBasenamesAcrossSearchDirs(kind.subdir(), TrackKind.NBT_EXT);
         int added = 0;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + TrackKind.NBT_EXT)) {
-            for (Path file : stream) {
-                String name = file.getFileName().toString();
-                if (!name.endsWith(TrackKind.NBT_EXT)) continue;
-                String basename = name.substring(0, name.length() - TrackKind.NBT_EXT.length())
-                    .toLowerCase(Locale.ROOT);
-                if (TrackKind.DEFAULT_NAME.equals(basename)) continue;
-                if (!NAME_PATTERN.matcher(basename).matches()) {
-                    LOGGER.warn("[DungeonTrain] Ignoring track variant '{}' from {} — invalid name",
-                        basename, file);
-                    continue;
-                }
-                if (into.add(basename)) added++;
+        for (String basename : ids) {
+            if (TrackKind.DEFAULT_NAME.equals(basename)) continue;
+            if (!NAME_PATTERN.matcher(basename).matches()) {
+                LOGGER.warn("[DungeonTrain] Ignoring track variant '{}' — invalid name", basename);
+                continue;
             }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to scan track variant dir {}: {}", dir, e.toString());
+            if (into.add(basename)) added++;
         }
         return added;
     }

@@ -263,21 +263,18 @@ public final class CarriageContentsRegistry {
     }
 
     private static int loadConfigDir() {
-        Path dir = CarriageContentsStore.directory();
-        if (!Files.isDirectory(dir)) return 0;
-
+        // Walks user/contents/ + every imported/<pkg>/contents/. Duplicate
+        // ids across packages are fine — load-time resolution in
+        // CarriageContentsStore uses UserContentPaths.findFile and prefers
+        // user/ first, then alphabetical packages.
+        java.util.Set<String> ids = games.brennan.dungeontrain.editor.UserContentPaths
+            .listBasenamesAcrossSearchDirs(
+                games.brennan.dungeontrain.editor.CarriageContentsStore.SUBDIR, ".nbt");
         int added = 0;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.nbt")) {
-            for (Path file : stream) {
-                String name = file.getFileName().toString();
-                if (!name.endsWith(".nbt")) continue;
-                String basename = name.substring(0, name.length() - 4).toLowerCase(Locale.ROOT);
-                if (CarriageContents.isReservedBuiltinName(basename)) continue;
-                if (!acceptCustomId(basename, "config dir " + file.getFileName())) continue;
-                if (CUSTOMS.add(basename)) added++;
-            }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to scan contents directory {}: {}", dir, e.toString());
+        for (String basename : ids) {
+            if (CarriageContents.isReservedBuiltinName(basename)) continue;
+            if (!acceptCustomId(basename, "user/ + imports")) continue;
+            if (CUSTOMS.add(basename)) added++;
         }
         return added;
     }

@@ -273,23 +273,13 @@ public final class BlockVariantPrefabStore {
             }
             IDS.add(name);
         }
-        // Config-dir tier — per-install override / new authoring
-        Path dir = directory();
-        if (Files.isDirectory(dir)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
-                for (Path file : stream) {
-                    String name = file.getFileName().toString();
-                    if (!name.endsWith(EXT)) continue;
-                    String basename = name.substring(0, name.length() - EXT.length()).toLowerCase(Locale.ROOT);
-                    if (!isValidName(basename)) {
-                        LOGGER.warn("[DungeonTrain] Ignoring block-variant prefab file with invalid name: {}", file);
-                        continue;
-                    }
-                    IDS.add(basename);
-                }
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] Failed to scan block-variant prefab dir {}: {}", dir, e.toString());
+        // Config-dir tier — user/prefabs/block_variants + every imported/<pkg>/.
+        for (String basename : UserContentPaths.listBasenamesAcrossSearchDirs(SUBDIR, EXT)) {
+            if (!isValidName(basename)) {
+                LOGGER.warn("[DungeonTrain] Ignoring block-variant prefab with invalid name: {}", basename);
+                continue;
             }
+            IDS.add(basename);
         }
         LOGGER.info("[DungeonTrain] Block-variant prefab registry loaded — {} prefab(s) ({} bundled)",
             IDS.size(), bundled.size());
@@ -310,8 +300,8 @@ public final class BlockVariantPrefabStore {
     }
 
     private static Optional<List<VariantState>> loadFromConfig(String key) {
-        Path file = fileFor(key);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        Path file = UserContentPaths.findFile(SUBDIR, key + EXT);
+        if (file == null) return Optional.empty();
         try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             return parseStates(r, key, "config " + file);
         } catch (IOException e) {

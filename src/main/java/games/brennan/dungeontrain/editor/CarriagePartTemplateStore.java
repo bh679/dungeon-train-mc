@@ -57,7 +57,7 @@ import java.util.Optional;
 public final class CarriagePartTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final String SUBDIR_BASE = "parts";
+    public static final String SUBDIR_BASE = "parts";
     private static final String EXT = ".nbt";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
@@ -159,8 +159,9 @@ public final class CarriagePartTemplateStore {
     private static Optional<StructureTemplate> loadFromConfig(
         ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims
     ) {
-        Path file = fileFor(kind, name);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        // Search user/parts/<kind>/ first, then imported/<pkg>/parts/<kind>/.
+        Path file = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
+        if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "config " + file);

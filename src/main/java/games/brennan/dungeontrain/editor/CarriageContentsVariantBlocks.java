@@ -111,8 +111,8 @@ public final class CarriageContentsVariantBlocks {
     }
 
     private static CarriageContentsVariantBlocks loadFromDisk(CarriageContents contents, Vec3i interiorSize) {
-        Path cfg = configPathFor(contents);
-        if (Files.isRegularFile(cfg)) {
+        Path cfg = UserContentPaths.findFile(SUBDIR, contents.id() + EXT);
+        if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, contents, "config " + cfg, interiorSize);
             } catch (IOException e) {

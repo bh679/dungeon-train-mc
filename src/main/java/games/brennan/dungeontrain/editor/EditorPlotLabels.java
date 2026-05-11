@@ -199,30 +199,36 @@ public final class EditorPlotLabels {
 
     /**
      * Resolve the {@code (isUser, isImported)} provenance pair for the
-     * variant whose per-install file is {@code file}. Both fields default
-     * to {@code false} when the file is missing (bundled-only).
+     * variant whose canonical user-folder file is {@code file}. Falls
+     * through to {@code (false, false)} (bundled) when neither tier has
+     * the file.
      *
-     * <p>The relative path passed to {@link ImportedContentIndex} is
-     * computed from the user-content root so the index key matches what
-     * the importer recorded at extract time. Forward slashes only — Windows
-     * backslashes are converted so the cross-platform check works.</p>
+     * <p>{@code file} is always the {@code user/...} path — the canonical
+     * "where would a save land" location for this variant. The method
+     * splits the path into {@code (subSlug, basenameWithExt)} relative
+     * to the user-content root and delegates to
+     * {@link UserContentPaths#provenanceOf(String, String)}, which checks
+     * {@code user/} first and then every imported package directory.</p>
      */
     static Provenance provenanceOf(java.nio.file.Path file) {
-        if (!java.nio.file.Files.isRegularFile(file)) {
-            return new Provenance(false, false);
-        }
         java.nio.file.Path userRoot = UserContentPaths.root();
         java.nio.file.Path relPath;
         try {
             relPath = userRoot.relativize(file);
         } catch (IllegalArgumentException unrelated) {
             // file lives outside user-root (e.g. dev-mode source-tree write) —
-            // not a candidate for the imported tint.
-            return new Provenance(true, false);
+            // treat as user-only (no imported overlay).
+            return new Provenance(java.nio.file.Files.isRegularFile(file), false);
         }
-        String key = relPath.toString().replace('\\', '/');
-        boolean imported = ImportedContentIndex.isImported(key);
-        return new Provenance(true, imported);
+        if (relPath.getNameCount() == 0) return new Provenance(false, false);
+        // Split into subSlug + basenameWithExt — every editor sub-tree is at
+        // least one level deep (templates/foo.nbt, parts/floor/foo.nbt, …),
+        // and the importer mirrors that structure.
+        String filename = relPath.getFileName().toString();
+        java.nio.file.Path parent = relPath.getParent();
+        String subSlug = parent == null ? "" : parent.toString().replace('\\', '/');
+        UserContentPaths.Provenance p = UserContentPaths.provenanceOf(subSlug, filename);
+        return new Provenance(p.isUser(), p.isImported());
     }
 
     /** Lightweight pair returned by {@link #provenanceOf(java.nio.file.Path)}. Lives here so the call sites stay one line each. */

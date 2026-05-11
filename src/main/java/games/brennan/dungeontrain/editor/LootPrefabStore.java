@@ -243,23 +243,13 @@ public final class LootPrefabStore {
             }
             IDS.add(name);
         }
-        // Config-dir tier
-        Path dir = directory();
-        if (Files.isDirectory(dir)) {
-            try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
-                for (Path file : stream) {
-                    String name = file.getFileName().toString();
-                    if (!name.endsWith(EXT)) continue;
-                    String basename = name.substring(0, name.length() - EXT.length()).toLowerCase(Locale.ROOT);
-                    if (!isValidName(basename)) {
-                        LOGGER.warn("[DungeonTrain] Ignoring loot prefab file with invalid name: {}", file);
-                        continue;
-                    }
-                    IDS.add(basename);
-                }
-            } catch (IOException e) {
-                LOGGER.error("[DungeonTrain] Failed to scan loot prefab dir {}: {}", dir, e.toString());
+        // Config-dir tier — user/prefabs/loot + every imported/<pkg>/prefabs/loot.
+        for (String basename : UserContentPaths.listBasenamesAcrossSearchDirs(SUBDIR, EXT)) {
+            if (!isValidName(basename)) {
+                LOGGER.warn("[DungeonTrain] Ignoring loot prefab with invalid name: {}", basename);
+                continue;
             }
+            IDS.add(basename);
         }
         LOGGER.info("[DungeonTrain] Loot prefab registry loaded — {} prefab(s) ({} bundled)",
             IDS.size(), bundled.size());
@@ -280,8 +270,8 @@ public final class LootPrefabStore {
     }
 
     private static Optional<Data> loadFromConfig(String key) {
-        Path file = fileFor(key);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        Path file = UserContentPaths.findFile(SUBDIR, key + EXT);
+        if (file == null) return Optional.empty();
         try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             return parseData(r, key);
         } catch (IOException e) {
