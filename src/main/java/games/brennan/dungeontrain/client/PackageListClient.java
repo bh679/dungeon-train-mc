@@ -31,8 +31,15 @@ public final class PackageListClient {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Min ticks between consecutive throttled refreshes (~250ms at 20 TPS). */
-    private static final long THROTTLE_TICKS = 5L;
+    /**
+     * Min ticks between consecutive throttled refreshes (~1 s at 20 TPS).
+     * The menu rebuilds every tick, so this is the dominant cadence —
+     * 1 s is fast enough that a click-then-look interaction feels live
+     * but slow enough not to fire 20 filesystem-walking syncs per second.
+     * Explicit mutations call {@link #scheduleRefreshAfterAction()} to
+     * bypass the throttle when responsiveness actually matters.
+     */
+    private static final long THROTTLE_TICKS = 20L;
 
     /** A small grace period after a Save / Activate / Enable click — refresh sooner. */
     private static final long FORCE_AFTER_ACTION_TICKS = 1L;
@@ -55,7 +62,7 @@ public final class PackageListClient {
     /** Replace the cached snapshot. Called by {@link PackageListSyncPacket#handle}. */
     public static void setSnapshot(PackageListSyncPacket packet) {
         SNAPSHOT = packet;
-        LOGGER.info("[DungeonTrain] PackageListClient: snapshot updated, {} packages", packet.entries().size());
+        LOGGER.debug("[DungeonTrain] PackageListClient: snapshot updated, {} packages", packet.entries().size());
     }
 
     /** Drop the cached snapshot — used when the player leaves a world / server. */
@@ -119,7 +126,7 @@ public final class PackageListClient {
     public static void requestRefresh() {
         DungeonTrainNet.sendToServer(new PackageListRequestPacket());
         lastRequestTick = currentTick();
-        LOGGER.info("[DungeonTrain] PackageListClient: sent immediate refresh request");
+        LOGGER.debug("[DungeonTrain] PackageListClient: sent immediate refresh request");
     }
 
     /**
@@ -140,7 +147,7 @@ public final class PackageListClient {
         lastRequestTick = now;
         DungeonTrainNet.sendToServer(new PackageListRequestPacket());
         if (firstRequest) {
-            LOGGER.info("[DungeonTrain] PackageListClient: sent initial refresh request");
+            LOGGER.debug("[DungeonTrain] PackageListClient: sent initial refresh request");
         }
     }
 
