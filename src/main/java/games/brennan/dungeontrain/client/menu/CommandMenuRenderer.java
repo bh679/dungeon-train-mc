@@ -354,13 +354,13 @@ public final class CommandMenuRenderer {
 
         drawTripleCell(poseStack, buffer, font, triple.leftEntry(),
             -halfW + padX, leftBoundary - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 0);
+            hovered && hoveredSub == 0, isTypingHere(rowIndex, 0));
         drawTripleCell(poseStack, buffer, font, triple.middleEntry(),
             leftBoundary + gap / 2f, rightBoundary - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 1);
+            hovered && hoveredSub == 1, isTypingHere(rowIndex, 1));
         drawTripleCell(poseStack, buffer, font, triple.rightEntry(),
             rightBoundary + gap / 2f, halfW - padX, cy, halfH, padY,
-            hovered && hoveredSub == 2);
+            hovered && hoveredSub == 2, isTypingHere(rowIndex, 2));
     }
 
     private static void drawQuadRow(
@@ -381,24 +381,39 @@ public final class CommandMenuRenderer {
 
         drawTripleCell(poseStack, buffer, font, quad.e1(),
             -halfW + padX, b1 - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 0);
+            hovered && hoveredSub == 0, isTypingHere(rowIndex, 0));
         drawTripleCell(poseStack, buffer, font, quad.e2(),
             b1 + gap / 2f, b2 - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 1);
+            hovered && hoveredSub == 1, isTypingHere(rowIndex, 1));
         drawTripleCell(poseStack, buffer, font, quad.e3(),
             b2 + gap / 2f, b3 - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 2);
+            hovered && hoveredSub == 2, isTypingHere(rowIndex, 2));
         drawTripleCell(poseStack, buffer, font, quad.e4(),
             b3 + gap / 2f, halfW - padX, cy, halfH, padY,
-            hovered && hoveredSub == 3);
+            hovered && hoveredSub == 3, isTypingHere(rowIndex, 3));
     }
 
     private static void drawTripleCell(
         PoseStack poseStack, MultiBufferSource buffer, Font font,
         CommandMenuEntry entry,
         float xStart, float xEnd, float cy, float halfH, float padY,
-        boolean hovered
+        boolean hovered, boolean typing
     ) {
+        // Typing cell wins over normal label rendering — draw the
+        // type-buffer with a green backdrop in place of the label, so the
+        // user sees their input land in the same cell they clicked.
+        if (typing) {
+            drawQuad(poseStack, buffer,
+                xStart, cy - halfH + padY,
+                xEnd,   cy + halfH - padY,
+                TYPING_BACKDROP);
+            float centerX = (xStart + xEnd) / 2f;
+            drawCenteredText(poseStack, buffer, font,
+                CommandMenuState.typedBuffer() + "_",
+                centerX, cy, 0xFF000000);
+            return;
+        }
+
         boolean isLabel = entry instanceof CommandMenuEntry.Label;
         int baseTint = baseTintFor(entry);
         int tint;
