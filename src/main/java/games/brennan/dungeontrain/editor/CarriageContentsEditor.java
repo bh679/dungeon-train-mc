@@ -93,6 +93,30 @@ public final class CarriageContentsEditor {
     }
 
     /**
+     * Erase + re-stamp the dirty slice of the +X contents row after a contents
+     * entry has been removed from {@link CarriageContentsRegistry}. Same
+     * semantics as {@link CarriageEditor#restampRowAfterDeletion}: erases
+     * {@code [oldDeletedIndex, oldCount)} (shifted-from positions plus the
+     * vacated tail) then re-stamps every contents whose new index ≥
+     * {@code oldDeletedIndex}. Must be called <b>after</b>
+     * {@link CarriageContentsRegistry#unregister}.
+     */
+    public static void restampRowAfterDeletion(ServerLevel level, int oldDeletedIndex, int oldCount, CarriageDims dims) {
+        int step = dims.length() + EditorLayout.GAP;
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int i = oldDeletedIndex; i < oldCount; i++) {
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * step, PLOT_Y, PLOT_Z);
+            CarriagePlacer.eraseAt(level, pos, dims);
+            CarriageContentsPlacer.eraseAt(level, pos, dims);
+            setOutline(level, pos, air, dims);
+        }
+        List<CarriageContents> remaining = CarriageContentsRegistry.allContents();
+        for (int i = oldDeletedIndex; i < remaining.size(); i++) {
+            stampPlot(level, remaining.get(i), dims);
+        }
+    }
+
+    /**
      * Erase the plot for {@code contents} — shell + interior back to air,
      * barrier cage removed. Called by {@code EditorCategory.clearAllPlots}
      * when switching categories.
