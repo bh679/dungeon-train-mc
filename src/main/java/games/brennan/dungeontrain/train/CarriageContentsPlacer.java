@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -412,10 +413,17 @@ public final class CarriageContentsPlacer {
                 }
                 if (level.addFreshEntity(entity)) {
                     spawned++;
-                    LOGGER.info("[DungeonTrain] Contents: spawned entity type={} uuid={} pos=({},{},{}) pIdx={} tag={}",
-                        entity.getType().getDescriptionId(), entity.getUUID(),
-                        worldX, worldY, worldZ, carriagePIdx, tag);
+                    // Per-entity verbose log gated on the diagnostic flag —
+                    // bounded log volume in production, full detail when
+                    // investigating disappearance regressions.
+                    if (DebugFlags.logContentsEntities()) {
+                        LOGGER.info("[DungeonTrain] Contents: spawned entity type={} uuid={} pos=({},{},{}) pIdx={} tag={}",
+                            entity.getType().getDescriptionId(), entity.getUUID(),
+                            worldX, worldY, worldZ, carriagePIdx, tag);
+                    }
                 } else {
+                    // Always log rejections — those are real failures, not
+                    // routine bookkeeping.
                     LOGGER.warn("[DungeonTrain] Contents: addFreshEntity rejected {} at ({},{},{}) pIdx={}",
                         entity.getType().getDescriptionId(), worldX, worldY, worldZ, carriagePIdx);
                 }

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
@@ -55,6 +56,7 @@ public final class ContentsEntityDiagnostics {
 
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
+        if (!DebugFlags.logContentsEntities()) return;
         Level level = event.getLevel();
         if (level.isClientSide) return;
         Entity entity = event.getEntity();
@@ -78,6 +80,7 @@ public final class ContentsEntityDiagnostics {
 
     @SubscribeEvent
     public static void onEntityLeave(EntityLeaveLevelEvent event) {
+        if (!DebugFlags.logContentsEntities()) return;
         Level level = event.getLevel();
         if (level.isClientSide) return;
         Entity entity = event.getEntity();

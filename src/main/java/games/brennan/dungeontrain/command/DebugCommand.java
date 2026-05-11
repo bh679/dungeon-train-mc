@@ -86,7 +86,17 @@ public final class DebugCommand {
             // appender between auto-spawn and J-keybind manual spawn.
             .then(Commands.literal("spawnmode")
                 .then(Commands.literal("auto").executes(ctx -> setSpawnMode(ctx.getSource(), false)))
-                .then(Commands.literal("manual").executes(ctx -> setSpawnMode(ctx.getSource(), true))));
+                .then(Commands.literal("manual").executes(ctx -> setSpawnMode(ctx.getSource(), true))))
+            // /dungeontrain debug contents-entities on|off — gates verbose
+            // lifecycle logging for contents entities (per-entity JOIN /
+            // LEAVE with stack trace, plus per-entity spawn lines). Off by
+            // default — flip on when investigating entity-disappearance
+            // regressions. The kill-ahead exemption that prevents the
+            // original disappearance bug doesn't depend on this flag; it
+            // uses the entity tag alone, which is always set.
+            .then(Commands.literal("contents-entities")
+                .then(Commands.literal("on").executes(ctx -> setLogContentsEntities(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setLogContentsEntities(ctx.getSource(), false))));
     }
 
     private static int setAllWireframes(CommandSourceStack source, boolean enabled) {
@@ -165,6 +175,14 @@ public final class DebugCommand {
         DebugFlags.setChatCollision(source.getServer(), enabled);
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Chat-log collision " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setLogContentsEntities(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setLogContentsEntities(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Contents-entity logging " + (enabled ? "ON" : "OFF")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }
