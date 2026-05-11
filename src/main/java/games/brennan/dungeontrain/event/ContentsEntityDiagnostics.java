@@ -86,14 +86,25 @@ public final class ContentsEntityDiagnostics {
         long spawnTick = entity.getPersistentData().getLong(CarriageContentsPlacer.NBT_SPAWN_GAME_TICK);
         long age = (spawnTick > 0) ? (level.getGameTime() - spawnTick) : -1L;
         Entity.RemovalReason reason = entity.getRemovalReason();
+        // Capture stack trace so we can see WHO triggered the removal. The
+        // EntityLeaveLevelEvent fires synchronously inside the entity-remove
+        // pipeline, so the upper frames show the caller chain. Cheap to
+        // build a Throwable (no fillInStackTrace cost ourselves —
+        // {@code new Throwable()} does it). Only fires for tagged entities,
+        // so log volume stays bounded.
+        StackTraceElement[] stack = new Throwable().getStackTrace();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(stack.length, 20); i++) {
+            sb.append("\n      at ").append(stack[i]);
+        }
         // Most leaves are routine chunk-unload as the train rolls past the
         // entity's slot — we still log them so a "discarded" reason stands
         // out by contrast in the log stream.
-        LOGGER.info("[DungeonTrain] Entity LEAVE: type={} uuid={} tag={} pos=({},{},{}) reason={} ageTicks={}",
+        LOGGER.info("[DungeonTrain] Entity LEAVE: type={} uuid={} tag={} pos=({},{},{}) reason={} ageTicks={} stack:{}",
             entity.getType().getDescriptionId(), entity.getUUID(), tag,
             String.format("%.2f", entity.getX()),
             String.format("%.2f", entity.getY()),
             String.format("%.2f", entity.getZ()),
-            reason, age);
+            reason, age, sb);
     }
 }
