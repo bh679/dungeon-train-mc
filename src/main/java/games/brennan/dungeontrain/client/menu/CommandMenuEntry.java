@@ -31,8 +31,15 @@ public sealed interface CommandMenuEntry {
      * to click again while watching the result update live. The menu
      * rebuilds entries each tick, so labels relying on server-pushed state
      * refresh automatically.
+     *
+     * <p>The optional {@code highlighted} flag draws the same persistent
+     * accent tint as {@link Run#highlighted} — used to mark "you're
+     * already on this option" for stay-open selection toggles like the
+     * active package row.</p>
      */
-    record Stay(String label, String command) implements CommandMenuEntry {}
+    record Stay(String label, String command, boolean highlighted) implements CommandMenuEntry {
+        public Stay(String label, String command) { this(label, command, false); }
+    }
 
     /**
      * Like {@link Stay}, but invokes a Java {@link Runnable} directly
@@ -131,5 +138,22 @@ public sealed interface CommandMenuEntry {
     record Triple(CommandMenuEntry leftEntry, CommandMenuEntry middleEntry, CommandMenuEntry rightEntry,
                   double leftFraction, double middleEnd) implements CommandMenuEntry {
         @Override public String label() { return middleEntry.label(); }
+    }
+
+    /**
+     * Four buttons side-by-side in one row. {@link #boundary1},
+     * {@link #boundary2}, {@link #boundary3} are panel-relative
+     * fractions (0..1) marking the three dividers between the four
+     * cells. The raycast produces {@code subIdx} 0 / 1 / 2 / 3 for
+     * left-most through right-most.
+     *
+     * <p>Used by the package list — each package row needs Name |
+     * Save | Open | Enable. Activating the leftmost cell flips the
+     * highlight without closing the menu so the player can immediately
+     * see which package became active.</p>
+     */
+    record Quad(CommandMenuEntry e1, CommandMenuEntry e2, CommandMenuEntry e3, CommandMenuEntry e4,
+                double boundary1, double boundary2, double boundary3) implements CommandMenuEntry {
+        @Override public String label() { return e1.label(); }
     }
 }

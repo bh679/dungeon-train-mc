@@ -138,16 +138,17 @@ public final class CommandMenuRenderer {
         MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
 
         int count = entries.size();
-        drawPanelBackdrop(poseStack, buffer, count);
+        double mainPanelW = CommandMenuState.mainPanelWidth();
+        drawPanelBackdrop(poseStack, buffer, count, mainPanelW);
 
         int hovered = CommandMenuState.hoveredIdx();
         int hoveredSub = CommandMenuState.hoveredSubIdx();
         for (int i = 0; i < count; i++) {
             drawRow(poseStack, buffer, font, entries.get(i), i, count,
-                hovered == i, hoveredSub);
+                hovered == i, hoveredSub, mainPanelW);
         }
 
-        drawHeader(poseStack, buffer, font, count, CommandMenuState.breadcrumb());
+        drawHeader(poseStack, buffer, font, count, CommandMenuState.breadcrumb(), mainPanelW);
 
         // Typing field is rendered inline at the originating row by drawRow /
         // drawSplitRow — see isTypingHere(). No top-of-panel field anymore.
@@ -171,23 +172,29 @@ public final class CommandMenuRenderer {
         List<CommandMenuEntry> sideEntries = CommandMenuState.sideEntries();
         if (sideEntries.isEmpty()) return;
 
-        double sideOffset = CommandMenuLayout.PANEL_WIDTH + SIDE_PANEL_GAP;
+        // Translate to the right of the *main* panel, regardless of the side
+        // panel's own width — the main panel's width is what determines the
+        // gap between the two pieces of UI.
+        double sideOffset = CommandMenuState.mainPanelWidth() / 2.0
+            + CommandMenuState.sidePanelWidth() / 2.0
+            + SIDE_PANEL_GAP;
         poseStack.pushPose();
         poseStack.translate(sideOffset, 0.0, 0.0);
 
         int sideCount = sideEntries.size();
-        drawPanelBackdrop(poseStack, buffer, sideCount);
+        double sidePanelW = CommandMenuState.sidePanelWidth();
+        drawPanelBackdrop(poseStack, buffer, sideCount, sidePanelW);
 
         int sideHovered = CommandMenuState.sideHoveredIdx();
         int sideHoveredSub = CommandMenuState.sideHoveredSubIdx();
         for (int i = 0; i < sideCount; i++) {
             drawRow(poseStack, buffer, font, sideEntries.get(i), i, sideCount,
-                sideHovered == i, sideHoveredSub);
+                sideHovered == i, sideHoveredSub, sidePanelW);
         }
 
         MenuScreen side = CommandMenuState.sideScreen();
         String title = side != null ? side.title() : "";
-        drawHeader(poseStack, buffer, font, sideCount, title);
+        drawHeader(poseStack, buffer, font, sideCount, title, sidePanelW);
 
         poseStack.popPose();
     }
@@ -195,8 +202,8 @@ public final class CommandMenuRenderer {
     /** Horizontal gap between the main panel's right edge and the side panel's left edge, in world units. */
     static final double SIDE_PANEL_GAP = 0.12;
 
-    private static void drawPanelBackdrop(PoseStack poseStack, MultiBufferSource buffer, int entryCount) {
-        float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
+    private static void drawPanelBackdrop(PoseStack poseStack, MultiBufferSource buffer, int entryCount, double panelWidth) {
+        float halfW = (float) (panelWidth / 2.0);
         float halfH = (float) (CommandMenuLayout.totalHeight(entryCount) / 2.0);
         drawQuad(poseStack, buffer, -halfW, -halfH, halfW, halfH, 0x90000000);
     }
@@ -204,18 +211,22 @@ public final class CommandMenuRenderer {
     private static void drawRow(
         PoseStack poseStack, MultiBufferSource buffer, Font font,
         CommandMenuEntry entry, int rowIndex, int count,
-        boolean hovered, int hoveredSub
+        boolean hovered, int hoveredSub, double panelWidth
     ) {
         if (entry instanceof CommandMenuEntry.Split split) {
-            drawSplitRow(poseStack, buffer, font, split, rowIndex, count, hovered, hoveredSub);
+            drawSplitRow(poseStack, buffer, font, split, rowIndex, count, hovered, hoveredSub, panelWidth);
+            return;
+        }
+        if (entry instanceof CommandMenuEntry.Quad quad) {
+            drawQuadRow(poseStack, buffer, font, quad, rowIndex, count, hovered, hoveredSub, panelWidth);
             return;
         }
         if (entry instanceof CommandMenuEntry.Triple triple) {
-            drawTripleRow(poseStack, buffer, font, triple, rowIndex, count, hovered, hoveredSub);
+            drawTripleRow(poseStack, buffer, font, triple, rowIndex, count, hovered, hoveredSub, panelWidth);
             return;
         }
 
-        float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
+        float halfW = (float) (panelWidth / 2.0);
         float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
         float cy = (float) CommandMenuLayout.rowCenterY(rowIndex, count);
         float padX = 0.02f;
@@ -261,9 +272,9 @@ public final class CommandMenuRenderer {
     private static void drawSplitRow(
         PoseStack poseStack, MultiBufferSource buffer, Font font,
         CommandMenuEntry.Split split, int rowIndex, int count,
-        boolean hovered, int hoveredSub
+        boolean hovered, int hoveredSub, double panelWidth
     ) {
-        float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
+        float halfW = (float) (panelWidth / 2.0);
         float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
         float cy = (float) CommandMenuLayout.rowCenterY(rowIndex, count);
         float padX = 0.02f;
@@ -271,7 +282,7 @@ public final class CommandMenuRenderer {
         float gap = 0.015f;
 
         float leftStart = -halfW + padX;
-        float splitX = (float) (-halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH);
+        float splitX = (float) (-halfW + split.leftFraction() * panelWidth);
         float rightEnd = halfW - padX;
 
         boolean typingLeft = isTypingHere(rowIndex, 0);
@@ -336,35 +347,80 @@ public final class CommandMenuRenderer {
     private static void drawTripleRow(
         PoseStack poseStack, MultiBufferSource buffer, Font font,
         CommandMenuEntry.Triple triple, int rowIndex, int count,
-        boolean hovered, int hoveredSub
+        boolean hovered, int hoveredSub, double panelWidth
     ) {
-        float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
+        float halfW = (float) (panelWidth / 2.0);
         float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
         float cy = (float) CommandMenuLayout.rowCenterY(rowIndex, count);
         float padX = 0.02f;
         float padY = 0.005f;
         float gap = 0.015f;
 
-        float leftBoundary  = (float) (-halfW + triple.leftFraction() * CommandMenuLayout.PANEL_WIDTH);
-        float rightBoundary = (float) (-halfW + triple.middleEnd()    * CommandMenuLayout.PANEL_WIDTH);
+        float leftBoundary  = (float) (-halfW + triple.leftFraction() * panelWidth);
+        float rightBoundary = (float) (-halfW + triple.middleEnd()    * panelWidth);
 
         drawTripleCell(poseStack, buffer, font, triple.leftEntry(),
             -halfW + padX, leftBoundary - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 0);
+            hovered && hoveredSub == 0, isTypingHere(rowIndex, 0));
         drawTripleCell(poseStack, buffer, font, triple.middleEntry(),
             leftBoundary + gap / 2f, rightBoundary - gap / 2f, cy, halfH, padY,
-            hovered && hoveredSub == 1);
+            hovered && hoveredSub == 1, isTypingHere(rowIndex, 1));
         drawTripleCell(poseStack, buffer, font, triple.rightEntry(),
             rightBoundary + gap / 2f, halfW - padX, cy, halfH, padY,
-            hovered && hoveredSub == 2);
+            hovered && hoveredSub == 2, isTypingHere(rowIndex, 2));
+    }
+
+    private static void drawQuadRow(
+        PoseStack poseStack, MultiBufferSource buffer, Font font,
+        CommandMenuEntry.Quad quad, int rowIndex, int count,
+        boolean hovered, int hoveredSub, double panelWidth
+    ) {
+        float halfW = (float) (panelWidth / 2.0);
+        float halfH = (float) (CommandMenuLayout.ROW_HEIGHT / 2.0);
+        float cy = (float) CommandMenuLayout.rowCenterY(rowIndex, count);
+        float padX = 0.02f;
+        float padY = 0.005f;
+        float gap = 0.012f;
+
+        float b1 = (float) (-halfW + quad.boundary1() * panelWidth);
+        float b2 = (float) (-halfW + quad.boundary2() * panelWidth);
+        float b3 = (float) (-halfW + quad.boundary3() * panelWidth);
+
+        drawTripleCell(poseStack, buffer, font, quad.e1(),
+            -halfW + padX, b1 - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 0, isTypingHere(rowIndex, 0));
+        drawTripleCell(poseStack, buffer, font, quad.e2(),
+            b1 + gap / 2f, b2 - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 1, isTypingHere(rowIndex, 1));
+        drawTripleCell(poseStack, buffer, font, quad.e3(),
+            b2 + gap / 2f, b3 - gap / 2f, cy, halfH, padY,
+            hovered && hoveredSub == 2, isTypingHere(rowIndex, 2));
+        drawTripleCell(poseStack, buffer, font, quad.e4(),
+            b3 + gap / 2f, halfW - padX, cy, halfH, padY,
+            hovered && hoveredSub == 3, isTypingHere(rowIndex, 3));
     }
 
     private static void drawTripleCell(
         PoseStack poseStack, MultiBufferSource buffer, Font font,
         CommandMenuEntry entry,
         float xStart, float xEnd, float cy, float halfH, float padY,
-        boolean hovered
+        boolean hovered, boolean typing
     ) {
+        // Typing cell wins over normal label rendering — draw the
+        // type-buffer with a green backdrop in place of the label, so the
+        // user sees their input land in the same cell they clicked.
+        if (typing) {
+            drawQuad(poseStack, buffer,
+                xStart, cy - halfH + padY,
+                xEnd,   cy + halfH - padY,
+                TYPING_BACKDROP);
+            float centerX = (xStart + xEnd) / 2f;
+            drawCenteredText(poseStack, buffer, font,
+                CommandMenuState.typedBuffer() + "_",
+                centerX, cy, 0xFF000000);
+            return;
+        }
+
         boolean isLabel = entry instanceof CommandMenuEntry.Label;
         int baseTint = baseTintFor(entry);
         int tint;
@@ -405,6 +461,9 @@ public final class CommandMenuRenderer {
             // Soft amber accent — "this is the option you're currently in".
             return 0x80FFAA33;
         }
+        if (entry instanceof CommandMenuEntry.Stay s && s.highlighted()) {
+            return 0x80FFAA33;
+        }
         if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted()) {
             return 0x80FFAA33;
         }
@@ -418,7 +477,12 @@ public final class CommandMenuRenderer {
         return entry.label();
     }
 
-    private static void drawHeader(PoseStack poseStack, MultiBufferSource buffer, Font font, int count, String title) {
+    private static void drawHeader(PoseStack poseStack, MultiBufferSource buffer, Font font, int count, String title, double panelWidth) {
+        // panelWidth currently unused — text is centered on x=0 within the
+        // panel's own coordinate frame so it scales with the panel width
+        // naturally. Threaded through to stay consistent with the other
+        // draw helpers and to leave room for left/right-aligned headers
+        // in the future.
         String header = title;
         if (header == null || header.isEmpty()) header = "Dungeon Train";
         float cy = (float) CommandMenuLayout.headerCenterY(count);
