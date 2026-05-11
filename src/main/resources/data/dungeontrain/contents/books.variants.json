@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "variants": {
     "1,2,4": [{"state": "minecraft:bookshelf", "weight": 8}, {"state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "4,1,3": { "lockId": 1, "states": ["minecraft:bookshelf", "minecraft:command_block[conditional=false,facing=north]"] },

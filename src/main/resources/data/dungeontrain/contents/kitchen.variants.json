@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "variants": {
     "2,0,0": [{"state": "minecraft:smoker[facing=south,lit=false]", "nbt": "{BurnTime:0,CookTime:0,CookTimeTotal:0,Items:[],RecipesUsed:{}}", "weight": 5, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}}, "minecraft:crafting_table"],
     "4,0,0": [{"state": "minecraft:smoker[facing=south,lit=false]", "nbt": "{BurnTime:0,CookTime:0,CookTimeTotal:0,Items:[],RecipesUsed:{}}", "weight": 5, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}}, "minecraft:crafting_table"],

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import games.brennan.dungeontrain.template.SaveResult;
 import games.brennan.dungeontrain.template.Stores;
 import games.brennan.dungeontrain.template.Template;
@@ -230,10 +231,23 @@ public final class SaveCommand {
     }
 
     /**
-     * Save every model in the player's current category. Skips plots whose
-     * captured region has fewer than {@link #EMPTY_PLOT_THRESHOLD} non-air
-     * blocks, so untouched plots don't overwrite their templates with empty
-     * geometry. Reports counts of saved / skipped / promoted / promote-errored.
+     * Save every model in the player's current category that the player has
+     * <i>actually edited</i> this session. A plot counts as edited when its
+     * live geometry diverges from the post-stamp snapshot captured by
+     * {@link games.brennan.dungeontrain.editor.EditorPlotSnapshots} — same
+     * signal the unsaved-list / category-switch confirm screen uses. Skips:
+     * <ul>
+     *   <li>Plots whose region holds fewer than {@link #EMPTY_PLOT_THRESHOLD}
+     *       non-air blocks (defensive, prevents stamping an empty footprint
+     *       over a saved template).</li>
+     *   <li>Plots whose dirty-check key isn't in the unsaved set — i.e. the
+     *       player hasn't entered the plot this session, or the live state
+     *       still matches the snapshot.</li>
+     * </ul>
+     * Parts ({@link games.brennan.dungeontrain.template.TemplateKind#PART})
+     * aren't covered by the dirty scan; the {@link #isPlotEmpty} filter is
+     * still applied for them so unused part plots don't sweep up.
+     * Reports counts of saved / skipped / promoted / promote-errored.
      */
     public static int runSaveAll(CommandSourceStack source, boolean promoteDefault) {
         ServerPlayer player = requirePlayer(source);
@@ -256,14 +270,23 @@ public final class SaveCommand {
             return 0;
         }
 
+        java.util.Set<String> dirtyKeys =
+            EditorDirtyCheck.unsavedModelIds(overworld, dims, category.id());
+
         int saved = 0;
-        int skipped = 0;
+        int skippedEmpty = 0;
+        int skippedClean = 0;
         int promoted = 0;
         StringBuilder promoteErrors = new StringBuilder();
 
         for (Template model : models) {
             if (isPlotEmpty(overworld, model, dims)) {
-                skipped++;
+                skippedEmpty++;
+                continue;
+            }
+            String dKey = EditorDirtyCheck.dirtyKeyFor(model);
+            if (dKey != null && !dirtyKeys.contains(dKey)) {
+                skippedClean++;
                 continue;
             }
             try {
@@ -290,9 +313,10 @@ public final class SaveCommand {
             }
         }
 
-        final int s = saved, sk = skipped, p = promoted;
+        final int s = saved, skE = skippedEmpty, skC = skippedClean, p = promoted;
         final String errs = promoteErrors.toString();
-        final String summary = "Saved " + s + ", skipped " + sk + " empty"
+        final String summary = "Saved " + s
+            + ", skipped " + skE + " empty + " + skC + " unchanged"
             + (promoteDefault ? (" — promoted " + p) : "")
             + " (category: " + category.displayName() + ")"
             + (errs.isEmpty() ? "" : errs);
