@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:chest",
+  "entries": [
+    { "id": "minecraft:diamond_sword", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_leggings", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_boots", "count": 1, "weight": 1 },
+    { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond", "count": 3, "weight": 4 },
+    { "id": "minecraft:diamond_helmet", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_pickaxe", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_axe", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_block", "count": 1, "weight": 1 },
+    { "id": "minecraft:obsidian", "count": 20, "weight": 5 },
+    { "id": "minecraft:diamond_hoe", "count": 1, "weight": 1 },
+    { "id": "minecraft:diamond_shovel", "count": 1, "weight": 1 },
+    { "id": "minecraft:netherite_ingot", "count": 1, "weight": 1 },
+    { "id": "minecraft:gold_ingot", "count": 1, "weight": 1 },
+    { "id": "minecraft:iron_ingot", "count": 1, "weight": 1 },
+    { "id": "minecraft:rib_armor_trim_smithing_template", "count": 1, "weight": 5 },
+    { "id": "minecraft:snout_armor_trim_smithing_template", "count": 1, "weight": 5 },
+    { "id": "minecraft:enchanted_golden_apple", "count": 1, "weight": 1 },
+    { "id": "minecraft:golden_apple", "count": 1, "weight": 2 },
+    { "id": "minecraft:cooked_beef", "count": 2, "weight": 10 },
+    { "id": "minecraft:porkchop", "count": 2, "weight": 10 },
+    { "id": "minecraft:cooked_mutton", "count": 2, "weight": 10 }
+  ]
+}

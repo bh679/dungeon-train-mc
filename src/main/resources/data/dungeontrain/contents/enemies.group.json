@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "cagedzombie",
+      "weight": 1
+    },
+    {
+      "id": "piglin",
+      "weight": 1
+    },
+    {
+      "id": "brute",
+      "weight": 1
+    }
+  ]
+}
