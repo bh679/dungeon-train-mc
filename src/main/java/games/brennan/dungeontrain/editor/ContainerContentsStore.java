@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -18,6 +19,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,6 +86,7 @@ public final class ContainerContentsStore {
     static final String SUBDIR = "containers";
     private static final String EXT = ".contents.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/containers/";
+    private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/containers";
 
     /** Session cache keyed by plot key. */
     private static final Map<String, ContainerContentsStore> CACHE = new HashMap<>();
@@ -304,6 +307,92 @@ public final class ContainerContentsStore {
         }
         LOGGER.info("[DungeonTrain] Saved container contents store for {} ({} cells) to {}",
             plotKey, pools.size(), file);
+    }
+
+    /**
+     * Write the current in-memory state into the source tree so the link/pool
+     * sidecar ships with the next mod build. Mirrors
+     * {@link CarriageContentsStore#saveToSource} and the variant-blocks
+     * sidecar's source write — the dev-mode write-through that keeps the
+     * bundled tier in lockstep with config-dir authoring.
+     *
+     * <p>Skips writing when the store has no pools and no links — there's
+     * nothing to ship, and a spurious empty sidecar would muddy diffs.</p>
+     *
+     * @throws IOException if the source tree isn't writable (not running from
+     *                     a dev checkout) or the write fails.
+     */
+    public synchronized void saveToSource() throws IOException {
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        if (pools.isEmpty() && links.isEmpty()) {
+            return;
+        }
+        Path file = sourcePathFor(plotKey);
+        Files.createDirectories(file.getParent());
+        try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            w.write(toJsonText());
+        }
+        LOGGER.info("[DungeonTrain] Wrote bundled container contents store for {} ({} cells, {} links) to {}",
+            plotKey, pools.size(), links.size(), file);
+    }
+
+    /**
+     * Copy the per-install config-dir sidecar into the source tree so its
+     * pools and links ship with the next mod build. Idempotent and best-effort:
+     * returns {@code false} (without throwing) when no config-dir file exists,
+     * so callers can invoke this unconditionally after promoting the parent
+     * template without worrying about whether the plot had any authored
+     * container data.
+     *
+     * @return {@code true} if a file was copied, {@code false} if there was
+     *         nothing to promote.
+     * @throws IOException if the source tree isn't writable or the copy fails.
+     */
+    public static synchronized boolean promoteFor(String plotKey) throws IOException {
+        Path src = configPathFor(plotKey);
+        if (!Files.isRegularFile(src)) return false;
+        if (!sourceTreeAvailable()) {
+            throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
+        }
+        Path dst = sourcePathFor(plotKey);
+        Files.createDirectories(dst.getParent());
+        Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
+        LOGGER.info("[DungeonTrain] Promoted container contents sidecar for {} from {} to {}", plotKey, src, dst);
+        return true;
+    }
+
+    public static boolean sourceTreeAvailable() {
+        Path resources = resourcesRootOrNull();
+        return resources != null && Files.isDirectory(resources) && Files.isWritable(resources);
+    }
+
+    private static Path sourcePathFor(String plotKey) {
+        Path dir = sourceDirectoryOrNull();
+        if (dir == null) {
+            throw new IllegalStateException(
+                "Cannot resolve source directory — FMLPaths.GAMEDIR has no parent."
+            );
+        }
+        return dir.resolve(safeFilename(plotKey) + EXT);
+    }
+
+    private static Path sourceDirectoryOrNull() {
+        Path projectRoot = projectRootOrNull();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve(SOURCE_REL_PATH);
+    }
+
+    private static Path resourcesRootOrNull() {
+        Path projectRoot = projectRootOrNull();
+        if (projectRoot == null) return null;
+        return projectRoot.resolve("src/main/resources");
+    }
+
+    private static Path projectRootOrNull() {
+        Path gameDir = FMLPaths.GAMEDIR.get();
+        return gameDir.getParent();
     }
 
     private String toJsonText() {
