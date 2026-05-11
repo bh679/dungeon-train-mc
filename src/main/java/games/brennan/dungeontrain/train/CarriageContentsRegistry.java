@@ -238,15 +238,18 @@ public final class CarriageContentsRegistry {
     }
 
     /**
-     * Weight assigned to the synthetic self-entry in a group's resolution pool.
-     * The parent's own {@code .nbt} is always a candidate alongside its
+     * Default weight assigned to the synthetic self-entry in a group's
+     * resolution pool when the group sidecar omits the {@code selfWeight}
+     * field. The parent's own {@code .nbt} is always a candidate alongside its
      * explicit members — this mirrors the "the original variant is the default
      * sub-variant" model and matches the editor UI's first row.
      *
-     * <p>Fixed at 1 in this phase. Editable weights for self are a future
-     * extension (would require a schema field on the group sidecar).</p>
+     * <p>Per-group {@code selfWeight} is editable via the
+     * {@code editor contents group set-weight <parent> <parent> ...} command
+     * and persisted in the group sidecar. This constant remains the fallback
+     * for pre-v1.1 sidecars that lack the field.</p>
      */
-    public static final int SELF_WEIGHT = 1;
+    public static final int SELF_WEIGHT = CarriageContentsGroup.DEFAULT_SELF_WEIGHT;
 
     /** Sentinel id used internally to mark the synthetic-self entry in the resolution pool. */
     private static final String SELF_TOKEN = "<self>";
@@ -268,8 +271,10 @@ public final class CarriageContentsRegistry {
         CarriageContentsGroup group = groupOpt.get();
 
         // Pool: synthetic self + every explicit member, no allow-list filter.
+        // Self-weight is read from the group sidecar (defaults to
+        // CarriageContentsGroup.DEFAULT_SELF_WEIGHT for pre-v1.1 files).
         List<PoolEntry> pool = new ArrayList<>(group.members().size() + 1);
-        pool.add(new PoolEntry(SELF_TOKEN, SELF_WEIGHT));
+        pool.add(new PoolEntry(SELF_TOKEN, group.selfWeight()));
         for (CarriageContentsGroup.Member m : group.members()) {
             pool.add(new PoolEntry(m.id(), m.weight()));
         }

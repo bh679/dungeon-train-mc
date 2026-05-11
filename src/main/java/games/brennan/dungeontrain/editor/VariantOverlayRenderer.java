@@ -766,17 +766,26 @@ public final class VariantOverlayRenderer {
         // Build the rows. Default (parent self) row always first. Provenance
         // tints (user/imported) flow through the same Variant fields the rest
         // of the type menu uses — read from the contents store's file path.
+        // The default row's weight is the parent's editable selfWeight from
+        // the group sidecar — but only when a group with at least one member
+        // exists (selfWeight has no behavioural effect when the parent has no
+        // members to compete with). For parents without a populated group,
+        // emit NO_WEIGHT so the cell is hidden and not clickable.
         String cat = EditorCategory.CONTENTS.name();
         List<EditorTypeMenusPacket.Variant> rows = new java.util.ArrayList<>();
+        Optional<games.brennan.dungeontrain.train.CarriageContentsGroup> groupOpt =
+            CarriageContentsGroupStore.get(parentId);
+        boolean hasMembers = groupOpt.isPresent() && !groupOpt.get().isEmpty();
+        int defaultRowWeight = hasMembers
+            ? groupOpt.get().selfWeight()
+            : games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT;
         EditorPlotLabels.Provenance parentProv = EditorPlotLabels.provenanceOf(
             games.brennan.dungeontrain.editor.CarriageContentsStore.fileForId(parentId));
         rows.add(new EditorTypeMenusPacket.Variant(
             parentId + " (default)",
-            games.brennan.dungeontrain.train.CarriageContentsRegistry.SELF_WEIGHT,
+            defaultRowWeight,
             cat, parentId, parentId,
             parentProv.isUser(), parentProv.isImported()));
-        Optional<games.brennan.dungeontrain.train.CarriageContentsGroup> groupOpt =
-            CarriageContentsGroupStore.get(parentId);
         if (groupOpt.isPresent()) {
             for (var m : groupOpt.get().members()) {
                 EditorPlotLabels.Provenance memberProv = EditorPlotLabels.provenanceOf(

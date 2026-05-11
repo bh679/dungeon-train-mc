@@ -828,6 +828,10 @@ public final class EditorCommand {
      * — set the weight of an existing group member and persist to the parent's
      * {@code .group.json} sidecar. Mirrors {@link #runContentsWeightSet} but
      * targets the per-member weight pool that group resolution actually reads.
+     *
+     * <p>When {@code parent == child}, the value is applied to the parent's
+     * own {@code selfWeight} (the weight of its synthetic self-entry in the
+     * resolution pool) via {@link CarriageContentsGroup#withSelfWeight}.</p>
      */
     private static int runContentsGroupWeightSet(CommandSourceStack source, String parentRaw, String childRaw, int value) {
         CarriageContents parent = parseContents(source, parentRaw);
@@ -841,20 +845,30 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        if (existing.get().members().stream().noneMatch(m -> m.id().equals(child.id()))) {
+        boolean isSelf = parent.id().equals(child.id());
+        if (!isSelf && existing.get().members().stream().noneMatch(m -> m.id().equals(child.id()))) {
             source.sendFailure(Component.literal(
                 "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        // Member constructor clamps to [MIN_WEIGHT, MAX_WEIGHT]; withMember replaces in place.
-        CarriageContentsGroup.Member updatedMember = new CarriageContentsGroup.Member(child.id(), value);
-        CarriageContentsGroup updated = existing.get().withMember(updatedMember);
+        CarriageContentsGroup updated;
+        final int stored;
+        if (isSelf) {
+            // Canonical constructor clamps to [MIN_WEIGHT, MAX_WEIGHT].
+            updated = existing.get().withSelfWeight(value);
+            stored = updated.selfWeight();
+        } else {
+            // Member constructor clamps to [MIN_WEIGHT, MAX_WEIGHT]; withMember replaces in place.
+            CarriageContentsGroup.Member updatedMember = new CarriageContentsGroup.Member(child.id(), value);
+            updated = existing.get().withMember(updatedMember);
+            stored = updatedMember.weight();
+        }
         try {
             CarriageContentsGroupStore.save(parent.id(), updated);
-            final int stored = updatedMember.weight();
+            final String label = isSelf ? "selfWeight" : "'" + child.id() + "' weight";
             source.sendSuccess(() -> Component.literal(
-                "Editor: group '" + parent.id() + "' → '" + child.id() + "' weight=" + stored + "."
+                "Editor: group '" + parent.id() + "' → " + label + "=" + stored + "."
             ).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
@@ -865,7 +879,7 @@ public final class EditorCommand {
         }
     }
 
-    /** Read-modify-write nudge for a group member's weight. Bounds clamp via {@link CarriageContentsGroup.Member}. */
+    /** Read-modify-write nudge for a group member's weight (or the parent's selfWeight when {@code parent == child}). Bounds clamp via {@link CarriageContentsGroup#clampWeight}. */
     private static int runContentsGroupWeightAdjust(CommandSourceStack source, String parentRaw, String childRaw, int delta) {
         CarriageContents parent = parseContents(source, parentRaw);
         if (parent == null) return 0;
@@ -878,16 +892,21 @@ public final class EditorCommand {
             ).withStyle(ChatFormatting.YELLOW));
             return 0;
         }
-        int current = existing.get().members().stream()
-            .filter(m -> m.id().equals(child.id()))
-            .mapToInt(CarriageContentsGroup.Member::weight)
-            .findFirst()
-            .orElse(-1);
-        if (current < 0) {
-            source.sendFailure(Component.literal(
-                "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
-            ).withStyle(ChatFormatting.YELLOW));
-            return 0;
+        int current;
+        if (parent.id().equals(child.id())) {
+            current = existing.get().selfWeight();
+        } else {
+            current = existing.get().members().stream()
+                .filter(m -> m.id().equals(child.id()))
+                .mapToInt(CarriageContentsGroup.Member::weight)
+                .findFirst()
+                .orElse(-1);
+            if (current < 0) {
+                source.sendFailure(Component.literal(
+                    "'" + child.id() + "' is not a member of group '" + parent.id() + "'."
+                ).withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
         }
         return runContentsGroupWeightSet(source, parentRaw, childRaw, current + delta);
     }

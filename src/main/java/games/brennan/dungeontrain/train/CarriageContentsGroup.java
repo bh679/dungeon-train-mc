@@ -23,6 +23,7 @@ import java.util.Random;
  * <pre>
  * {
  *   "schemaVersion": 1,
+ *   "selfWeight": 1,
  *   "variants": [
  *     {"id": "container_wooden", "weight": 5},
  *     {"id": "container_metal",  "weight": 2}
@@ -30,11 +31,17 @@ import java.util.Random;
  * }
  * </pre>
  *
+ * <p>{@code selfWeight} controls how often the parent's own contents are
+ * drawn from its group pool (alongside the explicit members in
+ * {@code variants}). Defaults to {@value #DEFAULT_SELF_WEIGHT} when
+ * unspecified — matches the pre-schema-v1.1 behaviour where the parent's
+ * synthetic self-entry was hardcoded to 1.</p>
+ *
  * <p>Field name {@code variants} (not {@code subVariants}) is intentional —
  * a group's members are themselves variants of contents; the parent is just
  * a variant that happens to delegate.</p>
  */
-public record CarriageContentsGroup(List<Member> members) {
+public record CarriageContentsGroup(int selfWeight, List<Member> members) {
 
     public static final String SCHEMA_KEY = "schemaVersion";
     public static final int SCHEMA_VERSION = 1;
@@ -45,6 +52,8 @@ public record CarriageContentsGroup(List<Member> members) {
     public static final int MAX_WEIGHT = 100;
     /** Default member weight when unspecified or invalid. */
     public static final int DEFAULT_WEIGHT = 1;
+    /** Default {@link #selfWeight()} for groups missing the field on disk. */
+    public static final int DEFAULT_SELF_WEIGHT = 1;
 
     /** Shared zero-member sentinel — "no group" should use {@code Optional.empty()} at the store level instead. */
     public static final CarriageContentsGroup EMPTY = new CarriageContentsGroup(Collections.emptyList());
@@ -64,6 +73,7 @@ public record CarriageContentsGroup(List<Member> members) {
     }
 
     public CarriageContentsGroup {
+        selfWeight = clampWeight(selfWeight);
         if (members == null) {
             members = Collections.emptyList();
         } else {
@@ -83,6 +93,15 @@ public record CarriageContentsGroup(List<Member> members) {
             }
             members = List.copyOf(ordered);
         }
+    }
+
+    /**
+     * Backwards-compatible constructor for call sites and tests that pre-date
+     * the editable {@link #selfWeight()} field. Initialises {@code selfWeight}
+     * to {@link #DEFAULT_SELF_WEIGHT}, matching the pre-v1.1 hardcoded behaviour.
+     */
+    public CarriageContentsGroup(List<Member> members) {
+        this(DEFAULT_SELF_WEIGHT, members);
     }
 
     public boolean isEmpty() {
@@ -122,7 +141,7 @@ public record CarriageContentsGroup(List<Member> members) {
             }
         }
         if (!replaced) next.add(member);
-        return new CarriageContentsGroup(next);
+        return new CarriageContentsGroup(selfWeight, next);
     }
 
     /** New group with {@code memberId} removed (idempotent). */
@@ -134,12 +153,22 @@ public record CarriageContentsGroup(List<Member> members) {
         for (Member m : members) {
             if (!m.id().equals(norm)) next.add(m);
         }
-        return new CarriageContentsGroup(next);
+        return new CarriageContentsGroup(selfWeight, next);
+    }
+
+    /**
+     * New group with {@code newSelfWeight} replacing the parent's self-weight
+     * in the resolution pool. The new value is clamped via {@link #clampWeight}
+     * in the canonical constructor.
+     */
+    public CarriageContentsGroup withSelfWeight(int newSelfWeight) {
+        return new CarriageContentsGroup(newSelfWeight, members);
     }
 
     public JsonObject toJson() {
         JsonObject o = new JsonObject();
         o.addProperty(SCHEMA_KEY, SCHEMA_VERSION);
+        o.addProperty("selfWeight", selfWeight);
         JsonArray arr = new JsonArray();
         for (Member m : members) {
             JsonObject entry = new JsonObject();
@@ -155,12 +184,23 @@ public record CarriageContentsGroup(List<Member> members) {
      * Tolerant reader. Missing or non-array {@code variants} → {@link #EMPTY}.
      * Entries that aren't objects, lack a string {@code id}, or fail name
      * validation are skipped with no error (the registry's load-time pass logs
-     * structural issues separately).
+     * structural issues separately). Missing or non-numeric {@code selfWeight}
+     * defaults to {@link #DEFAULT_SELF_WEIGHT} for backward compatibility with
+     * pre-v1.1 sidecars.
      */
     public static CarriageContentsGroup fromJson(JsonObject o) {
         if (o == null) return EMPTY;
+        int selfWeight = DEFAULT_SELF_WEIGHT;
+        JsonElement swEl = o.get("selfWeight");
+        if (swEl != null && swEl.isJsonPrimitive() && swEl.getAsJsonPrimitive().isNumber()) {
+            try {
+                selfWeight = swEl.getAsInt();
+            } catch (Exception ignored) {
+                selfWeight = DEFAULT_SELF_WEIGHT;
+            }
+        }
         JsonElement el = o.get("variants");
-        if (el == null || !el.isJsonArray()) return EMPTY;
+        if (el == null || !el.isJsonArray()) return new CarriageContentsGroup(selfWeight, Collections.emptyList());
         List<Member> out = new ArrayList<>();
         for (JsonElement item : el.getAsJsonArray()) {
             if (!item.isJsonObject()) continue;
@@ -182,7 +222,7 @@ public record CarriageContentsGroup(List<Member> members) {
             }
             out.add(new Member(norm, weight));
         }
-        return new CarriageContentsGroup(out);
+        return new CarriageContentsGroup(selfWeight, out);
     }
 
     public static int clampWeight(int value) {
