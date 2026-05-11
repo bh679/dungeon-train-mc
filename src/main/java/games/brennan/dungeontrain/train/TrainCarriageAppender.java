@@ -315,10 +315,53 @@ public final class TrainCarriageAppender {
                         provider.markPlacedSuccessfully();
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} placed successfully after {} clean ticks (ticksSinceSpawn={})",
                             provider.getPIdx(), CLEAN_TICKS_FOR_SUCCESS, check.ticksSinceSpawn());
+                        // Fire any deferred contents-entity spawns now that
+                        // the carriage group has stopped shifting. Each slot
+                        // record was stashed by TrainAssembler.spawnGroup
+                        // after the blocks-only contents pass.
+                        firePendingContentsEntitySpawns(level, provider);
                     }
                 }
             }
         }
+    }
+
+    /**
+     * Spawn the contents entities for every enclosed carriage in this
+     * group, using the pending records stashed by
+     * {@code TrainAssembler.spawnGroup}. Fired exactly once per group, at
+     * the moment {@link TrainTransformProvider#markPlacedSuccessfully} flips.
+     *
+     * <p>Why now: by this point the placement-collision tracker has run
+     * {@link #CLEAN_TICKS_FOR_SUCCESS} consecutive non-colliding ticks, so
+     * the carriage's {@code spawnWorldPos} (and consequently the world-space
+     * position of its shipyard chunks) is stable. Any shipyard-entity mixin
+     * binding done by VS at {@code addFreshEntity} time will see the same
+     * ship-transform on subsequent ticks — no shift mid-attachment.</p>
+     *
+     * <p>Race-free: {@code takePendingContentsEntitySpawns} atomically nulls
+     * the array on the provider, so a follow-up tick that somehow re-enters
+     * the success branch (shouldn't, but defensive) sees null and skips.
+     * {@code null} slots in the returned array correspond to FLATBED slots —
+     * those have no contents and are skipped without a log line.</p>
+     */
+    private static void firePendingContentsEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
+        PendingContentsEntitySpawn[] pending = provider.takePendingContentsEntitySpawns();
+        if (pending == null) return;
+        int fired = 0;
+        for (PendingContentsEntitySpawn p : pending) {
+            if (p == null) continue;
+            try {
+                CarriagePlacer.applyContentsEntitiesAt(level,
+                    p.shipyardOrigin(), p.variant(), p.dims(), p.config(), p.carriageIndex());
+                fired++;
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Deferred contents-entity spawn failed for pIdx={} origin={}: {}",
+                    p.carriageIndex(), p.shipyardOrigin(), t.toString());
+            }
+        }
+        LOGGER.info("[DungeonTrain] Placement tracker: fired deferred contents-entity spawn for group anchorPIdx={} ({} of {} slots had pending entities)",
+            provider.getPIdx(), fired, pending.length);
     }
 
     /**

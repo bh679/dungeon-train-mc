@@ -212,7 +212,8 @@ public final class CarriagePlacer {
         // it lands inside. finishPlace's collectFootprint re-reads the region
         // afterwards so contents blocks are included in the returned set.
         if (applyContents && (base != null || overlay != null)) {
-            applyContents(level, origin, variant, dims, config, carriageIndex);
+            applyContents(level, origin, variant, dims, config, carriageIndex,
+                /*placeBlocks*/ true, /*spawnEntities*/ true);
         }
 
         return finishPlace(level, origin, variant, dims, base, overlay);
@@ -223,31 +224,88 @@ public final class CarriagePlacer {
      * the contents pass so {@code TrainAssembler} can call it in a second pass
      * after {@code ShipAssembler.assembleToShip}. Passes the variant so
      * FLATBED skips automatically.
+     *
+     * <p>This is the legacy combined pass (blocks + entities together). The
+     * train spawn path uses {@link #applyContentsBlocksAt} +
+     * {@link #applyContentsEntitiesAt} instead so entity spawn can be
+     * deferred until the placement tracker confirms the carriage has settled.</p>
      */
     public static void applyContentsAt(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        applyContents(level, origin, variant, dims, config, carriageIndex);
+        applyContents(level, origin, variant, dims, config, carriageIndex,
+            /*placeBlocks*/ true, /*spawnEntities*/ true);
     }
 
     /**
-     * Pick a {@link CarriageContents} variant deterministically for this
-     * carriage and stamp its interior blocks on top of the already-placed
-     * shell. Wrapped in try/catch so a contents-load failure can't abort the
-     * spawn — worst case the interior stays empty with a warning.
+     * Split-pass variant — places ONLY the interior contents blocks at
+     * {@code origin}. The matching entity pass is {@link #applyContentsEntitiesAt}
+     * and should be invoked once the carriage's placement-collision tracker
+     * marks {@code placedSuccessfully}.
      *
-     * <p>Skipped for the {@link CarriageType#FLATBED} built-in: a flatbed is
-     * just a floor with no walls or roof, so any interior contents would
-     * appear as floating blocks visible from every side. Keep flatbeds empty
-     * so they read as the train's "separators" between enclosed carriages.</p>
+     * <p>FLATBED carriages skip both passes — they have no interior. Returns
+     * the {@link CarriageContents} picked for this carriage so the caller can
+     * stash it in a pending-spawn record (avoiding a second deterministic
+     * lookup later, though the lookup IS deterministic and re-picking would
+     * land on the same value).</p>
      */
-    private static void applyContents(
+    public static CarriageContents applyContentsBlocksAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
+    ) {
+        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            return null;
+        }
+        return applyContents(level, origin, variant, dims, config, carriageIndex,
+            /*placeBlocks*/ true, /*spawnEntities*/ false);
+    }
+
+    /**
+     * Split-pass variant — discards stale interior entities then spawns the
+     * entities for the {@code (variant, contents)} pick at {@code origin}. The
+     * blocks must already exist via {@link #applyContentsBlocksAt}.
+     *
+     * <p>FLATBED carriages are skipped — they have no interior. The discard
+     * pass cleans up any leftover armor stands / paintings / mobs from a
+     * previous carriage at this shipyard position (rolling-window cycle).</p>
+     */
+    public static void applyContentsEntitiesAt(
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return;
+        }
+        applyContents(level, origin, variant, dims, config, carriageIndex,
+            /*placeBlocks*/ false, /*spawnEntities*/ true);
+    }
+
+    /**
+     * Pick a {@link CarriageContents} variant deterministically for this
+     * carriage and stamp its interior on top of the already-placed shell.
+     * Wrapped in try/catch so a contents-load failure can't abort the spawn —
+     * worst case the interior stays empty with a warning.
+     *
+     * <p>Skipped for the {@link CarriageType#FLATBED} built-in: a flatbed is
+     * just a floor with no walls or roof, so any interior contents would
+     * appear as floating blocks visible from every side. Keep flatbeds empty
+     * so they read as the train's "separators" between enclosed carriages.</p>
+     *
+     * <p>{@code placeBlocks} / {@code spawnEntities} let the train-spawn path
+     * split the contents pass in two — blocks immediately after assembly
+     * (safe regardless of collision-tracker shifts because shipyard chunks
+     * track the shift transparently), entities deferred until the carriage
+     * has stopped shifting (avoids any timing race with VS's shipyard-entity
+     * mixin).</p>
+     */
+    private static CarriageContents applyContents(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean placeBlocks, boolean spawnEntities
+    ) {
+        if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
+            return null;
         }
         try {
             CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant);
@@ -255,12 +313,25 @@ public final class CarriagePlacer {
             // shipyard position — the block-only clearBoundingBox in
             // TrainAssembler doesn't discard entities, so armor stands and
             // paintings from prior contents at this index would otherwise
-            // accumulate each rolling-window cycle.
-            CarriageContentsPlacer.discardEntitiesAt(level, origin, dims);
-            CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
+            // accumulate each rolling-window cycle. Only relevant when we're
+            // about to spawn new entities (the blocks-only pass keeps any
+            // pre-existing entities so an in-flight deferred-spawn pending
+            // from a prior life of this slot can still complete).
+            if (spawnEntities) {
+                CarriageContentsPlacer.discardEntitiesAt(level, origin, dims);
+            }
+            if (placeBlocks && spawnEntities) {
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
+            } else if (placeBlocks) {
+                CarriageContentsPlacer.placeBlocksOnly(level, origin, contents, dims, config.seed(), carriageIndex);
+            } else if (spawnEntities) {
+                CarriageContentsPlacer.placeEntitiesOnly(level, origin, contents, dims, carriageIndex);
+            }
+            return contents;
         } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={}: {}",
-                origin, carriageIndex, t.toString());
+            LOGGER.warn("[DungeonTrain] Failed to apply contents at origin={} carriageIndex={} placeBlocks={} spawnEntities={}: {}",
+                origin, carriageIndex, placeBlocks, spawnEntities, t.toString());
+            return null;
         }
     }
 

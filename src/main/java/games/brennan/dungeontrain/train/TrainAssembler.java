@@ -259,14 +259,37 @@ public final class TrainAssembler {
             (int) Math.round(shipyardOriginVec.z));
 
         // Contents pass at shipyard coords for each enclosed carriage.
+        // We split the contents into two phases to dodge the entity-displacement
+        // bug: blocks now, entities deferred until placement settles.
+        //   • Blocks travel with the ship via shipyard chunks regardless of
+        //     any {@code shiftSpawnPosition} the placement tracker applies
+        //     during collision resolution, so it's safe to stamp them now.
+        //   • Entities are added with {@code level.addFreshEntity} at the
+        //     shipyard world position; VS's shipyard-entity mixin binds them
+        //     to the ship lazily, and that lazy bind interacting with the
+        //     per-tick shifts is the suspected cause of entities going
+        //     missing in newly-spawned carriages. Deferred to
+        //     {@code TrainCarriageAppender.runPlacementCollisionTracker} after
+        //     {@code CLEAN_TICKS_FOR_SUCCESS} consecutive collision-free ticks.
+        PendingContentsEntitySpawn[] pendingEntities = new PendingContentsEntitySpawn[groupSize];
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageShipyardOrigin = shipyardOrigin.offset(enclosedStartOffset + slot * length, 0, 0);
-            CarriagePlacer.applyContentsAt(level, carriageShipyardOrigin, enclosedBySlot[slot], dims, genCfg, carriagePIdx);
+            CarriageVariant variant = enclosedBySlot[slot];
+            CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx);
+            // Stash for the appender's tick handler to fire once the
+            // placement-collision tracker confirms this group has settled.
+            // FLATBEDs (variant.type == FLATBED) have null entries — the
+            // appender skips null slots. Per-slot stashing (rather than one
+            // record for the group) keeps the model trivially correct if
+            // groupSize ever moves to mixed-variant groups.
+            pendingEntities[slot] = new PendingContentsEntitySpawn(
+                carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx);
         }
 
         TrainTransformProvider provider = new TrainTransformProvider(
             velocity, shipyardOrigin, level.dimension(), anchorPIdx, groupSize, dims, trainId);
+        provider.setPendingContentsEntitySpawns(pendingEntities);
         ship.setKinematicDriver(provider);
         ship.setStatic(true);
 
