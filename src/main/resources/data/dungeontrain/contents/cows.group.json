@@ -16,10 +16,38 @@
     },
     {
       "id": "rabbits",
-      "weight": 10
+      "weight": 5
     },
     {
       "id": "armadillo",
+      "weight": 1
+    },
+    {
+      "id": "horse",
+      "weight": 1
+    },
+    {
+      "id": "goat",
+      "weight": 1
+    },
+    {
+      "id": "frog",
+      "weight": 1
+    },
+    {
+      "id": "fox",
+      "weight": 1
+    },
+    {
+      "id": "donkey",
+      "weight": 1
+    },
+    {
+      "id": "bee",
+      "weight": 1
+    },
+    {
+      "id": "mule",
       "weight": 1
     }
   ]
