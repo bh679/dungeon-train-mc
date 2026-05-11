@@ -461,6 +461,9 @@ public final class CommandMenuRenderer {
             // Soft amber accent — "this is the option you're currently in".
             return 0x80FFAA33;
         }
+        if (entry instanceof CommandMenuEntry.Stay s && s.highlighted()) {
+            return 0x80FFAA33;
+        }
         if (entry instanceof CommandMenuEntry.DrillIn d && d.highlighted()) {
             return 0x80FFAA33;
         }

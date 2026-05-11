@@ -31,8 +31,15 @@ public sealed interface CommandMenuEntry {
      * to click again while watching the result update live. The menu
      * rebuilds entries each tick, so labels relying on server-pushed state
      * refresh automatically.
+     *
+     * <p>The optional {@code highlighted} flag draws the same persistent
+     * accent tint as {@link Run#highlighted} — used to mark "you're
+     * already on this option" for stay-open selection toggles like the
+     * active package row.</p>
      */
-    record Stay(String label, String command) implements CommandMenuEntry {}
+    record Stay(String label, String command, boolean highlighted) implements CommandMenuEntry {
+        public Stay(String label, String command) { this(label, command, false); }
+    }
 
     /**
      * Like {@link Stay}, but invokes a Java {@link Runnable} directly

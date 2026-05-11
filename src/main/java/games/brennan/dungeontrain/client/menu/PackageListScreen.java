@@ -51,9 +51,11 @@ public final class PackageListScreen implements MenuScreen {
      * Wider than the default. Each row is a Quad
      * (Name | Save | Open | Enable) and package names can be 32 chars —
      * the standard 1.6-block width leaves the name cell uncomfortably
-     * tight. 2.6 lets the names breathe without dominating the view.
+     * tight. 3.6 gives the name cell ~1.98 blocks of horizontal space —
+     * enough to render a full 32-char id at the default text scale
+     * without truncation.
      */
-    @Override public double panelWidth() { return 2.6; }
+    @Override public double panelWidth() { return 3.6; }
 
     @Override public String title() { return "Packages"; }
 
@@ -94,7 +96,10 @@ public final class PackageListScreen implements MenuScreen {
         boolean enabled = entry.enabled();
 
         String activateLabel = (isActive ? "● " : "  ") + displayName(entry.name());
-        CommandMenuEntry activate = new CommandMenuEntry.Run(
+        // Stay (not Run) so clicking a package name flips the active marker
+        // without dismissing the menu — the player typically wants to keep
+        // browsing the contents pane or click a different package next.
+        CommandMenuEntry activate = new CommandMenuEntry.Stay(
             activateLabel,
             buildActivateCommand(entry.name()),
             isActive
@@ -126,7 +131,9 @@ public final class PackageListScreen implements MenuScreen {
             String enableCmd = "dungeontrain package "
                 + (enabled ? "disable " : "enable ")
                 + packageName;
-            enableCell = new CommandMenuEntry.Run(enableLabel, enableCmd);
+            // Stay so the player can toggle multiple packages in a row
+            // without re-opening the menu between clicks.
+            enableCell = new CommandMenuEntry.Stay(enableLabel, enableCmd);
         }
 
         // Boundaries: name(0..0.55) | save(0.55..0.72) | open(0.72..0.86) | enable(0.86..1.0).
