@@ -128,17 +128,6 @@ public final class UserContentImporter {
 
         if (!Files.isDirectory(importsDir)) return List.of();
 
-        List<Path> zips = new ArrayList<>();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(importsDir, "*.zip")) {
-            for (Path entry : stream) {
-                if (Files.isRegularFile(entry)) zips.add(entry);
-            }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to scan imports dir {}: {}", importsDir, e.toString());
-            return List.of();
-        }
-        if (zips.isEmpty()) return List.of();
-
         Path installedDir = importsDir.resolve(INSTALLED_SUBDIR);
         Path importedRoot = UserContentPaths.importedRoot();
         try {
@@ -149,18 +138,60 @@ public final class UserContentImporter {
             return List.of();
         }
 
-        zips.sort((a, b) -> a.getFileName().toString()
-            .compareToIgnoreCase(b.getFileName().toString()));
+        // Process zips from BOTH the top-level drop-zone AND the installed/
+        // subfolder. Previously-installed zips get reprocessed when their
+        // imported/<package>/ folder is missing (auto-recovery path: e.g.
+        // the player deleted the package dir to revert, or the layout
+        // changed in a mod upgrade and the old install needs re-extraction).
+        // Per-file skip-if-exists in importOne() keeps it cheap when the
+        // package is already extracted — every file is a no-op skip.
+        List<Path> inboxZips = listZipsAtTopLevel(importsDir);
+        List<Path> archivedZips = listZipsAtTopLevel(installedDir);
+        if (inboxZips.isEmpty() && archivedZips.isEmpty()) return List.of();
+
+        java.util.Comparator<Path> byName = (a, b) -> a.getFileName().toString()
+            .compareToIgnoreCase(b.getFileName().toString());
+        inboxZips.sort(byName);
+        archivedZips.sort(byName);
 
         List<ZipResult> results = new ArrayList<>();
-        for (Path zip : zips) {
+        // Inbox zips first — they're the canonical "new arrivals", and on
+        // success they move into installed/. Archived zips next — those
+        // already live in installed/, so we only re-extract when their
+        // imported/<package>/ folder is missing.
+        for (Path zip : inboxZips) {
             ZipResult r = importOne(zip, importedRoot);
             results.add(r);
             if (r.imported() > 0 || r.skipped() > 0) {
                 moveToInstalled(zip, installedDir);
             }
         }
+        for (Path zip : archivedZips) {
+            String packageName = packageNameFor(zip);
+            Path packageDir = importedRoot.resolve(packageName);
+            if (Files.isDirectory(packageDir)) {
+                // Already extracted; nothing to recover. Don't reprocess —
+                // the player intentionally moved it here.
+                continue;
+            }
+            LOGGER.info("[DungeonTrain] Recovering archived package {} — extracted folder missing",
+                zip.getFileName());
+            results.add(importOne(zip, importedRoot));
+        }
         return results;
+    }
+
+    private static List<Path> listZipsAtTopLevel(Path dir) {
+        if (!Files.isDirectory(dir)) return new ArrayList<>();
+        List<Path> out = new ArrayList<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.zip")) {
+            for (Path entry : stream) {
+                if (Files.isRegularFile(entry)) out.add(entry);
+            }
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] Failed to scan zip dir {}: {}", dir, e.toString());
+        }
+        return out;
     }
 
     /**
