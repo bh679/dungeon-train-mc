@@ -38,7 +38,7 @@ import java.util.TreeMap;
  * <ol>
  *   <li><b>Bundled default</b> — {@code /data/dungeontrain/contents/weights.json}
  *       on the classpath. Ships with the mod jar.</li>
- *   <li><b>Per-install override</b> — {@code config/dungeontrain/contents/weights.json}.
+ *   <li><b>Per-install override</b> — {@code config/dungeontrain/user/contents/weights.json}.
  *       Per-id entries in this file replace entries from the bundled copy.</li>
  * </ol>
  *
@@ -63,7 +63,7 @@ public record CarriageContentsWeights(Map<String, Integer> byId) {
     public static final CarriageContentsWeights EMPTY = new CarriageContentsWeights(Map.of());
 
     static final String BUNDLED_RESOURCE = "/data/dungeontrain/contents/weights.json";
-    static final String CONFIG_SUBDIR = "dungeontrain/contents";
+    static final String CONFIG_SUBDIR = "contents";
     static final String CONFIG_FILE = "weights.json";
 
     /** Cached weights for the active server. Loaded on ServerStartingEvent, cleared on stop. */
@@ -110,7 +110,7 @@ public record CarriageContentsWeights(Map<String, Integer> byId) {
 
     /**
      * Update the weight for {@code id} in-memory and persist the full weights
-     * map to {@code config/dungeontrain/contents/weights.json}. The new weight
+     * map to {@code config/dungeontrain/user/contents/weights.json}. The new weight
      * takes effect for the next carriage that spawns. Returns the clamped
      * value that was stored.
      */
@@ -197,7 +197,7 @@ public record CarriageContentsWeights(Map<String, Integer> byId) {
     }
 
     public static Path configPath() {
-        return FMLPaths.CONFIGDIR.get().resolve(CONFIG_SUBDIR).resolve(CONFIG_FILE);
+        return games.brennan.dungeontrain.editor.UserContentPaths.dir(CONFIG_SUBDIR).resolve(CONFIG_FILE);
     }
 
     /**

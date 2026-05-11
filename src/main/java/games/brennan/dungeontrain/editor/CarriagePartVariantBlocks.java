@@ -37,7 +37,7 @@ import java.util.Map;
  * {@link games.brennan.dungeontrain.train.CarriagePartPlacer#placeAt}
  * stamps the part at spawn time.
  *
- * <p>Storage: {@code config/dungeontrain/parts/<kind>/<name>.variants.json}
+ * <p>Storage: {@code config/dungeontrain/user/parts/<kind>/<name>.variants.json}
  * alongside the part NBT. Schema mirrors {@link CarriageVariantBlocks} (v2 —
  * candidates can be bare BlockState strings or {@code {state, nbt?}} objects
  * carrying SNBT for block-entity payloads). The
@@ -58,7 +58,7 @@ public final class CarriagePartVariantBlocks {
     public static final int CURRENT_SCHEMA_VERSION = CarriageVariantBlocks.CURRENT_SCHEMA_VERSION;
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
-    private static final String SUBDIR_BASE = "dungeontrain/parts";
+    static final String SUBDIR_BASE = "parts";
     private static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/parts/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/parts";
@@ -81,7 +81,7 @@ public final class CarriagePartVariantBlocks {
     }
 
     public static Path configPathFor(CarriagePartKind kind, String name) {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR_BASE).resolve(kind.id()).resolve(name + EXT);
+        return UserContentPaths.dir(SUBDIR_BASE).resolve(kind.id()).resolve(name + EXT);
     }
 
     public static String bundledResourceFor(CarriagePartKind kind, String name) {
@@ -108,8 +108,8 @@ public final class CarriagePartVariantBlocks {
     }
 
     private static CarriagePartVariantBlocks loadFromDisk(CarriagePartKind kind, String name, Vec3i partSize) {
-        Path cfg = configPathFor(kind, name);
-        if (Files.isRegularFile(cfg)) {
+        Path cfg = UserContentPaths.findFile(SUBDIR_BASE + "/" + kind.id(), name + EXT);
+        if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, kind, name, "config " + cfg, partSize);
             } catch (IOException e) {

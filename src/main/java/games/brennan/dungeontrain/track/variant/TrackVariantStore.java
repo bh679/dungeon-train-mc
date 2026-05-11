@@ -30,7 +30,7 @@ import java.util.Optional;
  * a footprint mismatch in one kind doesn't break stamping in another.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/<subdir>/<name>.nbt}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/<subdir>/<name>.nbt}.
  *       Per-install override; the various track-side editors save here.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/<subdir>/<name>.nbt}
  *       on the classpath. Optional. Shipped defaults live here.</li>
@@ -222,8 +222,10 @@ public final class TrackVariantStore {
     private static Optional<StructureTemplate> loadFromConfig(
         ServerLevel level, TrackKind kind, String name, CarriageDims dims
     ) {
-        Path file = fileFor(kind, name);
-        if (!Files.isRegularFile(file)) return Optional.empty();
+        // Search user/<kind.subdir>/ first, then each imported/<pkg>/<kind.subdir>/.
+        Path file = games.brennan.dungeontrain.editor.UserContentPaths.findFile(
+            kind.subdir(), name + TrackKind.NBT_EXT);
+        if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
             return loadAndValidate(level, kind, name, dims, tag, "config " + file);

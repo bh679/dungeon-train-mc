@@ -112,7 +112,7 @@ public final class CarriageVariantBlocks {
      */
     public static final int CURRENT_SCHEMA_VERSION = 6;
 
-    private static final String SUBDIR = "dungeontrain/templates";
+    static final String SUBDIR = "templates";
     private static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
@@ -176,7 +176,7 @@ public final class CarriageVariantBlocks {
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
     public static Path configPathFor(CarriageVariant variant) {
-        return net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(variant.id() + EXT);
+        return UserContentPaths.dir(SUBDIR).resolve(variant.id() + EXT);
     }
 
     /** Classpath resource for the bundled sidecar matching {@code variant} (only exists for shipped variants). */
@@ -211,8 +211,8 @@ public final class CarriageVariantBlocks {
     }
 
     private static CarriageVariantBlocks loadFromDisk(CarriageVariant variant, CarriageDims dims) {
-        Path cfg = configPathFor(variant);
-        if (Files.isRegularFile(cfg)) {
+        Path cfg = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
                 return parse(r, variant.id(), "config " + cfg, dims);
             } catch (IOException e) {
@@ -680,10 +680,8 @@ public final class CarriageVariantBlocks {
 
     /** Rename the config-dir sidecar from {@code sourceId} to {@code targetId}. No-op if source missing. */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
-        Path src = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get()
-            .resolve(SUBDIR).resolve(sourceId + EXT);
-        Path dst = net.neoforged.fml.loading.FMLPaths.CONFIGDIR.get()
-            .resolve(SUBDIR).resolve(targetId + EXT);
+        Path src = UserContentPaths.dir(SUBDIR).resolve(sourceId + EXT);
+        Path dst = UserContentPaths.dir(SUBDIR).resolve(targetId + EXT);
         if (!Files.isRegularFile(src)) return false;
         Files.move(src, dst, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         CarriageVariantBlocks cached = CACHE.remove(sourceId);

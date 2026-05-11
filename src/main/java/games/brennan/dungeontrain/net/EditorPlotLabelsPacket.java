@@ -47,7 +47,23 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
      * <p>{@code inPlot} is true on exactly the entry whose plot the player is
      * currently standing inside; the renderer uses it to gate the interactive
      * controls (weight arrows + save/reset/clear + contents button) and to
-     * draw a green border around the panel as a visual signal.</p>
+     * draw a coloured border around the panel as a visual signal.</p>
+     *
+     * <p>{@code isUser} is true when the template has a file under
+     * {@code <config>/dungeontrain/user/...} — i.e. the player has saved it
+     * themselves. The renderer swaps the border colour from green to blue so
+     * the player can tell at a glance which templates they authored vs which
+     * ship with the mod jar.</p>
+     *
+     * <p>{@code isImported} is true when the variant's file lives under
+     * {@code <config>/dungeontrain/imported/<package>/...} and no
+     * shadowing copy exists in {@code user/}. The player can revert from
+     * imported to bundled by deleting the package directory, or edit-and-
+     * save through the editor to create a user-folder copy that shadows
+     * the imported one (flipping the variant from orange to blue).
+     * Takes precedence over {@code isUser} for rendering: imported
+     * variants get an orange tint, user-saved variants get blue, bundled
+     * variants stay green.</p>
      */
     public record Entry(
         BlockPos worldPos,
@@ -56,7 +72,9 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         String category,
         String modelId,
         String modelName,
-        boolean inPlot
+        boolean inPlot,
+        boolean isUser,
+        boolean isImported
     ) {}
 
     public static final Type<EditorPlotLabelsPacket> TYPE =
@@ -86,6 +104,8 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeUtf(e.modelId(), 64);
             buf.writeUtf(e.modelName(), 64);
             buf.writeBoolean(e.inPlot());
+            buf.writeBoolean(e.isUser());
+            buf.writeBoolean(e.isImported());
         }
     }
 
@@ -101,7 +121,10 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             String modelId = buf.readUtf(64);
             String modelName = buf.readUtf(64);
             boolean inPlot = buf.readBoolean();
-            out.add(new Entry(pos, name, weight, category, modelId, modelName, inPlot));
+            boolean isUser = buf.readBoolean();
+            boolean isImported = buf.readBoolean();
+            out.add(new Entry(pos, name, weight, category, modelId, modelName,
+                inPlot, isUser, isImported));
         }
         return new EditorPlotLabelsPacket(out);
     }

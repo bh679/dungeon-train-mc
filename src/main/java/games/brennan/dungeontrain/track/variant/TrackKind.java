@@ -14,7 +14,7 @@ import java.util.Locale;
  * track tile, both tunnel kinds (section + portal), the three pillar column
  * sections, and the stairs adjunct. Each kind has a fixed footprint (some
  * width-dependent on {@link CarriageDims}) and a stable on-disk subdirectory
- * under {@code config/dungeontrain/} where its named templates live as
+ * under {@code config/dungeontrain/user/} where its named templates live as
  * {@code <name>.nbt} (+ optional {@code <name>.variants.json} sidecar).
  *
  * <p>Mirrors {@link games.brennan.dungeontrain.train.CarriagePartKind} for
@@ -24,7 +24,7 @@ import java.util.Locale;
  * {@link games.brennan.dungeontrain.track.TrackGenerator},
  * {@link games.brennan.dungeontrain.tunnel.TunnelPlacer}).</p>
  *
- * <p>Disk layout (under {@code config/dungeontrain/}):
+ * <p>Disk layout (under {@code config/dungeontrain/user/}):
  * <ul>
  *   <li>{@link #TILE} — {@code tracks/<name>.nbt}</li>
  *   <li>{@link #TUNNEL_SECTION} — {@code tunnels/section/<name>.nbt}</li>
@@ -64,7 +64,7 @@ public enum TrackKind {
     private final String id;
 
     /**
-     * Subdirectory under {@code config/dungeontrain/} (and the bundled
+     * Subdirectory under {@code config/dungeontrain/user/} (and the bundled
      * classpath under {@code /data/dungeontrain/}). May contain a slash to
      * nest under a kind-grouping folder (e.g. {@code "tunnels/section"}).
      */
@@ -83,9 +83,15 @@ public enum TrackKind {
         return subdir;
     }
 
-    /** {@code config/dungeontrain/<subdir>/} relative slug. */
+    /**
+     * {@code config/dungeontrain/user/<subdir>/} relative slug. The
+     * {@code user/} segment is fixed — every track-side template the player
+     * authors lives under the same user-content root that the exporter
+     * walks. Bundled classpath data and source-tree writes are unaffected
+     * (see {@link #bundledResourcePrefix()} and {@link #sourceRelativePath()}).
+     */
     public String configSubdir() {
-        return "dungeontrain/" + subdir;
+        return "dungeontrain/user/" + subdir;
     }
 
     /** {@code /data/dungeontrain/<subdir>/} classpath prefix (with trailing slash). */

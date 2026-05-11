@@ -36,7 +36,7 @@ import java.util.TreeMap;
  * templates so weights for the tunnel section don't bleed into the pillar
  * top.
  *
- * <p>Storage: {@code config/dungeontrain/<kind.subdir>/weights.json} —
+ * <p>Storage: {@code config/dungeontrain/user/<kind.subdir>/weights.json} —
  * a flat JSON object mapping name to integer weight, e.g.
  * {@code {"default": 1, "stone_section": 3}}. Bundled defaults at
  * {@code /data/dungeontrain/<kind.subdir>/weights.json} on the classpath.

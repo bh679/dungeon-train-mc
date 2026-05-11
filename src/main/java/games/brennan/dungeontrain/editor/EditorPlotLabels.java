@@ -60,11 +60,14 @@ public final class EditorPlotLabels {
         String category,
         String modelId,
         String modelName,
-        boolean inPlot
+        boolean inPlot,
+        boolean isUser,
+        boolean isImported
     ) {
         /** Construct a Label flagged as out-of-plot — the per-category builders use this; the per-player snapshot patches the matching one to inPlot=true. */
         public Label withInPlot(boolean newInPlot) {
-            return new Label(worldPos, name, weight, category, modelId, modelName, newInPlot);
+            return new Label(worldPos, name, weight, category, modelId, modelName,
+                newInPlot, isUser, isImported);
         }
     }
 
@@ -102,8 +105,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageEditor.plotOrigin(v, dims);
             if (origin == null) continue;
             int w = weights.weightFor(v.id());
+            Provenance p = provenanceOf(CarriageTemplateStore.fileForId(v.id()));
             out.add(new Label(anchorAbove(origin, carriageFootprint),
-                v.id(), w, category, v.id(), v.id(), false));
+                v.id(), w, category, v.id(), v.id(), false, p.isUser, p.isImported));
         }
 
         addPartLabels(out, CarriagePartKind.FLOOR, floors, dims);
@@ -128,8 +132,10 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriagePartEditor.plotOrigin(kind, name, dims);
             if (origin == null) continue;
             String label = kind.id() + ":" + name;
+            Provenance p = provenanceOf(CarriagePartTemplateStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint), label,
-                EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name, false));
+                EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name,
+                false, p.isUser, p.isImported));
         }
     }
 
@@ -143,8 +149,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
             int w = weights.weightFor(c.id());
+            Provenance p = provenanceOf(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                c.id(), w, category, c.id(), c.id(), false));
+                c.id(), w, category, c.id(), c.id(), false, p.isUser, p.isImported));
         }
         return out;
     }
@@ -183,10 +190,49 @@ public final class EditorPlotLabels {
         for (String name : TrackVariantRegistry.namesFor(kind)) {
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             int w = TrackVariantWeights.weightFor(kind, name);
+            Provenance p = provenanceOf(
+                games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint),
-                name, w, category, modelId, name, false));
+                name, w, category, modelId, name, false, p.isUser, p.isImported));
         }
     }
+
+    /**
+     * Resolve the {@code (isUser, isImported)} provenance pair for the
+     * variant whose canonical user-folder file is {@code file}. Falls
+     * through to {@code (false, false)} (bundled) when neither tier has
+     * the file.
+     *
+     * <p>{@code file} is always the {@code user/...} path — the canonical
+     * "where would a save land" location for this variant. The method
+     * splits the path into {@code (subSlug, basenameWithExt)} relative
+     * to the user-content root and delegates to
+     * {@link UserContentPaths#provenanceOf(String, String)}, which checks
+     * {@code user/} first and then every imported package directory.</p>
+     */
+    static Provenance provenanceOf(java.nio.file.Path file) {
+        java.nio.file.Path userRoot = UserContentPaths.root();
+        java.nio.file.Path relPath;
+        try {
+            relPath = userRoot.relativize(file);
+        } catch (IllegalArgumentException unrelated) {
+            // file lives outside user-root (e.g. dev-mode source-tree write) —
+            // treat as user-only (no imported overlay).
+            return new Provenance(java.nio.file.Files.isRegularFile(file), false);
+        }
+        if (relPath.getNameCount() == 0) return new Provenance(false, false);
+        // Split into subSlug + basenameWithExt — every editor sub-tree is at
+        // least one level deep (templates/foo.nbt, parts/floor/foo.nbt, …),
+        // and the importer mirrors that structure.
+        String filename = relPath.getFileName().toString();
+        java.nio.file.Path parent = relPath.getParent();
+        String subSlug = parent == null ? "" : parent.toString().replace('\\', '/');
+        UserContentPaths.Provenance p = UserContentPaths.provenanceOf(subSlug, filename);
+        return new Provenance(p.isUser(), p.isImported());
+    }
+
+    /** Lightweight pair returned by {@link #provenanceOf(java.nio.file.Path)}. Lives here so the call sites stay one line each. */
+    record Provenance(boolean isUser, boolean isImported) {}
 
     /**
      * Anchor above the footprint top, sitting over the +X back-most block of

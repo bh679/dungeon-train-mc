@@ -147,14 +147,53 @@ public final class CommandMenuRenderer {
                 hovered == i, hoveredSub);
         }
 
-        drawHeader(poseStack, buffer, font, count);
+        drawHeader(poseStack, buffer, font, count, CommandMenuState.breadcrumb());
 
         // Typing field is rendered inline at the originating row by drawRow /
         // drawSplitRow — see isTypingHere(). No top-of-panel field anymore.
 
+        // Side panel — drawn translated +X by the main panel's full width plus
+        // a small inter-panel gap. Uses the same row primitives so hover
+        // tints, base colours, and text alignment match the main panel
+        // exactly. Side-panel rebuild is driven by CommandMenuState — see
+        // MenuScreen.sidePanel for the data path.
+        if (CommandMenuState.hasSidePanel()) {
+            drawSidePanel(poseStack, buffer, font);
+        }
+
         buffer.endBatch(PANEL_QUAD);
         poseStack.popPose();
     }
+
+    private static void drawSidePanel(
+        PoseStack poseStack, MultiBufferSource buffer, Font font
+    ) {
+        List<CommandMenuEntry> sideEntries = CommandMenuState.sideEntries();
+        if (sideEntries.isEmpty()) return;
+
+        double sideOffset = CommandMenuLayout.PANEL_WIDTH + SIDE_PANEL_GAP;
+        poseStack.pushPose();
+        poseStack.translate(sideOffset, 0.0, 0.0);
+
+        int sideCount = sideEntries.size();
+        drawPanelBackdrop(poseStack, buffer, sideCount);
+
+        int sideHovered = CommandMenuState.sideHoveredIdx();
+        int sideHoveredSub = CommandMenuState.sideHoveredSubIdx();
+        for (int i = 0; i < sideCount; i++) {
+            drawRow(poseStack, buffer, font, sideEntries.get(i), i, sideCount,
+                sideHovered == i, sideHoveredSub);
+        }
+
+        MenuScreen side = CommandMenuState.sideScreen();
+        String title = side != null ? side.title() : "";
+        drawHeader(poseStack, buffer, font, sideCount, title);
+
+        poseStack.popPose();
+    }
+
+    /** Horizontal gap between the main panel's right edge and the side panel's left edge, in world units. */
+    static final double SIDE_PANEL_GAP = 0.12;
 
     private static void drawPanelBackdrop(PoseStack poseStack, MultiBufferSource buffer, int entryCount) {
         float halfW = (float) (CommandMenuLayout.PANEL_WIDTH / 2.0);
@@ -379,11 +418,11 @@ public final class CommandMenuRenderer {
         return entry.label();
     }
 
-    private static void drawHeader(PoseStack poseStack, MultiBufferSource buffer, Font font, int count) {
-        String breadcrumb = CommandMenuState.breadcrumb();
-        if (breadcrumb.isEmpty()) breadcrumb = "Dungeon Train";
+    private static void drawHeader(PoseStack poseStack, MultiBufferSource buffer, Font font, int count, String title) {
+        String header = title;
+        if (header == null || header.isEmpty()) header = "Dungeon Train";
         float cy = (float) CommandMenuLayout.headerCenterY(count);
-        drawCenteredText(poseStack, buffer, font, breadcrumb, 0f, cy, 0xFFFFEEBB);
+        drawCenteredText(poseStack, buffer, font, header, 0f, cy, 0xFFFFEEBB);
     }
 
     private static void drawCenteredText(

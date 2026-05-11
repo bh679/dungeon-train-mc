@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
  * {@link CarriageContentsRegistry}.
  *
  * <p>The {@link #id()} is the canonical lowercase token used as the template
- * filename under {@code config/dungeontrain/contents/} and as the argument
+ * filename under {@code config/dungeontrain/user/contents/} and as the argument
  * token on {@code /dungeontrain editor contents ...} subcommands. Built-in ids
  * are the lowercased enum names; custom ids are validated against
  * {@link #NAME_PATTERN}.

@@ -7,7 +7,6 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
@@ -38,7 +37,7 @@ import java.util.Map;
  * {@code "track:<kind>:<name>"}. The plot key is sanitised into a filename
  * by replacing {@code ':'} with {@code '__'} (colons are illegal on Windows).</p>
  *
- * <p>Storage path: {@code config/dungeontrain/containers/<plotKey>.contents.json}.</p>
+ * <p>Storage path: {@code config/dungeontrain/user/containers/<plotKey>.contents.json}.</p>
  *
  * <p><b>Two states per position:</b>
  * <ul>
@@ -82,7 +81,7 @@ public final class ContainerContentsStore {
 
     public static final int CURRENT_SCHEMA_VERSION = 2;
 
-    private static final String SUBDIR = "dungeontrain/containers";
+    static final String SUBDIR = "containers";
     private static final String EXT = ".contents.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/containers/";
 
@@ -234,7 +233,7 @@ public final class ContainerContentsStore {
      * stores it hasn't loaded into the session cache yet.
      */
     public static java.util.List<String> allKnownPlotKeys() {
-        Path dir = FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        Path dir = UserContentPaths.dir(SUBDIR);
         if (!Files.isDirectory(dir)) return java.util.Collections.emptyList();
         java.util.List<String> keys = new java.util.ArrayList<>();
         try (java.nio.file.DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
@@ -355,8 +354,8 @@ public final class ContainerContentsStore {
     }
 
     private static ContainerContentsStore loadFromDisk(String plotKey) {
-        Path file = configPathFor(plotKey);
-        if (Files.isRegularFile(file)) {
+        Path file = UserContentPaths.findFile(SUBDIR, safeFilename(plotKey) + EXT);
+        if (file != null) {
             try (Reader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                 return parseFromReader(r, plotKey, file.toString());
             } catch (IOException e) {
@@ -468,7 +467,7 @@ public final class ContainerContentsStore {
     }
 
     private static Path configPathFor(String plotKey) {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(safeFilename(plotKey) + EXT);
+        return UserContentPaths.dir(SUBDIR).resolve(safeFilename(plotKey) + EXT);
     }
 
     @Nullable

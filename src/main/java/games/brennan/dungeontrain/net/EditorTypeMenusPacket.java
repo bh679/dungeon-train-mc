@@ -49,13 +49,29 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
      * One variant row inside a type menu.
      * {@code weight = EditorPlotLabelsPacket.NO_WEIGHT} means "no weight
      * pool" — the renderer omits the weight cell.
+     *
+     * <p>{@code isUser} is true when the variant has a file under
+     * {@code <config>/dungeontrain/user/...} — i.e. the player saved it
+     * themselves. The renderer paints a subtle blue background on user rows
+     * so player-authored variants are distinguishable from bundled ones at a
+     * glance.</p>
+     *
+     * <p>{@code isImported} is true when the variant came from a package
+     * extracted by {@link games.brennan.dungeontrain.editor.UserContentImporter}
+     * and hasn't been edited locally since. Renderer paints these rows
+     * orange — same shape as the blue user-content tint but a different
+     * hue so the player can tell at a glance which variants arrived from
+     * a shared package vs which they authored themselves. Takes precedence
+     * over {@code isUser} when both are true.</p>
      */
     public record Variant(
         String name,
         int weight,
         String category,
         String modelId,
-        String modelName
+        String modelName,
+        boolean isUser,
+        boolean isImported
     ) {}
 
     public static final Type<EditorTypeMenusPacket> TYPE =
@@ -88,6 +104,8 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 buf.writeUtf(v.category(), 32);
                 buf.writeUtf(v.modelId(), 64);
                 buf.writeUtf(v.modelName(), 64);
+                buf.writeBoolean(v.isUser());
+                buf.writeBoolean(v.isImported());
             }
         }
     }
@@ -108,7 +126,10 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 String category = buf.readUtf(32);
                 String modelId = buf.readUtf(64);
                 String modelName = buf.readUtf(64);
-                variants.add(new Variant(name, weight, category, modelId, modelName));
+                boolean isUser = buf.readBoolean();
+                boolean isImported = buf.readBoolean();
+                variants.add(new Variant(name, weight, category, modelId, modelName,
+                    isUser, isImported));
             }
             out.add(new Menu(pos, typeName, variants, isCompanion));
         }

@@ -56,7 +56,7 @@ public final class TrackTemplateStore {
 
     private TrackTemplateStore() {}
 
-    /** Config dir for track tile NBTs ({@code config/dungeontrain/tracks/}). */
+    /** Config dir for track tile NBTs ({@code config/dungeontrain/user/tracks/}). */
     public static Path directory() {
         return TrackVariantStore.directory(TrackKind.TILE);
     }

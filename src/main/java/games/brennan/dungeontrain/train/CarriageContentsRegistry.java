@@ -45,8 +45,8 @@ import java.util.TreeSet;
  * </ol>
  *
  * <p>Only interior-sized {@code .nbt} files belong in that directory — shell
- * templates live under {@code config/dungeontrain/templates/} and pillar
- * templates under {@code config/dungeontrain/pillars/}. Because all three
+ * templates live under {@code config/dungeontrain/user/templates/} and pillar
+ * templates under {@code config/dungeontrain/user/pillars/}. Because all three
  * stores have distinct subdirs, file-name collisions cannot leak contents into
  * the shell registry or vice versa.
  *
@@ -221,7 +221,7 @@ public final class CarriageContentsRegistry {
             if (ZERO_WARNED) return;
             ZERO_WARNED = true;
             LOGGER.warn("[DungeonTrain] All carriage contents have weight 0 — falling back to uniform pick. "
-                + "Set at least one contents weight > 0 in config/dungeontrain/contents/weights.json.");
+                + "Set at least one contents weight > 0 in config/dungeontrain/user/contents/weights.json.");
         }
     }
 
@@ -263,21 +263,18 @@ public final class CarriageContentsRegistry {
     }
 
     private static int loadConfigDir() {
-        Path dir = CarriageContentsStore.directory();
-        if (!Files.isDirectory(dir)) return 0;
-
+        // Walks user/contents/ + every imported/<pkg>/contents/. Duplicate
+        // ids across packages are fine — load-time resolution in
+        // CarriageContentsStore uses UserContentPaths.findFile and prefers
+        // user/ first, then alphabetical packages.
+        java.util.Set<String> ids = games.brennan.dungeontrain.editor.UserContentPaths
+            .listBasenamesAcrossSearchDirs(
+                games.brennan.dungeontrain.editor.CarriageContentsStore.SUBDIR, ".nbt");
         int added = 0;
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.nbt")) {
-            for (Path file : stream) {
-                String name = file.getFileName().toString();
-                if (!name.endsWith(".nbt")) continue;
-                String basename = name.substring(0, name.length() - 4).toLowerCase(Locale.ROOT);
-                if (CarriageContents.isReservedBuiltinName(basename)) continue;
-                if (!acceptCustomId(basename, "config dir " + file.getFileName())) continue;
-                if (CUSTOMS.add(basename)) added++;
-            }
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] Failed to scan contents directory {}: {}", dir, e.toString());
+        for (String basename : ids) {
+            if (CarriageContents.isReservedBuiltinName(basename)) continue;
+            if (!acceptCustomId(basename, "user/ + imports")) continue;
+            if (CUSTOMS.add(basename)) added++;
         }
         return added;
     }
