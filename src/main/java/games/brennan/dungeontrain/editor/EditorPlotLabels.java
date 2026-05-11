@@ -189,14 +189,15 @@ public final class EditorPlotLabels {
     }
 
     /**
-     * Centre of the footprint top, lifted one block above the bedrock cage.
-     * The cage extends one block past the footprint on every face, so adding
-     * {@code footprint.y + 2} clears the top of the cage with a one-block
-     * gap.
+     * Anchor above the footprint top, sitting over the +X back-most block of
+     * the template (Z still centred), lifted one block above the bedrock
+     * cage. The cage extends one block past the footprint on every face, so
+     * adding {@code footprint.y + 2} clears the top of the cage with a
+     * one-block gap.
      */
     private static BlockPos anchorAbove(BlockPos origin, Vec3i footprint) {
         return new BlockPos(
-            origin.getX() + footprint.getX() / 2,
+            origin.getX() + footprint.getX() - 1,
             origin.getY() + footprint.getY() + 2,
             origin.getZ() + footprint.getZ() / 2
         );
