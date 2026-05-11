@@ -30,7 +30,7 @@ import java.util.Optional;
  * a footprint mismatch in one kind doesn't break stamping in another.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/<subdir>/<name>.nbt}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/<subdir>/<name>.nbt}.
  *       Per-install override; the various track-side editors save here.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/<subdir>/<name>.nbt}
  *       on the classpath. Optional. Shipped defaults live here.</li>

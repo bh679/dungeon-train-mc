@@ -89,9 +89,13 @@ public final class PillarTemplateStore {
 
     /**
      * Pre-0.30 → 0.30 migration: move pillar NBTs that were stored in the
-     * carriage-templates dir ({@code config/dungeontrain/templates/pillar_*.nbt})
+     * legacy carriage-templates dir ({@code config/dungeontrain/templates/pillar_*.nbt})
      * into the pillars dir so {@link games.brennan.dungeontrain.train.CarriageVariantRegistry}
      * doesn't accidentally register them as carriages and fail placement.
+     *
+     * <p>This migration still writes to the <i>legacy</i> {@code dungeontrain/pillars/}
+     * location; the newer {@link UserContentMigration} runs after this and
+     * moves the legacy pillar files into the user-content root in a second hop.
      *
      * <p>Only handles the legacy {@code templates/} → {@code pillars/} step.
      * The newer {@code pillars/pillar_<section>.nbt} → {@code pillars/<section>/default.nbt}

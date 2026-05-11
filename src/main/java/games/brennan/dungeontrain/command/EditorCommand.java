@@ -320,6 +320,7 @@ public final class EditorCommand {
                         if (type == null) return 0;
                         return runPromote(ctx.getSource(), type);
                     })))
+            .then(ExportCommand.build())
             .then(Commands.literal("contents")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CONTENTS))
                 .then(Commands.literal("enter")
@@ -644,7 +645,7 @@ public final class EditorCommand {
 
     /**
      * {@code /dt editor contents weight <id> <value>} — set the pick weight
-     * for the contents id and persist to {@code config/dungeontrain/contents/weights.json}.
+     * for the contents id and persist to {@code config/dungeontrain/user/contents/weights.json}.
      * Mirrors {@link #runWeightSet} but for carriage-interior contents.
      */
     private static int runContentsWeightSet(CommandSourceStack source, String rawContents, int value) {

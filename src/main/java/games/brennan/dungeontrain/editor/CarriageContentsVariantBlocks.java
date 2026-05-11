@@ -41,7 +41,7 @@ import java.util.Map;
  * games.brennan.dungeontrain.train.CarriageDims, long, int)} stamps the
  * contents at spawn time.
  *
- * <p>Storage: {@code config/dungeontrain/contents/<id>.variants.json} alongside
+ * <p>Storage: {@code config/dungeontrain/user/contents/<id>.variants.json} alongside
  * the contents NBT. Schema mirrors {@link CarriageVariantBlocks} (v2 —
  * candidates can be bare BlockState strings or {@code {state, nbt?}} objects).
  * The {@link CarriageVariantBlocks#isEmptyPlaceholder} sentinel and
@@ -61,7 +61,7 @@ public final class CarriageContentsVariantBlocks {
     public static final int CURRENT_SCHEMA_VERSION = CarriageVariantBlocks.CURRENT_SCHEMA_VERSION;
     public static final int MIN_STATES_PER_ENTRY = CarriageVariantBlocks.MIN_STATES_PER_ENTRY;
 
-    private static final String SUBDIR = "dungeontrain/contents";
+    static final String SUBDIR = "contents";
     private static final String EXT = ".variants.json";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/contents/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/contents";
@@ -88,7 +88,7 @@ public final class CarriageContentsVariantBlocks {
     }
 
     public static Path configPathForId(String id) {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR).resolve(id + EXT);
+        return UserContentPaths.dir(SUBDIR).resolve(id + EXT);
     }
 
     public static String bundledResourceFor(CarriageContents contents) {

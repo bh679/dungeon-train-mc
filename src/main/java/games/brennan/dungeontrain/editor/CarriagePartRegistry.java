@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  * <ol>
  *   <li><b>Bundled manifests</b> — {@code /data/dungeontrain/parts/<kind>/manifest.json}
  *       (optional JSON array of names) lists part NBTs that ship with the jar.</li>
- *   <li><b>Config directories</b> — {@code config/dungeontrain/parts/<kind>/*.nbt}
+ *   <li><b>Config directories</b> — {@code config/dungeontrain/user/parts/<kind>/*.nbt}
  *       scanned for filenames (minus the {@code .nbt} suffix).</li>
  * </ol>
  *

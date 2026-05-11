@@ -35,7 +35,7 @@ import java.util.Optional;
  * Three-tier carriage template store, keyed on {@link CarriageVariant}.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/templates/<id>.nbt}, the
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/templates/<id>.nbt}, the
  *       per-install override. Server admins / single-player customisations land here.
  *       Custom variants only exist at this tier — they have no bundled resource.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/templates/<id>.nbt} on the
@@ -58,7 +58,7 @@ import java.util.Optional;
 public final class CarriageTemplateStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/templates";
+    static final String SUBDIR = "templates";
     private static final String EXT = ".nbt";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/templates/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
@@ -70,7 +70,7 @@ public final class CarriageTemplateStore {
     private CarriageTemplateStore() {}
 
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return UserContentPaths.dir(SUBDIR);
     }
 
     public static Path fileFor(CarriageVariant variant) {

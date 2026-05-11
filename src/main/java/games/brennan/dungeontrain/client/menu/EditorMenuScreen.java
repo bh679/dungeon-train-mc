@@ -74,6 +74,7 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor part rename",
                     "", name));
             }
+            out.add(new CommandMenuEntry.Run("Export Content", "dungeontrain editor export"));
             out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
             return out;
         }
@@ -141,6 +142,7 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
+        out.add(new CommandMenuEntry.Run("Export Content", "dungeontrain editor export"));
         out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;
     }

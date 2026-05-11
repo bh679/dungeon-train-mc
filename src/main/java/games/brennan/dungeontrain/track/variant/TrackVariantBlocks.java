@@ -36,7 +36,7 @@ import java.util.Map;
  * shift-right-click variant authoring inside track-side editor plots and
  * deterministic per-tile randomization at stamp time.
  *
- * <p>Storage: {@code config/dungeontrain/<kind.subdir>/<name>.variants.json}
+ * <p>Storage: {@code config/dungeontrain/user/<kind.subdir>/<name>.variants.json}
  * alongside the template NBT. Schema mirrors the carriage sidecar — the v2
  * object form supports a per-entry {@code nbt} payload for block-entity
  * round-trip (chests, signs, banners). Schema parsing delegates to

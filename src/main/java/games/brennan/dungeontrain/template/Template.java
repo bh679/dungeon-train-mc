@@ -388,7 +388,7 @@ public sealed interface Template
         @Override
         public boolean isBuiltin() {
             // Parts have no shipped bundled tier today — every part exists
-            // as a user-authored template under config/dungeontrain/parts/.
+            // as a user-authored template under config/dungeontrain/user/parts/.
             return false;
         }
 
@@ -412,7 +412,7 @@ public sealed interface Template
         @Override public String variantName() { return name; }
         @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
             // Parts have no shipped bundled tier today — every part exists
-            // as a user-authored template under config/dungeontrain/parts/.
+            // as a user-authored template under config/dungeontrain/user/parts/.
             return Optional.empty();
         }
         @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {

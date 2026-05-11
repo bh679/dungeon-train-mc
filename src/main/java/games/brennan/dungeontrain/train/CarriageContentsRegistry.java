@@ -45,8 +45,8 @@ import java.util.TreeSet;
  * </ol>
  *
  * <p>Only interior-sized {@code .nbt} files belong in that directory — shell
- * templates live under {@code config/dungeontrain/templates/} and pillar
- * templates under {@code config/dungeontrain/pillars/}. Because all three
+ * templates live under {@code config/dungeontrain/user/templates/} and pillar
+ * templates under {@code config/dungeontrain/user/pillars/}. Because all three
  * stores have distinct subdirs, file-name collisions cannot leak contents into
  * the shell registry or vice versa.
  *
@@ -221,7 +221,7 @@ public final class CarriageContentsRegistry {
             if (ZERO_WARNED) return;
             ZERO_WARNED = true;
             LOGGER.warn("[DungeonTrain] All carriage contents have weight 0 — falling back to uniform pick. "
-                + "Set at least one contents weight > 0 in config/dungeontrain/contents/weights.json.");
+                + "Set at least one contents weight > 0 in config/dungeontrain/user/contents/weights.json.");
         }
     }
 

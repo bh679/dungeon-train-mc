@@ -66,7 +66,6 @@ public record CarriageWeights(Map<String, Integer> byId) {
     public static final CarriageWeights EMPTY = new CarriageWeights(Map.of());
 
     static final String BUNDLED_RESOURCE = "/data/dungeontrain/templates/weights.json";
-    static final String CONFIG_SUBDIR = "dungeontrain";
     static final String CONFIG_FILE = "weights.json";
 
     /** Cached weights for the active server. Loaded on ServerStartingEvent, cleared on stop. */
@@ -113,7 +112,7 @@ public record CarriageWeights(Map<String, Integer> byId) {
 
     /**
      * Update the weight for {@code id} in-memory and persist the full weights
-     * map to {@code config/dungeontrain/weights.json}. The new weight takes
+     * map to {@code config/dungeontrain/user/weights.json}. The new weight takes
      * effect for the next carriage that spawns — existing carriages in the
      * rolling window keep their variants until they scroll out and are
      * replaced. Returns the clamped value that was stored.
@@ -212,7 +211,7 @@ public record CarriageWeights(Map<String, Integer> byId) {
     }
 
     public static Path configPath() {
-        return FMLPaths.CONFIGDIR.get().resolve(CONFIG_SUBDIR).resolve(CONFIG_FILE);
+        return games.brennan.dungeontrain.editor.UserContentPaths.root().resolve(CONFIG_FILE);
     }
 
     /**

@@ -14,7 +14,7 @@ import java.util.Locale;
  * A parts-backed carriage (i.e. one whose {@code <id>.parts.json} sidecar
  * declares per-kind part names) stamps FLOOR, WALLS, ROOF, and DOORS in turn
  * at predictable positions within its {@link CarriageDims} footprint instead
- * of stamping the monolithic NBT in {@code config/dungeontrain/templates/}.
+ * of stamping the monolithic NBT in {@code config/dungeontrain/user/templates/}.
  *
  * <p>Geometry (axes X=length, Y=height, Z=width):
  * <ul>

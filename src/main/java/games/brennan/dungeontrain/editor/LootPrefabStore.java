@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
  * <ol>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/prefabs/loot/<id>.json}
  *       on the classpath. Shipped with the mod jar.</li>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/prefabs/loot/<id>.json}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/prefabs/loot/<id>.json}.
  *       Per-install override; written by {@link #save}.</li>
  *   <li><b>Empty</b> — caller falls back silently.</li>
  * </ol>
@@ -71,7 +71,7 @@ public final class LootPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String SUBDIR = "dungeontrain/prefabs/loot";
+    static final String SUBDIR = "prefabs/loot";
     private static final String EXT = ".json";
     public static final int CURRENT_SCHEMA_VERSION = 2;
     private static final ResourceLocation FALLBACK_BLOCK = ResourceLocation.fromNamespaceAndPath("minecraft", "chest");
@@ -89,7 +89,7 @@ public final class LootPrefabStore {
     public record Data(String id, ResourceLocation sourceBlock, ContainerContentsPool pool) {}
 
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return UserContentPaths.dir(SUBDIR);
     }
 
     public static Path fileFor(String id) {

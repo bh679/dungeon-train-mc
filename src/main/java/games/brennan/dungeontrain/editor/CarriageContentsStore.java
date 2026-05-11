@@ -37,7 +37,7 @@ import java.util.Optional;
  * are never captured here and come from the shell store.
  *
  * <ol>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/contents/<id>.nbt},
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/contents/<id>.nbt},
  *       per-install override. Custom contents only exist at this tier.</li>
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/contents/<id>.nbt}
  *       on the classpath. Ships inside the mod jar and represents the mod's
@@ -55,7 +55,7 @@ import java.util.Optional;
 public final class CarriageContentsStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final String SUBDIR = "dungeontrain/contents";
+    static final String SUBDIR = "contents";
     private static final String EXT = ".nbt";
     private static final String RESOURCE_PREFIX = "/data/dungeontrain/contents/";
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/contents";
@@ -65,7 +65,7 @@ public final class CarriageContentsStore {
     private CarriageContentsStore() {}
 
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return UserContentPaths.dir(SUBDIR);
     }
 
     public static Path fileFor(CarriageContents contents) {

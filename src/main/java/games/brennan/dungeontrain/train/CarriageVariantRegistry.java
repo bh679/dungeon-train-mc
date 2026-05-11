@@ -45,8 +45,8 @@ import java.util.TreeSet;
  *       shipped customs (same id is deduplicated by the underlying TreeSet).</li>
  * </ol>
  * Only carriage-sized {@code .nbt} files belong in that directory. Pillar
- * templates live under {@code config/dungeontrain/pillars/} ({@link PillarTemplateStore})
- * and tunnel templates under {@code config/dungeontrain/tunnels/}
+ * templates live under {@code config/dungeontrain/user/pillars/} ({@link PillarTemplateStore})
+ * and tunnel templates under {@code config/dungeontrain/user/tunnels/}
  * ({@link games.brennan.dungeontrain.editor.TunnelTemplateStore}) so this scan
  * can't misinterpret their footprints as carriages and leave gaps in the train.
  * The registry holds only the identifiers — the template bytes stay in

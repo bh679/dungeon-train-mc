@@ -47,7 +47,7 @@ import java.util.regex.Pattern;
  *   <li><b>Bundled resource</b> — {@code /data/dungeontrain/prefabs/block_variants/<id>.json}
  *       on the classpath. Shipped with the mod jar; survives fresh installs.
  *       Authored in dev mode via {@link #saveToSource}.</li>
- *   <li><b>Config dir</b> — {@code config/dungeontrain/prefabs/block_variants/<id>.json}.
+ *   <li><b>Config dir</b> — {@code config/dungeontrain/user/prefabs/block_variants/<id>.json}.
  *       Per-install override; written by {@link #save} on every saver action so
  *       the just-saved prefab is immediately reachable in this session
  *       (dev-mode classpath reads via {@code copyIdeResources=true} lag the
@@ -74,7 +74,7 @@ public final class BlockVariantPrefabStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final String SUBDIR = "dungeontrain/prefabs/block_variants";
+    static final String SUBDIR = "prefabs/block_variants";
     private static final String EXT = ".json";
     public static final int CURRENT_SCHEMA_VERSION = 1;
 
@@ -88,7 +88,7 @@ public final class BlockVariantPrefabStore {
     private BlockVariantPrefabStore() {}
 
     public static Path directory() {
-        return FMLPaths.CONFIGDIR.get().resolve(SUBDIR);
+        return UserContentPaths.dir(SUBDIR);
     }
 
     public static Path fileFor(String id) {
