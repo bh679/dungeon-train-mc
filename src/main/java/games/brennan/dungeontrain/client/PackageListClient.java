@@ -55,7 +55,7 @@ public final class PackageListClient {
     /** Replace the cached snapshot. Called by {@link PackageListSyncPacket#handle}. */
     public static void setSnapshot(PackageListSyncPacket packet) {
         SNAPSHOT = packet;
-        LOGGER.debug("[DungeonTrain] PackageListClient: snapshot updated, {} packages", packet.entries().size());
+        LOGGER.info("[DungeonTrain] PackageListClient: snapshot updated, {} packages", packet.entries().size());
     }
 
     /** Drop the cached snapshot — used when the player leaves a world / server. */
@@ -119,21 +119,28 @@ public final class PackageListClient {
     public static void requestRefresh() {
         DungeonTrainNet.sendToServer(new PackageListRequestPacket());
         lastRequestTick = currentTick();
-        LOGGER.debug("[DungeonTrain] PackageListClient: sent immediate refresh request");
+        LOGGER.info("[DungeonTrain] PackageListClient: sent immediate refresh request");
     }
 
     /**
      * Send a refresh request unless one was sent in the last
      * {@link #THROTTLE_TICKS} ticks. Safe to call from per-tick rebuilds.
+     *
+     * <p>The {@code lastRequestTick == Long.MIN_VALUE} check is load-bearing:
+     * without it, the first call would compute {@code now - Long.MIN_VALUE}
+     * which overflows to a large negative number (NOT a large positive),
+     * making the {@code < THROTTLE_TICKS} test pass forever — no request
+     * would ever fire and the menu would render the synthetic-unsaved
+     * fallback indefinitely.</p>
      */
     public static void requestRefreshThrottled() {
         long now = currentTick();
-        if (now - lastRequestTick < THROTTLE_TICKS) return;
         boolean firstRequest = lastRequestTick == Long.MIN_VALUE;
+        if (!firstRequest && now - lastRequestTick < THROTTLE_TICKS) return;
         lastRequestTick = now;
         DungeonTrainNet.sendToServer(new PackageListRequestPacket());
         if (firstRequest) {
-            LOGGER.debug("[DungeonTrain] PackageListClient: sent initial refresh request");
+            LOGGER.info("[DungeonTrain] PackageListClient: sent initial refresh request");
         }
     }
 
@@ -148,6 +155,10 @@ public final class PackageListClient {
         // the next request fires from the menu's tick rebuild. For now we
         // just request immediately — the response will land before the
         // following client tick.
+        if (lastRequestTick == Long.MIN_VALUE) {
+            requestRefresh();
+            return;
+        }
         long now = currentTick();
         if (now - lastRequestTick < FORCE_AFTER_ACTION_TICKS) {
             lastRequestTick = now - THROTTLE_TICKS; // ensure next throttled call fires

@@ -58,16 +58,16 @@ public record PackageListRequestPacket() implements CustomPacketPayload {
     public static void handle(PackageListRequestPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) {
-                LOGGER.debug("[DungeonTrain] PackageListRequest: dropping — no ServerPlayer in context");
+                LOGGER.info("[DungeonTrain] PackageListRequest: dropping — no ServerPlayer in context");
                 return;
             }
             if (!player.hasPermissions(2)) {
-                LOGGER.debug("[DungeonTrain] PackageListRequest: dropping non-OP request from {}",
+                LOGGER.info("[DungeonTrain] PackageListRequest: dropping non-OP request from {}",
                     player.getName().getString());
                 return;
             }
             PackageListSyncPacket sync = build();
-            LOGGER.debug("[DungeonTrain] PackageListRequest: sending sync to {} ({} packages)",
+            LOGGER.info("[DungeonTrain] PackageListRequest: sending sync to {} ({} packages)",
                 player.getName().getString(), sync.entries().size());
             DungeonTrainNet.sendTo(player, sync);
         });
