@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.track.TrackGenerator;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.Trains;
@@ -182,11 +183,35 @@ public final class TrainTickEvents {
         final AABB train_aabb = aabb;
         List<Entity> victims = level.getEntitiesOfClass(
             Entity.class, expanded,
+            // Skip players, dead entities, and entities inside the train's
+            // interior AABB. Also skip anything tagged as carriage contents:
+            // those entities live in shipyard chunks at absolute shipyard
+            // coords, so when the kill-ahead AABB is computed in visible-
+            // world coords the contents entities fail the
+            // {@code train_aabb.contains} sparing check even though they're
+            // logically inside the train. The diagnostic tag survives the
+            // {@code Entity.RemovalReason} and is the most reliable identity
+            // for "this is one of ours; do not kill."
             e -> !(e instanceof Player) && e.isAlive()
                 && !train_aabb.contains(e.getX(), e.getY(), e.getZ())
+                && !isCarriageContentsEntity(e)
         );
         for (Entity e : victims) {
             e.discard();
         }
+    }
+
+    /**
+     * Returns {@code true} if {@code entity}'s tag set contains any
+     * {@code dungeontrain_contents_pidx_*} marker (see
+     * {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX}). Cheap: the
+     * tag set is usually empty, and our prefix check exits early on a
+     * non-match.
+     */
+    private static boolean isCarriageContentsEntity(Entity entity) {
+        for (String tag : entity.getTags()) {
+            if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
+        }
+        return false;
     }
 }
