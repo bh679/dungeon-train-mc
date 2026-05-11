@@ -47,6 +47,14 @@ public final class PackageListScreen implements MenuScreen {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * Wider than the default. Each row is a Quad
+     * (Name | Save | Open | Enable) and package names can be 32 chars —
+     * the standard 1.6-block width leaves the name cell uncomfortably
+     * tight. 2.6 lets the names breathe without dominating the view.
+     */
+    @Override public double panelWidth() { return 2.6; }
+
     @Override public String title() { return "Packages"; }
 
     @Override public List<CommandMenuEntry> entries() {

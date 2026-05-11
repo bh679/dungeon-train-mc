@@ -82,12 +82,14 @@ public final class CommandMenuRaycast {
         }
 
         List<CommandMenuEntry> entries = CommandMenuState.entries();
+        double mainPanelW = CommandMenuState.mainPanelWidth();
+        double sidePanelW = CommandMenuState.sidePanelWidth();
 
         // Main panel hit-test first. If miss, fall through to the optional
         // side panel — keeps the main panel taking precedence when the
         // bounding rectangles overlap in screen space.
         if (!entries.isEmpty()
-            && testPanelHit(entries, hitX, hitY, /*panelCenterX=*/0.0,
+            && testPanelHit(entries, hitX, hitY, /*panelCenterX=*/0.0, mainPanelW,
                 CommandMenuState::setHovered)) {
             CommandMenuState.setSideHovered(-1, 0);
             return;
@@ -95,9 +97,12 @@ public final class CommandMenuRaycast {
         CommandMenuState.setHovered(-1, 0);
 
         if (CommandMenuState.hasSidePanel()) {
-            double sideOffset = CommandMenuLayout.PANEL_WIDTH
+            // Side panel sits to the right of the main panel by half of each
+            // panel's width plus the inter-panel gap — same arithmetic the
+            // renderer uses when translating the side-panel transform.
+            double sideOffset = mainPanelW / 2.0 + sidePanelW / 2.0
                 + CommandMenuRenderer.SIDE_PANEL_GAP;
-            if (testPanelHit(CommandMenuState.sideEntries(), hitX, hitY, sideOffset,
+            if (testPanelHit(CommandMenuState.sideEntries(), hitX, hitY, sideOffset, sidePanelW,
                     CommandMenuState::setSideHovered)) {
                 return;
             }
@@ -116,11 +121,11 @@ public final class CommandMenuRaycast {
     private static boolean testPanelHit(
         List<CommandMenuEntry> entries,
         double hitX, double hitY,
-        double panelCenterX,
+        double panelCenterX, double panelWidth,
         java.util.function.BiConsumer<Integer, Integer> setHover
     ) {
         if (entries.isEmpty()) return false;
-        double halfW = CommandMenuLayout.PANEL_WIDTH / 2.0;
+        double halfW = panelWidth / 2.0;
         double localX = hitX - panelCenterX;
         if (localX < -halfW || localX > halfW) return false;
 
@@ -136,12 +141,12 @@ public final class CommandMenuRaycast {
                 return false;
             }
             if (row instanceof CommandMenuEntry.Split split) {
-                double splitX = -halfW + split.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
+                double splitX = -halfW + split.leftFraction() * panelWidth;
                 if (localX > splitX) subIdx = 1;
             } else if (row instanceof CommandMenuEntry.Quad quad) {
-                double b1 = -halfW + quad.boundary1() * CommandMenuLayout.PANEL_WIDTH;
-                double b2 = -halfW + quad.boundary2() * CommandMenuLayout.PANEL_WIDTH;
-                double b3 = -halfW + quad.boundary3() * CommandMenuLayout.PANEL_WIDTH;
+                double b1 = -halfW + quad.boundary1() * panelWidth;
+                double b2 = -halfW + quad.boundary2() * panelWidth;
+                double b3 = -halfW + quad.boundary3() * panelWidth;
                 if (localX > b3) subIdx = 3;
                 else if (localX > b2) subIdx = 2;
                 else if (localX > b1) subIdx = 1;
@@ -156,8 +161,8 @@ public final class CommandMenuRaycast {
                     return false;
                 }
             } else if (row instanceof CommandMenuEntry.Triple triple) {
-                double leftBoundary = -halfW + triple.leftFraction() * CommandMenuLayout.PANEL_WIDTH;
-                double rightBoundary = -halfW + triple.middleEnd() * CommandMenuLayout.PANEL_WIDTH;
+                double leftBoundary = -halfW + triple.leftFraction() * panelWidth;
+                double rightBoundary = -halfW + triple.middleEnd() * panelWidth;
                 if (localX > rightBoundary) subIdx = 2;
                 else if (localX > leftBoundary) subIdx = 1;
                 CommandMenuEntry cell = switch (subIdx) {

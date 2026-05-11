@@ -51,4 +51,18 @@ public interface MenuScreen {
     default MenuScreen sidePanel() {
         return null;
     }
+
+    /**
+     * Horizontal extent of this panel in world units. Defaults to the
+     * shared {@link CommandMenuLayout#PANEL_WIDTH}. Override when a
+     * screen has unusually wide rows — e.g. the package list, which
+     * carries Name | Save | Open | Enable in a single Quad and
+     * benefits from a wider main panel so the name cell isn't cramped.
+     *
+     * <p>Each panel (main + side) is sized independently, so a wider
+     * main screen does not force the side panel to widen.</p>
+     */
+    default double panelWidth() {
+        return CommandMenuLayout.PANEL_WIDTH;
+    }
 }
