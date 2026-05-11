@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "variants": {
     "4,1,4": [{"state": "minecraft:bookshelf", "weight": 3}, {"state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "1,0,0": ["minecraft:lapis_block", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5}, {"state": "minecraft:lapis_ore", "weight": 3}],

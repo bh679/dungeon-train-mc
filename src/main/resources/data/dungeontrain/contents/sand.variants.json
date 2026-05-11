@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "variants": {
     "4,0,2": [{"state": "minecraft:sand", "weight": 10}, "minecraft:suspicious_sand[dusted=0]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 8}],
     "6,0,0": [{"state": "minecraft:sand", "weight": 10}, "minecraft:suspicious_sand[dusted=0]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 8}],
