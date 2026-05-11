@@ -497,6 +497,29 @@ public final class CarriagePartEditor {
     }
 
     /**
+     * Erase + re-stamp the dirty slice of a kind's +X row after a name has
+     * been removed from {@link CarriagePartRegistry}. Same shape as
+     * {@link CarriageEditor#restampRowAfterDeletion} but scoped to a single
+     * {@code kind}'s row in the parts grid. Erases positions
+     * {@code [oldDeletedIndex, oldCount)} on the kind's row then re-stamps
+     * every name whose new index ≥ {@code oldDeletedIndex}. Must run
+     * <b>after</b> {@link CarriagePartRegistry#unregister}.
+     */
+    public static void restampRowAfterDeletion(ServerLevel level, CarriagePartKind kind, int oldDeletedIndex, int oldCount, CarriageDims dims) {
+        int step = xSlotStride(kind, dims);
+        int rowZ = rowStartZ(kind, dims);
+        for (int i = oldDeletedIndex; i < oldCount; i++) {
+            BlockPos pos = new BlockPos(FIRST_PLOT_X + i * step, PLOT_Y, rowZ);
+            CarriagePartPlacer.eraseAt(level, pos, kind, dims);
+            clearOutline(level, pos, kind, dims);
+        }
+        List<String> remaining = CarriagePartRegistry.registeredNames(kind);
+        for (int i = oldDeletedIndex; i < remaining.size(); i++) {
+            stampPlot(level, kind, remaining.get(i), dims);
+        }
+    }
+
+    /**
      * Erase a single plot's footprint + cage back to air. Called on category
      * switch so the barrier grid doesn't persist when the player moves to
      * TRACKS / ARCHITECTURE.
