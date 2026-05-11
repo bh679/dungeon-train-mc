@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.editor.UserContentImporter;
 import games.brennan.dungeontrain.editor.UserContentPaths;
 import net.minecraft.Util;
 import net.neoforged.fml.loading.FMLPaths;
@@ -25,6 +26,10 @@ import java.util.List;
  *       player can inspect or hand-edit the saved templates.</li>
  *   <li><b>Open Package Folder</b> — opens {@code <game>/exports/} so
  *       previously-exported zips are easy to find for sharing.</li>
+ *   <li><b>Open Import Folder</b> — opens {@code <game>/imports/}, the
+ *       drop-zone that {@link UserContentImporter} scans on every server
+ *       start. Drop a friend's package zip here and it auto-extracts into
+ *       the user-content folder on next launch.</li>
  * </ul>
  *
  * <p>The folder-open rows use {@link CommandMenuEntry.ClientAction} +
@@ -45,6 +50,7 @@ public final class PackageMenuScreen implements MenuScreen {
             new CommandMenuEntry.Run("Export Package", "dungeontrain editor export"),
             new CommandMenuEntry.ClientAction("Contents Folder", PackageMenuScreen::openUserContentFolder),
             new CommandMenuEntry.ClientAction("Open Package Folder", PackageMenuScreen::openExportFolder),
+            new CommandMenuEntry.ClientAction("Open Import Folder", PackageMenuScreen::openImportFolder),
             new CommandMenuEntry.Back("< Back")
         );
     }
@@ -59,6 +65,10 @@ public final class PackageMenuScreen implements MenuScreen {
 
     private static void openExportFolder() {
         openFolder(FMLPaths.GAMEDIR.get().resolve("exports"), "export folder");
+    }
+
+    private static void openImportFolder() {
+        openFolder(UserContentImporter.directory(), "import folder");
     }
 
     private static void openFolder(Path path, String label) {
