@@ -49,13 +49,20 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
      * One variant row inside a type menu.
      * {@code weight = EditorPlotLabelsPacket.NO_WEIGHT} means "no weight
      * pool" — the renderer omits the weight cell.
+     *
+     * <p>{@code isUser} is true when the variant has a file under
+     * {@code <config>/dungeontrain/user/...} — i.e. the player saved it
+     * themselves. The renderer paints a subtle blue background on user rows
+     * so player-authored variants are distinguishable from bundled ones at a
+     * glance.</p>
      */
     public record Variant(
         String name,
         int weight,
         String category,
         String modelId,
-        String modelName
+        String modelName,
+        boolean isUser
     ) {}
 
     public static final Type<EditorTypeMenusPacket> TYPE =
@@ -88,6 +95,7 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 buf.writeUtf(v.category(), 32);
                 buf.writeUtf(v.modelId(), 64);
                 buf.writeUtf(v.modelName(), 64);
+                buf.writeBoolean(v.isUser());
             }
         }
     }
@@ -108,7 +116,8 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 String category = buf.readUtf(32);
                 String modelId = buf.readUtf(64);
                 String modelName = buf.readUtf(64);
-                variants.add(new Variant(name, weight, category, modelId, modelName));
+                boolean isUser = buf.readBoolean();
+                variants.add(new Variant(name, weight, category, modelId, modelName, isUser));
             }
             out.add(new Menu(pos, typeName, variants, isCompanion));
         }

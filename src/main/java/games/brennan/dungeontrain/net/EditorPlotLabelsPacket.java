@@ -47,7 +47,13 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
      * <p>{@code inPlot} is true on exactly the entry whose plot the player is
      * currently standing inside; the renderer uses it to gate the interactive
      * controls (weight arrows + save/reset/clear + contents button) and to
-     * draw a green border around the panel as a visual signal.</p>
+     * draw a coloured border around the panel as a visual signal.</p>
+     *
+     * <p>{@code isUser} is true when the template has a file under
+     * {@code <config>/dungeontrain/user/...} — i.e. the player has saved it
+     * themselves. The renderer swaps the border colour from green to blue so
+     * the player can tell at a glance which templates they authored vs which
+     * ship with the mod jar.</p>
      */
     public record Entry(
         BlockPos worldPos,
@@ -56,7 +62,8 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
         String category,
         String modelId,
         String modelName,
-        boolean inPlot
+        boolean inPlot,
+        boolean isUser
     ) {}
 
     public static final Type<EditorPlotLabelsPacket> TYPE =
@@ -86,6 +93,7 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             buf.writeUtf(e.modelId(), 64);
             buf.writeUtf(e.modelName(), 64);
             buf.writeBoolean(e.inPlot());
+            buf.writeBoolean(e.isUser());
         }
     }
 
@@ -101,7 +109,8 @@ public record EditorPlotLabelsPacket(List<Entry> entries) implements CustomPacke
             String modelId = buf.readUtf(64);
             String modelName = buf.readUtf(64);
             boolean inPlot = buf.readBoolean();
-            out.add(new Entry(pos, name, weight, category, modelId, modelName, inPlot));
+            boolean isUser = buf.readBoolean();
+            out.add(new Entry(pos, name, weight, category, modelId, modelName, inPlot, isUser));
         }
         return new EditorPlotLabelsPacket(out);
     }

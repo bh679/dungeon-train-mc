@@ -104,6 +104,8 @@ public final class EditorTypeMenuRenderer {
     private static final int HEADER_BG = 0x60FFEEBB;
     /** Persistent green tint behind the row matching the player's current plot — same green family as the in-plot panel border. */
     private static final int ACTIVE_ROW_COLOR = 0x6055FF55;
+    /** Subtle blue band behind every row whose variant has a user-authored file under {@code config/dungeontrain/user/...}. Drawn below the active-row tint so the active blue-and-green merge reads as "active user variant". */
+    private static final int USER_ROW_BG = 0x405599FF;
     /** Faint green band behind the bottom "+ New" row. Lower alpha than {@link #ACTIVE_ROW_COLOR} so the two never read as the same row. */
     private static final int NEW_ROW_BG = 0x4055FF55;
 
@@ -353,6 +355,15 @@ public final class EditorTypeMenuRenderer {
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
             double weightCellLeft = halfW - (halfW * 2.0) * WEIGHT_CELL_FRACTION;
             double nameRight = hasWeight ? weightCellLeft : halfW;
+
+            // User-row tint — subtle blue background on rows whose variant has
+            // a file under config/dungeontrain/user/. Drawn first so the
+            // active-row green tint overlays it on the currently-selected
+            // user variant (green-over-blue reads as "active user variant").
+            if (variant.isUser()) {
+                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
+                    halfW - 0.005, rowTop - 0.005, USER_ROW_BG);
+            }
 
             // Active-row tint for the variant matching the player's current
             // plot — drawn before hover so a hover-targeted active row shows

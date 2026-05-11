@@ -117,8 +117,10 @@ public final class EditorPlotLabelsRenderer {
     private static final int ROW_SEP_COLOR = 0x40FFFFFF;
     /** Soft tint behind the action / contents buttons so they look pressable. */
     private static final int BUTTON_BG = 0x40FFEEBB;
-    /** Green border drawn around the panel when the player is inside this plot. */
-    private static final int BORDER_COLOR = 0xFF55FF55;
+    /** Green border drawn around the panel when the player is inside a bundled-template plot. */
+    private static final int BORDER_COLOR_BUNDLED = 0xFF55FF55;
+    /** Blue border drawn around the panel when the player is inside a user-authored plot. */
+    private static final int BORDER_COLOR_USER = 0xFF5599FF;
     /**
      * Border thickness in world units. Sits OUTSIDE the panel's
      * {@code ±halfW / ±halfH} bounding rectangle so it never overlaps the
@@ -376,14 +378,15 @@ public final class EditorPlotLabelsRenderer {
         // them so the four quads don't double up at the corners.
         if (entry.inPlot()) {
             double t = BORDER_THICKNESS;
+            int borderColor = entry.isUser() ? BORDER_COLOR_USER : BORDER_COLOR_BUNDLED;
             // top (full width incl. corners)
-            drawQuad(ps, buffer, -halfW - t, halfH, halfW + t, halfH + t, BORDER_COLOR);
+            drawQuad(ps, buffer, -halfW - t, halfH, halfW + t, halfH + t, borderColor);
             // bottom (full width incl. corners)
-            drawQuad(ps, buffer, -halfW - t, -halfH - t, halfW + t, -halfH, BORDER_COLOR);
+            drawQuad(ps, buffer, -halfW - t, -halfH - t, halfW + t, -halfH, borderColor);
             // left (between top + bottom)
-            drawQuad(ps, buffer, -halfW - t, -halfH, -halfW, halfH, BORDER_COLOR);
+            drawQuad(ps, buffer, -halfW - t, -halfH, -halfW, halfH, borderColor);
             // right (between top + bottom)
-            drawQuad(ps, buffer, halfW, -halfH, halfW + t, halfH, BORDER_COLOR);
+            drawQuad(ps, buffer, halfW, -halfH, halfW + t, halfH, borderColor);
         }
 
         int rowIdx = 0;

@@ -60,11 +60,12 @@ public final class EditorPlotLabels {
         String category,
         String modelId,
         String modelName,
-        boolean inPlot
+        boolean inPlot,
+        boolean isUser
     ) {
         /** Construct a Label flagged as out-of-plot — the per-category builders use this; the per-player snapshot patches the matching one to inPlot=true. */
         public Label withInPlot(boolean newInPlot) {
-            return new Label(worldPos, name, weight, category, modelId, modelName, newInPlot);
+            return new Label(worldPos, name, weight, category, modelId, modelName, newInPlot, isUser);
         }
     }
 
@@ -102,8 +103,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageEditor.plotOrigin(v, dims);
             if (origin == null) continue;
             int w = weights.weightFor(v.id());
+            boolean isUser = java.nio.file.Files.isRegularFile(CarriageTemplateStore.fileForId(v.id()));
             out.add(new Label(anchorAbove(origin, carriageFootprint),
-                v.id(), w, category, v.id(), v.id(), false));
+                v.id(), w, category, v.id(), v.id(), false, isUser));
         }
 
         addPartLabels(out, CarriagePartKind.FLOOR, floors, dims);
@@ -128,8 +130,10 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriagePartEditor.plotOrigin(kind, name, dims);
             if (origin == null) continue;
             String label = kind.id() + ":" + name;
+            boolean isUser = java.nio.file.Files.isRegularFile(
+                CarriagePartTemplateStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint), label,
-                EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name, false));
+                EditorPlotLabelsPacket.NO_WEIGHT, "PARTS", kind.id(), name, false, isUser));
         }
     }
 
@@ -143,8 +147,9 @@ public final class EditorPlotLabels {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
             int w = weights.weightFor(c.id());
+            boolean isUser = java.nio.file.Files.isRegularFile(CarriageContentsStore.fileForId(c.id()));
             out.add(new Label(anchorAbove(origin, footprint),
-                c.id(), w, category, c.id(), c.id(), false));
+                c.id(), w, category, c.id(), c.id(), false, isUser));
         }
         return out;
     }
@@ -183,8 +188,10 @@ public final class EditorPlotLabels {
         for (String name : TrackVariantRegistry.namesFor(kind)) {
             BlockPos origin = TrackSidePlots.plotOrigin(kind, name, dims);
             int w = TrackVariantWeights.weightFor(kind, name);
+            boolean isUser = java.nio.file.Files.isRegularFile(
+                games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             out.add(new Label(anchorAbove(origin, footprint),
-                name, w, category, modelId, name, false));
+                name, w, category, modelId, name, false, isUser));
         }
     }
 

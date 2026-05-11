@@ -572,7 +572,7 @@ public final class VariantOverlayRenderer {
         for (EditorPlotLabels.Label l : labels) {
             entries.add(new EditorPlotLabelsPacket.Entry(
                 l.worldPos(), l.name(), l.weight(),
-                l.category(), l.modelId(), l.modelName(), l.inPlot()));
+                l.category(), l.modelId(), l.modelName(), l.inPlot(), l.isUser()));
         }
         EditorPlotLabels.Label first = labels.get(0);
         LOGGER.info("[DungeonTrain] EditorPlotLabels: send {} entries (category {}, first '{}' weight={} @ {}) to {}",
