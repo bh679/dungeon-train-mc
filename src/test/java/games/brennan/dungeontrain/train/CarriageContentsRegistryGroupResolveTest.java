@@ -123,53 +123,48 @@ final class CarriageContentsRegistryGroupResolveTest {
     }
 
     @Test
-    @DisplayName("pick: allow-list excluding every group member but allowing parent → parent self")
-    void allMembersExcludedSelfAllowed_returnsParentSelf() {
+    @DisplayName("Allow-list is parent-only: excluding a member id has NO effect at resolution")
+    void allowList_ignoredAtMemberLevel() {
         registerCustom("container");
         registerCustom("container_wooden");
         registerCustom("container_metal");
         CarriageContentsGroupStore.injectForTesting("container",
             group("container_wooden", "1", "container_metal", "1"));
 
-        // Exclude every member but keep parent allowed → synthetic self is the
-        // only entry in the pool. Parent returns as-is (its .nbt would be
-        // stamped at placement time).
+        // Allow-list excludes a member id directly. By design, the allow-list
+        // operates at the parent level only — once container is picked, its
+        // group resolution runs unfiltered. Wooden should STILL appear.
         CarriageContentsAllowList allow = CarriageContentsAllowList.EMPTY
             .withExcluded("default")
-            .withExcluded("container_wooden")
-            .withExcluded("container_metal");
-        CarriageContents picked = CarriageContentsRegistry.pick(0L, 0, allow);
-        assertEquals("container", picked.id(),
-            "with all members excluded but self allowed, group resolution must return parent self");
+            .withExcluded("container_wooden");
+        boolean sawWooden = false;
+        for (int idx = 0; idx < 500; idx++) {
+            CarriageContents picked = CarriageContentsRegistry.pick(0L, idx, allow);
+            if ("container_wooden".equals(picked.id())) { sawWooden = true; break; }
+        }
+        assertTrue(sawWooden,
+            "allow-list excludes are parent-only; excluding a sub-variant id directly must NOT remove it from its parent's pool");
     }
 
     @Test
-    @DisplayName("pick: allow-list excluding parent AND every member → DEFAULT sentinel")
-    void allMembersAndSelfExcluded_fallsBackToDefault() {
+    @DisplayName("Allow-list excluding parent stops the entire group from spawning")
+    void allowList_excludingParent_killsGroup() {
         registerCustom("container");
         registerCustom("container_wooden");
         registerCustom("container_metal");
+        registerCustom("other");
         CarriageContentsGroupStore.injectForTesting("container",
             group("container_wooden", "1", "container_metal", "1"));
 
-        // Force the parent into the top-level pick by adding another custom,
-        // then exclude self + every member so the group has truly nothing.
-        registerCustom("other");
-        CarriageContentsAllowList allow = CarriageContentsAllowList.EMPTY
-            .withExcluded("default")
-            .withExcluded("other");
-        // We need to land on container — but we also need to exclude container
-        // for the resolve fallback to trigger. Use the synchronised path
-        // directly via the resolveGroup logic: simpler to just exclude
-        // everything other than container from top-level, then on resolve also
-        // exclude container, wooden, metal.
-        CarriageContentsAllowList resolveAllow = allow
-            .withExcluded("container")
-            .withExcluded("container_wooden")
-            .withExcluded("container_metal");
-        // Top-level pick with resolveAllow: every contents excluded → DEFAULT (the existing path).
-        CarriageContents picked = CarriageContentsRegistry.pick(0L, 0, resolveAllow);
-        assertEquals("default", picked.id());
+        // Excluding the parent at top level → top-level pick never lands on
+        // container → group never resolves → no member appears.
+        CarriageContentsAllowList allow = CarriageContentsAllowList.EMPTY.withExcluded("container");
+        for (int idx = 0; idx < 500; idx++) {
+            String id = CarriageContentsRegistry.pick(0L, idx, allow).id();
+            assertFalse("container".equals(id), "parent excluded; idx=" + idx);
+            assertFalse("container_wooden".equals(id), "wooden excluded via parent; idx=" + idx);
+            assertFalse("container_metal".equals(id), "metal excluded via parent; idx=" + idx);
+        }
     }
 
     @Test

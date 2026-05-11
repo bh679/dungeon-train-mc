@@ -252,13 +252,14 @@ public final class CarriageContentsRegistry {
     private static final String SELF_TOKEN = "<self>";
 
     /**
-     * If {@code picked} has a group sidecar, draw one of its weighted members
-     * (filtered through {@code allow} so allow-list controls are coherent at
-     * both pick levels). The pool always includes a synthetic self-entry with
-     * {@link #SELF_WEIGHT} so the parent's own {@code .nbt} stays in rotation
-     * even after members are added. Returns {@link ContentsType#DEFAULT} only
-     * when both self and all members are excluded by the allow-list.
+     * If {@code picked} has a group sidecar, draw one of its weighted members.
+     * The pool is the synthetic self ({@link #SELF_WEIGHT}) + every explicit
+     * member. The per-carriage-variant allow-list is NOT consulted at this
+     * level — it operates only on parents at top-level pick time, by
+     * design. Once a parent passes the allow-list and gets picked, its full
+     * sub-variant pool runs unfiltered.
      */
+    @SuppressWarnings("unused") // allow-list intentionally not used inside group resolution
     private static CarriageContents resolveGroup(
         CarriageContents picked, Random parentRng, CarriageContentsAllowList allow
     ) {
@@ -266,21 +267,11 @@ public final class CarriageContentsRegistry {
         if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
         CarriageContentsGroup group = groupOpt.get();
 
-        // Build pool: synthetic self (always weight=SELF_WEIGHT) + filtered members.
-        // Self is included iff the parent itself is allowed by the allow-list.
-        boolean selfAllowed = allow.isAllowed(picked.id());
+        // Pool: synthetic self + every explicit member, no allow-list filter.
         List<PoolEntry> pool = new ArrayList<>(group.members().size() + 1);
-        if (selfAllowed) {
-            pool.add(new PoolEntry(SELF_TOKEN, SELF_WEIGHT));
-        }
+        pool.add(new PoolEntry(SELF_TOKEN, SELF_WEIGHT));
         for (CarriageContentsGroup.Member m : group.members()) {
-            if (!allow.isAllowed(m.id())) continue;
             pool.add(new PoolEntry(m.id(), m.weight()));
-        }
-        if (pool.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] Contents group '{}' has no allowed members (including self) under current allow-list — falling back to DEFAULT.",
-                picked.id());
-            return CarriageContents.of(ContentsType.DEFAULT);
         }
 
         Random childRng = new Random(parentRng.nextLong());

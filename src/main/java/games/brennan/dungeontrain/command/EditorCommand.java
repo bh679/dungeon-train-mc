@@ -165,6 +165,22 @@ public final class EditorCommand {
         };
 
     /**
+     * Parents-only suggester for places where sub-variant ids would be
+     * meaningless — chiefly the per-carriage-variant allow-list, which
+     * operates at the parent level. Children of any group are filtered out
+     * via {@link CarriageContentsGroupStore#allChildIds}.
+     */
+    private static final SuggestionProvider<CommandSourceStack> TOP_LEVEL_CONTENTS_SUGGESTIONS =
+        (ctx, builder) -> {
+            java.util.Set<String> children = CarriageContentsGroupStore.allChildIds();
+            for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+                if (children.contains(c.id())) continue;
+                builder.suggest(c.id());
+            }
+            return builder.buildFuture();
+        };
+
+    /**
      * Suggest variant names for the track kind parsed earlier in the command —
      * used by {@code /dt editor tracks weight <kind> <name> ...}. Defensive:
      * if the {@code kind} arg is missing or unrecognised, suggest nothing
@@ -305,7 +321,7 @@ public final class EditorCommand {
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
                     .then(Commands.argument("contents", StringArgumentType.word())
-                        .suggests(CONTENTS_SUGGESTIONS)
+                        .suggests(TOP_LEVEL_CONTENTS_SUGGESTIONS)
                         .then(Commands.literal("on").executes(ctx -> runCarriageContentsAllow(ctx.getSource(),
                             StringArgumentType.getString(ctx, "variant"),
                             StringArgumentType.getString(ctx, "contents"), true)))
@@ -2093,6 +2109,19 @@ public final class EditorCommand {
         if (variant == null) return 0;
         CarriageContents contents = parseContents(source, rawContents);
         if (contents == null) return 0;
+        // Allow-list operates at the parent level. Sub-variants are reached
+        // through their parent's resolution and never directly consulted
+        // against the allow-list — toggling a sub-variant here would be a
+        // no-op at spawn time, so reject with a clear message.
+        if (CarriageContentsGroupStore.allChildIds().contains(contents.id())) {
+            java.util.Optional<String> parentId = CarriageContentsGroupStore.findParentOf(contents.id());
+            source.sendFailure(Component.literal(
+                "'" + contents.id() + "' is a sub-variant"
+                    + parentId.map(p -> " of '" + p + "'").orElse("")
+                    + " — toggle the parent in the allow-list instead. Sub-variants follow their parent's allowance."
+            ).withStyle(ChatFormatting.YELLOW));
+            return 0;
+        }
         try {
             CarriageContentsAllowList current = CarriageVariantContentsAllowStore.get(variant)
                 .orElse(CarriageContentsAllowList.EMPTY);

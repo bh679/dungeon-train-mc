@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
+import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 
@@ -18,9 +19,11 @@ import java.util.Set;
  * carrying the updated excluded set, so the next {@link #entries()} rebuild
  * reflects the new state.
  *
- * <p>Per spec: every registered content always appears in the list (no
- * filtering), and the default for a content with no record in the sidecar is
- * "allowed" — matches the rule "by default all are yes".</p>
+ * <p>Per spec: only top-level (parent) contents appear here — sub-variants
+ * (group members) are picked through their parent's resolution, so toggling
+ * them individually in the allow-list would be meaningless. The default for
+ * a content with no record in the sidecar is "allowed" — matches the rule
+ * "by default all are yes".</p>
  */
 public final class CarriageContentsAllowScreen implements MenuScreen {
 
@@ -38,10 +41,14 @@ public final class CarriageContentsAllowScreen implements MenuScreen {
     @Override
     public List<CommandMenuEntry> entries() {
         Set<String> excluded = EditorStatusHudOverlay.excludedContents();
+        // Filter out group children — only parents (or leaves) get a toggle
+        // row, since picks resolve through parents at spawn time.
+        Set<String> children = CarriageContentsGroupStore.allChildIds();
         List<CarriageContents> all = CarriageContentsRegistry.allContents();
         List<CommandMenuEntry> out = new ArrayList<>(all.size() + 1);
         for (CarriageContents c : all) {
             String id = c.id();
+            if (children.contains(id)) continue;
             boolean allowed = !excluded.contains(id);
             out.add(new CommandMenuEntry.Toggle(
                 id,
