@@ -1,7 +1,7 @@
 {
   "schemaVersion": 6,
   "variants": {
-    "3,0,0": ["minecraft:smithing_table", "minecraft:blast_furnace[facing=north,lit=false]"],
+    "3,0,0": [{"state": "minecraft:smithing_table", "weight": 2}, {"state": "minecraft:blast_furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:blast_furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "blastfuel"}],
     "3,1,4": [{"state": "minecraft:anvil[facing=west]", "weight": 4}, {"state": "minecraft:chipped_anvil[facing=north]", "weight": 7}, {"state": "minecraft:damaged_anvil[facing=north]", "weight": 8}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}],
     "1,1,0": ["minecraft:flower_pot", "minecraft:command_block[conditional=false,facing=north]"],
     "5,1,0": ["minecraft:flower_pot", "minecraft:command_block[conditional=false,facing=north]"]

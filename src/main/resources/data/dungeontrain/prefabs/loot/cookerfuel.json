@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 3,
+  "block": "minecraft:smoker",
+  "fillMax": 1,
+  "entries": [
+    { "id": "minecraft:coal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
+    { "id": "minecraft:coal_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
+    { "id": "minecraft:charcoal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
+    { "id": "minecraft:oak_planks", "count": 1, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
+    { "id": "minecraft:oak_log", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 },
+    { "id": "minecraft:stick", "count": 1, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25, "slot": 1 }
+  ]
+}

@@ -3,6 +3,8 @@
   "variants": {
     "3,1,4": ["minecraft:stone_bricks", {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:furnace[facing=north,lit=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "fuelfurn"}],
     "3,0,2": ["minecraft:smithing_table", "minecraft:damaged_anvil[facing=north]", "minecraft:crafting_table", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}],
-    "3,2,0": [{"state": "minecraft:smooth_stone_slab[type=bottom,waterlogged=false]", "weight": 20}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}]
+    "3,2,0": [{"state": "minecraft:smooth_stone_slab[type=bottom,waterlogged=false]", "weight": 20}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}],
+    "2,0,0": [{"state": "minecraft:blast_furnace[facing=south,lit=false]", "nbt": "{BurnTime:0,CookTime:0,CookTimeTotal:0,Items:[],RecipesUsed:{}}", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:blast_furnace[facing=south,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "blastfuel"}],
+    "4,0,0": [{"state": "minecraft:blast_furnace[facing=south,lit=false]", "nbt": "{BurnTime:0,CookTime:0,CookTimeTotal:0,Items:[],RecipesUsed:{}}", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:blast_furnace[facing=south,lit=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "blastfuel"}]
   }
 }
