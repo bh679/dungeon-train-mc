@@ -58,6 +58,8 @@ public final class TitleScreenLayoutHandler {
         if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
             return;
         }
+        LOGGER.info("TitleScreenLayout: Init.Post fired on TitleScreen@{}",
+                System.identityHashCode(titleScreen));
 
         // Defensive: if the user bailed mid-world-load, the auto-open flag
         // would still be armed. Reaching the title screen means we have no
@@ -69,10 +71,11 @@ public final class TitleScreenLayoutHandler {
         Button quit = findButton(event, QUIT_KEY);
 
         if (mods == null || options == null || quit == null) {
-            LOGGER.warn("TitleScreen layout: could not locate Mods/Options/Quit (mods={}, options={}, quit={}); skipping.",
+            LOGGER.warn("TitleScreenLayout: could not locate Mods/Options/Quit (mods={}, options={}, quit={}); skipping reshuffle and not adding Editor/Discord.",
                     mods != null, options != null, quit != null);
             return;
         }
+        LOGGER.info("TitleScreenLayout: found all three buttons, applying reshuffle + adding Editor/Discord");
 
         int slotX = mods.getX();
         int slotY = mods.getY();
@@ -128,6 +131,7 @@ public final class TitleScreenLayoutHandler {
     }
 
     private static void openEditor(Screen parent) {
+        LOGGER.info("TitleScreenLayout: Train Editor button clicked — queueing devmode + auto-open and launching fresh world");
         EditorDevMode.queueOnForNextStart();
         EditorAutoOpenHandler.queueAutoOpen();
         DevQuickWorldHandler.launchFreshWorld(parent);

@@ -95,6 +95,7 @@ public final class EditorAutoOpenHandler {
         //     normal server-side feedback (success/error messages).
         if (mc.gui != null) {
             mc.gui.getChat().addMessage(Component.literal("§7[Train Editor] auto-running /dungeontrain editor"));
+            mc.gui.getChat().addMessage(Component.literal("§e[Train Editor] please wait a few seconds…"));
             mc.gui.getChat().addRecentChat("/dungeontrain editor");
         }
         mc.player.connection.sendCommand("dungeontrain editor");
