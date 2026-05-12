@@ -307,6 +307,18 @@ public final class ContainerContentsStore {
         }
         LOGGER.info("[DungeonTrain] Saved container contents store for {} ({} cells) to {}",
             plotKey, pools.size(), file);
+
+        // Auto-propagate to source tree when in dev mode so menu edits don't
+        // drift away from the bundled resource. Failures are logged but
+        // non-fatal — user config is the source of truth.
+        if (EditorDevMode.isEnabled() && sourceTreeAvailable()) {
+            try {
+                saveToSource();
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Auto-propagation to source tree failed for plot {}: {}",
+                    plotKey, e.toString());
+            }
+        }
     }
 
     /**

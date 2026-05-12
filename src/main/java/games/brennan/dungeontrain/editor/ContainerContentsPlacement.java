@@ -69,7 +69,7 @@ public final class ContainerContentsPlacement {
                 pool = ContainerContentsStore.loadFor(plotKey).poolAt(localPos);
             }
             if (!pool.isEmpty()) {
-                finalNbt = ContainerContentsRoller.roll(pool, state, localPos, worldSeed, carriageIndex, baseBeNbt, level.registryAccess());
+                finalNbt = ContainerContentsRoller.roll(pool, state, localPos, worldSeed, carriageIndex, baseBeNbt, level.registryAccess(), level);
             }
         }
         SilentBlockOps.setBlockSilent(level, worldPos, state, finalNbt);

@@ -146,6 +146,19 @@ public final class LootPrefabStore {
         boolean isNew = IDS.add(key);
         LOGGER.info("[DungeonTrain] {} loot prefab '{}' (block={}, {} entries) at {}",
             isNew ? "Saved new" : "Overwrote", key, sourceBlock, pool.entries().size(), file);
+
+        // Auto-propagate to source tree when in dev mode so menu edits
+        // (BUMP_FILL_MAX, BUMP_WEIGHT, etc.) don't drift away from the bundled
+        // resource. Failures are logged but non-fatal — user config is the
+        // source of truth; source tree is the dev-only commit target.
+        if (EditorDevMode.isEnabled() && sourceTreeAvailable()) {
+            try {
+                saveToSource(id, pool, sourceBlock);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Auto-propagation to source tree failed for loot prefab '{}': {}",
+                    key, e.toString());
+            }
+        }
         return isNew;
     }
 

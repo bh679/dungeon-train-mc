@@ -11,15 +11,23 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.AbstractCookingRecipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.world.item.crafting.SingleRecipeInput;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Pure utility — turn a {@link ContainerContentsPool} into the {@code Items}
@@ -78,7 +86,8 @@ public final class ContainerContentsRoller {
     public static CompoundTag roll(ContainerContentsPool pool, BlockState state,
                                    BlockPos localPos, long worldSeed, int carriageIndex,
                                    @Nullable CompoundTag baseNbt,
-                                   HolderLookup.Provider registries) {
+                                   HolderLookup.Provider registries,
+                                   @Nullable Level level) {
         if (pool == null || pool.isEmpty()) return baseNbt;
         if (!state.hasBlockEntity()) return baseNbt;
         int totalWeight = pool.totalWeight();
@@ -93,6 +102,13 @@ public final class ContainerContentsRoller {
                 return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, baseNbt, registries);
             }
             return baseNbt;
+        }
+
+        // Furnace family has semantic slots (input / fuel / output) — route to
+        // a slot-aware path so the input slot gets a cookable item, the fuel
+        // slot gets a burnable item, and the output slot gets anything.
+        if (isFurnaceLike(state)) {
+            return rollFurnace(pool, state, localPos, worldSeed, carriageIndex, baseNbt, registries, level);
         }
 
         // Roll K = uniform random in [fillMin, effectiveMax] (inclusive).
@@ -268,6 +284,160 @@ public final class ContainerContentsRoller {
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         out.put(NBT_POT_LOOT, stackTag);
         return out;
+    }
+
+    /** Furnace family — 3-slot cookers with semantic slots (input / fuel / output). */
+    public static boolean isFurnaceLike(BlockState state) {
+        return state.is(Blocks.FURNACE)
+            || state.is(Blocks.BLAST_FURNACE)
+            || state.is(Blocks.SMOKER);
+    }
+
+    private static RecipeType<? extends AbstractCookingRecipe> furnaceRecipeType(BlockState state) {
+        if (state.is(Blocks.BLAST_FURNACE)) return RecipeType.BLASTING;
+        if (state.is(Blocks.SMOKER))         return RecipeType.SMOKING;
+        return RecipeType.SMELTING;
+    }
+
+    /**
+     * Furnace-aware roll. Each pool entry classifies by its function in a
+     * priority cascade:
+     * <ol>
+     *   <li>cookable for this furnace's recipe type → input slot (0)</li>
+     *   <li>else fuel (positive burn time) → fuel slot (1)</li>
+     *   <li>else (smelt-result or none-of-the-above) → output slot (2)</li>
+     * </ol>
+     *
+     * <p>An item that is both cookable AND fuel (e.g. some wood logs) lands in
+     * the input slot — cookable wins by priority. Charcoal (fuel AND a
+     * smelt-result) lands in the fuel slot — fuel wins over smelt-result.</p>
+     *
+     * <p>The pool's fillMin/fillMax still controls how many slots get filled —
+     * K = uniform(fillMin, min(fillMax, 3)). Slots are attempted in priority
+     * order; a slot whose bucket is empty is skipped without consuming K, so
+     * a K=1 pool with only fuel will still put the fuel in slot 1 rather than
+     * leaving the furnace empty.</p>
+     */
+    private static CompoundTag rollFurnace(ContainerContentsPool pool, BlockState state,
+                                           BlockPos localPos, long worldSeed, int carriageIndex,
+                                           @Nullable CompoundTag baseNbt,
+                                           HolderLookup.Provider registries,
+                                           @Nullable Level level) {
+        RecipeType<? extends AbstractCookingRecipe> rt = furnaceRecipeType(state);
+        final int FURNACE_SLOTS = 3;
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? FURNACE_SLOTS : Math.min(pool.fillMax(), FURNACE_SLOTS);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
+
+        ListTag items = new ListTag();
+        int filled = 0;
+
+        if (filled < k) {
+            ContainerContentsEntry input = pickFiltered(pool,
+                e -> isCookable(e, rt, level),
+                localPos, worldSeed, carriageIndex, /*slot*/ 0);
+            if (appendRolled(items, /*slot*/ 0, input, localPos, worldSeed, carriageIndex, registries)) {
+                filled++;
+            }
+        }
+
+        if (filled < k) {
+            ContainerContentsEntry fuel = pickFiltered(pool,
+                e -> isFuel(e, rt) && !isCookable(e, rt, level),
+                localPos, worldSeed, carriageIndex, /*slot*/ 1);
+            if (appendRolled(items, /*slot*/ 1, fuel, localPos, worldSeed, carriageIndex, registries)) {
+                filled++;
+            }
+        }
+
+        if (filled < k) {
+            ContainerContentsEntry out2 = pickFiltered(pool,
+                e -> !isCookable(e, rt, level) && !isFuel(e, rt),
+                localPos, worldSeed, carriageIndex, /*slot*/ 2);
+            if (appendRolled(items, /*slot*/ 2, out2, localPos, worldSeed, carriageIndex, registries)) {
+                filled++;
+            }
+        }
+
+        CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
+        out.put("Items", items);
+        return out;
+    }
+
+    /**
+     * Weighted pick over the subset of pool entries matching {@code filter}.
+     * Returns null when the subset is empty or all subset weights are 0.
+     * Mixer uses {@code slot} so different slots produce independent picks.
+     */
+    @Nullable
+    private static ContainerContentsEntry pickFiltered(ContainerContentsPool pool,
+                                                       Predicate<ContainerContentsEntry> filter,
+                                                       BlockPos localPos, long worldSeed,
+                                                       int carriageIndex, int slot) {
+        List<ContainerContentsEntry> subset = new ArrayList<>();
+        int subsetWeight = 0;
+        for (ContainerContentsEntry e : pool.entries()) {
+            if (!filter.test(e)) continue;
+            subset.add(e);
+            subsetWeight += e.weight();
+        }
+        if (subset.isEmpty() || subsetWeight <= 0) return null;
+
+        long mixed = worldSeed
+            ^ ((long) localPos.getX() * MIX_X)
+            ^ ((long) localPos.getY() * MIX_Y)
+            ^ ((long) localPos.getZ() * MIX_Z)
+            ^ ((long) carriageIndex * MIX_C)
+            ^ ((long) slot * MIX_S);
+        mixed = (mixed ^ (mixed >>> 30)) * 0xBF58476D1CE4E5B9L;
+        mixed = (mixed ^ (mixed >>> 27)) * 0x94D049BB133111EBL;
+        mixed = mixed ^ (mixed >>> 31);
+        long unsigned = mixed & 0x7FFFFFFFFFFFFFFFL;
+        int target = (int) (unsigned % subsetWeight);
+        for (ContainerContentsEntry e : subset) {
+            target -= e.weight();
+            if (target < 0) return e;
+        }
+        return subset.get(subset.size() - 1);
+    }
+
+    /** True if the entry's item has a positive burn time for the given cooking type. */
+    private static boolean isFuel(ContainerContentsEntry e, RecipeType<?> recipeType) {
+        Item item = resolveItem(e.itemId());
+        if (item == null) return false;
+        return new ItemStack(item).getBurnTime(recipeType) > 0;
+    }
+
+    /** True if the entry's item has a matching cooking recipe for the given type. */
+    private static boolean isCookable(ContainerContentsEntry e,
+                                      RecipeType<? extends AbstractCookingRecipe> recipeType,
+                                      @Nullable Level level) {
+        if (level == null) return false;
+        Item item = resolveItem(e.itemId());
+        if (item == null) return false;
+        SingleRecipeInput input = new SingleRecipeInput(new ItemStack(item));
+        Optional<? extends RecipeHolder<? extends AbstractCookingRecipe>> recipe =
+            level.getRecipeManager().getRecipeFor(recipeType, input, level);
+        return recipe.isPresent();
+    }
+
+    /**
+     * Roll count + stack and write the NBT entry into {@code items} at
+     * {@code slot}. Returns true when an entry was actually added — caller uses
+     * this to decide whether the slot "consumed" a fill count.
+     */
+    private static boolean appendRolled(ListTag items, int slot, @Nullable ContainerContentsEntry picked,
+                                        BlockPos localPos, long worldSeed, int carriageIndex,
+                                        HolderLookup.Provider registries) {
+        if (picked == null || picked.isAir()) return false;
+        int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+        ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+        if (stack.isEmpty()) return false;
+        CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
+        stackTag.putByte("Slot", (byte) slot);
+        items.add(stackTag);
+        return true;
     }
 
     /**

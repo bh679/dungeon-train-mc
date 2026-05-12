@@ -219,7 +219,8 @@ public final class PrefabUseHandler {
         long worldSeed = serverLevel.getSeed();
         CompoundTag baseNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
         CompoundTag rolled = ContainerContentsRoller.roll(
-            loaded.get().pool(), placedState, pos, worldSeed, /* carriageIndex */ 0, baseNbt, serverLevel.registryAccess());
+            loaded.get().pool(), placedState, pos, worldSeed, /* carriageIndex */ 0, baseNbt,
+            serverLevel.registryAccess(), serverLevel);
         if (rolled == null) return;
         be.loadCustomOnly(rolled, serverLevel.registryAccess());
         be.setChanged();
