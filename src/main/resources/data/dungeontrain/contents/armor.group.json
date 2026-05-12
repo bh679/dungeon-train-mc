@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "armor2",
+      "weight": 1
+    },
+    {
+      "id": "armor3",
+      "weight": 1
+    },
+    {
+      "id": "armor4",
+      "weight": 1
+    },
+    {
+      "id": "armor5",
+      "weight": 1
+    }
+  ]
+}

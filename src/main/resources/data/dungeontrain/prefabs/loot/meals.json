@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:barrel",
+  "fillMin": 1,
+  "fillMax": 7,
+  "entries": [
+    { "id": "minecraft:bread", "count": 4, "weight": 30 },
+    { "id": "minecraft:cookie", "count": 6, "weight": 10 },
+    { "id": "minecraft:cake", "count": 1, "weight": 5 },
+    { "id": "minecraft:pumpkin_pie", "count": 1, "weight": 5 },
+    { "id": "minecraft:mushroom_stew", "count": 1, "weight": 5 },
+    { "id": "minecraft:beetroot_soup", "count": 1, "weight": 5 },
+    { "id": "minecraft:rabbit_stew", "count": 1, "weight": 5 }
+  ]
+}

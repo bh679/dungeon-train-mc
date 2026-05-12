@@ -125,7 +125,7 @@ public final class DevQuickWorldHandler {
         return null;
     }
 
-    private static void launchFreshWorld(Screen lastScreen) {
+    static void launchFreshWorld(Screen lastScreen) {
         Minecraft mc = Minecraft.getInstance();
         String name = "Dev World " + System.currentTimeMillis();
         LevelSettings settings = new LevelSettings(

@@ -2,15 +2,18 @@
   "schemaVersion": 1,
   "excluded": [
     "2ndlevel",
+    "armor",
     "barrel",
     "books",
     "chest",
     "craft",
     "enchant",
     "ender",
+    "enemies",
     "kitchen",
     "maze",
     "sand",
+    "shop",
     "smelt",
     "upgrade"
   ]

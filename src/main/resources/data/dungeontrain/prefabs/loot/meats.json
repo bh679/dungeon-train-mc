@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:barrel",
+  "fillMin": 1,
+  "fillMax": 8,
+  "entries": [
+    { "id": "minecraft:beef", "count": 5, "weight": 3 },
+    { "id": "minecraft:porkchop", "count": 5, "weight": 3 },
+    { "id": "minecraft:chicken", "count": 5, "weight": 3 },
+    { "id": "minecraft:rabbit", "count": 5, "weight": 3 },
+    { "id": "minecraft:cooked_beef", "count": 3, "weight": 3 },
+    { "id": "minecraft:porkchop", "count": 3, "weight": 1 },
+    { "id": "minecraft:cooked_mutton", "count": 3, "weight": 1 },
+    { "id": "minecraft:cooked_chicken", "count": 3, "weight": 1 },
+    { "id": "minecraft:cooked_rabbit", "count": 3, "weight": 1 }
+  ]
+}

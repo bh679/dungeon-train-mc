@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 2,
+  "pools": {
+    "6,3,0": {
+      "entries": [
+        { "id": "minecraft:wooden_sword", "count": 1, "weight": 20 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 20 },
+        { "id": "minecraft:stone_axe", "count": 1, "weight": 1 },
+        { "id": "minecraft:shield", "count": 1, "weight": 2 },
+        { "id": "minecraft:leather_helmet", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_helmet", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_leggings", "count": 1, "weight": 5 },
+        { "id": "minecraft:sweet_berries", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_chestplate", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_boots", "count": 1, "weight": 7 },
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 1 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 1 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 1 },
+        { "id": "minecraft:carrot", "count": 6, "weight": 20 },
+        { "id": "minecraft:potato", "count": 7, "weight": 20 },
+        { "id": "minecraft:baked_potato", "count": 3, "weight": 8 },
+        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 20 },
+        { "id": "minecraft:beetroot", "count": 6, "weight": 20 },
+        { "id": "minecraft:beef", "count": 2, "weight": 2 },
+        { "id": "minecraft:porkchop", "count": 2, "weight": 2 },
+        { "id": "minecraft:mutton", "count": 2, "weight": 2 }
+      ]
+    },
+    "1,3,4": {
+      "entries": [
+        { "id": "minecraft:wooden_sword", "count": 1, "weight": 20 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 20 },
+        { "id": "minecraft:stone_axe", "count": 1, "weight": 1 },
+        { "id": "minecraft:shield", "count": 1, "weight": 2 },
+        { "id": "minecraft:leather_helmet", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_helmet", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_leggings", "count": 1, "weight": 5 },
+        { "id": "minecraft:sweet_berries", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_chestplate", "count": 1, "weight": 5 },
+        { "id": "minecraft:leather_boots", "count": 1, "weight": 7 },
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 1 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 1 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 1 },
+        { "id": "minecraft:carrot", "count": 6, "weight": 20 },
+        { "id": "minecraft:potato", "count": 7, "weight": 20 },
+        { "id": "minecraft:baked_potato", "count": 3, "weight": 8 },
+        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 20 },
+        { "id": "minecraft:beetroot", "count": 6, "weight": 20 },
+        { "id": "minecraft:beef", "count": 2, "weight": 2 },
+        { "id": "minecraft:porkchop", "count": 2, "weight": 2 },
+        { "id": "minecraft:mutton", "count": 2, "weight": 2 }
+      ]
+    }
+  }
+}

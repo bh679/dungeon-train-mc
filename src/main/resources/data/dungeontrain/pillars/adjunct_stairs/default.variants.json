@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 6,
+  "variants": {
+    "0,4,2": [{"state": "minecraft:deepslate_brick_slab[type=double,waterlogged=false]", "weight": 100}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["west"]}, "lootPrefab": "starter"}]
+  }
+}

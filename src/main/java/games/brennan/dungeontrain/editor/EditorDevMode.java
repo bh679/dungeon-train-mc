@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 /**
@@ -35,6 +36,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 public final class EditorDevMode {
 
     private static volatile boolean enabled = false;
+    private static volatile boolean forceOnNextStart = false;
 
     private EditorDevMode() {}
 
@@ -46,11 +48,29 @@ public final class EditorDevMode {
         enabled = on;
     }
 
+    /**
+     * Arm a one-shot override: the next {@link ServerStartedEvent} flips editor
+     * mode on regardless of the {@link #onServerStarting} source-tree gate.
+     * Used by the title-screen "Dungeon Train Editor" button so the user lands
+     * in a fresh world with editor mode already active.
+     */
+    public static void queueOnForNextStart() {
+        forceOnNextStart = true;
+    }
+
     @SubscribeEvent
     public static void onServerStarting(ServerStartingEvent event) {
         // Auto-on in dev checkouts (source tree writable), auto-off in packaged
         // jars (no source tree). Manual `/editor devmode on|off` still overrides
         // mid-session — the next server start re-derives this default.
         set(CarriageTemplateStore.sourceTreeAvailable());
+    }
+
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        if (forceOnNextStart) {
+            forceOnNextStart = false;
+            set(true);
+        }
     }
 }

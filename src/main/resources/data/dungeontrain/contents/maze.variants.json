@@ -1,5 +1,8 @@
 {
   "schemaVersion": 6,
   "variants": {
+    "3,3,4": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["west"]}, "lootPrefab": "starter"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["south"]}}],
+    "3,3,0": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["south"]}}],
+    "2,0,3": [{"state": "minecraft:chest[facing=south,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}, {"state": "minecraft:command_block[conditional=false,facing=south]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["south"]}}]
   }
 }

@@ -15,6 +15,8 @@
   "dungeontrain.floor_y.label": "Floor Y",
   "dungeontrain.floor_y.value": "Y = %s",
   "dungeontrain.floor_y.tooltip": "Bedrock floor elevation. Lower values preserve more of the vanilla deepslate/diamond zone; higher values improve performance. World top stays at Y=320.",
+  "gui.dungeontrain.discord_button": "Discord",
+  "gui.dungeontrain.editor_button": "Train Editor",
   "gui.dungeontrain.options.button": "Dungeon Train Options…",
   "gui.dungeontrain.options.title": "Dungeon Train — World Options",
   "gui.dungeontrain.options.starts_with_train": "Starts with train",

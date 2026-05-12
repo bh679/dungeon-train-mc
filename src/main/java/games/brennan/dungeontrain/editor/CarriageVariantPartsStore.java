@@ -134,16 +134,24 @@ public final class CarriageVariantPartsStore {
     /**
      * Best-effort source-tree write invoked from {@link #save}. Silent no-op
      * outside dev mode (production installs have no writable
-     * {@code src/main/resources/}) or for non-builtin variants (custom
-     * carriages have no bundled-resource home). Warn-level log on dev-mode
-     * failures so the config write isn't masked by a source-tree problem.
-     * Mirrors {@link games.brennan.dungeontrain.train.CarriageWeights#trySaveToSource}.
+     * {@code src/main/resources/}) or for variants that don't ship with the
+     * game (no {@code <id>.nbt} present in the source-tree templates dir —
+     * those are per-install user variants). Builtin variants and shipping
+     * custom variants (e.g. {@code pen}, {@code black}) both promote. Warn-
+     * level log on dev-mode failures so the config write isn't masked by a
+     * source-tree problem. Mirrors
+     * {@link games.brennan.dungeontrain.train.CarriageWeights#trySaveToSource}.
      */
     private static void trySaveToSource(CarriageVariant variant, CarriagePartAssignment assignment) {
-        if (!sourceTreeAvailable()) return;
-        if (!(variant instanceof CarriageVariant.Builtin b)) return;
+        if (!shipsWithGame(variant)) return;
         try {
-            saveToSource(b.type(), assignment);
+            Path file = sourceFileForVariant(variant);
+            Files.createDirectories(file.getParent());
+            String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(assignment.toJson());
+            try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+                w.write(pretty);
+            }
+            LOGGER.info("[DungeonTrain] Wrote bundled parts assignment for {} to {}", variant.id(), file);
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Failed to write bundled parts assignment for {} to source tree: {} (config write succeeded).",
                 variant.id(), e.toString());
@@ -152,16 +160,15 @@ public final class CarriageVariantPartsStore {
 
     /**
      * Best-effort source-tree delete invoked from {@link #delete}. Removes the
-     * promoted {@code <type>.parts.json} so a Clear from the in-game menu also
+     * promoted {@code <id>.parts.json} so a Clear from the in-game menu also
      * propagates to the bundled copy in dev — otherwise the next load tier
      * would fall back to the stale promoted bundled file. Silent no-op outside
-     * dev mode or for non-builtin variants.
+     * dev mode or for variants that don't ship with the game.
      */
     private static void tryDeleteFromSource(CarriageVariant variant) {
-        if (!sourceTreeAvailable()) return;
-        if (!(variant instanceof CarriageVariant.Builtin b)) return;
+        if (!shipsWithGame(variant)) return;
         try {
-            Path file = sourceFileFor(b.type());
+            Path file = sourceFileForVariant(variant);
             if (Files.deleteIfExists(file)) {
                 LOGGER.info("[DungeonTrain] Deleted bundled parts assignment {} (devmode promote).", file);
             }
@@ -169,6 +176,23 @@ public final class CarriageVariantPartsStore {
             LOGGER.warn("[DungeonTrain] Failed to delete bundled parts assignment for {} from source tree: {} (config delete succeeded).",
                 variant.id(), e.toString());
         }
+    }
+
+    /** Source-tree path for any variant — by {@code id()}, regardless of Builtin/Custom. */
+    private static Path sourceFileForVariant(CarriageVariant variant) {
+        return sourceDirectory().resolve(variant.id() + EXT);
+    }
+
+    /**
+     * True when the variant's {@code <id>.nbt} is present in the writable
+     * source-tree templates dir — the signal that this variant ships with
+     * the game and its sidecars should be promoted alongside it. Returns
+     * false outside a dev checkout (no writable source tree) and for
+     * per-install user-only variants that have no shipped NBT.
+     */
+    private static boolean shipsWithGame(CarriageVariant variant) {
+        if (!sourceTreeAvailable()) return false;
+        return Files.exists(sourceDirectory().resolve(variant.id() + ".nbt"));
     }
 
     public static boolean exists(CarriageVariant variant) {
