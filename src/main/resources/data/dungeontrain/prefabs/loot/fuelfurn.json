@@ -1,6 +1,7 @@
 {
   "schemaVersion": 3,
   "block": "minecraft:furnace",
+  "fillMax": 1,
   "entries": [
     { "id": "minecraft:coal_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:coal", "count": 15, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
