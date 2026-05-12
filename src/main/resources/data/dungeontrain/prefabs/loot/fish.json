@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:barrel",
+  "entries": [
+    { "id": "minecraft:cod", "count": 1, "weight": 1 },
+    { "id": "minecraft:cooked_cod", "count": 1, "weight": 1 },
+    { "id": "minecraft:salmon", "count": 1, "weight": 1 },
+    { "id": "minecraft:cooked_salmon", "count": 1, "weight": 1 },
+    { "id": "minecraft:tropical_fish", "count": 1, "weight": 1 },
+    { "id": "minecraft:pufferfish", "count": 1, "weight": 1 },
+    { "id": "minecraft:fishing_rod", "count": 1, "weight": 1 },
+    { "id": "minecraft:seagrass", "count": 1, "weight": 1 },
+    { "id": "minecraft:sea_pickle", "count": 1, "weight": 1 },
+    { "id": "minecraft:prismarine_bricks", "count": 1, "weight": 1 },
+    { "id": "minecraft:prismarine", "count": 1, "weight": 1 },
+    { "id": "minecraft:dark_prismarine", "count": 1, "weight": 1 },
+    { "id": "minecraft:prismarine_shard", "count": 1, "weight": 1 },
+    { "id": "minecraft:prismarine_crystals", "count": 1, "weight": 1 }
+  ]
+}
