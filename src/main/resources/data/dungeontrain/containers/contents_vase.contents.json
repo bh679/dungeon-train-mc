@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+    "1,0,1": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "2,0,1": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "3,0,1": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "4,0,1": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "5,0,1": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "6,0,1": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "6,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "5,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "4,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "3,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "2,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "1,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "0,0,0": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "0,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "0,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "1,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "1,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "2,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "2,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "3,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "3,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "4,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "4,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "5,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "5,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "6,0,3": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "6,0,4": {
+      "entries": [
+        { "id": "minecraft:decorated_pot", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    }
+  },
+  "links": {
+    "0,0,2": "pot",
+    "0,0,1": "pot"
+  }
+}
