@@ -76,6 +76,8 @@ public final class ContainerContentsMenuRenderer {
     static final double X_CELL_WIDTH = 0.30;
     static final double COUNT_CELL_WIDTH = 0.40;
     static final double WEIGHT_CELL_WIDTH = 0.40;
+    /** Width of the slot-override cell ("auto" / "in" / "fuel" / "out"). */
+    static final double SLOT_CELL_WIDTH = 0.40;
     static final double TEXT_SCALE = 0.012;
 
     /** True when the menu currently has a link sub-row to draw. */
@@ -249,10 +251,12 @@ public final class ContainerContentsMenuRenderer {
 
             ContainerContentsSyncPacket.Entry entry = entries.get(i);
 
-            // Right-to-left: [×] [weight] [count] [name]
+            // Right-to-left: [×] [slot] [weight] [count] [name]
             double xCellL = colXR - X_CELL_WIDTH;
             double xCellR = colXR;
-            double weightR = xCellL;
+            double slotR = xCellL;
+            double slotL = slotR - SLOT_CELL_WIDTH;
+            double weightR = slotL;
             double weightL = weightR - WEIGHT_CELL_WIDTH;
             double countR = weightL;
             double countL = countR - COUNT_CELL_WIDTH;
@@ -286,6 +290,25 @@ public final class ContainerContentsMenuRenderer {
             drawCenteredText(ps, buffer, font, "w" + entry.weight(),
                 (weightL + weightR) / 2.0, rowCY,
                 weightHover ? 0xFF000000 : 0xFFFFFFFF);
+
+            // Slot-override button. Cycles: auto → in → fuel → out → auto.
+            // The tint encodes which slot the item is pinned to so the user
+            // can scan the list at a glance.
+            boolean slotHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_SLOT_ASSIGN && hovered.index() == i;
+            int slotOv = entry.slotOverride();
+            int slotTint;
+            String slotLabel;
+            switch (slotOv) {
+                case 0  -> { slotTint = slotHover ? 0xC066AAFF : 0x6033AACC; slotLabel = "in"; }
+                case 1  -> { slotTint = slotHover ? 0xC0FFAA66 : 0x60CC7733; slotLabel = "fuel"; }
+                case 2  -> { slotTint = slotHover ? 0xC066FF99 : 0x6033CC66; slotLabel = "out"; }
+                default -> { slotTint = slotHover ? 0xC0AAAAAA : 0x40555555; slotLabel = "auto"; }
+            }
+            drawQuad(ps, buffer, slotL + 0.005, rowBottom + 0.005,
+                slotR - 0.005, rowTop - 0.005, slotTint);
+            drawCenteredText(ps, buffer, font, slotLabel,
+                (slotL + slotR) / 2.0, rowCY,
+                slotHover ? 0xFF000000 : 0xFFFFFFFF);
 
             // Remove ×
             boolean xHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_REMOVE_X && hovered.index() == i;

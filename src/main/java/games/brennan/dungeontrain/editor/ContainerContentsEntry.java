@@ -31,7 +31,8 @@ public record ContainerContentsEntry(
     boolean randomDurability,
     int durabilityChance,
     boolean randomEnchantment,
-    int enchantmentChance
+    int enchantmentChance,
+    int slotOverride
 ) {
 
     public static final ResourceLocation AIR_ID = ResourceLocation.fromNamespaceAndPath("minecraft", "air");
@@ -40,6 +41,21 @@ public record ContainerContentsEntry(
     public static final int DEFAULT_DURABILITY_CHANCE = 100;
     public static final boolean DEFAULT_RANDOM_ENCHANTMENT = true;
     public static final int DEFAULT_ENCHANTMENT_CHANCE = 25;
+
+    /**
+     * {@link #slotOverride} sentinel for "no explicit slot — use the
+     * priority cascade in {@code rollFurnace}." Any negative value collapses
+     * here so old data without the field still resolves to auto.
+     */
+    public static final int SLOT_AUTO = -1;
+    /** Input slot of a furnace family container (cookable bucket by default). */
+    public static final int SLOT_INPUT = 0;
+    /** Fuel slot of a furnace family container (burn-time bucket by default). */
+    public static final int SLOT_FUEL = 1;
+    /** Output slot of a furnace family container (catch-all bucket by default). */
+    public static final int SLOT_OUTPUT = 2;
+    /** Highest valid explicit slot index — sized for furnace family (3 slots). */
+    public static final int MAX_SLOT_OVERRIDE = SLOT_OUTPUT;
 
     public ContainerContentsEntry {
         if (itemId == null) throw new IllegalArgumentException("itemId");
@@ -50,13 +66,24 @@ public record ContainerContentsEntry(
         if (durabilityChance > 100) durabilityChance = 100;
         if (enchantmentChance < 0) enchantmentChance = 0;
         if (enchantmentChance > 100) enchantmentChance = 100;
+        if (slotOverride < SLOT_AUTO) slotOverride = SLOT_AUTO;
+        if (slotOverride > MAX_SLOT_OVERRIDE) slotOverride = SLOT_AUTO;
     }
 
-    /** Convenience constructor — supplies the four new fields with defaults. */
+    /** Back-compat constructor — no slot override. */
+    public ContainerContentsEntry(ResourceLocation itemId, int count, int weight,
+                                  boolean randomDurability, int durabilityChance,
+                                  boolean randomEnchantment, int enchantmentChance) {
+        this(itemId, count, weight, randomDurability, durabilityChance,
+            randomEnchantment, enchantmentChance, SLOT_AUTO);
+    }
+
+    /** Convenience constructor — supplies the four random-effect fields and slot override with defaults. */
     public ContainerContentsEntry(ResourceLocation itemId, int count, int weight) {
         this(itemId, count, weight,
             DEFAULT_RANDOM_DURABILITY, DEFAULT_DURABILITY_CHANCE,
-            DEFAULT_RANDOM_ENCHANTMENT, DEFAULT_ENCHANTMENT_CHANCE);
+            DEFAULT_RANDOM_ENCHANTMENT, DEFAULT_ENCHANTMENT_CHANCE,
+            SLOT_AUTO);
     }
 
     public static ContainerContentsEntry of(Item item, int count, int weight) {
@@ -80,31 +107,46 @@ public record ContainerContentsEntry(
 
     public ContainerContentsEntry withWeight(int newWeight) {
         return new ContainerContentsEntry(itemId, count, newWeight,
-            randomDurability, durabilityChance, randomEnchantment, enchantmentChance);
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, slotOverride);
     }
 
     public ContainerContentsEntry withCount(int newCount) {
         return new ContainerContentsEntry(itemId, newCount, weight,
-            randomDurability, durabilityChance, randomEnchantment, enchantmentChance);
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, slotOverride);
     }
 
     public ContainerContentsEntry withRandomDurability(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            v, durabilityChance, randomEnchantment, enchantmentChance);
+            v, durabilityChance, randomEnchantment, enchantmentChance, slotOverride);
     }
 
     public ContainerContentsEntry withDurabilityChance(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, v, randomEnchantment, enchantmentChance);
+            randomDurability, v, randomEnchantment, enchantmentChance, slotOverride);
     }
 
     public ContainerContentsEntry withRandomEnchantment(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, durabilityChance, v, enchantmentChance);
+            randomDurability, durabilityChance, v, enchantmentChance, slotOverride);
     }
 
     public ContainerContentsEntry withEnchantmentChance(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
-            randomDurability, durabilityChance, randomEnchantment, v);
+            randomDurability, durabilityChance, randomEnchantment, v, slotOverride);
+    }
+
+    public ContainerContentsEntry withSlotOverride(int v) {
+        return new ContainerContentsEntry(itemId, count, weight,
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance, v);
+    }
+
+    /**
+     * Cycle the slot override forward: {@code auto → input → fuel → output → auto}.
+     * Wraps so a single button press steps cleanly through every state.
+     */
+    public ContainerContentsEntry cycleSlotOverride() {
+        int next = slotOverride + 1;
+        if (next > MAX_SLOT_OVERRIDE) next = SLOT_AUTO;
+        return withSlotOverride(next);
     }
 }

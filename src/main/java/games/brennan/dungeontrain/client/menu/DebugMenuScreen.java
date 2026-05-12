@@ -22,6 +22,7 @@ public final class DebugMenuScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         boolean manual = DebugFlagsState.manualSpawnMode();
+        boolean lootRolls = DebugFlagsState.logLootRolls();
         return List.of(
             new CommandMenuEntry.DrillIn("Wireframes", new WireframesMenuScreen()),
             new CommandMenuEntry.DrillIn("Chat Logs", new ChatLogsMenuScreen()),
@@ -29,6 +30,11 @@ public final class DebugMenuScreen implements MenuScreen {
                 "Manual Spawn (J)", manual,
                 "dungeontrain debug spawnmode manual",
                 "dungeontrain debug spawnmode auto"
+            ),
+            new CommandMenuEntry.Toggle(
+                "Log Loot Rolls", lootRolls,
+                "dungeontrain debug loot-rolls on",
+                "dungeontrain debug loot-rolls off"
             ),
             new CommandMenuEntry.Run("Debug Scan", "dungeontrain debug scan"),
             new CommandMenuEntry.Back("< Back")

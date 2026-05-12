@@ -211,6 +211,11 @@ public final class ContainerContentsMenuInputHandler {
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.BUMP_ENCH_CHANCE, plotKey, local, hit.index(), "", delta));
             }
+            case ENTRY_SLOT_ASSIGN -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.CYCLE_SLOT_ASSIGN, plotKey, local, hit.index(), "", 0));
+            }
             case LINK_UNLINK -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.UNLINK, plotKey, local, -1, "", 0));
             // LINK_INDICATOR is informational — no click action.

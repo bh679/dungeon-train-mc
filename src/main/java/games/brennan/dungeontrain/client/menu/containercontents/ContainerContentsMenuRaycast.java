@@ -181,15 +181,19 @@ public final class ContainerContentsMenuRaycast {
                 : ContainerContentsMenu.Hit.NONE;
         }
 
-        // Top strip layout (right-to-left): [×] [weight] [count] [name]
+        // Top strip layout (right-to-left): [×] [slot] [weight] [count] [name]
         double xR = colXR;
         double xCellL = xR - ContainerContentsMenuRenderer.X_CELL_WIDTH;
-        double weightR = xCellL;
+        double slotR = xCellL;
+        double slotL = slotR - ContainerContentsMenuRenderer.SLOT_CELL_WIDTH;
+        double weightR = slotL;
         double weightL = weightR - ContainerContentsMenuRenderer.WEIGHT_CELL_WIDTH;
         double countR = weightL;
         double countL = countR - ContainerContentsMenuRenderer.COUNT_CELL_WIDTH;
 
         if (hitX >= xCellL) return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_REMOVE_X, idx);
+        if (hitX >= slotL && hitX <= slotR)
+            return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_SLOT_ASSIGN, idx);
         if (hitX >= weightL && hitX <= weightR)
             return new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_WEIGHT_PLUS, idx);
         if (hitX >= countL && hitX <= countR)
