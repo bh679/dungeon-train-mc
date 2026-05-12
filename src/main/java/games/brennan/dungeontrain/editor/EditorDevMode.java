@@ -49,10 +49,13 @@ public final class EditorDevMode {
     }
 
     /**
-     * Arm a one-shot override: the next {@link ServerStartedEvent} flips editor
-     * mode on regardless of the {@link #onServerStarting} source-tree gate.
-     * Used by the title-screen "Dungeon Train Editor" button so the user lands
-     * in a fresh world with editor mode already active.
+     * Arm a one-shot override: the next {@link ServerStartedEvent} re-asserts
+     * editor dev-mode on, subject to the same source-tree gate as the default
+     * in {@link #onServerStarting}. In a packaged jar with no writable source
+     * tree, the override is a no-op — the button still launches the editor
+     * world, but dev-mode stays off so the status display and overlay
+     * behavior remain honest. Used by the title-screen "Dungeon Train Editor"
+     * button.
      */
     public static void queueOnForNextStart() {
         forceOnNextStart = true;
@@ -70,7 +73,7 @@ public final class EditorDevMode {
     public static void onServerStarted(ServerStartedEvent event) {
         if (forceOnNextStart) {
             forceOnNextStart = false;
-            set(true);
+            set(CarriageTemplateStore.sourceTreeAvailable());
         }
     }
 }
