@@ -116,6 +116,12 @@ public final class DebugCommand {
             .then(Commands.literal("contents-entities")
                 .then(Commands.literal("on").executes(ctx -> setLogContentsEntities(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLogContentsEntities(ctx.getSource(), false))))
+            // /dungeontrain debug loot-rolls on|off — gates the per-furnace-roll
+            // diagnostic in ContainerContentsRoller. Off by default; turn on when
+            // troubleshooting why a furnace came out empty or wrong.
+            .then(Commands.literal("loot-rolls")
+                .then(Commands.literal("on").executes(ctx -> setLogLootRolls(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setLogLootRolls(ctx.getSource(), false))))
             // /dungeontrain debug reroll <prefabId> — scan every loaded ship's
             // bounding box for blocks whose state matches the prefab's source
             // block, then re-roll their NBT through the current pool. Fixes
@@ -210,6 +216,14 @@ public final class DebugCommand {
         DebugFlags.setLogContentsEntities(source.getServer(), enabled);
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Contents-entity logging " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setLogLootRolls(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setLogLootRolls(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Loot-roll logging " + (enabled ? "ON" : "OFF")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }

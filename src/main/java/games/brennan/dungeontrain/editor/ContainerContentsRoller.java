@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.debug.DebugFlags;
+import org.slf4j.Logger;
+
 /**
  * Pure utility — turn a {@link ContainerContentsPool} into the {@code Items}
  * NBT list that {@link net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity}
@@ -42,6 +46,8 @@ import java.util.function.Predicate;
  * {@link CarriageVariantBlocks#pickIndexWeighted}.</p>
  */
 public final class ContainerContentsRoller {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final long MIX_X = 0x9E3779B97F4A7C15L;
     private static final long MIX_Y = 0xBF58476D1CE4E5B9L;
@@ -330,6 +336,21 @@ public final class ContainerContentsRoller {
         int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
         int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
 
+        if (DebugFlags.logLootRolls()) {
+            int pinned0 = 0, pinned1 = 0, pinned2 = 0, auto = 0;
+            for (ContainerContentsEntry e : pool.entries()) {
+                int so = e.slotOverride();
+                if (so == 0) pinned0++;
+                else if (so == 1) pinned1++;
+                else if (so == 2) pinned2++;
+                else auto++;
+            }
+            LOGGER.info("[DT-furnace] rollFurnace block={} K={} fillMin={} fillMax={} entries={} pinned(in/fuel/out/auto)={}/{}/{}/{} carriageIdx={} localPos={}",
+                state.getBlock(), k, pool.fillMin(), pool.fillMax(),
+                pool.entries().size(), pinned0, pinned1, pinned2, auto,
+                carriageIndex, localPos);
+        }
+
         ListTag items = new ListTag();
         int filled = 0;
 
@@ -342,30 +363,39 @@ public final class ContainerContentsRoller {
             ContainerContentsEntry input = pickForSlot(pool, ContainerContentsEntry.SLOT_INPUT,
                 e -> isCookable(e, rt, level) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
                 localPos, worldSeed, carriageIndex);
-            if (appendRolled(items, ContainerContentsEntry.SLOT_INPUT, input,
-                localPos, worldSeed, carriageIndex, registries)) {
-                filled++;
+            boolean wrote = appendRolled(items, ContainerContentsEntry.SLOT_INPUT, input,
+                localPos, worldSeed, carriageIndex, registries);
+            if (DebugFlags.logLootRolls()) {
+                LOGGER.info("[DT-furnace] slot0 picked={} wrote={}",
+                    input == null ? "null" : input.itemId(), wrote);
             }
+            if (wrote) filled++;
         }
 
         if (filled < k) {
             ContainerContentsEntry fuel = pickForSlot(pool, ContainerContentsEntry.SLOT_FUEL,
                 e -> isFuel(e, rt) && !isCookable(e, rt, level) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
                 localPos, worldSeed, carriageIndex);
-            if (appendRolled(items, ContainerContentsEntry.SLOT_FUEL, fuel,
-                localPos, worldSeed, carriageIndex, registries)) {
-                filled++;
+            boolean wrote = appendRolled(items, ContainerContentsEntry.SLOT_FUEL, fuel,
+                localPos, worldSeed, carriageIndex, registries);
+            if (DebugFlags.logLootRolls()) {
+                LOGGER.info("[DT-furnace] slot1 picked={} wrote={}",
+                    fuel == null ? "null" : fuel.itemId(), wrote);
             }
+            if (wrote) filled++;
         }
 
         if (filled < k) {
             ContainerContentsEntry out2 = pickForSlot(pool, ContainerContentsEntry.SLOT_OUTPUT,
                 e -> !isCookable(e, rt, level) && !isFuel(e, rt) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
                 localPos, worldSeed, carriageIndex);
-            if (appendRolled(items, ContainerContentsEntry.SLOT_OUTPUT, out2,
-                localPos, worldSeed, carriageIndex, registries)) {
-                filled++;
+            boolean wrote = appendRolled(items, ContainerContentsEntry.SLOT_OUTPUT, out2,
+                localPos, worldSeed, carriageIndex, registries);
+            if (DebugFlags.logLootRolls()) {
+                LOGGER.info("[DT-furnace] slot2 picked={} wrote={}",
+                    out2 == null ? "null" : out2.itemId(), wrote);
             }
+            if (wrote) filled++;
         }
 
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
