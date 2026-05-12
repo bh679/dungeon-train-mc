@@ -2,12 +2,11 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.menu.CommandRunner;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
@@ -19,26 +18,30 @@ import org.slf4j.Logger;
  * X-menu "Editor" entry runs) on the first client tick where the local player
  * and connection are both ready.</p>
  *
- * <p>Defensive resets:</p>
- * <ul>
- *   <li>{@link ClientPlayerNetworkEvent.LoggingOut} — clears the flag if the
- *       player disconnects before the tick handler consumes it, so the next
- *       world join doesn't accidentally inherit a stale pending request.</li>
- *   <li>{@link TitleScreenLayoutHandler} also clears the flag on every
- *       title-screen init, covering the case where world loading fails and
- *       the user is bounced back to the title without a logout event.</li>
- * </ul>
+ * <p>Defensive reset: {@link TitleScreenLayoutHandler} clears the flag on every
+ * title-screen init — covers the "user bailed back to title before world
+ * finished loading" case. A previous version also cleared on
+ * {@code ClientPlayerNetworkEvent.LoggingOut}, but that event fires spuriously
+ * during the integrated-server handshake when transitioning from the title
+ * screen into a fresh world and would wipe the flag before the tick handler
+ * ever saw it.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class EditorAutoOpenHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final int DISPATCH_DELAY_TICKS = 40; // 2s @ 20Hz
+
     private static volatile boolean pending = false;
+    private static int delayTicksRemaining = -1; // -1 = not yet started counting
+    private static long waitTickLogCounter = 0;
 
     private EditorAutoOpenHandler() {}
 
     public static void queueAutoOpen() {
         pending = true;
+        delayTicksRemaining = -1;
+        waitTickLogCounter = 0;
         LOGGER.info("EditorAutoOpen: armed (pending=true)");
     }
 
@@ -48,9 +51,8 @@ public final class EditorAutoOpenHandler {
                     Thread.currentThread().getStackTrace()[2]);
         }
         pending = false;
+        delayTicksRemaining = -1;
     }
-
-    private static long waitTickLogCounter = 0;
 
     @SubscribeEvent
     public static void onClientTickPost(ClientTickEvent.Post event) {
@@ -61,24 +63,47 @@ public final class EditorAutoOpenHandler {
         boolean playerReady = mc.player != null;
         boolean levelReady = mc.level != null;
         boolean connReady = mc.getConnection() != null;
-        if (!playerReady || !levelReady || !connReady) {
+        boolean gameModeReady = mc.gameMode != null;
+        if (!playerReady || !levelReady || !connReady || !gameModeReady) {
             if (++waitTickLogCounter % 20 == 0) {
-                LOGGER.info("EditorAutoOpen: waiting — player={}, level={}, conn={}",
-                        playerReady, levelReady, connReady);
+                LOGGER.info("EditorAutoOpen: waiting — player={}, level={}, conn={}, gameMode={}",
+                        playerReady, levelReady, connReady, gameModeReady);
             }
             return;
         }
-        waitTickLogCounter = 0;
-        pending = false;
-        LOGGER.info("EditorAutoOpen: dispatching `dungeontrain editor` on first ready tick");
-        CommandRunner.run("dungeontrain editor");
-    }
-
-    @SubscribeEvent
-    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        if (pending) {
-            LOGGER.info("EditorAutoOpen: cleared by LoggingOut while pending");
+        if (delayTicksRemaining < 0) {
+            delayTicksRemaining = DISPATCH_DELAY_TICKS;
+            LOGGER.info("EditorAutoOpen: conditions met — dispatching `dungeontrain editor` in {} ticks",
+                    DISPATCH_DELAY_TICKS);
+            return;
+        }
+        if (--delayTicksRemaining > 0) {
+            return;
         }
         pending = false;
+        delayTicksRemaining = -1;
+        waitTickLogCounter = 0;
+        LOGGER.info("EditorAutoOpen: dispatching `/dungeontrain editor` now");
+
+        // Visible-in-chat dispatch:
+        //  1. show a heads-up in the chat overlay so the player knows the
+        //     auto-open just fired (and any error from the server side will
+        //     land in the same chat below it).
+        //  2. add the command to chat history (up-arrow recall).
+        //  3. send via player.connection.sendCommand — the same path the
+        //     vanilla chat screen uses for typed commands, which produces
+        //     normal server-side feedback (success/error messages).
+        if (mc.gui != null) {
+            mc.gui.getChat().addMessage(Component.literal("§7[Train Editor] auto-running /dungeontrain editor"));
+            mc.gui.getChat().addRecentChat("/dungeontrain editor");
+        }
+        mc.player.connection.sendCommand("dungeontrain editor");
     }
+
+    // Intentionally NOT clearing on ClientPlayerNetworkEvent.LoggingOut.
+    // That event fires during the integrated-server handshake when transitioning
+    // from title screen to a fresh world (no prior connection to log out from),
+    // which would wipe the freshly-armed flag before the tick handler ever sees
+    // it ready. The TitleScreenLayoutHandler.onScreenInitPost clear handles the
+    // genuine "user bailed back to title" case on its own.
 }
