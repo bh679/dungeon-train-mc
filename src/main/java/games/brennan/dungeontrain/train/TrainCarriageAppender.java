@@ -311,6 +311,19 @@ public final class TrainCarriageAppender {
                 SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
                 if (check == null) continue;
 
+                // Drive the collide→move-together→collide lock BEFORE the
+                // shift decision so this tick's pushback observation can
+                // suppress this tick's move-together (the carriage doesn't
+                // get a "one last move-together" after the locking collision).
+                boolean lockFiredThisTick = false;
+                if (check.colliding()) {
+                    if (provider.hasRunMoveTogetherAfterCollision() && !provider.isMoveTogetherLocked()) {
+                        provider.markMoveTogetherLocked();
+                        lockFiredThisTick = true;
+                    }
+                    provider.markCollidedDuringPlacement();
+                }
+
                 // Three branches:
                 //   colliding             → shift AWAY from offender (existing)
                 //   gap > MAX_GAP_BLOCKS  → shift TOWARD train-facing sibling (new)
@@ -323,7 +336,8 @@ public final class TrainCarriageAppender {
                     check.selfPIdx(),
                     check.collidingPIdx(),
                     gap,
-                    provider.isSpawnedBackward());
+                    provider.isSpawnedBackward(),
+                    provider.isMoveTogetherLocked());
 
                 if (dx != 0.0) {
                     provider.shiftSpawnPosition(dx, 0.0, 0.0);
@@ -332,7 +346,18 @@ public final class TrainCarriageAppender {
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} colliding (overlaps pIdx={}) — shifted {} X, timer reset",
                             provider.getPIdx(), check.collidingPIdx(),
                             String.format("%+.1f", dx));
+                        if (lockFiredThisTick) {
+                            LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} move-together LOCKED (collide→move-together→collide cycle observed)",
+                                provider.getPIdx());
+                        }
                     } else {
+                        // Move-together fired. Mark "after-collision" if a
+                        // collision has already been observed during placement —
+                        // this is the middle leg of the collide→move-together→collide
+                        // cycle. The next collision will then lock.
+                        if (provider.hasCollidedDuringPlacement() && !provider.hasRunMoveTogetherAfterCollision()) {
+                            provider.markRunMoveTogetherAfterCollision();
+                        }
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} too-far (gap={} blocks > {}) — shifted {} X, timer reset",
                             provider.getPIdx(),
                             String.format("%.2f", gap),
@@ -402,31 +427,44 @@ public final class TrainCarriageAppender {
      *       higher pIdx (in front of us) → return {@code -COLLISION_SHIFT_BLOCKS};
      *       offender at lower pIdx (behind us) → return {@code +COLLISION_SHIFT_BLOCKS}.
      *       Equal pIdx is impossible (the collision check skips self), so the
-     *       ternary is exhaustive.</li>
-     *   <li>{@code colliding == false}, {@code gapToFacingSibling} finite and
-     *       {@code > MAX_GAP_BLOCKS} → pull TOWARD the train. Forward-spawn
-     *       (train at -X) → return {@code -COLLISION_SHIFT_BLOCKS}; backward-
-     *       spawn (train at +X) → return {@code +COLLISION_SHIFT_BLOCKS}.</li>
+     *       ternary is exhaustive. Collision pushback is never gated by
+     *       {@code moveTogetherLocked}.</li>
+     *   <li>{@code colliding == false}, {@code moveTogetherLocked == false},
+     *       {@code gapToFacingSibling} finite and {@code > MAX_GAP_BLOCKS} →
+     *       pull TOWARD the train. Forward-spawn (train at -X) → return
+     *       {@code -COLLISION_SHIFT_BLOCKS}; backward-spawn (train at +X) →
+     *       return {@code +COLLISION_SHIFT_BLOCKS}.</li>
      *   <li>otherwise → return {@code 0.0} (clean tick; caller increments the
-     *       consecutive-clean counter).</li>
+     *       consecutive-clean counter). Move-together is suppressed when the
+     *       lock has fired so a clean tick still accumulates and the carriage
+     *       can settle.</li>
      * </ul>
      * {@code gapToFacingSibling} is {@link Double#POSITIVE_INFINITY} when no
      * sibling is on the train-facing side (e.g. seed carriage of a fresh
      * train) — falls into the clean branch by the finite-check guard.
+     *
+     * <p>{@code moveTogetherLocked} reflects per-carriage state owned by
+     * {@link TrainTransformProvider}. It flips to {@code true} after the
+     * collide → move-together → collide cycle is observed, suppressing further
+     * close-gap shifts so the two systems can't keep fighting on the same
+     * group.</p>
      */
     static double placementTrackerShiftDx(
         boolean colliding,
         int selfPIdx,
         int collidingPIdx,
         double gapToFacingSibling,
-        boolean spawnedBackward
+        boolean spawnedBackward,
+        boolean moveTogetherLocked
     ) {
         if (colliding) {
             return (collidingPIdx > selfPIdx)
                 ? -COLLISION_SHIFT_BLOCKS
                 : +COLLISION_SHIFT_BLOCKS;
         }
-        if (Double.isFinite(gapToFacingSibling) && gapToFacingSibling > MAX_GAP_BLOCKS) {
+        if (!moveTogetherLocked
+            && Double.isFinite(gapToFacingSibling)
+            && gapToFacingSibling > MAX_GAP_BLOCKS) {
             return spawnedBackward
                 ? +COLLISION_SHIFT_BLOCKS
                 : -COLLISION_SHIFT_BLOCKS;
