@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:chest",
+  "entries": [
+    { "id": "minecraft:tnt", "count": 10, "weight": 1 },
+    { "id": "minecraft:activator_rail", "count": 1, "weight": 2 },
+    { "id": "minecraft:detector_rail", "count": 2, "weight": 3 },
+    { "id": "minecraft:powered_rail", "count": 5, "weight": 4 },
+    { "id": "minecraft:rail", "count": 8, "weight": 50 },
+    { "id": "minecraft:minecart", "count": 1, "weight": 10 },
+    { "id": "minecraft:hopper_minecart", "count": 1, "weight": 2 },
+    { "id": "minecraft:chest_minecart", "count": 1, "weight": 2 },
+    { "id": "minecraft:stone_bricks", "count": 7, "weight": 40 },
+    { "id": "minecraft:stone_brick_stairs", "count": 4, "weight": 34 },
+    { "id": "minecraft:stone_brick_slab", "count": 5, "weight": 30 },
+    { "id": "minecraft:stone_brick_wall", "count": 5, "weight": 20 }
+  ]
+}
