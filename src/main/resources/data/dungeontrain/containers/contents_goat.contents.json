@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 2,
+  "pools": {
+    "2,0,4": {
+      "fillMax": 3,
+      "entries": [
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:goat_horn", "count": 1, "weight": 1 },
+        { "id": "minecraft:oak_log", "count": 4, "weight": 10 },
+        { "id": "minecraft:oak_planks", "count": 2, "weight": 10 },
+        { "id": "minecraft:hay_block", "count": 3, "weight": 30 },
+        { "id": "minecraft:short_grass", "count": 3, "weight": 12 },
+        { "id": "minecraft:tall_grass", "count": 3, "weight": 12 },
+        { "id": "minecraft:oak_fence", "count": 1, "weight": 4 },
+        { "id": "minecraft:name_tag", "count": 1, "weight": 2 }
+      ]
+    }
+  }
+}

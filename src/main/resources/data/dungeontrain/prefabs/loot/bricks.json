@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:chest",
+  "fillMin": 1,
+  "fillMax": 15,
+  "entries": [
+    { "id": "minecraft:tuff_bricks", "count": 1, "weight": 1 },
+    { "id": "minecraft:mud_bricks", "count": 1, "weight": 1 },
+    { "id": "minecraft:bricks", "count": 1, "weight": 1 },
+    { "id": "minecraft:deepslate_bricks", "count": 1, "weight": 1 },
+    { "id": "minecraft:deepslate_tiles", "count": 1, "weight": 1 },
+    { "id": "minecraft:stone_bricks", "count": 1, "weight": 1 }
+  ]
+}

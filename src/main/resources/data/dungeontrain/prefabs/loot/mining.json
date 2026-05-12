@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:chest",
+  "fillMin": 1,
+  "fillMax": 20,
+  "entries": [
+    { "id": "minecraft:tuff", "count": 1, "weight": 11 },
+    { "id": "minecraft:cobbled_deepslate", "count": 1, "weight": 11 },
+    { "id": "minecraft:andesite", "count": 1, "weight": 13 },
+    { "id": "minecraft:granite", "count": 1, "weight": 13 },
+    { "id": "minecraft:diorite", "count": 1, "weight": 12 },
+    { "id": "minecraft:cobblestone", "count": 1, "weight": 24 },
+    { "id": "minecraft:dirt", "count": 1, "weight": 11 },
+    { "id": "minecraft:gravel", "count": 1, "weight": 10 },
+    { "id": "minecraft:wooden_pickaxe", "count": 1, "weight": 1 },
+    { "id": "minecraft:stone_pickaxe", "count": 1, "weight": 1 },
+    { "id": "minecraft:stone_shovel", "count": 1, "weight": 1 },
+    { "id": "minecraft:wooden_shovel", "count": 1, "weight": 1 }
+  ]
+}

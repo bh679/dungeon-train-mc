@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "block": "minecraft:chest",
+  "fillMin": 1,
+  "fillMax": 10,
+  "entries": [
+    { "id": "minecraft:paper", "count": 10, "weight": 10 },
+    { "id": "minecraft:sugar_cane", "count": 10, "weight": 10 },
+    { "id": "minecraft:chain", "count": 3, "weight": 5 },
+    { "id": "minecraft:glass", "count": 5, "weight": 10 },
+    { "id": "minecraft:oak_log", "count": 2, "weight": 4 },
+    { "id": "minecraft:book", "count": 5, "weight": 3 },
+    { "id": "minecraft:writable_book", "count": 1, "weight": 1 },
+    { "id": "minecraft:bookshelf", "count": 5, "weight": 1 },
+    { "id": "minecraft:ink_sac", "count": 8, "weight": 1 }
+  ]
+}
