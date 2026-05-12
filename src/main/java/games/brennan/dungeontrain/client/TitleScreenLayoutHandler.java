@@ -1,0 +1,135 @@
+package games.brennan.dungeontrain.client;
+
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.editor.EditorDevMode;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import org.slf4j.Logger;
+
+import java.net.URI;
+
+/**
+ * Restructures the title screen so the NeoForge "Mods" button slot is replaced
+ * by a 50/50 split of <b>Dungeon Train Editor</b> + <b>Discord</b>, and the
+ * vanilla Options/Quit row absorbs the displaced Mods button as a 33/33/33
+ * split of <b>Mods | Options | Quit Game</b>.
+ *
+ * <p>Discord opens {@value #DISCORD_URL} via {@link ConfirmLinkScreen}. The
+ * Editor button launches a fresh creative world (same path as
+ * {@link DevQuickWorldHandler#launchFreshWorld(Screen)}) and arms
+ * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
+ * after the server finishes starting, regardless of the
+ * {@code CarriageTemplateStore.sourceTreeAvailable()} gate.</p>
+ *
+ * <p>If any of Mods/Options/Quit can't be located on the title screen (e.g.
+ * a third-party mod has already rewritten the menu), this handler logs a
+ * warning and leaves the menu untouched rather than half-modifying it.</p>
+ */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
+public final class TitleScreenLayoutHandler {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final String DISCORD_URL = "https://discord.gg/jdKAwb6rbW";
+
+    private static final Component DISCORD_LABEL = Component.translatable("gui.dungeontrain.discord_button");
+    private static final Component EDITOR_LABEL = Component.translatable("gui.dungeontrain.editor_button");
+
+    private static final Component MODS_KEY = Component.translatable("fml.menu.mods");
+    private static final Component OPTIONS_KEY = Component.translatable("menu.options");
+    private static final Component QUIT_KEY = Component.translatable("menu.quit");
+
+    private static final int GAP = 4;
+
+    private TitleScreenLayoutHandler() {}
+
+    @SubscribeEvent
+    public static void onScreenInitPost(ScreenEvent.Init.Post event) {
+        if (!(event.getScreen() instanceof TitleScreen titleScreen)) {
+            return;
+        }
+
+        // Defensive: if the user bailed mid-world-load, the auto-open flag
+        // would still be armed. Reaching the title screen means we have no
+        // pending join, so drop it.
+        EditorAutoOpenHandler.clear();
+
+        Button mods = findButton(event, MODS_KEY);
+        Button options = findButton(event, OPTIONS_KEY);
+        Button quit = findButton(event, QUIT_KEY);
+
+        if (mods == null || options == null || quit == null) {
+            LOGGER.warn("TitleScreen layout: could not locate Mods/Options/Quit (mods={}, options={}, quit={}); skipping.",
+                    mods != null, options != null, quit != null);
+            return;
+        }
+
+        int slotX = mods.getX();
+        int slotY = mods.getY();
+        int slotW = mods.getWidth();
+        int slotH = mods.getHeight();
+        int halfW = (slotW - GAP) / 2;
+
+        int rowLeft = Math.min(options.getX(), quit.getX());
+        int rowRight = Math.max(options.getX() + options.getWidth(), quit.getX() + quit.getWidth());
+        int rowY = options.getY();
+        int rowWidth = rowRight - rowLeft;
+        int thirdW = (rowWidth - 2 * GAP) / 3;
+
+        mods.setX(rowLeft);
+        mods.setY(rowY);
+        mods.setWidth(thirdW);
+
+        options.setX(rowLeft + thirdW + GAP);
+        options.setY(rowY);
+        options.setWidth(thirdW);
+
+        quit.setX(rowLeft + 2 * (thirdW + GAP));
+        quit.setY(rowY);
+        quit.setWidth(thirdW);
+
+        Button editor = Button.builder(EDITOR_LABEL, b -> openEditor(titleScreen))
+                .bounds(slotX, slotY, halfW, slotH)
+                .build();
+        event.addListener(editor);
+
+        Button discord = Button.builder(DISCORD_LABEL, b -> openDiscord(titleScreen))
+                .bounds(slotX + halfW + GAP, slotY, halfW, slotH)
+                .build();
+        event.addListener(discord);
+    }
+
+    private static Button findButton(ScreenEvent.Init.Post event, Component message) {
+        for (GuiEventListener listener : event.getListenersList()) {
+            if (listener instanceof Button button && message.equals(button.getMessage())) {
+                return button;
+            }
+        }
+        return null;
+    }
+
+    private static void openDiscord(Screen parent) {
+        Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
+            if (yes) {
+                Util.getPlatform().openUri(URI.create(DISCORD_URL));
+            }
+            Minecraft.getInstance().setScreen(parent);
+        }, DISCORD_URL, true));
+    }
+
+    private static void openEditor(Screen parent) {
+        EditorDevMode.queueOnForNextStart();
+        EditorAutoOpenHandler.queueAutoOpen();
+        DevQuickWorldHandler.launchFreshWorld(parent);
+    }
+}
