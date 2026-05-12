@@ -1,12 +1,16 @@
 name: Release
 
+# Releases are dispatch-only. There is intentionally no `push: tags` trigger:
+# the release workflow is the SOURCE of tags, not a consumer. A tag pushed by
+# any other path (manual `git tag && push`, `gh release create`, stray script)
+# becomes a visible orphan with no release attached — see CLAUDE.md
+# "Releasing (post-Gate 3)" for the supported flow.
+
 on:
-  push:
-    tags: ['v*.*.*']
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.70.0). Must already exist in the repo."
+        description: "Tag to create + release (e.g. v0.142.0). Will be created from main HEAD — must NOT already exist."
         required: true
         type: string
 
@@ -16,11 +20,12 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      RELEASE_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: main
+          fetch-depth: 0
 
       - uses: actions/setup-java@v4
         with:
@@ -29,12 +34,21 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v3
 
-      - name: Verify tag matches mod_version
+      - name: Verify input tag matches mod_version on main
         run: |
           TAG="${RELEASE_TAG#v}"
           GRADLE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
           if [ "$TAG" != "$GRADLE_VERSION" ]; then
-            echo "::error::Tag $RELEASE_TAG does not match mod_version=$GRADLE_VERSION in gradle.properties"
+            echo "::error::Input tag $RELEASE_TAG does not match mod_version=$GRADLE_VERSION on main. Bump gradle.properties to $TAG (or re-dispatch with tag=v$GRADLE_VERSION) before releasing."
+            exit 1
+          fi
+
+      - name: Check tag does not already exist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/git/refs/tags/${RELEASE_TAG}" >/dev/null 2>&1; then
+            echo "::error::Tag $RELEASE_TAG already exists on remote (likely an orphan from before the dispatch-only flow). Delete it first: gh api -X DELETE repos/${GITHUB_REPOSITORY}/git/refs/tags/${RELEASE_TAG}"
             exit 1
           fi
 
