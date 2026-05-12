@@ -73,7 +73,7 @@ public final class LootPrefabStore {
 
     static final String SUBDIR = "prefabs/loot";
     private static final String EXT = ".json";
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int CURRENT_SCHEMA_VERSION = 3;
     private static final ResourceLocation FALLBACK_BLOCK = ResourceLocation.fromNamespaceAndPath("minecraft", "chest");
 
     static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/prefabs/loot/";
@@ -320,7 +320,20 @@ public final class LootPrefabStore {
                     ? e.get("count").getAsInt() : 1;
                 int weight = e.has("weight") && e.get("weight").isJsonPrimitive()
                     ? e.get("weight").getAsInt() : 1;
-                entries.add(new ContainerContentsEntry(rl, count, weight));
+                boolean randDur = e.has("randDur") && e.get("randDur").isJsonPrimitive()
+                    ? e.get("randDur").getAsBoolean()
+                    : ContainerContentsEntry.DEFAULT_RANDOM_DURABILITY;
+                int durChance = e.has("durChance") && e.get("durChance").isJsonPrimitive()
+                    ? e.get("durChance").getAsInt()
+                    : ContainerContentsEntry.DEFAULT_DURABILITY_CHANCE;
+                boolean randEnch = e.has("randEnch") && e.get("randEnch").isJsonPrimitive()
+                    ? e.get("randEnch").getAsBoolean()
+                    : ContainerContentsEntry.DEFAULT_RANDOM_ENCHANTMENT;
+                int enchChance = e.has("enchChance") && e.get("enchChance").isJsonPrimitive()
+                    ? e.get("enchChance").getAsInt()
+                    : ContainerContentsEntry.DEFAULT_ENCHANTMENT_CHANCE;
+                entries.add(new ContainerContentsEntry(rl, count, weight,
+                    randDur, durChance, randEnch, enchChance));
             }
         }
         return Optional.of(new Data(key, block, new ContainerContentsPool(entries, fillMin, fillMax)));
@@ -344,7 +357,11 @@ public final class LootPrefabStore {
             sb.append("\n    {")
                 .append(" \"id\": \"").append(e.itemId().toString()).append("\",")
                 .append(" \"count\": ").append(e.count()).append(",")
-                .append(" \"weight\": ").append(e.weight())
+                .append(" \"weight\": ").append(e.weight()).append(",")
+                .append(" \"randDur\": ").append(e.randomDurability()).append(",")
+                .append(" \"durChance\": ").append(e.durabilityChance()).append(",")
+                .append(" \"randEnch\": ").append(e.randomEnchantment()).append(",")
+                .append(" \"enchChance\": ").append(e.enchantmentChance())
                 .append(" }");
             first = false;
         }

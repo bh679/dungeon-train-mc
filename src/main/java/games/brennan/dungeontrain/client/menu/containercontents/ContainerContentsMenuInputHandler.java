@@ -189,6 +189,28 @@ public final class ContainerContentsMenuInputHandler {
                 DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                     ContainerContentsEditPacket.Op.REMOVE, plotKey, local, hit.index(), "", 0));
             }
+            case ENTRY_RAND_DUR_TOGGLE -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.TOGGLE_RAND_DUR, plotKey, local, hit.index(), "", 0));
+            }
+            case ENTRY_RAND_ENCH_TOGGLE -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.TOGGLE_RAND_ENCH, plotKey, local, hit.index(), "", 0));
+            }
+            case ENTRY_DUR_CHANCE -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                int delta = shift ? -5 : 5;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.BUMP_DUR_CHANCE, plotKey, local, hit.index(), "", delta));
+            }
+            case ENTRY_ENCH_CHANCE -> {
+                if (hit.index() < 0 || hit.index() >= ContainerContentsMenu.entries().size()) return;
+                int delta = shift ? -5 : 5;
+                DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
+                    ContainerContentsEditPacket.Op.BUMP_ENCH_CHANCE, plotKey, local, hit.index(), "", delta));
+            }
             case LINK_UNLINK -> DungeonTrainNet.sendToServer(new ContainerContentsEditPacket(
                 ContainerContentsEditPacket.Op.UNLINK, plotKey, local, -1, "", 0));
             // LINK_INDICATOR is informational — no click action.

@@ -2,17 +2,24 @@ package games.brennan.dungeontrain.editor;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.HolderSet;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.tags.EnchantmentTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 /**
  * Pure utility — turn a {@link ContainerContentsPool} into the {@code Items}
@@ -33,6 +40,15 @@ public final class ContainerContentsRoller {
     private static final long MIX_Z = 0x94D049BB133111EBL;
     private static final long MIX_S = 0xC6BC279692B5C323L;
     private static final long MIX_C = 0xCAFEBABE12345678L;
+
+    /** Salt for the durability-chance roll (does it apply on this spawn?). */
+    private static final long SALT_DUR_CHANCE  = 0xD1E5D1E5DEADCAFEL;
+    /** Salt for the actual durability value when the chance roll succeeds. */
+    private static final long SALT_DUR_VALUE   = 0x12345678ABCDEF01L;
+    /** Salt for the enchantment-chance roll. */
+    private static final long SALT_ENCH_CHANCE = 0xFEEDFACECAFEBABEL;
+    /** Seed source for the vanilla EnchantmentHelper RandomSource. */
+    private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
 
     /**
      * BE NBT key on {@code decorated_pot}. Holds the rolled {@link ItemStack} that
@@ -93,11 +109,11 @@ public final class ContainerContentsRoller {
             // Per-entry count is treated as a max — roll the actual stack
             // count uniformly in [1, picked.count()] for variety per slot.
             int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
-            CompoundTag stack = new CompoundTag();
-            stack.putByte("Slot", (byte) slot);
-            stack.putString("id", picked.itemId().toString());
-            stack.putByte("Count", (byte) Math.max(1, Math.min(64, rolledCount)));
-            items.add(stack);
+            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+            if (stack.isEmpty()) continue;
+            CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
+            stackTag.putByte("Slot", (byte) slot);
+            items.add(stackTag);
         }
 
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
@@ -245,17 +261,98 @@ public final class ContainerContentsRoller {
 
         ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);
         if (picked == null || picked.isAir()) return out;
-        Item item = resolveItem(picked.itemId());
-        if (item == null) return out;
 
         int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, /*slot*/ 0);
-        ItemStack stack = new ItemStack(item, Math.max(1, Math.min(stack0(item).getMaxStackSize(), rolledCount)));
+        ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, /*slot*/ 0, registries);
+        if (stack.isEmpty()) return out;
         CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
         out.put(NBT_POT_LOOT, stackTag);
         return out;
     }
 
-    private static ItemStack stack0(Item item) { return new ItemStack(item); }
+    /**
+     * Build the rolled {@link ItemStack} for a chosen pool entry. Materializes
+     * the registered Item, clamps the stack size to its max, then conditionally
+     * applies random durability and a random enchantment.
+     *
+     * <p>Each gate (durability, enchantment) uses an independent deterministic
+     * salt so toggling one effect doesn't shift the other's roll outcome — the
+     * same chest at the same world seed always produces the same loot.</p>
+     */
+    private static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
+                                           BlockPos localPos, long worldSeed,
+                                           int carriageIndex, int slot,
+                                           HolderLookup.Provider registries) {
+        Item item = resolveItem(picked.itemId());
+        if (item == null) return ItemStack.EMPTY;
+        int maxStack = new ItemStack(item).getMaxStackSize();
+        ItemStack stack = new ItemStack(item, Math.max(1, Math.min(maxStack, rolledCount)));
+
+        if (picked.randomDurability() && stack.isDamageableItem()
+            && rollChance(picked.durabilityChance(), localPos, worldSeed,
+                          carriageIndex, slot, SALT_DUR_CHANCE)) {
+            int max = stack.getMaxDamage();
+            if (max > 1) {
+                int damage = rollUniformInt(max - 1, localPos, worldSeed,
+                    carriageIndex, slot, SALT_DUR_VALUE);
+                stack.setDamageValue(damage);
+            }
+        }
+
+        if (picked.randomEnchantment() && stack.isEnchantable()
+            && rollChance(picked.enchantmentChance(), localPos, worldSeed,
+                          carriageIndex, slot, SALT_ENCH_CHANCE)) {
+            long seed = mix(localPos, worldSeed, carriageIndex, slot, SALT_ENCH_VALUE);
+            RandomSource rs = RandomSource.create(seed);
+            int level = 1 + rs.nextInt(30);
+            Optional<HolderSet.Named<Enchantment>> nonTreasure = registries
+                .lookup(Registries.ENCHANTMENT)
+                .flatMap(reg -> reg.get(EnchantmentTags.IN_ENCHANTING_TABLE));
+            if (nonTreasure.isPresent()) {
+                EnchantmentHelper.enchantItem(rs, stack, level, nonTreasure.get().stream());
+            }
+        }
+
+        return stack;
+    }
+
+    /**
+     * Roll {@code true} with probability {@code pct} %, deterministically seeded
+     * by {@code (localPos, worldSeed, carriageIndex, slot, salt)}. {@code pct=0}
+     * never fires; {@code pct>=100} always fires.
+     */
+    private static boolean rollChance(int pct, BlockPos localPos, long worldSeed,
+                                      int carriageIndex, int slot, long salt) {
+        if (pct <= 0) return false;
+        if (pct >= 100) return true;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
+        long unsigned = state & 0x7FFFFFFFFFFFFFFFL;
+        return (int) (unsigned % 100L) < pct;
+    }
+
+    /** Uniform integer in {@code [0, max]} (inclusive), deterministically seeded. */
+    private static int rollUniformInt(int max, BlockPos localPos, long worldSeed,
+                                      int carriageIndex, int slot, long salt) {
+        if (max <= 0) return 0;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
+        long unsigned = state & 0x7FFFFFFFFFFFFFFFL;
+        return (int) (unsigned % (long)(max + 1));
+    }
+
+    /** Splittable-mix of the deterministic-roll inputs. */
+    private static long mix(BlockPos localPos, long worldSeed, int carriageIndex, int slot, long salt) {
+        long state = worldSeed
+            ^ ((long) localPos.getX() * MIX_X)
+            ^ ((long) localPos.getY() * MIX_Y)
+            ^ ((long) localPos.getZ() * MIX_Z)
+            ^ ((long) carriageIndex * MIX_C)
+            ^ ((long) slot * MIX_S)
+            ^ salt;
+        state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+        state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+        state = state ^ (state >>> 31);
+        return state;
+    }
 
     @Nullable
     private static BlockEntityType<?> beTypeFor(BlockState state) {

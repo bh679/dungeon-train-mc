@@ -13,6 +13,10 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -53,6 +57,15 @@ public final class ContainerContentsMenuRenderer {
     );
 
     static final double ROW_HEIGHT = 0.30;
+    /**
+     * Per-entry sub-row height — hosts the 4 random-durability /
+     * -enchantment cells. Deliberately shorter than {@link #ROW_HEIGHT} so the
+     * vertical padding around the smaller controls reads as tight rather than
+     * matching the chunkier top-strip cells.
+     */
+    static final double SUB_ROW_HEIGHT = 0.18;
+    /** Total vertical space for one entry (top strip + sub-row). */
+    static final double ENTRY_BLOCK_HEIGHT = ROW_HEIGHT + SUB_ROW_HEIGHT;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
     static final double LINK_ROW_HEIGHT = 0.26;
@@ -122,9 +135,12 @@ public final class ContainerContentsMenuRenderer {
         int n = entries.size();
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
         double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
-        int displayedRows = Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN);
-        if (displayedRows == 0) displayedRows = 1;
-        double gridH = displayedRows * ROW_HEIGHT;
+
+        // Per-entry layout — variable row height. An item that supports
+        // neither random durability nor random enchantment collapses to a
+        // single-strip row (no sub-row drawn).
+        EntryLayout layout = computeLayout(entries, colCount);
+        double gridH = layout.gridHeight();
         double linkH = hasLinkRow() ? LINK_ROW_HEIGHT : 0.0;
         double panelH = HEADER_HEIGHT + linkH + TOOLBAR_HEIGHT + gridH;
         double halfW = panelW / 2.0;
@@ -220,10 +236,10 @@ public final class ContainerContentsMenuRenderer {
         double gridTop = toolbarBottom;
         for (int i = 0; i < n; i++) {
             int col = i / ContainerContentsMenu.ROWS_PER_COLUMN;
-            int row = i % ContainerContentsMenu.ROWS_PER_COLUMN;
             double colXL = -halfW + col * colActualW;
             double colXR = colXL + colActualW;
-            double rowTop = gridTop - row * ROW_HEIGHT;
+            // Top strip — name / count / weight / × (existing layout).
+            double rowTop = gridTop - layout.rowDispTop[i];
             double rowBottom = rowTop - ROW_HEIGHT;
             double rowCY = (rowTop + rowBottom) / 2.0;
 
@@ -278,7 +294,139 @@ public final class ContainerContentsMenuRenderer {
                 xCellR - 0.005, rowTop - 0.005, xTint);
             drawCenteredText(ps, buffer, font, "X",
                 (xCellL + xCellR) / 2.0, rowCY, 0xFFFFFFFF);
+
+            // Sub-row — only present when at least one effect applies to this
+            // item. Cells for the non-applicable effect (e.g. durability cells
+            // on a book, or enchantment cells on cobblestone) are simply not
+            // drawn.
+            boolean showDur = layout.showDur[i];
+            boolean showEnch = layout.showEnch[i];
+            if (!showDur && !showEnch) continue;
+
+            double subTop = rowBottom;
+            double subBottom = subTop - SUB_ROW_HEIGHT;
+            double subCY = (subTop + subBottom) / 2.0;
+            int subRowTint = (i % 2 == 0) ? 0x18FFFFFF : 0x08FFFFFF;
+            drawQuad(ps, buffer, colXL + 0.01, subBottom + 0.005,
+                colXR - 0.01, subTop - 0.005, subRowTint);
+
+            double subCellW = (colActualW - 0.02) / 4.0;
+            double dur1L = colXL + 0.01;
+            double dur1R = dur1L + subCellW;
+            double dur2L = dur1R;
+            double dur2R = dur2L + subCellW;
+            double ench1L = dur2R;
+            double ench1R = ench1L + subCellW;
+            double ench2L = ench1R;
+            double ench2R = colXR - 0.01;
+
+            if (showDur) {
+                // Random-durability toggle.
+                boolean durTogHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_RAND_DUR_TOGGLE && hovered.index() == i;
+                boolean durOn = entry.randomDurability();
+                int durTogTint = durTogHover
+                    ? (durOn ? 0xC066FF99 : 0xC0AAAAAA)
+                    : (durOn ? 0x6033CC66 : 0x40555555);
+                drawQuad(ps, buffer, dur1L + 0.005, subBottom + 0.005,
+                    dur1R - 0.005, subTop - 0.005, durTogTint);
+                drawCenteredText(ps, buffer, font, durOn ? "Dur ✓" : "Dur ✗",
+                    (dur1L + dur1R) / 2.0, subCY,
+                    durTogHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                // Random-durability chance cell.
+                boolean durChanceHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_DUR_CHANCE && hovered.index() == i;
+                int durChanceTint = durChanceHover ? 0xC0FFCC33 : 0x40FFFFFF;
+                drawQuad(ps, buffer, dur2L + 0.005, subBottom + 0.005,
+                    dur2R - 0.005, subTop - 0.005, durChanceTint);
+                drawCenteredText(ps, buffer, font, entry.durabilityChance() + "%",
+                    (dur2L + dur2R) / 2.0, subCY,
+                    durChanceHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
+
+            if (showEnch) {
+                // Random-enchantment toggle.
+                boolean enchTogHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_RAND_ENCH_TOGGLE && hovered.index() == i;
+                boolean enchOn = entry.randomEnchantment();
+                int enchTogTint = enchTogHover
+                    ? (enchOn ? 0xC099CCFF : 0xC0AAAAAA)
+                    : (enchOn ? 0x6033AACC : 0x40555555);
+                drawQuad(ps, buffer, ench1L + 0.005, subBottom + 0.005,
+                    ench1R - 0.005, subTop - 0.005, enchTogTint);
+                drawCenteredText(ps, buffer, font, enchOn ? "Ench ✓" : "Ench ✗",
+                    (ench1L + ench1R) / 2.0, subCY,
+                    enchTogHover ? 0xFF000000 : 0xFFFFFFFF);
+
+                // Random-enchantment chance cell.
+                boolean enchChanceHover = hovered.kind() == ContainerContentsMenu.CellKind.ENTRY_ENCH_CHANCE && hovered.index() == i;
+                int enchChanceTint = enchChanceHover ? 0xC0FFCC33 : 0x40FFFFFF;
+                drawQuad(ps, buffer, ench2L + 0.005, subBottom + 0.005,
+                    ench2R - 0.005, subTop - 0.005, enchChanceTint);
+                drawCenteredText(ps, buffer, font, entry.enchantmentChance() + "%",
+                    (ench2L + ench2R) / 2.0, subCY,
+                    enchChanceHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
         }
+    }
+
+    /**
+     * Per-entry layout for the root grid. Each entry's row height varies based
+     * on whether its item supports the random-durability / random-enchantment
+     * effects — items that support neither get a single-strip row, others get
+     * a double-strip row with a sub-row.
+     *
+     * <p>{@code rowDispTop[i]} is the entry's top-edge displacement from the
+     * grid's top edge (positive going down). {@code gridHeight} is the height
+     * needed by the tallest column.</p>
+     */
+    record EntryLayout(double[] rowDispTop, boolean[] showDur, boolean[] showEnch, double gridHeight) {}
+
+    static EntryLayout computeLayout(List<ContainerContentsSyncPacket.Entry> entries, int colCount) {
+        int n = entries.size();
+        double[] rowDispTop = new double[n];
+        boolean[] showDur = new boolean[n];
+        boolean[] showEnch = new boolean[n];
+        double[] colTotalH = new double[Math.max(colCount, 1)];
+        for (int i = 0; i < n; i++) {
+            int col = i / ContainerContentsMenu.ROWS_PER_COLUMN;
+            String id = entries.get(i).itemId();
+            showDur[i] = isDamageable(id);
+            showEnch[i] = isEnchantable(id);
+            double h = (showDur[i] || showEnch[i]) ? ENTRY_BLOCK_HEIGHT : ROW_HEIGHT;
+            rowDispTop[i] = colTotalH[col];
+            colTotalH[col] += h;
+        }
+        double gridH = 0;
+        for (double h : colTotalH) gridH = Math.max(gridH, h);
+        // Empty-state min height — keeps the panel visually anchored when the
+        // pool has zero entries.
+        if (gridH <= 0) gridH = ENTRY_BLOCK_HEIGHT;
+        return new EntryLayout(rowDispTop, showDur, showEnch, gridH);
+    }
+
+    /**
+     * True if the item identified by {@code itemId} has a durability bar
+     * (i.e. {@link ItemStack#isDamageableItem()}). Returns {@code false} for
+     * unknown / air / non-damageable items.
+     */
+    static boolean isDamageable(String itemId) {
+        Item item = resolveItem(itemId);
+        return item != null && new ItemStack(item).isDamageableItem();
+    }
+
+    /**
+     * True if the item identified by {@code itemId} can carry vanilla
+     * enchantments ({@link ItemStack#isEnchantable()}). Books are enchantable.
+     */
+    static boolean isEnchantable(String itemId) {
+        Item item = resolveItem(itemId);
+        return item != null && new ItemStack(item).isEnchantable();
+    }
+
+    private static Item resolveItem(String itemId) {
+        if (itemId == null || itemId.isEmpty()) return null;
+        ResourceLocation rl = ResourceLocation.tryParse(itemId);
+        if (rl == null) return null;
+        return BuiltInRegistries.ITEM.get(rl);
     }
 
     private static void drawSearch(PoseStack ps, MultiBufferSource buffer, Font font) {

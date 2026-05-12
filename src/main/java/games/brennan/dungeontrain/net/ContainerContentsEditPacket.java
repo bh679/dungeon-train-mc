@@ -25,6 +25,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       {@code delta} (signed; clamped server-side).</li>
  *   <li>{@link Op#UNLINK} — clear the loot-prefab link at this cell. No
  *       payload fields used.</li>
+ *   <li>{@link Op#TOGGLE_RAND_DUR} / {@link Op#TOGGLE_RAND_ENCH} — flip the
+ *       per-entry random-durability / random-enchantment master toggle.</li>
+ *   <li>{@link Op#BUMP_DUR_CHANCE} / {@link Op#BUMP_ENCH_CHANCE} — adjust the
+ *       0-100 % chance that the effect applies, wrapping at the boundaries.</li>
  * </ul>
  *
  * <p>Server validates OP + plot membership before mutating.</p>
@@ -32,7 +36,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localPos,
                                           int entryIndex, String itemId, int delta) implements CustomPacketPayload {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX, UNLINK }
+    public enum Op {
+        ADD, REMOVE, CLEAR, BUMP_WEIGHT, BUMP_COUNT, BUMP_FILL_MIN, BUMP_FILL_MAX, UNLINK,
+        TOGGLE_RAND_DUR, BUMP_DUR_CHANCE, TOGGLE_RAND_ENCH, BUMP_ENCH_CHANCE
+    }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "container_contents_edit"));

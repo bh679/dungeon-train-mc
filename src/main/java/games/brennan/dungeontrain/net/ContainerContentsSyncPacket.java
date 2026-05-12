@@ -39,10 +39,14 @@ public record ContainerContentsSyncPacket(
 ) implements CustomPacketPayload {
 
     /**
-     * Single pool entry on the wire — item registry id, max stack count, weight.
+     * Single pool entry on the wire — item registry id, max stack count, weight,
+     * plus the per-entry random-durability / random-enchantment master toggles
+     * and their 0-100 % chances.
      * {@code count} is a max — roll-time produces a uniform-random value in {@code [1, count]}.
      */
-    public record Entry(String itemId, int count, int weight) {}
+    public record Entry(String itemId, int count, int weight,
+                        boolean randomDurability, int durabilityChance,
+                        boolean randomEnchantment, int enchantmentChance) {}
 
     public static final Type<ContainerContentsSyncPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "container_contents_sync"));
@@ -80,6 +84,10 @@ public record ContainerContentsSyncPacket(
             buf.writeUtf(e.itemId(), 256);
             buf.writeVarInt(e.count());
             buf.writeVarInt(e.weight());
+            buf.writeBoolean(e.randomDurability());
+            buf.writeVarInt(e.durabilityChance());
+            buf.writeBoolean(e.randomEnchantment());
+            buf.writeVarInt(e.enchantmentChance());
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -110,7 +118,11 @@ public record ContainerContentsSyncPacket(
             String id = buf.readUtf(256);
             int count = buf.readVarInt();
             int weight = buf.readVarInt();
-            entries.add(new Entry(id, count, weight));
+            boolean randDur = buf.readBoolean();
+            int durChance = buf.readVarInt();
+            boolean randEnch = buf.readBoolean();
+            int enchChance = buf.readVarInt();
+            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link);

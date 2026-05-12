@@ -1,55 +1,55 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "pools": {
     "1,0,4": {
       "fillMin": 1,
       "fillMax": 14,
       "entries": [
-        { "id": "minecraft:emerald_block", "count": 1, "weight": 1 },
-        { "id": "minecraft:emerald", "count": 3, "weight": 15 },
-        { "id": "minecraft:paper", "count": 5, "weight": 20 },
-        { "id": "minecraft:carrot", "count": 3, "weight": 50 },
-        { "id": "minecraft:potato", "count": 3, "weight": 51 },
-        { "id": "minecraft:wooden_axe", "count": 1, "weight": 5 },
-        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 30 },
-        { "id": "minecraft:name_tag", "count": 1, "weight": 8 },
-        { "id": "minecraft:torch", "count": 1, "weight": 35 },
-        { "id": "minecraft:chain", "count": 1, "weight": 10 },
-        { "id": "minecraft:flower_pot", "count": 1, "weight": 10 }
+        { "id": "minecraft:emerald_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:emerald", "count": 3, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:paper", "count": 5, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:carrot", "count": 3, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:potato", "count": 3, "weight": 51, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:name_tag", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:torch", "count": 1, "weight": 35, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chain", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:flower_pot", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
     "0,0,0": {
       "fillMin": 1,
       "fillMax": 14,
       "entries": [
-        { "id": "minecraft:emerald_block", "count": 1, "weight": 1 },
-        { "id": "minecraft:emerald", "count": 3, "weight": 15 },
-        { "id": "minecraft:paper", "count": 5, "weight": 20 },
-        { "id": "minecraft:carrot", "count": 3, "weight": 50 },
-        { "id": "minecraft:potato", "count": 3, "weight": 51 },
-        { "id": "minecraft:wooden_axe", "count": 1, "weight": 5 },
-        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 30 },
-        { "id": "minecraft:name_tag", "count": 1, "weight": 8 },
-        { "id": "minecraft:torch", "count": 1, "weight": 35 },
-        { "id": "minecraft:chain", "count": 1, "weight": 10 },
-        { "id": "minecraft:flower_pot", "count": 1, "weight": 10 }
+        { "id": "minecraft:emerald_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:emerald", "count": 3, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:paper", "count": 5, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:carrot", "count": 3, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:potato", "count": 3, "weight": 51, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:name_tag", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:torch", "count": 1, "weight": 35, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chain", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:flower_pot", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
     "6,0,0": {
       "fillMin": 1,
       "fillMax": 14,
       "entries": [
-        { "id": "minecraft:emerald_block", "count": 1, "weight": 1 },
-        { "id": "minecraft:emerald", "count": 3, "weight": 15 },
-        { "id": "minecraft:paper", "count": 5, "weight": 20 },
-        { "id": "minecraft:carrot", "count": 3, "weight": 50 },
-        { "id": "minecraft:potato", "count": 3, "weight": 51 },
-        { "id": "minecraft:wooden_axe", "count": 1, "weight": 5 },
-        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 30 },
-        { "id": "minecraft:name_tag", "count": 1, "weight": 8 },
-        { "id": "minecraft:torch", "count": 1, "weight": 35 },
-        { "id": "minecraft:chain", "count": 1, "weight": 10 },
-        { "id": "minecraft:flower_pot", "count": 1, "weight": 10 }
+        { "id": "minecraft:emerald_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:emerald", "count": 3, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:paper", "count": 5, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:carrot", "count": 3, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:potato", "count": 3, "weight": 51, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:poisonous_potato", "count": 3, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:name_tag", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:torch", "count": 1, "weight": 35, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chain", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:flower_pot", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     }
   },
