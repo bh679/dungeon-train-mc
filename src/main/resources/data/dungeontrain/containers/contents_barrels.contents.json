@@ -1,6 +1,21 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "pools": {
+    "1,0,2": {
+      "fillMin": 1,
+      "fillMax": 1,
+      "entries": [
+        { "id": "minecraft:oak_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:spruce_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:birch_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:jungle_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:acacia_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:dark_oak_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:mangrove_propagule", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:cherry_sapling", "count": 5, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:azalea", "count": 6, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    }
   },
   "links": {
     "6,0,2": "meats",
