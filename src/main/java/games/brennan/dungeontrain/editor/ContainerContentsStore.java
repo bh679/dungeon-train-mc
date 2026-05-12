@@ -434,8 +434,11 @@ public final class ContainerContentsStore {
                     .append(" \"randDur\": ").append(ce.randomDurability()).append(",")
                     .append(" \"durChance\": ").append(ce.durabilityChance()).append(",")
                     .append(" \"randEnch\": ").append(ce.randomEnchantment()).append(",")
-                    .append(" \"enchChance\": ").append(ce.enchantmentChance())
-                    .append(" }");
+                    .append(" \"enchChance\": ").append(ce.enchantmentChance());
+                if (ce.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
+                    sb.append(", \"slot\": ").append(ce.slotOverride());
+                }
+                sb.append(" }");
                 firstEntry = false;
             }
             sb.append("\n      ]");
@@ -544,8 +547,11 @@ public final class ContainerContentsStore {
                         int enchChance = eo.has("enchChance")
                             ? eo.get("enchChance").getAsInt()
                             : ContainerContentsEntry.DEFAULT_ENCHANTMENT_CHANCE;
+                        int slotOverride = eo.has("slot")
+                            ? eo.get("slot").getAsInt()
+                            : ContainerContentsEntry.SLOT_AUTO;
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance));
+                            randDur, durChance, randEnch, enchChance, slotOverride));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));

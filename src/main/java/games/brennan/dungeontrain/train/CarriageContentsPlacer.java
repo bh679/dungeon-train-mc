@@ -133,6 +133,7 @@ public final class CarriageContentsPlacer {
                                CarriageDims dims, long seed, int carriageIndex) {
         placeAtInternal(level, carriageOrigin, contents, dims, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
         applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        applyContentLinks(level, carriageOrigin, contents, dims, seed, carriageIndex);
     }
 
     /**
@@ -165,6 +166,7 @@ public final class CarriageContentsPlacer {
                                         CarriageDims dims, long seed, int carriageIndex) {
         placeAtInternal(level, carriageOrigin, contents, dims, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
         applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        applyContentLinks(level, carriageOrigin, contents, dims, seed, carriageIndex);
     }
 
     /**
@@ -273,6 +275,60 @@ public final class CarriageContentsPlacer {
                     "contents:" + contents.id(), entry.localPos(), seed, carriageIndex,
                     picked.linkedLootPrefabId());
             }
+        }
+    }
+
+    /**
+     * Apply any {@link games.brennan.dungeontrain.editor.ContainerContentsStore}
+     * link at a cell that the static template stamped (rather than the variant
+     * sidecar). A link records "this cell uses prefab X" — for cells that also
+     * appear in the variants sidecar, the variant flow already rolls; this pass
+     * covers the link-only cells so a player can pin a static-template furnace
+     * to a loot prefab via the C-menu and have it just work.
+     *
+     * <p>Runs after {@link #applyVariantBlocks} so variant-overlaid cells aren't
+     * touched twice (the link read-through would otherwise re-roll into a
+     * variant cell that already has its own roll).</p>
+     */
+    private static void applyContentLinks(ServerLevel level, BlockPos carriageOrigin,
+                                          CarriageContents contents, CarriageDims dims,
+                                          long seed, int carriageIndex) {
+        String plotKey = "contents:" + contents.id();
+        games.brennan.dungeontrain.editor.ContainerContentsStore store =
+            games.brennan.dungeontrain.editor.ContainerContentsStore.loadFor(plotKey);
+        BlockPos origin = interiorOrigin(carriageOrigin);
+        // Skip cells already handled by a variant entry — the variant flow
+        // already rolled into them.
+        Vec3i size = interiorSize(dims);
+        games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks variants =
+            games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks.loadFor(contents, size);
+        java.util.Set<BlockPos> variantPositions = new java.util.HashSet<>();
+        if (!variants.isEmpty()) {
+            for (var entry : variants.entries()) variantPositions.add(entry.localPos());
+        }
+        for (BlockPos localPos : store.allPositions()) {
+            if (variantPositions.contains(localPos)) continue;
+            String linkId = store.linkAt(localPos);
+            if (linkId == null) continue;
+            java.util.Optional<games.brennan.dungeontrain.editor.LootPrefabStore.Data> loaded =
+                games.brennan.dungeontrain.editor.LootPrefabStore.load(linkId);
+            if (loaded.isEmpty()) continue;
+            games.brennan.dungeontrain.editor.ContainerContentsPool pool = loaded.get().pool();
+            if (pool.isEmpty()) continue;
+            BlockPos worldPos = origin.offset(localPos);
+            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
+            if (!state.hasBlockEntity()) continue;
+            if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
+                && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) continue;
+            net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(worldPos);
+            if (be == null) continue;
+            net.minecraft.nbt.CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
+            net.minecraft.nbt.CompoundTag rolled = games.brennan.dungeontrain.editor.ContainerContentsRoller.roll(
+                pool, state, localPos, seed, carriageIndex, baseNbt,
+                level.registryAccess(), level);
+            if (rolled == null) continue;
+            be.loadCustomOnly(rolled, level.registryAccess());
+            be.setChanged();
         }
     }
 

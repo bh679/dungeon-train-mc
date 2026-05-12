@@ -345,8 +345,11 @@ public final class LootPrefabStore {
                 int enchChance = e.has("enchChance") && e.get("enchChance").isJsonPrimitive()
                     ? e.get("enchChance").getAsInt()
                     : ContainerContentsEntry.DEFAULT_ENCHANTMENT_CHANCE;
+                int slotOverride = e.has("slot") && e.get("slot").isJsonPrimitive()
+                    ? e.get("slot").getAsInt()
+                    : ContainerContentsEntry.SLOT_AUTO;
                 entries.add(new ContainerContentsEntry(rl, count, weight,
-                    randDur, durChance, randEnch, enchChance));
+                    randDur, durChance, randEnch, enchChance, slotOverride));
             }
         }
         return Optional.of(new Data(key, block, new ContainerContentsPool(entries, fillMin, fillMax)));
@@ -374,8 +377,11 @@ public final class LootPrefabStore {
                 .append(" \"randDur\": ").append(e.randomDurability()).append(",")
                 .append(" \"durChance\": ").append(e.durabilityChance()).append(",")
                 .append(" \"randEnch\": ").append(e.randomEnchantment()).append(",")
-                .append(" \"enchChance\": ").append(e.enchantmentChance())
-                .append(" }");
+                .append(" \"enchChance\": ").append(e.enchantmentChance());
+            if (e.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
+                sb.append(", \"slot\": ").append(e.slotOverride());
+            }
+            sb.append(" }");
             first = false;
         }
         sb.append("\n  ]\n}\n");

@@ -159,7 +159,8 @@ public final class ContainerContentsMenuController {
             entries.add(new ContainerContentsSyncPacket.Entry(
                 e.itemId().toString(), e.count(), e.weight(),
                 e.randomDurability(), e.durabilityChance(),
-                e.randomEnchantment(), e.enchantmentChance()));
+                e.randomEnchantment(), e.enchantmentChance(),
+                e.slotOverride()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
@@ -364,6 +365,13 @@ public final class ContainerContentsMenuController {
                 ContainerContentsEntry e = current.entries().get(idx);
                 next = current.replaced(idx,
                     e.withEnchantmentChance(wrapChance(e.enchantmentChance(), packet.delta())));
+                dirty = true;
+            }
+            case CYCLE_SLOT_ASSIGN -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.cycleSlotOverride());
                 dirty = true;
             }
             case UNLINK -> {

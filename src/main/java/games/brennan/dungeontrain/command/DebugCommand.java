@@ -1,12 +1,20 @@
 package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.debug.CarriageDebug;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.editor.ContainerContentsPool;
+import games.brennan.dungeontrain.editor.ContainerContentsRoller;
+import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -15,13 +23,24 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
+
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * {@code /dungeontrain debug scan} — walks every active carriage index of
@@ -96,7 +115,15 @@ public final class DebugCommand {
             // uses the entity tag alone, which is always set.
             .then(Commands.literal("contents-entities")
                 .then(Commands.literal("on").executes(ctx -> setLogContentsEntities(ctx.getSource(), true)))
-                .then(Commands.literal("off").executes(ctx -> setLogContentsEntities(ctx.getSource(), false))));
+                .then(Commands.literal("off").executes(ctx -> setLogContentsEntities(ctx.getSource(), false))))
+            // /dungeontrain debug reroll <prefabId> — scan every loaded ship's
+            // bounding box for blocks whose state matches the prefab's source
+            // block, then re-roll their NBT through the current pool. Fixes
+            // already-spawned carriage containers whose contents were rolled
+            // before a template edit landed.
+            .then(Commands.literal("reroll")
+                .then(Commands.argument("prefabId", StringArgumentType.string())
+                    .executes(ctx -> runReroll(ctx.getSource(), StringArgumentType.getString(ctx, "prefabId")))));
     }
 
     private static int setAllWireframes(CommandSourceStack source, boolean enabled) {
@@ -253,6 +280,88 @@ public final class DebugCommand {
      * Sable's player↔sub-level handoff. Outcome decides whether to commit
      * to the per-group sub-level refactor.</p>
      */
+    /**
+     * Iterate every loaded {@link ManagedShip} across all server levels, walk
+     * each ship's world AABB block-by-block, and re-roll any BE whose state
+     * matches the prefab's source block. Picks the current pool from
+     * {@link LootPrefabStore} so menu-bumped fillMax / weight changes apply.
+     *
+     * <p>One-shot fix for already-spawned carriages whose contents were rolled
+     * by an older code path or against an older pool. New rolls go through the
+     * current {@link ContainerContentsRoller#roll} which respects fillMax and
+     * the priority-cascade slot semantics.</p>
+     */
+    private static int runReroll(CommandSourceStack source, String prefabId) {
+        Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(prefabId);
+        if (loaded.isEmpty()) {
+            source.sendFailure(Component.literal("Unknown loot prefab '" + prefabId + "'"));
+            return 0;
+        }
+        ContainerContentsPool pool = loaded.get().pool();
+        ResourceLocation sourceBlockId = loaded.get().sourceBlock();
+        Block sourceBlock = BuiltInRegistries.BLOCK.get(sourceBlockId);
+        if (pool.isEmpty()) {
+            source.sendFailure(Component.literal("Prefab '" + prefabId + "' has an empty pool — nothing to roll"));
+            return 0;
+        }
+
+        int touched = 0;
+        int ships = 0;
+        // Distinct salt per command invocation so re-rolling the same chest
+        // twice produces fresh contents rather than re-deriving the prior
+        // roll's items.
+        int salt = (int) (System.nanoTime() & 0x7FFFFFFFL);
+
+        MinecraftServer server = source.getServer();
+        for (ServerLevel level : server.getAllLevels()) {
+            long worldSeed = level.getSeed();
+            for (ManagedShip ship : Shipyards.of(level).findAll()) {
+                ships++;
+                // Sable stores each ship's blocks in a LevelPlot inside the
+                // parent level (offset to a far chunk). worldAABB() returns
+                // the rendered post-transform position, not the storage
+                // coords — iterate the plot's loaded chunks instead so we
+                // hit the real BE positions.
+                if (!(ship instanceof SableManagedShip sableShip)) continue;
+                ServerSubLevel subLevel = sableShip.subLevel();
+                LevelPlot plot = subLevel.getPlot();
+                int beInShip = 0;
+                int matched = 0;
+                for (PlotChunkHolder holder : plot.getLoadedChunks()) {
+                    LevelChunk chunk = holder.getChunk();
+                    if (chunk == null) continue;
+                    for (Map.Entry<BlockPos, BlockEntity> entry : chunk.getBlockEntities().entrySet()) {
+                        BlockPos pos = entry.getKey();
+                        BlockEntity be = entry.getValue();
+                        beInShip++;
+                        BlockState state = be.getBlockState();
+                        if (!state.is(sourceBlock)) continue;
+                        matched++;
+                        CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
+                        CompoundTag rolled = ContainerContentsRoller.roll(
+                            pool, state, pos, worldSeed, salt, baseNbt,
+                            level.registryAccess(), level);
+                        if (rolled == null) continue;
+                        be.loadCustomOnly(rolled, level.registryAccess());
+                        be.setChanged();
+                        touched++;
+                    }
+                }
+                LOGGER.info("[DT-reroll] ship subLevelId={} plot.getLoadedChunks={} beTotal={} matched={}",
+                    ship.subLevelId(), plot.getLoadedChunks().size(), beInShip, matched);
+            }
+        }
+
+        final int finalTouched = touched;
+        final int finalShips = ships;
+        source.sendSuccess(() -> Component.literal(
+            "Re-rolled " + finalTouched + " " + sourceBlockId + " BE(s) across " + finalShips
+                + " loaded ship(s) with prefab '" + prefabId + "'"
+        ).withStyle(ChatFormatting.GREEN), true);
+        LOGGER.info("[DungeonTrain] /debug reroll {}: touched={} ships={}", prefabId, touched, ships);
+        return touched;
+    }
+
     private static int runPair(CommandSourceStack source, double velocity) {
         ServerPlayer player;
         try {

@@ -333,29 +333,37 @@ public final class ContainerContentsRoller {
         ListTag items = new ListTag();
         int filled = 0;
 
+        // Per slot, prefer entries the author has explicitly pinned to that
+        // slot (slotOverride == slot). Pinned items override the cookable /
+        // fuel functional checks — the author has decided "this goes here"
+        // regardless of recipe data. Only fall through to the auto bucket
+        // when no entry was pinned to that slot.
         if (filled < k) {
-            ContainerContentsEntry input = pickFiltered(pool,
-                e -> isCookable(e, rt, level),
-                localPos, worldSeed, carriageIndex, /*slot*/ 0);
-            if (appendRolled(items, /*slot*/ 0, input, localPos, worldSeed, carriageIndex, registries)) {
+            ContainerContentsEntry input = pickForSlot(pool, ContainerContentsEntry.SLOT_INPUT,
+                e -> isCookable(e, rt, level) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
+                localPos, worldSeed, carriageIndex);
+            if (appendRolled(items, ContainerContentsEntry.SLOT_INPUT, input,
+                localPos, worldSeed, carriageIndex, registries)) {
                 filled++;
             }
         }
 
         if (filled < k) {
-            ContainerContentsEntry fuel = pickFiltered(pool,
-                e -> isFuel(e, rt) && !isCookable(e, rt, level),
-                localPos, worldSeed, carriageIndex, /*slot*/ 1);
-            if (appendRolled(items, /*slot*/ 1, fuel, localPos, worldSeed, carriageIndex, registries)) {
+            ContainerContentsEntry fuel = pickForSlot(pool, ContainerContentsEntry.SLOT_FUEL,
+                e -> isFuel(e, rt) && !isCookable(e, rt, level) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
+                localPos, worldSeed, carriageIndex);
+            if (appendRolled(items, ContainerContentsEntry.SLOT_FUEL, fuel,
+                localPos, worldSeed, carriageIndex, registries)) {
                 filled++;
             }
         }
 
         if (filled < k) {
-            ContainerContentsEntry out2 = pickFiltered(pool,
-                e -> !isCookable(e, rt, level) && !isFuel(e, rt),
-                localPos, worldSeed, carriageIndex, /*slot*/ 2);
-            if (appendRolled(items, /*slot*/ 2, out2, localPos, worldSeed, carriageIndex, registries)) {
+            ContainerContentsEntry out2 = pickForSlot(pool, ContainerContentsEntry.SLOT_OUTPUT,
+                e -> !isCookable(e, rt, level) && !isFuel(e, rt) && e.slotOverride() == ContainerContentsEntry.SLOT_AUTO,
+                localPos, worldSeed, carriageIndex);
+            if (appendRolled(items, ContainerContentsEntry.SLOT_OUTPUT, out2,
+                localPos, worldSeed, carriageIndex, registries)) {
                 filled++;
             }
         }
@@ -363,6 +371,28 @@ public final class ContainerContentsRoller {
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         out.put("Items", items);
         return out;
+    }
+
+    /**
+     * Two-tier pick for a furnace slot: explicit override wins, then auto bucket.
+     *
+     * <p>Tier 1 — entries with {@code slotOverride == slot}. These are author-pinned
+     * and override the functional checks (a wooden sword pinned to the fuel slot
+     * lands in the fuel slot even though it's also cookable).</p>
+     *
+     * <p>Tier 2 — entries matching {@code autoBucket}. The {@code autoBucket} filter
+     * should restrict to entries with {@code slotOverride == SLOT_AUTO} so pinned
+     * entries don't get double-counted across slots.</p>
+     */
+    @Nullable
+    private static ContainerContentsEntry pickForSlot(ContainerContentsPool pool, int slot,
+                                                      Predicate<ContainerContentsEntry> autoBucket,
+                                                      BlockPos localPos, long worldSeed, int carriageIndex) {
+        ContainerContentsEntry explicit = pickFiltered(pool,
+            e -> e.slotOverride() == slot,
+            localPos, worldSeed, carriageIndex, slot);
+        if (explicit != null) return explicit;
+        return pickFiltered(pool, autoBucket, localPos, worldSeed, carriageIndex, slot);
     }
 
     /**
