@@ -1,6 +1,0 @@
-{
-  "schemaVersion": 6,
-  "variants": {
-    "0,1,5": [{"state": "minecraft:deepslate_bricks", "weight": 100, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}]
-  }
-}
