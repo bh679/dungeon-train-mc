@@ -1,13 +1,15 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "block": "minecraft:barrel",
+  "fillMin": 1,
+  "fillMax": 10,
   "entries": [
-    { "id": "minecraft:lead", "count": 1, "weight": 1 },
-    { "id": "minecraft:hay_block", "count": 1, "weight": 1 },
-    { "id": "minecraft:wheat", "count": 1, "weight": 1 },
-    { "id": "minecraft:apple", "count": 1, "weight": 1 },
-    { "id": "minecraft:golden_apple", "count": 1, "weight": 1 },
-    { "id": "minecraft:saddle", "count": 1, "weight": 1 },
-    { "id": "minecraft:chest", "count": 1, "weight": 1 }
+    { "id": "minecraft:lead", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:hay_block", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:wheat", "count": 3, "weight": 70, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:apple", "count": 2, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:golden_apple", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:saddle", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chest", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }

@@ -312,6 +312,24 @@ public final class TrainTransformProvider implements KinematicDriver {
     private volatile boolean placedSuccessfully = false;
     private volatile int consecutiveCleanTicks = 0;
 
+    // Collide-then-move-together-then-collide lock. Tracks whether the
+    // placement tracker's "move together" (close-gap) branch should be
+    // permanently disabled for this carriage to stop the move-together
+    // and collision-pushback systems from fighting on the same group.
+    //
+    // State transitions (driven by TrainCarriageAppender.runPlacementCollisionTracker):
+    //   hasCollidedDuringPlacement: false → true on first collision tick.
+    //   hasRunMoveTogetherAfterCollision: false → true when a move-together
+    //       shift fires while hasCollidedDuringPlacement is already true.
+    //   moveTogetherLocked: false → true when a collision is detected while
+    //       hasRunMoveTogetherAfterCollision is already true — the
+    //       collide → move-together → collide cycle is observed and any
+    //       further move-together for this carriage is suppressed.
+    // All three are one-way. Collision pushback is never gated by the lock.
+    private volatile boolean hasCollidedDuringPlacement = false;
+    private volatile boolean hasRunMoveTogetherAfterCollision = false;
+    private volatile boolean moveTogetherLocked = false;
+
     /**
      * Pending contents-entity spawn records, one per enclosed carriage in
      * this group. Stashed by {@code TrainAssembler.spawnGroup} after the
@@ -396,6 +414,30 @@ public final class TrainTransformProvider implements KinematicDriver {
 
     public void setSpawnedBackward(boolean v) {
         this.spawnedBackward = v;
+    }
+
+    public boolean hasCollidedDuringPlacement() {
+        return hasCollidedDuringPlacement;
+    }
+
+    public void markCollidedDuringPlacement() {
+        this.hasCollidedDuringPlacement = true;
+    }
+
+    public boolean hasRunMoveTogetherAfterCollision() {
+        return hasRunMoveTogetherAfterCollision;
+    }
+
+    public void markRunMoveTogetherAfterCollision() {
+        this.hasRunMoveTogetherAfterCollision = true;
+    }
+
+    public boolean isMoveTogetherLocked() {
+        return moveTogetherLocked;
+    }
+
+    public void markMoveTogetherLocked() {
+        this.moveTogetherLocked = true;
     }
 
     /**

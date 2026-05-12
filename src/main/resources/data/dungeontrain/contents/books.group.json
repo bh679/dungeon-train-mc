@@ -1,9 +1,21 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "seating",
+      "weight": 1
+    },
+    {
+      "id": "dining",
+      "weight": 1
+    },
+    {
+      "id": "seating_thin",
+      "weight": 1
+    },
+    {
+      "id": "center_dining",
       "weight": 1
     }
   ]

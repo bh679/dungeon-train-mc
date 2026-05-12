@@ -38,7 +38,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("collision with offender ahead → shift -X away")
     void collidingOffenderAhead_shiftsBackward() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            true, 5, 6, Double.POSITIVE_INFINITY, false);
+            true, 5, 6, Double.POSITIVE_INFINITY, false, false);
         assertEquals(-SHIFT, dx, EPS);
     }
 
@@ -46,7 +46,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("collision with offender behind → shift +X away")
     void collidingOffenderBehind_shiftsForward() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            true, 5, 4, Double.POSITIVE_INFINITY, false);
+            true, 5, 4, Double.POSITIVE_INFINITY, false, false);
         assertEquals(+SHIFT, dx, EPS);
     }
 
@@ -54,7 +54,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("forward spawn, gap=5.0 (too far) → shift -X toward train")
     void forwardSpawnTooFar_shiftsBackwardTowardTrain() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 5.0, false);
+            false, 5, 0, 5.0, false, false);
         assertEquals(-SHIFT, dx, EPS);
     }
 
@@ -62,7 +62,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("backward spawn, gap=5.0 (too far) → shift +X toward train")
     void backwardSpawnTooFar_shiftsForwardTowardTrain() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 5.0, true);
+            false, 5, 0, 5.0, true, false);
         assertEquals(+SHIFT, dx, EPS);
     }
 
@@ -70,7 +70,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("gap=2.5 (inside dead-band) → no shift, clean tick")
     void gapInsideDeadBand_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 2.5, false);
+            false, 5, 0, 2.5, false, false);
         assertEquals(0.0, dx, EPS);
     }
 
@@ -78,7 +78,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("gap=3.0 exactly (boundary) → no shift, clean tick")
     void gapAtBoundary_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, 3.0, false);
+            false, 5, 0, 3.0, false, false);
         assertEquals(0.0, dx, EPS);
     }
 
@@ -86,7 +86,7 @@ final class CarriageTooFarShiftTest {
     @DisplayName("gap=∞ (no sibling on facing side) → no shift, clean tick")
     void gapInfinite_noShift() {
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            false, 5, 0, Double.POSITIVE_INFINITY, false);
+            false, 5, 0, Double.POSITIVE_INFINITY, false, false);
         assertEquals(0.0, dx, EPS);
     }
 
@@ -98,8 +98,52 @@ final class CarriageTooFarShiftTest {
         // gap to 0.0 when colliding, but the pure helper is defensive),
         // collision branch wins.
         double dx = TrainCarriageAppender.placementTrackerShiftDx(
-            true, 5, 6, 10.0, false);
+            true, 5, 6, 10.0, false, false);
         assertEquals(-SHIFT, dx, EPS);
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // moveTogetherLocked — collide→move-together→collide cycle lock
+    // ───────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("locked, gap=5.0 (too far) → no shift (move-together suppressed)")
+    void locked_tooFar_suppressesMoveTogether() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 5.0, false, true);
+        assertEquals(0.0, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("locked, backward spawn, gap=5.0 → no shift (move-together suppressed)")
+    void locked_backwardTooFar_suppressesMoveTogether() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 5.0, true, true);
+        assertEquals(0.0, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("locked, colliding ahead → still shifts -X away (lock does NOT gate collision pushback)")
+    void locked_collidingAhead_stillShiftsAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            true, 5, 6, Double.POSITIVE_INFINITY, false, true);
+        assertEquals(-SHIFT, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("locked, colliding behind → still shifts +X away (lock does NOT gate collision pushback)")
+    void locked_collidingBehind_stillShiftsAway() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            true, 5, 4, Double.POSITIVE_INFINITY, false, true);
+        assertEquals(+SHIFT, dx, EPS);
+    }
+
+    @Test
+    @DisplayName("locked, gap inside dead-band → no shift (same as unlocked)")
+    void locked_gapInDeadBand_noShift() {
+        double dx = TrainCarriageAppender.placementTrackerShiftDx(
+            false, 5, 0, 2.5, false, true);
+        assertEquals(0.0, dx, EPS);
     }
 
     // ───────────────────────────────────────────────────────────────
