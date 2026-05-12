@@ -1,17 +1,33 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 1,
+  "selfWeight": 10,
   "variants": [
     {
       "id": "cagedzombie",
-      "weight": 1
+      "weight": 10
     },
     {
       "id": "piglin",
-      "weight": 1
+      "weight": 10
     },
     {
       "id": "brute",
+      "weight": 5
+    },
+    {
+      "id": "zombieroom",
+      "weight": 10
+    },
+    {
+      "id": "skeleton",
+      "weight": 10
+    },
+    {
+      "id": "pillager",
+      "weight": 5
+    },
+    {
+      "id": "vindicator",
       "weight": 1
     }
   ]

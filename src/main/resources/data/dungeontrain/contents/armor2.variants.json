@@ -1,5 +1,13 @@
 {
   "schemaVersion": 6,
   "variants": {
+    "6,0,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "0,0,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "0,0,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "6,0,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "4,0,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "2,0,4": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "4,0,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "2,0,0": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}]
   }
 }

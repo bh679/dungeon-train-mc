@@ -25,7 +25,7 @@ final class DebugFlagsPacketTest {
     @DisplayName("round-trip preserves all-false default state")
     void roundTrip_allFalse() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            false, false, false, false, false, false, false, false, false);
+            false, false, false, false, false, false, false, false, false, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }
@@ -34,7 +34,7 @@ final class DebugFlagsPacketTest {
     @DisplayName("round-trip preserves all-true state")
     void roundTrip_allTrue() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            true, true, true, true, true, true, true, true, true);
+            true, true, true, true, true, true, true, true, true, true);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }
@@ -43,7 +43,7 @@ final class DebugFlagsPacketTest {
     @DisplayName("round-trip preserves only chatTrainSpawn=true (catches field-order swap)")
     void roundTrip_onlyChatTrainSpawn() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            false, false, false, false, false, false, true, false, false);
+            false, false, false, false, false, false, true, false, false, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
         assertEquals(true, decoded.chatTrainSpawn());
@@ -54,7 +54,7 @@ final class DebugFlagsPacketTest {
     @DisplayName("round-trip preserves only chatCollision=true (catches field-order swap)")
     void roundTrip_onlyChatCollision() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            false, false, false, false, false, false, false, true, false);
+            false, false, false, false, false, false, false, true, false, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
         assertEquals(false, decoded.chatTrainSpawn());
@@ -62,21 +62,33 @@ final class DebugFlagsPacketTest {
     }
 
     @Test
-    @DisplayName("round-trip preserves only logContentsEntities=true (newest field, last position)")
+    @DisplayName("round-trip preserves only logContentsEntities=true (catches field-order swap)")
     void roundTrip_onlyLogContentsEntities() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            false, false, false, false, false, false, false, false, true);
+            false, false, false, false, false, false, false, false, true, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
         assertEquals(true, decoded.logContentsEntities());
         assertEquals(false, decoded.chatCollision());
+        assertEquals(false, decoded.logLootRolls());
+    }
+
+    @Test
+    @DisplayName("round-trip preserves only logLootRolls=true (newest field, last position)")
+    void roundTrip_onlyLogLootRolls() {
+        DebugFlagsPacket original = new DebugFlagsPacket(
+            false, false, false, false, false, false, false, false, false, true);
+        DebugFlagsPacket decoded = roundTrip(original);
+        assertEquals(original, decoded);
+        assertEquals(true, decoded.logLootRolls());
+        assertEquals(false, decoded.logContentsEntities());
     }
 
     @Test
     @DisplayName("round-trip preserves alternating bit pattern (pins every position)")
     void roundTrip_alternating() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            true, false, true, false, true, false, true, false, true);
+            true, false, true, false, true, false, true, false, true, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(true, decoded.gapCubes());
         assertEquals(false, decoded.gapLine());
@@ -87,13 +99,14 @@ final class DebugFlagsPacketTest {
         assertEquals(true, decoded.chatTrainSpawn());
         assertEquals(false, decoded.chatCollision());
         assertEquals(true, decoded.logContentsEntities());
+        assertEquals(false, decoded.logLootRolls());
     }
 
     @Test
     @DisplayName("round-trip preserves wireframe-on / chatlog-off (typical visual-only debug session)")
     void roundTrip_wireframesOn_chatLogsOff() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            true, true, true, true, true, false, false, false, false);
+            true, true, true, true, true, false, false, false, false, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }
@@ -102,7 +115,7 @@ final class DebugFlagsPacketTest {
     @DisplayName("round-trip preserves wireframe-off / chatlog-on (typical chat-only debug session)")
     void roundTrip_wireframesOff_chatLogsOn() {
         DebugFlagsPacket original = new DebugFlagsPacket(
-            false, false, false, false, false, false, true, true, false);
+            false, false, false, false, false, false, true, true, false, false);
         DebugFlagsPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }

@@ -50,7 +50,8 @@ public record DebugFlagsPacket(
     boolean manualSpawnMode,
     boolean chatTrainSpawn,
     boolean chatCollision,
-    boolean logContentsEntities
+    boolean logContentsEntities,
+    boolean logLootRolls
 ) implements CustomPacketPayload {
 
     public static final Type<DebugFlagsPacket> TYPE =
@@ -68,8 +69,10 @@ public record DebugFlagsPacket(
                 buf.writeBoolean(packet.chatTrainSpawn);
                 buf.writeBoolean(packet.chatCollision);
                 buf.writeBoolean(packet.logContentsEntities);
+                buf.writeBoolean(packet.logLootRolls);
             },
             buf -> new DebugFlagsPacket(
+                buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),

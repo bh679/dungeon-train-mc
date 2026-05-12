@@ -46,7 +46,8 @@ public record ContainerContentsSyncPacket(
      */
     public record Entry(String itemId, int count, int weight,
                         boolean randomDurability, int durabilityChance,
-                        boolean randomEnchantment, int enchantmentChance) {}
+                        boolean randomEnchantment, int enchantmentChance,
+                        int slotOverride) {}
 
     public static final Type<ContainerContentsSyncPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "container_contents_sync"));
@@ -88,6 +89,7 @@ public record ContainerContentsSyncPacket(
             buf.writeVarInt(e.durabilityChance());
             buf.writeBoolean(e.randomEnchantment());
             buf.writeVarInt(e.enchantmentChance());
+            buf.writeVarInt(e.slotOverride());
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -122,7 +124,8 @@ public record ContainerContentsSyncPacket(
             int durChance = buf.readVarInt();
             boolean randEnch = buf.readBoolean();
             int enchChance = buf.readVarInt();
-            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance));
+            int slotOverride = buf.readVarInt();
+            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link);

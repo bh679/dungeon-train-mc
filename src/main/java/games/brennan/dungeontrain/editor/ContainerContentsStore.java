@@ -307,6 +307,18 @@ public final class ContainerContentsStore {
         }
         LOGGER.info("[DungeonTrain] Saved container contents store for {} ({} cells) to {}",
             plotKey, pools.size(), file);
+
+        // Auto-propagate to source tree when in dev mode so menu edits don't
+        // drift away from the bundled resource. Failures are logged but
+        // non-fatal — user config is the source of truth.
+        if (EditorDevMode.isEnabled() && sourceTreeAvailable()) {
+            try {
+                saveToSource();
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Auto-propagation to source tree failed for plot {}: {}",
+                    plotKey, e.toString());
+            }
+        }
     }
 
     /**
@@ -422,8 +434,11 @@ public final class ContainerContentsStore {
                     .append(" \"randDur\": ").append(ce.randomDurability()).append(",")
                     .append(" \"durChance\": ").append(ce.durabilityChance()).append(",")
                     .append(" \"randEnch\": ").append(ce.randomEnchantment()).append(",")
-                    .append(" \"enchChance\": ").append(ce.enchantmentChance())
-                    .append(" }");
+                    .append(" \"enchChance\": ").append(ce.enchantmentChance());
+                if (ce.slotOverride() != ContainerContentsEntry.SLOT_AUTO) {
+                    sb.append(", \"slot\": ").append(ce.slotOverride());
+                }
+                sb.append(" }");
                 firstEntry = false;
             }
             sb.append("\n      ]");
@@ -532,8 +547,11 @@ public final class ContainerContentsStore {
                         int enchChance = eo.has("enchChance")
                             ? eo.get("enchChance").getAsInt()
                             : ContainerContentsEntry.DEFAULT_ENCHANTMENT_CHANCE;
+                        int slotOverride = eo.has("slot")
+                            ? eo.get("slot").getAsInt()
+                            : ContainerContentsEntry.SLOT_AUTO;
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance));
+                            randDur, durChance, randEnch, enchChance, slotOverride));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));

@@ -80,6 +80,12 @@
     "6,1,4": [{"state": "minecraft:bookshelf", "weight": 8}, {"state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "6,0,1": { "lockId": 5, "states": ["minecraft:bookshelf", "minecraft:command_block[conditional=false,facing=north]"] },
     "6,1,1": { "lockId": 5, "states": ["minecraft:bookshelf", "minecraft:command_block[conditional=false,facing=north]"] },
-    "4,0,3": { "lockId": 1, "states": ["minecraft:bookshelf", "minecraft:command_block[conditional=false,facing=north]"] }
+    "4,0,3": { "lockId": 1, "states": ["minecraft:bookshelf", "minecraft:command_block[conditional=false,facing=north]"] },
+    "1,0,1": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "0,0,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "3,0,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "5,0,1": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "6,0,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "5,0,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}]
   }
 }

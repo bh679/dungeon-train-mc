@@ -46,6 +46,8 @@ public final class ContainerContentsMenu {
         ENTRY_RAND_ENCH_TOGGLE,
         /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
         ENTRY_ENCH_CHANCE,
+        /** Per-entry main-row cell: cycle slot override (auto / in / fuel / out). */
+        ENTRY_SLOT_ASSIGN,
         SEARCH_FIELD,
         SEARCH_RESULT,
         SEARCH_BACK,

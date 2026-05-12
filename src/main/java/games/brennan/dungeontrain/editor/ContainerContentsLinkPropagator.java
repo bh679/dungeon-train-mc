@@ -82,7 +82,7 @@ public final class ContainerContentsLinkPropagator {
                 BlockState state = level.getBlockState(worldPos);
                 CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
                 CompoundTag rolled = ContainerContentsRoller.roll(
-                    pool, state, localPos, worldSeed, rollSalt, baseNbt, level.registryAccess());
+                    pool, state, localPos, worldSeed, rollSalt, baseNbt, level.registryAccess(), level);
                 if (rolled == null) continue;
                 be.loadCustomOnly(rolled, level.registryAccess());
                 be.setChanged();

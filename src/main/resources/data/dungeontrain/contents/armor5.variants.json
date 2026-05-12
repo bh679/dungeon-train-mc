@@ -1,5 +1,11 @@
 {
   "schemaVersion": 6,
   "variants": {
+    "3,0,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "4,0,2": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "4,0,1": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "3,0,1": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "4,0,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
+    "3,0,3": [{"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}]
   }
 }

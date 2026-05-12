@@ -57,6 +57,14 @@ public final class DebugFlags {
      * entity-disappearance regressions.
      */
     private static volatile boolean logContentsEntities = false;
+    /**
+     * Per-furnace-roll diagnostics in {@code ContainerContentsRoller.rollFurnace}
+     * — K count, fillMin/fillMax, slotOverride breakdown, what each slot
+     * picked. Off by default; flip on with {@code /dungeontrain debug
+     * loot-rolls on} when troubleshooting why a furnace came out empty or
+     * full of the wrong thing.
+     */
+    private static volatile boolean logLootRolls = false;
 
     private DebugFlags() {}
 
@@ -68,6 +76,7 @@ public final class DebugFlags {
     public static boolean chatTrainSpawn() { return chatTrainSpawn; }
     public static boolean chatCollision() { return chatCollision; }
     public static boolean logContentsEntities() { return logContentsEntities; }
+    public static boolean logLootRolls() { return logLootRolls; }
 
     public static boolean manualSpawnMode() {
         return TrainCarriageAppender.MANUAL_MODE;
@@ -130,6 +139,11 @@ public final class DebugFlags {
         broadcastTo(server);
     }
 
+    public static void setLogLootRolls(MinecraftServer server, boolean value) {
+        logLootRolls = value;
+        broadcastTo(server);
+    }
+
     /** Toggle manual-spawn mode server-side and broadcast to all connected clients. */
     public static void setManualSpawnMode(MinecraftServer server, boolean value) {
         TrainCarriageAppender.MANUAL_MODE = value;
@@ -157,7 +171,8 @@ public final class DebugFlags {
             gapCubes, gapLine, nextSpawn, collision, hudDistance,
             TrainCarriageAppender.MANUAL_MODE,
             chatTrainSpawn, chatCollision,
-            logContentsEntities
+            logContentsEntities,
+            logLootRolls
         );
     }
 }
