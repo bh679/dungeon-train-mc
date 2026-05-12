@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 6,
+  "variants": {
+    "3,0,4": [{"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,0": [{"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "loot"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "starter"}, {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["south"]}, "lootPrefab": "loot_irongold"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["south"]}}]
+  }
+}
