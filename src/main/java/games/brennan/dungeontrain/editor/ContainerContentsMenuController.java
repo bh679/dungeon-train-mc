@@ -157,7 +157,9 @@ public final class ContainerContentsMenuController {
         List<ContainerContentsSyncPacket.Entry> entries = new ArrayList<>(pool.entries().size());
         for (ContainerContentsEntry e : pool.entries()) {
             entries.add(new ContainerContentsSyncPacket.Entry(
-                e.itemId().toString(), e.count(), e.weight()));
+                e.itemId().toString(), e.count(), e.weight(),
+                e.randomDurability(), e.durabilityChance(),
+                e.randomEnchantment(), e.enchantmentChance()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
@@ -334,6 +336,36 @@ public final class ContainerContentsMenuController {
                 next = current.withFillMax(next0).withFillMin(newMin);
                 dirty = true;
             }
+            case TOGGLE_RAND_DUR -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.withRandomDurability(!e.randomDurability()));
+                dirty = true;
+            }
+            case TOGGLE_RAND_ENCH -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx, e.withRandomEnchantment(!e.randomEnchantment()));
+                dirty = true;
+            }
+            case BUMP_DUR_CHANCE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx,
+                    e.withDurabilityChance(wrapChance(e.durabilityChance(), packet.delta())));
+                dirty = true;
+            }
+            case BUMP_ENCH_CHANCE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                next = current.replaced(idx,
+                    e.withEnchantmentChance(wrapChance(e.enchantmentChance(), packet.delta())));
+                dirty = true;
+            }
             case UNLINK -> {
                 String prev = store.linkAt(localPos);
                 if (prev == null) return;
@@ -426,5 +458,19 @@ public final class ContainerContentsMenuController {
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
         player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    }
+
+    /**
+     * Wrap a 0-100 chance value by {@code delta}, mirroring the
+     * {@code BUMP_FILL_MIN} wrap behaviour: positive delta past 100 wraps to 0,
+     * negative past 0 wraps to 100. Mid-range bumps clamp to the [0, 100] band.
+     */
+    private static int wrapChance(int current, int delta) {
+        if (delta > 0 && current >= 100) return 0;
+        if (delta < 0 && current <= 0) return 100;
+        int next = current + delta;
+        if (next < 0) next = 0;
+        if (next > 100) next = 100;
+        return next;
     }
 }

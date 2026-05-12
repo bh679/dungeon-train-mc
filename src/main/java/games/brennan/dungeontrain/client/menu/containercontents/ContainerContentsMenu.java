@@ -38,6 +38,14 @@ public final class ContainerContentsMenu {
         ENTRY_WEIGHT_MINUS,
         ENTRY_WEIGHT_PLUS,
         ENTRY_REMOVE_X,
+        /** Per-entry sub-row checkbox: flip random-durability master toggle. */
+        ENTRY_RAND_DUR_TOGGLE,
+        /** Per-entry sub-row %NN cell: bump random-durability chance (0-100). */
+        ENTRY_DUR_CHANCE,
+        /** Per-entry sub-row checkbox: flip random-enchantment master toggle. */
+        ENTRY_RAND_ENCH_TOGGLE,
+        /** Per-entry sub-row %NN cell: bump random-enchantment chance (0-100). */
+        ENTRY_ENCH_CHANCE,
         SEARCH_FIELD,
         SEARCH_RESULT,
         SEARCH_BACK,
