@@ -28,7 +28,7 @@
   ],
   "roof": [
     {
-      "name": "none",
+      "name": "open",
       "weight": 1
     }
   ],

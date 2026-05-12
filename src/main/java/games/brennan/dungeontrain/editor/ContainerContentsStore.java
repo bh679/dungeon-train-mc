@@ -81,7 +81,7 @@ public final class ContainerContentsStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int CURRENT_SCHEMA_VERSION = 3;
 
     static final String SUBDIR = "containers";
     private static final String EXT = ".contents.json";
@@ -418,7 +418,11 @@ public final class ContainerContentsStore {
                 sb.append("\n        {")
                     .append(" \"id\": \"").append(ce.itemId().toString()).append("\",")
                     .append(" \"count\": ").append(ce.count()).append(",")
-                    .append(" \"weight\": ").append(ce.weight())
+                    .append(" \"weight\": ").append(ce.weight()).append(",")
+                    .append(" \"randDur\": ").append(ce.randomDurability()).append(",")
+                    .append(" \"durChance\": ").append(ce.durabilityChance()).append(",")
+                    .append(" \"randEnch\": ").append(ce.randomEnchantment()).append(",")
+                    .append(" \"enchChance\": ").append(ce.enchantmentChance())
                     .append(" }");
                 firstEntry = false;
             }
@@ -516,7 +520,20 @@ public final class ContainerContentsStore {
                         if (id == null) continue;
                         int count = eo.has("count") ? eo.get("count").getAsInt() : 1;
                         int weight = eo.has("weight") ? eo.get("weight").getAsInt() : 1;
-                        entries.add(new ContainerContentsEntry(id, count, weight));
+                        boolean randDur = eo.has("randDur")
+                            ? eo.get("randDur").getAsBoolean()
+                            : ContainerContentsEntry.DEFAULT_RANDOM_DURABILITY;
+                        int durChance = eo.has("durChance")
+                            ? eo.get("durChance").getAsInt()
+                            : ContainerContentsEntry.DEFAULT_DURABILITY_CHANCE;
+                        boolean randEnch = eo.has("randEnch")
+                            ? eo.get("randEnch").getAsBoolean()
+                            : ContainerContentsEntry.DEFAULT_RANDOM_ENCHANTMENT;
+                        int enchChance = eo.has("enchChance")
+                            ? eo.get("enchChance").getAsInt()
+                            : ContainerContentsEntry.DEFAULT_ENCHANTMENT_CHANCE;
+                        entries.add(new ContainerContentsEntry(id, count, weight,
+                            randDur, durChance, randEnch, enchChance));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));

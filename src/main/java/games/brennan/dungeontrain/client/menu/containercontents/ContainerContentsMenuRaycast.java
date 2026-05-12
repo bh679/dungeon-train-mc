@@ -77,9 +77,8 @@ public final class ContainerContentsMenuRaycast {
         int n = entries.size();
         int colCount = Math.max(1, (n + ContainerContentsMenu.ROWS_PER_COLUMN - 1) / ContainerContentsMenu.ROWS_PER_COLUMN);
         double panelW = Math.max(ContainerContentsMenuRenderer.MIN_PANEL_WIDTH, colCount * ContainerContentsMenuRenderer.COLUMN_WIDTH);
-        int displayedRows = Math.min(n, ContainerContentsMenu.ROWS_PER_COLUMN);
-        if (displayedRows == 0) displayedRows = 1;
-        double gridH = displayedRows * ContainerContentsMenuRenderer.ROW_HEIGHT;
+        ContainerContentsMenuRenderer.EntryLayout layout = ContainerContentsMenuRenderer.computeLayout(entries, colCount);
+        double gridH = layout.gridHeight();
         double linkH = ContainerContentsMenuRenderer.hasLinkRow() ? ContainerContentsMenuRenderer.LINK_ROW_HEIGHT : 0.0;
         double panelH = ContainerContentsMenuRenderer.HEADER_HEIGHT + linkH + ContainerContentsMenuRenderer.TOOLBAR_HEIGHT + gridH;
         double halfW = panelW / 2.0;
@@ -122,19 +121,67 @@ public final class ContainerContentsMenuRaycast {
             return new ContainerContentsMenu.Hit(kind, -1);
         }
 
-        // Grid
+        // Grid — variable row height. Find which entry contains hitY by
+        // walking the column's entries and accumulating their heights.
         double gridTop = toolbarBottom;
         double yFromGridTop = gridTop - hitY;
         if (yFromGridTop < 0 || yFromGridTop > gridH) return ContainerContentsMenu.Hit.NONE;
-        int row = (int) Math.floor(yFromGridTop / ContainerContentsMenuRenderer.ROW_HEIGHT);
         int col = (int) Math.floor((hitX + halfW) / colActualW);
         if (col < 0 || col >= colCount) return ContainerContentsMenu.Hit.NONE;
-        int idx = col * ContainerContentsMenu.ROWS_PER_COLUMN + row;
-        if (idx >= n) return ContainerContentsMenu.Hit.NONE;
+        int colStart = col * ContainerContentsMenu.ROWS_PER_COLUMN;
+        int colEnd = Math.min(n, colStart + ContainerContentsMenu.ROWS_PER_COLUMN);
+        int idx = -1;
+        for (int i = colStart; i < colEnd; i++) {
+            boolean hasSub = layout.showDur()[i] || layout.showEnch()[i];
+            double h = hasSub
+                ? ContainerContentsMenuRenderer.ENTRY_BLOCK_HEIGHT
+                : ContainerContentsMenuRenderer.ROW_HEIGHT;
+            if (yFromGridTop >= layout.rowDispTop()[i]
+                && yFromGridTop < layout.rowDispTop()[i] + h) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) return ContainerContentsMenu.Hit.NONE;
 
-        // Cell layout (right-to-left): [×] [weight] [count] [name]
+        boolean showDur = layout.showDur()[idx];
+        boolean showEnch = layout.showEnch()[idx];
+        double yWithinBlock = yFromGridTop - layout.rowDispTop()[idx];
+        boolean inSubRow = (showDur || showEnch) && yWithinBlock > ContainerContentsMenuRenderer.ROW_HEIGHT;
+
         double colXL = -halfW + col * colActualW;
         double colXR = colXL + colActualW;
+
+        if (inSubRow) {
+            // Sub-row cells are positioned in a 4-cell layout regardless of
+            // applicability — cells for the non-applicable effect are simply
+            // not interactive (raycast returns NONE there).
+            double subCellW = (colActualW - 0.02) / 4.0;
+            double dur1L = colXL + 0.01;
+            double dur1R = dur1L + subCellW;
+            double dur2R = dur1R + subCellW;
+            double ench1R = dur2R + subCellW;
+            if (hitX <= dur1R) {
+                return showDur
+                    ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_RAND_DUR_TOGGLE, idx)
+                    : ContainerContentsMenu.Hit.NONE;
+            }
+            if (hitX <= dur2R) {
+                return showDur
+                    ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_DUR_CHANCE, idx)
+                    : ContainerContentsMenu.Hit.NONE;
+            }
+            if (hitX <= ench1R) {
+                return showEnch
+                    ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_RAND_ENCH_TOGGLE, idx)
+                    : ContainerContentsMenu.Hit.NONE;
+            }
+            return showEnch
+                ? new ContainerContentsMenu.Hit(ContainerContentsMenu.CellKind.ENTRY_ENCH_CHANCE, idx)
+                : ContainerContentsMenu.Hit.NONE;
+        }
+
+        // Top strip layout (right-to-left): [×] [weight] [count] [name]
         double xR = colXR;
         double xCellL = xR - ContainerContentsMenuRenderer.X_CELL_WIDTH;
         double weightR = xCellL;
