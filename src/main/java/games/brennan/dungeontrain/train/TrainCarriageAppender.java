@@ -221,6 +221,28 @@ public final class TrainCarriageAppender {
      */
     private static final int CLEAN_TICKS_FOR_SUCCESS = 60;
     /**
+     * Maximum distance (in blocks, world space) from any player to a
+     * placement-settled carriage's current world position at which the
+     * carriage's deferred contents-entity spawn will fire. Carriages further
+     * than this hold their pending spawns indefinitely until a player
+     * approaches (or until the rolling-window cleanup drops the carriage,
+     * at which point the pending array is GC'd along with the provider).
+     *
+     * <p>Rationale: every carriage spawned far ahead used to fire its mobs
+     * at placement-success time. Mobs then wandered between adjacent
+     * carriages of the same group (whose internal walls are passable via
+     * doors/windows) for tens of seconds before the player walked in,
+     * making them visibly land in "the wrong carriage." Deferring spawn
+     * until the player is close cuts the wander window to ~0.</p>
+     *
+     * <p>48 ≈ 3 chunks — comfortably inside any sensible render distance
+     * so spawn-pop-in isn't visible; comfortably outside vanilla's entity
+     * activation radius (32) so mobs aren't already in stasis on first
+     * sight.</p>
+     */
+    private static final double SPAWN_RADIUS_BLOCKS = 48.0;
+    private static final double SPAWN_RADIUS_SQ = SPAWN_RADIUS_BLOCKS * SPAWN_RADIUS_BLOCKS;
+    /**
      * Per-collision shift distance in the spawn (+X) direction. The
      * carriage's {@code spawnWorldPos} is bumped by this amount each
      * tick it's seen colliding, which the deterministic position
@@ -371,11 +393,10 @@ public final class TrainCarriageAppender {
                         provider.markPlacedSuccessfully();
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} placed successfully after {} clean ticks (ticksSinceSpawn={})",
                             provider.getPIdx(), CLEAN_TICKS_FOR_SUCCESS, check.ticksSinceSpawn());
-                        // Fire any deferred contents-entity spawns now that
-                        // the carriage group has stopped shifting. Each slot
-                        // record was stashed by TrainAssembler.spawnGroup
-                        // after the blocks-only contents pass.
-                        firePendingContentsEntitySpawns(level, provider);
+                        // Entity spawn is no longer fired here — it's gated on
+                        // player proximity by {@link #tickPendingEntitySpawnDistanceGate}
+                        // so mobs don't get a head-start to wander between
+                        // adjacent carriages before the player arrives.
                     }
                 }
             }
@@ -852,6 +873,55 @@ public final class TrainCarriageAppender {
         }
     }
 
+    /**
+     * Per-tick player-proximity gate for deferred contents-entity spawns.
+     * Walks every group on every loaded train; for each group whose
+     * placement has settled ({@link TrainTransformProvider#isPlacedSuccessfully})
+     * but whose pending entity array has not yet been consumed, checks
+     * whether any player is within {@link #SPAWN_RADIUS_BLOCKS} blocks of
+     * the group's current world position. If so, fires
+     * {@link #firePendingContentsEntitySpawns} which atomically drains the
+     * pending array (so a follow-up tick can't double-fire).
+     *
+     * <p>Skips trivially when no group has pending spawns — both the
+     * isPlacedSuccessfully and hasPendingContentsEntitySpawns short-circuit
+     * are cheap volatile reads.</p>
+     *
+     * <p>Distance is measured from each player to the group's anchor
+     * {@link TrainTransformProvider#getCanonicalPos canonicalPos}. The
+     * anchor sits at the back-pad-side edge of the group; with a typical
+     * 37-block group footprint and a 48-block radius, players approaching
+     * either end of the group fire the gate before the carriage reaches
+     * their view bubble.</p>
+     */
+    private static void tickPendingEntitySpawnDistanceGate(ServerLevel level, List<ServerPlayer> players) {
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        for (List<Trains.Carriage> train : trains.values()) {
+            for (Trains.Carriage carriage : train) {
+                TrainTransformProvider provider = carriage.provider();
+                if (!provider.isPlacedSuccessfully()) continue;
+                if (!provider.hasPendingContentsEntitySpawns()) continue;
+                Vector3dc pos = provider.getCanonicalPos();
+                if (pos == null) continue;
+                double cx = pos.x();
+                double cy = pos.y();
+                double cz = pos.z();
+                boolean inRange = false;
+                for (ServerPlayer player : players) {
+                    if (player.distanceToSqr(cx, cy, cz) <= SPAWN_RADIUS_SQ) {
+                        inRange = true;
+                        break;
+                    }
+                }
+                if (inRange) {
+                    LOGGER.info("[DungeonTrain] Distance gate: pIdx={} player within {} blocks — firing deferred contents-entity spawn",
+                        provider.getPIdx(), SPAWN_RADIUS_BLOCKS);
+                    firePendingContentsEntitySpawns(level, provider);
+                }
+            }
+        }
+    }
+
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
@@ -863,6 +933,12 @@ public final class TrainCarriageAppender {
         // {@code placedSuccessfully = true} it's permanently exempt
         // from the tracker AND the wireframe overlay.
         runPlacementCollisionTracker(level);
+
+        // Player-distance gate for deferred contents-entity spawns. Fires
+        // each group's mobs only when a player gets close, eliminating the
+        // long wandering window between far-ahead placement and the player
+        // walking in.
+        tickPendingEntitySpawnDistanceGate(level, players);
 
         // Contents-entity drift sampling — debug only. Walks any
         // registered entities (gated at registration on logContentsEntities)

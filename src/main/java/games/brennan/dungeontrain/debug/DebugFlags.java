@@ -51,17 +51,11 @@ public final class DebugFlags {
      * Verbose lifecycle logging for carriage-contents entities (per-entity
      * JOIN / LEAVE log lines with stack traces, plus per-entity spawn lines
      * with UUID + tag, AND post-spawn drift sampling at +1/+5/+20/+60
-     * elapsed ticks). Flip on with
+     * elapsed ticks). Off by default — pure observability. Flip on with
      * {@code /dungeontrain debug contents-entities on} when investigating
-     * entity-disappearance regressions.
-     *
-     * <p>Temporarily defaulted ON for the busy-nash branch while the
-     * mob-under-train bug is under investigation — every fresh carriage
-     * spawn produces a {@code reqPos / actualPos / delta} line and a
-     * {@code [SpawnDrift]} follow-up sequence without the player having
-     * to remember the chat toggle. Revert to {@code false} before merge.</p>
+     * entity-disappearance or post-spawn drift regressions.
      */
-    private static volatile boolean logContentsEntities = true;
+    private static volatile boolean logContentsEntities = false;
     /**
      * Per-furnace-roll diagnostics in {@code ContainerContentsRoller.rollFurnace}
      * — K count, fillMin/fillMax, slotOverride breakdown, what each slot
