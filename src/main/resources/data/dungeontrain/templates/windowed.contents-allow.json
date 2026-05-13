@@ -2,9 +2,11 @@
   "schemaVersion": 1,
   "excluded": [
     "cows",
+    "craft",
     "dirt",
     "ender",
     "pigs",
-    "sheep"
+    "sheep",
+    "shop"
   ]
 }
