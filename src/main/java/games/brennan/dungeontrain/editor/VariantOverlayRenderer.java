@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
@@ -8,6 +9,9 @@ import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.template.Template;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsAllowList;
@@ -50,7 +54,15 @@ import java.util.UUID;
  *
  * <p>Everything is per-player, so a dedicated server with multiple editors
  * only bills each player for their own plot.</p>
+ *
+ * <p>All the per-player dedup maps below are static, so they would otherwise
+ * leak across worlds in the integrated server (single JVM, multiple
+ * world-load cycles). The {@link ServerStoppedEvent} hook below clears them
+ * on every world quit so a fresh server start treats every player as
+ * "never sent anything yet" — the first-tick dedup compare returns "no
+ * change vs empty" only when there's genuinely nothing to send.</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class VariantOverlayRenderer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -112,6 +124,26 @@ public final class VariantOverlayRenderer {
     private static final Map<UUID, String> LAST_TYPE_MENUS_KEY = new HashMap<>();
 
     private VariantOverlayRenderer() {}
+
+    /**
+     * Wipe every per-player dedup map and the overlay-disabled set when the
+     * integrated server stops. Without this, a player who entered the editor
+     * in world A and quit to title would carry the dedup state forward into
+     * world B — the next server's first tick would skip sending an empty
+     * snapshot (since "no labels" matches the last key it remembers from
+     * world A under the same UUID) and any non-empty snapshot would diff
+     * against world A's state rather than a fresh slate.
+     */
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        DISABLED.clear();
+        LAST_HOVER_POS.clear();
+        LAST_STATUS.clear();
+        LAST_LOCK_SNAPSHOT_KEY.clear();
+        LAST_OUTLINE_SNAPSHOT_KEY.clear();
+        LAST_PLOT_LABELS_KEY.clear();
+        LAST_TYPE_MENUS_KEY.clear();
+    }
 
     /** Toggle the overlay for {@code player}. {@code on == true} resumes rendering. */
     public static void setEnabled(ServerPlayer player, boolean on) {

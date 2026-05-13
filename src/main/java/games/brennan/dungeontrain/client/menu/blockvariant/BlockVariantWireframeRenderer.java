@@ -12,6 +12,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -59,6 +60,16 @@ public final class BlockVariantWireframeRenderer {
         }
         cacheOrigin = packet.plotOriginWorldPos();
         CACHE.addAll(packet.positions());
+    }
+
+    /**
+     * Wipe the wireframe cache on world quit so phantom outlines don't
+     * survive across worlds. Symmetric with
+     * {@link games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer#onLoggingOut}.
+     */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        applySnapshot(BlockVariantOutlinePacket.empty());
     }
 
     @SubscribeEvent

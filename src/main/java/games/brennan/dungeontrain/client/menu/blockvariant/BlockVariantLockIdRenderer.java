@@ -17,6 +17,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -90,6 +91,16 @@ public final class BlockVariantLockIdRenderer {
         for (BlockVariantLockIdsPacket.Entry e : packet.entries()) {
             CACHE.put(e.localPos(), e.lockId());
         }
+    }
+
+    /**
+     * Wipe the lock-id cache on world quit so phantom digits don't persist
+     * across worlds. Symmetric with
+     * {@link games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer#onLoggingOut}.
+     */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        applySnapshot(BlockVariantLockIdsPacket.empty());
     }
 
     @SubscribeEvent

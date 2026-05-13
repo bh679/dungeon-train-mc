@@ -3,8 +3,10 @@
   "excluded": [
     "chest",
     "cows",
+    "craft",
     "ender",
     "pigs",
-    "sheep"
+    "sheep",
+    "shop"
   ]
 }

@@ -96,6 +96,23 @@ public final class PartPositionMenu {
     }
 
     /**
+     * Reset to the "menu closed" state. Mirrors the {@code kind == null}
+     * branch of {@link #applySync} but doesn't require a packet — invoked on
+     * client logout so the singleton doesn't carry an active part-position
+     * menu across worlds.
+     */
+    public static void clearForLogout() {
+        active = false;
+        kind = null;
+        entries = Collections.emptyList();
+        registeredNames = Collections.emptyList();
+        screen = Screen.ROOT;
+        removeMode = false;
+        searchBuffer = "";
+        hovered = Hit.NONE;
+    }
+
+    /**
      * Apply a server-pushed sync packet. {@code kind == null} closes the
      * menu and resets sub-screen state so the next open lands on ROOT.
      */

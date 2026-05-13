@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.editor.EditorDirtyCheck;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -226,6 +227,9 @@ public final class EditorStatusHudOverlay {
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         clear();
+        // The part-position menu has no event-bus subscriber of its own; reset
+        // it from here so every client-side editor renderer wipes in unison.
+        PartPositionMenu.clearForLogout();
     }
 
     @SubscribeEvent
