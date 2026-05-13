@@ -1,8 +1,11 @@
 {
   "black": 1,
-  "cracked": 5,
-  "fancywood": 1,
+  "cracked": 4,
+  "fancy": 10,
+  "fancywood": 10,
+  "open": 20,
   "pen": 15,
+  "shop": 10,
   "standard": 20,
   "windowed": 20
 }

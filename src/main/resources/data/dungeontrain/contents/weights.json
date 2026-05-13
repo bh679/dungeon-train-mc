@@ -1,9 +1,9 @@
 {
   "armor": 1,
-  "books": 4,
+  "books": 5,
   "cows": 15,
-  "craft": 5,
-  "default": 0,
+  "craft": 1,
+  "default": 1,
   "dirt": 2,
   "dirt2": 2,
   "enchant": 2,
@@ -11,6 +11,6 @@
   "enemies": 5,
   "maze": 2,
   "sand": 0,
-  "shop": 2,
+  "shop": 1,
   "vase": 1
 }
