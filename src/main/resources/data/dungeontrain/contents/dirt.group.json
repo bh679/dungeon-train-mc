@@ -5,6 +5,22 @@
     {
       "id": "sand",
       "weight": 0
+    },
+    {
+      "id": "dirt2",
+      "weight": 1
+    },
+    {
+      "id": "dirt3",
+      "weight": 1
+    },
+    {
+      "id": "mud",
+      "weight": 1
+    },
+    {
+      "id": "mud2",
+      "weight": 3
     }
   ]
 }
