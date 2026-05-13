@@ -396,6 +396,16 @@ public final class TrainTransformProvider implements KinematicDriver {
         return snapshot;
     }
 
+    /**
+     * Non-mutating peek used by the per-tick player-distance gate to skip
+     * carriages that already fired (or never had any contents). Read of the
+     * volatile field returns the same value the next {@link #takePendingContentsEntitySpawns}
+     * call would consume — true iff that consume would yield a non-null array.
+     */
+    public boolean hasPendingContentsEntitySpawns() {
+        return pendingContentsEntitySpawns != null;
+    }
+
     public int getConsecutiveCleanTicks() {
         return consecutiveCleanTicks;
     }
