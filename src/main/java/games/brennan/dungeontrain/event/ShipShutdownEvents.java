@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
@@ -30,10 +31,12 @@ import java.util.List;
  * <p>On {@link ServerStoppingEvent} (which fires before {@code stopServer()}),
  * we delete every DT-managed train (one {@link ManagedShip} per carriage)
  * via {@link Shipyard#delete}. Sable queues each sub-level for removal; we
- * then explicitly pump {@link ServerSubLevelContainer#tick} so the queued
- * removals process and the {@code PlotChunkHolder}s drop out of
- * {@code updatingChunkMap} before the vanilla shutdown wait loop checks
- * {@code hasWork()}.
+ * then pump {@link ServerSubLevelContainer#tick} in a bounded loop until no
+ * {@link ServerSubLevel} reports {@code isRemoved()} (or a safety cap of 20
+ * ticks fires). A single tick processes one round of changes and is not
+ * enough to fully drain several sub-levels removed at once — leftover
+ * {@code PlotChunkHolder}s would keep {@code ChunkMap.hasWork()} true and
+ * the vanilla shutdown wait loop would spin forever.
  *
  * <p>Acceptable side effects:
  * <ul>
@@ -78,13 +81,29 @@ public final class ShipShutdownEvents {
             }
 
             // Pump Sable's container so the markRemoved() calls above are
-            // processed synchronously this turn. Without the explicit tick,
-            // PlotChunkHolders linger in ChunkMap.updatingChunkMap and the
-            // vanilla shutdown wait loop hangs. Same call as Sable's normal
-            // per-tick driver in plot.ServerLevelMixin.sable$tickPlotContainer.
+            // processed before vanilla's shutdown wait loop. A single tick
+            // only runs one processChanges() pass and leaves PlotChunkHolders
+            // in ChunkMap.updatingChunkMap when several sub-levels are removed
+            // at once — vanilla's wait-for-no-work loop then spins forever.
+            // Drain in a bounded loop until no removed sub-levels remain.
             ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
             if (container != null && deletedHere > 0) {
-                container.tick();
+                final int maxTicks = 20;
+                int ticksUsed = 0;
+                for (int i = 0; i < maxTicks; i++) {
+                    container.tick();
+                    ticksUsed++;
+                    boolean anyRemoved = container.getAllSubLevels().stream()
+                        .anyMatch(ServerSubLevel::isRemoved);
+                    if (!anyRemoved) break;
+                }
+                if (ticksUsed >= maxTicks) {
+                    LOGGER.warn("[DungeonTrain] Drain loop hit cap of {} ticks in {} — sub-levels may still be pending removal",
+                        maxTicks, level.dimension().location());
+                } else {
+                    LOGGER.info("[DungeonTrain] Drained {} sub-level removals in {} ticks for {}",
+                        deletedHere, ticksUsed, level.dimension().location());
+                }
             }
 
             if (deletedHere > 0) {
