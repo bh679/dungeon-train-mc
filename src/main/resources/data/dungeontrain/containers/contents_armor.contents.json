@@ -220,6 +220,10 @@
     }
   },
   "links": {
-    "3,0,0": "starter"
+    "3,0,0": "starter",
+    "6,0,0": "singlebasicarmor",
+    "6,0,4": "singlebasicarmor",
+    "0,0,4": "singlebasicarmor",
+    "0,0,0": "singlebasicarmor"
   }
 }

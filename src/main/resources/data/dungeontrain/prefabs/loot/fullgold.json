@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:armor_stand",
+  "category": "armor_stand",
+  "fillMin": 4,
+  "entries": [
+    { "id": "minecraft:golden_helmet", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+    { "id": "minecraft:golden_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+    { "id": "minecraft:golden_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+    { "id": "minecraft:golden_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 }
+  ]
+}
