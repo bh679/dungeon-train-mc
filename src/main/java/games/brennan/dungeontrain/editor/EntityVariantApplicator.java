@@ -64,37 +64,42 @@ public final class EntityVariantApplicator {
     private EntityVariantApplicator() {}
 
     /**
-     * Apply the variant at {@code localPos} (interior-local coords) to
-     * {@code entityNbt} in-place. No-op when:
-     * <ul>
-     *   <li>The sidecar is null/empty.</li>
-     *   <li>No variant exists at {@code localPos}.</li>
-     *   <li>The picked variant has no {@code linkedLootPrefabId}.</li>
-     *   <li>The entity's {@code id} is not one of the supported types
-     *       (armor stand, item frame, glow item frame).</li>
-     *   <li>The prefab is missing or its pool is empty.</li>
-     * </ul>
+     * Apply the variant + cell-level pool at {@code localPos} (interior-local
+     * coords) to {@code entityNbt} in-place. Resolution order mirrors the
+     * block-side
+     * {@link games.brennan.dungeontrain.train.CarriageContentsPlacer
+     * applyVariantBlocks → applyContentLinks} pipeline:
+     *
+     * <ol>
+     *   <li>Variant sidecar entry with a non-null {@code linkedLootPrefabId}
+     *       wins. The variant flow chose a specific candidate for this
+     *       {@code (seed, carriageIndex, localPos)} and that choice may
+     *       differ per spawn.</li>
+     *   <li>Else fall back to the cell-level pool from
+     *       {@link ContainerContentsStore#poolAt(BlockPos)} — the same store
+     *       the C-menu writes to when the player authors a link/pool on a
+     *       cell directly (entity-targeted authoring lands here).</li>
+     *   <li>Else no-op.</li>
+     * </ol>
+     *
+     * No-op also when the entity's {@code id} is not one of the supported
+     * types (armor stand, item frame, glow item frame), and when the
+     * resolved pool is empty.
      *
      * <p>Caller is expected to pass an {@code entityNbt} that is safe to
      * mutate — in the existing spawn path that is already a {@code .copy()}
      * of the template entry's NBT.</p>
      */
     public static void applyTo(CompoundTag entityNbt, BlockPos localPos, long seed, int carriageIndex,
-                                @Nullable CarriageContentsVariantBlocks sidecar, ServerLevel level) {
-        if (sidecar == null || sidecar.isEmpty()) return;
+                                @Nullable CarriageContentsVariantBlocks sidecar,
+                                @Nullable ContainerContentsStore contentsStore,
+                                ServerLevel level) {
         if (entityNbt == null) return;
         String entityId = entityNbt.getString(NBT_ID);
         if (entityId.isEmpty()) return;
         if (!isSupported(entityId)) return;
 
-        VariantState picked = sidecar.resolve(localPos, seed, carriageIndex);
-        if (picked == null) return;
-        String prefabId = picked.linkedLootPrefabId();
-        if (prefabId == null || prefabId.isEmpty()) return;
-
-        Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(prefabId);
-        if (loaded.isEmpty()) return;
-        ContainerContentsPool pool = loaded.get().pool();
+        ContainerContentsPool pool = resolvePool(localPos, seed, carriageIndex, sidecar, contentsStore);
         if (pool == null || pool.isEmpty()) return;
 
         HolderLookup.Provider registries = level.registryAccess();
@@ -106,6 +111,35 @@ public final class EntityVariantApplicator {
                 applyToItemFrame(entityNbt, pool, localPos, seed, carriageIndex, registries);
             default -> { /* filtered above */ }
         }
+    }
+
+    /**
+     * Two-tier pool resolution: variant sidecar's per-spawn pick (with
+     * {@code linkedLootPrefabId}) first, falling through to the cell-level
+     * {@link ContainerContentsStore} pool authored via the C menu.
+     */
+    @Nullable
+    private static ContainerContentsPool resolvePool(BlockPos localPos, long seed, int carriageIndex,
+                                                      @Nullable CarriageContentsVariantBlocks sidecar,
+                                                      @Nullable ContainerContentsStore contentsStore) {
+        if (sidecar != null && !sidecar.isEmpty()) {
+            VariantState picked = sidecar.resolve(localPos, seed, carriageIndex);
+            if (picked != null) {
+                String prefabId = picked.linkedLootPrefabId();
+                if (prefabId != null && !prefabId.isEmpty()) {
+                    Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(prefabId);
+                    if (loaded.isPresent()) {
+                        ContainerContentsPool pool = loaded.get().pool();
+                        if (pool != null && !pool.isEmpty()) return pool;
+                    }
+                }
+            }
+        }
+        if (contentsStore != null) {
+            ContainerContentsPool pool = contentsStore.poolAt(localPos);
+            if (pool != null && !pool.isEmpty()) return pool;
+        }
+        return null;
     }
 
     private static boolean isSupported(String entityId) {

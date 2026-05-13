@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
@@ -406,6 +407,12 @@ public final class CarriageContentsPlacer {
         // for this contents id — the applicator no-ops on null/empty.
         CarriageContentsVariantBlocks variantSidecar =
             CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+        // Cell-level link / authored pool — populated when the player edits
+        // an armor stand or item frame via the C menu (the menu writes to
+        // this store, keyed by interior-local block pos). Mirrors the block-
+        // side applyContentLinks pass.
+        ContainerContentsStore contentsLinkStore =
+            ContainerContentsStore.loadFor("contents:" + contents.id());
         int spawned = 0;
         for (int i = 0; i < entries.size(); i++) {
             CompoundTag entry = entries.getCompound(i);
@@ -462,7 +469,8 @@ public final class CarriageContentsPlacer {
             // the sidecar has no entry at the position, no prefab link, or
             // the entity isn't a supported type.
             BlockPos localBlock = BlockPos.containing(localX, localY, localZ);
-            EntityVariantApplicator.applyTo(entityNbt, localBlock, seed, carriagePIdx, variantSidecar, level);
+            EntityVariantApplicator.applyTo(entityNbt, localBlock, seed, carriagePIdx,
+                variantSidecar, contentsLinkStore, level);
 
             try {
                 Optional<Entity> created = EntityType.create(entityNbt, level);
