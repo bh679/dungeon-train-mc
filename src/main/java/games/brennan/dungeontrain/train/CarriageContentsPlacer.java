@@ -5,8 +5,10 @@ import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
+import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -20,7 +22,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
@@ -220,6 +224,12 @@ public final class CarriageContentsPlacer {
             }
             if (spawnEntities) {
                 spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed);
+                // Cell-link entity spawn — mirrors the block-side
+                // applyContentLinks pass. Lets a player who placed a prefab
+                // armor stand in the editor without saving the template still
+                // get the stand at runtime: the link in ContainerContentsStore
+                // drives the entity spawn directly.
+                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
@@ -522,6 +532,77 @@ public final class CarriageContentsPlacer {
         if (spawned > 0) {
             LOGGER.info("[DungeonTrain] Contents: spawned {} entities at origin={} (template listed {}) pIdx={} tag={}",
                 spawned, origin, entries.size(), carriagePIdx, tag);
+        }
+    }
+
+    /**
+     * Cell-link entity spawn pass — mirror of
+     * {@link #applyContentLinks} for entities. Iterates every cell in the
+     * carriage's {@link ContainerContentsStore}; for each link whose prefab
+     * has {@code category="armor_stand"}, spawns a fresh armor stand at the
+     * cell's world position and applies the rolled equipment via
+     * {@link EntityVariantApplicator#applyPoolToLiveEntity}.
+     *
+     * <p>Skips cells that already host an armor stand (template-captured
+     * entity from a saved template wins the dedup). Item frames are
+     * deferred — they need facing data we don't currently persist in the
+     * store.</p>
+     *
+     * <p>Runs every carriage spawn (and every editor preview re-stamp) so a
+     * link → entity association at the cell is the source of truth, the
+     * same way `applyContentLinks` makes the link → chest-loot association
+     * the source of truth on the block side.</p>
+     */
+    private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
+                                             CarriageContents contents,
+                                             int carriagePIdx, long seed) {
+        ContainerContentsStore store = ContainerContentsStore.loadFor("contents:" + contents.id());
+        java.util.Set<BlockPos> allPositions = store.allPositions();
+        if (allPositions.isEmpty()) return;
+
+        net.minecraft.core.HolderLookup.Provider registries = level.registryAccess();
+        String tag = contentsTagFor(carriagePIdx);
+        long spawnTick = level.getGameTime();
+        int spawned = 0;
+
+        for (BlockPos localPos : allPositions) {
+            String linkId = store.linkAt(localPos);
+            if (linkId == null) continue;
+            Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(linkId);
+            if (loaded.isEmpty()) continue;
+            LootPrefabStore.Data data = loaded.get();
+            if (!LootPrefabStore.CATEGORY_ARMOR_STAND.equals(data.category())) continue;
+            ContainerContentsPool pool = data.pool();
+            if (pool == null || pool.isEmpty()) continue;
+
+            BlockPos worldPos = interiorOrigin.offset(localPos);
+            // Dedup: skip if a captured stand from the template was already
+            // placed at this cell. spawnEntitiesFromTemplate runs first, so
+            // captured entities are in the level by the time we get here.
+            AABB cellAabb = new AABB(worldPos);
+            if (!level.getEntitiesOfClass(ArmorStand.class, cellAabb).isEmpty()) continue;
+
+            Vec3 spawnPos = Vec3.atBottomCenterOf(worldPos);
+            ArmorStand stand = new ArmorStand(level, spawnPos.x, spawnPos.y, spawnPos.z);
+            stand.addTag(tag);
+            CompoundTag persistent = stand.getPersistentData();
+            persistent.putDouble(NBT_SPAWN_SHIPYARD_X, spawnPos.x);
+            persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, spawnPos.y);
+            persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, spawnPos.z);
+            persistent.putLong(NBT_SPAWN_GAME_TICK, spawnTick);
+            persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
+
+            if (!level.addFreshEntity(stand)) {
+                LOGGER.warn("[DungeonTrain] LinkedEntities: addFreshEntity rejected armor_stand at {} pIdx={} link={}",
+                    worldPos, carriagePIdx, linkId);
+                continue;
+            }
+            EntityVariantApplicator.applyPoolToLiveEntity(stand, pool, seed, carriagePIdx, registries);
+            spawned++;
+        }
+        if (spawned > 0) {
+            LOGGER.info("[DungeonTrain] LinkedEntities: spawned {} armor stand(s) for contents={} pIdx={} tag={}",
+                spawned, contents.id(), carriagePIdx, tag);
         }
     }
 
