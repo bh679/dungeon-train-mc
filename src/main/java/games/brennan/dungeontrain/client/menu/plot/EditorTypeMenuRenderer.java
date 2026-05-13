@@ -87,7 +87,21 @@ public final class EditorTypeMenuRenderer {
      * the sub-variants list that used to render as a separate floating
      * companion. Click dispatch teleports to the sub-variant.</p>
      */
-    public enum CellKind { NONE, HEADER, NAME, WEIGHT, NEW, CATEGORY, TYPE_TAB, SUB_VARIANT }
+    public enum CellKind {
+        NONE, HEADER, NAME, WEIGHT, NEW, CATEGORY, TYPE_TAB, SUB_VARIANT,
+        /** Package row — clicking activates that package. */
+        PKG_NAME,
+        /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
+        PKG_SAVE,
+        /** Package Open cell — opens the package's working folder in the OS file manager. */
+        PKG_OPEN,
+        /** Package Enable/Disable cell — toggles the package's enabled flag. */
+        PKG_ENABLE,
+        /** Top-row Reload cell — runs {@code dungeontrain editor import}. */
+        PKG_RELOAD,
+        /** Top-row Open Packages cell — opens the dtpacks root. */
+        PKG_OPEN_FOLDER
+    }
 
     /**
      * Where the player's crosshair is currently pointing. {@code variantIdx}
@@ -181,7 +195,38 @@ public final class EditorTypeMenuRenderer {
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
     private static volatile Hovered HOVERED = Hovered.NONE;
 
+    /**
+     * Sticky billboard basis for the package menu — captured on the first
+     * render frame after the menu appears, reused every frame after. Unlike
+     * the cylindrical billboards used elsewhere, the package panel pins its
+     * initial orientation toward the player's spawn-in camera and stays
+     * fixed thereafter, so it reads as a stationary signpost rather than a
+     * follower panel. Cleared on editor exit (empty snapshot) so re-entry
+     * recaptures from the new camera.
+     */
+    private static volatile Vec3[] PACKAGE_BASIS = null;
+
     private EditorTypeMenuRenderer() {}
+
+    /**
+     * Returns the billboard basis to use for {@code menu}. For the package
+     * menu this is sticky — captured on first call, reused thereafter.
+     * For every other menu kind this is the live cylindrical billboard.
+     *
+     * <p>Shared by the renderer and {@link EditorTypeMenuRaycast} so the
+     * hit-test plane matches the visible panel exactly even after the
+     * camera moves.</p>
+     */
+    public static Vec3[] basisFor(EditorTypeMenusPacket.Menu menu, Vec3 anchor, Vec3 cam) {
+        if (!menu.isPackageMenu()) {
+            return EditorPlotLabelsRenderer.basis(anchor, cam);
+        }
+        Vec3[] cached = PACKAGE_BASIS;
+        if (cached != null) return cached;
+        Vec3[] fresh = EditorPlotLabelsRenderer.basis(anchor, cam);
+        PACKAGE_BASIS = fresh;
+        return fresh;
+    }
 
     /**
      * Wipe the renderer cache on world quit. Without this, the static
@@ -198,11 +243,21 @@ public final class EditorTypeMenuRenderer {
         if (packet.isEmpty()) {
             CACHE = List.of();
             HOVERED = Hovered.NONE;
+            PACKAGE_BASIS = null;
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
         }
         List<EditorTypeMenusPacket.Menu> menus = List.copyOf(packet.menus());
         CACHE = menus;
+        // Keep PACKAGE_BASIS sticky across snapshots that still carry a
+        // package menu (so category switches don't reorient the panel); drop
+        // it if the new snapshot has no package menu, so the next appearance
+        // recaptures from the player's current camera.
+        boolean hasPackageMenu = false;
+        for (EditorTypeMenusPacket.Menu m : menus) {
+            if (m.isPackageMenu()) { hasPackageMenu = true; break; }
+        }
+        if (!hasPackageMenu) PACKAGE_BASIS = null;
         EditorTypeMenusPacket.Menu first = menus.get(0);
         LOGGER.info("[DungeonTrain] EditorTypeMenus: client received {} menus (first: '{}' with {} variants @ {})",
             menus.size(), first.typeName(), first.variants().size(), first.worldPos());
@@ -270,8 +325,20 @@ public final class EditorTypeMenuRenderer {
      * full category bar plus the expanded column plus every collapsed tab.
      */
     public static double halfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
+        if (menu.isPackageMenu()) return packageHalfWidth();
         if (menu.isNavMenu()) return navHalfWidth(menu, font);
         return companionHalfWidth(menu, font);
+    }
+
+    /**
+     * Package menu width. Wider than the X-menu's {@code panelWidth = 3.6}
+     * because worldspace text renders at {@link #TEXT_SCALE} (0.025) — the
+     * Enable cell's "Disable" label and the top row's "Open Packages" label
+     * both need physical world-space width past what 3.6 affords. 6.0 blocks
+     * leaves comfortable padding for every cell at the fractions below.
+     */
+    private static double packageHalfWidth() {
+        return 6.0 / 2.0;
     }
 
     /**
@@ -531,6 +598,10 @@ public final class EditorTypeMenuRenderer {
     }
 
     public static int rowCount(EditorTypeMenusPacket.Menu menu, Font font) {
+        // Package: header + Reload/Open row + N package rows.
+        if (menu.isPackageMenu()) {
+            return 2 + games.brennan.dungeontrain.client.PackageListClient.entries().size();
+        }
         // Companion: header + N variants + "+ New" footer (skip footer for empty menus).
         // Nav: category bar + tab strip + total variant rows (1 per variant
         // plus extra rows for wrapped sub-variants) + "+ New" footer.
@@ -597,6 +668,9 @@ public final class EditorTypeMenuRenderer {
      */
     public static Hovered hitFor(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
                                  double hitX, double hitY) {
+        if (menu.isPackageMenu()) {
+            return hitForPackageMenu(menuIdx, menu, font, hitX, hitY);
+        }
         if (menu.isNavMenu()) {
             return hitForNav(menuIdx, menu, font, hitX, hitY);
         }
@@ -756,7 +830,7 @@ public final class EditorTypeMenuRenderer {
         EditorTypeMenusPacket.Menu menu, Hovered hovered,
         double priorCompanionWidth
     ) {
-        Vec3[] b = EditorPlotLabelsRenderer.basis(anchor, cam);
+        Vec3[] b = basisFor(menu, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
 
         ps.pushPose();
@@ -787,7 +861,9 @@ public final class EditorTypeMenuRenderer {
             ps.translate(shiftX, 0, 0);
         }
 
-        if (menu.isNavMenu()) {
+        if (menu.isPackageMenu()) {
+            drawPackageMenu(ps, buffer, font, menu, hovered);
+        } else if (menu.isNavMenu()) {
             drawNavMenu(ps, buffer, font, menu, hovered);
         } else {
             drawCompanionMenu(ps, buffer, font, menu, hovered);
@@ -1139,6 +1215,201 @@ public final class EditorTypeMenuRenderer {
             if (e.inPlot()) return e.modelName();
         }
         return "";
+    }
+
+    // ---------- package menu ----------
+
+    /**
+     * Cell-boundary fractions for a per-package row: {@code Name | Save | Open | Enable}.
+     * Reallocated from the X-menu's {@code (0.55, 0.72, 0.86)} so the Enable cell
+     * gets ~24% of panel width — enough room for "Disable" to render without
+     * truncation at the worldspace text scale.
+     */
+    private static final double PKG_BOUND_1 = 0.50;
+    private static final double PKG_BOUND_2 = 0.63;
+    private static final double PKG_BOUND_3 = 0.76;
+    /** Cell-boundary fraction for the top {@code Reload | Open Packages} split row. */
+    private static final double PKG_TOP_SPLIT = 0.55;
+
+    /**
+     * Render the worldspace package panel — mirror of the X-menu's flat
+     * {@link games.brennan.dungeontrain.client.menu.PackageListScreen}.
+     *
+     * <p>Rows: {@code Packages} header, {@code Reload | Open Packages} top
+     * split, then one row per package with cells
+     * {@code Name | Save | Open | Enable}. Data comes from the client-side
+     * {@link games.brennan.dungeontrain.client.PackageListClient} cache —
+     * the {@link EditorTypeMenusPacket} carries only the anchor + a marker
+     * flag, so package state changes propagate through the existing
+     * {@code PackageListSyncPacket} channel rather than re-sending the type
+     * menus snapshot.</p>
+     */
+    private static void drawPackageMenu(
+        PoseStack ps, MultiBufferSource buffer, Font font,
+        EditorTypeMenusPacket.Menu menu, Hovered hovered
+    ) {
+        // Keep the client cache warm — same throttle the X-menu uses.
+        games.brennan.dungeontrain.client.PackageListClient.requestRefreshThrottled();
+
+        java.util.List<games.brennan.dungeontrain.net.PackageListSyncPacket.Entry> entries =
+            games.brennan.dungeontrain.client.PackageListClient.entries();
+
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        double topY = halfH;
+        double panelW = halfW * 2.0;
+
+        // Whole-panel backdrop.
+        drawQuad(ps, buffer, -halfW, -halfH, halfW, halfH, BACKDROP_COLOR);
+
+        // Header row.
+        double headerTop = topY;
+        double headerBottom = headerTop - ROW_H;
+        double headerCY = (headerTop + headerBottom) / 2.0;
+        drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
+        drawCenteredText(ps, buffer, font, "Packages", 0, headerCY, HEADER_COLOR);
+
+        // Top split row — Reload | Open Packages.
+        double topRowTop = headerBottom;
+        double topRowBottom = topRowTop - ROW_H;
+        double topRowCY = (topRowTop + topRowBottom) / 2.0;
+        double topSplitX = -halfW + panelW * PKG_TOP_SPLIT;
+        drawQuad(ps, buffer, -halfW, topRowTop - 0.005, halfW, topRowTop + 0.005, ROW_SEP_COLOR);
+        if (hovered.cell == CellKind.PKG_RELOAD) {
+            drawQuad(ps, buffer, -halfW + 0.005, topRowBottom + 0.005,
+                topSplitX - 0.005, topRowTop - 0.005, HOVER_COLOR);
+        }
+        if (hovered.cell == CellKind.PKG_OPEN_FOLDER) {
+            drawQuad(ps, buffer, topSplitX + 0.005, topRowBottom + 0.005,
+                halfW - 0.005, topRowTop - 0.005, HOVER_COLOR);
+        }
+        drawCenteredText(ps, buffer, font, "Reload",
+            (-halfW + topSplitX) / 2.0, topRowCY, NAME_COLOR);
+        drawCenteredText(ps, buffer, font, "Open Packages",
+            (topSplitX + halfW) / 2.0, topRowCY, NAME_COLOR);
+        drawQuad(ps, buffer, topSplitX - COLUMN_DIVIDER_W / 2.0, topRowBottom,
+            topSplitX + COLUMN_DIVIDER_W / 2.0, topRowTop, COLUMN_SEP_COLOR);
+
+        // Per-package rows.
+        double cellBound1X = -halfW + panelW * PKG_BOUND_1;
+        double cellBound2X = -halfW + panelW * PKG_BOUND_2;
+        double cellBound3X = -halfW + panelW * PKG_BOUND_3;
+
+        for (int i = 0; i < entries.size(); i++) {
+            games.brennan.dungeontrain.net.PackageListSyncPacket.Entry entry = entries.get(i);
+            double rowTop = topRowBottom - i * ROW_H;
+            double rowBottom = rowTop - ROW_H;
+            double rowCY = (rowTop + rowBottom) / 2.0;
+            boolean isUnsaved = games.brennan.dungeontrain.editor.PackageInfo.UNSAVED_NAME.equals(entry.name());
+
+            drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
+
+            // Active row tint.
+            if (entry.isActive()) {
+                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
+                    halfW - 0.005, rowTop - 0.005, ACTIVE_ROW_COLOR);
+            }
+
+            // Hover highlights per cell.
+            boolean nameHover = hovered.cell == CellKind.PKG_NAME && hovered.variantIdx == i;
+            boolean saveHover = hovered.cell == CellKind.PKG_SAVE && hovered.variantIdx == i;
+            boolean openHover = hovered.cell == CellKind.PKG_OPEN && hovered.variantIdx == i;
+            boolean enableHover = hovered.cell == CellKind.PKG_ENABLE && hovered.variantIdx == i;
+            if (nameHover) {
+                drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005,
+                    cellBound1X - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            if (saveHover) {
+                drawQuad(ps, buffer, cellBound1X + 0.005, rowBottom + 0.005,
+                    cellBound2X - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            if (openHover) {
+                drawQuad(ps, buffer, cellBound2X + 0.005, rowBottom + 0.005,
+                    cellBound3X - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            if (enableHover) {
+                drawQuad(ps, buffer, cellBound3X + 0.005, rowBottom + 0.005,
+                    halfW - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+
+            // Column dividers.
+            drawQuad(ps, buffer, cellBound1X - COLUMN_DIVIDER_W / 2.0, rowBottom,
+                cellBound1X + COLUMN_DIVIDER_W / 2.0, rowTop, COLUMN_SEP_COLOR);
+            drawQuad(ps, buffer, cellBound2X - COLUMN_DIVIDER_W / 2.0, rowBottom,
+                cellBound2X + COLUMN_DIVIDER_W / 2.0, rowTop, COLUMN_SEP_COLOR);
+            drawQuad(ps, buffer, cellBound3X - COLUMN_DIVIDER_W / 2.0, rowBottom,
+                cellBound3X + COLUMN_DIVIDER_W / 2.0, rowTop, COLUMN_SEP_COLOR);
+
+            // Cell text — name carries the active marker "●", same as PackageListScreen.
+            String nameLabel = (entry.isActive() ? "● " : "  ") + entry.name();
+            drawCenteredText(ps, buffer, font, nameLabel,
+                (-halfW + cellBound1X) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, "Save",
+                (cellBound1X + cellBound2X) / 2.0, rowCY, NAME_COLOR);
+            drawCenteredText(ps, buffer, font, "Open",
+                (cellBound2X + cellBound3X) / 2.0, rowCY, NAME_COLOR);
+            String enableLabel;
+            if (isUnsaved) {
+                enableLabel = "—";
+            } else {
+                enableLabel = entry.enabled() ? "Disable" : "Enable";
+            }
+            drawCenteredText(ps, buffer, font, enableLabel,
+                (cellBound3X + halfW) / 2.0, rowCY, NAME_COLOR);
+        }
+    }
+
+    /**
+     * Map a panel-local hit on a package menu to its cell. Mirrors the
+     * row layout from {@link #drawPackageMenu} — header / top-split /
+     * per-package rows with cell boundaries at {@link #PKG_BOUND_1} /
+     * {@link #PKG_BOUND_2} / {@link #PKG_BOUND_3} / {@link #PKG_TOP_SPLIT}.
+     *
+     * <p>{@code variantIdx} carries the entry index for per-package cells
+     * (PKG_NAME / PKG_SAVE / PKG_OPEN / PKG_ENABLE); {@code -1} for the
+     * top-row cells. The Enable cell on the unsaved pseudo-package returns
+     * {@link Hovered#NONE} so the inert "—" placeholder is non-clickable.</p>
+     */
+    private static Hovered hitForPackageMenu(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
+                                              double hitX, double hitY) {
+        double halfW = halfWidth(menu, font);
+        double halfH = halfHeight(menu, font);
+        if (hitX < -halfW || hitX > halfW || hitY < -halfH || hitY > halfH) return Hovered.NONE;
+
+        int rows = rowCount(menu, font);
+        int rowFromTop = (int) Math.floor((halfH - hitY) / ROW_H);
+        if (rowFromTop < 0 || rowFromTop >= rows) return Hovered.NONE;
+
+        double panelW = halfW * 2.0;
+
+        // Row 0 — header (inert).
+        if (rowFromTop == 0) return Hovered.NONE;
+
+        // Row 1 — Reload | Open Packages.
+        if (rowFromTop == 1) {
+            double splitX = -halfW + panelW * PKG_TOP_SPLIT;
+            return hitX < splitX
+                ? new Hovered(menuIdx, -1, CellKind.PKG_RELOAD)
+                : new Hovered(menuIdx, -1, CellKind.PKG_OPEN_FOLDER);
+        }
+
+        // Rows 2..end — per-package quad cells.
+        int pkgIdx = rowFromTop - 2;
+        java.util.List<games.brennan.dungeontrain.net.PackageListSyncPacket.Entry> entries =
+            games.brennan.dungeontrain.client.PackageListClient.entries();
+        if (pkgIdx < 0 || pkgIdx >= entries.size()) return Hovered.NONE;
+        games.brennan.dungeontrain.net.PackageListSyncPacket.Entry entry = entries.get(pkgIdx);
+        boolean isUnsaved = games.brennan.dungeontrain.editor.PackageInfo.UNSAVED_NAME.equals(entry.name());
+
+        double cellBound1X = -halfW + panelW * PKG_BOUND_1;
+        double cellBound2X = -halfW + panelW * PKG_BOUND_2;
+        double cellBound3X = -halfW + panelW * PKG_BOUND_3;
+        if (hitX < cellBound1X) return new Hovered(menuIdx, pkgIdx, CellKind.PKG_NAME);
+        if (hitX < cellBound2X) return new Hovered(menuIdx, pkgIdx, CellKind.PKG_SAVE);
+        if (hitX < cellBound3X) return new Hovered(menuIdx, pkgIdx, CellKind.PKG_OPEN);
+        // Enable cell on the unsaved pseudo-package is rendered as inert "—".
+        if (isUnsaved) return Hovered.NONE;
+        return new Hovered(menuIdx, pkgIdx, CellKind.PKG_ENABLE);
     }
 
     private static void drawCenteredText(

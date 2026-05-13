@@ -1,16 +1,9 @@
 package games.brennan.dungeontrain.client.menu;
 
-import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.PackageListClient;
 import games.brennan.dungeontrain.editor.PackageInfo;
-import games.brennan.dungeontrain.editor.PackageRegistry;
-import games.brennan.dungeontrain.editor.UserContentPaths;
 import games.brennan.dungeontrain.net.PackageListSyncPacket;
-import net.minecraft.Util;
-import org.slf4j.Logger;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,8 +38,6 @@ import java.util.List;
  */
 public final class PackageListScreen implements MenuScreen {
 
-    private static final Logger LOGGER = LogUtils.getLogger();
-
     /**
      * Wider than the default. Each row is a Quad
      * (Name | Save | Open | Enable) and package names can be 32 chars —
@@ -69,7 +60,7 @@ public final class PackageListScreen implements MenuScreen {
 
         out.add(new CommandMenuEntry.Split(
             new CommandMenuEntry.Stay("Reload", "dungeontrain editor import"),
-            new CommandMenuEntry.ClientAction("Open Packages", PackageListScreen::openDtpacksFolder),
+            new CommandMenuEntry.ClientAction("Open Packages", PackageMenuActions::openDtpacksFolder),
             0.55
         ));
 
@@ -117,7 +108,7 @@ public final class PackageListScreen implements MenuScreen {
         final String packageName = entry.name();
         CommandMenuEntry open = new CommandMenuEntry.ClientAction(
             "Open",
-            () -> openWorkingFolder(packageName)
+            () -> PackageMenuActions.openWorkingFolder(packageName)
         );
 
         CommandMenuEntry enableCell;
@@ -150,26 +141,5 @@ public final class PackageListScreen implements MenuScreen {
     private static String displayName(String name) {
         // Show "(unsaved)" verbatim, otherwise just the name.
         return name;
-    }
-
-    private static void openDtpacksFolder() {
-        openFolder(PackageRegistry.dtpacksRoot(), "dtpacks folder");
-    }
-
-    private static void openWorkingFolder(String packageName) {
-        Path target = PackageInfo.UNSAVED_NAME.equals(packageName)
-            ? UserContentPaths.root()
-            : PackageRegistry.dtpacksRoot().resolve(packageName);
-        openFolder(target, "package '" + packageName + "' folder");
-    }
-
-    private static void openFolder(Path path, String label) {
-        try {
-            Files.createDirectories(path);
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Couldn't ensure {} at {}: {}", label, path, e.toString());
-        }
-        Util.getPlatform().openUri(path.toUri());
-        LOGGER.info("[DungeonTrain] Opened {} at {}", label, path);
     }
 }

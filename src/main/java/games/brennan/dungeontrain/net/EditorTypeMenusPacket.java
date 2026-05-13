@@ -70,21 +70,29 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         boolean isCompanion,
         String activeCategoryId,
         List<CategoryButton> categoryBar,
-        List<TypeTab> typeStrip
+        List<TypeTab> typeStrip,
+        boolean isPackageMenu
     ) {
         /** Convenience: row-start menus default to {@code isCompanion=false} and empty nav chrome. */
         public Menu(BlockPos worldPos, String typeName, List<Variant> variants) {
-            this(worldPos, typeName, variants, false, "", List.of(), List.of());
+            this(worldPos, typeName, variants, false, "", List.of(), List.of(), false);
         }
 
         /** Convenience: explicit companion flag, no nav chrome. */
         public Menu(BlockPos worldPos, String typeName, List<Variant> variants, boolean isCompanion) {
-            this(worldPos, typeName, variants, isCompanion, "", List.of(), List.of());
+            this(worldPos, typeName, variants, isCompanion, "", List.of(), List.of(), false);
+        }
+
+        /** Convenience: full nav-menu constructor without the package flag — keeps the existing
+         *  nav-menu call sites compiling unchanged. */
+        public Menu(BlockPos worldPos, String typeName, List<Variant> variants, boolean isCompanion,
+                    String activeCategoryId, List<CategoryButton> categoryBar, List<TypeTab> typeStrip) {
+            this(worldPos, typeName, variants, isCompanion, activeCategoryId, categoryBar, typeStrip, false);
         }
 
         /** True when this menu carries the category bar + type strip (a row-start nav panel). */
         public boolean isNavMenu() {
-            return !isCompanion && !categoryBar.isEmpty();
+            return !isCompanion && !isPackageMenu && !categoryBar.isEmpty();
         }
     }
 
@@ -183,6 +191,7 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 buf.writeUtf(t.modelId(), 64);
                 buf.writeUtf(t.modelName(), 64);
             }
+            buf.writeBoolean(m.isPackageMenu());
         }
     }
 
@@ -246,8 +255,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 String tabModelName = buf.readUtf(64);
                 typeStrip.add(new TypeTab(tabName, tabCategory, tabModelId, tabModelName));
             }
+            boolean isPackageMenu = buf.readBoolean();
             out.add(new Menu(pos, typeName, variants, isCompanion,
-                activeCategoryId, categoryBar, typeStrip));
+                activeCategoryId, categoryBar, typeStrip, isPackageMenu));
         }
         return new EditorTypeMenusPacket(out);
     }
