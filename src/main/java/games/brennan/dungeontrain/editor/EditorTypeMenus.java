@@ -340,6 +340,39 @@ public final class EditorTypeMenus {
     }
 
     /**
+     * Z offset from the carriages nav menu's centre — mirrors
+     * {@code EditorHelpPanelRenderer.WORLD_OFFSET_BLOCKS} on the opposite
+     * side, so the carriages nav menu sits between the help/welcome panel
+     * ({@code +Z}) and the package menu ({@code -Z}). Same distance, opposite
+     * side — visually balanced trio at the editor's entry door.
+     */
+    private static final int PACKAGE_MENU_Z_OFFSET = -5;
+
+    /**
+     * Anchor for the floating package menu — the worldspace mirror of the
+     * X-menu's "Package" drilldown. Shares the carriages nav menu's
+     * {@code -X} depth and {@code Y} lift so the two read as siblings on
+     * the same horizontal plane, but offset on {@code +Z} so they appear
+     * side-by-side rather than stacked along the player's view axis.
+     *
+     * <p>Returns {@code null} when no carriage variants are registered —
+     * same fallthrough the carriages nav menu uses (no anchor without a
+     * first plot).</p>
+     */
+    public static BlockPos packageMenuAnchor(CarriageDims dims) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        if (variants.isEmpty()) return null;
+        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
+        if (firstOrigin == null) return null;
+        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        return new BlockPos(
+            firstOrigin.getX() - MENU_GAP,
+            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
+            firstOrigin.getZ() + footprint.getZ() / 2 + PACKAGE_MENU_Z_OFFSET
+        );
+    }
+
+    /**
      * Anchor for a Z-extending row: one {@code GAP} past the first plot's
      * {@code -Z} cage edge, lifted {@link #Y_ANCHOR_LIFT} blocks above the
      * cage top, centred over the footprint X.

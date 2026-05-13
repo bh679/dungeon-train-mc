@@ -619,6 +619,7 @@ public final class VariantOverlayRenderer {
         java.util.List<EditorTypeMenusPacket.Menu> menus = appendSubVariantsCompanion(
             baseMenus, player, dims, category);
         menus = appendCompanionMenu(menus, player, dims, category);
+        menus = appendPackageMenu(menus, dims);
 
         StringBuilder keyBuf = new StringBuilder(64);
         keyBuf.append(category.name()).append('|');
@@ -727,6 +728,34 @@ public final class VariantOverlayRenderer {
 
     /** Marker typeName for the sub-variants companion menu. Input handler keys off this to route + New differently. */
     public static final String SUB_VARIANTS_TYPE_NAME = "Sub-Variants";
+
+    /**
+     * Append the floating package menu — the worldspace mirror of the X-menu's
+     * "Package" drilldown. One menu per snapshot, anchored at
+     * {@link EditorTypeMenus#packageMenuAnchor(CarriageDims)} so it sits beside
+     * the carriages nav menu at the editor's main entry door.
+     *
+     * <p>Data (package name / isActive / enabled) is NOT included in the
+     * packet — the client renderer reads from {@code PackageListClient} which
+     * is fed by {@code PackageListSyncPacket} on a separate channel. The
+     * snapshot-key dedupe in {@link #pushTypeMenusSnapshot} keys on
+     * {@code (anchor, typeName, variants)}; with empty variants the package
+     * menu's contribution to the key is stable, which is what we want — the
+     * data channel handles re-renders on package state changes.</p>
+     */
+    private static java.util.List<EditorTypeMenusPacket.Menu> appendPackageMenu(
+        java.util.List<EditorTypeMenusPacket.Menu> baseMenus, CarriageDims dims
+    ) {
+        BlockPos anchor = EditorTypeMenus.packageMenuAnchor(dims);
+        if (anchor == null) return baseMenus;
+        java.util.List<EditorTypeMenusPacket.Menu> out = new java.util.ArrayList<>(baseMenus.size() + 1);
+        out.addAll(baseMenus);
+        out.add(new EditorTypeMenusPacket.Menu(
+            anchor, "Packages", java.util.List.of(),
+            false, "", java.util.List.of(), java.util.List.of(),
+            /*isPackageMenu*/ true));
+        return out;
+    }
 
     /**
      * If the player is standing inside a CONTENTS editor plot, return a copy
