@@ -82,6 +82,44 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Long> LAST_SPAWNED_TICK_FORWARD = new ConcurrentHashMap<>();
     private static final Map<UUID, Long> LAST_SPAWNED_TICK_BACKWARD = new ConcurrentHashMap<>();
 
+    /**
+     * Per-train, per-direction: the tick at which we first wanted to spawn
+     * but couldn't (gate closed or anchor duplicated). Cleared whenever a
+     * spawn fires in that direction or the direction stops being needed.
+     * Used by {@link #detectAndAnnounceStall} to flag stalls in chat.
+     */
+    private static final Map<UUID, Long> BLOCKED_SINCE_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> BLOCKED_SINCE_BACKWARD = new ConcurrentHashMap<>();
+
+    /**
+     * Per-train, per-direction: one-shot latch — true once we've already
+     * chatted about the current stall in this direction. Prevents repeating
+     * the warning every tick. Reset alongside {@link #BLOCKED_SINCE_FORWARD}
+     * / {@link #BLOCKED_SINCE_BACKWARD} when a spawn fires or need clears.
+     */
+    private static final Map<UUID, Boolean> STALL_WARNED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Boolean> STALL_WARNED_BACKWARD = new ConcurrentHashMap<>();
+
+    /**
+     * Stall threshold: 600 ticks = 30 s at 20 Hz. Comfortably past the
+     * 60-tick {@link #CLEAN_TICKS_FOR_SUCCESS} settle window so a normally
+     * operating train (which blocks for ~60-100 ticks between spawns)
+     * never trips this. Tunable if false positives or missed stalls appear.
+     */
+    private static final int STUCK_THRESHOLD_TICKS = 600;
+
+    /**
+     * Master kill-switch for {@link #detectAndAnnounceStall}. Off by
+     * default — the placement-tracker safety valves (PR #212) make the
+     * carriage-spawn stall a rare event, so the diagnostic is opt-in.
+     * Flip to {@code true} (and rebuild) when investigating a regression
+     * where carriages stop being appended despite a near player. When
+     * off, the appender's spawn loop runs bit-identical to the
+     * pre-diagnostic build (no map ops, no {@code LOGGER.warn}, no chat
+     * broadcast).
+     */
+    private static volatile boolean STALL_DETECTION_ENABLED = false;
+
 
     /**
      * Minimum visible gap (in blocks) between a freshly-spawned group and
@@ -858,6 +896,10 @@ public final class TrainCarriageAppender {
         LAST_SPAWNED_TICK_FORWARD.clear();
         LAST_SPAWNED_TICK_BACKWARD.clear();
         LAST_SPAWN_COLLISION_CHECK.clear();
+        BLOCKED_SINCE_FORWARD.clear();
+        BLOCKED_SINCE_BACKWARD.clear();
+        STALL_WARNED_FORWARD.clear();
+        STALL_WARNED_BACKWARD.clear();
     }
 
     /**
@@ -1132,6 +1174,10 @@ public final class TrainCarriageAppender {
         // maps. Both directions are pruned in lock-step.
         NEXT_PLANNED_SPAWNS_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         NEXT_PLANNED_SPAWNS_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        BLOCKED_SINCE_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        BLOCKED_SINCE_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        STALL_WARNED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        STALL_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -1186,6 +1232,7 @@ public final class TrainCarriageAppender {
         int globalMinNeededPIdx = Integer.MAX_VALUE;
 
         List<Integer> nearPlayerPIdxs = new ArrayList<>();
+        List<ServerPlayer> nearPlayers = new ArrayList<>();
         for (ServerPlayer player : players) {
             // Player is "near" the train if within NEAR_RADIUS of any group's
             // world AABB.
@@ -1241,6 +1288,7 @@ public final class TrainCarriageAppender {
             if (pMinNeeded < globalMinNeededPIdx) globalMinNeededPIdx = pMinNeeded;
 
             nearPlayerPIdxs.add(pIdx);
+            nearPlayers.add(player);
         }
         // Auto mode bails when no player is near the train (no spawning
         // and no preview broadcast are needed). Manual mode skips this
@@ -1398,7 +1446,8 @@ public final class TrainCarriageAppender {
         // without overlapping, so its AABB is settled and well past any
         // Sable plot/mass-tracker latency.
         long now = level.getGameTime();
-        boolean spawnedAny = false;
+        boolean didForwardSpawn = false;
+        boolean didBackwardSpawn = false;
 
         if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, trainId)) {
             ManagedShip newShip = spawnNewGroup(level, lead, forwardAnchor, groupSize, dims, velocity, trainId, train);
@@ -1409,7 +1458,7 @@ public final class TrainCarriageAppender {
             LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
             recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
             announceSpawn(level, forwardAnchor);
-            spawnedAny = true;
+            didForwardSpawn = true;
         }
 
         if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, trainId)) {
@@ -1421,9 +1470,19 @@ public final class TrainCarriageAppender {
             LAST_SPAWNED_TICK_BACKWARD.put(trainId, now);
             recordPostSpawnCollisionCheck(trainId, newShip, backwardAnchor, train);
             announceSpawn(level, backwardAnchor);
-            spawnedAny = true;
+            didBackwardSpawn = true;
         }
-        return spawnedAny;
+
+        if (STALL_DETECTION_ENABLED) {
+            detectAndAnnounceStall(level, trainId, nearPlayers, now,
+                needsForward, didForwardSpawn, true,
+                BLOCKED_SINCE_FORWARD, STALL_WARNED_FORWARD);
+            detectAndAnnounceStall(level, trainId, nearPlayers, now,
+                needsBackward, didBackwardSpawn, false,
+                BLOCKED_SINCE_BACKWARD, STALL_WARNED_BACKWARD);
+        }
+
+        return didForwardSpawn || didBackwardSpawn;
     }
 
     /**
@@ -1462,6 +1521,62 @@ public final class TrainCarriageAppender {
                 ).withStyle(ChatFormatting.GREEN),
                 true);
         }
+    }
+
+    /**
+     * Per-direction stall detection — Phase 1 diagnostic. Called once per
+     * direction at the end of {@link #updateTrain}, after the spawn-attempt
+     * branches. Tracks how long the appender has wanted to spawn in this
+     * direction without succeeding, and emits one chat warning + one
+     * {@code LOGGER.warn} when the duration first crosses
+     * {@link #STUCK_THRESHOLD_TICKS}. The one-shot warning latch
+     * ({@code warnedMap}) prevents repeating the message every tick once
+     * the threshold is crossed; it clears when a spawn finally fires or
+     * the direction stops being needed.
+     *
+     * <p>Skipped in {@link #MANUAL_MODE} — manual mode only spawns on
+     * J-press, so "no spawn" is the expected state, not a stall.</p>
+     */
+    private static void detectAndAnnounceStall(
+        ServerLevel level,
+        UUID trainId,
+        List<ServerPlayer> nearPlayers,
+        long now,
+        boolean directionNeeded,
+        boolean spawnedThisTick,
+        boolean forward,
+        Map<UUID, Long> blockedSinceMap,
+        Map<UUID, Boolean> warnedMap
+    ) {
+        if (MANUAL_MODE) {
+            blockedSinceMap.remove(trainId);
+            warnedMap.remove(trainId);
+            return;
+        }
+        if (!directionNeeded || spawnedThisTick) {
+            blockedSinceMap.remove(trainId);
+            warnedMap.remove(trainId);
+            return;
+        }
+        long blockedSince = blockedSinceMap.computeIfAbsent(trainId, k -> now);
+        long ticksStuck = now - blockedSince;
+        if (ticksStuck < STUCK_THRESHOLD_TICKS) return;
+        if (warnedMap.getOrDefault(trainId, false)) return;
+
+        String shortId = trainId.toString().substring(0, 8);
+        String dir = forward ? "forward" : "backward";
+        String msg = "[DungeonTrain] STALL: train " + shortId
+            + " has not spawned " + dir + " for "
+            + ticksStuck + " ticks (" + (ticksStuck / 20) + "s)";
+        LOGGER.warn(msg);
+        if (games.brennan.dungeontrain.debug.DebugFlags.chatStallTrain()) {
+            for (ServerPlayer player : nearPlayers) {
+                player.displayClientMessage(
+                    Component.literal(msg).withStyle(ChatFormatting.YELLOW),
+                    false);
+            }
+        }
+        warnedMap.put(trainId, true);
     }
 
     /**

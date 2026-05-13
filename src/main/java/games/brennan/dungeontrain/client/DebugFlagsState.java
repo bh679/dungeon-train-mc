@@ -36,6 +36,7 @@ public final class DebugFlagsState {
     private static volatile boolean chatCollision = false;
     private static volatile boolean logContentsEntities = false;
     private static volatile boolean logLootRolls = false;
+    private static volatile boolean chatStallTrain = false;
 
     private DebugFlagsState() {}
 
@@ -49,6 +50,7 @@ public final class DebugFlagsState {
     public static boolean chatCollision() { return chatCollision; }
     public static boolean logContentsEntities() { return logContentsEntities; }
     public static boolean logLootRolls() { return logLootRolls; }
+    public static boolean chatStallTrain() { return chatStallTrain; }
 
     public static void applyServerState(DebugFlagsPacket packet) {
         gapCubes = packet.gapCubes();
@@ -61,5 +63,6 @@ public final class DebugFlagsState {
         chatCollision = packet.chatCollision();
         logContentsEntities = packet.logContentsEntities();
         logLootRolls = packet.logLootRolls();
+        chatStallTrain = packet.chatStallTrain();
     }
 }
