@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 2,
+  "floor": [
+    {
+      "name": "wood",
+      "weight": 1
+    }
+  ],
+  "walls": [
+    {
+      "name": "woodnice",
+      "weight": 10,
+      "sideMode": "either"
+    },
+    {
+      "name": "woodwindow",
+      "weight": 10
+    },
+    {
+      "name": "open",
+      "weight": 1,
+      "sideMode": "either"
+    }
+  ],
+  "roof": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "doors": [
+    {
+      "name": "woodwooddoor",
+      "weight": 1
+    }
+  ]
+}

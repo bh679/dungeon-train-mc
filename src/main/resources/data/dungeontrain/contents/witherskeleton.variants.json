@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 6,
+  "variants": {
+    "3,0,3": [{"state": "minecraft:waxed_exposed_copper_door[facing=north,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:copper_door[facing=north,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}

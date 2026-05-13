@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "enchant",

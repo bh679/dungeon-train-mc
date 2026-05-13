@@ -186,12 +186,17 @@ public final class CarriageVariantBlocks {
 
     /** Source-tree path for the bundled sidecar — only writable in a {@code ./gradlew runClient} dev checkout. */
     public static Path sourcePathFor(CarriageType type) {
+        return sourcePathForVariant(CarriageVariant.of(type));
+    }
+
+    /** Variant-keyed source-tree path — works for both built-ins and customs. */
+    public static Path sourcePathForVariant(CarriageVariant variant) {
         Path gameDir = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get();
         Path projectRoot = gameDir.getParent();
         if (projectRoot == null) {
             throw new IllegalStateException("Cannot resolve source directory — FMLPaths.GAMEDIR has no parent.");
         }
-        return projectRoot.resolve(SOURCE_REL_PATH).resolve(type.name().toLowerCase(Locale.ROOT) + EXT);
+        return projectRoot.resolve(SOURCE_REL_PATH).resolve(variant.id() + EXT);
     }
 
     /**
@@ -666,19 +671,29 @@ public final class CarriageVariantBlocks {
 
     /**
      * Dev-mode write-through: copy the sidecar into the project source tree
-     * so it ships with the next build. Mirrors
-     * {@link CarriageTemplateStore#saveToSource}.
+     * so it ships with the next build. Built-in entry point — see the
+     * {@link #saveToSource(CarriageVariant) variant-keyed overload} for the
+     * path that also handles custom variants.
      */
     public synchronized void saveToSource(CarriageType type) throws IOException {
-        Path file = sourcePathFor(type);
+        saveToSource(CarriageVariant.of(type));
+    }
+
+    /**
+     * Variant-keyed dev-mode write-through — works for both
+     * {@link CarriageVariant.Builtin}s and {@link CarriageVariant.Custom}s.
+     * Mirrors {@link CarriageTemplateStore#saveToSource(CarriageVariant, net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate)}.
+     */
+    public synchronized void saveToSource(CarriageVariant variant) throws IOException {
+        Path file = sourcePathForVariant(variant);
         if (entries.isEmpty()) {
             Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled variant sidecar for {} (no entries)", type);
+            LOGGER.info("[DungeonTrain] Cleared bundled variant sidecar for {} (no entries)", variant.id());
             return;
         }
         Files.createDirectories(file.getParent());
         Files.writeString(file, toJson(), StandardCharsets.UTF_8);
-        LOGGER.info("[DungeonTrain] Wrote bundled variant sidecar for {} to {}", type, file);
+        LOGGER.info("[DungeonTrain] Wrote bundled variant sidecar for {} to {}", variant.id(), file);
     }
 
     /** Delete both the config-dir sidecar and invalidate cache. Used by the editor reset path. */
