@@ -33,6 +33,10 @@
     {
       "id": "witherskeleton",
       "weight": 1
+    },
+    {
+      "id": "winterskeleton",
+      "weight": 1
     }
   ]
 }

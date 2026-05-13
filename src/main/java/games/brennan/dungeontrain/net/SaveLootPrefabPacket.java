@@ -91,10 +91,23 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
             }
             BlockPos worldPos = plot.origin().offset(packet.localPos());
             BlockState targetState = level.getBlockState(worldPos);
-            ResourceLocation sourceBlock = BuiltInRegistries.BLOCK.getKey(targetState.getBlock());
+            // Category is captured from the open-menu state — block hits leave
+            // it as "loot" (default), entity hits set it per entity type.
+            // Override sourceBlock for entity categories so the creative-tab
+            // icon resolves to the entity's item form (armor stand item /
+            // item frame item) rather than the empty air at the entity's
+            // floored block position.
+            String category = ContainerContentsMenuController.categoryFor(player);
+            ResourceLocation sourceBlock = switch (category) {
+                case LootPrefabStore.CATEGORY_ARMOR_STAND ->
+                    ResourceLocation.fromNamespaceAndPath("minecraft", "armor_stand");
+                case LootPrefabStore.CATEGORY_ITEM_FRAME ->
+                    ResourceLocation.fromNamespaceAndPath("minecraft", "item_frame");
+                default -> BuiltInRegistries.BLOCK.getKey(targetState.getBlock());
+            };
             try {
-                boolean isNew = LootPrefabStore.save(packet.name(), pool, sourceBlock);
-                String suffix = writeToSourceTreeIfDevMode(packet.name(), pool, sourceBlock);
+                boolean isNew = LootPrefabStore.save(packet.name(), pool, sourceBlock, category);
+                String suffix = writeToSourceTreeIfDevMode(packet.name(), pool, sourceBlock, category);
                 // Auto-link: saving as 'foo' declares this container's contents
                 // are template 'foo'. Future saves use this name without
                 // re-prompting via PrefabNameScreen.
@@ -122,11 +135,12 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
         });
     }
 
-    private static String writeToSourceTreeIfDevMode(String name, ContainerContentsPool pool, ResourceLocation sourceBlock) {
+    private static String writeToSourceTreeIfDevMode(String name, ContainerContentsPool pool,
+                                                      ResourceLocation sourceBlock, String category) {
         if (!EditorDevMode.isEnabled()) return "";
         if (!LootPrefabStore.sourceTreeAvailable()) return " (no src tree)";
         try {
-            LootPrefabStore.saveToSource(name, pool, sourceBlock);
+            LootPrefabStore.saveToSource(name, pool, sourceBlock, category);
             return " (→ src)";
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] SaveLootPrefab source write failed: {}", e.toString());

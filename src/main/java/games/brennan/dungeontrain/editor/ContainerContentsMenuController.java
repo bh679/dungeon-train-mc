@@ -14,12 +14,19 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.ItemFrame;
+import net.minecraft.world.entity.decoration.GlowItemFrame;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
@@ -52,7 +59,14 @@ public final class ContainerContentsMenuController {
 
     private static final double TOGGLE_REACH = 8.0;
 
-    private record OpenMenu(String plotKey, BlockPos localPos, Direction face, Vec3 up) {}
+    /**
+     * Per-player open-menu state. {@code category} reflects what the player
+     * was looking at when the menu opened — {@link LootPrefabStore#CATEGORY_LOOT}
+     * for a container block, {@link LootPrefabStore#CATEGORY_ARMOR_STAND} or
+     * {@link LootPrefabStore#CATEGORY_ITEM_FRAME} for the corresponding entity.
+     * The save flow reads this to route prefabs to the right creative tab.
+     */
+    private record OpenMenu(String plotKey, BlockPos localPos, Direction face, Vec3 up, String category) {}
 
     private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
 
@@ -86,19 +100,42 @@ public final class ContainerContentsMenuController {
             return;
         }
 
-        HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
-        if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
-            actionBar(player, "Look at a chest, barrel, or other container", ChatFormatting.YELLOW);
-            return;
+        // Block raycast first — chest/barrel/etc.
+        HitResult blockHit = player.pick(TOGGLE_REACH, 1.0f, false);
+        BlockHitResult validBlockHit = null;
+        if (blockHit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS) {
+            BlockState targetState = level.getBlockState(bhit.getBlockPos());
+            if (ContainerContentsRoller.isContainerState(targetState)) {
+                validBlockHit = bhit;
+            }
         }
-        BlockPos worldPos = bhit.getBlockPos();
-        BlockState targetState = level.getBlockState(worldPos);
-        if (!ContainerContentsRoller.isContainerState(targetState)) {
-            actionBar(player, "Block has no inventory — look at a chest, barrel, dispenser, etc.",
-                ChatFormatting.YELLOW);
-            return;
-        }
+        // Entity raycast in parallel — armor stand / item frame can host the
+        // same menu via EntityVariantApplicator's contentsStore fallback.
+        EntityHitResult entityHit = pickSupportedEntity(player, TOGGLE_REACH);
 
+        // Both hit: pick the closer one (vanilla interaction precedence).
+        Vec3 eye = player.getEyePosition(1.0f);
+        double blockDist2 = validBlockHit == null ? Double.POSITIVE_INFINITY
+            : Vec3.atCenterOf(validBlockHit.getBlockPos()).distanceToSqr(eye);
+        double entityDist2 = entityHit == null ? Double.POSITIVE_INFINITY
+            : entityHit.getLocation().distanceToSqr(eye);
+
+        if (validBlockHit != null && blockDist2 <= entityDist2) {
+            openAtBlock(player, plot, level, validBlockHit);
+            return;
+        }
+        if (entityHit != null) {
+            openAtEntity(player, plot, level, entityHit);
+            return;
+        }
+        actionBar(player, "Look at a chest, barrel, armor stand, or item frame",
+            ChatFormatting.YELLOW);
+    }
+
+    /** Open the menu for a container block hit — the original code path. */
+    private static void openAtBlock(ServerPlayer player, BlockVariantPlot plot,
+                                     ServerLevel level, BlockHitResult bhit) {
+        BlockPos worldPos = bhit.getBlockPos();
         BlockPos localPos = worldPos.subtract(plot.origin());
         if (!plot.inBoundsTolerant(localPos)) {
             actionBar(player, "Container is outside the editor plot", ChatFormatting.YELLOW);
@@ -109,8 +146,82 @@ public final class ContainerContentsMenuController {
 
         Direction face = bhit.getDirection();
         Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up));
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up,
+            LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+    }
+
+    /**
+     * Open the menu for a supported entity hit (armor stand / item frame).
+     * Uses the entity's floored block position as {@code localPos} — same
+     * key {@link EntityVariantApplicator} reads at spawn time — and orients
+     * the menu cardinally toward the player so it materialises in a readable
+     * orientation regardless of the entity's facing.
+     */
+    private static void openAtEntity(ServerPlayer player, BlockVariantPlot plot,
+                                      ServerLevel level, EntityHitResult ehit) {
+        Entity entity = ehit.getEntity();
+        BlockPos worldPos = entity.blockPosition();
+        BlockPos localPos = worldPos.subtract(plot.origin());
+        if (!plot.inBoundsTolerant(localPos)) {
+            actionBar(player, "Entity is outside the editor plot", ChatFormatting.YELLOW);
+            return;
+        }
+        BlockPos clampedLocal = clampToFootprint(localPos, plot);
+        BlockPos clampedWorld = plot.origin().offset(clampedLocal);
+
+        // Face the player horizontally — vertical Y faces would force the
+        // existing computeUp branch into its degenerate path. fromYRot returns
+        // a horizontal cardinal direction; flipping by 180° points it at the
+        // player, so the menu's front faces the author.
+        Direction face = Direction.fromYRot(player.getYRot() + 180);
+        Vec3 up = computeUp(face, player);
+        String category = entity instanceof ArmorStand
+            ? LootPrefabStore.CATEGORY_ARMOR_STAND
+            : LootPrefabStore.CATEGORY_ITEM_FRAME;
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up, category));
+        sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+    }
+
+    /**
+     * Category of the menu the player currently has open, or
+     * {@link LootPrefabStore#CATEGORY_LOOT} when no menu is open (safe
+     * fallback for the save flow). Read by
+     * {@link games.brennan.dungeontrain.net.SaveLootPrefabPacket} to route
+     * the saved prefab to the right creative tab.
+     */
+    public static String categoryFor(ServerPlayer player) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        return open == null ? LootPrefabStore.CATEGORY_LOOT : open.category();
+    }
+
+    /**
+     * Entity raycast for the {@link #toggle} menu. Mirrors the vanilla
+     * {@code Entity#pick}-like pattern using
+     * {@link ProjectileUtil#getEntityHitResult}, restricted to entity types
+     * the C menu can meaningfully edit — currently
+     * {@link ArmorStand}, {@link ItemFrame}, {@link GlowItemFrame}. Kept in
+     * sync with {@link EntityVariantApplicator}'s supported-id list so the
+     * menu never opens on an entity the applicator would ignore at spawn.
+     */
+    @javax.annotation.Nullable
+    private static EntityHitResult pickSupportedEntity(ServerPlayer player, double reach) {
+        Vec3 eyePos = player.getEyePosition(1.0f);
+        Vec3 viewVec = player.getViewVector(1.0f);
+        Vec3 endVec = eyePos.add(viewVec.scale(reach));
+        AABB search = player.getBoundingBox()
+            .expandTowards(viewVec.scale(reach))
+            .inflate(1.0);
+        return ProjectileUtil.getEntityHitResult(
+            player.level(), player, eyePos, endVec, search,
+            ContainerContentsMenuController::isSupportedEditEntity);
+    }
+
+    /** Entity types the C menu accepts as edit targets. */
+    private static boolean isSupportedEditEntity(Entity entity) {
+        return entity instanceof ArmorStand
+            || entity instanceof ItemFrame
+            || entity instanceof GlowItemFrame;
     }
 
     private static Vec3 computeUp(Direction face, Player player) {
@@ -185,7 +296,11 @@ public final class ContainerContentsMenuController {
         }
         BlockPos clamped = clampToFootprint(localPos, plot);
         BlockPos worldPos = plot.origin().offset(clamped);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clamped, face, up));
+        // External openAt callers target container blocks (variant preview path) —
+        // default to the loot category so saves from this entry land in the
+        // Containers / Loot tab as before.
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clamped, face, up,
+            LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clamped, worldPos, face, up);
     }
 
@@ -408,7 +523,9 @@ public final class ContainerContentsMenuController {
                 return;
             }
             try {
-                LootPrefabStore.save(linked, next, templ.get().sourceBlock());
+                // Preserve the existing template's category — edits propagated
+                // via the link-readthrough path don't reclassify the prefab.
+                LootPrefabStore.save(linked, next, templ.get().sourceBlock(), templ.get().category());
                 ContainerContentsLinkPropagator.propagate(level, linked);
                 net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
                     games.brennan.dungeontrain.net.PrefabRegistrySyncPacket.fromRegistries());

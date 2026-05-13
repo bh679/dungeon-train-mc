@@ -221,5 +221,9 @@
         { "id": "minecraft:scrape_pottery_sherd", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     }
+  },
+  "links": {
+    "6,0,1": "threebasicarmor",
+    "0,0,3": "threebasicarmor"
   }
 }

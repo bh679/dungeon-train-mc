@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "6,0,4": "leatherhelmet",
+    "0,0,0": "leatherhelmet",
+    "0,0,4": "leatherhelmet",
+    "1,0,0": "leatherhelmet",
+    "2,0,0": "leatherhelmet",
+    "3,0,0": "leatherhelmet",
+    "4,0,0": "leatherhelmet",
+    "5,0,0": "leatherhelmet",
+    "6,0,0": "leatherhelmet",
+    "5,0,4": "leatherhelmet",
+    "4,0,4": "leatherhelmet",
+    "3,0,4": "leatherhelmet",
+    "2,0,4": "leatherhelmet",
+    "1,0,4": "leatherhelmet"
+  }
+}

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.PrefabTabState;
+import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.event.PrefabUseHandler;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import net.minecraft.core.component.DataComponents;
@@ -57,8 +58,37 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(Items.CHEST))
             .displayItems((parameters, output) -> {
                 for (PrefabRegistrySyncPacket.LootEntry entry : PrefabTabState.lootEntries()) {
+                    if (!LootPrefabStore.CATEGORY_LOOT.equals(entry.category())) continue;
                     ItemStack stack = buildPrefabStack(
                         entry.iconBlockId(), Items.CHEST,
+                        PrefabUseHandler.NBT_LOOT_PREFAB_ID, entry.id(), entry.committed());
+                    output.accept(stack);
+                }
+            })
+            .build()
+    );
+
+    /**
+     * Loot prefabs authored on armor stands or item frames. Combined into a
+     * single tab so the two adjacent entity-loot flows stay near each other;
+     * the underlying category field is still granular ({@code armor_stand}
+     * vs {@code item_frame}) so a future split into two tabs is a one-line
+     * filter change.
+     */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_LOOT_ENTITY = TABS.register(
+        "prefab_loot_entity",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("gui.dungeontrain.prefab_tab.loot_entity"))
+            .icon(() -> new ItemStack(Items.ARMOR_STAND))
+            .displayItems((parameters, output) -> {
+                for (PrefabRegistrySyncPacket.LootEntry entry : PrefabTabState.lootEntries()) {
+                    String cat = entry.category();
+                    if (!LootPrefabStore.CATEGORY_ARMOR_STAND.equals(cat)
+                        && !LootPrefabStore.CATEGORY_ITEM_FRAME.equals(cat)) continue;
+                    Item fallback = LootPrefabStore.CATEGORY_ITEM_FRAME.equals(cat)
+                        ? Items.ITEM_FRAME : Items.ARMOR_STAND;
+                    ItemStack stack = buildPrefabStack(
+                        entry.iconBlockId(), fallback,
                         PrefabUseHandler.NBT_LOOT_PREFAB_ID, entry.id(), entry.committed());
                     output.accept(stack);
                 }
@@ -90,6 +120,13 @@ public final class ModCreativeTabs {
             if (block != null) {
                 Item resolved = block.asItem();
                 if (resolved != Items.AIR) item = resolved;
+            }
+            // Item-only ids (armor_stand, item_frame, glow_item_frame, …) don't
+            // resolve via the Block registry — fall through to the Item
+            // registry so entity-category prefabs show with their item icon.
+            if (item == fallbackItem) {
+                Item itemOnly = BuiltInRegistries.ITEM.get(rl);
+                if (itemOnly != Items.AIR) item = itemOnly;
             }
         }
         ItemStack stack = new ItemStack(item);

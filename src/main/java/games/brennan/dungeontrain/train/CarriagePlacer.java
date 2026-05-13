@@ -325,7 +325,7 @@ public final class CarriagePlacer {
             } else if (placeBlocks) {
                 CarriageContentsPlacer.placeBlocksOnly(level, origin, contents, dims, config.seed(), carriageIndex);
             } else if (spawnEntities) {
-                CarriageContentsPlacer.placeEntitiesOnly(level, origin, contents, dims, carriageIndex);
+                CarriageContentsPlacer.placeEntitiesOnly(level, origin, contents, dims, config.seed(), carriageIndex);
             }
             return contents;
         } catch (Throwable t) {

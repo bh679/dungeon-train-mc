@@ -441,5 +441,8 @@
         { "id": "minecraft:wheat", "count": 1, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     }
+  },
+  "links": {
+    "3,0,4": "singlebasicarmor"
   }
 }
