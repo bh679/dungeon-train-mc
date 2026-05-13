@@ -3,6 +3,10 @@
   "floor": [
     {
       "name": "dirt",
+      "weight": 50
+    },
+    {
+      "name": "mud",
       "weight": 1
     }
   ],
