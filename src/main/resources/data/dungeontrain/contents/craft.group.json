@@ -8,18 +8,22 @@
     },
     {
       "id": "kitchen",
-      "weight": 5
+      "weight": 3
     },
     {
       "id": "smelt",
-      "weight": 5
+      "weight": 3
     },
     {
       "id": "upgrade",
       "weight": 1
     },
     {
-      "id": "kitchen2",
+      "id": "dressing",
+      "weight": 3
+    },
+    {
+      "id": "sleeping",
       "weight": 1
     }
   ]

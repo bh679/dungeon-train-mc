@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "5,1,2": "pot",
+    "6,1,3": "pot"
+  }
+}
