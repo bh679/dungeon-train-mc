@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 6,
+  "variants": {
+    "0,1,3": [{"state": "minecraft:iron_door[facing=west,half=lower,hinge=right,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:waxed_oxidized_copper_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["west"]}}, {"state": "minecraft:waxed_copper_door[facing=west,half=lower,hinge=left,open=false,powered=false]", "rotation": {"mode": "lock", "dirs": ["west"]}}]
+  }
+}

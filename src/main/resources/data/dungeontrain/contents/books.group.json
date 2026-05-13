@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 2,
+  "selfWeight": 4,
   "variants": [
     {
       "id": "seating",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "dining",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "seating_thin",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "center_dining",
@@ -20,6 +20,22 @@
     },
     {
       "id": "books2",
+      "weight": 2
+    },
+    {
+      "id": "center_dining2",
+      "weight": 1
+    },
+    {
+      "id": "dining_maze",
+      "weight": 1
+    },
+    {
+      "id": "dining_thin",
+      "weight": 1
+    },
+    {
+      "id": "dining_thin2",
       "weight": 1
     }
   ]
