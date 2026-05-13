@@ -293,6 +293,7 @@ public final class TrainCarriageAppender {
      * </p>
      */
     private static final Map<UUID, Long> PLACEMENT_TRACKER_FIRST_SEEN = new ConcurrentHashMap<>();
+
     /**
      * Per-collision shift distance in the spawn (+X) direction. The
      * carriage's {@code spawnWorldPos} is bumped by this amount each
