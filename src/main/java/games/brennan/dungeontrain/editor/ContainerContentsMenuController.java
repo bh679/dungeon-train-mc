@@ -59,7 +59,14 @@ public final class ContainerContentsMenuController {
 
     private static final double TOGGLE_REACH = 8.0;
 
-    private record OpenMenu(String plotKey, BlockPos localPos, Direction face, Vec3 up) {}
+    /**
+     * Per-player open-menu state. {@code category} reflects what the player
+     * was looking at when the menu opened — {@link LootPrefabStore#CATEGORY_LOOT}
+     * for a container block, {@link LootPrefabStore#CATEGORY_ARMOR_STAND} or
+     * {@link LootPrefabStore#CATEGORY_ITEM_FRAME} for the corresponding entity.
+     * The save flow reads this to route prefabs to the right creative tab.
+     */
+    private record OpenMenu(String plotKey, BlockPos localPos, Direction face, Vec3 up, String category) {}
 
     private static final Map<UUID, OpenMenu> OPEN = new ConcurrentHashMap<>();
 
@@ -139,7 +146,8 @@ public final class ContainerContentsMenuController {
 
         Direction face = bhit.getDirection();
         Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up));
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up,
+            LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
     }
 
@@ -168,8 +176,23 @@ public final class ContainerContentsMenuController {
         // player, so the menu's front faces the author.
         Direction face = Direction.fromYRot(player.getYRot() + 180);
         Vec3 up = computeUp(face, player);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up));
+        String category = entity instanceof ArmorStand
+            ? LootPrefabStore.CATEGORY_ARMOR_STAND
+            : LootPrefabStore.CATEGORY_ITEM_FRAME;
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clampedLocal, face, up, category));
         sendSync(player, plot, clampedLocal, clampedWorld, face, up);
+    }
+
+    /**
+     * Category of the menu the player currently has open, or
+     * {@link LootPrefabStore#CATEGORY_LOOT} when no menu is open (safe
+     * fallback for the save flow). Read by
+     * {@link games.brennan.dungeontrain.net.SaveLootPrefabPacket} to route
+     * the saved prefab to the right creative tab.
+     */
+    public static String categoryFor(ServerPlayer player) {
+        OpenMenu open = OPEN.get(player.getUUID());
+        return open == null ? LootPrefabStore.CATEGORY_LOOT : open.category();
     }
 
     /**
@@ -273,7 +296,11 @@ public final class ContainerContentsMenuController {
         }
         BlockPos clamped = clampToFootprint(localPos, plot);
         BlockPos worldPos = plot.origin().offset(clamped);
-        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clamped, face, up));
+        // External openAt callers target container blocks (variant preview path) —
+        // default to the loot category so saves from this entry land in the
+        // Containers / Loot tab as before.
+        OPEN.put(player.getUUID(), new OpenMenu(plot.key(), clamped, face, up,
+            LootPrefabStore.CATEGORY_LOOT));
         sendSync(player, plot, clamped, worldPos, face, up);
     }
 
@@ -496,7 +523,9 @@ public final class ContainerContentsMenuController {
                 return;
             }
             try {
-                LootPrefabStore.save(linked, next, templ.get().sourceBlock());
+                // Preserve the existing template's category — edits propagated
+                // via the link-readthrough path don't reclassify the prefab.
+                LootPrefabStore.save(linked, next, templ.get().sourceBlock(), templ.get().category());
                 ContainerContentsLinkPropagator.propagate(level, linked);
                 net.neoforged.neoforge.network.PacketDistributor.sendToAllPlayers(
                     games.brennan.dungeontrain.net.PrefabRegistrySyncPacket.fromRegistries());

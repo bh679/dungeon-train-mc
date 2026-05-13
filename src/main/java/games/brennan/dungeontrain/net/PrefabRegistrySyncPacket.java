@@ -50,9 +50,15 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
         }
     }
 
-    /** Loot prefab tab entry — full pool list used by the icon-grid tooltip. */
-    public record LootEntry(String id, String iconBlockId, boolean committed, List<LootItem> items) {
+    /**
+     * Loot prefab tab entry — full pool list used by the icon-grid tooltip.
+     * {@code category} routes the entry to the right creative tab — see
+     * {@link LootPrefabStore#CATEGORY_LOOT} / {@code CATEGORY_ARMOR_STAND} /
+     * {@code CATEGORY_ITEM_FRAME}.
+     */
+    public record LootEntry(String id, String iconBlockId, boolean committed, String category, List<LootItem> items) {
         public LootEntry {
+            if (category == null || category.isEmpty()) category = LootPrefabStore.CATEGORY_LOOT;
             items = List.copyOf(items);
         }
     }
@@ -103,7 +109,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
                 items.add(new LootItem(e.itemId().toString(), e.count()));
             }
             loot.add(new LootEntry(data.id(), data.sourceBlock().toString(),
-                LootPrefabStore.isCommitted(id), items));
+                LootPrefabStore.isCommitted(id), data.category(), items));
         }
         return new PrefabRegistrySyncPacket(variants, loot);
     }
@@ -122,6 +128,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
             buf.writeUtf(e.id(), 64);
             buf.writeUtf(e.iconBlockId(), 128);
             buf.writeBoolean(e.committed());
+            buf.writeUtf(e.category(), 32);
             buf.writeVarInt(e.items().size());
             for (LootItem it : e.items()) {
                 buf.writeUtf(it.itemId(), 128);
@@ -148,6 +155,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
             String id = buf.readUtf(64);
             String iconBlockId = buf.readUtf(128);
             boolean committed = buf.readBoolean();
+            String category = buf.readUtf(32);
             int iCount = buf.readVarInt();
             List<LootItem> items = new ArrayList<>(iCount);
             for (int j = 0; j < iCount; j++) {
@@ -155,7 +163,7 @@ public record PrefabRegistrySyncPacket(List<VariantEntry> variants, List<LootEnt
                 int count = buf.readVarInt();
                 items.add(new LootItem(itemId, count));
             }
-            loot.add(new LootEntry(id, iconBlockId, committed, items));
+            loot.add(new LootEntry(id, iconBlockId, committed, category, items));
         }
         return new PrefabRegistrySyncPacket(variants, loot);
     }

@@ -73,8 +73,15 @@ public final class LootPrefabStore {
 
     static final String SUBDIR = "prefabs/loot";
     private static final String EXT = ".json";
-    public static final int CURRENT_SCHEMA_VERSION = 3;
+    public static final int CURRENT_SCHEMA_VERSION = 4;
     private static final ResourceLocation FALLBACK_BLOCK = ResourceLocation.fromNamespaceAndPath("minecraft", "chest");
+
+    /** Prefab authored on a container block (chest, barrel, etc.) — the default. */
+    public static final String CATEGORY_LOOT = "loot";
+    /** Prefab authored on an armor stand entity. */
+    public static final String CATEGORY_ARMOR_STAND = "armor_stand";
+    /** Prefab authored on an item frame / glow item frame entity. */
+    public static final String CATEGORY_ITEM_FRAME = "item_frame";
 
     static final String BUNDLED_RESOURCE_PREFIX = "/data/dungeontrain/prefabs/loot/";
     static final String SOURCE_RELATIVE_PATH = "src/main/resources/data/dungeontrain/prefabs/loot";
@@ -85,8 +92,19 @@ public final class LootPrefabStore {
 
     private LootPrefabStore() {}
 
-    /** A loaded prefab — pool plus the source container block so the creative tab can show the right icon. */
-    public record Data(String id, ResourceLocation sourceBlock, ContainerContentsPool pool) {}
+    /**
+     * A loaded prefab — pool plus the source container block (for the icon)
+     * and category (for the creative tab assignment). {@code category} is one
+     * of {@link #CATEGORY_LOOT} / {@link #CATEGORY_ARMOR_STAND} /
+     * {@link #CATEGORY_ITEM_FRAME}; null or unknown values fall back to
+     * {@link #CATEGORY_LOOT} for back-compat with v3 files that pre-date the
+     * field.
+     */
+    public record Data(String id, ResourceLocation sourceBlock, String category, ContainerContentsPool pool) {
+        public Data {
+            if (category == null || category.isEmpty()) category = CATEGORY_LOOT;
+        }
+    }
 
     public static Path directory() {
         return UserContentPaths.dir(SUBDIR);
@@ -128,7 +146,8 @@ public final class LootPrefabStore {
         return loadFromResource(key);
     }
 
-    public static synchronized boolean save(String id, ContainerContentsPool pool, ResourceLocation sourceBlock)
+    public static synchronized boolean save(String id, ContainerContentsPool pool, ResourceLocation sourceBlock,
+                                            String category)
         throws IOException {
         if (!isValidName(id)) {
             throw new IOException("Invalid prefab name '" + id + "' — must match " + NAME_PATTERN.pattern());
@@ -137,15 +156,16 @@ public final class LootPrefabStore {
             throw new IOException("Loot prefab needs at least one entry");
         }
         if (sourceBlock == null) sourceBlock = FALLBACK_BLOCK;
+        if (category == null || category.isEmpty()) category = CATEGORY_LOOT;
         String key = id.toLowerCase(Locale.ROOT);
         Path file = fileFor(key);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(toJsonText(pool, sourceBlock));
+            w.write(toJsonText(pool, sourceBlock, category));
         }
         boolean isNew = IDS.add(key);
-        LOGGER.info("[DungeonTrain] {} loot prefab '{}' (block={}, {} entries) at {}",
-            isNew ? "Saved new" : "Overwrote", key, sourceBlock, pool.entries().size(), file);
+        LOGGER.info("[DungeonTrain] {} loot prefab '{}' (block={}, category={}, {} entries) at {}",
+            isNew ? "Saved new" : "Overwrote", key, sourceBlock, category, pool.entries().size(), file);
 
         // Auto-propagate to source tree when in dev mode so menu edits
         // (BUMP_FILL_MAX, BUMP_WEIGHT, etc.) don't drift away from the bundled
@@ -153,7 +173,7 @@ public final class LootPrefabStore {
         // source of truth; source tree is the dev-only commit target.
         if (EditorDevMode.isEnabled() && sourceTreeAvailable()) {
             try {
-                saveToSource(id, pool, sourceBlock);
+                saveToSource(id, pool, sourceBlock, category);
             } catch (IOException e) {
                 LOGGER.warn("[DungeonTrain] Auto-propagation to source tree failed for loot prefab '{}': {}",
                     key, e.toString());
@@ -167,7 +187,8 @@ public final class LootPrefabStore {
      * {@link #SOURCE_RELATIVE_PATH} so the JSON file is committed via git and
      * shipped on the next mod build. Throws if the source tree isn't writable.
      */
-    public static synchronized void saveToSource(String id, ContainerContentsPool pool, ResourceLocation sourceBlock)
+    public static synchronized void saveToSource(String id, ContainerContentsPool pool, ResourceLocation sourceBlock,
+                                                  String category)
         throws IOException {
         if (!sourceTreeAvailable()) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
@@ -179,13 +200,15 @@ public final class LootPrefabStore {
             throw new IOException("Loot prefab needs at least one entry");
         }
         if (sourceBlock == null) sourceBlock = FALLBACK_BLOCK;
+        if (category == null || category.isEmpty()) category = CATEGORY_LOOT;
         String key = id.toLowerCase(Locale.ROOT);
         Path file = sourceFileFor(key);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write(toJsonText(pool, sourceBlock));
+            w.write(toJsonText(pool, sourceBlock, category));
         }
-        LOGGER.info("[DungeonTrain] Wrote bundled loot prefab '{}' (block={}) to {}", key, sourceBlock, file);
+        LOGGER.info("[DungeonTrain] Wrote bundled loot prefab '{}' (block={}, category={}) to {}",
+            key, sourceBlock, category, file);
     }
 
     /**
@@ -315,6 +338,11 @@ public final class LootPrefabStore {
             ResourceLocation parsed = ResourceLocation.tryParse(obj.get("block").getAsString());
             if (parsed != null) block = parsed;
         }
+        // v4+: explicit category for tab routing. v3 files default to "loot"
+        // — the Data record's compact constructor coerces null/empty too.
+        String category = obj.has("category") && obj.get("category").isJsonPrimitive()
+            ? obj.get("category").getAsString()
+            : CATEGORY_LOOT;
         int fillMin = obj.has("fillMin") && obj.get("fillMin").isJsonPrimitive()
             ? obj.get("fillMin").getAsInt() : 0;
         int fillMax = obj.has("fillMax") && obj.get("fillMax").isJsonPrimitive()
@@ -352,14 +380,15 @@ public final class LootPrefabStore {
                     randDur, durChance, randEnch, enchChance, slotOverride));
             }
         }
-        return Optional.of(new Data(key, block, new ContainerContentsPool(entries, fillMin, fillMax)));
+        return Optional.of(new Data(key, block, category, new ContainerContentsPool(entries, fillMin, fillMax)));
     }
 
-    private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock) {
+    private static String toJsonText(ContainerContentsPool pool, ResourceLocation sourceBlock, String category) {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
         sb.append("  \"block\": \"").append(sourceBlock).append("\",\n");
+        sb.append("  \"category\": \"").append(category).append("\",\n");
         if (pool.fillMin() != 0) {
             sb.append("  \"fillMin\": ").append(pool.fillMin()).append(",\n");
         }

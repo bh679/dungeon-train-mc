@@ -40,6 +40,7 @@
   "item.dungeontrain.variant_clipboard": "Block Variant Clipboard",
   "gui.dungeontrain.prefab_tab.variants": "Block Variants",
   "gui.dungeontrain.prefab_tab.loot": "Containers / Loot",
+  "gui.dungeontrain.prefab_tab.loot_entity": "Armor Stands / Item Frames",
   "gui.dungeontrain.prefab_tab.empty": "No prefabs available",
   "gui.dungeontrain.prefab_save.title.variant": "Save Block Variant Prefab",
   "gui.dungeontrain.prefab_save.title.loot": "Save Loot Prefab",
