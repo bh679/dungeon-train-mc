@@ -242,6 +242,57 @@ public final class TrainCarriageAppender {
      */
     private static final double SPAWN_RADIUS_BLOCKS = 48.0;
     private static final double SPAWN_RADIUS_SQ = SPAWN_RADIUS_BLOCKS * SPAWN_RADIUS_BLOCKS;
+
+    /**
+     * Hard ceiling on how many game ticks the placement-collision tracker
+     * will keep a carriage in the unplaced state. If
+     * {@code ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS} and the
+     * carriage has still not flipped {@link TrainTransformProvider#markPlacedSuccessfully},
+     * the tracker force-finalises it with a WARN log capturing the full
+     * state at the time of release.
+     *
+     * <p>Exists because two pathological stalls were observed in 0.167.0
+     * testing: (a) a colliding carriage that kept shifting +0.5 X every
+     * tick but the world AABB used by {@link #checkOneCarriage} lagged
+     * behind the cumulative shift — so the collision never cleared; (b) a
+     * "silent" carriage whose Sable physics tick never fired, leaving the
+     * placement tracker in a no-op state indefinitely. Both stalls
+     * permanently blocked the next spawn via the wait-for-placedSuccessfully
+     * lane gate.</p>
+     *
+     * <p>200 ticks = 10 seconds — 3× the legitimate 60-clean-tick window,
+     * but short enough that a player walking the train length doesn't
+     * notice the stall. The blocks are already placed at shipyard coords
+     * regardless of {@code spawnWorldPos}; the worst visible artefact of
+     * a premature force-finalise is a small overlap with the colliding
+     * sibling. Strictly better than a totally-blocked train.</p>
+     */
+    private static final int MAX_PLACEMENT_SETTLE_TICKS = 200;
+
+    /**
+     * Approach window before {@link #MAX_PLACEMENT_SETTLE_TICKS} during
+     * which the placement tracker emits a per-second state-snapshot log
+     * line, so the divergence leading up to the safety-valve fire is
+     * captured in the log even if the carriage settles legitimately at
+     * the last moment.
+     */
+    private static final int PLACEMENT_STALL_APPROACH_TICKS = 40;
+
+    /**
+     * Tick at which each placement-tracked sub-level was first seen by
+     * {@link #runPlacementCollisionTracker}. Keyed by Sable sub-level id
+     * (matches {@code carriage.ship().subLevelId()}). Used by the
+     * safety-valve to bound the unplaced lifetime — handles the case
+     * where {@link TrainTransformProvider#getSpawnGameTick} is still -1
+     * (Sable hasn't fired the ship's first physics tick yet).
+     *
+     * <p>Entries are removed when the carriage is force-finalised by the
+     * safety valve, when it naturally reaches {@code placedSuccessfully},
+     * or by a per-tick reconciliation pass against the current
+     * {@link Trains#byTrainId} membership (handles rolling-window despawn).
+     * </p>
+     */
+    private static final Map<UUID, Long> PLACEMENT_TRACKER_FIRST_SEEN = new ConcurrentHashMap<>();
     /**
      * Per-collision shift distance in the spawn (+X) direction. The
      * carriage's {@code spawnWorldPos} is bumped by this amount each
@@ -324,12 +375,38 @@ public final class TrainCarriageAppender {
     public static void runPlacementCollisionTracker(ServerLevel level) {
         long now = level.getGameTime();
         Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        Set<UUID> liveSubLevelIds = new HashSet<>();
         for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
             UUID trainId = entry.getKey();
             List<Trains.Carriage> train = entry.getValue();
             for (Trains.Carriage carriage : train) {
                 TrainTransformProvider provider = carriage.provider();
-                if (provider.isPlacedSuccessfully()) continue;
+                UUID subLevelId = carriage.ship().subLevelId();
+                liveSubLevelIds.add(subLevelId);
+                if (provider.isPlacedSuccessfully()) {
+                    PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
+                    continue;
+                }
+
+                // Safety valve — bound the unplaced lifetime. Two pre-0.167.1
+                // stalls bypassed the natural 60-clean-tick path: a
+                // collide-loop where the world AABB lagged behind cumulative
+                // shifts, and a silent stall where Sable never fired the
+                // ship's first physics tick. Both blocked the next lane spawn
+                // permanently. Force-finalise after MAX_PLACEMENT_SETTLE_TICKS
+                // with a WARN snapshot so the underlying bug stays visible.
+                long firstSeenTick = PLACEMENT_TRACKER_FIRST_SEEN.computeIfAbsent(subLevelId, k -> now);
+                long ticksSinceFirstSeen = now - firstSeenTick;
+                if (ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS) {
+                    logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "SAFETY-VALVE-FIRE");
+                    provider.markPlacedSuccessfully();
+                    PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
+                    continue;
+                }
+                if (ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS - PLACEMENT_STALL_APPROACH_TICKS
+                    && (ticksSinceFirstSeen % 20) == 0) {
+                    logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "APPROACHING-VALVE");
+                }
 
                 SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
                 if (check == null) continue;
@@ -391,6 +468,7 @@ public final class TrainCarriageAppender {
                     provider.incrementConsecutiveCleanTicks();
                     if (provider.getConsecutiveCleanTicks() >= CLEAN_TICKS_FOR_SUCCESS) {
                         provider.markPlacedSuccessfully();
+                        PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} placed successfully after {} clean ticks (ticksSinceSpawn={})",
                             provider.getPIdx(), CLEAN_TICKS_FOR_SUCCESS, check.ticksSinceSpawn());
                         // Entity spawn is no longer fired here — it's gated on
@@ -401,6 +479,81 @@ public final class TrainCarriageAppender {
                 }
             }
         }
+        // Drop tracking entries for sub-levels no longer in any train.
+        // Handles rolling-window cleanup so the map can't accumulate
+        // entries for despawned groups.
+        PLACEMENT_TRACKER_FIRST_SEEN.keySet().retainAll(liveSubLevelIds);
+    }
+
+    /**
+     * Format and emit a placement-stall state snapshot. Called both by
+     * the safety valve at force-finalisation and by the approach-window
+     * per-second instrumentation. {@code reason} tags the log line so
+     * a single grep separates the two cases.
+     *
+     * <p>Captures everything needed to debug the underlying bug — the
+     * provider's spawn-tick / canonical-pos / shift state, the world AABB
+     * the collision check is actually using, and the colliding sibling's
+     * AABB if any. Survives the case where the ship has never been
+     * physics-ticked ({@code spawnGameTick == -1}, {@code canonicalPos == null}).</p>
+     */
+    private static void logPlacementStallState(
+        UUID trainId,
+        Trains.Carriage carriage,
+        List<Trains.Carriage> train,
+        TrainTransformProvider provider,
+        long now,
+        long ticksSinceFirstSeen,
+        String reason
+    ) {
+        long spawnGameTick = provider.getSpawnGameTick();
+        long ticksSinceSpawn = (spawnGameTick < 0L) ? -1L : (now - spawnGameTick);
+        Vector3dc canonicalPos = provider.getCanonicalPos();
+        BlockPos shipyardOrigin = provider.getShipyardOrigin();
+        String canonicalPosStr = (canonicalPos == null)
+            ? "null(no-physics-tick)"
+            : String.format("(%.3f,%.3f,%.3f)", canonicalPos.x(), canonicalPos.y(), canonicalPos.z());
+        Vector3d cornerProbe = new Vector3d(
+            shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ());
+        try {
+            carriage.ship().shipToWorld(cornerProbe);
+        } catch (Throwable t) {
+            cornerProbe.set(Double.NaN, Double.NaN, Double.NaN);
+        }
+        AABBdc selfAabb = null;
+        try {
+            selfAabb = carriage.ship().worldAABB();
+        } catch (Throwable ignored) {}
+        String selfAabbStr = (selfAabb == null || isZeroAabb(selfAabb))
+            ? "zero/null"
+            : String.format("[%.2f..%.2f, %.2f..%.2f, %.2f..%.2f]",
+                selfAabb.minX(), selfAabb.maxX(),
+                selfAabb.minY(), selfAabb.maxY(),
+                selfAabb.minZ(), selfAabb.maxZ());
+        SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
+        String collidingStr = (check == null)
+            ? "check=null"
+            : String.format("colliding=%s collidingPIdx=%d",
+                check.colliding(), check.collidingPIdx());
+        LOGGER.warn(
+            "[DungeonTrain] Placement-stall [{}] pIdx={} subLevelId={} ticksSinceFirstSeen={} ticksSinceSpawn={} consecutiveCleanTicks={} canonicalPos={} shipyardOrigin=({},{},{}) shipToWorldCorner=({},{},{}) selfAABB={} {} flags=[collided={}, ranMoveTogetherAfterCollision={}, moveTogetherLocked={}, spawnedBackward={}]",
+            reason,
+            provider.getPIdx(),
+            carriage.ship().subLevelId(),
+            ticksSinceFirstSeen,
+            ticksSinceSpawn,
+            provider.getConsecutiveCleanTicks(),
+            canonicalPosStr,
+            shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ(),
+            String.format("%.3f", cornerProbe.x),
+            String.format("%.3f", cornerProbe.y),
+            String.format("%.3f", cornerProbe.z),
+            selfAabbStr,
+            collidingStr,
+            provider.hasCollidedDuringPlacement(),
+            provider.hasRunMoveTogetherAfterCollision(),
+            provider.isMoveTogetherLocked(),
+            provider.isSpawnedBackward());
     }
 
     /**
