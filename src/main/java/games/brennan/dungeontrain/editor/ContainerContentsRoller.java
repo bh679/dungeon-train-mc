@@ -142,6 +142,50 @@ public final class ContainerContentsRoller {
     }
 
     /**
+     * Variant of {@link #roll} that returns a flat list of rolled
+     * {@link ItemStack}s instead of an {@code Items} NBT ListTag. Used by the
+     * entity-side variant path ({@code EntityVariantApplicator}) where the
+     * consumer needs to bucket stacks into entity-specific slot layouts
+     * (armor stand {@code ArmorItems}/{@code HandItems}, item frame
+     * {@code Item}) rather than container slot indices.
+     *
+     * <p>Reuses the same deterministic mixers as the chest path —
+     * {@code (localPos, worldSeed, carriageIndex)} drive the K-count + slot-
+     * subset, and a per-slot salt drives entry + count + stack rolls. The
+     * {@code slotCount} parameter sets the synthetic upper bound (e.g. 6 for
+     * armor stands = 4 armor + 2 hands, 1 for item frames). The returned list
+     * is unordered with respect to entity slots; callers are expected to map
+     * each stack to its semantic slot (e.g. via
+     * {@code Mob.getEquipmentSlotForItem}).</p>
+     */
+    public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              HolderLookup.Provider registries) {
+        if (pool == null || pool.isEmpty()) return List.of();
+        if (slotCount <= 0) return List.of();
+        int totalWeight = pool.totalWeight();
+        if (totalWeight <= 0) return List.of();
+
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? slotCount : Math.min(pool.fillMax(), slotCount);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
+        if (k <= 0) return List.of();
+        int[] slotsToFill = resolveSlotSubset(slotCount, k, localPos, worldSeed, carriageIndex);
+
+        List<ItemStack> out = new ArrayList<>();
+        for (int slot : slotsToFill) {
+            ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
+            if (picked == null || picked.isAir()) continue;
+            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+            if (stack.isEmpty()) continue;
+            out.add(stack);
+        }
+        return out;
+    }
+
+    /**
      * Deterministic K = uniform integer in {@code [min, max]}. Same mixer
      * basis as the slot-pick / count rolls but with a distinct salt so all
      * three rolls are independent.

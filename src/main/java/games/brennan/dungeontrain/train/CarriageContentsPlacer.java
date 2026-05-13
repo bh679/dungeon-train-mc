@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -112,7 +113,10 @@ public final class CarriageContentsPlacer {
      * are spawned with the sentinel pIdx {@link #EDITOR_SENTINEL_PIDX}.</p>
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents, CarriageDims dims) {
-        placeAtInternal(level, carriageOrigin, contents, dims, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true);
+        // Editor preview / template flows have no real seed — pass 0 so the
+        // entity-variant lookup behaves deterministically for previews too
+        // (sidecar.resolve handles any seed value the same way).
+        placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true);
     }
 
     /**
@@ -131,7 +135,7 @@ public final class CarriageContentsPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
-        placeAtInternal(level, carriageOrigin, contents, dims, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
+        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
         applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
         applyContentLinks(level, carriageOrigin, contents, dims, seed, carriageIndex);
     }
@@ -164,7 +168,7 @@ public final class CarriageContentsPlacer {
      */
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
-        placeAtInternal(level, carriageOrigin, contents, dims, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
+        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
         applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
         applyContentLinks(level, carriageOrigin, contents, dims, seed, carriageIndex);
     }
@@ -184,8 +188,8 @@ public final class CarriageContentsPlacer {
      * double-shift can't double-spawn.</p>
      */
     public static void placeEntitiesOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
-                                          CarriageDims dims, int carriagePIdx) {
-        placeAtInternal(level, carriageOrigin, contents, dims, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true);
+                                          CarriageDims dims, long seed, int carriagePIdx) {
+        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true);
     }
 
     /**
@@ -197,7 +201,7 @@ public final class CarriageContentsPlacer {
      * coords match the placed blocks.
      */
     private static void placeAtInternal(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
-                                         CarriageDims dims, int carriagePIdx,
+                                         CarriageDims dims, long seed, int carriagePIdx,
                                          boolean placeBlocks, boolean spawnEntities) {
         Vec3i size = interiorSize(dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
@@ -214,7 +218,7 @@ public final class CarriageContentsPlacer {
                 stampTemplateBlocks(level, origin, template);
             }
             if (spawnEntities) {
-                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx);
+                spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
@@ -385,7 +389,9 @@ public final class CarriageContentsPlacer {
      *       which inside-the-ship entities count toward by accident).</li>
      * </ul>
      */
-    private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template, int carriagePIdx) {
+    private static void spawnEntitiesFromTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                                   int carriagePIdx, CarriageContents contents, Vec3i interiorSize,
+                                                   long seed) {
         CompoundTag saved = template.save(new CompoundTag());
         if (!saved.contains("entities", Tag.TAG_LIST)) {
             return;
@@ -394,6 +400,12 @@ public final class CarriageContentsPlacer {
         if (entries.isEmpty()) return;
         long spawnTick = level.getGameTime();
         String tag = contentsTagFor(carriagePIdx);
+        // Variant sidecar drives armor stand / item frame equipment via the
+        // same linkedLootPrefabId machinery as block-side container loot.
+        // loadFor is cached + size-validated; null result means no variants
+        // for this contents id — the applicator no-ops on null/empty.
+        CarriageContentsVariantBlocks variantSidecar =
+            CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
         int spawned = 0;
         for (int i = 0; i < entries.size(); i++) {
             CompoundTag entry = entries.getCompound(i);
@@ -440,6 +452,17 @@ public final class CarriageContentsPlacer {
             // for animals/villagers under certain conditions) can't silently
             // eat our carriage entities.
             entityNbt.putBoolean("PersistenceRequired", true);
+
+            // Variant-driven equipment for armor stands / item frames. Looks
+            // up the variant cell at the entity's interior-local block pos
+            // (floored from the float Pos) and, if the picked variant has a
+            // linkedLootPrefabId, rolls the prefab into the entity's
+            // ArmorItems/HandItems (stand) or Item (frame) before
+            // EntityType.create so the entity is born equipped. No-op when
+            // the sidecar has no entry at the position, no prefab link, or
+            // the entity isn't a supported type.
+            BlockPos localBlock = BlockPos.containing(localX, localY, localZ);
+            EntityVariantApplicator.applyTo(entityNbt, localBlock, seed, carriagePIdx, variantSidecar, level);
 
             try {
                 Optional<Entity> created = EntityType.create(entityNbt, level);
