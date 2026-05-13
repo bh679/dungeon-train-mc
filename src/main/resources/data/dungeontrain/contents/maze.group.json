@@ -9,6 +9,18 @@
     {
       "id": "hall",
       "weight": 1
+    },
+    {
+      "id": "twoway",
+      "weight": 1
+    },
+    {
+      "id": "sides",
+      "weight": 1
+    },
+    {
+      "id": "up",
+      "weight": 1
     }
   ]
 }
