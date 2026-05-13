@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 5,
+  "selfWeight": 1,
   "variants": [
     {
       "id": "enchant",
@@ -16,7 +16,7 @@
     },
     {
       "id": "upgrade",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "dressing",
@@ -24,7 +24,11 @@
     },
     {
       "id": "sleeping",
-      "weight": 1
+      "weight": 2
+    },
+    {
+      "id": "trimming",
+      "weight": 2
     }
   ]
 }
