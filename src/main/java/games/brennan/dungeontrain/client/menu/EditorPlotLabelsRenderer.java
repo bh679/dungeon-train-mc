@@ -18,6 +18,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -140,6 +141,19 @@ public final class EditorPlotLabelsRenderer {
     private static volatile Hovered HOVERED = Hovered.NONE;
 
     private EditorPlotLabelsRenderer() {}
+
+    /**
+     * Wipe the renderer cache on world quit. Without this, the static
+     * {@link #CACHE} survives across worlds in the integrated server — quit
+     * to title with floating editor labels onscreen, open a different world,
+     * and the panels keep rendering until the server pushes a new snapshot
+     * (which it won't, if the new world has no editor state). Symmetric with
+     * {@link games.brennan.dungeontrain.client.EditorStatusHudOverlay#onLoggingOut}.
+     */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        applySnapshot(EditorPlotLabelsPacket.empty());
+    }
 
     /** Called from the packet handler on the client thread. */
     public static void applySnapshot(EditorPlotLabelsPacket packet) {
