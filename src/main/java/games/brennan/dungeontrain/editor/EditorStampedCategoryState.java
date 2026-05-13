@@ -1,5 +1,10 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.DungeonTrain;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+
 import java.util.Optional;
 
 /**
@@ -17,7 +22,16 @@ import java.util.Optional;
  * the snapshot dispatch reads it on every tick from the same thread; the
  * volatile keeps the field cheap and consistent without adding a lock to the
  * tight per-tick path.</p>
+ *
+ * <p>The integrated server starts and stops within one JVM, so this static
+ * field would otherwise leak across worlds: enter the editor, "Save and Quit
+ * to Title", open a different world, and the next server tick would push
+ * phantom plot labels for the previously-stamped category. The
+ * {@link ServerStoppedEvent} hook below resets the field on every world quit
+ * so a fresh world that the player has not entered the editor in renders
+ * nothing editor-shaped.</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class EditorStampedCategoryState {
 
     private static volatile EditorCategory current = null;
@@ -37,5 +51,10 @@ public final class EditorStampedCategoryState {
     /** The currently stamped category, or empty if no category is active. */
     public static Optional<EditorCategory> current() {
         return Optional.ofNullable(current);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        clear();
     }
 }
