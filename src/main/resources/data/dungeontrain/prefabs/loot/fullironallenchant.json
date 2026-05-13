@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:armor_stand",
+  "category": "armor_stand",
+  "fillMin": 4,
+  "entries": [
+    { "id": "minecraft:iron_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:iron_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:iron_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 },
+    { "id": "minecraft:iron_helmet", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": true, "enchChance": 100 }
+  ]
+}

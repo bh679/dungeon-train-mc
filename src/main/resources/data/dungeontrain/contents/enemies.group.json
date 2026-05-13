@@ -29,6 +29,10 @@
     {
       "id": "vindicator",
       "weight": 1
+    },
+    {
+      "id": "winterskeleton",
+      "weight": 1
     }
   ]
 }

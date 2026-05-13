@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:armor_stand",
+  "category": "armor_stand",
+  "fillMin": 1,
+  "fillMax": 1,
+  "entries": [
+    { "id": "minecraft:leather_helmet", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 0 }
+  ]
+}

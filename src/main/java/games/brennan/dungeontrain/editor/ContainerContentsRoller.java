@@ -142,11 +142,58 @@ public final class ContainerContentsRoller {
     }
 
     /**
+     * Variant of {@link #roll} that returns a flat list of rolled
+     * {@link ItemStack}s instead of an {@code Items} NBT ListTag. Used by the
+     * entity-side variant path ({@code EntityVariantApplicator}) where the
+     * consumer needs to bucket stacks into entity-specific slot layouts
+     * (armor stand {@code ArmorItems}/{@code HandItems}, item frame
+     * {@code Item}) rather than container slot indices.
+     *
+     * <p>Reuses the same deterministic mixers as the chest path —
+     * {@code (localPos, worldSeed, carriageIndex)} drive the K-count + slot-
+     * subset, and a per-slot salt drives entry + count + stack rolls. The
+     * {@code slotCount} parameter sets the synthetic upper bound (e.g. 6 for
+     * armor stands = 4 armor + 2 hands, 1 for item frames). The returned list
+     * is unordered with respect to entity slots; callers are expected to map
+     * each stack to its semantic slot (e.g. via
+     * {@code Mob.getEquipmentSlotForItem}).</p>
+     */
+    public static List<ItemStack> rollStacks(ContainerContentsPool pool, int slotCount,
+                                              BlockPos localPos, long worldSeed, int carriageIndex,
+                                              HolderLookup.Provider registries) {
+        if (pool == null || pool.isEmpty()) return List.of();
+        if (slotCount <= 0) return List.of();
+        int totalWeight = pool.totalWeight();
+        if (totalWeight <= 0) return List.of();
+
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? slotCount : Math.min(pool.fillMax(), slotCount);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
+        if (k <= 0) return List.of();
+        int[] slotsToFill = resolveSlotSubset(slotCount, k, localPos, worldSeed, carriageIndex);
+
+        List<ItemStack> out = new ArrayList<>();
+        for (int slot : slotsToFill) {
+            ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, slot);
+            if (picked == null || picked.isAir()) continue;
+            int rolledCount = rollItemCount(picked.count(), localPos, worldSeed, carriageIndex, slot);
+            ItemStack stack = rollItemStack(picked, rolledCount, localPos, worldSeed, carriageIndex, slot, registries);
+            if (stack.isEmpty()) continue;
+            out.add(stack);
+        }
+        return out;
+    }
+
+    /**
      * Deterministic K = uniform integer in {@code [min, max]}. Same mixer
      * basis as the slot-pick / count rolls but with a distinct salt so all
      * three rolls are independent.
+     *
+     * <p>Package-private so {@link EntityVariantApplicator} can drive its
+     * slot-aware armor stand fill with the same seed math.</p>
      */
-    private static int rollKCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex) {
+    static int rollKCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex) {
         if (max <= min) return min;
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
@@ -164,8 +211,11 @@ public final class ContainerContentsRoller {
     /**
      * Deterministic stack count for a slot — uniform in {@code [1, max]}.
      * Independent salt so it doesn't correlate with the entry pick.
+     *
+     * <p>Package-private so {@link EntityVariantApplicator} can roll counts
+     * the same way per equipment slot.</p>
      */
-    private static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+    static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
         if (max <= 1) return 1;
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
@@ -417,12 +467,15 @@ public final class ContainerContentsRoller {
      * Weighted pick over the subset of pool entries matching {@code filter}.
      * Returns null when the subset is empty or all subset weights are 0.
      * Mixer uses {@code slot} so different slots produce independent picks.
+     *
+     * <p>Package-private so {@link EntityVariantApplicator}'s slot-aware fill
+     * can reuse the same weighted-filter pick for per-equipment-slot rolls.</p>
      */
     @Nullable
-    private static ContainerContentsEntry pickFiltered(ContainerContentsPool pool,
-                                                       Predicate<ContainerContentsEntry> filter,
-                                                       BlockPos localPos, long worldSeed,
-                                                       int carriageIndex, int slot) {
+    static ContainerContentsEntry pickFiltered(ContainerContentsPool pool,
+                                               Predicate<ContainerContentsEntry> filter,
+                                               BlockPos localPos, long worldSeed,
+                                               int carriageIndex, int slot) {
         List<ContainerContentsEntry> subset = new ArrayList<>();
         int subsetWeight = 0;
         for (ContainerContentsEntry e : pool.entries()) {
@@ -496,8 +549,11 @@ public final class ContainerContentsRoller {
      * <p>Each gate (durability, enchantment) uses an independent deterministic
      * salt so toggling one effect doesn't shift the other's roll outcome — the
      * same chest at the same world seed always produces the same loot.</p>
+     *
+     * <p>Package-private so {@link EntityVariantApplicator}'s slot-aware fill
+     * can call the same per-stack roll with its slot ordinal as the slot key.</p>
      */
-    private static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
+    static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
                                            BlockPos localPos, long worldSeed,
                                            int carriageIndex, int slot,
                                            HolderLookup.Provider registries) {

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 3,
+  "block": "minecraft:air",
+  "fillMax": 4,
+  "entries": [
+    { "id": "minecraft:leather_helmet", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:leather_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:leather_leggings", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:leather_boots", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chainmail_boots", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+  ]
+}
