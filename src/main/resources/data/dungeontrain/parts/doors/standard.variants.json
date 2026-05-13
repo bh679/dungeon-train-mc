@@ -1,7 +1,7 @@
 {
   "schemaVersion": 6,
   "variants": {
-    "0,2,3": [{"state": "minecraft:stone_button[face=wall,facing=north,powered=false]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:oak_button[face=wall,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:lever[face=wall,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "0,2,3": [{"state": "minecraft:stone_button[face=wall,facing=north,powered=false]", "weight": 50, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:oak_button[face=wall,facing=north,powered=false]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 171, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:lever[face=wall,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "0,1,3": ["minecraft:oak_pressure_plate[powered=false]", {"state": "minecraft:stone_pressure_plate[powered=false]", "weight": 4}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 100, "rotation": {"mode": "lock", "dirs": ["north"]}}]
   }
 }
