@@ -27,6 +27,7 @@ public final class ChatLogsMenuScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         boolean trainSpawn = DebugFlagsState.chatTrainSpawn();
+        boolean stall = DebugFlagsState.chatStallTrain();
         boolean collision = DebugFlagsState.chatCollision();
 
         return List.of(
@@ -39,6 +40,11 @@ public final class ChatLogsMenuScreen implements MenuScreen {
                 "Train Spawn", trainSpawn,
                 "dungeontrain debug chatlogs train-spawn on",
                 "dungeontrain debug chatlogs train-spawn off"
+            ),
+            new CommandMenuEntry.Toggle(
+                "Stall", stall,
+                "dungeontrain debug chatlogs stall on",
+                "dungeontrain debug chatlogs stall off"
             ),
             new CommandMenuEntry.Toggle(
                 "Collision", collision,

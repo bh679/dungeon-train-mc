@@ -98,6 +98,9 @@ public final class DebugCommand {
                 .then(Commands.literal("train-spawn")
                     .then(Commands.literal("on").executes(ctx -> setChatTrainSpawn(ctx.getSource(), true)))
                     .then(Commands.literal("off").executes(ctx -> setChatTrainSpawn(ctx.getSource(), false))))
+                .then(Commands.literal("stall")
+                    .then(Commands.literal("on").executes(ctx -> setChatStallTrain(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setChatStallTrain(ctx.getSource(), false))))
                 .then(Commands.literal("collision")
                     .then(Commands.literal("on").executes(ctx -> setChatCollision(ctx.getSource(), true)))
                     .then(Commands.literal("off").executes(ctx -> setChatCollision(ctx.getSource(), false)))))
@@ -208,6 +211,14 @@ public final class DebugCommand {
         DebugFlags.setChatCollision(source.getServer(), enabled);
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Chat-log collision " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setChatStallTrain(CommandSourceStack source, boolean enabled) {
+        DebugFlags.setChatStallTrain(source.getServer(), enabled);
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Chat-log stall " + (enabled ? "ON" : "OFF")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }

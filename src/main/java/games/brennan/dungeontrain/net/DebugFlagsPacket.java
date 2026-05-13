@@ -29,12 +29,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * vice versa).</p>
  *
  * <p>Wire field order is fixed and append-only: writer and reader lambdas
- * must consume the nine booleans in the same sequence ({@code gapCubes},
+ * must consume the booleans in the same sequence ({@code gapCubes},
  * {@code gapLine}, {@code nextSpawn}, {@code collision}, {@code hudDistance},
  * {@code manualSpawnMode}, {@code chatTrainSpawn}, {@code chatCollision},
- * {@code logContentsEntities}). Mismatched order would silently scramble
- * client-side state. New flags MUST be appended at the end (never inserted)
- * so existing clients see a consistent prefix.</p>
+ * {@code logContentsEntities}, {@code logLootRolls}, {@code chatStallTrain}).
+ * Mismatched order would silently scramble client-side state. New flags
+ * MUST be appended at the end (never inserted) so existing clients see a
+ * consistent prefix.</p>
  *
  * <p>{@code logContentsEntities} gates the verbose carriage-contents
  * entity lifecycle logging (per-entity JOIN/LEAVE with stack trace, plus
@@ -51,7 +52,8 @@ public record DebugFlagsPacket(
     boolean chatTrainSpawn,
     boolean chatCollision,
     boolean logContentsEntities,
-    boolean logLootRolls
+    boolean logLootRolls,
+    boolean chatStallTrain
 ) implements CustomPacketPayload {
 
     public static final Type<DebugFlagsPacket> TYPE =
@@ -70,8 +72,10 @@ public record DebugFlagsPacket(
                 buf.writeBoolean(packet.chatCollision);
                 buf.writeBoolean(packet.logContentsEntities);
                 buf.writeBoolean(packet.logLootRolls);
+                buf.writeBoolean(packet.chatStallTrain);
             },
             buf -> new DebugFlagsPacket(
+                buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),
                 buf.readBoolean(),

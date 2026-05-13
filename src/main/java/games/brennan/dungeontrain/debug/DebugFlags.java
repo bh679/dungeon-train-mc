@@ -48,6 +48,13 @@ public final class DebugFlags {
     private static volatile boolean chatTrainSpawn = false;
     private static volatile boolean chatCollision = false;
     /**
+     * Per-train "spawn stall" warnings emitted by
+     * {@link games.brennan.dungeontrain.train.TrainCarriageAppender}. Off by
+     * default so normal play stays quiet; the server-side {@code LOGGER.warn}
+     * fires regardless, so flipping this off does NOT lose forensic data.
+     */
+    private static volatile boolean chatStallTrain = false;
+    /**
      * Verbose lifecycle logging for carriage-contents entities (per-entity
      * JOIN / LEAVE log lines with stack traces, plus per-entity spawn lines
      * with UUID + tag, AND post-spawn drift sampling at +1/+5/+20/+60
@@ -74,6 +81,7 @@ public final class DebugFlags {
     public static boolean hudDistance() { return hudDistance; }
     public static boolean chatTrainSpawn() { return chatTrainSpawn; }
     public static boolean chatCollision() { return chatCollision; }
+    public static boolean chatStallTrain() { return chatStallTrain; }
     public static boolean logContentsEntities() { return logContentsEntities; }
     public static boolean logLootRolls() { return logLootRolls; }
 
@@ -126,10 +134,16 @@ public final class DebugFlags {
         broadcastTo(server);
     }
 
-    /** Master setter — flips both chat-log flags to {@code value} in one broadcast. */
+    public static void setChatStallTrain(MinecraftServer server, boolean value) {
+        chatStallTrain = value;
+        broadcastTo(server);
+    }
+
+    /** Master setter — flips all chat-log flags to {@code value} in one broadcast. */
     public static void setAllChatLogs(MinecraftServer server, boolean value) {
         chatTrainSpawn = value;
         chatCollision = value;
+        chatStallTrain = value;
         broadcastTo(server);
     }
 
@@ -171,7 +185,8 @@ public final class DebugFlags {
             TrainCarriageAppender.MANUAL_MODE,
             chatTrainSpawn, chatCollision,
             logContentsEntities,
-            logLootRolls
+            logLootRolls,
+            chatStallTrain
         );
     }
 }
