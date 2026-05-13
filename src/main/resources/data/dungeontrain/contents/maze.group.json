@@ -1,8 +1,13 @@
 {
   "schemaVersion": 1,
+  "selfWeight": 1,
   "variants": [
     {
       "id": "2ndlevel",
+      "weight": 1
+    },
+    {
+      "id": "hall",
       "weight": 1
     }
   ]
