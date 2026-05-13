@@ -189,8 +189,11 @@ public final class ContainerContentsRoller {
      * Deterministic K = uniform integer in {@code [min, max]}. Same mixer
      * basis as the slot-pick / count rolls but with a distinct salt so all
      * three rolls are independent.
+     *
+     * <p>Package-private so {@link EntityVariantApplicator} can drive its
+     * slot-aware armor stand fill with the same seed math.</p>
      */
-    private static int rollKCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex) {
+    static int rollKCount(int min, int max, BlockPos localPos, long worldSeed, int carriageIndex) {
         if (max <= min) return min;
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
@@ -208,8 +211,11 @@ public final class ContainerContentsRoller {
     /**
      * Deterministic stack count for a slot — uniform in {@code [1, max]}.
      * Independent salt so it doesn't correlate with the entry pick.
+     *
+     * <p>Package-private so {@link EntityVariantApplicator} can roll counts
+     * the same way per equipment slot.</p>
      */
-    private static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+    static int rollItemCount(int max, BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
         if (max <= 1) return 1;
         long state = worldSeed
             ^ ((long) localPos.getX() * MIX_X)
@@ -461,12 +467,15 @@ public final class ContainerContentsRoller {
      * Weighted pick over the subset of pool entries matching {@code filter}.
      * Returns null when the subset is empty or all subset weights are 0.
      * Mixer uses {@code slot} so different slots produce independent picks.
+     *
+     * <p>Package-private so {@link EntityVariantApplicator}'s slot-aware fill
+     * can reuse the same weighted-filter pick for per-equipment-slot rolls.</p>
      */
     @Nullable
-    private static ContainerContentsEntry pickFiltered(ContainerContentsPool pool,
-                                                       Predicate<ContainerContentsEntry> filter,
-                                                       BlockPos localPos, long worldSeed,
-                                                       int carriageIndex, int slot) {
+    static ContainerContentsEntry pickFiltered(ContainerContentsPool pool,
+                                               Predicate<ContainerContentsEntry> filter,
+                                               BlockPos localPos, long worldSeed,
+                                               int carriageIndex, int slot) {
         List<ContainerContentsEntry> subset = new ArrayList<>();
         int subsetWeight = 0;
         for (ContainerContentsEntry e : pool.entries()) {
@@ -540,8 +549,11 @@ public final class ContainerContentsRoller {
      * <p>Each gate (durability, enchantment) uses an independent deterministic
      * salt so toggling one effect doesn't shift the other's roll outcome — the
      * same chest at the same world seed always produces the same loot.</p>
+     *
+     * <p>Package-private so {@link EntityVariantApplicator}'s slot-aware fill
+     * can call the same per-stack roll with its slot ordinal as the slot key.</p>
      */
-    private static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
+    static ItemStack rollItemStack(ContainerContentsEntry picked, int rolledCount,
                                            BlockPos localPos, long worldSeed,
                                            int carriageIndex, int slot,
                                            HolderLookup.Provider registries) {

@@ -156,40 +156,48 @@ public final class EntityVariantApplicator {
      * {@code ArmorItems[4]} (FEET / LEGS / CHEST / HEAD) and
      * {@code HandItems[2]} (MAINHAND / OFFHAND) NBT lists.
      *
-     * <p>Slot assignment is by item type via {@link #equipmentSlotFor} —
-     * armor items resolve to FEET / LEGS / CHEST / HEAD via
-     * {@link Equipable#get(ItemStack)}; shields land in OFFHAND; everything
-     * else defaults to MAINHAND. Multiple rolled stacks mapping to the same
-     * slot resolve last-write-wins (the roller produces a deterministic
-     * order so the same seed → same outcome).</p>
-     *
-     * <p>Only slots that receive a rolled stack are overwritten; the
-     * template's existing bake survives in untouched slots.</p>
+     * <p><b>Slot-aware fill</b> — only empty slots receive items, and at
+     * most one item per slot. The pool's entries are bucketed by their
+     * natural slot ({@link #equipmentSlotFor}); for each empty slot that
+     * has at least one matching entry, a weighted-random entry is picked
+     * from that slot's bucket. So a pool with one helmet / chestplate /
+     * leggings / boots at {@code fillMin=4} always produces one of each,
+     * never four helmets — and a stand already wearing iron boots keeps
+     * the boots and only fills the still-empty slots.</p>
      */
     private static void applyToArmorStand(CompoundTag entityNbt, ContainerContentsPool pool,
                                            BlockPos localPos, long seed, int carriageIndex,
                                            HolderLookup.Provider registries) {
-        List<ItemStack> rolled = ContainerContentsRoller.rollStacks(
-            pool, ARMOR_STAND_SLOTS, localPos, seed, carriageIndex, registries);
-        if (rolled.isEmpty()) return;
-
         ListTag armorItems = readOrInitList(entityNbt, NBT_ARMOR_ITEMS, 4);
         ListTag handItems = readOrInitList(entityNbt, NBT_HAND_ITEMS, 2);
+
+        java.util.EnumSet<EquipmentSlot> emptySlots = java.util.EnumSet.noneOf(EquipmentSlot.class);
+        if (isEmptyStackTag(armorItems.getCompound(0))) emptySlots.add(EquipmentSlot.FEET);
+        if (isEmptyStackTag(armorItems.getCompound(1))) emptySlots.add(EquipmentSlot.LEGS);
+        if (isEmptyStackTag(armorItems.getCompound(2))) emptySlots.add(EquipmentSlot.CHEST);
+        if (isEmptyStackTag(armorItems.getCompound(3))) emptySlots.add(EquipmentSlot.HEAD);
+        if (isEmptyStackTag(handItems.getCompound(0))) emptySlots.add(EquipmentSlot.MAINHAND);
+        if (isEmptyStackTag(handItems.getCompound(1))) emptySlots.add(EquipmentSlot.OFFHAND);
+        if (emptySlots.isEmpty()) return;
+
+        java.util.Map<EquipmentSlot, ItemStack> rolled = rollForArmorStandSlots(
+            pool, emptySlots, localPos, seed, carriageIndex, registries);
+        if (rolled.isEmpty()) return;
+
         boolean armorTouched = false;
         boolean handsTouched = false;
-
-        for (ItemStack stack : rolled) {
+        for (java.util.Map.Entry<EquipmentSlot, ItemStack> e : rolled.entrySet()) {
+            ItemStack stack = e.getValue();
             if (stack.isEmpty()) continue;
-            EquipmentSlot slot = equipmentSlotFor(stack);
             CompoundTag stackTag = (CompoundTag) stack.save(registries, new CompoundTag());
-            switch (slot) {
+            switch (e.getKey()) {
                 case FEET -> { armorItems.set(0, stackTag); armorTouched = true; }
                 case LEGS -> { armorItems.set(1, stackTag); armorTouched = true; }
                 case CHEST -> { armorItems.set(2, stackTag); armorTouched = true; }
                 case HEAD -> { armorItems.set(3, stackTag); armorTouched = true; }
                 case MAINHAND -> { handItems.set(0, stackTag); handsTouched = true; }
                 case OFFHAND -> { handItems.set(1, stackTag); handsTouched = true; }
-                default -> { /* BODY / SADDLE etc — armor stand has no such slot */ }
+                default -> { /* BODY / SADDLE — armor stand has no such slot */ }
             }
         }
 
@@ -197,9 +205,97 @@ public final class EntityVariantApplicator {
         if (handsTouched) entityNbt.put(NBT_HAND_ITEMS, handItems);
 
         if (DebugFlags.logLootRolls()) {
-            LOGGER.info("[DT-armor-stand-variant] applied {} rolled stacks at localPos={} seed={} carriageIdx={} armorTouched={} handsTouched={}",
-                rolled.size(), localPos, seed, carriageIndex, armorTouched, handsTouched);
+            LOGGER.info("[DT-armor-stand-variant] filled {} slot(s) at localPos={} seed={} carriageIdx={} emptyBefore={} armorTouched={} handsTouched={}",
+                rolled.size(), localPos, seed, carriageIndex, emptySlots, armorTouched, handsTouched);
         }
+    }
+
+    /**
+     * Slot-aware roll for armor stand fills. Buckets the pool by each
+     * entry's natural equipment slot, intersects with the set of currently-
+     * empty slots, then rolls K (uniform in {@code [fillMin, min(fillMax,
+     * pickable.size())]}) of those slots — each receives a weighted-random
+     * pick from its bucket.
+     *
+     * <p>Determinism: each picked slot uses its enum {@code ordinal()} as
+     * the slot key, so the per-slot picks reuse the same mixers as the
+     * chest path (independent randomization per slot, deterministic for a
+     * given {@code (worldSeed, carriageIndex, localPos)}).</p>
+     */
+    private static java.util.Map<EquipmentSlot, ItemStack> rollForArmorStandSlots(
+            ContainerContentsPool pool, java.util.EnumSet<EquipmentSlot> emptySlots,
+            BlockPos localPos, long seed, int carriageIndex,
+            HolderLookup.Provider registries) {
+        // Bucket entries by the slot their item naturally targets.
+        java.util.EnumMap<EquipmentSlot, java.util.List<ContainerContentsEntry>> bucketsBySlot =
+            new java.util.EnumMap<>(EquipmentSlot.class);
+        for (ContainerContentsEntry entry : pool.entries()) {
+            if (entry.isAir()) continue;
+            net.minecraft.world.item.Item item = ContainerContentsRoller.resolveItem(entry.itemId());
+            if (item == null) continue;
+            EquipmentSlot slot = equipmentSlotFor(new ItemStack(item));
+            bucketsBySlot.computeIfAbsent(slot, s -> new java.util.ArrayList<>()).add(entry);
+        }
+        // Pickable = empty slots ∩ slots the pool can fill.
+        java.util.EnumSet<EquipmentSlot> pickable = java.util.EnumSet.copyOf(emptySlots);
+        pickable.retainAll(bucketsBySlot.keySet());
+        if (pickable.isEmpty()) return java.util.Collections.emptyMap();
+
+        int slotCount = pickable.size();
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? slotCount : Math.min(pool.fillMax(), slotCount);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = ContainerContentsRoller.rollKCount(effectiveMin, effectiveMax, localPos, seed, carriageIndex);
+        if (k <= 0) return java.util.Collections.emptyMap();
+
+        // Deterministically pick K distinct slots from pickable. Fisher-
+        // Yates on the enum's natural order, seeded the same way the chest
+        // path seeds its slot subset.
+        EquipmentSlot[] order = pickable.toArray(new EquipmentSlot[0]);
+        shuffleSlotsDeterministic(order, localPos, seed, carriageIndex);
+        java.util.Map<EquipmentSlot, ItemStack> out = new java.util.EnumMap<>(EquipmentSlot.class);
+        for (int i = 0; i < k && i < order.length; i++) {
+            EquipmentSlot slot = order[i];
+            int slotKey = slot.ordinal();
+            ContainerContentsEntry picked = ContainerContentsRoller.pickFiltered(
+                pool, e -> bucketsBySlot.get(slot).contains(e),
+                localPos, seed, carriageIndex, slotKey);
+            if (picked == null || picked.isAir()) continue;
+            int count = ContainerContentsRoller.rollItemCount(picked.count(), localPos, seed, carriageIndex, slotKey);
+            ItemStack stack = ContainerContentsRoller.rollItemStack(
+                picked, count, localPos, seed, carriageIndex, slotKey, registries);
+            if (stack.isEmpty()) continue;
+            out.put(slot, stack);
+        }
+        return out;
+    }
+
+    /**
+     * Deterministic Fisher-Yates over {@code slots}, seeded the same way the
+     * chest path seeds its slot-subset shuffle so the slot-pick order is
+     * reproducible across world reloads.
+     */
+    private static void shuffleSlotsDeterministic(EquipmentSlot[] slots,
+                                                   BlockPos localPos, long seed, int carriageIndex) {
+        long state = seed
+            ^ ((long) localPos.getX() * 0x9E3779B97F4A7C15L)
+            ^ ((long) localPos.getY() * 0xBF58476D1CE4E5B9L)
+            ^ ((long) localPos.getZ() * 0x94D049BB133111EBL)
+            ^ ((long) carriageIndex * 0xCAFEBABE12345678L);
+        for (int i = slots.length - 1; i > 0; i--) {
+            state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+            state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+            state = state ^ (state >>> 31);
+            int j = (int) ((state & 0x7FFFFFFFFFFFFFFFL) % (i + 1));
+            EquipmentSlot tmp = slots[i];
+            slots[i] = slots[j];
+            slots[j] = tmp;
+        }
+    }
+
+    /** True when {@code tag} is null or has no fields — vanilla's "empty slot" sentinel. */
+    private static boolean isEmptyStackTag(CompoundTag tag) {
+        return tag == null || tag.isEmpty();
     }
 
     /**
@@ -253,17 +349,22 @@ public final class EntityVariantApplicator {
         BlockPos pos = entity.blockPosition();
 
         if (entity instanceof ArmorStand stand) {
-            List<ItemStack> rolled = ContainerContentsRoller.rollStacks(
-                pool, ARMOR_STAND_SLOTS, pos, seed, carriageIndex, registries);
-            if (rolled.isEmpty()) return false;
-            boolean any = false;
-            for (ItemStack stack : rolled) {
-                if (stack.isEmpty()) continue;
-                EquipmentSlot slot = equipmentSlotFor(stack);
-                stand.setItemSlot(slot, stack);
-                any = true;
+            // Slot-aware fill — same logic as the NBT path. Read the
+            // stand's CURRENT equipment to compute empty slots, then ask
+            // the roller for at-most-one stack per empty slot.
+            java.util.EnumSet<EquipmentSlot> emptySlots = java.util.EnumSet.noneOf(EquipmentSlot.class);
+            for (EquipmentSlot slot : EquipmentSlot.values()) {
+                if (slot == EquipmentSlot.BODY) continue; // armor stand has no body slot
+                if (stand.getItemBySlot(slot).isEmpty()) emptySlots.add(slot);
             }
-            return any;
+            if (emptySlots.isEmpty()) return false;
+            java.util.Map<EquipmentSlot, ItemStack> rolled = rollForArmorStandSlots(
+                pool, emptySlots, pos, seed, carriageIndex, registries);
+            if (rolled.isEmpty()) return false;
+            for (java.util.Map.Entry<EquipmentSlot, ItemStack> e : rolled.entrySet()) {
+                stand.setItemSlot(e.getKey(), e.getValue());
+            }
+            return true;
         }
         if (entity instanceof ItemFrame frame) {
             List<ItemStack> rolled = ContainerContentsRoller.rollStacks(
