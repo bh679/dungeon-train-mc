@@ -17,6 +17,10 @@
     {
       "id": "center_dining",
       "weight": 1
+    },
+    {
+      "id": "books2",
+      "weight": 1
     }
   ]
 }
