@@ -8,7 +8,10 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.Equipable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -224,6 +227,56 @@ public final class EntityVariantApplicator {
             LOGGER.info("[DT-item-frame-variant] applied {} at localPos={} seed={} carriageIdx={}",
                 pick.getItem(), localPos, seed, carriageIndex);
         }
+    }
+
+    /**
+     * Apply a loot pool directly to a live {@link Entity} (armor stand /
+     * item frame / glow item frame). Parallel to {@link #applyTo} but
+     * operates on an already-spawned entity rather than pre-spawn NBT —
+     * used by the prefab-item placement flow (right-click an armor stand
+     * prefab from the new "Armor Stands / Item Frames" creative tab).
+     *
+     * <p>Slot mapping mirrors {@link #applyToArmorStand} — armor items
+     * resolve to FEET / LEGS / CHEST / HEAD via {@link Equipable#get};
+     * shields land in OFFHAND; everything else defaults to MAINHAND.
+     * Multiple stacks mapping to the same slot resolve last-write-wins.
+     * Existing equipment in slots not touched by the roll is preserved.</p>
+     *
+     * @return {@code true} when the entity was an applicable type and at
+     *         least one rolled stack was written; {@code false} when the
+     *         entity type isn't supported or the pool was empty.
+     */
+    public static boolean applyPoolToLiveEntity(Entity entity, ContainerContentsPool pool,
+                                                 long seed, int carriageIndex,
+                                                 HolderLookup.Provider registries) {
+        if (entity == null || pool == null || pool.isEmpty()) return false;
+        BlockPos pos = entity.blockPosition();
+
+        if (entity instanceof ArmorStand stand) {
+            List<ItemStack> rolled = ContainerContentsRoller.rollStacks(
+                pool, ARMOR_STAND_SLOTS, pos, seed, carriageIndex, registries);
+            if (rolled.isEmpty()) return false;
+            boolean any = false;
+            for (ItemStack stack : rolled) {
+                if (stack.isEmpty()) continue;
+                EquipmentSlot slot = equipmentSlotFor(stack);
+                stand.setItemSlot(slot, stack);
+                any = true;
+            }
+            return any;
+        }
+        if (entity instanceof ItemFrame frame) {
+            List<ItemStack> rolled = ContainerContentsRoller.rollStacks(
+                pool, ITEM_FRAME_SLOTS, pos, seed, carriageIndex, registries);
+            for (ItemStack stack : rolled) {
+                if (!stack.isEmpty()) {
+                    frame.setItem(stack, /*updateNeighbours*/ true);
+                    return true;
+                }
+            }
+            return false;
+        }
+        return false;
     }
 
     /**

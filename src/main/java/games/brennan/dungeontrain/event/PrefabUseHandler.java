@@ -6,8 +6,10 @@ import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BlockVariantPrefabStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsMenuController;
+import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsRoller;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
+import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -21,13 +23,19 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.decoration.GlowItemFrame;
+import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
@@ -256,6 +264,133 @@ public final class PrefabUseHandler {
                 "Placed loot prefab '" + prefabId + "'" + (linkedInEditor ? " (linked)" : ""),
                 ChatFormatting.GREEN);
         }
+    }
+
+    /**
+     * Entity prefab placement — after vanilla spawns an armor stand or item
+     * frame from a held item, attach the prefab's rolled equipment to the
+     * fresh entity. Parallel to {@link #onEntityPlace} but for entities
+     * rather than block entities — vanilla's
+     * {@code BlockEvent.EntityPlaceEvent} only fires for block placements,
+     * so armor stand / item frame placement needs its own hook.
+     *
+     * <p>Player association is by proximity + item-type match: vanilla
+     * places the entity within reach of the placer, so the nearest player
+     * holding a matching prefab stack is the placer. Falls through silently
+     * for entities spawned by other means (mob spawn, chunk load, etc.).</p>
+     */
+    @SubscribeEvent
+    public static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide) return;
+        if (!(event.getLevel() instanceof ServerLevel serverLevel)) return;
+        Entity entity = event.getEntity();
+        net.minecraft.world.item.Item placerItem = placerItemFor(entity);
+        if (placerItem == null) return;
+
+        Player placer = findNearbyPlacerHolding(serverLevel, entity, placerItem);
+        if (placer == null) return;
+        ItemStack stack = stackWithLootPrefab(placer);
+        if (stack.isEmpty()) return;
+        CompoundTag tag = customDataTag(stack);
+        if (tag == null || !tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING)) return;
+
+        String prefabId = tag.getString(NBT_LOOT_PREFAB_ID);
+        Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(prefabId);
+        if (loaded.isEmpty()) {
+            if (placer instanceof ServerPlayer sp) {
+                actionBar(sp, "Unknown loot prefab '" + prefabId + "'", ChatFormatting.RED);
+            }
+            return;
+        }
+        ContainerContentsPool pool = loaded.get().pool();
+        if (pool == null || pool.isEmpty()) return;
+
+        // Deterministic seed reuse: world seed + entity block pos, same as
+        // the carriage spawn path. carriageIndex=0 — there's no carriage
+        // context for ad-hoc creative placements.
+        long worldSeed = serverLevel.getSeed();
+        boolean applied = EntityVariantApplicator.applyPoolToLiveEntity(
+            entity, pool, worldSeed, /*carriageIndex*/ 0, serverLevel.registryAccess());
+        if (!applied) return;
+
+        // Editor-plot link write — mirrors the chest path so a stand placed
+        // inside an editor plot persists its prefab choice for future spawns.
+        boolean linkedInEditor = false;
+        if (placer instanceof ServerPlayer sp) {
+            CarriageDims dims = DungeonTrainWorldData.get(serverLevel).dims();
+            BlockVariantPlot plot = BlockVariantPlot.resolveAt(sp, dims);
+            if (plot != null) {
+                BlockPos localPos = entity.blockPosition().subtract(plot.origin());
+                if (plot.inBoundsTolerant(localPos)) {
+                    ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
+                    store.setLink(localPos, prefabId);
+                    try {
+                        store.save();
+                        linkedInEditor = true;
+                        ContainerContentsMenuController.resyncIfOpen(sp, plot.key(), localPos);
+                    } catch (IOException e) {
+                        LOGGER.warn("[DungeonTrain] PrefabUseHandler(entity): link save failed for {}: {}",
+                            plot.key(), e.toString());
+                    }
+                }
+            }
+            actionBar(sp,
+                "Placed loot prefab '" + prefabId + "'" + (linkedInEditor ? " (linked)" : ""),
+                ChatFormatting.GREEN);
+        }
+    }
+
+    /**
+     * The item used to place this entity, or {@code null} for entity types
+     * the loot-prefab flow doesn't support. Used to disambiguate which prefab
+     * stack in the placer's hand to consume — e.g. a player holding both a
+     * regular armor stand and a glow item frame prefab should only match the
+     * one whose item type spawns this entity.
+     *
+     * <p>{@link GlowItemFrame} extends {@link ItemFrame}, so the glow-frame
+     * branch must come first.</p>
+     */
+    @javax.annotation.Nullable
+    private static net.minecraft.world.item.Item placerItemFor(Entity entity) {
+        if (entity instanceof ArmorStand) return Items.ARMOR_STAND;
+        if (entity instanceof GlowItemFrame) return Items.GLOW_ITEM_FRAME;
+        if (entity instanceof ItemFrame) return Items.ITEM_FRAME;
+        return null;
+    }
+
+    /**
+     * Find the closest player within player-reach radius of {@code entity}
+     * who holds a loot-prefab stack matching {@code entityItemType}. Returns
+     * null if no candidate is found — handler bails out cleanly for
+     * non-placement entity joins (chunk load, mob spawn, etc.).
+     */
+    @javax.annotation.Nullable
+    private static Player findNearbyPlacerHolding(ServerLevel level, Entity entity,
+                                                   net.minecraft.world.item.Item entityItemType) {
+        // 6-block radius — covers player reach (4.5b) plus a slack for the
+        // entity's bounding-box centre offset from the click point.
+        final double maxDist2 = 6.0 * 6.0;
+        Player nearest = null;
+        double bestDist2 = maxDist2;
+        for (Player p : level.players()) {
+            double d2 = p.distanceToSqr(entity);
+            if (d2 >= bestDist2) continue;
+            if (!holdsPrefabOf(p, entityItemType)) continue;
+            nearest = p;
+            bestDist2 = d2;
+        }
+        return nearest;
+    }
+
+    private static boolean holdsPrefabOf(Player player, net.minecraft.world.item.Item item) {
+        return prefabStackOfType(player.getMainHandItem(), item)
+            || prefabStackOfType(player.getOffhandItem(), item);
+    }
+
+    private static boolean prefabStackOfType(ItemStack stack, net.minecraft.world.item.Item item) {
+        if (stack.isEmpty() || !stack.is(item)) return false;
+        CompoundTag tag = customDataTag(stack);
+        return tag != null && tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING);
     }
 
     /**
