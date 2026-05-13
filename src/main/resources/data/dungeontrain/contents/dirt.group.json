@@ -20,7 +20,23 @@
     },
     {
       "id": "mud2",
+      "weight": 5
+    },
+    {
+      "id": "clay",
       "weight": 3
+    },
+    {
+      "id": "dirt4",
+      "weight": 3
+    },
+    {
+      "id": "packedice",
+      "weight": 3
+    },
+    {
+      "id": "moss",
+      "weight": 5
     }
   ]
 }
