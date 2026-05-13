@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -718,6 +719,139 @@ public final class TrainCarriageAppender {
 
     private TrainCarriageAppender() {}
 
+    /**
+     * Elapsed-tick milestones at which {@link #tickEntityDriftTracking}
+     * logs a contents-entity's current world position relative to its
+     * requested spawn coords. Bounded by 60 — the placement-tracker's
+     * own clean-tick window — so even slow lazy-bind races would show up
+     * by the final milestone.
+     */
+    private static final long[] DRIFT_MILESTONES = { 1L, 5L, 20L, 60L };
+
+    /**
+     * In-flight drift-tracking records for contents-spawned entities.
+     * Populated by {@link #trackEntityDrift} (called from
+     * {@link CarriageContentsPlacer} immediately after a successful
+     * {@code addFreshEntity} when
+     * {@link games.brennan.dungeontrain.debug.DebugFlags#logContentsEntities}
+     * is on). Drained by {@link #tickEntityDriftTracking} once the last
+     * milestone (60 ticks) has been logged or the entity is gone.
+     *
+     * <p>Bounded leak risk: each entry lives at most 60 ticks (~3 s) of
+     * server time. {@code ConcurrentHashMap} for belt-and-braces safety
+     * against any future off-thread caller — both readers and writers
+     * today are on the server thread.</p>
+     */
+    private static final Map<UUID, EntityDriftTrack> ENTITY_DRIFT_TRACKS = new ConcurrentHashMap<>();
+
+    /**
+     * One entry per contents-entity being observed for post-spawn drift.
+     * Holds the requested spawn coords (the {@code (worldX, worldY, worldZ)}
+     * passed to {@code entity.moveTo}) and the game tick the spawn fired
+     * on, so per-tick checks can compute elapsed ticks and per-axis deltas.
+     *
+     * <p>{@code milestonesLoggedMask} is a 4-bit set, one bit per index in
+     * {@link #DRIFT_MILESTONES}. Flipped on by {@link #tickEntityDriftTracking}
+     * after logging so duplicate ticks (defensive — shouldn't happen but
+     * cheap) cannot double-log the same milestone.</p>
+     */
+    private static final class EntityDriftTrack {
+        final long spawnTick;
+        final double spawnX;
+        final double spawnY;
+        final double spawnZ;
+        final int carriagePIdx;
+        int milestonesLoggedMask;
+
+        EntityDriftTrack(long spawnTick, double spawnX, double spawnY, double spawnZ, int carriagePIdx) {
+            this.spawnTick = spawnTick;
+            this.spawnX = spawnX;
+            this.spawnY = spawnY;
+            this.spawnZ = spawnZ;
+            this.carriagePIdx = carriagePIdx;
+            this.milestonesLoggedMask = 0;
+        }
+    }
+
+    /**
+     * Register a freshly-spawned contents entity for post-spawn drift
+     * observation. Caller must already have confirmed
+     * {@code addFreshEntity} returned true; the entity's UUID is the map
+     * key.
+     *
+     * <p>Per-tick checks at {@link #DRIFT_MILESTONES} elapsed ticks log
+     * the requested spawn coords, the entity's current world position,
+     * and the per-axis delta — telling us whether the entity stayed
+     * where we asked, was instantly ejected by vanilla "in solid block"
+     * resolution, or drifted during Sable's lazy ship-binding window.
+     * </p>
+     */
+    public static void trackEntityDrift(UUID entityId, long spawnTick,
+                                        double spawnX, double spawnY, double spawnZ,
+                                        int carriagePIdx) {
+        ENTITY_DRIFT_TRACKS.put(entityId,
+            new EntityDriftTrack(spawnTick, spawnX, spawnY, spawnZ, carriagePIdx));
+    }
+
+    /**
+     * Per-tick drift-milestone walker. For each tracked entity, looks up
+     * the current world position via {@link ServerLevel#getEntity(UUID)}
+     * and logs at the unlogged elapsed-tick milestones in
+     * {@link #DRIFT_MILESTONES}. Entries self-evict once the final
+     * milestone fires, the entity is gone, or {@code elapsed > 60}.
+     *
+     * <p>Cheap: only iterates entries we explicitly registered — typically
+     * a handful per spawn burst, draining within 60 ticks of any given
+     * spawn. Zero cost when no entries are registered (the
+     * {@code logContentsEntities} flag gates registration at the call
+     * site in {@link CarriageContentsPlacer}).</p>
+     */
+    private static void tickEntityDriftTracking(ServerLevel level) {
+        if (ENTITY_DRIFT_TRACKS.isEmpty()) return;
+        long now = level.getGameTime();
+        Iterator<Map.Entry<UUID, EntityDriftTrack>> it = ENTITY_DRIFT_TRACKS.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, EntityDriftTrack> entry = it.next();
+            UUID uuid = entry.getKey();
+            EntityDriftTrack track = entry.getValue();
+            long elapsed = now - track.spawnTick;
+            if (elapsed > DRIFT_MILESTONES[DRIFT_MILESTONES.length - 1]) {
+                it.remove();
+                continue;
+            }
+            Entity ent = level.getEntity(uuid);
+            if (ent == null) {
+                LOGGER.info("[SpawnDrift] pIdx={} uuid={} t=+{} entity GONE (reqPos=({},{},{}))",
+                    track.carriagePIdx, uuid, elapsed,
+                    String.format("%.3f", track.spawnX),
+                    String.format("%.3f", track.spawnY),
+                    String.format("%.3f", track.spawnZ));
+                it.remove();
+                continue;
+            }
+            for (int i = 0; i < DRIFT_MILESTONES.length; i++) {
+                if (elapsed != DRIFT_MILESTONES[i]) continue;
+                int bit = 1 << i;
+                if ((track.milestonesLoggedMask & bit) != 0) continue;
+                track.milestonesLoggedMask |= bit;
+                double dx = ent.getX() - track.spawnX;
+                double dy = ent.getY() - track.spawnY;
+                double dz = ent.getZ() - track.spawnZ;
+                LOGGER.info("[SpawnDrift] pIdx={} uuid={} t=+{} reqPos=({},{},{}) curPos=({},{},{}) delta=({},{},{})",
+                    track.carriagePIdx, uuid, elapsed,
+                    String.format("%.3f", track.spawnX),
+                    String.format("%.3f", track.spawnY),
+                    String.format("%.3f", track.spawnZ),
+                    String.format("%.3f", ent.getX()),
+                    String.format("%.3f", ent.getY()),
+                    String.format("%.3f", ent.getZ()),
+                    String.format("%+.3f", dx),
+                    String.format("%+.3f", dy),
+                    String.format("%+.3f", dz));
+            }
+        }
+    }
+
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
@@ -729,6 +863,12 @@ public final class TrainCarriageAppender {
         // {@code placedSuccessfully = true} it's permanently exempt
         // from the tracker AND the wireframe overlay.
         runPlacementCollisionTracker(level);
+
+        // Contents-entity drift sampling — debug only. Walks any
+        // registered entities (gated at registration on logContentsEntities)
+        // and logs position at fixed elapsed-tick milestones to expose
+        // post-spawn displacement (vanilla ejection vs Sable lazy-bind race).
+        tickEntityDriftTracking(level);
 
         // Manual mode: spawn cycles fire only when a J-press has set
         // MANUAL_SPAWN_REQUESTED. The flag is NOT consumed at the top of

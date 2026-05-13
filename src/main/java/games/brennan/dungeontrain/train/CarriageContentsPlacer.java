@@ -472,10 +472,36 @@ public final class CarriageContentsPlacer {
                     // Per-entity verbose log gated on the diagnostic flag —
                     // bounded log volume in production, full detail when
                     // investigating disappearance regressions.
+                    //
+                    // Logs both the REQUESTED spawn position (worldX/Y/Z —
+                    // the coords we asked vanilla to place the entity at)
+                    // and the ACTUAL post-add position read off the entity.
+                    // A non-zero delta on the same line means vanilla's
+                    // "no entity inside solid block" resolution displaced
+                    // the mob synchronously inside {@code addFreshEntity} —
+                    // the spawn target was clipping carriage geometry.
                     if (DebugFlags.logContentsEntities()) {
-                        LOGGER.info("[DungeonTrain] Contents: spawned entity type={} uuid={} pos=({},{},{}) pIdx={} tag={}",
+                        double dx0 = entity.getX() - worldX;
+                        double dy0 = entity.getY() - worldY;
+                        double dz0 = entity.getZ() - worldZ;
+                        LOGGER.info("[DungeonTrain] Contents: spawned entity type={} uuid={} reqPos=({},{},{}) actualPos=({},{},{}) delta=({},{},{}) pIdx={} tag={}",
                             entity.getType().getDescriptionId(), entity.getUUID(),
-                            worldX, worldY, worldZ, carriagePIdx, tag);
+                            String.format("%.3f", worldX),
+                            String.format("%.3f", worldY),
+                            String.format("%.3f", worldZ),
+                            String.format("%.3f", entity.getX()),
+                            String.format("%.3f", entity.getY()),
+                            String.format("%.3f", entity.getZ()),
+                            String.format("%+.3f", dx0),
+                            String.format("%+.3f", dy0),
+                            String.format("%+.3f", dz0),
+                            carriagePIdx, tag);
+                        // Register for per-tick drift sampling at +1, +5,
+                        // +20, +60 elapsed ticks. Bounded lifetime; the
+                        // tracker self-evicts after the final milestone.
+                        TrainCarriageAppender.trackEntityDrift(
+                            entity.getUUID(), spawnTick,
+                            worldX, worldY, worldZ, carriagePIdx);
                     }
                 } else {
                     // Always log rejections — those are real failures, not
