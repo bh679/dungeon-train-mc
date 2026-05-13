@@ -17,6 +17,10 @@
     {
       "id": "upgrade",
       "weight": 1
+    },
+    {
+      "id": "kitchen2",
+      "weight": 1
     }
   ]
 }
