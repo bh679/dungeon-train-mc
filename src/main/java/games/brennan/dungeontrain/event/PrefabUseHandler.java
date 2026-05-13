@@ -288,7 +288,19 @@ public final class PrefabUseHandler {
         if (placerItem == null) return;
 
         Player placer = findNearbyPlacerHolding(serverLevel, entity, placerItem);
-        if (placer == null) return;
+        if (placer == null) {
+            // Most entity joins are natural spawns / chunk loads — only log
+            // when there IS a nearby player holding the matching item type
+            // (regardless of prefab tag), so we surface the case where a
+            // player tried to place with the right item but the prefab tag
+            // wasn't found in any of their hands.
+            Player nearbyAnyItem = nearestPlayerHoldingItem(serverLevel, entity, placerItem);
+            if (nearbyAnyItem != null) {
+                LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): {} spawned near a player holding {} but no NBT_LOOT_PREFAB_ID match — was the prefab item dropped/swapped?",
+                    entity.getType().getDescriptionId(), placerItem);
+            }
+            return;
+        }
         ItemStack stack = stackWithLootPrefab(placer);
         if (stack.isEmpty()) return;
         CompoundTag tag = customDataTag(stack);
@@ -300,10 +312,16 @@ public final class PrefabUseHandler {
             if (placer instanceof ServerPlayer sp) {
                 actionBar(sp, "Unknown loot prefab '" + prefabId + "'", ChatFormatting.RED);
             }
+            LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): prefab '{}' missing for {} at {}",
+                prefabId, entity.getType().getDescriptionId(), entity.blockPosition());
             return;
         }
         ContainerContentsPool pool = loaded.get().pool();
-        if (pool == null || pool.isEmpty()) return;
+        if (pool == null || pool.isEmpty()) {
+            LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): prefab '{}' pool empty for {} at {}",
+                prefabId, entity.getType().getDescriptionId(), entity.blockPosition());
+            return;
+        }
 
         // Deterministic seed reuse: world seed + entity block pos, same as
         // the carriage spawn path. carriageIndex=0 — there's no carriage
@@ -311,7 +329,11 @@ public final class PrefabUseHandler {
         long worldSeed = serverLevel.getSeed();
         boolean applied = EntityVariantApplicator.applyPoolToLiveEntity(
             entity, pool, worldSeed, /*carriageIndex*/ 0, serverLevel.registryAccess());
-        if (!applied) return;
+        if (!applied) {
+            LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): applyPoolToLiveEntity returned false for {} prefab='{}' at {}",
+                entity.getType().getDescriptionId(), prefabId, entity.blockPosition());
+            return;
+        }
 
         // Editor-plot link write — mirrors the chest path so a stand placed
         // inside an editor plot persists its prefab choice for future spawns.
@@ -337,6 +359,8 @@ public final class PrefabUseHandler {
             actionBar(sp,
                 "Placed loot prefab '" + prefabId + "'" + (linkedInEditor ? " (linked)" : ""),
                 ChatFormatting.GREEN);
+            LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): equipped {} from prefab '{}' at world={} linked={}",
+                entity.getType().getDescriptionId(), prefabId, entity.blockPosition(), linkedInEditor);
         }
     }
 
@@ -391,6 +415,29 @@ public final class PrefabUseHandler {
         if (stack.isEmpty() || !stack.is(item)) return false;
         CompoundTag tag = customDataTag(stack);
         return tag != null && tag.contains(NBT_LOOT_PREFAB_ID, Tag.TAG_STRING);
+    }
+
+    /**
+     * Diagnostic helper — find the nearest player holding {@code item} in
+     * either hand, ignoring the prefab tag. Used to surface "vanilla placed
+     * the entity but my handler bailed" scenarios so we can tell apart
+     * "didn't try" from "tried with the wrong stack".
+     */
+    @javax.annotation.Nullable
+    private static Player nearestPlayerHoldingItem(ServerLevel level, Entity entity,
+                                                    net.minecraft.world.item.Item item) {
+        final double maxDist2 = 6.0 * 6.0;
+        Player nearest = null;
+        double bestDist2 = maxDist2;
+        for (Player p : level.players()) {
+            double d2 = p.distanceToSqr(entity);
+            if (d2 >= bestDist2) continue;
+            if (p.getMainHandItem().is(item) || p.getOffhandItem().is(item)) {
+                nearest = p;
+                bestDist2 = d2;
+            }
+        }
+        return nearest;
     }
 
     /**
