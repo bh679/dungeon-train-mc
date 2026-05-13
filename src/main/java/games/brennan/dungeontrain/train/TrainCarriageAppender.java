@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
@@ -220,6 +221,80 @@ public final class TrainCarriageAppender {
      */
     private static final int CLEAN_TICKS_FOR_SUCCESS = 60;
     /**
+     * Maximum distance (in blocks, world space) from any player to a
+     * placement-settled carriage's current world position at which the
+     * carriage's deferred contents-entity spawn will fire. Carriages further
+     * than this hold their pending spawns indefinitely until a player
+     * approaches (or until the rolling-window cleanup drops the carriage,
+     * at which point the pending array is GC'd along with the provider).
+     *
+     * <p>Rationale: every carriage spawned far ahead used to fire its mobs
+     * at placement-success time. Mobs then wandered between adjacent
+     * carriages of the same group (whose internal walls are passable via
+     * doors/windows) for tens of seconds before the player walked in,
+     * making them visibly land in "the wrong carriage." Deferring spawn
+     * until the player is close cuts the wander window to ~0.</p>
+     *
+     * <p>48 ≈ 3 chunks — comfortably inside any sensible render distance
+     * so spawn-pop-in isn't visible; comfortably outside vanilla's entity
+     * activation radius (32) so mobs aren't already in stasis on first
+     * sight.</p>
+     */
+    private static final double SPAWN_RADIUS_BLOCKS = 48.0;
+    private static final double SPAWN_RADIUS_SQ = SPAWN_RADIUS_BLOCKS * SPAWN_RADIUS_BLOCKS;
+
+    /**
+     * Hard ceiling on how many game ticks the placement-collision tracker
+     * will keep a carriage in the unplaced state. If
+     * {@code ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS} and the
+     * carriage has still not flipped {@link TrainTransformProvider#markPlacedSuccessfully},
+     * the tracker force-finalises it with a WARN log capturing the full
+     * state at the time of release.
+     *
+     * <p>Exists because two pathological stalls were observed in 0.167.0
+     * testing: (a) a colliding carriage that kept shifting +0.5 X every
+     * tick but the world AABB used by {@link #checkOneCarriage} lagged
+     * behind the cumulative shift — so the collision never cleared; (b) a
+     * "silent" carriage whose Sable physics tick never fired, leaving the
+     * placement tracker in a no-op state indefinitely. Both stalls
+     * permanently blocked the next spawn via the wait-for-placedSuccessfully
+     * lane gate.</p>
+     *
+     * <p>200 ticks = 10 seconds — 3× the legitimate 60-clean-tick window,
+     * but short enough that a player walking the train length doesn't
+     * notice the stall. The blocks are already placed at shipyard coords
+     * regardless of {@code spawnWorldPos}; the worst visible artefact of
+     * a premature force-finalise is a small overlap with the colliding
+     * sibling. Strictly better than a totally-blocked train.</p>
+     */
+    private static final int MAX_PLACEMENT_SETTLE_TICKS = 200;
+
+    /**
+     * Approach window before {@link #MAX_PLACEMENT_SETTLE_TICKS} during
+     * which the placement tracker emits a per-second state-snapshot log
+     * line, so the divergence leading up to the safety-valve fire is
+     * captured in the log even if the carriage settles legitimately at
+     * the last moment.
+     */
+    private static final int PLACEMENT_STALL_APPROACH_TICKS = 40;
+
+    /**
+     * Tick at which each placement-tracked sub-level was first seen by
+     * {@link #runPlacementCollisionTracker}. Keyed by Sable sub-level id
+     * (matches {@code carriage.ship().subLevelId()}). Used by the
+     * safety-valve to bound the unplaced lifetime — handles the case
+     * where {@link TrainTransformProvider#getSpawnGameTick} is still -1
+     * (Sable hasn't fired the ship's first physics tick yet).
+     *
+     * <p>Entries are removed when the carriage is force-finalised by the
+     * safety valve, when it naturally reaches {@code placedSuccessfully},
+     * or by a per-tick reconciliation pass against the current
+     * {@link Trains#byTrainId} membership (handles rolling-window despawn).
+     * </p>
+     */
+    private static final Map<UUID, Long> PLACEMENT_TRACKER_FIRST_SEEN = new ConcurrentHashMap<>();
+
+    /**
      * Per-collision shift distance in the spawn (+X) direction. The
      * carriage's {@code spawnWorldPos} is bumped by this amount each
      * tick it's seen colliding, which the deterministic position
@@ -301,12 +376,38 @@ public final class TrainCarriageAppender {
     public static void runPlacementCollisionTracker(ServerLevel level) {
         long now = level.getGameTime();
         Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        Set<UUID> liveSubLevelIds = new HashSet<>();
         for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
             UUID trainId = entry.getKey();
             List<Trains.Carriage> train = entry.getValue();
             for (Trains.Carriage carriage : train) {
                 TrainTransformProvider provider = carriage.provider();
-                if (provider.isPlacedSuccessfully()) continue;
+                UUID subLevelId = carriage.ship().subLevelId();
+                liveSubLevelIds.add(subLevelId);
+                if (provider.isPlacedSuccessfully()) {
+                    PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
+                    continue;
+                }
+
+                // Safety valve — bound the unplaced lifetime. Two pre-0.167.1
+                // stalls bypassed the natural 60-clean-tick path: a
+                // collide-loop where the world AABB lagged behind cumulative
+                // shifts, and a silent stall where Sable never fired the
+                // ship's first physics tick. Both blocked the next lane spawn
+                // permanently. Force-finalise after MAX_PLACEMENT_SETTLE_TICKS
+                // with a WARN snapshot so the underlying bug stays visible.
+                long firstSeenTick = PLACEMENT_TRACKER_FIRST_SEEN.computeIfAbsent(subLevelId, k -> now);
+                long ticksSinceFirstSeen = now - firstSeenTick;
+                if (ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS) {
+                    logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "SAFETY-VALVE-FIRE");
+                    provider.markPlacedSuccessfully();
+                    PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
+                    continue;
+                }
+                if (ticksSinceFirstSeen > MAX_PLACEMENT_SETTLE_TICKS - PLACEMENT_STALL_APPROACH_TICKS
+                    && (ticksSinceFirstSeen % 20) == 0) {
+                    logPlacementStallState(trainId, carriage, train, provider, now, ticksSinceFirstSeen, "APPROACHING-VALVE");
+                }
 
                 SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
                 if (check == null) continue;
@@ -368,17 +469,92 @@ public final class TrainCarriageAppender {
                     provider.incrementConsecutiveCleanTicks();
                     if (provider.getConsecutiveCleanTicks() >= CLEAN_TICKS_FOR_SUCCESS) {
                         provider.markPlacedSuccessfully();
+                        PLACEMENT_TRACKER_FIRST_SEEN.remove(subLevelId);
                         LOGGER.info("[DungeonTrain] Placement tracker: pIdx={} placed successfully after {} clean ticks (ticksSinceSpawn={})",
                             provider.getPIdx(), CLEAN_TICKS_FOR_SUCCESS, check.ticksSinceSpawn());
-                        // Fire any deferred contents-entity spawns now that
-                        // the carriage group has stopped shifting. Each slot
-                        // record was stashed by TrainAssembler.spawnGroup
-                        // after the blocks-only contents pass.
-                        firePendingContentsEntitySpawns(level, provider);
+                        // Entity spawn is no longer fired here — it's gated on
+                        // player proximity by {@link #tickPendingEntitySpawnDistanceGate}
+                        // so mobs don't get a head-start to wander between
+                        // adjacent carriages before the player arrives.
                     }
                 }
             }
         }
+        // Drop tracking entries for sub-levels no longer in any train.
+        // Handles rolling-window cleanup so the map can't accumulate
+        // entries for despawned groups.
+        PLACEMENT_TRACKER_FIRST_SEEN.keySet().retainAll(liveSubLevelIds);
+    }
+
+    /**
+     * Format and emit a placement-stall state snapshot. Called both by
+     * the safety valve at force-finalisation and by the approach-window
+     * per-second instrumentation. {@code reason} tags the log line so
+     * a single grep separates the two cases.
+     *
+     * <p>Captures everything needed to debug the underlying bug — the
+     * provider's spawn-tick / canonical-pos / shift state, the world AABB
+     * the collision check is actually using, and the colliding sibling's
+     * AABB if any. Survives the case where the ship has never been
+     * physics-ticked ({@code spawnGameTick == -1}, {@code canonicalPos == null}).</p>
+     */
+    private static void logPlacementStallState(
+        UUID trainId,
+        Trains.Carriage carriage,
+        List<Trains.Carriage> train,
+        TrainTransformProvider provider,
+        long now,
+        long ticksSinceFirstSeen,
+        String reason
+    ) {
+        long spawnGameTick = provider.getSpawnGameTick();
+        long ticksSinceSpawn = (spawnGameTick < 0L) ? -1L : (now - spawnGameTick);
+        Vector3dc canonicalPos = provider.getCanonicalPos();
+        BlockPos shipyardOrigin = provider.getShipyardOrigin();
+        String canonicalPosStr = (canonicalPos == null)
+            ? "null(no-physics-tick)"
+            : String.format("(%.3f,%.3f,%.3f)", canonicalPos.x(), canonicalPos.y(), canonicalPos.z());
+        Vector3d cornerProbe = new Vector3d(
+            shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ());
+        try {
+            carriage.ship().shipToWorld(cornerProbe);
+        } catch (Throwable t) {
+            cornerProbe.set(Double.NaN, Double.NaN, Double.NaN);
+        }
+        AABBdc selfAabb = null;
+        try {
+            selfAabb = carriage.ship().worldAABB();
+        } catch (Throwable ignored) {}
+        String selfAabbStr = (selfAabb == null || isZeroAabb(selfAabb))
+            ? "zero/null"
+            : String.format("[%.2f..%.2f, %.2f..%.2f, %.2f..%.2f]",
+                selfAabb.minX(), selfAabb.maxX(),
+                selfAabb.minY(), selfAabb.maxY(),
+                selfAabb.minZ(), selfAabb.maxZ());
+        SpawnCollisionCheck check = checkOneCarriage(trainId, carriage, train, now);
+        String collidingStr = (check == null)
+            ? "check=null"
+            : String.format("colliding=%s collidingPIdx=%d",
+                check.colliding(), check.collidingPIdx());
+        LOGGER.warn(
+            "[DungeonTrain] Placement-stall [{}] pIdx={} subLevelId={} ticksSinceFirstSeen={} ticksSinceSpawn={} consecutiveCleanTicks={} canonicalPos={} shipyardOrigin=({},{},{}) shipToWorldCorner=({},{},{}) selfAABB={} {} flags=[collided={}, ranMoveTogetherAfterCollision={}, moveTogetherLocked={}, spawnedBackward={}]",
+            reason,
+            provider.getPIdx(),
+            carriage.ship().subLevelId(),
+            ticksSinceFirstSeen,
+            ticksSinceSpawn,
+            provider.getConsecutiveCleanTicks(),
+            canonicalPosStr,
+            shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ(),
+            String.format("%.3f", cornerProbe.x),
+            String.format("%.3f", cornerProbe.y),
+            String.format("%.3f", cornerProbe.z),
+            selfAabbStr,
+            collidingStr,
+            provider.hasCollidedDuringPlacement(),
+            provider.hasRunMoveTogetherAfterCollision(),
+            provider.isMoveTogetherLocked(),
+            provider.isSpawnedBackward());
     }
 
     /**
@@ -718,6 +894,188 @@ public final class TrainCarriageAppender {
 
     private TrainCarriageAppender() {}
 
+    /**
+     * Elapsed-tick milestones at which {@link #tickEntityDriftTracking}
+     * logs a contents-entity's current world position relative to its
+     * requested spawn coords. Bounded by 60 — the placement-tracker's
+     * own clean-tick window — so even slow lazy-bind races would show up
+     * by the final milestone.
+     */
+    private static final long[] DRIFT_MILESTONES = { 1L, 5L, 20L, 60L };
+
+    /**
+     * In-flight drift-tracking records for contents-spawned entities.
+     * Populated by {@link #trackEntityDrift} (called from
+     * {@link CarriageContentsPlacer} immediately after a successful
+     * {@code addFreshEntity} when
+     * {@link games.brennan.dungeontrain.debug.DebugFlags#logContentsEntities}
+     * is on). Drained by {@link #tickEntityDriftTracking} once the last
+     * milestone (60 ticks) has been logged or the entity is gone.
+     *
+     * <p>Bounded leak risk: each entry lives at most 60 ticks (~3 s) of
+     * server time. {@code ConcurrentHashMap} for belt-and-braces safety
+     * against any future off-thread caller — both readers and writers
+     * today are on the server thread.</p>
+     */
+    private static final Map<UUID, EntityDriftTrack> ENTITY_DRIFT_TRACKS = new ConcurrentHashMap<>();
+
+    /**
+     * One entry per contents-entity being observed for post-spawn drift.
+     * Holds the requested spawn coords (the {@code (worldX, worldY, worldZ)}
+     * passed to {@code entity.moveTo}) and the game tick the spawn fired
+     * on, so per-tick checks can compute elapsed ticks and per-axis deltas.
+     *
+     * <p>{@code milestonesLoggedMask} is a 4-bit set, one bit per index in
+     * {@link #DRIFT_MILESTONES}. Flipped on by {@link #tickEntityDriftTracking}
+     * after logging so duplicate ticks (defensive — shouldn't happen but
+     * cheap) cannot double-log the same milestone.</p>
+     */
+    private static final class EntityDriftTrack {
+        final long spawnTick;
+        final double spawnX;
+        final double spawnY;
+        final double spawnZ;
+        final int carriagePIdx;
+        int milestonesLoggedMask;
+
+        EntityDriftTrack(long spawnTick, double spawnX, double spawnY, double spawnZ, int carriagePIdx) {
+            this.spawnTick = spawnTick;
+            this.spawnX = spawnX;
+            this.spawnY = spawnY;
+            this.spawnZ = spawnZ;
+            this.carriagePIdx = carriagePIdx;
+            this.milestonesLoggedMask = 0;
+        }
+    }
+
+    /**
+     * Register a freshly-spawned contents entity for post-spawn drift
+     * observation. Caller must already have confirmed
+     * {@code addFreshEntity} returned true; the entity's UUID is the map
+     * key.
+     *
+     * <p>Per-tick checks at {@link #DRIFT_MILESTONES} elapsed ticks log
+     * the requested spawn coords, the entity's current world position,
+     * and the per-axis delta — telling us whether the entity stayed
+     * where we asked, was instantly ejected by vanilla "in solid block"
+     * resolution, or drifted during Sable's lazy ship-binding window.
+     * </p>
+     */
+    public static void trackEntityDrift(UUID entityId, long spawnTick,
+                                        double spawnX, double spawnY, double spawnZ,
+                                        int carriagePIdx) {
+        ENTITY_DRIFT_TRACKS.put(entityId,
+            new EntityDriftTrack(spawnTick, spawnX, spawnY, spawnZ, carriagePIdx));
+    }
+
+    /**
+     * Per-tick drift-milestone walker. For each tracked entity, looks up
+     * the current world position via {@link ServerLevel#getEntity(UUID)}
+     * and logs at the unlogged elapsed-tick milestones in
+     * {@link #DRIFT_MILESTONES}. Entries self-evict once the final
+     * milestone fires, the entity is gone, or {@code elapsed > 60}.
+     *
+     * <p>Cheap: only iterates entries we explicitly registered — typically
+     * a handful per spawn burst, draining within 60 ticks of any given
+     * spawn. Zero cost when no entries are registered (the
+     * {@code logContentsEntities} flag gates registration at the call
+     * site in {@link CarriageContentsPlacer}).</p>
+     */
+    private static void tickEntityDriftTracking(ServerLevel level) {
+        if (ENTITY_DRIFT_TRACKS.isEmpty()) return;
+        long now = level.getGameTime();
+        Iterator<Map.Entry<UUID, EntityDriftTrack>> it = ENTITY_DRIFT_TRACKS.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, EntityDriftTrack> entry = it.next();
+            UUID uuid = entry.getKey();
+            EntityDriftTrack track = entry.getValue();
+            long elapsed = now - track.spawnTick;
+            if (elapsed > DRIFT_MILESTONES[DRIFT_MILESTONES.length - 1]) {
+                it.remove();
+                continue;
+            }
+            Entity ent = level.getEntity(uuid);
+            if (ent == null) {
+                LOGGER.info("[SpawnDrift] pIdx={} uuid={} t=+{} entity GONE (reqPos=({},{},{}))",
+                    track.carriagePIdx, uuid, elapsed,
+                    String.format("%.3f", track.spawnX),
+                    String.format("%.3f", track.spawnY),
+                    String.format("%.3f", track.spawnZ));
+                it.remove();
+                continue;
+            }
+            for (int i = 0; i < DRIFT_MILESTONES.length; i++) {
+                if (elapsed != DRIFT_MILESTONES[i]) continue;
+                int bit = 1 << i;
+                if ((track.milestonesLoggedMask & bit) != 0) continue;
+                track.milestonesLoggedMask |= bit;
+                double dx = ent.getX() - track.spawnX;
+                double dy = ent.getY() - track.spawnY;
+                double dz = ent.getZ() - track.spawnZ;
+                LOGGER.info("[SpawnDrift] pIdx={} uuid={} t=+{} reqPos=({},{},{}) curPos=({},{},{}) delta=({},{},{})",
+                    track.carriagePIdx, uuid, elapsed,
+                    String.format("%.3f", track.spawnX),
+                    String.format("%.3f", track.spawnY),
+                    String.format("%.3f", track.spawnZ),
+                    String.format("%.3f", ent.getX()),
+                    String.format("%.3f", ent.getY()),
+                    String.format("%.3f", ent.getZ()),
+                    String.format("%+.3f", dx),
+                    String.format("%+.3f", dy),
+                    String.format("%+.3f", dz));
+            }
+        }
+    }
+
+    /**
+     * Per-tick player-proximity gate for deferred contents-entity spawns.
+     * Walks every group on every loaded train; for each group whose
+     * placement has settled ({@link TrainTransformProvider#isPlacedSuccessfully})
+     * but whose pending entity array has not yet been consumed, checks
+     * whether any player is within {@link #SPAWN_RADIUS_BLOCKS} blocks of
+     * the group's current world position. If so, fires
+     * {@link #firePendingContentsEntitySpawns} which atomically drains the
+     * pending array (so a follow-up tick can't double-fire).
+     *
+     * <p>Skips trivially when no group has pending spawns — both the
+     * isPlacedSuccessfully and hasPendingContentsEntitySpawns short-circuit
+     * are cheap volatile reads.</p>
+     *
+     * <p>Distance is measured from each player to the group's anchor
+     * {@link TrainTransformProvider#getCanonicalPos canonicalPos}. The
+     * anchor sits at the back-pad-side edge of the group; with a typical
+     * 37-block group footprint and a 48-block radius, players approaching
+     * either end of the group fire the gate before the carriage reaches
+     * their view bubble.</p>
+     */
+    private static void tickPendingEntitySpawnDistanceGate(ServerLevel level, List<ServerPlayer> players) {
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        for (List<Trains.Carriage> train : trains.values()) {
+            for (Trains.Carriage carriage : train) {
+                TrainTransformProvider provider = carriage.provider();
+                if (!provider.isPlacedSuccessfully()) continue;
+                if (!provider.hasPendingContentsEntitySpawns()) continue;
+                Vector3dc pos = provider.getCanonicalPos();
+                if (pos == null) continue;
+                double cx = pos.x();
+                double cy = pos.y();
+                double cz = pos.z();
+                boolean inRange = false;
+                for (ServerPlayer player : players) {
+                    if (player.distanceToSqr(cx, cy, cz) <= SPAWN_RADIUS_SQ) {
+                        inRange = true;
+                        break;
+                    }
+                }
+                if (inRange) {
+                    LOGGER.info("[DungeonTrain] Distance gate: pIdx={} player within {} blocks — firing deferred contents-entity spawn",
+                        provider.getPIdx(), SPAWN_RADIUS_BLOCKS);
+                    firePendingContentsEntitySpawns(level, provider);
+                }
+            }
+        }
+    }
+
     public static void onLevelTick(ServerLevel level) {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
@@ -729,6 +1087,18 @@ public final class TrainCarriageAppender {
         // {@code placedSuccessfully = true} it's permanently exempt
         // from the tracker AND the wireframe overlay.
         runPlacementCollisionTracker(level);
+
+        // Player-distance gate for deferred contents-entity spawns. Fires
+        // each group's mobs only when a player gets close, eliminating the
+        // long wandering window between far-ahead placement and the player
+        // walking in.
+        tickPendingEntitySpawnDistanceGate(level, players);
+
+        // Contents-entity drift sampling — debug only. Walks any
+        // registered entities (gated at registration on logContentsEntities)
+        // and logs position at fixed elapsed-tick milestones to expose
+        // post-spawn displacement (vanilla ejection vs Sable lazy-bind race).
+        tickEntityDriftTracking(level);
 
         // Manual mode: spawn cycles fire only when a J-press has set
         // MANUAL_SPAWN_REQUESTED. The flag is NOT consumed at the top of

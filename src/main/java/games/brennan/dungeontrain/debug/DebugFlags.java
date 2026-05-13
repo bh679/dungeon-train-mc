@@ -50,11 +50,10 @@ public final class DebugFlags {
     /**
      * Verbose lifecycle logging for carriage-contents entities (per-entity
      * JOIN / LEAVE log lines with stack traces, plus per-entity spawn lines
-     * with UUID + tag). Off by default — the kill-ahead fix that depended
-     * on the diagnostics is now load-bearing on the tag alone, so these
-     * logs are pure observability. Flip on with
+     * with UUID + tag, AND post-spawn drift sampling at +1/+5/+20/+60
+     * elapsed ticks). Off by default — pure observability. Flip on with
      * {@code /dungeontrain debug contents-entities on} when investigating
-     * entity-disappearance regressions.
+     * entity-disappearance or post-spawn drift regressions.
      */
     private static volatile boolean logContentsEntities = false;
     /**

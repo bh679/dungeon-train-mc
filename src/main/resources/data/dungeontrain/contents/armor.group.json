@@ -29,6 +29,26 @@
     {
       "id": "armor8",
       "weight": 3
+    },
+    {
+      "id": "armor9",
+      "weight": 1
+    },
+    {
+      "id": "armor10",
+      "weight": 1
+    },
+    {
+      "id": "armor11",
+      "weight": 1
+    },
+    {
+      "id": "armor12",
+      "weight": 1
+    },
+    {
+      "id": "armor13",
+      "weight": 1
     }
   ]
 }

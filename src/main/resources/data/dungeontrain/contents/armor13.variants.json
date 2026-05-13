@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 6,
+  "variants": {
+    "0,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "0,0,3": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "0,0,1": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "1,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "2,0,3": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "2,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "2,0,1": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "3,0,1": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "3,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "3,0,3": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "4,0,3": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "4,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "4,0,1": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "5,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "6,0,1": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "6,0,2": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] },
+    "6,0,3": { "lockId": 1, "states": ["minecraft:brown_carpet", "minecraft:black_carpet"] }
+  }
+}
