@@ -54,6 +54,7 @@
     }
   },
   "links": {
-    "5,0,4": "villager"
+    "5,0,4": "villager",
+    "3,0,3": "villagerloot"
   }
 }
