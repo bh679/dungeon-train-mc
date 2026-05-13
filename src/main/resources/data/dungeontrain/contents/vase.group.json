@@ -1,12 +1,17 @@
 {
   "schemaVersion": 1,
+  "selfWeight": 10,
   "variants": [
     {
       "id": "barrels",
-      "weight": 1
+      "weight": 10
     },
     {
       "id": "chest",
+      "weight": 10
+    },
+    {
+      "id": "vasestack",
       "weight": 1
     }
   ]
