@@ -1,6 +1,5 @@
 package games.brennan.dungeontrain.client.menu.plot;
 
-import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovered;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
@@ -66,7 +65,7 @@ public final class EditorTypeMenuRaycast {
                 menuPriorCompanionWidth = 0;
             }
 
-            Vec3[] basis = EditorPlotLabelsRenderer.basis(anchor, rayOrigin);
+            Vec3[] basis = EditorTypeMenuRenderer.basisFor(menu, anchor, rayOrigin);
             Vec3 right = basis[0], up = basis[1], normal = basis[2];
 
             Vec3 offset = rayOrigin.subtract(anchor);

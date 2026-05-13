@@ -2,9 +2,13 @@ package games.brennan.dungeontrain.client.menu.plot;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.PackageListClient;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
+import games.brennan.dungeontrain.client.menu.PackageListScreen;
+import games.brennan.dungeontrain.client.menu.PackageMenuActions;
+import games.brennan.dungeontrain.net.PackageListSyncPacket;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.Hovered;
@@ -138,6 +142,60 @@ public final class EditorTypeMenuInputHandler {
             String cmd = "dt editor " + btn.id();
             LOGGER.debug("[DungeonTrain] EditorTypeMenu category click: {}", cmd);
             CommandRunner.run(cmd);
+            return;
+        }
+
+        // Package menu top-row cells — independent of any variant index.
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.PKG_RELOAD) {
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg Reload click");
+            CommandRunner.run("dungeontrain editor import");
+            PackageListClient.scheduleRefreshAfterAction();
+            return;
+        }
+        if (hit.cell() == EditorTypeMenuRenderer.CellKind.PKG_OPEN_FOLDER) {
+            LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg Open Packages click");
+            PackageMenuActions.openDtpacksFolder();
+            return;
+        }
+
+        // Per-package row cells — variantIdx is the entry index in PackageListClient.entries().
+        EditorTypeMenuRenderer.CellKind c = hit.cell();
+        if (c == EditorTypeMenuRenderer.CellKind.PKG_NAME
+            || c == EditorTypeMenuRenderer.CellKind.PKG_SAVE
+            || c == EditorTypeMenuRenderer.CellKind.PKG_OPEN
+            || c == EditorTypeMenuRenderer.CellKind.PKG_ENABLE) {
+            java.util.List<PackageListSyncPacket.Entry> entries = PackageListClient.entries();
+            int idx = hit.variantIdx();
+            if (idx < 0 || idx >= entries.size()) return;
+            PackageListSyncPacket.Entry entry = entries.get(idx);
+            switch (c) {
+                case PKG_NAME -> {
+                    String cmd = "dungeontrain package activate " + entry.name();
+                    LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg activate: {}", cmd);
+                    CommandRunner.run(cmd);
+                    PackageListClient.scheduleRefreshAfterAction();
+                }
+                case PKG_SAVE -> {
+                    // Fall through to the X-menu drilled at the package list so
+                    // the user types the new name there — no parallel typing
+                    // buffer needed. Same idiom dispatchNew uses.
+                    LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg Save click — opening PackageListScreen");
+                    CommandMenuState.openAt(new PackageListScreen());
+                }
+                case PKG_OPEN -> {
+                    LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg Open: {}", entry.name());
+                    PackageMenuActions.openWorkingFolder(entry.name());
+                }
+                case PKG_ENABLE -> {
+                    String cmd = "dungeontrain package "
+                        + (entry.enabled() ? "disable " : "enable ")
+                        + entry.name();
+                    LOGGER.debug("[DungeonTrain] EditorTypeMenu pkg toggle enable: {}", cmd);
+                    CommandRunner.run(cmd);
+                    PackageListClient.scheduleRefreshAfterAction();
+                }
+                default -> {}
+            }
             return;
         }
 
