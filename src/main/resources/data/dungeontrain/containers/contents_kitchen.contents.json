@@ -1,6 +1,50 @@
 {
   "schemaVersion": 3,
   "pools": {
+    "2,0,2": {
+      "fillMax": 1,
+      "entries": [
+        { "id": "minecraft:coal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:coal_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:charcoal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_planks", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_log", "count": 1, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stick", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "3,0,2": {
+      "fillMax": 1,
+      "entries": [
+        { "id": "minecraft:coal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:coal_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:charcoal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_planks", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_log", "count": 1, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stick", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "4,0,2": {
+      "fillMax": 1,
+      "entries": [
+        { "id": "minecraft:coal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:coal_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:charcoal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_planks", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_log", "count": 1, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stick", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "5,0,2": {
+      "fillMax": 1,
+      "entries": [
+        { "id": "minecraft:coal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:coal_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:charcoal", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_planks", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:oak_log", "count": 1, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stick", "count": 1, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    }
   },
   "links": {
     "1,0,3": "cookerfuel",
