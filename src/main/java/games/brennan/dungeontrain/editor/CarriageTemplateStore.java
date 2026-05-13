@@ -166,36 +166,67 @@ public final class CarriageTemplateStore {
     /**
      * Write {@code template} to the source-tree copy that gets bundled into the
      * mod jar at build time. Only succeeds in a dev checkout where the source
-     * tree is on disk and writable. Only built-in variants have bundled slots.
+     * tree is on disk and writable. Built-in entry point — see the
+     * {@link #saveToSource(CarriageVariant, StructureTemplate) variant-keyed
+     * overload} for the path that also handles custom variants.
      */
     public static synchronized void saveToSource(CarriageType type, StructureTemplate template) throws IOException {
+        saveToSource(CarriageVariant.of(type), template);
+    }
+
+    /**
+     * Variant-keyed source-tree write — works for both {@link CarriageVariant.Builtin}s
+     * and {@link CarriageVariant.Custom}s. The dev-mode auto-write-through in
+     * {@code CarriageEditor.save} uses this so a custom variant authored in the
+     * editor (e.g. {@code cracked}, {@code fancywood}) lands in the source tree
+     * alongside built-ins; once {@code <id>.nbt} is on disk, the
+     * {@code shipsWithGame()} gate in {@link CarriageVariantPartsStore} and
+     * {@link CarriageVariantContentsAllowStore} starts returning true and the
+     * sidecar promotes auto-cascade.
+     */
+    public static synchronized void saveToSource(CarriageVariant variant, StructureTemplate template) throws IOException {
         if (!sourceTreeAvailable()) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
         }
-        Path file = sourceFileFor(type);
+        Path file = sourceFileForVariant(variant);
         Files.createDirectories(file.getParent());
         CompoundTag tag = template.save(new CompoundTag());
         NbtIo.writeCompressed(tag, file);
-        LOGGER.info("[DungeonTrain] Wrote bundled template {} to {}", type, file);
+        LOGGER.info("[DungeonTrain] Wrote bundled template {} to {}", variant.id(), file);
     }
 
     /**
      * Copy the per-install config-dir copy of {@code type} into the source tree
-     * so it ships with the next build. Only built-ins can be promoted.
+     * so it ships with the next build. Built-in entry point — see the
+     * {@link #promote(CarriageVariant) variant-keyed overload} for the path
+     * that also handles custom variants.
      */
     public static synchronized void promote(CarriageType type) throws IOException {
-        CarriageVariant variant = CarriageVariant.of(type);
+        promote(CarriageVariant.of(type));
+    }
+
+    /**
+     * Variant-keyed promote — works for both built-ins and customs. Copies
+     * {@code config/dungeontrain/user/templates/<id>.nbt} into the source tree
+     * so the next build ships it.
+     */
+    public static synchronized void promote(CarriageVariant variant) throws IOException {
         Path src = fileFor(variant);
         if (!Files.isRegularFile(src)) {
-            throw new IOException("No saved template for " + name(type) + " in " + src);
+            throw new IOException("No saved template for " + variant.id() + " in " + src);
         }
         if (!sourceTreeAvailable()) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
         }
-        Path dst = sourceFileFor(type);
+        Path dst = sourceFileForVariant(variant);
         Files.createDirectories(dst.getParent());
         Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        LOGGER.info("[DungeonTrain] Promoted template {} from {} to {}", type, src, dst);
+        LOGGER.info("[DungeonTrain] Promoted template {} from {} to {}", variant.id(), src, dst);
+    }
+
+    /** Source-tree path for any variant — by {@code id()}, regardless of Builtin/Custom. */
+    private static Path sourceFileForVariant(CarriageVariant variant) {
+        return sourceDirectory().resolve(variant.id() + EXT);
     }
 
     public static synchronized boolean delete(CarriageVariant variant) throws IOException {
@@ -349,16 +380,16 @@ public final class CarriageTemplateStore {
 
         @Override
         public boolean canPromote(Template.Carriage template) {
-            return template.variant() instanceof CarriageVariant.Builtin
-                && sourceTreeAvailable();
+            // Custom variants ARE promotable in dev mode now — see the
+            // variant-keyed CarriageTemplateStore.promote/saveToSource pair.
+            // Outside dev mode there is no writable source tree, so neither
+            // built-ins nor customs can promote and we return false.
+            return sourceTreeAvailable();
         }
 
         @Override
         public void promote(Template.Carriage template) throws Exception {
-            if (!(template.variant() instanceof CarriageVariant.Builtin builtin)) {
-                throw new IllegalStateException("Custom carriages cannot promote — no bundled tier.");
-            }
-            CarriageTemplateStore.promote(builtin.type());
+            CarriageTemplateStore.promote(template.variant());
         }
     };
 

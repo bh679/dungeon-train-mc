@@ -81,8 +81,10 @@ public final class CarriageEditor {
      * Outcome of {@link #save} — config-dir write always happens (or throws);
      * the source-tree write is opt-in via {@link EditorDevMode} and reported
      * separately so the caller can surface partial success. Source-tree writes
-     * only apply to {@link CarriageVariant.Builtin}s; custom variants never
-     * ship bundled so source-tree is always {@link #skipped()} for them.
+     * apply to both {@link CarriageVariant.Builtin}s and
+     * {@link CarriageVariant.Custom}s — a custom variant authored in the editor
+     * lands in {@code src/main/resources/data/dungeontrain/templates/} alongside
+     * built-ins and ships in the next build.
      */
     public record SaveResult(boolean sourceAttempted, boolean sourceWritten, String sourceError) {
         public static SaveResult skipped() { return new SaveResult(false, false, null); }
@@ -261,8 +263,12 @@ public final class CarriageEditor {
      * {@code variant} into a fresh {@link StructureTemplate} and persist it
      * via {@link CarriageTemplateStore}. Air positions are excluded so the
      * saved template only describes placed blocks. When {@link EditorDevMode}
-     * is on and the variant is a built-in, the same template is also written
-     * through to the source tree so it ships with the next mod build.
+     * is on, the same template is also written through to the source tree so
+     * it ships with the next mod build — applies to built-ins AND customs
+     * (custom variants get a slot in the source tree the first time they save
+     * in dev mode, which then unlocks the cascading sidecar promotes in
+     * {@link CarriageVariantPartsStore} and
+     * {@link CarriageVariantContentsAllowStore}).
      */
     public static SaveResult save(ServerPlayer player, CarriageVariant variant) throws IOException {
         MinecraftServer server = player.getServer();
@@ -294,10 +300,9 @@ public final class CarriageEditor {
             sidecar.size());
 
         if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
-        if (!(variant instanceof CarriageVariant.Builtin builtin)) return SaveResult.skipped();
         try {
-            CarriageTemplateStore.saveToSource(builtin.type(), template);
-            sidecar.saveToSource(builtin.type());
+            CarriageTemplateStore.saveToSource(variant, template);
+            sidecar.saveToSource(variant);
             return SaveResult.written();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Editor save: source write failed for {}: {}", variant.id(), e.toString());
