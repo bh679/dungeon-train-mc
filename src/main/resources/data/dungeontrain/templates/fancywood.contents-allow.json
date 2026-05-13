@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "cows",
+    "default",
+    "dirt",
+    "ender",
+    "enemies",
+    "maze",
+    "vase"
+  ]
+}

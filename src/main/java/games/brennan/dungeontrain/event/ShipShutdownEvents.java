@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
@@ -31,12 +30,18 @@ import java.util.List;
  * <p>On {@link ServerStoppingEvent} (which fires before {@code stopServer()}),
  * we delete every DT-managed train (one {@link ManagedShip} per carriage)
  * via {@link Shipyard#delete}. Sable queues each sub-level for removal; we
- * then pump {@link ServerSubLevelContainer#tick} in a bounded loop until no
- * {@link ServerSubLevel} reports {@code isRemoved()} (or a safety cap of 20
- * ticks fires). A single tick processes one round of changes and is not
- * enough to fully drain several sub-levels removed at once — leftover
+ * then pump {@link ServerSubLevelContainer#tick} in an unconditional 20-tick
+ * loop. A single tick processes one round of changes and is not enough to
+ * fully drain several sub-levels removed at once — leftover
  * {@code PlotChunkHolder}s would keep {@code ChunkMap.hasWork()} true and
- * the vanilla shutdown wait loop would spin forever.
+ * the vanilla shutdown wait loop would spin forever. An earlier revision
+ * short-circuited the loop when {@code container.getAllSubLevels()} no
+ * longer reported any {@code isRemoved()} entries, but that broke out
+ * after 1 tick on the "create world → immediate Save-and-Quit" path and
+ * left vanilla spinning on "Saving worlds" — Sable evicts sub-levels from
+ * its own list before the chunk-map holders drain. Always running the
+ * full budget costs up to ~1 s on every clean shutdown that touches DT
+ * sub-levels but provably terminates.
  *
  * <p>Acceptable side effects:
  * <ul>
@@ -85,25 +90,38 @@ public final class ShipShutdownEvents {
             // only runs one processChanges() pass and leaves PlotChunkHolders
             // in ChunkMap.updatingChunkMap when several sub-levels are removed
             // at once — vanilla's wait-for-no-work loop then spins forever.
-            // Drain in a bounded loop until no removed sub-levels remain.
+            //
+            // No early break: we always run the full {@code fullDrainTicks}.
+            // The old break-when-{@code !anyRemoved} heuristic broke out after
+            // 1 tick in the "create world → immediate Save-and-Quit" stress
+            // path (Sable evicts sub-levels from its own list before the
+            // {@code PlotChunkHolder}s drain from {@code ChunkMap.updatingChunkMap}),
+            // leaving the vanilla shutdown loop spinning on "Saving worlds".
+            // Cost of the brute-force drain: up to {@code fullDrainTicks * 50ms}
+            // (~1 s) on every clean shutdown that touches DT sub-levels.
+            //
+            // TODO(smarter-drain): replace the fixed-tick budget with a
+            // condition that directly observes the thing vanilla actually
+            // waits on — {@code ChunkMap.hasWork()} (or equivalently, that
+            // {@code ChunkMap.updatingChunkMap} contains no {@code PlotChunkHolder}
+            // entries for the now-removed plots). Both are private; reaching
+            // them needs either an accessor mixin we add or reflection through
+            // {@code ServerLevel.getChunkSource().chunkMap}. Worth doing once
+            // upstream Sable lands a proper fix and we can compare behaviours;
+            // until then the brute-force loop is simpler and provably terminates.
+            //   Sable hook point:  {@code dev.ryanhcode.sable.plot.ChunkMapMixin}
+            //   Vanilla wait site: {@code net.minecraft.server.MinecraftServer.stopServer}
+            //                      → {@code chunkMap.hasWork()} polled by
+            //                      {@code waitUntilNextTick} during shutdown
+            //   Upstream issue:    https://github.com/ryanhcode/sable/issues/679
             ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
             if (container != null && deletedHere > 0) {
-                final int maxTicks = 20;
-                int ticksUsed = 0;
-                for (int i = 0; i < maxTicks; i++) {
+                final int fullDrainTicks = 20;
+                for (int i = 0; i < fullDrainTicks; i++) {
                     container.tick();
-                    ticksUsed++;
-                    boolean anyRemoved = container.getAllSubLevels().stream()
-                        .anyMatch(ServerSubLevel::isRemoved);
-                    if (!anyRemoved) break;
                 }
-                if (ticksUsed >= maxTicks) {
-                    LOGGER.warn("[DungeonTrain] Drain loop hit cap of {} ticks in {} — sub-levels may still be pending removal",
-                        maxTicks, level.dimension().location());
-                } else {
-                    LOGGER.info("[DungeonTrain] Drained {} sub-level removals in {} ticks for {}",
-                        deletedHere, ticksUsed, level.dimension().location());
-                }
+                LOGGER.info("[DungeonTrain] Drained {} sub-level removals over {} ticks for {}",
+                    deletedHere, fullDrainTicks, level.dimension().location());
             }
 
             if (deletedHere > 0) {

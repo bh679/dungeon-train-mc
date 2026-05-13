@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "excluded": [
+    "armor",
+    "books",
+    "cows",
+    "craft",
+    "ender",
+    "shop"
+  ]
+}
