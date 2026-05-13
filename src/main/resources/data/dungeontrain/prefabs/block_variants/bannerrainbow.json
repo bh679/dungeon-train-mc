@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    "minecraft:white_banner[rotation=8]",
+    "minecraft:light_gray_banner[rotation=0]",
+    "minecraft:gray_banner[rotation=0]",
+    "minecraft:black_banner[rotation=0]",
+    "minecraft:brown_banner[rotation=0]",
+    "minecraft:red_banner[rotation=0]",
+    "minecraft:orange_banner[rotation=0]",
+    "minecraft:yellow_banner[rotation=0]",
+    "minecraft:lime_banner[rotation=0]",
+    "minecraft:green_banner[rotation=0]",
+    "minecraft:cyan_banner[rotation=0]",
+    "minecraft:light_blue_banner[rotation=0]",
+    "minecraft:blue_banner[rotation=0]",
+    "minecraft:purple_banner[rotation=0]",
+    "minecraft:magenta_banner[rotation=0]",
+    "minecraft:pink_banner[rotation=0]"
+  ]
+}
