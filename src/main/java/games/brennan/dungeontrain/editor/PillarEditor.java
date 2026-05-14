@@ -173,6 +173,8 @@ public final class PillarEditor {
     public static void stampPlot(ServerLevel overworld, PillarSection section, String name, CarriageDims dims) {
         BlockPos origin = plotOrigin(section, name, dims);
         eraseAt(overworld, origin, section, dims);
+        EditorPlotEntityClearer.discardNonPlayersIn(
+            overworld, origin.offset(-1, -1, -1), new Vec3i(3, section.height() + 2, dims.width() + 2));
         stampNameAt(overworld, origin, section, name, dims);
         setOutline(overworld, origin, section, dims);
         captureSectionSnapshot(overworld, origin, section, name, dims);

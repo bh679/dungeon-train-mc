@@ -3,6 +3,7 @@
   "excluded": [
     "cows",
     "craft",
+    "default",
     "dirt",
     "ender",
     "pigs",

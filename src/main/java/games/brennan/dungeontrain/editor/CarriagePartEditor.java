@@ -360,6 +360,16 @@ public final class CarriagePartEditor {
         CarriagePartTemplateStore.save(kind, name, template);
         CarriagePartRegistry.register(kind, name);
 
+        // Contents store: persist any in-session loot-prefab link changes
+        // accumulated since enter (PrefabUseHandler defers its writes until
+        // /save). Failure is logged but doesn't fail the whole save.
+        try {
+            ContainerContentsStore.loadFor("part:" + kind.id() + ":" + name).save();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Part editor save: contents-store save failed for {}:{}: {}",
+                kind.id(), name, e.toString());
+        }
+
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
 
         LOGGER.info("[DungeonTrain] Part editor save: {} -> {}:{} template",
@@ -482,6 +492,10 @@ public final class CarriagePartEditor {
     public static void stampPlot(ServerLevel level, CarriagePartKind kind, String name, CarriageDims dims) {
         BlockPos origin = plotOrigin(kind, name, dims);
         if (origin == null) return;
+        // Drop in-session contents-store changes (loot-prefab links) so the
+        // re-stamp reads the last-saved disk state; placement writes only
+        // touch the in-memory cache until /save.
+        ContainerContentsStore.invalidate("part:" + kind.id() + ":" + name);
         CarriagePartPlacer.eraseAt(level, origin, kind, dims);
         stampCurrent(level, origin, kind, name, dims);
         setOutline(level, origin, kind, dims);

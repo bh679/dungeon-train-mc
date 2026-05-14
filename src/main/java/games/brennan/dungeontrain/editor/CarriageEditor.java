@@ -193,8 +193,14 @@ public final class CarriageEditor {
         // edits made since the last load. Session editing then works against
         // the freshly-loaded map; `editor save` persists the result.
         CarriageVariantBlocks.invalidate(variant.id());
+        // Drop in-session contents-store changes (loot-prefab links) so the
+        // re-stamp reads the last-saved disk state; placement writes only
+        // touch the in-memory cache until /save.
+        ContainerContentsStore.invalidate("carriage:" + variant.id());
 
         CarriagePlacer.eraseAt(overworld, origin, dims);
+        EditorPlotEntityClearer.discardNonPlayersIn(
+            overworld, origin, new Vec3i(dims.length(), dims.height(), dims.width()));
         CarriagePlacer.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
 
@@ -287,6 +293,16 @@ public final class CarriageEditor {
         // entry doesn't leave a stale sidecar on disk.
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
         sidecar.save(variant);
+
+        // Contents store: persist any in-session loot-prefab link changes
+        // accumulated since enter (PrefabUseHandler defers its writes until
+        // /save). Failure is logged but doesn't fail the whole save.
+        try {
+            ContainerContentsStore.loadFor("carriage:" + variant.id()).save();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Editor save: contents-store save failed for {}: {}",
+                variant.id(), e.toString());
+        }
 
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.
