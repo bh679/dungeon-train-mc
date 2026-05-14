@@ -383,6 +383,10 @@ public final class TrackGenerator {
             games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
                 local, worldSeed, (int) tileIndex);
             if (picked == null) return base;
+            if (picked.isMob()) {
+                TrackVariantMobs.warnDropped("tile", local, picked.entityId());
+                return Blocks.AIR.defaultBlockState();
+            }
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
                 picked.state(), picked.rotation(),
                 local, worldSeed, (int) tileIndex,
@@ -536,6 +540,10 @@ public final class TrackGenerator {
             games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
                 local, worldSeed, pillarIndex);
             if (picked == null) return base;
+            if (picked.isMob()) {
+                TrackVariantMobs.warnDropped("pillar", local, picked.entityId());
+                return Blocks.AIR.defaultBlockState();
+            }
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
                 picked.state(), picked.rotation(),
                 local, worldSeed, pillarIndex,
@@ -1097,6 +1105,11 @@ public final class TrackGenerator {
                     games.brennan.dungeontrain.editor.VariantState picked =
                         stairsSidecar.resolve(entry.localPos(), worldSeed, centerX);
                     if (picked == null) continue;
+                    if (picked.isMob()) {
+                        TrackVariantMobs.warnDropped("stairs", entry.localPos(), picked.entityId());
+                        level.setBlock(wpos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                        continue;
+                    }
                     BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
                         picked.state(), picked.rotation(),
                         entry.localPos(), worldSeed, centerX,

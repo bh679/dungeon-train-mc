@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "variants": {
     "4,0,0": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "2,0,2": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}],
@@ -32,6 +32,7 @@
     "0,0,1": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "0,0,3": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "0,0,4": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"}],
-    "1,0,4": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+    "1,0,4": ["minecraft:bamboo_sapling", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 4, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:tall_grass[half=lower]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:short_grass", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,1,0": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:panda"}]
   }
 }

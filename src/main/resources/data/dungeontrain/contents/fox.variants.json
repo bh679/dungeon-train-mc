@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "variants": {
     "6,0,0": ["minecraft:snow_block", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "5,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
-    "4,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,0,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
     "3,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "2,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "6,0,3": [{"state": "minecraft:snow_block", "weight": 16}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
@@ -33,6 +33,20 @@
     "1,0,1": [{"state": "minecraft:snow_block", "weight": 16}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "2,0,1": [{"state": "minecraft:snow_block", "weight": 16}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "3,0,1": [{"state": "minecraft:snow_block", "weight": 16}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
-    "1,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+    "1,0,2": [{"state": "minecraft:snow_block", "weight": 2}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:snow[layers=1]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,1,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "3,3,0": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "4,3,0": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "6,3,0": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "2,3,0": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "1,3,0": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "3,3,1": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "2,3,1": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "2,3,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "3,3,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "3,3,3": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "3,2,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "4,2,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}],
+    "2,2,2": [{"state": "minecraft:command_block[conditional=false,facing=up]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"entity": "minecraft:fox"}]
   }
 }

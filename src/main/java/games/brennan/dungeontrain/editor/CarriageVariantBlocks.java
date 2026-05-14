@@ -108,9 +108,17 @@ public final class CarriageVariantBlocks {
      *       The editor renders the prefab id as the row label and the
      *       spawn pipeline rolls contents from the linked pool. The field
      *       is omitted when null, so v5 entries round-trip diff-clean.</li>
+     *   <li>v7 — adds optional per-entry {@code entity} string (entity-type
+     *       registry id) and optional {@code nbt} entity NBT for mob
+     *       variants. When present, the cell rolls AIR and a deferred
+     *       entity pass spawns the mob (subject to the existing 48-block
+     *       distance gate). The {@code state} field is omitted from JSON
+     *       for mob entries (the schema infers the AIR sentinel). v6
+     *       entries load with {@code entityId == null} and re-save
+     *       diff-clean.</li>
      * </ul>
      */
-    public static final int CURRENT_SCHEMA_VERSION = 6;
+    public static final int CURRENT_SCHEMA_VERSION = 7;
 
     static final String SUBDIR = "templates";
     private static final String EXT = ".variants.json";
@@ -324,6 +332,39 @@ public final class CarriageVariantBlocks {
         }
         if (el.isJsonObject()) {
             JsonObject obj = el.getAsJsonObject();
+            // v7 mob entry — has "entity" instead of "state". The picker treats
+            // the cell as AIR (the canonical VariantState constructor stamps
+            // the COMMAND_BLOCK sentinel) and a deferred entity pass spawns
+            // the mob.
+            if (obj.has("entity") && obj.get("entity").isJsonPrimitive()
+                && obj.get("entity").getAsJsonPrimitive().isString()) {
+                String raw = obj.get("entity").getAsString().trim();
+                net.minecraft.resources.ResourceLocation eid =
+                    net.minecraft.resources.ResourceLocation.tryParse(raw);
+                if (eid == null) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: bad entity id '{}', skipping.",
+                        contextId, contextPos, raw);
+                    return null;
+                }
+                CompoundTag mobNbt = null;
+                if (obj.has("nbt") && obj.get("nbt").isJsonPrimitive()
+                    && obj.get("nbt").getAsJsonPrimitive().isString()) {
+                    try {
+                        mobNbt = TagParser.parseTag(obj.get("nbt").getAsString());
+                    } catch (Exception e) {
+                        LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: could not parse mob 'nbt' SNBT ({}), dropping NBT.",
+                            contextId, contextPos, e.getMessage());
+                    }
+                }
+                int mobWeight = 1;
+                if (obj.has("weight") && obj.get("weight").isJsonPrimitive()
+                    && obj.get("weight").getAsJsonPrimitive().isNumber()) {
+                    int rawW = obj.get("weight").getAsInt();
+                    mobWeight = rawW < 1 ? 1 : rawW;
+                }
+                VariantRotation mobRot = parseRotation(obj.get("rotation"), contextId, contextPos);
+                return VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
+            }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
                     contextId, contextPos);
@@ -857,6 +898,25 @@ public final class CarriageVariantBlocks {
     }
 
     public static void appendVariantJson(StringBuilder sb, VariantState s) {
+        if (s.isMob()) {
+            // v7 mob entry — "entity" instead of "state". The state field is
+            // always the COMMAND_BLOCK sentinel (forced by the canonical
+            // constructor) so omit it from the JSON; the reader knows to
+            // infer it.
+            sb.append("{\"entity\": \"").append(escapeJson(s.entityId().toString())).append("\"");
+            if (s.hasBlockEntityData()) {
+                sb.append(", \"nbt\": \"").append(escapeJson(s.blockEntityNbt().toString())).append("\"");
+            }
+            if (s.weight() != 1) {
+                sb.append(", \"weight\": ").append(s.weight());
+            }
+            if (!s.rotation().isDefault()) {
+                sb.append(", \"rotation\": ");
+                appendRotationJson(sb, s.rotation());
+            }
+            sb.append("}");
+            return;
+        }
         String stateStr = BlockStateParser.serialize(s.state());
         if (s.isPlainBareString()) {
             sb.append('"').append(escapeJson(stateStr)).append('"');

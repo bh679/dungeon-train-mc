@@ -931,9 +931,38 @@ public final class VariantOverlayRenderer {
     private static List<ResourceLocation> toBlockIds(List<VariantState> states) {
         List<ResourceLocation> out = new ArrayList<>(states.size());
         for (VariantState s : states) {
+            if (s.isMob()) {
+                // Mob entry — resolve the matching spawn egg item id for the
+                // entity type so the HUD renders a recognisable spawn-egg
+                // icon. Falls back to BARRIER (via the HUD's own missing-item
+                // path) if the entity type has no spawn egg registered.
+                ResourceLocation eggId = spawnEggIdFor(s.entityId());
+                if (eggId != null) {
+                    out.add(eggId);
+                    continue;
+                }
+                // No spawn egg (e.g. minecraft:player) — show the entity id
+                // as-is; the HUD's BARRIER fallback will render.
+                out.add(s.entityId());
+                continue;
+            }
             out.add(BuiltInRegistries.BLOCK.getKey(s.state().getBlock()));
         }
         return out;
+    }
+
+    /**
+     * Resolve the spawn-egg item registry id for an entity type, or
+     * {@code null} when no spawn egg exists for that type. Vanilla pattern:
+     * lookup the {@code <namespace>:<entity_path>_spawn_egg} item.
+     */
+    private static @org.jetbrains.annotations.Nullable ResourceLocation spawnEggIdFor(ResourceLocation entityId) {
+        if (entityId == null) return null;
+        ResourceLocation eggId = ResourceLocation.fromNamespaceAndPath(
+            entityId.getNamespace(), entityId.getPath() + "_spawn_egg");
+        net.minecraft.world.item.Item item = BuiltInRegistries.ITEM.get(eggId);
+        if (item == null || item == net.minecraft.world.item.Items.AIR) return null;
+        return eggId;
     }
 
     /**

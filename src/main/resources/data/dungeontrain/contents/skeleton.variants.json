@@ -1,9 +1,10 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "variants": {
     "1,0,0": ["minecraft:skeleton_skull[powered=false,rotation=7]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "4,0,4": ["minecraft:skeleton_skull[powered=false,rotation=7]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "5,0,0": ["minecraft:skeleton_skull[powered=false,rotation=7]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
-    "0,0,4": ["minecraft:skeleton_skull[powered=false,rotation=7]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+    "0,0,4": ["minecraft:skeleton_skull[powered=false,rotation=7]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,0,1": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 40, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"entity": "minecraft:skeleton", "weight": 5}]
   }
 }

@@ -252,7 +252,11 @@ public final class BlockVariantMenuRenderer {
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
             BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
-            boolean rotatable = parsed != null && RotationApplier.canRotate(parsed);
+            // Mob entries have no rotation property in the block sense — the
+            // state is the COMMAND_BLOCK sentinel which IS rotatable, so
+            // suppress the rotation cells explicitly to avoid an irrelevant
+            // FACING editor on a mob row.
+            boolean rotatable = parsed != null && !entry.isMob() && RotationApplier.canRotate(parsed);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -270,7 +274,14 @@ public final class BlockVariantMenuRenderer {
                 drawQuad(ps, buffer, nameCellL + 0.01, rowBottom + 0.005,
                     nameCellR - 0.005, rowTop - 0.005, 0x60FFCC33);
             }
-            drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY);
+            // Mob entries render the spawn-egg icon + a "(mob)" suffix so
+            // they're visually distinct from the empty-placeholder
+            // sentinel and from regular block entries.
+            if (entry.isMob()) {
+                drawMobIcon(ps, buffer, entry.entityId(), nameCellL, rowCY);
+            } else {
+                drawBlockIcon(ps, buffer, entry.stateString(), nameCellL, rowCY);
+            }
             // Linked rows show the loot-prefab id instead of the block path
             // so two rows backed by the same block (e.g. two barrels linked
             // to different templates) read distinctly. Dangling links — the
@@ -278,7 +289,10 @@ public final class BlockVariantMenuRenderer {
             String linkedId = entry.linkedLootPrefabId();
             String label;
             int labelColour;
-            if (linkedId != null) {
+            if (entry.isMob()) {
+                label = mobLabel(entry.entityId());
+                labelColour = nameHover ? 0xFF000000 : 0xFFE39DFF;
+            } else if (linkedId != null) {
                 label = linkedId;
                 boolean dangling = !PrefabTabState.findLootItems(linkedId).isPresent();
                 if (dangling) {
@@ -617,6 +631,58 @@ public final class BlockVariantMenuRenderer {
             0
         );
         ps.popPose();
+    }
+
+    /**
+     * Render a spawn-egg icon for a mob-variant row. Looks up the matching
+     * {@code <namespace>:<entity>_spawn_egg} item; falls back to BARRIER
+     * when the entity has no spawn egg (e.g. {@code minecraft:player}).
+     */
+    static void drawMobIcon(PoseStack ps, MultiBufferSource buffer,
+                            String entityId, double cellLeftX, double rowCY) {
+        if (entityId == null || entityId.isEmpty()) return;
+        ItemStack stack = mobIconStack(entityId);
+        Minecraft mc = Minecraft.getInstance();
+        ItemRenderer itemRenderer = mc.getItemRenderer();
+        ps.pushPose();
+        ps.translate(cellLeftX + ICON_LEFT_PAD + ICON_SIZE / 2.0, rowCY, 0.002);
+        ps.scale((float) ICON_SIZE, (float) ICON_SIZE, (float) ICON_SIZE);
+        itemRenderer.renderStatic(
+            stack,
+            ItemDisplayContext.GUI,
+            LightTexture.FULL_BRIGHT,
+            OverlayTexture.NO_OVERLAY,
+            ps,
+            buffer,
+            mc.level,
+            0
+        );
+        ps.popPose();
+    }
+
+    /** Resolve the spawn-egg ItemStack for a given entity id; BARRIER fallback. */
+    private static ItemStack mobIconStack(String entityId) {
+        net.minecraft.resources.ResourceLocation eid =
+            net.minecraft.resources.ResourceLocation.tryParse(entityId);
+        if (eid == null) return new ItemStack(Items.BARRIER);
+        net.minecraft.resources.ResourceLocation eggId =
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
+                eid.getNamespace(), eid.getPath() + "_spawn_egg");
+        Item eggItem = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(eggId);
+        if (eggItem == null || eggItem == Items.AIR) return new ItemStack(Items.BARRIER);
+        return new ItemStack(eggItem);
+    }
+
+    /**
+     * Row label for a mob entry — strip the {@code minecraft:} prefix when
+     * present so the path fits the narrow name cell, and append " (mob)" so
+     * the row reads distinctly from a similarly-named block.
+     */
+    static String mobLabel(String entityId) {
+        if (entityId == null || entityId.isEmpty()) return "(mob)";
+        int colon = entityId.indexOf(':');
+        String path = colon >= 0 ? entityId.substring(colon + 1) : entityId;
+        return path + " (mob)";
     }
 
     static void drawCenteredText(PoseStack ps, MultiBufferSource buffer, Font font,
