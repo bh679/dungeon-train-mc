@@ -1,12 +1,45 @@
 {
   "schemaVersion": 3,
   "pools": {
+    "3,0,2": {
+      "fillMin": 4,
+      "entries": [
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 }
+      ]
+    },
+    "3,0,1": {
+      "fillMin": 4,
+      "entries": [
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 }
+      ]
+    },
+    "4,0,2": {
+      "fillMin": 4,
+      "entries": [
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 }
+      ]
+    },
+    "2,0,0": {
+      "fillMin": 4,
+      "entries": [
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 1, "randDur": false, "durChance": 100, "randEnch": false, "enchChance": 25 }
+      ]
+    }
   },
   "links": {
     "2,0,1": "loot",
-    "5,0,2": "horse",
-    "3,0,2": "test",
-    "3,0,3": "test",
-    "3,0,1": "test"
+    "5,0,2": "horse"
   }
 }
