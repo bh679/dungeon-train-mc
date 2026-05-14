@@ -99,6 +99,26 @@ public final class Trains {
         return new LinkedHashMap<>(map);
     }
 
+    /**
+     * Drop a single anchor's registry entry. Used by the appender to
+     * forget "ghost" anchors — sub-levels that were registered on spawn
+     * but subsequently culled by Sable before placement could complete
+     * and never reloaded. Without this, the registry's grow-only nature
+     * left those anchors permanently inflating
+     * {@link #knownAnchors(UUID)}, so every future spawn was placed past
+     * the ghosts and the train showed a visible gap. Caller must have
+     * confirmed via {@code Shipyards.findAll()} that the anchor's
+     * sub-level is no longer loaded before invoking this. Returns the
+     * previously-registered {@link ManagedShip} (or {@code null} if the
+     * anchor wasn't in the registry) so the caller can perform any
+     * needed Sable-side cleanup.
+     */
+    public static ManagedShip unregisterGroup(UUID trainId, int anchorPIdx) {
+        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+        if (map == null) return null;
+        return map.remove(anchorPIdx);
+    }
+
     /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
     public static void clearRegistry() {
         SPAWNED_GROUPS.clear();

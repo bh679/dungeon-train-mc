@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -99,6 +101,22 @@ public final class TrainCarriageAppender {
      */
     private static final Map<UUID, Boolean> STALL_WARNED_FORWARD = new ConcurrentHashMap<>();
     private static final Map<UUID, Boolean> STALL_WARNED_BACKWARD = new ConcurrentHashMap<>();
+
+    /**
+     * Per-train, per-direction: latch — true once
+     * {@link #isLanePlacementGateClear} has fired a cull-clear in this
+     * direction for this train. Prevents the cull-clear path from cascading
+     * unboundedly: the lane gets at most ONE cull-clear per natural
+     * placement success. The latch is cleared the next time a spawn in this
+     * direction reaches {@code placedSuccessfully} via the normal tracker
+     * path — at that point the train has caught up to the player, Sable's
+     * plot covers the train's end, and we're safe to allow another
+     * cull-clear if a future spawn is culled. While the latch is set, the
+     * gate stays closed even after the pending sub-level is removed —
+     * extension in that direction halts until placement actually succeeds.
+     */
+    private static final Map<UUID, Boolean> CULL_CLEARED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Boolean> CULL_CLEARED_BACKWARD = new ConcurrentHashMap<>();
 
     /**
      * Stall threshold: 600 ticks = 30 s at 20 Hz. Comfortably past the
@@ -258,6 +276,20 @@ public final class TrainCarriageAppender {
      * settle latency.
      */
     private static final int CLEAN_TICKS_FOR_SUCCESS = 60;
+    /**
+     * Grace period after a spawn before {@link #isLanePlacementGateClear}
+     * is allowed to declare the pending ship "culled by Sable". Sable's
+     * {@code findAll()} doesn't include a freshly-spawned sub-level
+     * immediately — observed registration lag is 2-5 ticks. Without a
+     * grace window, the cull check fires on tick N+1 (false positive),
+     * the lane re-opens, the next spawn fires, that ship is also "culled"
+     * a tick later, and the appender produces a runaway sequence of
+     * gap-creating spawns. 60 ticks matches {@link #CLEAN_TICKS_FOR_SUCCESS}
+     * so a normally-settling ship reaches {@code placedSuccessfully}
+     * before the cull check ever fires; the cull-clear path then only
+     * activates for ships that genuinely never appeared in Sable's plot.
+     */
+    private static final long CULL_DETECTION_GRACE_TICKS = 60L;
     /**
      * Maximum distance (in blocks, world space) from any player to a
      * placement-settled carriage's current world position at which the
@@ -900,6 +932,8 @@ public final class TrainCarriageAppender {
         BLOCKED_SINCE_BACKWARD.clear();
         STALL_WARNED_FORWARD.clear();
         STALL_WARNED_BACKWARD.clear();
+        CULL_CLEARED_FORWARD.clear();
+        CULL_CLEARED_BACKWARD.clear();
     }
 
     /**
@@ -1178,6 +1212,8 @@ public final class TrainCarriageAppender {
         BLOCKED_SINCE_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         STALL_WARNED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         STALL_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        CULL_CLEARED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        CULL_CLEARED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -1326,6 +1362,49 @@ public final class TrainCarriageAppender {
             trainMinAnchor = minA;
         }
 
+        // Proximity-based latch reset: if any near player's pIdx is past
+        // the registry's end in a direction, clear that direction's
+        // {@link #CULL_CLEARED_FORWARD}/{@link #CULL_CLEARED_BACKWARD}
+        // latch and unregister any ghost anchors past the visible train's
+        // end. The bounded cull-clear normally only re-arms via a natural
+        // placement success — but when EVERY spawn in a direction is
+        // being culled (player rode past Sable's plot, or flew there in
+        // creative), no placement ever succeeds and the latch would stay
+        // set forever. The "player is beyond the registry" condition
+        // signals that they've physically reached the end and a fresh
+        // spawn at the next anchor is worth attempting.
+        //
+        // We also drop ghost anchors from the registry — anchors that
+        // were spawned, then culled by Sable, and never reloaded. Without
+        // this, the next spawn's anchor (computed as
+        // {@code registryMin - groupSize} / {@code registryMax + groupSize})
+        // would skip past every ghost, producing a visible pIdx gap
+        // between the actual visible end and the next spawn. After
+        // cleanup, the registry edge matches the visible edge so the next
+        // spawn fills the slot adjacent to what the player can see.
+        boolean refreshedAnchors = false;
+        for (int playerPIdx : nearPlayerPIdxs) {
+            if (playerPIdx > trainMaxAnchor && CULL_CLEARED_FORWARD.remove(trainId) != null) {
+                refreshedAnchors |= cleanupGhostAnchors(level, trainId, train, true);
+            }
+            if (playerPIdx < trainMinAnchor && CULL_CLEARED_BACKWARD.remove(trainId) != null) {
+                refreshedAnchors |= cleanupGhostAnchors(level, trainId, train, false);
+            }
+        }
+        if (refreshedAnchors) {
+            knownAnchors = Trains.knownAnchors(trainId);
+            if (!knownAnchors.isEmpty()) {
+                int maxA = Integer.MIN_VALUE;
+                int minA = Integer.MAX_VALUE;
+                for (int a : knownAnchors) {
+                    if (a > maxA) maxA = a;
+                    if (a < minA) minA = a;
+                }
+                trainMaxAnchor = maxA;
+                trainMinAnchor = minA;
+            }
+        }
+
         // Independent per-direction spawn decision. Forward and backward
         // are evaluated as two SEPARATE spawn lanes — each has its own
         // preview slot ({@code NEXT_PLANNED_SPAWNS_FORWARD/BACKWARD}),
@@ -1342,10 +1421,20 @@ public final class TrainCarriageAppender {
         // J always falls through to forward for press-contract continuity
         // (J = "spawn one carriage in front") — backward is auto-only.
         //
-        // Backward fires only when the lowest needed pIdx falls below
-        // the registry's current min anchor (i.e. a player has walked
-        // off the tail).
-        boolean needsForward = true;
+        // Auto-mode forward and backward use the same symmetric trigger:
+        // only fire when the player's needed pIdx range actually extends
+        // past the registry's current extent in that direction. Forward
+        // was previously unconditional ({@code needsForward = true}),
+        // relying on the placement-success gate's natural 60-tick rate
+        // limit. That rate limit disappears once
+        // {@link #isLanePlacementGateClear} starts clearing the lane on
+        // a Sable cull (the lane re-opens within one tick of a cull
+        // instead of after 60 clean ticks), so without the symmetric
+        // needs-check the appender would spawn unboundedly forward when
+        // a far-ahead carriage gets repeatedly culled.
+        boolean needsForward = MANUAL_MODE
+            || (globalMaxNeededPIdx != Integer.MIN_VALUE
+                && globalMaxNeededPIdx > trainMaxAnchor);
         boolean needsBackward = !MANUAL_MODE
             && globalMinNeededPIdx != Integer.MAX_VALUE
             && globalMinNeededPIdx < trainMinAnchor;
@@ -1449,7 +1538,7 @@ public final class TrainCarriageAppender {
         boolean didForwardSpawn = false;
         boolean didBackwardSpawn = false;
 
-        if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, trainId)) {
+        if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
             ManagedShip newShip = spawnNewGroup(level, lead, forwardAnchor, groupSize, dims, velocity, trainId, train);
             if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
                 newProvider.setSpawnedBackward(false);
@@ -1461,7 +1550,7 @@ public final class TrainCarriageAppender {
             didForwardSpawn = true;
         }
 
-        if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, trainId)) {
+        if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
             ManagedShip newShip = spawnNewGroup(level, tail, backwardAnchor, groupSize, dims, velocity, trainId, train);
             if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
                 newProvider.setSpawnedBackward(true);
@@ -1491,15 +1580,153 @@ public final class TrainCarriageAppender {
      * {@code placedSuccessfully = true} on its
      * {@link TrainTransformProvider}. Removes the entry from {@code lane}
      * once cleared so the gate's "hot" set stays bounded to in-flight ships.
+     *
+     * <p>Also clears the lane when Sable has culled the pending sub-level
+     * before placement could complete. {@link #runPlacementCollisionTracker}
+     * only iterates sub-levels currently in {@code Shipyards.findAll()}, so
+     * once a pending carriage falls out of Sable's plot its
+     * {@code placedSuccessfully} flag can never flip — without this check the
+     * lane would stay closed for the rest of the session.</p>
+     *
+     * <p>The cull check is gated by {@link #CULL_DETECTION_GRACE_TICKS}.
+     * Sable doesn't include a freshly-spawned sub-level in {@code findAll()}
+     * for several ticks after creation, so without the grace window the
+     * check would false-positive on every new spawn and produce a runaway
+     * sequence of gap-creating spawns. After the grace window, if the
+     * pending {@code subLevelId} is still missing from {@code currentTrain}
+     * (built upstream from {@code Shipyards.findAll()} via
+     * {@link Trains#byTrainId}), we log a {@code WARN} and drop the entry
+     * so the lane reopens.</p>
+     *
+     * <p>Cull-clear is bounded by {@code cullClearedFlags}: at most ONE
+     * cull-clear per natural placement success. Once the latch fires, the
+     * gate stays closed in this direction even after we remove the pending
+     * sub-level — extension halts until a future spawn's
+     * {@code placedSuccessfully} flips through the normal tracker path, at
+     * which point we clear the latch (the train has caught up to the player
+     * and Sable's plot covers the train's end). This prevents the runaway
+     * cull→clear→spawn→cull cascade where each cull-cleared anchor advances
+     * the registry frontier without filling in, producing a long chain of
+     * registered-but-invisible ghost carriages.</p>
      */
-    private static boolean isLanePlacementGateClear(Map<UUID, ManagedShip> lane, UUID trainId) {
+    private static boolean isLanePlacementGateClear(
+        Map<UUID, ManagedShip> lane,
+        Map<UUID, Long> laneTickMap,
+        Map<UUID, Boolean> cullClearedFlags,
+        UUID trainId,
+        List<Trains.Carriage> currentTrain,
+        long now,
+        boolean forward
+    ) {
         ManagedShip pending = lane.get(trainId);
-        if (pending == null) return true;
+        if (pending == null) {
+            return !cullClearedFlags.getOrDefault(trainId, false);
+        }
         if (pending.getKinematicDriver() instanceof TrainTransformProvider provider
             && !provider.isPlacedSuccessfully()) {
-            return false;
+            Long spawnTick = laneTickMap.get(trainId);
+            if (spawnTick != null && now - spawnTick < CULL_DETECTION_GRACE_TICKS) {
+                return false;
+            }
+            UUID pendingSubLevelId = pending.subLevelId();
+            boolean stillLoaded = false;
+            for (Trains.Carriage c : currentTrain) {
+                if (c.ship().subLevelId().equals(pendingSubLevelId)) {
+                    stillLoaded = true;
+                    break;
+                }
+            }
+            if (stillLoaded) {
+                return false;
+            }
+            if (cullClearedFlags.getOrDefault(trainId, false)) {
+                return false;
+            }
+            long ticksSinceSpawn = (spawnTick == null) ? -1L : (now - spawnTick);
+            LOGGER.warn(
+                "[DungeonTrain] Lane {} pending sub-level {} culled by Sable before placement (ticksSinceSpawn={}) — clearing gate ONCE; further extension paused until next placement succeeds (trainId={})",
+                forward ? "forward" : "backward",
+                pendingSubLevelId,
+                ticksSinceSpawn,
+                trainId);
+            cullClearedFlags.put(trainId, true);
+            lane.remove(trainId);
+            return true;
         }
         lane.remove(trainId);
+        cullClearedFlags.remove(trainId);
+        return true;
+    }
+
+    /**
+     * Drop registry entries for "ghost" anchors past the visible end of
+     * the train in the given direction, AND mark their underlying Sable
+     * sub-levels as removed so a future plot move can't reload them
+     * into the spot we're about to refill.
+     *
+     * <p>Called from {@link #updateTrain} when a proximity unlatch fires
+     * — the player has physically reached the registry's edge, so any
+     * anchor in the registry that's still not in {@code currentTrain}
+     * (i.e. Sable culled it long ago and hasn't reloaded it) is treated
+     * as a ghost and forgotten. Without this cleanup the next spawn
+     * anchor would be placed past the ghosts, leaving a visible pIdx
+     * gap between the actual visible end of the train and the new spawn.</p>
+     *
+     * <p>Sable distinguishes {@code UNLOADED} (culled, retained in
+     * {@code HoldingSubLevel} storage, may reload when the plot returns)
+     * from {@code REMOVED} (gone for good). A culled ghost is still in
+     * Sable's storage; if we only forgot it from our registry, Sable
+     * could later reload it into the same anchor we just respawned —
+     * producing two ships at the same anchor. {@link Shipyard#delete}
+     * calls {@code SubLevel.markRemoved()} which the container's tick
+     * pass converts into a {@code REMOVED} removal, so the holding-
+     * storage entry is also dropped.</p>
+     *
+     * <p>Returns {@code true} if at least one anchor was removed so the
+     * caller can recompute {@code trainMin/MaxAnchor} from the updated
+     * registry before proceeding with the spawn decision.</p>
+     */
+    private static boolean cleanupGhostAnchors(
+        ServerLevel level,
+        UUID trainId,
+        List<Trains.Carriage> currentTrain,
+        boolean forward
+    ) {
+        int visibleMin = Integer.MAX_VALUE;
+        int visibleMax = Integer.MIN_VALUE;
+        for (Trains.Carriage c : currentTrain) {
+            int p = c.provider().getPIdx();
+            if (p < visibleMin) visibleMin = p;
+            if (p > visibleMax) visibleMax = p;
+        }
+        if (visibleMin == Integer.MAX_VALUE) return false;
+
+        Set<Integer> known = Trains.knownAnchors(trainId);
+        int finalVisibleMin = visibleMin;
+        int finalVisibleMax = visibleMax;
+        java.util.List<Integer> toRemove = new java.util.ArrayList<>();
+        for (int a : known) {
+            boolean past = forward ? (a > finalVisibleMax) : (a < finalVisibleMin);
+            if (past) toRemove.add(a);
+        }
+        if (toRemove.isEmpty()) return false;
+        Shipyard shipyard = Shipyards.of(level);
+        int deletedSableShips = 0;
+        for (int a : toRemove) {
+            ManagedShip ship = Trains.unregisterGroup(trainId, a);
+            if (ship != null) {
+                shipyard.delete(ship);
+                deletedSableShips++;
+            }
+        }
+        LOGGER.info(
+            "[DungeonTrain] Cleaned up {} ghost anchor(s) past visible {}={} for trainId={} — anchors={}, sableShipsDeleted={}",
+            toRemove.size(),
+            forward ? "max" : "min",
+            forward ? visibleMax : visibleMin,
+            trainId,
+            toRemove,
+            deletedSableShips);
         return true;
     }
 
