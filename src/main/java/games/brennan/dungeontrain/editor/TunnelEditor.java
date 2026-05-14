@@ -157,6 +157,8 @@ public final class TunnelEditor {
     public static void stampPlot(ServerLevel overworld, TunnelVariant variant, String name) {
         BlockPos origin = plotOrigin(variant, name);
         TunnelPlacer.eraseAt(overworld, origin);
+        EditorPlotEntityClearer.discardNonPlayersIn(
+            overworld, origin, new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH));
         if (variant == TunnelVariant.SECTION) {
             TunnelPlacer.placeSectionNamed(overworld, origin, name);
         } else {

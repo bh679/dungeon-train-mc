@@ -132,6 +132,9 @@ public final class TrackEditor {
     public static void stampPlot(ServerLevel overworld, String name, CarriageDims dims) {
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         eraseAt(overworld, origin, dims);
+        EditorPlotEntityClearer.discardNonPlayersIn(
+            overworld, origin.offset(-1, -1, -1),
+            new Vec3i(TrackPlacer.TILE_LENGTH + 2, TrackPlacer.HEIGHT + 2, dims.width() + 2));
         stampNameAt(overworld, origin, name, dims);
         setOutline(overworld, origin, dims);
         captureSnapshot(overworld, origin, name, dims);

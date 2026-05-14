@@ -195,6 +195,8 @@ public final class CarriageEditor {
         CarriageVariantBlocks.invalidate(variant.id());
 
         CarriagePlacer.eraseAt(overworld, origin, dims);
+        EditorPlotEntityClearer.discardNonPlayersIn(
+            overworld, origin, new Vec3i(dims.length(), dims.height(), dims.width()));
         CarriagePlacer.placeAt(overworld, origin, variant, dims);
         setOutline(overworld, origin, OUTLINE_BLOCK, dims);
 
