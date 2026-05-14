@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyard;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -1360,6 +1362,49 @@ public final class TrainCarriageAppender {
             trainMinAnchor = minA;
         }
 
+        // Proximity-based latch reset: if any near player's pIdx is past
+        // the registry's end in a direction, clear that direction's
+        // {@link #CULL_CLEARED_FORWARD}/{@link #CULL_CLEARED_BACKWARD}
+        // latch and unregister any ghost anchors past the visible train's
+        // end. The bounded cull-clear normally only re-arms via a natural
+        // placement success — but when EVERY spawn in a direction is
+        // being culled (player rode past Sable's plot, or flew there in
+        // creative), no placement ever succeeds and the latch would stay
+        // set forever. The "player is beyond the registry" condition
+        // signals that they've physically reached the end and a fresh
+        // spawn at the next anchor is worth attempting.
+        //
+        // We also drop ghost anchors from the registry — anchors that
+        // were spawned, then culled by Sable, and never reloaded. Without
+        // this, the next spawn's anchor (computed as
+        // {@code registryMin - groupSize} / {@code registryMax + groupSize})
+        // would skip past every ghost, producing a visible pIdx gap
+        // between the actual visible end and the next spawn. After
+        // cleanup, the registry edge matches the visible edge so the next
+        // spawn fills the slot adjacent to what the player can see.
+        boolean refreshedAnchors = false;
+        for (int playerPIdx : nearPlayerPIdxs) {
+            if (playerPIdx > trainMaxAnchor && CULL_CLEARED_FORWARD.remove(trainId) != null) {
+                refreshedAnchors |= cleanupGhostAnchors(level, trainId, train, true);
+            }
+            if (playerPIdx < trainMinAnchor && CULL_CLEARED_BACKWARD.remove(trainId) != null) {
+                refreshedAnchors |= cleanupGhostAnchors(level, trainId, train, false);
+            }
+        }
+        if (refreshedAnchors) {
+            knownAnchors = Trains.knownAnchors(trainId);
+            if (!knownAnchors.isEmpty()) {
+                int maxA = Integer.MIN_VALUE;
+                int minA = Integer.MAX_VALUE;
+                for (int a : knownAnchors) {
+                    if (a > maxA) maxA = a;
+                    if (a < minA) minA = a;
+                }
+                trainMaxAnchor = maxA;
+                trainMinAnchor = minA;
+            }
+        }
+
         // Independent per-direction spawn decision. Forward and backward
         // are evaluated as two SEPARATE spawn lanes — each has its own
         // preview slot ({@code NEXT_PLANNED_SPAWNS_FORWARD/BACKWARD}),
@@ -1610,6 +1655,78 @@ public final class TrainCarriageAppender {
         }
         lane.remove(trainId);
         cullClearedFlags.remove(trainId);
+        return true;
+    }
+
+    /**
+     * Drop registry entries for "ghost" anchors past the visible end of
+     * the train in the given direction, AND mark their underlying Sable
+     * sub-levels as removed so a future plot move can't reload them
+     * into the spot we're about to refill.
+     *
+     * <p>Called from {@link #updateTrain} when a proximity unlatch fires
+     * — the player has physically reached the registry's edge, so any
+     * anchor in the registry that's still not in {@code currentTrain}
+     * (i.e. Sable culled it long ago and hasn't reloaded it) is treated
+     * as a ghost and forgotten. Without this cleanup the next spawn
+     * anchor would be placed past the ghosts, leaving a visible pIdx
+     * gap between the actual visible end of the train and the new spawn.</p>
+     *
+     * <p>Sable distinguishes {@code UNLOADED} (culled, retained in
+     * {@code HoldingSubLevel} storage, may reload when the plot returns)
+     * from {@code REMOVED} (gone for good). A culled ghost is still in
+     * Sable's storage; if we only forgot it from our registry, Sable
+     * could later reload it into the same anchor we just respawned —
+     * producing two ships at the same anchor. {@link Shipyard#delete}
+     * calls {@code SubLevel.markRemoved()} which the container's tick
+     * pass converts into a {@code REMOVED} removal, so the holding-
+     * storage entry is also dropped.</p>
+     *
+     * <p>Returns {@code true} if at least one anchor was removed so the
+     * caller can recompute {@code trainMin/MaxAnchor} from the updated
+     * registry before proceeding with the spawn decision.</p>
+     */
+    private static boolean cleanupGhostAnchors(
+        ServerLevel level,
+        UUID trainId,
+        List<Trains.Carriage> currentTrain,
+        boolean forward
+    ) {
+        int visibleMin = Integer.MAX_VALUE;
+        int visibleMax = Integer.MIN_VALUE;
+        for (Trains.Carriage c : currentTrain) {
+            int p = c.provider().getPIdx();
+            if (p < visibleMin) visibleMin = p;
+            if (p > visibleMax) visibleMax = p;
+        }
+        if (visibleMin == Integer.MAX_VALUE) return false;
+
+        Set<Integer> known = Trains.knownAnchors(trainId);
+        int finalVisibleMin = visibleMin;
+        int finalVisibleMax = visibleMax;
+        java.util.List<Integer> toRemove = new java.util.ArrayList<>();
+        for (int a : known) {
+            boolean past = forward ? (a > finalVisibleMax) : (a < finalVisibleMin);
+            if (past) toRemove.add(a);
+        }
+        if (toRemove.isEmpty()) return false;
+        Shipyard shipyard = Shipyards.of(level);
+        int deletedSableShips = 0;
+        for (int a : toRemove) {
+            ManagedShip ship = Trains.unregisterGroup(trainId, a);
+            if (ship != null) {
+                shipyard.delete(ship);
+                deletedSableShips++;
+            }
+        }
+        LOGGER.info(
+            "[DungeonTrain] Cleaned up {} ghost anchor(s) past visible {}={} for trainId={} — anchors={}, sableShipsDeleted={}",
+            toRemove.size(),
+            forward ? "max" : "min",
+            forward ? visibleMax : visibleMin,
+            trainId,
+            toRemove,
+            deletedSableShips);
         return true;
     }
 
