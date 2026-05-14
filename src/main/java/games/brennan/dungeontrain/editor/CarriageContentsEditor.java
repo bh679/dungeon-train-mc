@@ -76,6 +76,10 @@ public final class CarriageContentsEditor {
     public static void stampPlot(ServerLevel overworld, CarriageContents contents, CarriageDims dims) {
         BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) return;
+        // Drop in-session contents-store changes (loot-prefab links) so the
+        // re-stamp reads the last-saved disk state; placement writes only
+        // touch the in-memory cache until /save.
+        ContainerContentsStore.invalidate("contents:" + contents.id());
         CarriagePlacer.eraseAt(overworld, origin, dims);
         CarriageContentsPlacer.eraseAt(overworld, origin, dims);
         CarriagePlacer.placeAt(overworld, origin, DEFAULT_SHELL, dims);
@@ -303,6 +307,16 @@ public final class CarriageContentsEditor {
 
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, origin, dims);
         CarriageContentsStore.save(contents, template);
+
+        // Contents store: persist any in-session loot-prefab link changes
+        // accumulated since enter (PrefabUseHandler defers its writes until
+        // /save). Failure is logged but doesn't fail the whole save.
+        try {
+            ContainerContentsStore.loadFor("contents:" + contents.id()).save();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Contents editor save: contents-store save failed for {}: {}",
+                contents.id(), e.toString());
+        }
 
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.

@@ -77,14 +77,6 @@ public final class VariantEntityBreakHandler {
         if (prevLink != null) {
             hadLink = store.clearLink(local);
             if (hadLink) {
-                try {
-                    store.save();
-                } catch (IOException e) {
-                    player.displayClientMessage(
-                        Component.literal("Contents save failed: " + e.getMessage())
-                            .withStyle(ChatFormatting.YELLOW), true);
-                    return;
-                }
                 ContainerContentsMenuController.resyncIfOpen(player, plot.key(), local);
             }
         }

@@ -131,6 +131,10 @@ public final class TrackEditor {
     /** Erase + restamp the single plot for {@code name}. */
     public static void stampPlot(ServerLevel overworld, String name, CarriageDims dims) {
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
+        // Drop in-session contents-store changes (loot-prefab links) so the
+        // re-stamp reads the last-saved disk state; placement writes only
+        // touch the in-memory cache until /save.
+        ContainerContentsStore.invalidate("track:" + TrackKind.TILE.id() + ":" + name);
         eraseAt(overworld, origin, dims);
         EditorPlotEntityClearer.discardNonPlayersIn(
             overworld, origin.offset(-1, -1, -1),
@@ -184,6 +188,16 @@ public final class TrackEditor {
         BlockPos origin = TrackSidePlots.plotOrigin(TrackKind.TILE, name, dims);
         StructureTemplate template = captureTemplate(overworld, origin, dims);
         TrackVariantStore.save(TrackKind.TILE, name, template);
+
+        // Contents store: persist any in-session loot-prefab link changes
+        // accumulated since enter (PrefabUseHandler defers its writes until
+        // /save). Failure is logged but doesn't fail the whole save.
+        try {
+            ContainerContentsStore.loadFor("track:" + TrackKind.TILE.id() + ":" + name).save();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Track editor save: contents-store save failed for {}: {}",
+                name, e.toString());
+        }
 
         // Refresh the dirty-check baseline so the just-saved state reads as
         // clean on the next /dt editor unsaved-list query.

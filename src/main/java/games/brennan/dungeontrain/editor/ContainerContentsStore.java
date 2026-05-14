@@ -116,6 +116,16 @@ public final class ContainerContentsStore {
         CACHE.clear();
     }
 
+    /**
+     * Drop a single plot's cached store so the next {@link #loadFor} re-reads
+     * from disk. Called from each plot type's {@code stampPlot} (reset path)
+     * so that in-session-only link/pool changes are discarded and the
+     * re-stamp sees the last-saved state.
+     */
+    public static synchronized void invalidate(String plotKey) {
+        if (plotKey != null) CACHE.remove(plotKey);
+    }
+
     public String plotKey() { return plotKey; }
 
     /**
