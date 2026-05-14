@@ -1,18 +1,27 @@
 package games.brennan.dungeontrain.editor;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
 import org.jetbrains.annotations.Nullable;
 
 /**
- * One entry in a v6 variants sidecar: a {@link BlockState} plus optional
+ * One entry in a v7 variants sidecar: a {@link BlockState} plus optional
  * {@link CompoundTag} {@code BlockEntity} payload, plus a per-entry
  * {@code weight} (default 1, ≥ 1), plus a per-entry {@link VariantRotation}
  * (default {@link VariantRotation#NONE}), plus an optional per-entry
- * {@code linkedLootPrefabId} pointing into {@code LootPrefabStore}.
- * Pure data — equality is by value so the picker / overlay / list code can
- * compare entries safely.
+ * {@code linkedLootPrefabId} pointing into {@code LootPrefabStore}, plus an
+ * optional per-entry {@code entityId} for mob spawn entries.
+ *
+ * <p>When {@code entityId != null}, the entry is a <b>mob entry</b>: at spawn
+ * time the picker treats {@code state} as the empty-placeholder sentinel
+ * (cell becomes AIR) and a separate entity pass spawns the mob. The
+ * {@code blockEntityNbt} field is reused as the optional <b>entity NBT</b>
+ * (custom name, equipment, tags). The constructor force-stamps {@code state}
+ * to the COMMAND_BLOCK sentinel so every existing applier site routes the
+ * cell through the AIR branch automatically.</p>
  *
  * <p>Schema history:
  * <ul>
@@ -38,12 +47,23 @@ import org.jetbrains.annotations.Nullable;
  *       the cell-level link in {@code ContainerContentsStore}. v5 files
  *       load with {@code linkedLootPrefabId == null} and re-save
  *       diff-clean.</li>
+ *   <li>v7 — adds an optional per-entry {@code entityId} for mob spawn
+ *       entries. When set, the cell rolls AIR at spawn and a deferred
+ *       entity pass creates the mob (subject to the existing 48-block
+ *       player-distance gate). v6 files load with {@code entityId == null}
+ *       and re-save diff-clean.</li>
  * </ul></p>
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
-                           VariantRotation rotation, @Nullable String linkedLootPrefabId) {
+                           VariantRotation rotation, @Nullable String linkedLootPrefabId,
+                           @Nullable ResourceLocation entityId) {
 
     public VariantState {
+        if (entityId != null) {
+            // Mob entries always sit in the AIR-via-sentinel lane so existing
+            // applier branches clear the cell without any new branch.
+            state = Blocks.COMMAND_BLOCK.defaultBlockState();
+        }
         if (state == null) throw new IllegalArgumentException("state");
         if (weight < 1) weight = 1;
         if (blockEntityNbt != null && blockEntityNbt.isEmpty()) {
@@ -59,14 +79,20 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         }
     }
 
-    /** Four-arg overload defaulting {@code linkedLootPrefabId} to {@code null}. */
+    /** Five-arg overload defaulting {@code entityId} to {@code null} (block entry). */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
+                        VariantRotation rotation, @Nullable String linkedLootPrefabId) {
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, null);
+    }
+
+    /** Four-arg overload defaulting {@code linkedLootPrefabId} and {@code entityId} to {@code null}. */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight, VariantRotation rotation) {
-        this(state, blockEntityNbt, weight, rotation, null);
+        this(state, blockEntityNbt, weight, rotation, null, null);
     }
 
     /** Three-arg overload defaulting rotation to {@link VariantRotation#NONE}. */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight) {
-        this(state, blockEntityNbt, weight, VariantRotation.NONE, null);
+        this(state, blockEntityNbt, weight, VariantRotation.NONE, null, null);
     }
 
     /**
@@ -76,12 +102,33 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * unchanged.
      */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt) {
-        this(state, blockEntityNbt, 1, VariantRotation.NONE, null);
+        this(state, blockEntityNbt, 1, VariantRotation.NONE, null, null);
     }
 
     /** State-only constructor — equivalent to a v1 entry (weight 1, no NBT, default rotation, no link). */
     public static VariantState of(BlockState state) {
-        return new VariantState(state, null, 1, VariantRotation.NONE, null);
+        return new VariantState(state, null, 1, VariantRotation.NONE, null, null);
+    }
+
+    /**
+     * Mob-entry factory. The {@code state} field is auto-set to the
+     * COMMAND_BLOCK sentinel by the canonical constructor so existing
+     * applier branches AIR the cell. {@code entityNbt} carries optional
+     * mob NBT (custom name, equipment, tags) — pass {@code null} for a
+     * default mob.
+     *
+     * @param entityId  Registry id of the entity type to spawn (e.g.
+     *                  {@code minecraft:zombie}). Required.
+     * @param entityNbt Optional NBT applied via
+     *                  {@link net.minecraft.world.entity.EntityType#create}.
+     * @param weight    Weighted-pick weight (≥ 1).
+     * @param rotation  Y-rotation at spawn (rotation field reused for mobs).
+     */
+    public static VariantState ofMob(ResourceLocation entityId, @Nullable CompoundTag entityNbt,
+                                      int weight, VariantRotation rotation) {
+        if (entityId == null) throw new IllegalArgumentException("entityId");
+        return new VariantState(Blocks.COMMAND_BLOCK.defaultBlockState(),
+            entityNbt, weight, rotation, null, entityId);
     }
 
     public boolean hasBlockEntityData() {
@@ -93,23 +140,29 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         return linkedLootPrefabId != null;
     }
 
+    /** True when this entry spawns a mob instead of placing a block. */
+    public boolean isMob() {
+        return entityId != null;
+    }
+
     /** True when the entry has no extras over v1 — drives bare-string vs object-form JSON serialisation. */
     public boolean isPlainBareString() {
-        return blockEntityNbt == null && weight == 1 && rotation.isDefault() && linkedLootPrefabId == null;
+        return blockEntityNbt == null && weight == 1 && rotation.isDefault()
+            && linkedLootPrefabId == null && entityId == null;
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId);
     }
 }

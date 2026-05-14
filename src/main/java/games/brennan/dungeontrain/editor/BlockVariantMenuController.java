@@ -183,10 +183,11 @@ public final class BlockVariantMenuController {
             String stateStr = BlockStateParser.serialize(s.state());
             String beNbt = s.hasBlockEntityData() ? s.blockEntityNbt().toString() : null;
             VariantRotation rot = s.rotation();
+            String entityId = s.entityId() == null ? null : s.entityId().toString();
             entries.add(new BlockVariantSyncPacket.Entry(
                 stateStr, beNbt, s.weight(),
                 (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
-                s.linkedLootPrefabId()));
+                s.linkedLootPrefabId(), entityId));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -241,6 +242,59 @@ public final class BlockVariantMenuController {
         switch (packet.op()) {
             case ADD -> {
                 ItemStack held = player.getMainHandItem();
+                // Spawn-egg branch: add a v7 mob variant entry. The cell rolls
+                // AIR at spawn (mob entries are auto-stamped with the
+                // empty-placeholder sentinel) and a deferred entity pass
+                // creates the mob, gated by the existing 48-block player-
+                // distance check.
+                if (held.getItem() instanceof net.minecraft.world.item.SpawnEggItem egg) {
+                    net.minecraft.world.entity.EntityType<?> type = egg.getType(held);
+                    if (type == null) {
+                        actionBar(player, "Spawn egg has no entity type", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    net.minecraft.resources.ResourceLocation eid =
+                        net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type);
+                    if (eid == null) {
+                        actionBar(player, "Cannot resolve entity id for spawn egg", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    CompoundTag mobNbt = null;
+                    net.minecraft.world.item.component.CustomData beData =
+                        held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+                    if (beData != null && !beData.isEmpty()) {
+                        CompoundTag raw = beData.copyTag();
+                        if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                            mobNbt = raw.getCompound("EntityTag").copy();
+                        } else if (!raw.isEmpty()) {
+                            mobNbt = raw;
+                        }
+                        if (mobNbt != null) mobNbt.remove("id");
+                    }
+                    if (wasEmpty) {
+                        // Mob added to an empty cell — seed with the empty-
+                        // placeholder sentinel so the picker can still roll
+                        // between "stay air" and "spawn mob".
+                        mutated.add(VariantState.of(
+                            net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                    }
+                    VariantState mobVariant = VariantState.ofMob(
+                        eid, mobNbt, 1, games.brennan.dungeontrain.editor.VariantRotation.NONE);
+                    if (mutated.size() >= MAX_ENTRIES) {
+                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    for (VariantState existing : mutated) {
+                        if (existing.isMob() && existing.entityId().equals(eid)
+                            && Objects.equals(existing.blockEntityNbt(), mobNbt)) {
+                            actionBar(player, "Mob variant already in this cell", ChatFormatting.YELLOW);
+                            return;
+                        }
+                    }
+                    mutated.add(mobVariant);
+                    dirty = true;
+                    break;
+                }
                 BlockState capturedState;
                 CompoundTag itemBeNbt;
                 String linkedPrefabId = null;
@@ -252,7 +306,7 @@ public final class BlockVariantMenuController {
                     capturedState = net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState();
                     itemBeNbt = null;
                 } else if (!(held.getItem() instanceof BlockItem blockItem)) {
-                    actionBar(player, "Hold a block (or empty hand for air) to add a variant",
+                    actionBar(player, "Hold a block, spawn egg, or empty hand to add a variant",
                         ChatFormatting.YELLOW);
                     return;
                 } else {
@@ -297,10 +351,15 @@ public final class BlockVariantMenuController {
                 for (VariantState existing : mutated) {
                     // Two rows linked to different loot prefabs are distinct
                     // even if their state + beNbt match — the link makes them
-                    // semantically different variants.
+                    // semantically different variants. Mob entries also share
+                    // the COMMAND_BLOCK sentinel state but are distinguished
+                    // by entityId, so include it in the dedup key (otherwise
+                    // adding the empty-placeholder to a cell already
+                    // containing a mob entry false-positives).
                     if (existing.state().equals(newVariant.state())
                         && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())
-                        && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())) {
+                        && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())
+                        && Objects.equals(existing.entityId(), newVariant.entityId())) {
                         actionBar(player, "Variant already in this cell", ChatFormatting.YELLOW);
                         return;
                     }

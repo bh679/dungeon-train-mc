@@ -18,8 +18,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.SpawnEggItem;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -91,9 +93,16 @@ public final class VariantBlockInteractions {
         BlockPos clicked = event.getPos();
 
         ItemStack held = event.getItemStack();
-        if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) return;
+        if (held.isEmpty()) return;
 
-        VariantState newVariant = captureVariant(event, level, player, blockItem, held, clicked);
+        VariantState newVariant;
+        if (held.getItem() instanceof BlockItem blockItem) {
+            newVariant = captureVariant(event, level, player, blockItem, held, clicked);
+        } else if (held.getItem() instanceof SpawnEggItem egg) {
+            newVariant = captureMobVariant(egg, held, player);
+        } else {
+            return;
+        }
         if (newVariant == null) return;
 
         // Part plot takes priority: if the clicked position falls inside a
@@ -353,6 +362,50 @@ public final class VariantBlockInteractions {
     }
 
     /**
+     * Build a mob {@link VariantState} from a held vanilla spawn egg. The
+     * resulting entry's {@code state} is auto-stamped to the COMMAND_BLOCK
+     * sentinel by the canonical constructor, so existing applier branches
+     * AIR the cell at spawn; a parallel entity pass spawns the mob (subject
+     * to the existing 48-block player-distance gate). Entity NBT from the
+     * spawn-egg's {@code EntityTag} component (set by anvil-rename / vanilla
+     * NBT-give) is preserved so a tagged egg round-trips into the variant.
+     */
+    private static @Nullable VariantState captureMobVariant(SpawnEggItem egg, ItemStack held, ServerPlayer player) {
+        EntityType<?> type = egg.getType(held);
+        if (type == null) {
+            player.displayClientMessage(
+                Component.literal("Spawn egg has no entity type — cannot add as variant.")
+                    .withStyle(ChatFormatting.YELLOW), true);
+            return null;
+        }
+        ResourceLocation eid = BuiltInRegistries.ENTITY_TYPE.getKey(type);
+        if (eid == null) {
+            player.displayClientMessage(
+                Component.literal("Cannot resolve entity id for spawn egg.")
+                    .withStyle(ChatFormatting.YELLOW), true);
+            return null;
+        }
+        // Optional entity NBT — preserves anvil-renamed / NBT-tagged eggs.
+        // Vanilla stores the spawn payload in BLOCK_ENTITY_DATA on the egg
+        // (ID:"<entity>" + extra fields like CustomName / Tags / ArmorItems);
+        // we strip the ID since the entity type is the authoritative source
+        // and avoid stamping a redundant id mismatch onto the spawned mob.
+        net.minecraft.nbt.CompoundTag mobNbt = null;
+        net.minecraft.world.item.component.CustomData beData =
+            held.get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA);
+        if (beData != null && !beData.isEmpty()) {
+            net.minecraft.nbt.CompoundTag raw = beData.copyTag();
+            if (raw.contains("EntityTag", net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+                mobNbt = raw.getCompound("EntityTag").copy();
+            } else if (!raw.isEmpty()) {
+                mobNbt = raw;
+            }
+            if (mobNbt != null) mobNbt.remove("id"); // EntityType.create writes its own
+        }
+        return VariantState.ofMob(eid, mobNbt, 1, VariantRotation.NONE);
+    }
+
+    /**
      * Capture the cell's existing block as a {@link VariantState} so the
      * first shift-click seeds the candidate list with {@code [base, added]}.
      * Block-entity payloads are read from the world so an authored chest /
@@ -383,13 +436,24 @@ public final class VariantBlockInteractions {
         List<VariantState> updated = new ArrayList<>();
         if (existing == null) {
             if (baseVariant == null || baseState.isAir()) {
-                player.displayClientMessage(
-                    Component.literal("Target block is air — place a base block first.")
-                        .withStyle(ChatFormatting.YELLOW), true);
-                suppressVanillaPlace(event);
-                return null;
+                if (newVariant.isMob()) {
+                    // Mob added to air cell — seed with the empty-placeholder
+                    // so the picker can roll between "stay air" (sentinel) and
+                    // "spawn mob" (mob entry). Without this seed the cell
+                    // would have only one candidate and short-circuit any
+                    // weight authoring.
+                    updated.add(VariantState.of(
+                        net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                } else {
+                    player.displayClientMessage(
+                        Component.literal("Target block is air — place a base block first.")
+                            .withStyle(ChatFormatting.YELLOW), true);
+                    suppressVanillaPlace(event);
+                    return null;
+                }
+            } else {
+                updated.add(baseVariant);
             }
-            updated.add(baseVariant);
         } else {
             if (existing.size() >= MAX_VARIANTS_PER_POSITION) {
                 player.displayClientMessage(
@@ -399,6 +463,14 @@ public final class VariantBlockInteractions {
                 return null;
             }
             updated.addAll(existing);
+        }
+        // Mob entries skip rotation-orientation: rotation field semantics
+        // differ (Y-rot at spawn rather than block FACING) and the state
+        // field is the AIR-sentinel anyway. Preserve the mob entry as-is so
+        // its entityId / entityNbt round-trip through buildUpdatedList.
+        if (newVariant.isMob()) {
+            updated.add(newVariant);
+            return updated;
         }
         // Orient the new entry against the predecessor list so its facing
         // matches the most recent existing block with a direction. This
@@ -413,11 +485,19 @@ public final class VariantBlockInteractions {
 
     private static void sendAddedFeedback(ServerPlayer player, BlockPos clicked, BlockPos local,
                                            VariantState added, List<VariantState> updated) {
-        ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(added.state().getBlock());
         final int count = updated.size();
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();
+        if (added.isMob()) {
+            String mobLabel = added.entityId().toString() + " (mob)"
+                + (added.hasBlockEntityData() ? " (+nbt)" : "");
+            player.displayClientMessage(
+                Component.literal("+ " + mobLabel + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
+                    .withStyle(ChatFormatting.LIGHT_PURPLE), true);
+            return;
+        }
+        ResourceLocation newName = BuiltInRegistries.BLOCK.getKey(added.state().getBlock());
         boolean sentinel = CarriageVariantBlocks.isEmptyPlaceholder(added.state());
         StringBuilder label = new StringBuilder();
         if (sentinel) {

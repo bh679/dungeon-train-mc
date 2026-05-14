@@ -61,12 +61,24 @@ public record BlockVariantSyncPacket(
      * pool (see {@code LootPrefabStore}).</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
-                        byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId) {
+                        byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                        @Nullable String entityId) {
 
         /** Backward-compat constructor for call sites that don't carry a loot link. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
                      byte rotMode, byte rotDirMask) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, null);
+            this(stateString, beNbt, weight, rotMode, rotDirMask, null, null);
+        }
+
+        /** Backward-compat constructor for call sites that don't carry an entity id. */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, null);
+        }
+
+        /** True for v7 mob entries — the C-menu renders the spawn-egg icon for these rows. */
+        public boolean isMob() {
+            return entityId != null && !entityId.isEmpty();
         }
     }
 
@@ -111,6 +123,9 @@ public record BlockVariantSyncPacket(
             boolean hasLink = e.linkedLootPrefabId() != null && !e.linkedLootPrefabId().isEmpty();
             buf.writeBoolean(hasLink);
             if (hasLink) buf.writeUtf(e.linkedLootPrefabId(), 128);
+            boolean hasEid = e.entityId() != null && !e.entityId().isEmpty();
+            buf.writeBoolean(hasEid);
+            if (hasEid) buf.writeUtf(e.entityId(), 128);
         }
     }
 
@@ -138,7 +153,9 @@ public record BlockVariantSyncPacket(
             byte rotDirMask = buf.readByte();
             boolean hasLink = buf.readBoolean();
             String linkedLootPrefabId = hasLink ? buf.readUtf(128) : null;
-            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask, linkedLootPrefabId));
+            boolean hasEid = buf.readBoolean();
+            String entityId = hasEid ? buf.readUtf(128) : null;
+            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }

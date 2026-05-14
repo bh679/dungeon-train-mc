@@ -230,6 +230,11 @@ public final class CarriageContentsPlacer {
                 // get the stand at runtime: the link in ContainerContentsStore
                 // drives the entity spawn directly.
                 spawnLinkedEntities(level, origin, contents, carriagePIdx, seed);
+                // Mob-variant entity spawn — re-rolls the variant sidecar
+                // and spawns mobs at cells whose pick has entityId != null.
+                // Block pass already AIRed those cells via the existing
+                // empty-placeholder branch.
+                spawnVariantMobsForContents(level, origin, contents, dims, seed, carriagePIdx);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
@@ -630,6 +635,131 @@ public final class CarriageContentsPlacer {
             LOGGER.info("[DungeonTrain] LinkedEntities: spawned {} armor stand(s) for contents={} pIdx={} tag={}",
                 spawned, contents.id(), carriagePIdx, tag);
         }
+    }
+
+    /**
+     * Mob-variant entity-pass for a carriage's interior. Re-rolls the
+     * contents variant sidecar with the same {@code (seed, carriagePIdx)}
+     * the block pass used and spawns a mob at every cell whose pick has
+     * {@code entityId != null}.
+     *
+     * <p>The block pass already cleared those cells to AIR through the
+     * existing empty-placeholder sentinel branch (the canonical
+     * {@link VariantState} constructor force-stamps the COMMAND_BLOCK
+     * sentinel onto mob entries), so this pass only spawns entities — it
+     * never touches blocks.</p>
+     *
+     * <p>Spawn position is the bottom-centre of the cell. Subject to the
+     * existing 48-block player-distance gate that wraps the entity pass.</p>
+     */
+    private static void spawnVariantMobsForContents(ServerLevel level, BlockPos carriageOrigin,
+                                                     CarriageContents contents, CarriageDims dims,
+                                                     long seed, int carriagePIdx) {
+        // Editor preview / template-load path uses EDITOR_SENTINEL_PIDX —
+        // skip variant mob spawning so authoring doesn't drop random live
+        // mobs into the editor plot every time the template is restamped.
+        // Template-baked entities (armor stands etc. captured into the
+        // .nbt file) still spawn here via spawnEntitiesFromTemplate; only
+        // the stochastic per-spawn variant rolls are suppressed.
+        if (carriagePIdx == EDITOR_SENTINEL_PIDX) return;
+        Vec3i size = interiorSize(dims);
+        if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
+        CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
+        if (sidecar.isEmpty()) return;
+        BlockPos origin = interiorOrigin(carriageOrigin);
+        int spawned = 0;
+        for (var entry : sidecar.entries()) {
+            VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx);
+            if (picked == null || !picked.isMob()) continue;
+            BlockPos world = origin.offset(entry.localPos());
+            if (spawnVariantMob(level, world, picked, carriagePIdx)) spawned++;
+        }
+        if (spawned > 0) {
+            LOGGER.info("[DungeonTrain] Mob-variant: spawned {} mobs for contents={} pIdx={} seed={}",
+                spawned, contents.id(), carriagePIdx, seed);
+        }
+    }
+
+    /**
+     * Spawn a single mob at {@code worldPos} from a mob-variant pick.
+     * Reuses the same tag / persistence / NBT-stamping pattern as
+     * {@link #spawnEntitiesFromTemplate} so mobs from variant rolls are
+     * indistinguishable from template-baked entities for the diagnostics
+     * subscriber and despawn rules.
+     *
+     * @param level        Target level.
+     * @param worldPos     Cell world position; the mob spawns at the cell's
+     *                     bottom-centre.
+     * @param picked       Mob variant entry (must satisfy {@link VariantState#isMob}).
+     * @param carriagePIdx Carriage's pIdx for tag + diagnostics.
+     * @return {@code true} when the mob was successfully added to the
+     *         level; {@code false} on registry-resolve failure or
+     *         {@code addFreshEntity} rejection.
+     */
+    public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
+                                           VariantState picked, int carriagePIdx) {
+        if (picked == null || !picked.isMob()) return false;
+        Optional<EntityType<?>> typeOpt = EntityType.byString(picked.entityId().toString());
+        if (typeOpt.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] Mob-variant: unknown entity id '{}' at {} pIdx={} — skipping.",
+                picked.entityId(), worldPos, carriagePIdx);
+            return false;
+        }
+        EntityType<?> type = typeOpt.get();
+        Entity entity;
+        try {
+            CompoundTag mobNbt = picked.blockEntityNbt();
+            if (mobNbt != null) {
+                CompoundTag spawnNbt = mobNbt.copy();
+                spawnNbt.putString("id", picked.entityId().toString());
+                Optional<Entity> created = EntityType.create(spawnNbt, level);
+                if (created.isEmpty()) {
+                    LOGGER.warn("[DungeonTrain] Mob-variant: EntityType.create failed for {} at {} pIdx={}",
+                        picked.entityId(), worldPos, carriagePIdx);
+                    return false;
+                }
+                entity = created.get();
+            } else {
+                entity = type.create(level);
+                if (entity == null) {
+                    LOGGER.warn("[DungeonTrain] Mob-variant: type.create returned null for {} at {} pIdx={}",
+                        picked.entityId(), worldPos, carriagePIdx);
+                    return false;
+                }
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Mob-variant: spawn threw for {} at {} pIdx={}: {}",
+                picked.entityId(), worldPos, carriagePIdx, t.toString());
+            return false;
+        }
+        // Fresh UUID so the same template at multiple carriages doesn't
+        // collide on the UUID index (MC silently drops duplicate UUIDs).
+        entity.setUUID(UUID.randomUUID());
+        // Spawn at cell bottom-centre — matches the mob's footprint to the
+        // cell so it doesn't clip the floor / walls.
+        Vec3 pos = Vec3.atBottomCenterOf(worldPos);
+        // Y-rot: zero by default. Future: reuse VariantRotation.dirMask to
+        // pick a Direction and convert via Direction.toYRot.
+        entity.moveTo(pos.x, pos.y, pos.z, 0.0f, 0.0f);
+
+        String tag = contentsTagFor(carriagePIdx);
+        entity.addTag(tag);
+        CompoundTag persistent = entity.getPersistentData();
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);
+        persistent.putLong(NBT_SPAWN_GAME_TICK, level.getGameTime());
+        persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
+
+        if (entity instanceof Mob mob) {
+            mob.setPersistenceRequired();
+        }
+        if (!level.addFreshEntity(entity)) {
+            LOGGER.warn("[DungeonTrain] Mob-variant: addFreshEntity rejected {} at {} pIdx={}",
+                picked.entityId(), worldPos, carriagePIdx);
+            return false;
+        }
+        return true;
     }
 
     /**

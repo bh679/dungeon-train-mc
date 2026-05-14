@@ -89,6 +89,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_ROT_DIRS = "rd";
     /** Per-entry loot-prefab link id (v6 schema). Absent when the entry has no link. */
     private static final String NBT_LOOT_PREFAB = "lp";
+    /** Per-entry entity id (v7 schema, mob entries). Absent for block entries. */
+    private static final String NBT_ENTITY_ID = "eid";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -238,7 +240,14 @@ public final class VariantClipboardItem extends Item {
         ListTag list = new ListTag();
         for (VariantState s : states) {
             CompoundTag entry = new CompoundTag();
-            entry.putString(NBT_STATE, BlockStateParser.serialize(s.state()));
+            if (s.isMob()) {
+                // Mob entry: state field is the COMMAND_BLOCK sentinel and
+                // adds no information — omit on the wire and let the decoder
+                // route via the eid key.
+                entry.putString(NBT_ENTITY_ID, s.entityId().toString());
+            } else {
+                entry.putString(NBT_STATE, BlockStateParser.serialize(s.state()));
+            }
             if (s.hasBlockEntityData()) {
                 entry.put(NBT_BENBT, s.blockEntityNbt());
             }
@@ -330,18 +339,6 @@ public final class VariantClipboardItem extends Item {
             BuiltInRegistries.BLOCK.asLookup();
         for (int i = 0; i < list.size(); i++) {
             CompoundTag entry = list.getCompound(i);
-            String stateStr = entry.getString(NBT_STATE);
-            if (stateStr == null || stateStr.isEmpty()) continue;
-            BlockState state;
-            try {
-                state = BlockStateParser.parseForBlock(blocks, stateStr, false).blockState();
-            } catch (Exception e) {
-                LOGGER.warn("[DungeonTrain] VariantClipboard: skipping bad state '{}' ({})",
-                    stateStr, e.getMessage());
-                continue;
-            }
-            CompoundTag beNbt = entry.contains(NBT_BENBT, Tag.TAG_COMPOUND)
-                ? entry.getCompound(NBT_BENBT) : null;
             int weight = entry.contains(NBT_WEIGHT, Tag.TAG_INT) ? entry.getInt(NBT_WEIGHT) : 1;
             VariantRotation rotation = VariantRotation.NONE;
             if (entry.contains(NBT_ROT_MODE, Tag.TAG_BYTE)) {
@@ -353,6 +350,29 @@ public final class VariantClipboardItem extends Item {
                 if (ord >= 0 && ord < modes.length) {
                     rotation = new VariantRotation(modes[ord], mask);
                 }
+            }
+            CompoundTag beNbt = entry.contains(NBT_BENBT, Tag.TAG_COMPOUND)
+                ? entry.getCompound(NBT_BENBT) : null;
+            // v7 mob entry: presence of NBT_ENTITY_ID drives the mob branch.
+            if (entry.contains(NBT_ENTITY_ID, Tag.TAG_STRING)) {
+                String eidStr = entry.getString(NBT_ENTITY_ID);
+                ResourceLocation eid = ResourceLocation.tryParse(eidStr);
+                if (eid == null) {
+                    LOGGER.warn("[DungeonTrain] VariantClipboard: skipping bad entity id '{}'", eidStr);
+                    continue;
+                }
+                out.add(VariantState.ofMob(eid, beNbt, weight, rotation));
+                continue;
+            }
+            String stateStr = entry.getString(NBT_STATE);
+            if (stateStr == null || stateStr.isEmpty()) continue;
+            BlockState state;
+            try {
+                state = BlockStateParser.parseForBlock(blocks, stateStr, false).blockState();
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] VariantClipboard: skipping bad state '{}' ({})",
+                    stateStr, e.getMessage());
+                continue;
             }
             String lootPrefab = null;
             if (entry.contains(NBT_LOOT_PREFAB, Tag.TAG_STRING)) {

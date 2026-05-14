@@ -274,11 +274,64 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
+        // Shell + parts mob-variant entity-pass — runs for every variant
+        // including FLATBED. The block pass already AIRed mob-entry cells
+        // via the existing empty-placeholder branch (mob entries' state is
+        // forced to the COMMAND_BLOCK sentinel by the canonical
+        // VariantState constructor). Subject to the same 48-block player-
+        // distance gate that wraps this entity pass.
+        spawnShellAndPartsVariantMobs(level, origin, variant, dims, config.seed(), carriageIndex);
         if (variant instanceof CarriageVariant.Builtin b && b.type() == CarriageType.FLATBED) {
             return;
         }
         applyContents(level, origin, variant, dims, config, carriageIndex,
             /*placeBlocks*/ false, /*spawnEntities*/ true);
+    }
+
+    /**
+     * Re-roll the shell {@link CarriageVariantBlocks} sidecar AND every
+     * declared part's {@link CarriagePartVariantBlocks} sidecar, spawning
+     * a mob at each cell whose pick has {@code entityId != null}. The
+     * block pass already AIRed those cells (the mob entry's state is the
+     * empty-placeholder sentinel), so this pass only spawns entities.
+     */
+    private static void spawnShellAndPartsVariantMobs(ServerLevel level, BlockPos origin,
+                                                       CarriageVariant variant, CarriageDims dims,
+                                                       long seed, int carriageIndex) {
+        spawnShellVariantMobs(level, origin, variant, dims, seed, carriageIndex);
+        spawnPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex);
+    }
+
+    private static void spawnShellVariantMobs(ServerLevel level, BlockPos origin,
+                                               CarriageVariant variant, CarriageDims dims,
+                                               long seed, int carriageIndex) {
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        if (sidecar.isEmpty()) return;
+        int spawned = 0;
+        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+            VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
+            if (picked == null || !picked.isMob()) continue;
+            BlockPos world = origin.offset(e.localPos());
+            if (CarriageContentsPlacer.spawnVariantMob(level, world, picked, carriageIndex)) spawned++;
+        }
+        if (spawned > 0) {
+            LOGGER.info("[DungeonTrain] Mob-variant: spawned {} shell mobs for variant={} pIdx={}",
+                spawned, variant.id(), carriageIndex);
+        }
+    }
+
+    private static void spawnPartsVariantMobs(ServerLevel level, BlockPos origin,
+                                               CarriageVariant variant, CarriageDims dims,
+                                               long seed, int carriageIndex) {
+        Optional<CarriagePartAssignment> assignment =
+            games.brennan.dungeontrain.editor.CarriageVariantPartsStore.get(variant);
+        if (assignment.isEmpty()) return;
+        CarriagePartAssignment a = assignment.get();
+        if (a.allNone()) return;
+        for (CarriagePartKind kind : CarriagePartKind.values()) {
+            java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex);
+            CarriagePartPlacer.spawnPartVariantMobsAt(level, origin, kind, picks, dims, seed, carriageIndex);
+        }
     }
 
     /**

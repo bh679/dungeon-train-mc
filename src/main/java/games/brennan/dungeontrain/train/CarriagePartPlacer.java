@@ -145,6 +145,48 @@ public final class CarriagePartPlacer {
     }
 
     /**
+     * Mob-variant entity-pass for {@code kind}. For each placement (left/right
+     * wall etc.), re-rolls the matching part variant sidecar with the same
+     * {@code (seed, carriageIndex)} the block pass used and spawns a mob at
+     * every cell whose pick has {@code entityId != null}. The block pass
+     * already AIRed those cells through the empty-placeholder branch.
+     *
+     * <p>World position uses the same mirror-aware {@link #transformLocal}
+     * as the block pass so mob spawn positions track the placement's mirror
+     * orientation (left vs right wall etc.).</p>
+     */
+    public static void spawnPartVariantMobsAt(ServerLevel level, BlockPos carriageOrigin,
+                                               CarriagePartKind kind, List<String> names, CarriageDims dims,
+                                               long seed, int carriageIndex) {
+        List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        Vec3i partSize = kind.dims(dims);
+        int spawnedTotal = 0;
+        for (int i = 0; i < placements.size(); i++) {
+            String name = i < names.size() ? names.get(i) : null;
+            if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
+            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+            if (sidecar.isEmpty()) continue;
+            CarriagePartKind.Placement p = placements.get(i);
+            BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
+            for (var entry : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                if (picked == null || !picked.isMob()) continue;
+                BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
+                if (CarriageContentsPlacer.spawnVariantMob(level, world, picked, carriageIndex)) {
+                    spawnedTotal++;
+                }
+            }
+        }
+        if (spawnedTotal > 0) {
+            // Single-line summary keeps log volume bounded — per-spawn detail
+            // already lives in spawnVariantMob's WARN-on-failure logging.
+            org.slf4j.LoggerFactory.getLogger(CarriagePartPlacer.class)
+                .info("[DungeonTrain] Mob-variant: spawned {} parts mobs for kind={} pIdx={}",
+                    spawnedTotal, kind.id(), carriageIndex);
+        }
+    }
+
+    /**
      * Apply the placement's mirror to a local part position, then offset by
      * {@code stampOrigin} to land the world position. Matches vanilla
      * {@code StructureTemplate.calculateRelativePosition} with

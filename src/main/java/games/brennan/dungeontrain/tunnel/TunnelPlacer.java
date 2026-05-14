@@ -183,6 +183,12 @@ public final class TunnelPlacer {
             games.brennan.dungeontrain.editor.VariantState picked =
                 sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
             if (picked == null) continue;
+            if (picked.isMob()) {
+                games.brennan.dungeontrain.track.TrackVariantMobs.warnDropped(
+                    "tunnel", entry.localPos(), picked.entityId());
+                level.setBlock(wpos, AIR, Block.UPDATE_CLIENTS);
+                continue;
+            }
             BlockState toPlace =
                 games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(picked.state())
                     ? AIR
@@ -249,6 +255,12 @@ public final class TunnelPlacer {
             games.brennan.dungeontrain.editor.VariantState picked =
                 sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
             if (picked == null) continue;
+            if (picked.isMob()) {
+                games.brennan.dungeontrain.track.TrackVariantMobs.warnDropped(
+                    "tunnel-sidecar", entry.localPos(), picked.entityId());
+                SilentBlockOps.setBlockSilent(level, wpos, AIR);
+                continue;
+            }
             if (games.brennan.dungeontrain.editor.CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
                 SilentBlockOps.setBlockSilent(level, wpos, AIR);
             } else {
