@@ -3,7 +3,7 @@
   "books": 5,
   "cows": 15,
   "craft": 1,
-  "default": 1,
+  "default": 0,
   "dirt": 2,
   "dirt2": 2,
   "enchant": 2,

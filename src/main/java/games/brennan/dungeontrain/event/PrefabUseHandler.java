@@ -247,14 +247,8 @@ public final class PrefabUseHandler {
                 if (plot.inBoundsTolerant(localPos)) {
                     ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
                     store.setLink(localPos, prefabId);
-                    try {
-                        store.save();
-                        linkedInEditor = true;
-                        ContainerContentsMenuController.resyncIfOpen(sp, plot.key(), localPos);
-                    } catch (IOException e) {
-                        LOGGER.warn("[DungeonTrain] PrefabUseHandler: link save failed for {}: {}",
-                            plot.key(), e.toString());
-                    }
+                    linkedInEditor = true;
+                    ContainerContentsMenuController.resyncIfOpen(sp, plot.key(), localPos);
                 }
             }
         }
@@ -346,14 +340,8 @@ public final class PrefabUseHandler {
                 if (plot.inBoundsTolerant(localPos)) {
                     ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
                     store.setLink(localPos, prefabId);
-                    try {
-                        store.save();
-                        linkedInEditor = true;
-                        ContainerContentsMenuController.resyncIfOpen(sp, plot.key(), localPos);
-                    } catch (IOException e) {
-                        LOGGER.warn("[DungeonTrain] PrefabUseHandler(entity): link save failed for {}: {}",
-                            plot.key(), e.toString());
-                    }
+                    linkedInEditor = true;
+                    ContainerContentsMenuController.resyncIfOpen(sp, plot.key(), localPos);
                 }
             }
             actionBar(sp,
