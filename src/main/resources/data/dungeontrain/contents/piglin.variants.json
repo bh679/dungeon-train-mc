@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "variants": {
     "3,0,0": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}],
     "3,1,0": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
@@ -10,6 +10,9 @@
     "2,0,4": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "3,0,3": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "4,0,4": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
-    "3,1,4": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+    "3,1,4": ["minecraft:gold_block", {"state": "minecraft:nether_gold_ore", "weight": 10}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,0": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:zombified_piglin"}],
+    "5,0,4": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:zombified_piglin"}],
+    "3,2,4": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:zombified_piglin"}]
   }
 }
