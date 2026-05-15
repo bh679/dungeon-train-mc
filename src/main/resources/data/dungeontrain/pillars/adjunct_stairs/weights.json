@@ -1,3 +1,4 @@
 {
-  "default": 20
+  "default": 20,
+  "ladderonly": 4
 }
