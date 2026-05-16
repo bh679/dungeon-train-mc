@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Pool-aware builder for {@code Items.WRITTEN_BOOK} stacks rolled from
@@ -44,7 +43,7 @@ public final class RandomBookFactory {
 
     /**
      * A picked {@code (book, variantIndex)} tuple. Returned by
-     * {@link #pickUnseenForPlayer} and consumed by {@link #replaceStackContent}.
+     * {@link #pickUnseenForWorld} and consumed by {@link #replaceStackContent}.
      */
     public record PickedBook(RandomBookFile book, int variantIndex) {}
 
@@ -73,12 +72,12 @@ public final class RandomBookFactory {
     }
 
     /**
-     * Pick an unseen {@code (book, variantIndex)} tuple for the given player.
+     * Pick an unseen {@code (book, variantIndex)} tuple for the world.
      * Books with at least one unseen variant are weighted by their pool
      * weight; within the picked book, an unseen variant is chosen uniformly
      * from the unseen set.
      *
-     * <p>If every variant of every loaded book has been seen, the player's
+     * <p>If every variant of every loaded book has been seen, the world's
      * random-book tracking is <b>reset</b> (silent cycle) and the pick
      * retries against the now-empty seen set — so the caller always gets
      * a fresh pick when the pool is non-empty.</p>
@@ -86,18 +85,18 @@ public final class RandomBookFactory {
      * <p>Returns {@link Optional#empty()} only when the registry holds no
      * books at all (or every book has weight 0 — same outcome).</p>
      */
-    public static Optional<PickedBook> pickUnseenForPlayer(UUID uuid, NarrativeProgressData data, long rollSeed) {
+    public static Optional<PickedBook> pickUnseenForWorld(NarrativeProgressData data, long rollSeed) {
         if (RandomBookRegistry.count() == 0) return Optional.empty();
         long bookSeed = mix(rollSeed, SALT_BOOK_PICK);
         long variantSeed = mix(rollSeed, SALT_VARIANT_PICK);
-        Optional<PickedBook> first = tryPickUnseen(uuid, data, bookSeed, variantSeed);
+        Optional<PickedBook> first = tryPickUnseen(data, bookSeed, variantSeed);
         if (first.isPresent()) return first;
-        // Player has seen every variant of every loaded book — silent cycle.
-        data.resetRandomBookProgress(uuid);
-        return tryPickUnseen(uuid, data, bookSeed, variantSeed);
+        // World has seen every variant of every loaded book — silent cycle.
+        data.resetRandomBookProgress();
+        return tryPickUnseen(data, bookSeed, variantSeed);
     }
 
-    private static Optional<PickedBook> tryPickUnseen(UUID uuid, NarrativeProgressData data,
+    private static Optional<PickedBook> tryPickUnseen(NarrativeProgressData data,
                                                       long bookSeed, long variantSeed) {
         List<RandomBookFile> candidates = new ArrayList<>();
         int totalWeight = 0;
@@ -106,7 +105,7 @@ public final class RandomBookFactory {
             if (bookOpt.isEmpty()) continue;
             RandomBookFile book = bookOpt.get();
             if (book.weight() <= 0) continue;
-            if (hasAnyUnseenVariant(uuid, data, book)) {
+            if (hasAnyUnseenVariant(data, book)) {
                 candidates.add(book);
                 totalWeight += book.weight();
             }
@@ -123,26 +122,26 @@ public final class RandomBookFactory {
         }
 
         // Uniform pick across the picked book's unseen variants.
-        List<Integer> unseen = collectUnseenVariantIndices(uuid, data, picked);
+        List<Integer> unseen = collectUnseenVariantIndices(data, picked);
         if (unseen.isEmpty()) return Optional.empty(); // defensive: hasAnyUnseenVariant said yes
         long unsignedVariant = variantSeed & 0x7FFFFFFFFFFFFFFFL;
         int variantIndex = unseen.get((int) (unsignedVariant % unseen.size()));
         return Optional.of(new PickedBook(picked, variantIndex));
     }
 
-    private static boolean hasAnyUnseenVariant(UUID uuid, NarrativeProgressData data, RandomBookFile book) {
+    private static boolean hasAnyUnseenVariant(NarrativeProgressData data, RandomBookFile book) {
         int total = book.variants().size();
         for (int i = 0; i < total; i++) {
-            if (!data.hasSeenRandomBook(uuid, book.basename(), i)) return true;
+            if (!data.hasSeenRandomBook(book.basename(), i)) return true;
         }
         return false;
     }
 
-    private static List<Integer> collectUnseenVariantIndices(UUID uuid, NarrativeProgressData data, RandomBookFile book) {
+    private static List<Integer> collectUnseenVariantIndices(NarrativeProgressData data, RandomBookFile book) {
         List<Integer> out = new ArrayList<>();
         int total = book.variants().size();
         for (int i = 0; i < total; i++) {
-            if (!data.hasSeenRandomBook(uuid, book.basename(), i)) out.add(i);
+            if (!data.hasSeenRandomBook(book.basename(), i)) out.add(i);
         }
         return out;
     }
