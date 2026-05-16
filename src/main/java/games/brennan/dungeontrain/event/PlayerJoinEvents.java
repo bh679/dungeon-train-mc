@@ -21,10 +21,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -114,6 +116,16 @@ public final class PlayerJoinEvents {
      * spawning the player half a chunk away.
      */
     private static final int MAX_FALLBACK_PERP = 60;
+
+    /**
+     * Max blocks to slide the spawn anchor along the track when the
+     * original anchor produces no LOS-clear candidates. The camera still
+     * points back toward the train area, so a slide simply moves the
+     * player further down the tracks to a clearer vantage point. 300
+     * blocks ÷ {@code 2 * X_JITTER_MAX} stride = up to 10 retries before
+     * the on-train last-resort fires.
+     */
+    private static final int MAX_X_SLIDE = 300;
 
     /** Standing eye height (blocks above feet) — used for pitch math. */
     private static final double EYE_HEIGHT = 1.62;
@@ -272,7 +284,7 @@ public final class PlayerJoinEvents {
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
         int anchorX = haveBuffered ? bufferedX : lookX;
 
-        PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g, trainCenter);
+        PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
 
         // Compute yaw/pitch explicitly from (target → referencePoint) and
@@ -397,17 +409,79 @@ public final class PlayerJoinEvents {
     }
 
     /**
-     * Random perpendicular offset around the X anchor. Re-rolls up to
-     * {@link #MAX_ATTEMPTS} times if the candidate is in water or otherwise
-     * invalid. If the random search fails (e.g. all probes hit deep ocean),
-     * walks perpendicular outward looking for the first dry surface. As a
-     * last resort, spawns on top of the train so the player never lands on
-     * tracks AND never lands in water.
+     * Pick a spawn position with a verified line of sight to the train.
+     *
+     * <p>Strategy:</p>
+     * <ol>
+     *   <li>Try the original anchor (random jitter + perpendicular walk,
+     *       both gated on {@link #hasLineOfSight}).</li>
+     *   <li>If no LOS-clear candidate exists at that anchor, slide the
+     *       anchor along the track in both directions by stride
+     *       {@code 2 * X_JITTER_MAX} (so the random ranges don't overlap)
+     *       and retry. Tunnel-buried X columns are skipped. Camera
+     *       direction still points back toward the train, so the player
+     *       just ends up further down the tracks looking at the train.</li>
+     *   <li>Last resort: spawn on top of the train — guarantees LOS
+     *       (player is literally on the train) and avoids landing on
+     *       rails or in water.</li>
+     * </ol>
      */
     private static PlayerTarget pickPlayerTarget(
-        ServerLevel level, int anchorX, TrackGeometry g, Vector3d trainCenter
+        ServerLevel level, int anchorX, TrackGeometry g, TunnelGeometry tg,
+        Vector3d trainCenter
     ) {
         RandomSource rand = level.getRandom();
+        // Aim point sits in the open air ABOVE the train, well clear of:
+        //   - the bed/carriage blocks (bed Y .. bed Y + ~3)
+        //   - the trench wall (extends from bed Y up to local surface Y)
+        // The open corridor is open to sky at above-ground X stretches, so
+        // a ray to (trainX, bedY + 8, trainZ) crosses the trench top and
+        // arrives in open air. If the ray hits something it's a genuine
+        // overhead obstruction (tree, overhanging cliff).
+        Vec3 trainAim = new Vec3(trainCenter.x, trainCenter.y + 8.0, trainCenter.z);
+
+        // Phase A — original anchor.
+        PlayerTarget r = tryFindLOSClearSpawn(level, anchorX, g, trainAim, rand);
+        if (r != null) return r;
+
+        // Phase B — slide the anchor along the track in both directions.
+        // 2 * X_JITTER_MAX stride so each slide explores a fresh X region.
+        int stride = (int) (2.0 * X_JITTER_MAX);
+        for (int step = stride; step <= MAX_X_SLIDE; step += stride) {
+            for (int dir : new int[] {+1, -1}) {
+                int newAnchor = anchorX + dir * step;
+                level.getChunk(newAnchor >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
+                if (TunnelGenerator.isColumnUnderground(level, newAnchor, tg)) continue;
+                r = tryFindLOSClearSpawn(level, newAnchor, g, trainAim, rand);
+                if (r != null) {
+                    LOGGER.info("[DungeonTrain] X-slide found LOS-clear anchor at X={} (slid {} from original X={})",
+                        newAnchor, dir * step, anchorX);
+                    return r;
+                }
+            }
+        }
+
+        // Phase C — true last resort: spawn on top of the train so the
+        // player neither drowns nor lands on the rails, and LOS to the
+        // train is trivially satisfied (they're on it).
+        int tx = Mth.floor(trainCenter.x);
+        int ty = (int) Math.ceil(trainCenter.y) + 8;
+        int tz = Mth.floor(trainCenter.z);
+        LOGGER.warn("[DungeonTrain] pickPlayerTarget exhausted X-slide ±{} — last-resort spawn above train at ({}, {}, {})",
+            MAX_X_SLIDE, tx, ty, tz);
+        return new PlayerTarget(tx + 0.5, ty, tz + 0.5);
+    }
+
+    /**
+     * Run the random + perpendicular-walk search at a single anchor X.
+     * Returns the first candidate that passes both {@link #isSafePlayerPos}
+     * and {@link #hasLineOfSight} to {@code trainAim}, or {@code null} if
+     * no candidate within {@link #MAX_FALLBACK_PERP} satisfies both.
+     */
+    private static PlayerTarget tryFindLOSClearSpawn(
+        ServerLevel level, int anchorX, TrackGeometry g,
+        Vec3 trainAim, RandomSource rand
+    ) {
         double centerZ = g.trackCenterZ() + 0.5;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             double xOffset = (rand.nextDouble() * 2.0 - 1.0) * X_JITTER_MAX;
@@ -421,39 +495,26 @@ public final class PlayerJoinEvents {
 
             int groundY = findGroundY(level, bx, bz);
             int playerY = groundY + 1;
-            if (isSafePlayerPos(level, bx, playerY, bz)) {
-                // Align target to bx + 0.5 / bz + 0.5 so a BlockPos round-trip
-                // (via setDefaultSpawnPos) lands the player at the same spot.
-                return new PlayerTarget(bx + 0.5, playerY, bz + 0.5);
-            }
+            if (!isSafePlayerPos(level, bx, playerY, bz)) continue;
+            if (!hasLineOfSight(level, bx + 0.5, playerY + EYE_HEIGHT, bz + 0.5,
+                                trainAim.x, trainAim.y, trainAim.z)) continue;
+            return new PlayerTarget(bx + 0.5, playerY, bz + 0.5);
         }
 
-        // Random retry exhausted — corridor crosses deep ocean or other
-        // hostile perpendicular. Walk perpendicular outward looking for the
-        // first dry surface on either side. Never accept a wet/void column.
         for (int perpDist = (int) PERP_MIN; perpDist <= MAX_FALLBACK_PERP; perpDist++) {
             for (int sign : new int[] {+1, -1}) {
                 int bz = Mth.floor(centerZ + sign * perpDist);
                 level.getChunk(anchorX >> 4, bz >> 4, ChunkStatus.FULL, true);
                 int gy = findGroundY(level, anchorX, bz);
                 int py = gy + 1;
-                if (isSafePlayerPos(level, anchorX, py, bz)) {
-                    LOGGER.info("[DungeonTrain] pickPlayerTarget random search exhausted; widened perp walk found dry ground at Z={} Y={}",
-                        bz + 0.5, py);
-                    return new PlayerTarget(anchorX + 0.5, py, bz + 0.5);
-                }
+                if (!isSafePlayerPos(level, anchorX, py, bz)) continue;
+                if (!hasLineOfSight(level, anchorX + 0.5, py + EYE_HEIGHT, bz + 0.5,
+                                    trainAim.x, trainAim.y, trainAim.z)) continue;
+                return new PlayerTarget(anchorX + 0.5, py, bz + 0.5);
             }
         }
 
-        // Tiny-island corner case: no dry land within ±MAX_FALLBACK_PERP.
-        // Spawn on top of the train so the player neither drowns nor lands
-        // on the rails. Y = trainCenter.y + 8 clears the carriage roof.
-        int tx = Mth.floor(trainCenter.x);
-        int ty = (int) Math.ceil(trainCenter.y) + 8;
-        int tz = Mth.floor(trainCenter.z);
-        LOGGER.warn("[DungeonTrain] pickPlayerTarget found no dry land within ±{} perp — last-resort spawn above train at ({}, {}, {})",
-            MAX_FALLBACK_PERP, tx, ty, tz);
-        return new PlayerTarget(tx + 0.5, ty, tz + 0.5);
+        return null;
     }
 
     /**
@@ -482,7 +543,7 @@ public final class PlayerJoinEvents {
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
         int anchorX = haveBuffered ? bufferedX : lookX;
 
-        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, trainCenter);
+        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
 
         double dx = referencePoint.x - pt.px;
@@ -565,6 +626,31 @@ public final class PlayerJoinEvents {
         if (head.is(BlockTags.LEAVES)) return false;
         if (head.is(BlockTags.ICE)) return false;
         return true;
+    }
+
+    /**
+     * Returns {@code true} if a ray from {@code (fromX,Y,Z)} to {@code (toX,Y,Z)}
+     * hits no solid block. Uses {@link ClipContext.Block#COLLIDER} so
+     * full-cube terrain, leaves, and ice spikes block the ray; uses
+     * {@link ClipContext.Fluid#NONE} so water/lava do NOT block (the player
+     * can spawn near a coastal corridor and still see the train through
+     * shallow water). The train itself lives in a Sable sub-level — its
+     * blocks are NOT in this level, so this ray only intersects world terrain.
+     */
+    private static boolean hasLineOfSight(
+        ServerLevel level,
+        double fromX, double fromY, double fromZ,
+        double toX,   double toY,   double toZ
+    ) {
+        Vec3 from = new Vec3(fromX, fromY, fromZ);
+        Vec3 to   = new Vec3(toX,   toY,   toZ);
+        HitResult hit = level.clip(new ClipContext(
+            from, to,
+            ClipContext.Block.COLLIDER,
+            ClipContext.Fluid.NONE,
+            (net.minecraft.world.entity.Entity) null
+        ));
+        return hit.getType() == HitResult.Type.MISS;
     }
 
     private record PlayerTarget(double px, int py, double pz) {}

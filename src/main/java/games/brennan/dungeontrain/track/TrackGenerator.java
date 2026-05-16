@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StairsRegistryData;
+import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
@@ -1356,6 +1357,14 @@ public final class TrackGenerator {
                         pos.set(x, y, z);
                         if (level.getBlockState(pos).isAir()) continue;
                         level.setBlock(pos, air, Block.UPDATE_CLIENTS);
+                    }
+                    // Anchor the cell directly above the carve so that any
+                    // sand/gravel column resting on the now-air ceiling
+                    // doesn't fall onto the rails when its persisted
+                    // worldgen-scheduled tick fires post-load.
+                    int anchorY = clearMaxY + 1;
+                    if (anchorY < maxBuildHeight) {
+                        FallingBlockAnchor.anchorAtWorldgen(level, new BlockPos(x, anchorY, z));
                     }
                 }
             }
