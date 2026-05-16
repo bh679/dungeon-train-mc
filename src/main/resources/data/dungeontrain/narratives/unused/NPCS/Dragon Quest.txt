@@ -1,0 +1,20 @@
+Character: Random NPC
+Story: Dragon Quest
+
+Letter One-
+Brave adventurer!
+Please! 
+Slay the dragon that lies in wait! 
+It is imperative that this \n
+ancient evil be purged \n
+from the hallowed traincars \n
+of this sacred place!
+
+Letter Two-
+Couldn't find the dragon either, huh? 
+Yeah, no luck on my end. 
+Starting to think that old \n
+gypsy woman may have lied to me.
+
+
+

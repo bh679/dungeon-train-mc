@@ -1,0 +1,54 @@
+Character: Random NPC
+Story: Nothing Quest
+
+Letter One-
+Greetings, adventurer! 
+I have an askance of thee
+please continue as you were, \n
+moving forward, \n
+for an indeterminate amount of time, \n
+then turn the quest back in to me! 
+You have my thanks, brave knight.
+
+Letter Two-
+You've done it! 
+You've continued forward an indeterminate period of time! 
+Congratulations! 
+Alas, I am naught but a poor beggar \n
+and have nothing to offer you as reward. 
+But, you're, like, cool with that, \n
+right?
+
+Letter Three-
+Oh, ah? You again?
+I see you're still going.
+Well dont give up now.
+An indeterminate period of time
+Waits ahead of you.
+Go forth.
+Experience time.
+Perhaps I will see you within it.
+
+Letter 4-
+Once again, time has passed.
+And here we are.
+A junction of journies.
+A crossing of clocks.
+A T-intersection in time.
+You have successfully nagivated.
+The maze of time through reality.
+How long until we next meet?
+And to what end?
+
+Letter 5-
+If time is an illusion.
+If reality is subjective.
+If space is infinite.
+Is the reality of space & time\n
+A subjective infinite illluion?
+For you have been travelling forth to me
+Indeterminately...
+in passage of time
+in passage of space
+in passage of reality
+But has anything changed?

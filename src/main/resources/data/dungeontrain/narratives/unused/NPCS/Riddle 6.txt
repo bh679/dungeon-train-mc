@@ -1,0 +1,34 @@
+Character: Random NPC
+Story: Riddles 6 Quest
+
+Letter One-
+I am the mind reading riddler.
+I present you a riddle.
+And I can read your mind\n
+as to the answer.
+Here is the riddle:
+Pete and Repeat\n
+went fishing. \n
+Pete fell of the boat. \n
+Who was left?
+Okay fine.
+Pete and Repeat\n
+went fishing. \n
+Pete fell of the boat. \n
+Who was left?
+Again?
+Pete and Repeat\n
+went fishing. \n
+Pete fell of the boat. \n
+Who was left?
+Okay, I've had enough with you
+There is  only so many times 
+I am going to repeat this.
+Pete and Repeat\n
+went fishing. \n
+Pete fell of the boat. \n
+Who was left?
+No. 
+I will not repeat this any more.
+
+

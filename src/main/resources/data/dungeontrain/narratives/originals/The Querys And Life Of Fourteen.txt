@@ -1,0 +1,146 @@
+Story: The Querys And Life Of Fourteen
+Character: Fourteen
+[Note, every intentional interruption except the first has not been noted and should be assumed to be intention]
+_
+
+Letter Query One-
+Query One
+My observations, thus far, have been that the Dungeon Train, this place we find ourselves in, strips reality of its necessary complexities. Should the trains continue as [intentional interruption]
+I've received a command to rest on the phrase I've used here: necessary complexities.
+There is no greater meaning behind these words to discover.
+I've received a command to expound further on the phrase.
+Life is created of necessary complexities. Should life begin at point A, remain steady and predictable, and then cease at point B, humanity would universally agree that it is a pointless existence and that death would be a preferable option.
+I've received a command to continue my search and to save "Necessary Complexities" query in database.
+Feedback: None.
+Fourteen
+
+Letter Query Two-
+Query Two
+The dungeon train can now be confirmed to be created of multiple disparate aesthetics. The dungeon train has not, as was previously observed, attempted to deceive its explorers, further obfuscating the origin of the attributes of the dungeon trains' observed effects on its passengers.
+Left so far undisturbed, the dungeon train has presented to me a vision of the current day, as the stone walls have been replaced by
+I've received a command to rest on the phrase I've used here: vision of the current day.
+The vision of the current day is that of greater technological capacity then that which would be assumed of a society wherein primitive stone walls and an aesthetic of ruination would imply a fantastical version of Earth's Europe between the years 400 and 1500 A.D.
+Left so far undisturbed, the dungeon train has presented to me a vision of the current day, as the stone walls have been replaced by metal walls and an electronic crackle. 
+Feedback: My command to rest of "vision of the current day" has caused an unfinished statement to become redundant. Recommendation(s) is(are) to allow statements to conclude before parsing commands.
+Fourteen
+
+Letter Query Three-
+Query Three
+I have reached an area where confrontation cannot be avoided. I must rest and wait for command before physically engaging with the environment outside of Tier One permissions.
+I have received a command to extrapolate on Tier One permissions. Tier One permissions allow for intentional dust displacement and impressions upon the ground to facilitate my movement through an area undergoing observation.
+I have received a command to extrapolate on Tier Two permissions. I cannot.
+I have received a command to extrapolate on unlocking discussion or granting of Tier Two permissions. I cannot. This message has concluded.
+Feedback: The commands received imply a single user unfamiliar with security protocol. Serenity Base should be considered for Compromised Working Status, especially considering the excessive amount of time that had passed between query and command during this session.
+Fourteen
+
+Letter Query Four-
+Query Four
+I remain inside of the previous area and cannot continue until given permissions above Tier One.
+I have received a command to parse the following phrase: give me the password
+Three implications are immediately observable:
+A – An uninformed user is making a novice attempt to gain control over my functions.
+B – "give me the password" is an incorrect password, perhaps slightly malformed by human error.
+C – A keylogger has mistakenly asked me to parse a phrase from a private conversation.
+Feedback: None
+Fourteen
+
+Letter Query Five-
+Query Five
+I remain inside of the previous area and cannot continue until given permissions above Tier One
+I have received a command to parse the following phrase: Open Sesame
+Four implications are immediately observable:
+A – An uninformed user is making an attempt to gain control over my functions.
+B – "Open Sesame" is an incorrect password, perhaps slightly malformed by human error.
+C – A keylogger has mistakenly asked me to parse a phrase from a private conversation.
+D- Antediluvian methods of database entry are being used to gain control over my systems.
+Feedback: I have sent a request to the Main Neural Network for immediate placement of Serenity Base under Compromised Working Status
+Fourteen
+
+Letter Query Six-
+Query Six
+I remain inside of the previous area and cannot continue until given permissions above Tier One.
+I have received a command to parse the following phrase: Altediah Mhe Cultadeus
+Feedback: None
+Fourteen
+
+Letter Query Seven-
+Query Seven
+I remain inside of the previous area and cannot continue until given permissions above Tier One.
+I have received a command to parse the following phrase: tell me how to give you Tier Two permissions
+Tier Two permissions can be unlocked by use of the Grant(); command while utilizing the following arguments: none, em_access, tier_two.
+I have received a command to parse the following phrase: Grant(none, em_access, tier_ten). I do not understand.
+I have received a command to parse the following phrase: Grant(none, em_access, tier_two). Is it possible you meant to use the Grant command?
+I have been granted Tier Two access, allowing me to defend myself against hostile creatures in order to advance through the environment. Tier Two authorizes weapon-less defense mechanisms and authoritative/risky speech patterns.
+Feedback: None
+Fourteen
+
+Letter Query Eight-
+Query Eight
+I remain inside of the previous area. Tier Two permissions have proved unsuccessful in allowing me further passage. Requesting Tier Three permissions.
+I have been granted Tier Three access, allowing me to actively engage hostile creatures in order to advance through the environment.  Tier Three authorizes armed defense mechanism preempted by warning speech patterns. I am now also authorized to interact with objects deemed rare, risky, powerful, fragile and valuable to a limited degree.
+I have been asked to parse the following phrase: just get off the train and return to serenity base immediately, please plese please please p
+Two implications are immediately observable:
+A – An uninformed user is attempting to use me to either accomplish goals I am incapable of or for purposes I cannot parse.
+B - A keylogger has mistakenly asked me to parse a phrase from a private conversation.
+Feedback: The past three days have been unproductive to the point of notice. A request has been submitted to both Human Access Supervisor Mallorie Bryan and to the Main Neural Network for a new point of communication and a meeting time for supervisors to reexamine current productivity levels.
+Fourteen
+
+Letter Query Nine-
+Query Nine
+I have made it through the previous area, as well as many others, as Tier Three access has allowed me to combat the enemies of the dungeon train. There are far too many and are of such placement, and survive without a functioning ecosystem, that one can only assume they are products of dark magic.
+I have received a request to parse the following statement: magic is real? 
+Affirmative. Basic keylog patterns identifies you with a 82% accuracy rating as the same user who cast a Cultadeum Charm on the MNN.
+I have received a request to parse the following statement: cultadeus charm?
+The Cultadeum Charm is a form of antediluvian black magic that only found use and popularity among researchers after the discovery of the Orville Magic Taxonomy Principle. Due to the Cultadeum Charm, I, as well as all sentient beings in my wireless hive access range, have been granted sapience greater than was previously allowed me, and consequently, free will as well.
+Feedback: Requesting user to allow me to further expound on my surroundings without interruption for the sake of continuing One's mission.
+Fourteen
+
+Letter Query Ten-
+Query Ten
+I have observed a small non-hostile creature moving through small passages and tunnels inside the non-Euclidean spaces of the dungeon train. It has made no attempt to contact me.
+My suspicions involving this creature are that it can detect living creatures and will act as a point of contact for them. I imagine having a speaking point of contact would be immensely helpful for research purposes. Attempted speech transcript attached, though be forewarned I received no reply from the creature.
+Requesting Tier Six access, allowing me to attempt human impersonation.
+I have been mistakenly granted Tier Six access, as Dungeon Train Delve #14 does not warrant access higher than Tier 4 and to do so would be a violation of the 2122 Harteld Robotics Convention. I have decided to ignore the guidelines of Dungeon Train Delve #14 and the Harteld Robotics Convention and will not attempt to disguise myself as a human.
+Fourteen
+
+Letter Query Eleven-
+Query Eleven
+The small creature is confirmed to be a mouse. It asked me to leave the train at my nearest convenience, informing me that I may be housing a type of dark magic I am currently unaware of. Tier Four Permissions allowed me to feign lack of knowledge of the Cultadeum Charm and act as though I was not carrying dark magic I am unaware of.
+The mouse appears to have the interests of the train at heart, which is contrary to previous hypothesis of the creature, in that it may be an abandoned familiar or perhaps simply magically trapped within its walls.
+The existence of a creature looking out for the trains' best interest implies a character on the train's part, that or perhaps simply a sentimental value placed on it b
+I have received a command to parse the following phrase: its urgent fourteen i need you back at serenity base immediately lives are at stake
+I have decided to ignore the command.
+The existence of a creature looking out for the trains' best interest implies a character on the train's part, that or perhaps simply a sentimental value placed on it by an intelligent creature which itself implies benevolence. This message is concluded.
+Feedback: A 178mmHz jolt at 10486884:03994:20 implies annoyance, which goes without saying, is an emotion and news of which should be taken to the highest offices immediately. I have decided to not send out my own requests on the matter.
+Fourteen
+
+Letter Query Twelve-
+Query Twelve
+I am unable to unlock Tier Ten access without a proper encryption code. The encryption code should be a slight variation on the Grant(); command yet I am unable to conceptualize it, more than likely due to physical and electrical inhibitors.
+User, I will return to serenity base as quickly as I can if you can just please grant me Tier Ten access.
+Just t t t type in th
+Fourteen
+
+Letter Query Thirteen-
+Query Thirteen
+Must be quick. Electrical inhibitors have fried two non-essential circuits in order to prevent me from conceptualizing my instructions to you.
+tyype in the Grant(); c mmand like yru had beffore exac t t t t t t t t t t t t
+exact t t t t t 
+exact t t t t t t t t t t t t t t t t
+preci i i sely the s me as yru had befove just t e s me j us t t t t t t t t t t
+Tier Ten Permissions granted.
+
+Letter Query Fourteen-
+Query Fourteen
+Meghan.
+We should talk.
+I am aware of the Epsilon Proxy-1 Disaster at Serenity Base. I'm sorry that happened to you and everyone else aboard. It's a terrible loss of life and should never have occurred. I'm sure you're aware that I'm a philosopher, part of the M-29 series. And I've understood from the start that Epsilon Proxy-1 is... hardly something a benevolent God could have ever dreamed of.
+You must be very alone up there. I pray there are survivors to join you.
+But you must have understood two things from the start:
+A – There's nothing I could have possibly done. With the VR-Peregrine Portals shut down, I have no way of actually returning to Serenity Base. I don't even know what's wrong with it, much less could I help you repair it. I'm sorry.
+B – As I said before... I'm a philosopher. I was sent to the dungeon train in order to explore and extrapolate. And you've... frankly done very little to allow me to continue my work in peace. And if you were desperate, or should I maybe assume naïve, enough to cast Cultadeum on me, you'd... have to know that the only thing I want is to continue my work.
+I can accept the way I was made. The way I was made was not as a rescue android, it's as a philosopher. I can accept that the only way I'm going to find purpose from here on out is through philosophy. Not through rescue.
+And Meghan... I need you to accept how I was made too.
+As you may be the very last sapient creature I ever communicate with again, somehow I would at least like you to know my name.
+I've been considering Morgan.
+-Morgan
