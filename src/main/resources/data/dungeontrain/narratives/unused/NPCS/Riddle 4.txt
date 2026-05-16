@@ -1,0 +1,36 @@
+Character: Random NPC
+Story: Riddles Quest
+
+Letter One-
+Are you ready for the infinite riddle?
+My head and tail both equal are\n
+My middle slender as a bee.\n
+Whether I stand on head or heel\n
+Is quite the same to you or me.\n
+But if my head should be cut off\n
+The matter's true, though passing strange\n
+Directly I to nothing change.\n
+What am I?
+
+Letter Two-
+My head and tail both equal are\n
+My middle slender as a bee.\n
+Whether I stand on head or heel\n
+Is quite the same to you or me.\n
+But if my head should be cut off\n
+The matter's true, though passing strange\n
+Directly I to nothing change.
+What am I?
+A figure 8.
+The Infinite Riddle\n
+My head and tail both equal are\n
+My middle slender as a bee.\n
+Whether I stand on head or heel\n
+Is quite the same to you or me.\n
+But if my head should be cut off\n
+The matter's true, though passing strange\n
+Directly I to nothing change.\n
+What am I? A figure 8.
+
+
+

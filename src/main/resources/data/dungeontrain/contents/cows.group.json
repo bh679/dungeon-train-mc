@@ -1,54 +1,54 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 2,
+  "selfWeight": 6,
   "variants": [
     {
       "id": "chickens",
-      "weight": 2
+      "weight": 6
     },
     {
       "id": "pigs",
-      "weight": 2
+      "weight": 6
     },
     {
       "id": "sheep",
-      "weight": 2
+      "weight": 6
     },
     {
       "id": "rabbits",
-      "weight": 2
+      "weight": 5
     },
     {
       "id": "armadillo",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "horse",
-      "weight": 1
+      "weight": 3
     },
     {
       "id": "goat",
-      "weight": 1
+      "weight": 3
     },
     {
       "id": "frog",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "fox",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "donkey",
-      "weight": 1
+      "weight": 3
     },
     {
       "id": "bee",
-      "weight": 1
+      "weight": 3
     },
     {
       "id": "mule",
-      "weight": 1
+      "weight": 3
     },
     {
       "id": "panda",

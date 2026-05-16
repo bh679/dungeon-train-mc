@@ -1,0 +1,54 @@
+Character: Faulthurst
+Story: 
+
+"Character:" and "Story" will be imported for editor purposes. It is not used in the actual game (but we could if we wanted to). Both will read until end of line. Order not important
+
+Everything else before "Letter One" will be ignore by the system. Feel free to include notes to the game designer.
+
+
+Letter One-
+Some have asked me why the lands outsid\n
+change so drastically between rooms. 
+
+The simple answer is because we trust\n
+our eyes in a place where we are fools\n
+to trust any of our senses. 
+
+The long answer?
+
+Even if I had the long answer for you,\n
+I wouldn't trust my eyes to read it correctly.\n
+Much less yours.
+
+
+
+Alt
+All the stories you find here really happened.
+On this train. 
+That doesn't mean they occurred in reality. 
+Only that these stories undeniably happened. 
+Just as we are undeniably witnesses to them.
+
+
+Alt
+Congratulations on seeing the Dungeon Train, traveler. 
+Congratulations on seeing it and exploring it with your own two eyes. 
+Congratulations on listening to it. 
+And while you may never smell it, \n
+take it from me, you're not really \n
+missing out.
+
+
+Alt
+The reality of the Dungeon Train can be very grim...
+But you can extract the pleasure of exploration \n
+from me just as easily as you can extract \n
+my beating heart from me. 
+I would have the same chance of survival either way. 
+It's a pleasure beyond pleasures to lay witness to your adventure.
+
+Alt
+Do your best to survive. 
+If you don't, try to come back!
+I've seen it happen with others! 
+How they do it, I haven't the foggiest.

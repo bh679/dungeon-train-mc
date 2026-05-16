@@ -3,6 +3,7 @@ package games.brennan.dungeontrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModSounds;
@@ -31,6 +32,10 @@ public class DungeonTrain {
         // First DeferredRegister in the project — wires the variant
         // clipboard item produced by the block-variant menu's Copy button.
         ModItems.register(modBus);
+        // narrative_lectern + its BlockItem — first block-registry in the
+        // project. NarrativeLecternHooks (mod-bus) attaches it to vanilla
+        // BlockEntityType.LECTERN's valid blocks.
+        ModBlocks.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);

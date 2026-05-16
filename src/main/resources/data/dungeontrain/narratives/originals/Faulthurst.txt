@@ -1,0 +1,183 @@
+Character: Faulthurst
+Story: 
+
+"Character:" and "Story" will be imported for editor purposes. It is not used in the actual game (but we could if we wanted to). Both will read until end of line. Order not important
+
+Everything else before "Letter One" will be ignore by the system. Feel free to include notes to the game designer.
+
+
+Letter One-
+Some have asked me why the lands outsid\n
+change so drastically between rooms. 
+
+The simple answer is because we trust\n
+our eyes in a place where we are fools\n
+to trust any of our senses. 
+
+The long answer?
+
+Even if I had the long answer for you,\n
+I wouldn't trust my eyes to read it correctly.\n
+Much less yours.
+
+
+
+Alt
+All the stories you find here really happened.
+On this train. 
+That doesn't mean they occurred in reality. 
+Only that these stories undeniably happened. 
+Just as we are undeniably witnesses to them.
+
+
+Alt
+Congratulations on seeing the Dungeon Train, traveler. 
+Congratulations on seeing it and exploring it with your own two eyes. 
+Congratulations on listening to it. 
+And while you may never smell it, \n
+take it from me, you're not really \n
+missing out.
+
+
+Alt
+The reality of the Dungeon Train can be very grim...
+But you can extract the pleasure of exploration \n
+from me just as easily as you can extract \n
+my beating heart from me. 
+I would have the same chance of survival either way. 
+It's a pleasure beyond pleasures to lay witness to your adventure.
+
+Alt
+Do your best to survive. 
+If you don't, try to come back!
+I've seen it happen with others! 
+How they do it, I haven't the foggiest.
+
+Alt
+I find you fascinating. 
+Yes, you. Your differences. 
+Everyone who's come here. 
+The subtle ways in which\n
+you differentiate yourselves\n
+without even trying. 
+You could stand still for two \n
+hours just looking around and \n
+that would still manage to be... \n
+utterly unique.
+
+Alt
+It's fine to kill the slimes. 
+No, honestly, please do, they're pests. 
+Do they live? 
+I couldn't answer that. 
+A tree lives. 
+A tree is a beautiful, \n
+otherworldly pleasure to me, \n
+and I would cut it down happily. 
+Had I the ability. \n
+Or upper body strength.
+
+Alt
+The iron maidens are as mysterious \n
+to me as they are to you, \n
+that I can promise. 
+I am no omniscient being, \n
+I don't know how this started \n
+or where it will end, \n
+and the only difference between you \n
+and I is that I'm much harder to kill \n
+and I've had plenty of time to utilize \n
+that distinct quality of mine. 
+I still don't know what's up with the iron maidens, \n
+however.
+
+Alt
+The books will be opening soon. 
+Not the books I've seen you adventurers carry around with you, \n
+those are magical books. 
+Magical, at least, in the sense that I cannot explain how it is they work. 
+I'm certain if I could explain it, \n
+it would then cease, very quickly, \n
+to be magical. No, the regular books. 
+They'll be opening soon.
+
+Alt
+The coins are tempting, are they not? 
+A briefcase full of coins would also be extremely tempting, \n
+even out in the desert, \n
+where not even a million dollars could buy you one drop of beautiful, \n
+life-sustaining water. 
+Somehow the allure is hard to shake off. 
+That said, do continue collecting coins, \n
+they will come very much in handy. 
+If not for you then for someone else.
+
+Alt
+That book. 
+I wish to ask questions about it, \n
+but it seems you're as able to \n
+tell me about them as you are able \n
+to let go of the darn things.
+Do you know how they work? 
+I don't. I'd like to. 
+Would you like to? No?
+
+
+Alt
+Who do you think made this place? 
+I've considered how the question 
+resembles the question of God and the afterlife, \n
+but I mean literally. 
+Who made this place? 
+Someone had to have, right? 
+No, I don't mean, again, \n
+in the sense of the divine and of creationism. 
+I mean brick by brick. 
+Who designed it, \n
+who's hand guided the creation of- oh darn it!
+The questions are different!
+I'm just having a hard time expressing how.
+
+Alt
+I've seen quite a few people explore \n
+the dungeon train and not find anything \n
+close to what they're looking for. 
+But you adventurers are different. 
+I've stopped trying to keep count. 
+In some strange way, this wave of adventurers and explorers... 
+I still don't know what to call you guys specifically... 
+I feel as though the dungeon train's been waiting for you specifically. 
+Maybe you'll find something on this darn train.
+
+Alt
+People die on here, yes. Adventurers too, yes. 
+However, it never seems to bother the adventurers as much. 
+Oh sure, I've seen annoyance. 
+One person's screams were cut off during a flustered rage, 
+it's true. 
+But... it wasn't dying rage. 
+It wasn't... the snuffing of a candle. 
+Simply anger. You people are just fascinating to me.
+
+Alt
+Somewhere in my heart of hearts, 
+I know that time isn't supposed to move the way it does in the dungeon train. 
+Another one of those things that can't be explained. Among many. 
+Days are supposed to be as long as nights, and both are supposed to be substantially longer than they are in here. 
+I know that somehow. 
+Observation of the exterior world is supposed to inform internal insight. 
+Not this time.
+
+Alt
+What are those red things inside the slimes, anyway? 
+Hearts? \n
+Perhaps a nucleus? 
+I suppose I could study it to a rudimentary degree. 
+I'm still trying to work up the guts to do it. 
+I'm stalling, admittedly.
+
+Alt
+Adventurers tend to gravitate toward more opulent, \n
+decorative swords and weapons I've noticed. 
+Not so with the other passengers of the train. 
+I wonder what the difference between you and them is.

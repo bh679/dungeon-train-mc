@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "selfWeight": 10,
+  "variants": [
+    {
+      "id": "seatingnarrative",
+      "weight": 1
+    },
+    {
+      "id": "dungeonnarrative",
+      "weight": 1
+    }
+  ]
+}

@@ -1,0 +1,570 @@
+Story: Questions
+
+Letter -
+Does this item answer the 
+questions you have?
+
+Letter -
+What would you like to know about
+this item?
+
+Letter -
+hmmmm, curious you found this 
+one, this time. 
+What does it tell you about the
+train this time?
+
+Letter -
+Let me know when you find 
+something of real value. 
+But what is value?
+
+Letter -
+I dont think this is what I am
+looking for, 
+but is it what you are looking
+for?
+
+Alt
+Its not what I am looking for, 
+personally.
+But maybe its exactly what you
+are looking for!
+Or at least what you need.
+Do you know what you need?
+
+
+Letter -
+I hope this serves you well. 
+Do you?
+
+Letter -
+Is it that easy?
+
+Letter -
+I cant tell you the number of 
+these I have seen.
+No really, I cant. Why?
+
+Letter -
+It looks like its been here 
+for a while.
+Or did someone just drop it 
+here now?
+Will you leave it here for 
+the next person?
+
+Letter -
+It looks as old as this train.
+How old is this train?
+
+Letter -
+This doesnt feel right.
+What do you think?
+
+Letter -
+This feels right.
+What do you think?
+
+Letter -
+This thing has a story.
+A story we can never know.
+But I am here to log its new 
+story.
+And you are here to explore 
+its new story.
+
+Letter -
+Do you think it tastes like 
+a wooden table?
+
+Alt
+Do you think it tastes like 
+pineapple?
+
+Alt
+Do you think it tastes like 
+chicken soup?
+
+Alt
+Do you think it tastes like 
+train?
+
+Alt
+Do you think it tastes like 
+golfballs?
+
+Alt
+Do you think it tastes like 
+the unstobbable marching of time?
+
+Alt
+Do you think it tastes like 
+value?
+
+Alt
+Do you think it tastes like 
+the candy?
+
+Alt
+Do you think it tastes like 
+humanity?
+
+Letter -
+What happens if you throw it 
+off the train?
+Does existance contiune off 
+the train?
+Or is this train all there is?
+
+Letter -
+This, like you, is just another 
+passanger of the train.
+To where does it ride?
+How far is its destination?
+To what end?
+
+Letter -
+But.. how did it get here?
+
+Letter -
+Funny. I think you already had 
+this exact one.
+Like, not a similar one.
+This. Exact. One.
+Could it be?
+Is it a bug in the train?
+Or is it a bug in me?
+Or is... the bug in you?
+
+Letter -
+Wait.. what time is it?
+
+
+Letter -
+I've seen this before.
+Show me something new.
+
+
+Letter -
+Ohhh. Now that is interesting. 
+I havent seen many of these with
+this kind of data structures.
+Mind if I send a recording of 
+this to the IRL Brennan?
+Either this is a bug, or youre 
+getting closer to what I am 
+looking for.
+
+Letter -
+Just sitting on this train.
+
+Alt
+Its just sitting here
+
+Alt
+Sitting here on this train. 
+Curious.
+
+Letter -
+I have a feeling you are the first
+to hold it for a VERY long time.
+A literal eternity. 
+
+Letter -
+This one has data encoded on when
+it was created.
+Its encoded biologically? Weird.
+It says it was created..
+A literal eternity ago.
+An infinite passage of time ago.
+As if that was an exact unit of 
+mesurement from 
+this present moment.
+Does that even make sense?
+I might send a copy of this to 
+the IRL Brennan
+
+Letter -
+My personality algorithm is 
+instructing me to,\n
+After reading this, smile at you.
+:)
+
+Alt
+My personality algorithm is 
+instructing me to,\n
+after reading this, 
+"Look concerned".
+*Looks concerned at you*
+
+Alt
+My personality algorithm is 
+instructing me to,\n
+"Wink at the user".
+*Winks at you*
+
+Alt
+My personality algorithm is 
+instructing me to,\n
+"Look intrigued".
+
+Letter -
+Ahh.. just a sec. 
+Im sending this to the 
+IRL Brennan.
+This one could be key to 
+something we have been looking
+into for a while.
+
+
+Letter -
+Are you sure you want to hold
+that with the hand you eat with?
+How long has it been 
+on this train?
+
+Letter -
+I remember when I first found 
+one of these.
+It seemed so special.
+Is it still special?
+
+Letter -
+Its not often a train produces 
+one of these\n
+at this level of quality
+
+Letter -
+The more of these we record, 
+the less sure I am.
+Where did they actually 
+come from?
+
+Letter -
+This once belonged to 
+someone I knew
+
+Alt
+This once belonged to 
+Maxwell Valiant.
+
+Alt
+This once belonged to 
+Aelis the Ronin Shield Maiden.
+
+Alt
+This once belonged to 
+Jay Kuruvilla.
+
+Alt
+This once belonged to 
+Madae Ulster.
+
+Alt
+This once belonged to 
+Priestess Cadence Fermi.
+
+Alt
+This once belonged to 
+Morgan.
+
+Alt
+This once belonged to 
+a friend of mine.
+
+Alt
+This once belonged to 
+Maxwell.
+
+Alt
+This once belonged to 
+Fourteen.
+
+Alt
+This once belonged to 
+Fermi.
+
+Alt
+This once belonged to 
+a man named Stanley.
+Empolyee #427
+
+Alt
+This once belonged to 
+Jay.
+
+Alt
+This once belonged to 
+a Ronin Shield Maiden.
+
+Alt
+This once belonged to 
+Aelis.
+
+Alt
+This once belonged to 
+Mr Valiant.
+
+Letter -
+This was once held by 
+Maxwell Valiant.
+
+Alt
+This was once held by 
+Aelis the Ronin Shield Maiden.
+
+Alt
+This was once held by 
+Jay Kuruvilla.
+
+Alt
+This was once held by 
+Madae Ulster.
+
+Alt
+This was once held by 
+Priestess Cadence Fermi.
+
+Alt
+This was once held by 
+Morgan.
+
+Alt
+This was once held by 
+a friend of mine.
+
+Alt
+This was once held by 
+Maxwell.
+
+Alt
+This was once held by 
+Fourteen.
+
+Alt
+This was once held by 
+Fermi.
+
+Alt
+This was once held by 
+Jay.
+
+Alt
+This was once held by 
+a Ronin Shield Maiden.
+
+Alt
+This was once held by 
+Aelis.
+
+Alt
+This was once held by 
+Mr Valiant.
+
+
+Letter -
+It has been touched by 
+Maxwell Valiant.
+Some long time ago.
+
+Alt
+It has been touched by 
+Aelis the Ronin Shield 
+Maiden.
+Some long time ago.
+
+Alt
+It has been touched by 
+Jay Kuruvilla.
+Some long time ago.
+
+Alt
+It has been touched by 
+Madae Ulster.
+Some long time ago.
+
+Alt
+It has been touched by 
+Priestess Cadence Fermi.
+Some long time ago.
+
+Alt
+It has been touched by 
+Morgan.
+Some long time ago.
+
+Alt
+It has been touched by 
+a friend of mine.
+Some long time ago.
+
+Alt
+It has been touched by 
+Maxwell.
+Some long time ago.
+
+Alt
+It has been touched by 
+Fourteen.
+Some long time ago.
+
+Alt
+It has been touched by 
+Fermi.
+Some long time ago.
+
+Alt
+It has been touched by 
+Jay.
+Some long time ago.
+
+Alt
+It has been touched by 
+a Ronin Shield Maiden.
+Some long time ago.
+
+Alt
+It has been touched by 
+Aelis.
+Some long time ago.
+
+Alt
+It has been touched by 
+Mr Valiant.
+Some long time ago.
+
+Letter -
+I am looking for something very
+similar to this.
+I can feel it.
+Do you feel it?
+
+Letter -
+Does it even matter?
+Does anyhting matter?
+The rumble of this train?
+The blurring of country side?
+The wind on my face?
+Why are we here?
+Why is it here?
+This Train!
+Who put it here?
+And to what end?
+What.. end?
+
+Letter - 
+I think this was left here 
+intentionally.
+Did you see who put it here?
+Was it Faulhurst?
+Maybe hold onto this one.
+Or maybe, put it down 
+and never touch it again.
+
+Alt
+This one smells like Faulhurst.
+
+Alt
+I wouldn't worry about this one.
+I think Faulthurst put it here.
+
+Alt
+Ahh Faulhurst my old buddy. 
+My old friend.
+Did you leave this herefor us?
+It seems we cant help 
+but play with each other.
+How many lives does
+our interaction span?
+How many generations?
+Realities.
+
+Letter - 
+I once came across a very 
+similar thing.
+Found by another passanger.
+What feels like a millennium ago.
+Or was it yesteday?
+Mutli-dimentional time 
+is hard to track sometimes.
+Perhaps when isnt important.
+Perhaps it is a question of 
+'Where?'.
+
+Letter - 
+Sometimes these things.
+They appear in mutliple realities
+at once.
+Do you know how many people 
+are holding this right now?
+How many other realities 
+have people
+holding this exact thing 
+right in this moment.
+I'll tell you.
+Well. oh, just one. 
+Its just you.
+Hah, I swear 
+usually there is 
+much more than one.
+Well that is odd indeed.
+
+Letter - 
+I ate one of these once.
+I would recommend it.
+Back when I had a phsyical body.
+I mean, back when I wasnt a book.
+I wonder if IRL Brennan 
+could make me a mouth.
+
+Letter - 
+It brings to mind, some words:
+Sometimes I sit and wonder
+I stare out and cry.
+For what is my purpose here?
+Why should I try?
+Upon this train of forever
+With no one to say goodbye
+Why cant I seem to find
+An final place to lie.
+
+Alt
+It brings to mind, some a single word:
+Infitiy.
+What is infitity?
+
+Alt
+It brings to mind, some a single word:
+Verisimilitude.
+The appearence of truth.
+What here, is truth?
+
+Alt
+It brings to mind, some a single word:
+Finality.
+What is finality?
+
+Letter - 
+It brings to mind, the image of,
+An ouroboros.
+A snake, eating its own tale.
+A symbol.
+Birth. Death. Rebirth.
+
+Alt
+It brings to mind the sound of,
+A beating heart.
+Does your heart still beat?
+I hope so.
+
+Letter - 
+It brings to mind the concept of,
+Ritural.
+But, what ritual?
+
+Alt
+It brings to mind the concept of,
+Greed.
+Can greed be good?
+
