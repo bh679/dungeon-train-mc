@@ -114,14 +114,36 @@ public final class ShipShutdownEvents {
             //                      → {@code chunkMap.hasWork()} polled by
             //                      {@code waitUntilNextTick} during shutdown
             //   Upstream issue:    https://github.com/ryanhcode/sable/issues/679
+            // Always drain when a Sable container exists. Heuristics on
+            // {@code findAll()} / {@code getAllSubLevels()} are unreliable
+            // because Sable EVICTS removed sub-levels from its own list
+            // before its chunk-map cleanup (running on OTHER threads)
+            // finishes. After eviction the list is empty but
+            // {@code ChunkMap.hasWork()} can stay true — vanilla's
+            // shutdown wait loop then spins forever on "Saving worlds".
+            //
+            // The drain is wall-clock-bound: {@code container.tick()} is
+            // a synchronous queue-pump that returns instantly when
+            // nothing's queued, but Sable's chunk-map cleanup runs on
+            // OTHER threads. Looping for ~1 s with {@code Thread.yield()}
+            // gives those threads CPU time to drain. 500 ms proved
+            // intermittently insufficient in testing — the conservative
+            // 1 s budget reliably avoids the hang. Total shutdown cost:
+            // ~3 s on the 3-dim default world, acceptable for stability.
             ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-            if (container != null && deletedHere > 0) {
-                final int fullDrainTicks = 20;
-                for (int i = 0; i < fullDrainTicks; i++) {
+            if (container != null) {
+                final long drainNanos = 1_000_000_000L; // 1 s
+                long deadline = System.nanoTime() + drainNanos;
+                int ticks = 0;
+                while (System.nanoTime() < deadline) {
                     container.tick();
+                    ticks++;
+                    Thread.yield();
                 }
-                LOGGER.info("[DungeonTrain] Drained {} sub-level removals over {} ticks for {}",
-                    deletedHere, fullDrainTicks, level.dimension().location());
+                if (deletedHere > 0) {
+                    LOGGER.info("[DungeonTrain] Drained {} sub-level removals over {} ticks (~{}ms wall) for {}",
+                        deletedHere, ticks, drainNanos / 1_000_000, level.dimension().location());
+                }
             }
 
             if (deletedHere > 0) {

@@ -130,7 +130,7 @@ public final class DeathScreenLayoutHandler {
         event.addListener(newWorld);
     }
 
-    static void launchWorld(Screen lastScreen, boolean sameSeed) {
+    public static void launchWorld(Screen lastScreen, boolean sameSeed) {
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (server == null) {
@@ -240,15 +240,30 @@ public final class DeathScreenLayoutHandler {
                             deleted++;
                         }
                     }
-                    if (deleted == 0) continue;
+                    // Pre-drain only runs when we actually deleted ships on
+                    // this level — its purpose is to clean up after the
+                    // deletes here, BEFORE the disconnect chain starts.
+                    // Levels with no DT ships are skipped; ShipShutdownEvents
+                    // will run its own short safety drain at ServerStopping
+                    // for any leftover Sable chunk-map state.
+                    //
+                    // Wall-clock-bound: {@code container.tick()} is a
+                    // synchronous queue-pump that returns instantly when
+                    // nothing's queued, but Sable's chunk-map cleanup runs
+                    // on OTHER threads. Looping with {@code Thread.yield()}
+                    // gives those threads CPU time.
                     ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-                    if (container != null) {
-                        for (int i = 0; i < 60; i++) {
+                    if (container != null && deleted > 0) {
+                        long deadline = System.nanoTime() + 1_000_000_000L; // 1 s
+                        int ticks = 0;
+                        while (System.nanoTime() < deadline) {
                             container.tick();
+                            ticks++;
+                            Thread.yield();
                         }
+                        LOGGER.info("DeathScreenLayout: pre-drained {} train sub-levels in {} ({} ticks, ~1s wall)",
+                                deleted, level.dimension().location(), ticks);
                     }
-                    LOGGER.info("DeathScreenLayout: pre-drained {} train sub-levels in {} (60 ticks)",
-                            deleted, level.dimension().location());
                 }
             } catch (Throwable t) {
                 LOGGER.warn("DeathScreenLayout: pre-drain failed; falling back to vanilla shutdown path", t);
