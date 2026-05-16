@@ -11,6 +11,9 @@ import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.Letter;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.narrative.RandomBookFactory;
+import games.brennan.dungeontrain.narrative.RandomBookFile;
+import games.brennan.dungeontrain.narrative.RandomBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.registry.ModBlocks;
@@ -46,8 +49,13 @@ import java.util.Optional;
  *       calling player a signed book for a single Letter.</li>
  *   <li>{@code /dungeontrain narrative lectern <story> [letter]} — place a
  *       lectern at the player's look-target with the book mounted.</li>
- *   <li>{@code /dungeontrain narrative reload} — re-scan the bundled
- *       narratives without restarting the server.</li>
+ *   <li>{@code /dungeontrain narrative reload} — re-scan both the bundled
+ *       narratives and the random-book pool without restarting the server.</li>
+ *   <li>{@code /dungeontrain narrative randombook list} — chat-print every
+ *       loaded random book with variant / weight / generation.</li>
+ *   <li>{@code /dungeontrain narrative randombook give [basename]} — give the
+ *       calling player a rolled vanilla written book from the random-book pool;
+ *       no basename → pool-weighted random pick.</li>
  * </ul>
  *
  * <p>OP-only (permission level 2) is inherited from the {@code dungeontrain}
@@ -60,6 +68,10 @@ public final class NarrativeCommand {
     /** Tab-completion source: every loaded story basename, alphabetical. */
     private static final SuggestionProvider<CommandSourceStack> STORY_SUGGESTIONS =
         (ctx, builder) -> SharedSuggestionProvider.suggest(StoryRegistry.basenames(), builder);
+
+    /** Tab-completion source: every loaded random-book basename, alphabetical. */
+    private static final SuggestionProvider<CommandSourceStack> RANDOM_BOOK_SUGGESTIONS =
+        (ctx, builder) -> SharedSuggestionProvider.suggest(RandomBookRegistry.basenames(), builder);
 
     private NarrativeCommand() {}
 
@@ -90,7 +102,19 @@ public final class NarrativeCommand {
             // narrative_lectern block — places the lazy-resolution lectern
             // block at the player's look-target. The actual book content is
             // decided per-player on right-click.
-            .then(Commands.literal("spawnlectern").executes(NarrativeCommand::runSpawnLectern));
+            .then(Commands.literal("spawnlectern").executes(NarrativeCommand::runSpawnLectern))
+            // randombook subtree — list + give helpers for the standalone
+            // random-book pool. The pool is delivered via the
+            // dungeontrain:random_book placeholder item; these commands are
+            // for testing without placing chests.
+            .then(Commands.literal("randombook")
+                .then(Commands.literal("list").executes(NarrativeCommand::runRandomBookList))
+                .then(Commands.literal("give")
+                    // No basename — pool-weighted random pick.
+                    .executes(NarrativeCommand::runRandomBookGiveRandom)
+                    .then(Commands.argument("basename", StringArgumentType.string())
+                        .suggests(RANDOM_BOOK_SUGGESTIONS)
+                        .executes(NarrativeCommand::runRandomBookGiveExplicit))));
     }
 
     private static int runList(CommandContext<CommandSourceStack> ctx) {
@@ -117,11 +141,80 @@ public final class NarrativeCommand {
 
     private static int runReload(CommandContext<CommandSourceStack> ctx) {
         StoryRegistry.reload();
-        int total = StoryRegistry.count();
+        RandomBookRegistry.reload();
+        int stories = StoryRegistry.count();
+        int randomBooks = RandomBookRegistry.count();
         ctx.getSource().sendSuccess(() ->
-            Component.literal("Narrative registry reloaded: " + total + " stories").withStyle(ChatFormatting.GREEN),
+            Component.literal("Narrative reloaded: " + stories + " stories, " + randomBooks + " random books")
+                .withStyle(ChatFormatting.GREEN),
             true);
+        return stories + randomBooks;
+    }
+
+    private static int runRandomBookList(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        int total = RandomBookRegistry.count();
+        if (total == 0) {
+            source.sendSuccess(() -> Component.literal("No random books loaded.").withStyle(ChatFormatting.YELLOW), false);
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Random books loaded: " + total + " (total weight: " + RandomBookRegistry.totalWeight() + ")"
+        ).withStyle(ChatFormatting.GREEN), false);
+        for (var id : RandomBookRegistry.ids()) {
+            RandomBookRegistry.get(id).ifPresent(book -> {
+                String tail = id.getPath().substring(id.getPath().lastIndexOf('/') + 1);
+                source.sendSuccess(() -> Component.literal(
+                    String.format("  %s — %s by %s (%d variants, weight %d, gen %d)",
+                        tail, book.title(), book.author(),
+                        book.variants().size(), book.weight(), book.generation())
+                ), false);
+            });
+        }
         return total;
+    }
+
+    private static int runRandomBookGiveRandom(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        if (RandomBookRegistry.count() == 0) {
+            ctx.getSource().sendFailure(Component.literal("No random books loaded."));
+            return 0;
+        }
+        long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
+        Optional<ItemStack> bookOpt = RandomBookFactory.rollFromPool(seed);
+        if (bookOpt.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("Random-book pool is empty (zero total weight?)"));
+            return 0;
+        }
+        ItemStack book = bookOpt.get();
+        if (!player.getInventory().add(book)) {
+            player.drop(book, false);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Gave random book (pool-weighted)"
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int runRandomBookGiveExplicit(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String basename = StringArgumentType.getString(ctx, "basename");
+        Optional<RandomBookFile> opt = RandomBookRegistry.getByBasename(basename);
+        if (opt.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("Unknown random book: " + basename));
+            return 0;
+        }
+        RandomBookFile book = opt.get();
+        long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
+        String body = book.pickVariant(seed);
+        ItemStack stack = RandomBookFactory.buildVanillaBook(book, body);
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Gave random book: " + book.title() + " (one of " + book.variants().size() + " variants)"
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
     }
 
     /**
