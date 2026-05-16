@@ -1,8 +1,8 @@
 {
   "armor": 1,
-  "books": 5,
+  "books": 7,
   "cows": 15,
-  "craft": 1,
+  "craft": 2,
   "default": 0,
   "dirt": 2,
   "dirt2": 2,
@@ -10,7 +10,7 @@
   "ender": 1,
   "enemies": 5,
   "maze": 2,
-  "narrative": 2,
+  "narrative": 3,
   "sand": 0,
   "shop": 1,
   "vase": 1

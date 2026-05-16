@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "variants": {
     "2,1,4": ["minecraft:potted_cornflower", {"state": "minecraft:tripwire_hook[attached=false,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "minecraft:lever[face=wall,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "4,1,0": ["minecraft:potted_torchflower", {"state": "minecraft:tripwire_hook[attached=false,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:lever[face=wall,facing=north,powered=false]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
