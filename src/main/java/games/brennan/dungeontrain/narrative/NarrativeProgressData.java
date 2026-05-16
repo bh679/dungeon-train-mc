@@ -8,11 +8,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * Per-overworld persistence for world narrative read-progress. Stored at
@@ -24,9 +26,17 @@ import java.util.TreeSet;
  * {@link SavedData.Factory}, keyed on the overworld so all dimensions read
  * the same store.</p>
  *
- * <p>Shape: {@code storyBasename -> readLetterIndices}, plus a parallel
- * map for random-book variant tracking. Narrative state is shared by every
- * player in the world — one cursor, one source of truth.</p>
+ * <p>Two scopes coexist in one .dat file:</p>
+ * <ul>
+ *   <li><b>World-scoped</b> — story progress (which letters were read) and
+ *       random-book seen-variants. One cursor per world, shared by every
+ *       player. Introduced when the system pivoted away from per-player
+ *       progression.</li>
+ *   <li><b>Per-player</b> — starting-book first-login receipt. Whether a
+ *       given player has been handed their welcome book on first join.
+ *       Stays per-player because each player gets their own welcome on first
+ *       join; the world-scoped flip would surprise the second player.</li>
+ * </ul>
  *
  * <p>Legacy {@code players} list from the prior per-player schema is silently
  * dropped on load — fresh start on first launch of the new code, per the
@@ -40,19 +50,32 @@ public final class NarrativeProgressData extends SavedData {
     private static final String TAG_RANDOM_BOOKS = "random_books";
     private static final String TAG_STORY_ID = "id";
     private static final String TAG_STORY_READ = "read";
+    /** Root-level list of UUIDs that have already received their first-login welcome book. */
+    private static final String TAG_STARTING_BOOK_RECEIVED = "starting_book_received";
+    /** Key for a per-entry UUID inside the starting-book-received list. */
+    private static final String TAG_UUID = "uuid";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
     private final Map<String, NarrativeProgress> randomBooksSeen;
+    /**
+     * Players who have already been given their first-login welcome book.
+     * Per-player rather than world-scoped: each player gets their own welcome
+     * strike on their own first join, regardless of whether someone else
+     * already spawned in this world.
+     */
+    private final Set<UUID> startingBookReceived;
 
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>());
+        this(new HashMap<>(), new HashMap<>(), new HashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
-                                  Map<String, NarrativeProgress> randomBooksSeen) {
+                                  Map<String, NarrativeProgress> randomBooksSeen,
+                                  Set<UUID> startingBookReceived) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
+        this.startingBookReceived = startingBookReceived;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -133,6 +156,37 @@ public final class NarrativeProgressData extends SavedData {
             randomBooksSeen.clear();
             setDirty();
         }
+    }
+
+    // ---------------- Starting-book first-login tracking ----------------
+
+    /**
+     * True when the player has already been handed their first-login welcome
+     * book. Used by the login hook in {@code StartingBookEvents} to suppress
+     * a second give on plain logins. Does NOT suppress respawn gives — those
+     * always fire regardless of this flag.
+     */
+    public boolean hasReceivedStartingBook(UUID playerUuid) {
+        return startingBookReceived.contains(playerUuid);
+    }
+
+    /**
+     * Mark the player as having received their first-login welcome book.
+     * Returns {@code true} when state changed.
+     */
+    public boolean markStartingBookReceived(UUID playerUuid) {
+        boolean added = startingBookReceived.add(playerUuid);
+        if (added) setDirty();
+        return added;
+    }
+
+    /**
+     * Clear the first-login flag for {@code playerUuid} — next plain login
+     * will give a fresh welcome book again. Used by the
+     * {@code /narrative startingbook reset} test command.
+     */
+    public void resetStartingBookReceived(UUID playerUuid) {
+        if (startingBookReceived.remove(playerUuid)) setDirty();
     }
 
     /**
@@ -217,6 +271,15 @@ public final class NarrativeProgressData extends SavedData {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.put(TAG_STORIES, encodeStoryProgress(byStory));
         tag.put(TAG_RANDOM_BOOKS, encodeStoryProgress(randomBooksSeen));
+
+        // Per-player starting-book receipts — flat list of UUIDs.
+        ListTag startedList = new ListTag();
+        for (UUID uuid : startingBookReceived) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID(TAG_UUID, uuid);
+            startedList.add(entry);
+        }
+        tag.put(TAG_STARTING_BOOK_RECEIVED, startedList);
         return tag;
     }
 
@@ -243,14 +306,28 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
-     * Load the world-scoped schema. Legacy per-player {@code players} list
-     * from the old schema is silently dropped (returns empty store) — by
-     * design, "each new world starts fresh" per the approved plan.
+     * Load the world-scoped schema + per-player starting-book set. Legacy
+     * per-player {@code players} list from the old story schema is silently
+     * dropped — by design, "each new world starts fresh" per the approved
+     * plan.
      */
     private static NarrativeProgressData load(CompoundTag tag) {
         Map<String, NarrativeProgress> stories = decodeStoryProgress(tag, TAG_STORIES);
         Map<String, NarrativeProgress> randomBooks = decodeStoryProgress(tag, TAG_RANDOM_BOOKS);
-        return new NarrativeProgressData(stories, randomBooks);
+        Set<UUID> startingBookReceived = new HashSet<>();
+        // Backwards-compatible: missing `starting_book_received` tag means no
+        // players have been marked yet. On first post-update login each
+        // existing player gets the welcome strike they would've gotten if
+        // the feature had shipped earlier. Intended behaviour.
+        if (tag.contains(TAG_STARTING_BOOK_RECEIVED, Tag.TAG_LIST)) {
+            ListTag startedList = tag.getList(TAG_STARTING_BOOK_RECEIVED, Tag.TAG_COMPOUND);
+            for (int i = 0; i < startedList.size(); i++) {
+                CompoundTag entry = startedList.getCompound(i);
+                if (!entry.hasUUID(TAG_UUID)) continue;
+                startingBookReceived.add(entry.getUUID(TAG_UUID));
+            }
+        }
+        return new NarrativeProgressData(stories, randomBooks, startingBookReceived);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */
