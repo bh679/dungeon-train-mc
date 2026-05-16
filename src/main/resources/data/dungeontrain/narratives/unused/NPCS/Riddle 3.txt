@@ -1,0 +1,28 @@
+Character: Random NPC
+Story: Riddles Quest 3
+
+Letter One-
+A riddle for thee
+My first is equality,\n
+my second inferiority,\n
+my whole superiority.\n
+.\n
+What am I?\n
+
+Letter Two-
+Did you get it?
+The answer to the riddle.
+My first is equality,\n
+my second inferiority,\n
+my whole superiority.\n
+.\n
+What am I?\n
+Here is the answer:?
+MATCHLESS
+My first is equality,\n
+my second inferiority,\n
+my whole superiority.\n
+.\n
+What am I? MATCHLESS\n
+
+

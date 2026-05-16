@@ -1,0 +1,197 @@
+Story: Menu
+
+Letter x-
+Dungeon Train\n
+Train of Decay\n
+\n
+by Brennan Hatton\n
+\n
+Update Logbook.
+
+Update 0.20.00\n
+Bug Fixes\n
+- So many bug fixes, where do I start?\n
+- Stuff doesnt fall through train\n
+- Walls/Floors shouldnt disappear.\n
+- Items shouldnt unspawn.\n
+- Carrying itmes into next cart should work.\n
+- New story/lore added.\n
+- Falling off train, resets back to cart.\n
+- A couple new items, I forget which.\n
+
+Update 0.19.00\n
+Sea & Desert\n
+- New Terrain Types / Biomes\n
+- More Random Stuff\n
+- Night time is shorter.\n
+
+Update 0.18.00\n
+Movign Sun\n
+- Day/Night Cycles
+
+Update 0.17.01\n
+More Stuff\n
+- More Random Nature.\n
+- Sci Fi now in the Random mix.\n
+- More Outside Terrains.
+
+Update 0.16.01\n
+Ending\n
+- Each Run now has an ending\n
+- Also, some small bug fixes from the last update.\n
+Update inspired by @lonewolfy
+
+Update 0.15.22\n
+Inclusive Controls, Start Cart & Lore\n
+- Handedness Added\n
+- Controls Model\n
+- Lore content doubled\n
+- Paper Sytemp Update\n
+- Hid all gamemodes\n
+- De-cluttered\n
+- Bed added\n
+Special thanks to @johnson, \n
+@bc732 & @lonewolfy \n
+and Narrative Director, Wilson Taylor\n
+(@MrFunkSandwich)
+
+Update 0.14.16\n
+Performance Boost\n
+- +67% increase to Frames Per Second (FPS)!\n
+- Indoor Weather Systems\n
+- More Random Stuff\n
+- Health Flower Improved\n
+- Terrain Improved\n
+- Coins Improved\n
+- Physics Improvements\n
+
+Update 0.14.16\n
+Speical Thanks\n
+Shaun Norton (@shaun), @bc732,\n
+@lonewolfy, Wilson Taylor (@MrFunkSandwich), \n
+@Artoones, Jake (@whoelsebutbino), \n
+@Dan Mizu,  @johnson
+
+
+Update 0.13.20\n
+Weapons, Carts & Life\n
+- Triple number of weapons to 72\n
+- Over 50 swords and daggers.\n
+- The game now has Axes\n
+- Scythe Fixed\n
+- Cave Carts\n
+- Improved Nature Carts\n
+- Flower of Life moved to hand\n
+
+Update 0.13.20\n
+Lore & Game Modes Update\n
+- Leafs drop when you take damage\n
+- Visual effects added\n
+- heavy breathing on low health\n
+- More Train Lore \n
+- Drums are now playable\n
+- Walls shouldn't disappear now
+
+Update 0.12.10\n
+Lore & Game Modes Update\n
+- New Character Story\n
+- Improver Story Interactions\n
+- The same stories are told \n
+differently randomly\n
+- Pages shred when you drop them
+
+Update 0.12.10\n
+Same Update Contiuned\n
+- Game Modes working again\n
+- You restart when you die. \n
+- Scavenger Mode is now called Decay,\n
+and is default.\n
+- Decay health loss is per cart, \n
+rather than over time\n
+- New Title in starting cart.
+
+Update 0.12.10\n
+Same Update Contiuned\n
+- Balancing of random cart types.\n
+- Nature carts\n
+- Small slimes are now easier to kill\n
+- Small slimes are now more deadly\n
+- Weapons may not disappear in your hands
+
+Update 0.11.10\n
+Interactive Items Update 2\n
+- Hands stick to items not IRL hands\n
+- Things can be broken in your hands\n
+- Force grab range larger\n
+- Food can be broken\n
+- Improved colliders (so many!)\n
+- Chairs are grabbale and destructable\n
+- Cant walk through crates and barrels\n
+- Less items per carriage\n
+- Walk off edge bug fixed\n
+- Runes added
+
+Update 0.10.X\n
+- Volume Balancing\n
+- Making Audio 3D\n
+- Combat Music Added\n
+- Weapons Sounds var on weight.\n
+- Update 0.9.X\n
+- Smooth Locomotion\n
+- Improved teleporting\n
+- Hands\n
+- Better throwing physics\n
+- Slimes that can shoot slime at you\n
+- New Swords\n
+- Starter sword\n
+- Jars Break\n
+- Towns
+
+Update 0.9.X\n
+- Smooth Locomotion\n
+- Improved teleporting\n
+- Hands\n
+- Better throwing physics\n
+- Slimes that can shoot slime at you\n
+- New Swords\n
+- Starter sword\n
+- Jars Break\n
+- Towns
+
+Update 0.7.6\n
+Vases now drop loot.\n
+Broken Vases can now be broken more.\n
+Fireplaces heal you.\n
+Sound effects added\n
+- Heavy breathing on low health.\n
+- Laugh when healed fully.\n
+- Sigh when healed by fire.\n
+Audio optimizations improve performance.\n
+Lighting optimizations.\n
+Analytics added.
+
+Update 0.6.X\n
+- Slimes now drop loot\n
+- You have a belt with coins pouch and health flower.\n
+- Item collection is less buggy.\n
+- Some graphics artifacts removed.\n
+- Starting paper now has information on updates\n
+- Health now behaves correctly. \n
+- Eating food heals you. \n
+- Scavenger mode is working again.\n
+- Health auto-generates in free explorer mode.\n
+\n
+Thanks Dan Mizu for the inspiration for this update.
+
+Update 0.5.2\n
+- Slimes can now die.\n
+- Slimes can now kill you in survival.\n
+- Slimes are not so buggy when you kill them.\n
+\n
+Thanks Wiliam Taylor for the inspiration for this update.\n
+
+All game types are very early stage, and not an indication of the final product.
+
+See all updates in detail \n
+on the itch.io page \n
+or DungeonTrain.com

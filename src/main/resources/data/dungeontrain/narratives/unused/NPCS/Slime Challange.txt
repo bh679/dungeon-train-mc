@@ -1,0 +1,48 @@
+Character: Random NPC
+Story: NPC Repeat 1
+
+Letter One-
+Oh thank god! You made it.
+Have you seen them?
+They are terrifying!
+Soft and lumpy.
+Green.
+Slimey.
+And sploshy.
+If you can kill them.
+It will help me out a lot.
+
+Alt
+I want to move forward, 
+but there are... \n
+slimes ahead. 
+They frighten me. 
+Any chance you could... \n
+clear 'em out?
+
+Alt
+If you proceed, adventurer, 
+be warned of the danger that awaits you. 
+Danger unlike that which \n
+has ever been witnessed \n
+by man or beast.
+
+Alt
+Adventurer, I beseech you! 
+Slay 6 slimes and return to me!
+
+Letter two-
+Hey, thanks! 
+You, uhh. Missed one or two. 
+But that's okay, 
+I run pretty fast.
+
+Alt
+Okay, I may have overestimated\n
+the danger a little. 
+Just, yeah, maybe a little bit.
+
+Alt
+Oh, hey, did you slay those slimes? 
+I bet you did, you seem like a trustworthy guy, 
+I'll believe you.
