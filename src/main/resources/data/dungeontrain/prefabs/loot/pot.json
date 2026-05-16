@@ -1,6 +1,7 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "block": "minecraft:decorated_pot",
+  "category": "loot",
   "fillMin": 1,
   "entries": [
     { "id": "minecraft:emerald", "count": 5, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -52,6 +53,7 @@
     { "id": "minecraft:beetroot_soup", "count": 2, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:suspicious_stew", "count": 2, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:wheat", "count": 1, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:scrape_pottery_sherd", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "minecraft:scrape_pottery_sherd", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
