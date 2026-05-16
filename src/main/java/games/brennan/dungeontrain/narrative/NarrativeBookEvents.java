@@ -6,6 +6,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -15,6 +16,7 @@ import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
@@ -87,6 +89,65 @@ public final class NarrativeBookEvents {
             LOGGER.info("[DungeonTrain] Narrative: marked {} letter {} read for {} ({})",
                 id.storyBasename(), id.letterIndex(), player.getName().getString(), player.getUUID());
         }
+    }
+
+    /**
+     * Pre-mutate random-book stacks the moment they reach a held hand slot,
+     * so by the time the player right-clicks to open, the client already has
+     * the corrected stack synced. Mutating later (inside
+     * {@code RightClickItem}) is too late — the client opens
+     * {@code BookViewScreen} locally from its stale stack before the server's
+     * mutation reaches it.
+     *
+     * <p>Logic:
+     * <ul>
+     *   <li>Stack must be a {@link RandomBookTag}-stamped vanilla written book.</li>
+     *   <li>If the player has not yet seen this {@code (basename, variantIndex)},
+     *       mark it seen and leave the stack as-is.</li>
+     *   <li>If they HAVE seen it, ask {@link RandomBookFactory#pickUnseenForPlayer}
+     *       for an alternative tuple and swap the stack's content. The
+     *       picker resets the player's tracking automatically when every
+     *       loaded variant has been seen (silent cycle).</li>
+     * </ul>
+     */
+    @SubscribeEvent
+    public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        EquipmentSlot slot = event.getSlot();
+        if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) return;
+        ItemStack stack = event.getTo();
+        if (stack.isEmpty()) return;
+        Optional<RandomBookTag.RandomBookIdentity> idOpt = RandomBookTag.read(stack);
+        if (idOpt.isEmpty()) return;
+
+        ServerLevel overworld = overworldOf(player);
+        if (overworld == null) return;
+        NarrativeProgressData data = NarrativeProgressData.get(overworld);
+
+        RandomBookTag.RandomBookIdentity id = idOpt.get();
+        if (!data.hasSeenRandomBook(player.getUUID(), id.basename(), id.variantIndex())) {
+            // First time the player has held this exact tuple — mark and let
+            // the read flow proceed unchanged.
+            data.markRandomBookSeen(player.getUUID(), id.basename(), id.variantIndex());
+            LOGGER.info("[DungeonTrain] RandomBook: marked {} variant {} seen for {} ({})",
+                id.basename(), id.variantIndex(), player.getName().getString(), player.getUUID());
+            return;
+        }
+
+        // Already seen — try to swap to an unseen pick. The picker resets
+        // tracking internally if every variant is seen, so the second-stage
+        // call always returns something when the pool is non-empty.
+        long seed = overworld.getGameTime() ^ player.getUUID().getLeastSignificantBits();
+        Optional<RandomBookFactory.PickedBook> alt =
+            RandomBookFactory.pickUnseenForPlayer(player.getUUID(), data, seed);
+        if (alt.isEmpty()) return;  // pool empty — leave as-is
+
+        RandomBookFactory.replaceStackContent(stack, alt.get());
+        data.markRandomBookSeen(player.getUUID(), alt.get().book().basename(), alt.get().variantIndex());
+        LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} for {} ({})",
+            id.basename(), id.variantIndex(),
+            alt.get().book().basename(), alt.get().variantIndex(),
+            player.getName().getString(), player.getUUID());
     }
 
     private static ServerLevel overworldOf(Player player) {

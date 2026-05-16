@@ -31,6 +31,8 @@ import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.narrative.RandomBookFactory;
+import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
 /**
@@ -63,6 +65,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_CHANCE = 0xFEEDFACECAFEBABEL;
     /** Seed source for the vanilla EnchantmentHelper RandomSource. */
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
+    /** Salt for the random-book placeholder substitution. */
+    private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -559,6 +563,18 @@ public final class ContainerContentsRoller {
                                            HolderLookup.Provider registries) {
         Item item = resolveItem(picked.itemId());
         if (item == null) return ItemStack.EMPTY;
+
+        // Editor-only placeholder dungeontrain:random_book — substitute a
+        // stamped vanilla WRITTEN_BOOK rolled from RandomBookRegistry. Pool
+        // empty → return EMPTY so the slot stays empty rather than dropping
+        // the useless placeholder into the world.
+        // Furnace path note: a substituted written book lands in the output
+        // slot (fails isCookable + isFuel). Cosmetically odd but harmless.
+        if (item == ModItems.RANDOM_BOOK.get()) {
+            long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+            return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
+        }
+
         int maxStack = new ItemStack(item).getMaxStackSize();
         ItemStack stack = new ItemStack(item, Math.max(1, Math.min(maxStack, rolledCount)));
 

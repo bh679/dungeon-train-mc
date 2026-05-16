@@ -1,20 +1,22 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "block": "minecraft:chest",
+  "category": "loot",
   "fillMin": 1,
   "fillMax": 20,
   "entries": [
-    { "id": "minecraft:tuff", "count": 1, "weight": 11 },
-    { "id": "minecraft:cobbled_deepslate", "count": 1, "weight": 11 },
-    { "id": "minecraft:andesite", "count": 1, "weight": 13 },
-    { "id": "minecraft:granite", "count": 1, "weight": 13 },
-    { "id": "minecraft:diorite", "count": 1, "weight": 12 },
-    { "id": "minecraft:cobblestone", "count": 1, "weight": 24 },
-    { "id": "minecraft:dirt", "count": 1, "weight": 11 },
-    { "id": "minecraft:gravel", "count": 1, "weight": 10 },
-    { "id": "minecraft:wooden_pickaxe", "count": 1, "weight": 1 },
-    { "id": "minecraft:stone_pickaxe", "count": 1, "weight": 1 },
-    { "id": "minecraft:stone_shovel", "count": 1, "weight": 1 },
-    { "id": "minecraft:wooden_shovel", "count": 1, "weight": 1 }
+    { "id": "minecraft:tuff", "count": 1, "weight": 11, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cobbled_deepslate", "count": 1, "weight": 11, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:andesite", "count": 1, "weight": 13, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:granite", "count": 1, "weight": 13, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:diorite", "count": 1, "weight": 12, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cobblestone", "count": 1, "weight": 24, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:dirt", "count": 1, "weight": 11, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:gravel", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:wooden_pickaxe", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_pickaxe", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_shovel", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:wooden_shovel", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }

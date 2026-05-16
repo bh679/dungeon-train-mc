@@ -1,6 +1,7 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "block": "minecraft:chest",
+  "category": "loot",
   "fillMin": 1,
   "fillMax": 9,
   "entries": [
@@ -25,6 +26,7 @@
     { "id": "minecraft:beetroot", "count": 6, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:beef", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:porkchop", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:mutton", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "minecraft:mutton", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
