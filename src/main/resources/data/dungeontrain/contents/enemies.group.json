@@ -37,6 +37,10 @@
     {
       "id": "skeletons",
       "weight": 1
+    },
+    {
+      "id": "slimes",
+      "weight": 8
     }
   ]
 }

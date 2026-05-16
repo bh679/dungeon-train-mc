@@ -23,22 +23,31 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 
 /**
- * A vanilla-lectern look-alike that defers its book content to right-click
- * time and resolves it per-player from {@link BookFactory#buildOrRandomForPlayer}.
+ * A vanilla-lectern look-alike that resolves its book content on the FIRST
+ * right-click and then locks it for the lifetime of the block.
  *
  * <p>Behaviour:
  * <ul>
  *   <li>Always renders with a book on top (state's {@code HAS_BOOK=true} from
  *       placement).</li>
- *   <li>On right-click (server-side): looks up the player's "current book"
- *       via {@link BookFactory#buildOrRandomForPlayer}, swaps it into the
- *       vanilla {@link LecternBlockEntity} in this position, then delegates
- *       to {@link LecternBlock#useWithoutItem} so the screen opens with the
- *       freshly-resolved content.</li>
- *   <li>If every story is complete for the player, the right-click no-ops
- *       and shows an action-bar message.</li>
- *   <li>On break, drops only the lectern item — the rotating book is purely
- *       transient and shouldn't survive as loot.</li>
+ *   <li>On right-click (server-side):
+ *     <ul>
+ *       <li>If the {@link LecternBlockEntity} already holds a non-empty book
+ *           (i.e. a prior click already resolved one), skip resolution and
+ *           delegate straight to {@link LecternBlock#useWithoutItem}. The
+ *           locked book opens unchanged.</li>
+ *       <li>If the BE is empty, ask {@link BookFactory#buildOrRandomForLectern}
+ *           for the next book in the world's narrative cursor, place it on
+ *           the BE (vanilla serialization persists the stack across saves),
+ *           advance world progress, then delegate to vanilla.</li>
+ *     </ul>
+ *   </li>
+ *   <li>If every story is complete for the world, the right-click no-ops
+ *       and shows an action-bar message — and the lectern stays "empty"
+ *       until more content loads.</li>
+ *   <li>On break, drops only the lectern item — the rotating book is
+ *       transient w.r.t. block loot (the BE is destroyed with the block,
+ *       so the lock dies with the lectern).</li>
  * </ul>
  *
  * <p>Reuses {@link LecternBlockEntity} via NeoForge's
@@ -69,9 +78,21 @@ public class NarrativeLecternBlock extends LecternBlock {
         if (level.isClientSide) return InteractionResult.SUCCESS;
         if (!(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
         if (!(level instanceof ServerLevel sl)) return InteractionResult.PASS;
-        ServerLevel overworld = sl.getServer().overworld();
 
-        Optional<ItemStack> resolved = BookFactory.buildOrRandomForPlayer(overworld, sp, pos.asLong());
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof LecternBlockEntity lectern)) {
+            return super.useWithoutItem(state, level, pos, player, hit);
+        }
+
+        // Lock check: a prior interaction already resolved a book for this
+        // lectern. The BE persists it across saves, so just open it again.
+        if (!lectern.getBook().isEmpty()) {
+            return super.useWithoutItem(state, level, pos, player, hit);
+        }
+
+        // First interaction — resolve the world's next book and lock it.
+        ServerLevel overworld = sl.getServer().overworld();
+        Optional<ItemStack> resolved = BookFactory.buildOrRandomForLectern(overworld, pos.asLong());
         if (resolved.isEmpty()) {
             sp.displayClientMessage(
                 Component.literal("All narratives complete.").withStyle(ChatFormatting.YELLOW),
@@ -79,22 +100,20 @@ public class NarrativeLecternBlock extends LecternBlock {
             return InteractionResult.CONSUME;
         }
 
-        BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof LecternBlockEntity lectern) {
-            ItemStack book = resolved.get();
-            book.setCount(1);
-            lectern.setBook(book);
-            lectern.setChanged();
+        ItemStack book = resolved.get();
+        book.setCount(1);
+        lectern.setBook(book);
+        lectern.setChanged();
 
-            // Decide AND record the read atomically — opening this lectern
-            // counts as reading the letter we just resolved. Without this,
-            // the read-marking only fires on the NEXT right-click via the
-            // RightClickBlock subscriber (which sees the previous BE
-            // state), meaning a one-and-done viewer never advances.
-            NarrativeBookTag.read(book).ifPresent(id ->
-                NarrativeProgressData.get(overworld)
-                    .markRead(sp.getUUID(), id.storyBasename(), id.letterIndex()));
-        }
+        // Decide AND record the read atomically — opening this lectern
+        // counts as reading the letter we just resolved. Without this,
+        // the read-marking only fires on the NEXT right-click via the
+        // RightClickBlock subscriber (which sees the previous BE state),
+        // meaning a one-and-done viewer never advances.
+        NarrativeBookTag.read(book).ifPresent(id ->
+            NarrativeProgressData.get(overworld)
+                .markRead(id.storyBasename(), id.letterIndex()));
+
         // Now let vanilla open the lectern menu — it reads the BE's book
         // we just swapped in.
         return super.useWithoutItem(state, level, pos, player, hit);
@@ -102,9 +121,8 @@ public class NarrativeLecternBlock extends LecternBlock {
 
     /**
      * Vanilla {@link LecternBlock#onRemove} drops the stored book as an
-     * item. For narrative_lectern that book is transient (re-resolved every
-     * click) — clear the BE's book before super so vanilla's drop logic has
-     * nothing to scatter.
+     * item. The lock dies with the lectern — clear the BE's book before
+     * super so vanilla's drop logic has nothing to scatter.
      */
     @Override
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {

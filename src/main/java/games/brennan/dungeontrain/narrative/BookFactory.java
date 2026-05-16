@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -68,79 +67,78 @@ public final class BookFactory {
     }
 
     /**
-     * Player-aware spawn — picks the next unread letter for the player and
-     * builds a book for it. If {@code preferStory} is present and not
-     * complete for the player, uses that story; otherwise falls forward to
-     * the player's next-uncompleted story (alphabetical by basename).
+     * World-aware spawn — picks the next unread letter for the world and
+     * builds a book for it. If {@code preferStory} is present and not yet
+     * complete for the world, uses that story; otherwise falls forward to
+     * the world's next-uncompleted story (alphabetical by basename).
      *
      * <p>Returns {@link Optional#empty()} when every loaded story is
-     * complete for the player. Caller surfaces "all stories complete" to
-     * the player.</p>
+     * complete for the world. Caller surfaces "all stories complete".</p>
      *
      * <p>This method does NOT advance progress — that's the read-event
      * handler's job. The book is just stamped with its identity NBT.</p>
      */
-    public static Optional<ItemStack> buildNextForPlayer(
-        ServerLevel overworld, ServerPlayer player, Optional<StoryFile> preferStory
+    public static Optional<ItemStack> buildNext(
+        ServerLevel overworld, Optional<StoryFile> preferStory
     ) {
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
         StoryFile story = null;
         if (preferStory.isPresent()) {
             StoryFile candidate = preferStory.get();
             String basename = basenameOf(candidate);
-            if (!data.progressFor(player.getUUID(), basename).isComplete(candidate.letters().size())) {
+            if (!data.progressFor(basename).isComplete(candidate.letters().size())) {
                 story = candidate;
             }
         }
         if (story == null) {
-            Optional<String> nextBasename = data.nextUncompletedStory(player.getUUID());
+            Optional<String> nextBasename = data.nextUncompletedStory();
             if (nextBasename.isEmpty()) return Optional.empty();
             Optional<StoryFile> resolved = StoryRegistry.getByBasename(nextBasename.get());
             if (resolved.isEmpty()) return Optional.empty();
             story = resolved.get();
         }
         String basename = basenameOf(story);
-        int next = data.progressFor(player.getUUID(), basename).nextUnreadLetter(story.letters().size());
+        int next = data.progressFor(basename).nextUnreadLetter(story.letters().size());
         if (next < 1) return Optional.empty();
         Letter letter = story.letterByIndex(next).orElse(null);
         if (letter == null) return Optional.empty();
-        long seed = overworld.getGameTime() ^ player.getUUID().getLeastSignificantBits();
+        // Variant seed: stable per (story, letter) so handing out the same
+        // letter twice doesn't flip variant. Mixing the letter index keeps
+        // distinct letters from collapsing onto the same variant.
+        long seed = ((long) basename.hashCode() << 32) ^ letter.index();
         return Optional.of(buildSignedBook(story, letter, seed));
     }
 
     /**
-     * Lazy lectern resolver — picks "what book should this lectern show this
-     * player right now":
+     * Lazy lectern resolver — picks "what book should this lectern show
+     * right now" for the world:
      * <ol>
-     *   <li>If the player has any in-progress story (started, not complete) —
+     *   <li>If the world has any in-progress story (started, not complete) —
      *       the next-unread letter of that story.</li>
-     *   <li>Otherwise — a random pick from the player's uncompleted stories,
+     *   <li>Otherwise — a random pick from the world's uncompleted stories,
      *       seeded by {@code lecternSeed} so the same lectern shows the same
-     *       story across re-clicks until the player actually advances.</li>
+     *       story across re-clicks until something actually advances.</li>
      *   <li>If every story is complete → {@link Optional#empty()}.</li>
      * </ol>
      *
      * <p>The returned ItemStack is stamped with the identity NBT just like
-     * {@link #buildSignedBook} — so the read-event handler advances progress
-     * automatically when the player opens it.</p>
+     * {@link #buildSignedBook} — so the read-event handler advances world
+     * progress automatically when the book is opened.</p>
      *
      * @param overworld   The overworld ServerLevel (where progress is stored).
-     * @param player      The player asking — drives all per-player progression.
      * @param lecternSeed A long stable per-lectern (e.g. {@code pos.asLong()})
-     *                    used in the random-pick fallback. Mixing in player
-     *                    UUID happens internally.
+     *                    used in the random-pick fallback and as the variant
+     *                    seed. Same lectern → same variant forever, which
+     *                    is exactly what lock-on-first-read demands.
      */
-    public static Optional<ItemStack> buildOrRandomForPlayer(
-        ServerLevel overworld, ServerPlayer player, long lecternSeed
+    public static Optional<ItemStack> buildOrRandomForLectern(
+        ServerLevel overworld, long lecternSeed
     ) {
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
-        Optional<String> inProgress = data.currentInProgressStory(player.getUUID());
-        Optional<String> chosen = inProgress;
+        Optional<String> chosen = data.currentInProgressStory();
         if (chosen.isEmpty()) {
-            long mixed = lecternSeed ^ player.getUUID().getLeastSignificantBits()
-                                     ^ (player.getUUID().getMostSignificantBits() << 1);
-            chosen = data.randomUncompletedStory(player.getUUID(), mixed);
+            chosen = data.randomUncompletedStory(lecternSeed);
         }
         if (chosen.isEmpty()) return Optional.empty();
 
@@ -148,14 +146,13 @@ public final class BookFactory {
         if (storyOpt.isEmpty()) return Optional.empty();
         StoryFile story = storyOpt.get();
 
-        int next = data.progressFor(player.getUUID(), chosen.get())
+        int next = data.progressFor(chosen.get())
             .nextUnreadLetter(story.letters().size());
         if (next < 1) return Optional.empty();
         Letter letter = story.letterByIndex(next).orElse(null);
         if (letter == null) return Optional.empty();
 
-        long variantSeed = overworld.getGameTime() ^ player.getUUID().getLeastSignificantBits();
-        return Optional.of(buildSignedBook(story, letter, variantSeed));
+        return Optional.of(buildSignedBook(story, letter, lecternSeed));
     }
 
     /**

@@ -246,10 +246,10 @@ public final class NarrativeCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel overworld = player.serverLevel().getServer().overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
-        var snapshot = data.randomBookSnapshot(player.getUUID());
+        var snapshot = data.randomBookSnapshot();
 
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "Random-book reads for " + player.getName().getString() + ":"
+            "Random-book reads for this world:"
         ).withStyle(ChatFormatting.GREEN), false);
 
         for (var basename : RandomBookRegistry.basenames()) {
@@ -360,9 +360,9 @@ public final class NarrativeCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel overworld = player.serverLevel().getServer().overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
-        data.resetRandomBookProgress(player.getUUID());
+        data.resetRandomBookProgress();
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "Random-book reads reset for " + player.getName().getString()
+            "Random-book reads reset for this world"
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -370,6 +370,7 @@ public final class NarrativeCommand {
     /**
      * Progression-aware book give. {@code basenameOpt} present → prefer that
      * story (cycle to next uncompleted if complete); absent → next-uncompleted-story.
+     * Uses the world's progression cursor.
      */
     private static int runBookNext(CommandContext<CommandSourceStack> ctx, Optional<String> basenameOpt) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
@@ -379,10 +380,10 @@ public final class NarrativeCommand {
             ctx.getSource().sendFailure(Component.literal("Unknown story: " + basenameOpt.get()));
             return 0;
         }
-        Optional<ItemStack> bookOpt = BookFactory.buildNextForPlayer(overworld, player, preferStory);
+        Optional<ItemStack> bookOpt = BookFactory.buildNext(overworld, preferStory);
         if (bookOpt.isEmpty()) {
             ctx.getSource().sendSuccess(() -> Component.literal(
-                "All narratives complete for this player. Run `/dungeontrain narrative reset` to start over."
+                "All narratives complete for this world. Run `/dungeontrain narrative reset` to start over."
             ).withStyle(ChatFormatting.YELLOW), false);
             return 0;
         }
@@ -436,10 +437,10 @@ public final class NarrativeCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel overworld = player.serverLevel().getServer().overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
-        var snapshot = data.snapshotForPlayer(player.getUUID());
+        var snapshot = data.snapshotStories();
 
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "Narrative progress for " + player.getName().getString() + ":"
+            "Narrative progress for this world:"
         ).withStyle(ChatFormatting.GREEN), false);
 
         for (var basename : StoryRegistry.basenames()) {
@@ -454,7 +455,7 @@ public final class NarrativeCommand {
             ), false);
         }
 
-        Optional<String> next = data.nextUncompletedStory(player.getUUID());
+        Optional<String> next = data.nextUncompletedStory();
         if (next.isEmpty()) {
             ctx.getSource().sendSuccess(() -> Component.literal(
                 "All stories complete."
@@ -462,7 +463,7 @@ public final class NarrativeCommand {
         } else {
             String nextBasename = next.get();
             int letterIdx = StoryRegistry.getByBasename(nextBasename)
-                .map(s -> data.progressFor(player.getUUID(), nextBasename).nextUnreadLetter(s.letters().size()))
+                .map(s -> data.progressFor(nextBasename).nextUnreadLetter(s.letters().size()))
                 .orElse(-1);
             ctx.getSource().sendSuccess(() -> Component.literal(
                 "Next: " + nextBasename + " (letter " + letterIdx + ")"
@@ -475,9 +476,9 @@ public final class NarrativeCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         ServerLevel overworld = player.serverLevel().getServer().overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
-        data.resetPlayer(player.getUUID());
+        data.resetAll();
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "Narrative progress reset for " + player.getName().getString()
+            "Narrative progress reset for this world"
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
@@ -491,10 +492,10 @@ public final class NarrativeCommand {
             ctx.getSource().sendFailure(Component.literal("Unknown story: " + basenameOpt.get()));
             return 0;
         }
-        Optional<ItemStack> bookOpt = BookFactory.buildNextForPlayer(overworld, player, preferStory);
+        Optional<ItemStack> bookOpt = BookFactory.buildNext(overworld, preferStory);
         if (bookOpt.isEmpty()) {
             ctx.getSource().sendSuccess(() -> Component.literal(
-                "All narratives complete for this player."
+                "All narratives complete for this world."
             ).withStyle(ChatFormatting.YELLOW), false);
             return 0;
         }

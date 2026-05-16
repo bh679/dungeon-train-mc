@@ -17,7 +17,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 /**
- * Per-overworld persistence for player narrative read-progress. Stored at
+ * Per-overworld persistence for world narrative read-progress. Stored at
  * {@code <world>/data/dungeontrain_narratives.dat}.
  *
  * <p>Mirrors the
@@ -26,31 +26,43 @@ import java.util.UUID;
  * {@link SavedData.Factory}, keyed on the overworld so all dimensions read
  * the same store.</p>
  *
- * <p>Shape: {@code playerUuid -> storyBasename -> readLetterIndices}.
- * Each mutation calls {@link #setDirty()} so the dat-file picks it up on
- * save.</p>
+ * <p>Two scopes coexist in one .dat file:</p>
+ * <ul>
+ *   <li><b>World-scoped</b> — story progress (which letters were read) and
+ *       random-book seen-variants. One cursor per world, shared by every
+ *       player. Introduced when the system pivoted away from per-player
+ *       progression.</li>
+ *   <li><b>Per-player</b> — starting-book first-login receipt. Whether a
+ *       given player has been handed their welcome book on first join.
+ *       Stays per-player because each player gets their own welcome on first
+ *       join; the world-scoped flip would surprise the second player.</li>
+ * </ul>
+ *
+ * <p>Legacy {@code players} list from the prior per-player schema is silently
+ * dropped on load — fresh start on first launch of the new code, per the
+ * approved plan.</p>
  */
 public final class NarrativeProgressData extends SavedData {
 
     public static final String NAME = "dungeontrain_narratives";
 
-    private static final String TAG_PLAYERS = "players";
-    private static final String TAG_PLAYER_UUID = "uuid";
-    private static final String TAG_PLAYER_STORIES = "stories";
-    private static final String TAG_PLAYER_RANDOM_BOOKS = "random_books";
+    private static final String TAG_STORIES = "stories";
+    private static final String TAG_RANDOM_BOOKS = "random_books";
     private static final String TAG_STORY_ID = "id";
     private static final String TAG_STORY_READ = "read";
     /** Root-level list of UUIDs that have already received their first-login welcome book. */
     private static final String TAG_STARTING_BOOK_RECEIVED = "starting_book_received";
+    /** Key for a per-entry UUID inside the starting-book-received list. */
+    private static final String TAG_UUID = "uuid";
 
-    private final Map<UUID, Map<String, NarrativeProgress>> byPlayer;
-    /** Per-player seen-variant tracking for the random-book pool. Shape mirrors {@link #byPlayer}. */
-    private final Map<UUID, Map<String, NarrativeProgress>> byPlayerRandomBooks;
+    private final Map<String, NarrativeProgress> byStory;
+    /** World-wide seen-variant tracking for the random-book pool. */
+    private final Map<String, NarrativeProgress> randomBooksSeen;
     /**
      * Players who have already been given their first-login welcome book.
-     * Distinct from random-book tracking — welcome books are re-given on every
-     * respawn (regardless of this set), but only ever given <em>once</em>
-     * per-player on plain login.
+     * Per-player rather than world-scoped: each player gets their own welcome
+     * strike on their own first join, regardless of whether someone else
+     * already spawned in this world.
      */
     private final Set<UUID> startingBookReceived;
 
@@ -58,11 +70,11 @@ public final class NarrativeProgressData extends SavedData {
         this(new HashMap<>(), new HashMap<>(), new HashSet<>());
     }
 
-    private NarrativeProgressData(Map<UUID, Map<String, NarrativeProgress>> byPlayer,
-                                  Map<UUID, Map<String, NarrativeProgress>> byPlayerRandomBooks,
+    private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
+                                  Map<String, NarrativeProgress> randomBooksSeen,
                                   Set<UUID> startingBookReceived) {
-        this.byPlayer = byPlayer;
-        this.byPlayerRandomBooks = byPlayerRandomBooks;
+        this.byStory = byStory;
+        this.randomBooksSeen = randomBooksSeen;
         this.startingBookReceived = startingBookReceived;
     }
 
@@ -76,80 +88,74 @@ public final class NarrativeProgressData extends SavedData {
         );
     }
 
-    /** Read-only progress for {@code (player, storyBasename)}; never null. */
-    public NarrativeProgress progressFor(UUID playerUuid, String storyBasename) {
-        Map<String, NarrativeProgress> stories = byPlayer.get(playerUuid);
-        if (stories == null) return new NarrativeProgress();
-        NarrativeProgress p = stories.get(storyBasename);
+    /** Read-only progress for {@code storyBasename}; never null. */
+    public NarrativeProgress progressFor(String storyBasename) {
+        NarrativeProgress p = byStory.get(storyBasename);
         return p != null ? p : new NarrativeProgress();
     }
 
     /**
-     * Mark {@code letterIndex} read for the player + story. Returns
-     * {@code true} when state changed (caller can decide whether to log).
-     * Always calls {@link #setDirty()} so the .dat file persists.
+     * Mark {@code letterIndex} read for the story. Returns {@code true} when
+     * state changed (caller can decide whether to log). Always calls
+     * {@link #setDirty()} so the .dat file persists.
      */
-    public boolean markRead(UUID playerUuid, String storyBasename, int letterIndex) {
-        NarrativeProgress p = byPlayer
-            .computeIfAbsent(playerUuid, k -> new HashMap<>())
-            .computeIfAbsent(storyBasename, k -> new NarrativeProgress());
+    public boolean markRead(String storyBasename, int letterIndex) {
+        NarrativeProgress p = byStory.computeIfAbsent(storyBasename, k -> new NarrativeProgress());
         boolean changed = p.markRead(letterIndex);
         if (changed) setDirty();
         return changed;
     }
 
     /**
-     * Snapshot of every story this player has touched (read at least one
+     * Snapshot of every story the world has touched (read at least one
      * letter of). Used by `/narrative progress` to print a table.
      */
-    public Map<String, NarrativeProgress> snapshotForPlayer(UUID playerUuid) {
-        Map<String, NarrativeProgress> stories = byPlayer.get(playerUuid);
-        if (stories == null) return Map.of();
-        Map<String, NarrativeProgress> out = new HashMap<>(stories.size());
-        for (var e : stories.entrySet()) {
+    public Map<String, NarrativeProgress> snapshotStories() {
+        Map<String, NarrativeProgress> out = new HashMap<>(byStory.size());
+        for (var e : byStory.entrySet()) {
             out.put(e.getKey(), new NarrativeProgress(e.getValue().readLetters()));
         }
         return out;
     }
 
-    /** Reset every story for {@code playerUuid}. */
-    public void resetPlayer(UUID playerUuid) {
-        Map<String, NarrativeProgress> removed = byPlayer.remove(playerUuid);
-        if (removed != null) setDirty();
+    /** Reset every story for the world. */
+    public void resetAll() {
+        if (!byStory.isEmpty()) {
+            byStory.clear();
+            setDirty();
+        }
     }
 
     // ---------------- Random-book tracking ----------------
 
     /**
-     * True when the player has already seen
+     * True when the world has already seen
      * {@code (bookBasename, variantIndex)}. Used by the equipment-change
      * handler to decide whether to swap the held stack to an unseen pick.
      */
-    public boolean hasSeenRandomBook(UUID playerUuid, String bookBasename, int variantIndex) {
-        Map<String, NarrativeProgress> books = byPlayerRandomBooks.get(playerUuid);
-        if (books == null) return false;
-        NarrativeProgress p = books.get(bookBasename);
+    public boolean hasSeenRandomBook(String bookBasename, int variantIndex) {
+        NarrativeProgress p = randomBooksSeen.get(bookBasename);
         return p != null && p.readLetters().contains(variantIndex);
     }
 
     /**
-     * Mark {@code variantIndex} of {@code bookBasename} seen for the player.
+     * Mark {@code variantIndex} of {@code bookBasename} seen for the world.
      * Returns {@code true} when state changed. Calls {@link #setDirty()} so
      * the .dat file persists.
      */
-    public boolean markRandomBookSeen(UUID playerUuid, String bookBasename, int variantIndex) {
-        NarrativeProgress p = byPlayerRandomBooks
-            .computeIfAbsent(playerUuid, k -> new HashMap<>())
-            .computeIfAbsent(bookBasename, k -> new NarrativeProgress());
+    public boolean markRandomBookSeen(String bookBasename, int variantIndex) {
+        NarrativeProgress p = randomBooksSeen.computeIfAbsent(bookBasename, k -> new NarrativeProgress());
         boolean changed = p.markRead(variantIndex);
         if (changed) setDirty();
         return changed;
     }
 
-    /** Clear random-book tracking for {@code playerUuid}. */
-    public void resetRandomBookProgress(UUID playerUuid) {
-        Map<String, NarrativeProgress> removed = byPlayerRandomBooks.remove(playerUuid);
-        if (removed != null) setDirty();
+    /** Clear random-book tracking for the world. */
+    public void resetRandomBookProgress() {
+        if (!randomBooksSeen.isEmpty()) {
+            randomBooksSeen.clear();
+            setDirty();
+        }
     }
 
     // ---------------- Starting-book first-login tracking ----------------
@@ -184,52 +190,50 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
-     * Snapshot of every random book this player has touched (any variant
+     * Snapshot of every random book the world has touched (any variant
      * seen). Used by {@code /narrative randombook progress} to print a
      * table. Returns an immutable-copy-style map; mutating the result
      * doesn't affect the store.
      */
-    public Map<String, NarrativeProgress> randomBookSnapshot(UUID playerUuid) {
-        Map<String, NarrativeProgress> books = byPlayerRandomBooks.get(playerUuid);
-        if (books == null) return Map.of();
-        Map<String, NarrativeProgress> out = new HashMap<>(books.size());
-        for (var e : books.entrySet()) {
+    public Map<String, NarrativeProgress> randomBookSnapshot() {
+        Map<String, NarrativeProgress> out = new HashMap<>(randomBooksSeen.size());
+        for (var e : randomBooksSeen.entrySet()) {
             out.put(e.getKey(), new NarrativeProgress(e.getValue().readLetters()));
         }
         return out;
     }
 
     /**
-     * Pick the next uncompleted story for {@code playerUuid}, alphabetical
-     * by basename. Iterates the live registry so newly-loaded stories show
-     * up automatically. Empty when every story is complete.
+     * Pick the next uncompleted story for the world, alphabetical by
+     * basename. Iterates the live registry so newly-loaded stories show up
+     * automatically. Empty when every story is complete.
      */
-    public Optional<String> nextUncompletedStory(UUID playerUuid) {
+    public Optional<String> nextUncompletedStory() {
         List<String> all = StoryRegistry.basenames();
         for (String basename : all) {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
-            NarrativeProgress p = progressFor(playerUuid, basename);
+            NarrativeProgress p = progressFor(basename);
             if (!p.isComplete(story.get().letters().size())) return Optional.of(basename);
         }
         return Optional.empty();
     }
 
     /**
-     * First story (alphabetical) that the player has *started* but not
+     * First story (alphabetical) that the world has *started* but not
      * finished. "In-progress" = at least one letter read AND not complete.
      *
-     * <p>Used by the narrative_lectern's lazy resolver: if the player is in
+     * <p>Used by the narrative_lectern's lazy resolver: if the world is in
      * the middle of any story, that lectern continues that story rather
-     * than picking a fresh random one. Empty when the player has no
-     * in-progress narrative.</p>
+     * than picking a fresh random one. Empty when there is no in-progress
+     * narrative.</p>
      */
-    public Optional<String> currentInProgressStory(UUID playerUuid) {
+    public Optional<String> currentInProgressStory() {
         List<String> all = StoryRegistry.basenames();
         for (String basename : all) {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
-            NarrativeProgress p = progressFor(playerUuid, basename);
+            NarrativeProgress p = progressFor(basename);
             int total = story.get().letters().size();
             if (p.readCount() > 0 && !p.isComplete(total)) {
                 return Optional.of(basename);
@@ -240,52 +244,39 @@ public final class NarrativeProgressData extends SavedData {
 
     /**
      * Random pick from uncompleted stories, deterministic per
-     * {@code randomSeed}. Used by the narrative_lectern when the player has
+     * {@code randomSeed}. Used by the narrative_lectern when the world has
      * no in-progress story — same lectern shows the same first-read story
-     * to the same player on re-clicks (until they actually read something).
+     * on re-clicks (until something actually advances).
      *
-     * <p>Empty when every loaded story is complete for the player.</p>
+     * <p>Empty when every loaded story is complete.</p>
      */
-    public Optional<String> randomUncompletedStory(UUID playerUuid, long randomSeed) {
+    public Optional<String> randomUncompletedStory(long randomSeed) {
         List<String> uncompleted = new java.util.ArrayList<>();
         for (String basename : StoryRegistry.basenames()) {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
-            NarrativeProgress p = progressFor(playerUuid, basename);
+            NarrativeProgress p = progressFor(basename);
             if (!p.isComplete(story.get().letters().size())) {
                 uncompleted.add(basename);
             }
         }
         if (uncompleted.isEmpty()) return Optional.empty();
-        // Deterministic mix so the lectern + player UUID + seed produce a
-        // stable index across re-clicks until the player advances state.
+        // Deterministic mix so the lectern seed produces a stable index
+        // across re-clicks until state advances.
         int idx = Math.floorMod(randomSeed, uncompleted.size());
         return Optional.of(uncompleted.get(idx));
     }
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        // Union of player UUIDs across stories and random-book tracking.
-        Set<UUID> uuids = new HashSet<>();
-        uuids.addAll(byPlayer.keySet());
-        uuids.addAll(byPlayerRandomBooks.keySet());
+        tag.put(TAG_STORIES, encodeStoryProgress(byStory));
+        tag.put(TAG_RANDOM_BOOKS, encodeStoryProgress(randomBooksSeen));
 
-        ListTag players = new ListTag();
-        for (UUID uuid : uuids) {
-            CompoundTag playerTag = new CompoundTag();
-            playerTag.putUUID(TAG_PLAYER_UUID, uuid);
-            playerTag.put(TAG_PLAYER_STORIES, encodeStoryProgress(byPlayer.get(uuid)));
-            playerTag.put(TAG_PLAYER_RANDOM_BOOKS, encodeStoryProgress(byPlayerRandomBooks.get(uuid)));
-            players.add(playerTag);
-        }
-        tag.put(TAG_PLAYERS, players);
-
-        // Starting-book first-login tracking is a flat UUID set — encoded as a
-        // root-level ListTag of UUIDs (each as a compound with a `uuid` field).
+        // Per-player starting-book receipts — flat list of UUIDs.
         ListTag startedList = new ListTag();
         for (UUID uuid : startingBookReceived) {
             CompoundTag entry = new CompoundTag();
-            entry.putUUID(TAG_PLAYER_UUID, uuid);
+            entry.putUUID(TAG_UUID, uuid);
             startedList.add(entry);
         }
         tag.put(TAG_STARTING_BOOK_RECEIVED, startedList);
@@ -296,7 +287,7 @@ public final class NarrativeProgressData extends SavedData {
      * Shared encoder for both the story-progress map and the random-book
      * map — same shape ({@code basename -> Set<Integer>}), so the same
      * ListTag layout works for both. Returns an empty ListTag when the
-     * input is null or empty (so the saved player tag stays well-formed).
+     * input is null or empty.
      */
     private static ListTag encodeStoryProgress(Map<String, NarrativeProgress> progress) {
         ListTag list = new ListTag();
@@ -314,42 +305,36 @@ public final class NarrativeProgressData extends SavedData {
         return list;
     }
 
+    /**
+     * Load the world-scoped schema + per-player starting-book set. Legacy
+     * per-player {@code players} list from the old story schema is silently
+     * dropped — by design, "each new world starts fresh" per the approved
+     * plan.
+     */
     private static NarrativeProgressData load(CompoundTag tag) {
-        Map<UUID, Map<String, NarrativeProgress>> stories = new HashMap<>();
-        Map<UUID, Map<String, NarrativeProgress>> randomBooks = new HashMap<>();
+        Map<String, NarrativeProgress> stories = decodeStoryProgress(tag, TAG_STORIES);
+        Map<String, NarrativeProgress> randomBooks = decodeStoryProgress(tag, TAG_RANDOM_BOOKS);
         Set<UUID> startingBookReceived = new HashSet<>();
-        if (tag.contains(TAG_PLAYERS, Tag.TAG_LIST)) {
-            ListTag players = tag.getList(TAG_PLAYERS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < players.size(); i++) {
-                CompoundTag playerTag = players.getCompound(i);
-                if (!playerTag.hasUUID(TAG_PLAYER_UUID)) continue;
-                UUID uuid = playerTag.getUUID(TAG_PLAYER_UUID);
-                Map<String, NarrativeProgress> playerStories = decodeStoryProgress(playerTag, TAG_PLAYER_STORIES);
-                if (!playerStories.isEmpty()) stories.put(uuid, playerStories);
-                Map<String, NarrativeProgress> playerRandomBooks = decodeStoryProgress(playerTag, TAG_PLAYER_RANDOM_BOOKS);
-                if (!playerRandomBooks.isEmpty()) randomBooks.put(uuid, playerRandomBooks);
-            }
-        }
         // Backwards-compatible: missing `starting_book_received` tag means no
-        // players have been marked yet. On first post-update login each existing
-        // player gets the welcome book they'd have gotten if the feature had
-        // shipped earlier. Intended behaviour.
+        // players have been marked yet. On first post-update login each
+        // existing player gets the welcome strike they would've gotten if
+        // the feature had shipped earlier. Intended behaviour.
         if (tag.contains(TAG_STARTING_BOOK_RECEIVED, Tag.TAG_LIST)) {
             ListTag startedList = tag.getList(TAG_STARTING_BOOK_RECEIVED, Tag.TAG_COMPOUND);
             for (int i = 0; i < startedList.size(); i++) {
                 CompoundTag entry = startedList.getCompound(i);
-                if (!entry.hasUUID(TAG_PLAYER_UUID)) continue;
-                startingBookReceived.add(entry.getUUID(TAG_PLAYER_UUID));
+                if (!entry.hasUUID(TAG_UUID)) continue;
+                startingBookReceived.add(entry.getUUID(TAG_UUID));
             }
         }
         return new NarrativeProgressData(stories, randomBooks, startingBookReceived);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */
-    private static Map<String, NarrativeProgress> decodeStoryProgress(CompoundTag playerTag, String key) {
+    private static Map<String, NarrativeProgress> decodeStoryProgress(CompoundTag root, String key) {
         Map<String, NarrativeProgress> out = new HashMap<>();
-        if (!playerTag.contains(key, Tag.TAG_LIST)) return out;
-        ListTag list = playerTag.getList(key, Tag.TAG_COMPOUND);
+        if (!root.contains(key, Tag.TAG_LIST)) return out;
+        ListTag list = root.getList(key, Tag.TAG_COMPOUND);
         for (int j = 0; j < list.size(); j++) {
             CompoundTag storyTag = list.getCompound(j);
             if (!storyTag.contains(TAG_STORY_ID, Tag.TAG_STRING)) continue;
