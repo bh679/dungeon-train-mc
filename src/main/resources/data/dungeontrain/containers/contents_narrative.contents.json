@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+    "2,1,4": {
+      "fillMin": 40,
+      "entries": [
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    }
+  }
+}
