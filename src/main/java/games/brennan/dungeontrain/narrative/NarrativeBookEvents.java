@@ -84,10 +84,10 @@ public final class NarrativeBookEvents {
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
-        boolean changed = data.markRead(player.getUUID(), id.storyBasename(), id.letterIndex());
+        boolean changed = data.markRead(id.storyBasename(), id.letterIndex());
         if (changed) {
-            LOGGER.info("[DungeonTrain] Narrative: marked {} letter {} read for {} ({})",
-                id.storyBasename(), id.letterIndex(), player.getName().getString(), player.getUUID());
+            LOGGER.info("[DungeonTrain] Narrative: world marked {} letter {} read (by {})",
+                id.storyBasename(), id.letterIndex(), player.getName().getString());
         }
     }
 
@@ -99,14 +99,14 @@ public final class NarrativeBookEvents {
      * {@code BookViewScreen} locally from its stale stack before the server's
      * mutation reaches it.
      *
-     * <p>Logic:
+     * <p>Logic (world-scoped):
      * <ul>
      *   <li>Stack must be a {@link RandomBookTag}-stamped vanilla written book.</li>
-     *   <li>If the player has not yet seen this {@code (basename, variantIndex)},
+     *   <li>If the world has not yet seen this {@code (basename, variantIndex)},
      *       mark it seen and leave the stack as-is.</li>
-     *   <li>If they HAVE seen it, ask {@link RandomBookFactory#pickUnseenForPlayer}
+     *   <li>If the world HAS seen it, ask {@link RandomBookFactory#pickUnseenForWorld}
      *       for an alternative tuple and swap the stack's content. The
-     *       picker resets the player's tracking automatically when every
+     *       picker resets the world's tracking automatically when every
      *       loaded variant has been seen (silent cycle).</li>
      * </ul>
      */
@@ -125,12 +125,12 @@ public final class NarrativeBookEvents {
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
         RandomBookTag.RandomBookIdentity id = idOpt.get();
-        if (!data.hasSeenRandomBook(player.getUUID(), id.basename(), id.variantIndex())) {
-            // First time the player has held this exact tuple — mark and let
+        if (!data.hasSeenRandomBook(id.basename(), id.variantIndex())) {
+            // First time the world has seen this exact tuple — mark and let
             // the read flow proceed unchanged.
-            data.markRandomBookSeen(player.getUUID(), id.basename(), id.variantIndex());
-            LOGGER.info("[DungeonTrain] RandomBook: marked {} variant {} seen for {} ({})",
-                id.basename(), id.variantIndex(), player.getName().getString(), player.getUUID());
+            data.markRandomBookSeen(id.basename(), id.variantIndex());
+            LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {})",
+                id.basename(), id.variantIndex(), player.getName().getString());
             return;
         }
 
@@ -139,15 +139,15 @@ public final class NarrativeBookEvents {
         // call always returns something when the pool is non-empty.
         long seed = overworld.getGameTime() ^ player.getUUID().getLeastSignificantBits();
         Optional<RandomBookFactory.PickedBook> alt =
-            RandomBookFactory.pickUnseenForPlayer(player.getUUID(), data, seed);
+            RandomBookFactory.pickUnseenForWorld(data, seed);
         if (alt.isEmpty()) return;  // pool empty — leave as-is
 
         RandomBookFactory.replaceStackContent(stack, alt.get());
-        data.markRandomBookSeen(player.getUUID(), alt.get().book().basename(), alt.get().variantIndex());
-        LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} for {} ({})",
+        data.markRandomBookSeen(alt.get().book().basename(), alt.get().variantIndex());
+        LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} (held by {})",
             id.basename(), id.variantIndex(),
             alt.get().book().basename(), alt.get().variantIndex(),
-            player.getName().getString(), player.getUUID());
+            player.getName().getString());
     }
 
     private static ServerLevel overworldOf(Player player) {
