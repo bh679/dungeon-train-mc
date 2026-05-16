@@ -109,6 +109,8 @@ public final class NarrativeCommand {
             // for testing without placing chests.
             .then(Commands.literal("randombook")
                 .then(Commands.literal("list").executes(NarrativeCommand::runRandomBookList))
+                .then(Commands.literal("progress").executes(NarrativeCommand::runRandomBookProgress))
+                .then(Commands.literal("reset").executes(NarrativeCommand::runRandomBookReset))
                 .then(Commands.literal("give")
                     // No basename — pool-weighted random pick.
                     .executes(NarrativeCommand::runRandomBookGiveRandom)
@@ -206,14 +208,50 @@ public final class NarrativeCommand {
         }
         RandomBookFile book = opt.get();
         long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
-        String body = book.pickVariant(seed);
-        ItemStack stack = RandomBookFactory.buildVanillaBook(book, body);
+        int variantIndex = book.pickVariantIndex(seed);
+        String body = book.variants().get(variantIndex);
+        ItemStack stack = RandomBookFactory.buildVanillaBook(book, body, variantIndex);
         if (!player.getInventory().add(stack)) {
             player.drop(stack, false);
         }
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "Gave random book: " + book.title() + " (one of " + book.variants().size() + " variants)"
+            "Gave random book: " + book.title() + " (variant " + (variantIndex + 1) + "/" + book.variants().size() + ")"
         ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int runRandomBookProgress(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel overworld = player.serverLevel().getServer().overworld();
+        NarrativeProgressData data = NarrativeProgressData.get(overworld);
+        var snapshot = data.randomBookSnapshot(player.getUUID());
+
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Random-book reads for " + player.getName().getString() + ":"
+        ).withStyle(ChatFormatting.GREEN), false);
+
+        for (var basename : RandomBookRegistry.basenames()) {
+            Optional<RandomBookFile> book = RandomBookRegistry.getByBasename(basename);
+            if (book.isEmpty()) continue;
+            int total = book.get().variants().size();
+            NarrativeProgress p = snapshot.getOrDefault(basename, new NarrativeProgress());
+            int read = p.readCount();
+            String marker = read >= total ? " ✓" : "";
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                String.format("  %s — %d/%d%s", basename, read, total, marker)
+            ), false);
+        }
+        return snapshot.size();
+    }
+
+    private static int runRandomBookReset(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel overworld = player.serverLevel().getServer().overworld();
+        NarrativeProgressData data = NarrativeProgressData.get(overworld);
+        data.resetRandomBookProgress(player.getUUID());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Random-book reads reset for " + player.getName().getString()
+        ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 

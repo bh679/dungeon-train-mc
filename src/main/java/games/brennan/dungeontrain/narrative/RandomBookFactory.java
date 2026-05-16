@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.narrative;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.network.Filterable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -12,6 +13,7 @@ import org.slf4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Pool-aware builder for {@code Items.WRITTEN_BOOK} stacks rolled from
@@ -20,10 +22,11 @@ import java.util.Optional;
  * correlate — same seed → same book → same variant, but a small change to
  * the seed shuffles both independently.
  *
- * <p>Unlike {@link BookFactory#buildFromBody}, this builder does <b>not</b>
- * stamp {@link NarrativeBookTag} on the returned stack. Random books are
- * flavour drops with no per-player progression; the read-event handler
- * silently no-ops on untagged books, which is the behaviour we want.</p>
+ * <p>Every built stack carries a {@link RandomBookTag} identity component
+ * ({@code (bookBasename, variantIndex)}) so the equipment-change handler
+ * in {@link NarrativeBookEvents} can recognise the stack and, when the
+ * holder has already seen the tuple, swap content via
+ * {@link #replaceStackContent} before the book screen opens.</p>
  *
  * <p>Reuses {@link BookFactory#paginate} (package-private) for page splitting
  * and the {@code MAX_*} caps so layout matches narrative books.</p>
@@ -40,9 +43,15 @@ public final class RandomBookFactory {
     private RandomBookFactory() {}
 
     /**
+     * A picked {@code (book, variantIndex)} tuple. Returned by
+     * {@link #pickUnseenForPlayer} and consumed by {@link #replaceStackContent}.
+     */
+    public record PickedBook(RandomBookFile book, int variantIndex) {}
+
+    /**
      * Pick a book from the pool, pick a variant from that book, and build a
      * stamped vanilla {@link Items#WRITTEN_BOOK} stack ready to drop into a
-     * chest slot.
+     * chest slot. Deterministic per {@code rollSeed}.
      *
      * <p>Returns {@link Optional#empty()} when the pool is empty (or every
      * book weight is 0) — caller should leave the slot empty rather than
@@ -58,16 +67,115 @@ public final class RandomBookFactory {
         }
         RandomBookFile book = bookOpt.get();
         long variantSeed = mix(rollSeed, SALT_VARIANT_PICK);
-        String body = book.pickVariant(variantSeed);
-        return Optional.of(buildVanillaBook(book, body));
+        int variantIndex = book.pickVariantIndex(variantSeed);
+        String body = book.variants().get(variantIndex);
+        return Optional.of(buildVanillaBook(book, body, variantIndex));
     }
 
     /**
-     * Build a vanilla written book from an explicit body — exposed for the
-     * {@code /dungeontrain narrative randombook give <basename>} test
-     * command and for direct callers that already know the book.
+     * Pick an unseen {@code (book, variantIndex)} tuple for the given player.
+     * Books with at least one unseen variant are weighted by their pool
+     * weight; within the picked book, an unseen variant is chosen uniformly
+     * from the unseen set.
+     *
+     * <p>If every variant of every loaded book has been seen, the player's
+     * random-book tracking is <b>reset</b> (silent cycle) and the pick
+     * retries against the now-empty seen set — so the caller always gets
+     * a fresh pick when the pool is non-empty.</p>
+     *
+     * <p>Returns {@link Optional#empty()} only when the registry holds no
+     * books at all (or every book has weight 0 — same outcome).</p>
      */
-    public static ItemStack buildVanillaBook(RandomBookFile book, String body) {
+    public static Optional<PickedBook> pickUnseenForPlayer(UUID uuid, NarrativeProgressData data, long rollSeed) {
+        if (RandomBookRegistry.count() == 0) return Optional.empty();
+        long bookSeed = mix(rollSeed, SALT_BOOK_PICK);
+        long variantSeed = mix(rollSeed, SALT_VARIANT_PICK);
+        Optional<PickedBook> first = tryPickUnseen(uuid, data, bookSeed, variantSeed);
+        if (first.isPresent()) return first;
+        // Player has seen every variant of every loaded book — silent cycle.
+        data.resetRandomBookProgress(uuid);
+        return tryPickUnseen(uuid, data, bookSeed, variantSeed);
+    }
+
+    private static Optional<PickedBook> tryPickUnseen(UUID uuid, NarrativeProgressData data,
+                                                      long bookSeed, long variantSeed) {
+        List<RandomBookFile> candidates = new ArrayList<>();
+        int totalWeight = 0;
+        for (ResourceLocation id : RandomBookRegistry.ids()) {
+            Optional<RandomBookFile> bookOpt = RandomBookRegistry.get(id);
+            if (bookOpt.isEmpty()) continue;
+            RandomBookFile book = bookOpt.get();
+            if (book.weight() <= 0) continue;
+            if (hasAnyUnseenVariant(uuid, data, book)) {
+                candidates.add(book);
+                totalWeight += book.weight();
+            }
+        }
+        if (candidates.isEmpty() || totalWeight <= 0) return Optional.empty();
+
+        // Weighted pick across candidates.
+        long unsignedBook = bookSeed & 0x7FFFFFFFFFFFFFFFL;
+        int target = (int) (unsignedBook % totalWeight);
+        RandomBookFile picked = candidates.get(candidates.size() - 1);
+        for (RandomBookFile c : candidates) {
+            target -= c.weight();
+            if (target < 0) { picked = c; break; }
+        }
+
+        // Uniform pick across the picked book's unseen variants.
+        List<Integer> unseen = collectUnseenVariantIndices(uuid, data, picked);
+        if (unseen.isEmpty()) return Optional.empty(); // defensive: hasAnyUnseenVariant said yes
+        long unsignedVariant = variantSeed & 0x7FFFFFFFFFFFFFFFL;
+        int variantIndex = unseen.get((int) (unsignedVariant % unseen.size()));
+        return Optional.of(new PickedBook(picked, variantIndex));
+    }
+
+    private static boolean hasAnyUnseenVariant(UUID uuid, NarrativeProgressData data, RandomBookFile book) {
+        int total = book.variants().size();
+        for (int i = 0; i < total; i++) {
+            if (!data.hasSeenRandomBook(uuid, book.basename(), i)) return true;
+        }
+        return false;
+    }
+
+    private static List<Integer> collectUnseenVariantIndices(UUID uuid, NarrativeProgressData data, RandomBookFile book) {
+        List<Integer> out = new ArrayList<>();
+        int total = book.variants().size();
+        for (int i = 0; i < total; i++) {
+            if (!data.hasSeenRandomBook(uuid, book.basename(), i)) out.add(i);
+        }
+        return out;
+    }
+
+    /**
+     * Mutate {@code stack}'s {@link DataComponents#WRITTEN_BOOK_CONTENT} and
+     * {@link RandomBookTag} components to point at {@code picked}. Used by
+     * the equipment-change handler to swap a stale random-book stack to
+     * unseen content before the player right-clicks to open it.
+     *
+     * <p>Other components on the stack (e.g. unrelated custom data) are
+     * preserved — only the book content and the random-book identity tag
+     * are overwritten.</p>
+     */
+    public static void replaceStackContent(ItemStack stack, PickedBook picked) {
+        String body = picked.book().variants().get(picked.variantIndex());
+        ItemStack temp = buildVanillaBook(picked.book(), body, picked.variantIndex());
+        WrittenBookContent newContent = temp.get(DataComponents.WRITTEN_BOOK_CONTENT);
+        if (newContent != null) {
+            stack.set(DataComponents.WRITTEN_BOOK_CONTENT, newContent);
+        }
+        // Re-stamp the identity tag with the new (basename, variantIndex)
+        // — uses CustomData.update internally so other CUSTOM_DATA keys
+        // (if any) are preserved.
+        RandomBookTag.stamp(stack, picked.book().basename(), picked.variantIndex());
+    }
+
+    /**
+     * Build a vanilla written book from an explicit body and variant index.
+     * Stamps the {@link RandomBookTag} identity component so the
+     * equipment-change handler can detect and re-roll stale stacks.
+     */
+    public static ItemStack buildVanillaBook(RandomBookFile book, String body, int variantIndex) {
         String title = book.title() == null || book.title().isEmpty() || "Untitled".equals(book.title())
             ? book.basename()
             : book.title();
@@ -100,9 +208,9 @@ public final class RandomBookFactory {
 
         ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
-        // Deliberately NOT stamping NarrativeBookTag — random books are not
-        // progression-tracked. The read handler treats untagged books as
-        // no-op, which is the behaviour we want.
+        // Identity stamp so per-player tracking and on-equip re-roll can
+        // recognise this stack later.
+        RandomBookTag.stamp(stack, book.basename(), variantIndex);
         return stack;
     }
 
