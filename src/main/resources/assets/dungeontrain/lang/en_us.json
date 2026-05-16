@@ -55,5 +55,6 @@
   "gui.dungeontrain.prefab_save.name_label": "Name (a-z, 0-9, _)",
   "gui.dungeontrain.prefab_save.save": "Save",
   "gui.dungeontrain.prefab_save.cancel": "Cancel",
-  "subtitles.dungeontrain.train_engine": "Train engine chugs"
+  "subtitles.dungeontrain.train_engine": "Train engine chugs",
+  "block.dungeontrain.narrative_lectern": "Narrative Lectern"
 }

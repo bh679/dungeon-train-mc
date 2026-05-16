@@ -1,0 +1,27 @@
+Red
+Orange
+Yellow
+Green
+Blue
+Cyan
+Purple
+White
+Black
+Brown
+Magenta
+Tan
+Olive
+Maroon
+Navy
+Aquamarine
+Turquoise
+Silver
+Lime
+Teal
+Indigo
+Violet
+Pink
+Gray
+Off White
+Navy Blue
+Baby Pink

@@ -1,0 +1,88 @@
+Character: Random NPC
+Story: Taking a rest
+
+Letter One-
+Hey, how's it going? 
+You can keep going, \n
+I'm just taking a rest.
+
+Alt
+Dont mind me.
+I'm just taking a rest.
+
+Letter Two-
+Hey, good to see you again. 
+I'm- uhh- taking another rest. 
+I'm pretty bushed. 
+See you on the other side.
+
+Alt
+I think I've been posioned
+I am so drained.
+I dont have the energy to move on.
+Hopefully a little more rest\n
+will help me recover.
+
+Letter 3-
+You seem to always catch me \n
+when taking a rest
+You must think thats all I do.
+
+Alt
+I always feel so compelled to go on.
+Yet I rest.
+This train is draining, yet invigorating. 
+
+Alt
+Dont go looking at me with\n
+those judging eyes.
+Just becuase Im resting all the time.
+
+Letter 4-
+I only see you while resting.
+Its making me feel guilty.
+Why am I always so tired?
+Its like every train cart\n
+just takes a little out of me
+You know...
+There is a more important question here
+How is it that I rest so much\n
+But yet you are always \n
+catching up to me?
+Perhaps you are resting more than I am?
+Or youre just slow.
+
+Letter 5-
+Catching up again I see.
+I hope you've rested well.
+These carts are really sucking \n
+the life out of me.
+Do you feel the drain \n
+with each door you step into?
+I dont know if I'll survive the next cart.
+
+Letter 6-
+Catching up again I see.
+Well this is the last time.
+I'm done with this place.
+I'm getting off this train.
+Next stop, and I'm out of here.
+Unless I die waiting first.
+
+
+Alt
+I have a confesion to make.
+Since I have met you.
+I have done nothing but rest on this train.
+Sometimes I fall asleep.
+And when I wake up next.
+I am somewhere new.
+And everytime, without fail
+There you are.
+Looking so exhausted.
+Like you've been working so hard
+Just to get to where I've woken up.
+I'm going to brave through it this time.
+Once you leave, 
+Im going to muster the energy
+To explore that next cart.

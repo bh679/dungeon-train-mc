@@ -1,0 +1,13 @@
+Character: Random NPC
+Story: Leave me alone Quest
+
+Letter One-
+Leave me be. 
+I wish to be alone with my thoughts
+
+Letter Two-
+You've successfully completed 
+the "leave me alone with my thoughts" quest! 
+Congratulations!
+
+

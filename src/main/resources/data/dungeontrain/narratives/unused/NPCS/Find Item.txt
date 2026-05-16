@@ -1,0 +1,13 @@
+Character: Random NPC
+Story: Find Item
+
+Letter One-
+Can you help me?
+I am looking for an item
+Its round, with soft parts on it.
+
+Letter Two-
+Hey I actually found it myself.
+They are pretty cool huh!
+Did you find one?
+Dont eat it, thats my only advice.
