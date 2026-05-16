@@ -40,19 +40,30 @@ public final class NarrativeProgressData extends SavedData {
     private static final String TAG_PLAYER_RANDOM_BOOKS = "random_books";
     private static final String TAG_STORY_ID = "id";
     private static final String TAG_STORY_READ = "read";
+    /** Root-level list of UUIDs that have already received their first-login welcome book. */
+    private static final String TAG_STARTING_BOOK_RECEIVED = "starting_book_received";
 
     private final Map<UUID, Map<String, NarrativeProgress>> byPlayer;
     /** Per-player seen-variant tracking for the random-book pool. Shape mirrors {@link #byPlayer}. */
     private final Map<UUID, Map<String, NarrativeProgress>> byPlayerRandomBooks;
+    /**
+     * Players who have already been given their first-login welcome book.
+     * Distinct from random-book tracking — welcome books are re-given on every
+     * respawn (regardless of this set), but only ever given <em>once</em>
+     * per-player on plain login.
+     */
+    private final Set<UUID> startingBookReceived;
 
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>());
+        this(new HashMap<>(), new HashMap<>(), new HashSet<>());
     }
 
     private NarrativeProgressData(Map<UUID, Map<String, NarrativeProgress>> byPlayer,
-                                  Map<UUID, Map<String, NarrativeProgress>> byPlayerRandomBooks) {
+                                  Map<UUID, Map<String, NarrativeProgress>> byPlayerRandomBooks,
+                                  Set<UUID> startingBookReceived) {
         this.byPlayer = byPlayer;
         this.byPlayerRandomBooks = byPlayerRandomBooks;
+        this.startingBookReceived = startingBookReceived;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -139,6 +150,37 @@ public final class NarrativeProgressData extends SavedData {
     public void resetRandomBookProgress(UUID playerUuid) {
         Map<String, NarrativeProgress> removed = byPlayerRandomBooks.remove(playerUuid);
         if (removed != null) setDirty();
+    }
+
+    // ---------------- Starting-book first-login tracking ----------------
+
+    /**
+     * True when the player has already been handed their first-login welcome
+     * book. Used by the login hook in {@code StartingBookEvents} to suppress
+     * a second give on plain logins. Does NOT suppress respawn gives — those
+     * always fire regardless of this flag.
+     */
+    public boolean hasReceivedStartingBook(UUID playerUuid) {
+        return startingBookReceived.contains(playerUuid);
+    }
+
+    /**
+     * Mark the player as having received their first-login welcome book.
+     * Returns {@code true} when state changed.
+     */
+    public boolean markStartingBookReceived(UUID playerUuid) {
+        boolean added = startingBookReceived.add(playerUuid);
+        if (added) setDirty();
+        return added;
+    }
+
+    /**
+     * Clear the first-login flag for {@code playerUuid} — next plain login
+     * will give a fresh welcome book again. Used by the
+     * {@code /narrative startingbook reset} test command.
+     */
+    public void resetStartingBookReceived(UUID playerUuid) {
+        if (startingBookReceived.remove(playerUuid)) setDirty();
     }
 
     /**
@@ -237,6 +279,16 @@ public final class NarrativeProgressData extends SavedData {
             players.add(playerTag);
         }
         tag.put(TAG_PLAYERS, players);
+
+        // Starting-book first-login tracking is a flat UUID set — encoded as a
+        // root-level ListTag of UUIDs (each as a compound with a `uuid` field).
+        ListTag startedList = new ListTag();
+        for (UUID uuid : startingBookReceived) {
+            CompoundTag entry = new CompoundTag();
+            entry.putUUID(TAG_PLAYER_UUID, uuid);
+            startedList.add(entry);
+        }
+        tag.put(TAG_STARTING_BOOK_RECEIVED, startedList);
         return tag;
     }
 
@@ -265,20 +317,32 @@ public final class NarrativeProgressData extends SavedData {
     private static NarrativeProgressData load(CompoundTag tag) {
         Map<UUID, Map<String, NarrativeProgress>> stories = new HashMap<>();
         Map<UUID, Map<String, NarrativeProgress>> randomBooks = new HashMap<>();
-        if (!tag.contains(TAG_PLAYERS, Tag.TAG_LIST)) {
-            return new NarrativeProgressData(stories, randomBooks);
+        Set<UUID> startingBookReceived = new HashSet<>();
+        if (tag.contains(TAG_PLAYERS, Tag.TAG_LIST)) {
+            ListTag players = tag.getList(TAG_PLAYERS, Tag.TAG_COMPOUND);
+            for (int i = 0; i < players.size(); i++) {
+                CompoundTag playerTag = players.getCompound(i);
+                if (!playerTag.hasUUID(TAG_PLAYER_UUID)) continue;
+                UUID uuid = playerTag.getUUID(TAG_PLAYER_UUID);
+                Map<String, NarrativeProgress> playerStories = decodeStoryProgress(playerTag, TAG_PLAYER_STORIES);
+                if (!playerStories.isEmpty()) stories.put(uuid, playerStories);
+                Map<String, NarrativeProgress> playerRandomBooks = decodeStoryProgress(playerTag, TAG_PLAYER_RANDOM_BOOKS);
+                if (!playerRandomBooks.isEmpty()) randomBooks.put(uuid, playerRandomBooks);
+            }
         }
-        ListTag players = tag.getList(TAG_PLAYERS, Tag.TAG_COMPOUND);
-        for (int i = 0; i < players.size(); i++) {
-            CompoundTag playerTag = players.getCompound(i);
-            if (!playerTag.hasUUID(TAG_PLAYER_UUID)) continue;
-            UUID uuid = playerTag.getUUID(TAG_PLAYER_UUID);
-            Map<String, NarrativeProgress> playerStories = decodeStoryProgress(playerTag, TAG_PLAYER_STORIES);
-            if (!playerStories.isEmpty()) stories.put(uuid, playerStories);
-            Map<String, NarrativeProgress> playerRandomBooks = decodeStoryProgress(playerTag, TAG_PLAYER_RANDOM_BOOKS);
-            if (!playerRandomBooks.isEmpty()) randomBooks.put(uuid, playerRandomBooks);
+        // Backwards-compatible: missing `starting_book_received` tag means no
+        // players have been marked yet. On first post-update login each existing
+        // player gets the welcome book they'd have gotten if the feature had
+        // shipped earlier. Intended behaviour.
+        if (tag.contains(TAG_STARTING_BOOK_RECEIVED, Tag.TAG_LIST)) {
+            ListTag startedList = tag.getList(TAG_STARTING_BOOK_RECEIVED, Tag.TAG_COMPOUND);
+            for (int i = 0; i < startedList.size(); i++) {
+                CompoundTag entry = startedList.getCompound(i);
+                if (!entry.hasUUID(TAG_PLAYER_UUID)) continue;
+                startingBookReceived.add(entry.getUUID(TAG_PLAYER_UUID));
+            }
         }
-        return new NarrativeProgressData(stories, randomBooks);
+        return new NarrativeProgressData(stories, randomBooks, startingBookReceived);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

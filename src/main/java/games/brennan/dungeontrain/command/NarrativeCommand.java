@@ -14,6 +14,8 @@ import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.narrative.RandomBookFile;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
+import games.brennan.dungeontrain.narrative.StartingBookFactory;
+import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.registry.ModBlocks;
@@ -73,6 +75,10 @@ public final class NarrativeCommand {
     private static final SuggestionProvider<CommandSourceStack> RANDOM_BOOK_SUGGESTIONS =
         (ctx, builder) -> SharedSuggestionProvider.suggest(RandomBookRegistry.basenames(), builder);
 
+    /** Tab-completion source: every loaded starting-book basename, alphabetical. */
+    private static final SuggestionProvider<CommandSourceStack> STARTING_BOOK_SUGGESTIONS =
+        (ctx, builder) -> SharedSuggestionProvider.suggest(StartingBookRegistry.basenames(), builder);
+
     private NarrativeCommand() {}
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
@@ -116,7 +122,21 @@ public final class NarrativeCommand {
                     .executes(NarrativeCommand::runRandomBookGiveRandom)
                     .then(Commands.argument("basename", StringArgumentType.string())
                         .suggests(RANDOM_BOOK_SUGGESTIONS)
-                        .executes(NarrativeCommand::runRandomBookGiveExplicit))));
+                        .executes(NarrativeCommand::runRandomBookGiveExplicit))))
+            // startingbook subtree — list, give, reload, reset helpers for the
+            // welcome-book pool. The pool is delivered automatically on first
+            // login and every respawn; these commands are for testing without
+            // logging out + back in.
+            .then(Commands.literal("startingbook")
+                .then(Commands.literal("list").executes(NarrativeCommand::runStartingBookList))
+                .then(Commands.literal("reload").executes(NarrativeCommand::runStartingBookReload))
+                .then(Commands.literal("reset").executes(NarrativeCommand::runStartingBookReset))
+                .then(Commands.literal("give")
+                    // No basename — pool-weighted random pick.
+                    .executes(NarrativeCommand::runStartingBookGiveRandom)
+                    .then(Commands.argument("basename", StringArgumentType.string())
+                        .suggests(STARTING_BOOK_SUGGESTIONS)
+                        .executes(NarrativeCommand::runStartingBookGiveExplicit))));
     }
 
     private static int runList(CommandContext<CommandSourceStack> ctx) {
@@ -144,13 +164,15 @@ public final class NarrativeCommand {
     private static int runReload(CommandContext<CommandSourceStack> ctx) {
         StoryRegistry.reload();
         RandomBookRegistry.reload();
+        StartingBookRegistry.reload();
         int stories = StoryRegistry.count();
         int randomBooks = RandomBookRegistry.count();
+        int startingBooks = StartingBookRegistry.count();
         ctx.getSource().sendSuccess(() ->
-            Component.literal("Narrative reloaded: " + stories + " stories, " + randomBooks + " random books")
+            Component.literal("Narrative reloaded: " + stories + " stories, " + randomBooks + " random books, " + startingBooks + " starting books")
                 .withStyle(ChatFormatting.GREEN),
             true);
-        return stories + randomBooks;
+        return stories + randomBooks + startingBooks;
     }
 
     private static int runRandomBookList(CommandContext<CommandSourceStack> ctx) {
@@ -242,6 +264,96 @@ public final class NarrativeCommand {
             ), false);
         }
         return snapshot.size();
+    }
+
+    // ---------------- startingbook subcommands ----------------
+
+    private static int runStartingBookList(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack source = ctx.getSource();
+        int total = StartingBookRegistry.count();
+        if (total == 0) {
+            source.sendSuccess(() -> Component.literal("No starting books loaded.").withStyle(ChatFormatting.YELLOW), false);
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Starting books loaded: " + total + " (total weight: " + StartingBookRegistry.totalWeight() + ")"
+        ).withStyle(ChatFormatting.GREEN), false);
+        for (var id : StartingBookRegistry.ids()) {
+            StartingBookRegistry.get(id).ifPresent(book -> {
+                String tail = id.getPath().substring(id.getPath().lastIndexOf('/') + 1);
+                source.sendSuccess(() -> Component.literal(
+                    String.format("  %s — %s by %s (%d variants, weight %d, gen %d)",
+                        tail, book.title(), book.author(),
+                        book.variants().size(), book.weight(), book.generation())
+                ), false);
+            });
+        }
+        return total;
+    }
+
+    private static int runStartingBookReload(CommandContext<CommandSourceStack> ctx) {
+        StartingBookRegistry.reload();
+        int startingBooks = StartingBookRegistry.count();
+        ctx.getSource().sendSuccess(() ->
+            Component.literal("Starting-book pool reloaded: " + startingBooks + " books")
+                .withStyle(ChatFormatting.GREEN),
+            true);
+        return startingBooks;
+    }
+
+    private static int runStartingBookGiveRandom(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        if (StartingBookRegistry.count() == 0) {
+            ctx.getSource().sendFailure(Component.literal("No starting books loaded."));
+            return 0;
+        }
+        long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
+        Optional<ItemStack> bookOpt = StartingBookFactory.rollFromPool(seed);
+        if (bookOpt.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("Starting-book pool is empty (zero total weight?)"));
+            return 0;
+        }
+        ItemStack book = bookOpt.get();
+        if (!player.getInventory().add(book)) {
+            player.drop(book, false);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Gave starting book (pool-weighted)"
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int runStartingBookGiveExplicit(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String basename = StringArgumentType.getString(ctx, "basename");
+        Optional<RandomBookFile> opt = StartingBookRegistry.getByBasename(basename);
+        if (opt.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal("Unknown starting book: " + basename));
+            return 0;
+        }
+        RandomBookFile book = opt.get();
+        long seed = player.serverLevel().getGameTime() ^ player.getUUID().getLeastSignificantBits();
+        int variantIndex = book.pickVariantIndex(seed);
+        String body = book.variants().get(variantIndex);
+        ItemStack stack = StartingBookFactory.buildUnstampedBook(book, body, variantIndex);
+        if (!player.getInventory().add(stack)) {
+            player.drop(stack, false);
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Gave starting book: " + book.title() + " (variant " + (variantIndex + 1) + "/" + book.variants().size() + ")"
+        ).withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int runStartingBookReset(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel overworld = player.serverLevel().getServer().overworld();
+        NarrativeProgressData data = NarrativeProgressData.get(overworld);
+        data.resetStartingBookReceived(player.getUUID());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Starting-book first-login flag reset for " + player.getName().getString() + " — next login will give a fresh welcome book"
+        ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
     }
 
     private static int runRandomBookReset(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

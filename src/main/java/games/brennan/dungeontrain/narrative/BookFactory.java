@@ -42,8 +42,12 @@ public final class BookFactory {
      * {@link WrittenBookContent#PAGE_LENGTH} = 32767, but the in-game book
      * UI fits ~14 lines × ~19 chars = ~266 chars before content runs off
      * the page. 256 leaves a small visual buffer.
+     *
+     * <p>Package-private so {@link StartingBookFactory#paginateExplicit} can
+     * use the same threshold when deciding whether to fall back to auto-flow
+     * pagination for an oversize chunk.</p>
      */
-    private static final int MAX_CHARS_PER_PAGE = 256;
+    static final int MAX_CHARS_PER_PAGE = 256;
 
     /** Vanilla cap on pages per signed book — anything beyond is truncated. */
     public static final int MAX_PAGES = 100;

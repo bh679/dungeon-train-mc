@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "20";
+    public static final String PROTOCOL_VERSION = "21";
 
     private DungeonTrainNet() {}
 
@@ -69,6 +69,9 @@ public final class DungeonTrainNet {
         // package list + flags + per-package content basenames.
         registrar.playToServer(PackageListRequestPacket.TYPE, PackageListRequestPacket.STREAM_CODEC, PackageListRequestPacket::handle);
         registrar.playToClient(PackageListSyncPacket.TYPE, PackageListSyncPacket.STREAM_CODEC, PackageListSyncPacket::handle);
+
+        // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.
+        registrar.playToServer(StartingBookClosedPacket.TYPE, StartingBookClosedPacket.STREAM_CODEC, StartingBookClosedPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */
