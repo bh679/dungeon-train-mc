@@ -1,6 +1,8 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "block": "minecraft:chest",
+  "category": "loot",
+  "fillMax": 17,
   "entries": [
     { "id": "minecraft:diamond_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:diamond_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -27,6 +29,10 @@
     { "id": "minecraft:cooked_mutton", "count": 2, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:white_shulker_box", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:shulker_box", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:shulker_shell", "count": 2, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "minecraft:shulker_shell", "count": 2, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:end_crystal", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ender_pearl", "count": 3, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:enchanted_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:ender_chest", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
