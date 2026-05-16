@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.tunnel;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.track.TrackPalette;
+import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -179,6 +180,17 @@ public final class LegacyTunnelPaint {
 
         // 4. Arched interior roof — stepped pyramid profile rising 4 rows above wall tops.
         paintArchedRoof(level, worldX, tg);
+
+        // 5. Anchor the cell directly above the apex cap so any sand/gravel
+        // column resting on the tunnel ceiling can't fall through the apex
+        // void from a persisted scheduled tick. Spans the full 13-wide
+        // wall footprint to also catch the corner wedges (above the arch
+        // tier stairs/stones) where the template doesn't always provide
+        // solid coverage.
+        int anchorY = tg.ceilingY() + ARCH_TIERS + 2;
+        for (int z = tg.wallMinZ(); z <= tg.wallMaxZ(); z++) {
+            FallingBlockAnchor.anchorAt(level, new BlockPos(worldX, anchorY, z));
+        }
     }
 
     /**
@@ -377,6 +389,13 @@ public final class LegacyTunnelPaint {
         }
 
         paintArchedRoofWorldgen(level, worldX, tg);
+
+        // Anchor sand/gravel resting on the tunnel ceiling — see runtime
+        // paintTunnelColumn for the rationale.
+        int anchorY = tg.ceilingY() + ARCH_TIERS + 2;
+        for (int z = tg.wallMinZ(); z <= tg.wallMaxZ(); z++) {
+            FallingBlockAnchor.anchorAtWorldgen(level, new BlockPos(worldX, anchorY, z));
+        }
     }
 
     /** Worldgen variant of {@link #paintArchedRoof}. Stepped arch + apex cap. */

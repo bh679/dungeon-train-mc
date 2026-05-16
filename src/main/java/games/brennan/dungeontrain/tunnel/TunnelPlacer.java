@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -156,6 +157,7 @@ public final class TunnelPlacer {
         // No ShipFilterProcessor — no ships at chunkgen.
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+        anchorAboveFootprintWorldgen(level, origin);
     }
 
     /**
@@ -206,6 +208,7 @@ public final class TunnelPlacer {
                 }
             }
         }
+        anchorAboveFootprint(level, origin);
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin,
@@ -218,6 +221,7 @@ public final class TunnelPlacer {
             .addProcessor(ShipFilterProcessor.INSTANCE);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
+        anchorAboveFootprint(level, origin);
     }
 
     /**
@@ -265,6 +269,36 @@ public final class TunnelPlacer {
                 SilentBlockOps.setBlockSilent(level, wpos, AIR);
             } else {
                 SilentBlockOps.setBlockSilent(level, wpos, picked.state(), picked.blockEntityNbt());
+            }
+        }
+    }
+
+    /**
+     * Anchor any falling block sitting on the {@link #LENGTH}×{@link #WIDTH}
+     * footprint immediately above the stamped template. Prevents sand /
+     * gravel resting on the apex roof from falling into the tunnel via a
+     * persisted {@link net.minecraft.world.level.block.FallingBlock}
+     * scheduled tick. Defensive — the apex stone-brick cap usually covers
+     * this, but the corner wedges and any custom template gaps benefit
+     * from the guarantee.
+     */
+    private static void anchorAboveFootprint(ServerLevel level, BlockPos origin) {
+        int anchorY = origin.getY() + HEIGHT;
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                FallingBlockAnchor.anchorAt(
+                    level, new BlockPos(origin.getX() + dx, anchorY, origin.getZ() + dz));
+            }
+        }
+    }
+
+    /** Worldgen variant of {@link #anchorAboveFootprint}. */
+    private static void anchorAboveFootprintWorldgen(WorldGenLevel level, BlockPos origin) {
+        int anchorY = origin.getY() + HEIGHT;
+        for (int dx = 0; dx < LENGTH; dx++) {
+            for (int dz = 0; dz < WIDTH; dz++) {
+                FallingBlockAnchor.anchorAtWorldgen(
+                    level, new BlockPos(origin.getX() + dx, anchorY, origin.getZ() + dz));
             }
         }
     }
