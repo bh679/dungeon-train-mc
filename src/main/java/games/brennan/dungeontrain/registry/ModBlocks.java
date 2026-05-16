@@ -37,7 +37,10 @@ public final class ModBlocks {
      */
     public static final DeferredBlock<NarrativeLecternBlock> NARRATIVE_LECTERN = BLOCKS.register(
         "narrative_lectern",
-        () -> new NarrativeLecternBlock(BlockBehaviour.Properties.ofFullCopy(Blocks.LECTERN))
+        () -> new NarrativeLecternBlock(
+            BlockBehaviour.Properties.ofFullCopy(Blocks.LECTERN)
+                .lightLevel(s -> 12)
+        )
     );
 
     /** Matching {@link BlockItem} so the block is craftable / placeable. */
