@@ -142,7 +142,7 @@ public final class CarriageContentsPlacer {
                                CarriageDims dims, long seed, int carriageIndex) {
         placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
         applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
-        applyContentLinks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        applyContentPools(level, carriageOrigin, contents, dims, seed, carriageIndex);
     }
 
     /**
@@ -175,7 +175,7 @@ public final class CarriageContentsPlacer {
                                         CarriageDims dims, long seed, int carriageIndex) {
         placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
         applyVariantBlocks(level, carriageOrigin, contents, dims, seed, carriageIndex);
-        applyContentLinks(level, carriageOrigin, contents, dims, seed, carriageIndex);
+        applyContentPools(level, carriageOrigin, contents, dims, seed, carriageIndex);
     }
 
     /**
@@ -225,7 +225,7 @@ public final class CarriageContentsPlacer {
             if (spawnEntities) {
                 spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed);
                 // Cell-link entity spawn — mirrors the block-side
-                // applyContentLinks pass. Lets a player who placed a prefab
+                // applyContentPools pass. Lets a player who placed a prefab
                 // armor stand in the editor without saving the template still
                 // get the stand at runtime: the link in ContainerContentsStore
                 // drives the entity spawn directly.
@@ -300,17 +300,22 @@ public final class CarriageContentsPlacer {
 
     /**
      * Apply any {@link games.brennan.dungeontrain.editor.ContainerContentsStore}
-     * link at a cell that the static template stamped (rather than the variant
-     * sidecar). A link records "this cell uses prefab X" — for cells that also
-     * appear in the variants sidecar, the variant flow already rolls; this pass
-     * covers the link-only cells so a player can pin a static-template furnace
-     * to a loot prefab via the C-menu and have it just work.
+     * pool at a cell that the static template stamped (rather than the variant
+     * sidecar). The pool can be either a per-cell LINK to a {@code LootPrefabStore}
+     * template ("this cell uses prefab X") or a LOCAL pool authored directly in
+     * the C-menu. {@link games.brennan.dungeontrain.editor.ContainerContentsStore#poolAt}
+     * read-throughs the link; either way we end up rolling the right entries.
+     *
+     * <p>For cells that also appear in the variants sidecar, the variant flow
+     * already rolls; this pass covers cells the variant flow didn't touch —
+     * static-template chests/furnaces/barrels whose contents are authored in
+     * the C-menu without a block-variant override.</p>
      *
      * <p>Runs after {@link #applyVariantBlocks} so variant-overlaid cells aren't
-     * touched twice (the link read-through would otherwise re-roll into a
+     * touched twice (the pool read-through would otherwise re-roll into a
      * variant cell that already has its own roll).</p>
      */
-    private static void applyContentLinks(ServerLevel level, BlockPos carriageOrigin,
+    private static void applyContentPools(ServerLevel level, BlockPos carriageOrigin,
                                           CarriageContents contents, CarriageDims dims,
                                           long seed, int carriageIndex) {
         String plotKey = "contents:" + contents.id();
@@ -328,12 +333,9 @@ public final class CarriageContentsPlacer {
         }
         for (BlockPos localPos : store.allPositions()) {
             if (variantPositions.contains(localPos)) continue;
-            String linkId = store.linkAt(localPos);
-            if (linkId == null) continue;
-            java.util.Optional<games.brennan.dungeontrain.editor.LootPrefabStore.Data> loaded =
-                games.brennan.dungeontrain.editor.LootPrefabStore.load(linkId);
-            if (loaded.isEmpty()) continue;
-            games.brennan.dungeontrain.editor.ContainerContentsPool pool = loaded.get().pool();
+            // Single read-through — store.poolAt resolves a link if present,
+            // else returns the local pool, else empty. Empty → skip.
+            games.brennan.dungeontrain.editor.ContainerContentsPool pool = store.poolAt(localPos);
             if (pool.isEmpty()) continue;
             BlockPos worldPos = origin.offset(localPos);
             net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
@@ -425,7 +427,7 @@ public final class CarriageContentsPlacer {
         // Cell-level link / authored pool — populated when the player edits
         // an armor stand or item frame via the C menu (the menu writes to
         // this store, keyed by interior-local block pos). Mirrors the block-
-        // side applyContentLinks pass.
+        // side applyContentPools pass.
         ContainerContentsStore contentsLinkStore =
             ContainerContentsStore.loadFor("contents:" + contents.id());
         int spawned = 0;
@@ -568,7 +570,7 @@ public final class CarriageContentsPlacer {
 
     /**
      * Cell-link entity spawn pass — mirror of
-     * {@link #applyContentLinks} for entities. Iterates every cell in the
+     * {@link #applyContentPools} for entities. Iterates every cell in the
      * carriage's {@link ContainerContentsStore}; for each link whose prefab
      * has {@code category="armor_stand"}, spawns a fresh armor stand at the
      * cell's world position and applies the rolled equipment via
@@ -581,7 +583,7 @@ public final class CarriageContentsPlacer {
      *
      * <p>Runs every carriage spawn (and every editor preview re-stamp) so a
      * link → entity association at the cell is the source of truth, the
-     * same way `applyContentLinks` makes the link → chest-loot association
+     * same way `applyContentPools` makes the pool → chest-loot association
      * the source of truth on the block side.</p>
      */
     private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
