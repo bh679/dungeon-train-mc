@@ -1,6 +1,7 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "block": "minecraft:barrel",
+  "category": "loot",
   "fillMin": 1,
   "fillMax": 8,
   "entries": [
@@ -17,6 +18,7 @@
     { "id": "minecraft:prismarine", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:dark_prismarine", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:prismarine_shard", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:prismarine_crystals", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "minecraft:prismarine_crystals", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }

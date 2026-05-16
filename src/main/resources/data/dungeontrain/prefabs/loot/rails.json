@@ -1,18 +1,20 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "block": "minecraft:chest",
+  "category": "loot",
   "entries": [
-    { "id": "minecraft:tnt", "count": 10, "weight": 1 },
-    { "id": "minecraft:activator_rail", "count": 1, "weight": 2 },
-    { "id": "minecraft:detector_rail", "count": 2, "weight": 3 },
-    { "id": "minecraft:powered_rail", "count": 5, "weight": 4 },
-    { "id": "minecraft:rail", "count": 8, "weight": 50 },
-    { "id": "minecraft:minecart", "count": 1, "weight": 10 },
-    { "id": "minecraft:hopper_minecart", "count": 1, "weight": 2 },
-    { "id": "minecraft:chest_minecart", "count": 1, "weight": 2 },
-    { "id": "minecraft:stone_bricks", "count": 7, "weight": 40 },
-    { "id": "minecraft:stone_brick_stairs", "count": 4, "weight": 34 },
-    { "id": "minecraft:stone_brick_slab", "count": 5, "weight": 30 },
-    { "id": "minecraft:stone_brick_wall", "count": 5, "weight": 20 }
+    { "id": "minecraft:tnt", "count": 10, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:activator_rail", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:detector_rail", "count": 2, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:powered_rail", "count": 5, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:rail", "count": 8, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:minecart", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:hopper_minecart", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chest_minecart", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_bricks", "count": 7, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_brick_stairs", "count": 4, "weight": 34, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_brick_slab", "count": 5, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_brick_wall", "count": 5, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chest", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }

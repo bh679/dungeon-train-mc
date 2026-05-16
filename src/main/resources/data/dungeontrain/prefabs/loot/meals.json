@@ -1,15 +1,17 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "block": "minecraft:barrel",
+  "category": "loot",
   "fillMin": 1,
   "fillMax": 7,
   "entries": [
-    { "id": "minecraft:bread", "count": 4, "weight": 30 },
-    { "id": "minecraft:cookie", "count": 6, "weight": 10 },
-    { "id": "minecraft:cake", "count": 1, "weight": 5 },
-    { "id": "minecraft:pumpkin_pie", "count": 1, "weight": 5 },
-    { "id": "minecraft:mushroom_stew", "count": 1, "weight": 5 },
-    { "id": "minecraft:beetroot_soup", "count": 1, "weight": 5 },
-    { "id": "minecraft:rabbit_stew", "count": 1, "weight": 5 }
+    { "id": "minecraft:bread", "count": 4, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cookie", "count": 6, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cake", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:pumpkin_pie", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:mushroom_stew", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:beetroot_soup", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:rabbit_stew", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
