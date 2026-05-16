@@ -10,6 +10,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -23,6 +24,7 @@ import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -556,12 +558,44 @@ public final class ContainerContentsMenuController {
             actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
         }
 
+        // Re-roll the local chest so the edit takes visible effect immediately.
+        // The linked-template path re-rolls via ContainerContentsLinkPropagator;
+        // local pools were missing the equivalent step, so author edits only
+        // showed up at the NEXT carriage spawn — confusing for an authoring
+        // surface where the editor-plot chest IS the preview.
+        rerollLocalContainer(level, plot, localPos, next);
+
         if (next.isEmpty() && packet.op() == ContainerContentsEditPacket.Op.CLEAR) {
             OPEN.remove(player.getUUID());
             DungeonTrainNet.sendTo(player, ContainerContentsSyncPacket.empty());
             return;
         }
         resyncSameFace(player, plot, localPos);
+    }
+
+    /**
+     * Re-roll the BlockEntity at {@code (plot.origin + localPos)} using
+     * {@code pool}, mirroring {@link ContainerContentsLinkPropagator}'s
+     * per-position logic. Silent no-op when no BE is present (the slot might
+     * not currently hold a container block — e.g. the variant is empty);
+     * caller does not depend on the result. Uses
+     * {@code carriageIndex = 0} to match {@link
+     * games.brennan.dungeontrain.event.PrefabUseHandler}'s editor-plot rolls.
+     */
+    private static void rerollLocalContainer(ServerLevel level, BlockVariantPlot plot,
+                                              BlockPos localPos, ContainerContentsPool pool) {
+        BlockPos worldPos = plot.origin().offset(localPos);
+        BlockEntity be = level.getBlockEntity(worldPos);
+        if (be == null) return;
+        BlockState state = level.getBlockState(worldPos);
+        CompoundTag baseNbt = be.saveWithFullMetadata(level.registryAccess());
+        CompoundTag rolled = ContainerContentsRoller.roll(
+            pool, state, localPos,
+            level.getSeed(), /*carriageIndex*/ 0,
+            baseNbt, level.registryAccess(), level);
+        if (rolled == null) return;
+        be.loadCustomOnly(rolled, level.registryAccess());
+        be.setChanged();
     }
 
     private static void resyncSameFace(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {

@@ -36,6 +36,18 @@ public final class ModItems {
         () -> new VariantClipboardItem(new Item.Properties().stacksTo(1))
     );
 
+    /**
+     * Editor-only placeholder. Never appears in survival inventories — at
+     * chest spawn time {@code ContainerContentsRoller.rollItemStack}
+     * intercepts entries with this item id and substitutes a stamped vanilla
+     * {@code WRITTEN_BOOK} rolled from
+     * {@link games.brennan.dungeontrain.narrative.RandomBookRegistry}.
+     */
+    public static final DeferredItem<Item> RANDOM_BOOK = ITEMS.register(
+        "random_book",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
     private ModItems() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
@@ -44,9 +56,11 @@ public final class ModItems {
     }
 
     /**
-     * Add the variant clipboard to the Creative inventory's MISC tab. Allows
-     * authors to spawn a blank one for testing without the menu's Copy
-     * action.
+     * Add the variant clipboard to the Creative inventory's TOOLS_AND_UTILITIES
+     * tab. The narrative-side {@link #RANDOM_BOOK} placeholder lives in the
+     * mod's own NARRATIVE tab (see {@link ModCreativeTabs#NARRATIVE}), not
+     * here — narrative authoring deserves its own grouping rather than being
+     * mixed in with editor tools.
      */
     @SubscribeEvent
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {

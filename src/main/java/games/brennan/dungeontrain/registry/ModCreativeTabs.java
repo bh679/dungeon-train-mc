@@ -96,6 +96,30 @@ public final class ModCreativeTabs {
             .build()
     );
 
+    /**
+     * Narrative content tab — collects every mod item and block that drives
+     * in-world story delivery. Currently:
+     * <ul>
+     *   <li>{@link ModItems#RANDOM_BOOK} — placeholder for the chest-loot
+     *       random-book intercept (substitutes a stamped vanilla written book
+     *       at carriage-spawn time).</li>
+     *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
+     *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
+     *       discoverability).</li>
+     * </ul>
+     */
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> NARRATIVE = TABS.register(
+        "narrative",
+        () -> CreativeModeTab.builder()
+            .title(Component.translatable("gui.dungeontrain.creative_tab.narrative"))
+            .icon(() -> new ItemStack(Items.WRITTEN_BOOK))
+            .displayItems((parameters, output) -> {
+                output.accept(ModItems.RANDOM_BOOK.get());
+                output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+            })
+            .build()
+    );
+
     private ModCreativeTabs() {}
 
     public static void register(IEventBus modBus) {

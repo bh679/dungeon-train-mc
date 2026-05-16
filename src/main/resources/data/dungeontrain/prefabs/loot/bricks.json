@@ -1,14 +1,16 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "block": "minecraft:chest",
+  "category": "loot",
   "fillMin": 1,
   "fillMax": 15,
   "entries": [
-    { "id": "minecraft:tuff_bricks", "count": 1, "weight": 1 },
-    { "id": "minecraft:mud_bricks", "count": 1, "weight": 1 },
-    { "id": "minecraft:bricks", "count": 1, "weight": 1 },
-    { "id": "minecraft:deepslate_bricks", "count": 1, "weight": 1 },
-    { "id": "minecraft:deepslate_tiles", "count": 1, "weight": 1 },
-    { "id": "minecraft:stone_bricks", "count": 1, "weight": 1 }
+    { "id": "minecraft:tuff_bricks", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:mud_bricks", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:bricks", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:deepslate_bricks", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:deepslate_tiles", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:stone_bricks", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }

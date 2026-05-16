@@ -1,6 +1,7 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "block": "minecraft:barrel",
+  "category": "loot",
   "fillMin": 1,
   "fillMax": 10,
   "entries": [
@@ -10,6 +11,7 @@
     { "id": "minecraft:apple", "count": 2, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:golden_apple", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:saddle", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:chest", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "minecraft:chest", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_book", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
