@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 3,
+  "pools": {
+  },
+  "links": {
+    "0,3,2": "loot"
+  }
+}

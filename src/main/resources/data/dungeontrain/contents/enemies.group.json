@@ -40,7 +40,15 @@
     },
     {
       "id": "slimes",
+      "weight": 10
+    },
+    {
+      "id": "bogged",
       "weight": 8
+    },
+    {
+      "id": "zombiesrooms",
+      "weight": 10
     }
   ]
 }
