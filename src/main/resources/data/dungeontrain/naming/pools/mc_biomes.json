@@ -1,0 +1,31 @@
+{
+  "id": "dungeontrain:mc_biomes",
+  "entries": [
+    { "text": "Plains" },
+    { "text": "Desert" },
+    { "text": "Forest" },
+    { "text": "Jungle" },
+    { "text": "Taiga" },
+    { "text": "Snowy Plains" },
+    { "text": "Swamp" },
+    { "text": "Mangrove Swamp" },
+    { "text": "Mesa" },
+    { "text": "Mushroom Fields" },
+    { "text": "Cherry Grove" },
+    { "text": "Lush Caves" },
+    { "text": "Dripstone Caves" },
+    { "text": "Deep Dark" },
+    { "text": "Frozen Ocean" },
+    { "text": "Warm Ocean" },
+    { "text": "Beach" },
+    { "text": "Stony Shore" },
+    { "text": "Savanna" },
+    { "text": "Bamboo Jungle" },
+    { "text": "The Nether" },
+    { "text": "Crimson Forest" },
+    { "text": "Warped Forest" },
+    { "text": "Soul Sand Valley" },
+    { "text": "Basalt Deltas" },
+    { "text": "The End" }
+  ]
+}
