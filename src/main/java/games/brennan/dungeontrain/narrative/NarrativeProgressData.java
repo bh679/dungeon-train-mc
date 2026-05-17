@@ -48,6 +48,8 @@ public final class NarrativeProgressData extends SavedData {
 
     private static final String TAG_STORIES = "stories";
     private static final String TAG_RANDOM_BOOKS = "random_books";
+    /** Per-world (basename → seen-variant indices) for the starting-book pool — RESPAWN cycling. */
+    private static final String TAG_STARTING_BOOKS_SEEN = "starting_books_seen";
     private static final String TAG_STORY_ID = "id";
     private static final String TAG_STORY_READ = "read";
     /** Root-level list of UUIDs that have already received their first-login welcome book. */
@@ -59,6 +61,14 @@ public final class NarrativeProgressData extends SavedData {
     /** World-wide seen-variant tracking for the random-book pool. */
     private final Map<String, NarrativeProgress> randomBooksSeen;
     /**
+     * World-wide seen-variant tracking for the <em>starting-book</em> pool.
+     * Drives the RESPAWN cycling rule: while any RESPAWN-pool variant is
+     * unseen, rolls come only from that subset; once every RESPAWN variant
+     * has been marked here, the picker switches to the union of
+     * RESPAWN + DEFAULT pools and stays there.
+     */
+    private final Map<String, NarrativeProgress> startingBooksSeen;
+    /**
      * Players who have already been given their first-login welcome book.
      * Per-player rather than world-scoped: each player gets their own welcome
      * strike on their own first join, regardless of whether someone else
@@ -67,14 +77,16 @@ public final class NarrativeProgressData extends SavedData {
     private final Set<UUID> startingBookReceived;
 
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>(), new HashSet<>());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
                                   Map<String, NarrativeProgress> randomBooksSeen,
+                                  Map<String, NarrativeProgress> startingBooksSeen,
                                   Set<UUID> startingBookReceived) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
+        this.startingBooksSeen = startingBooksSeen;
         this.startingBookReceived = startingBookReceived;
     }
 
@@ -158,6 +170,50 @@ public final class NarrativeProgressData extends SavedData {
         }
     }
 
+    // ---------------- Starting-book variant tracking (respawn cycling) ----------------
+
+    /**
+     * True when the world has already delivered
+     * {@code (bookBasename, variantIndex)} via the RESPAWN cycling path.
+     * Used by {@link StartingBookFactory#rollForRespawn} to bias toward
+     * unseen variants while any remain in the RESPAWN pool.
+     */
+    public boolean hasSeenStartingBookVariant(String bookBasename, int variantIndex) {
+        NarrativeProgress p = startingBooksSeen.get(bookBasename);
+        return p != null && p.readLetters().contains(variantIndex);
+    }
+
+    /**
+     * Mark {@code variantIndex} of {@code bookBasename} seen for the world.
+     * Returns {@code true} when state changed.
+     */
+    public boolean markStartingBookVariantSeen(String bookBasename, int variantIndex) {
+        NarrativeProgress p = startingBooksSeen.computeIfAbsent(bookBasename, k -> new NarrativeProgress());
+        boolean changed = p.markRead(variantIndex);
+        if (changed) setDirty();
+        return changed;
+    }
+
+    /** Clear the starting-book variant-seen-set for the world. */
+    public void resetStartingBookVariantsSeen() {
+        if (!startingBooksSeen.isEmpty()) {
+            startingBooksSeen.clear();
+            setDirty();
+        }
+    }
+
+    /**
+     * Snapshot of every starting-book the world has delivered (any variant
+     * seen). Used for diagnostics / a future `progress` chat-print.
+     */
+    public Map<String, NarrativeProgress> startingBookSeenSnapshot() {
+        Map<String, NarrativeProgress> out = new HashMap<>(startingBooksSeen.size());
+        for (var e : startingBooksSeen.entrySet()) {
+            out.put(e.getKey(), new NarrativeProgress(e.getValue().readLetters()));
+        }
+        return out;
+    }
+
     // ---------------- Starting-book first-login tracking ----------------
 
     /**
@@ -187,6 +243,19 @@ public final class NarrativeProgressData extends SavedData {
      */
     public void resetStartingBookReceived(UUID playerUuid) {
         if (startingBookReceived.remove(playerUuid)) setDirty();
+    }
+
+    /**
+     * True when any player <em>other than</em> {@code excluding} has already
+     * been welcomed in this world. Used by the starting-book context
+     * resolver to detect the "joined someone else's world" case at
+     * strike-fire time.
+     */
+    public boolean anyOtherPlayerReceivedStartingBook(UUID excluding) {
+        for (UUID uuid : startingBookReceived) {
+            if (!uuid.equals(excluding)) return true;
+        }
+        return false;
     }
 
     /**
@@ -271,6 +340,7 @@ public final class NarrativeProgressData extends SavedData {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.put(TAG_STORIES, encodeStoryProgress(byStory));
         tag.put(TAG_RANDOM_BOOKS, encodeStoryProgress(randomBooksSeen));
+        tag.put(TAG_STARTING_BOOKS_SEEN, encodeStoryProgress(startingBooksSeen));
 
         // Per-player starting-book receipts — flat list of UUIDs.
         ListTag startedList = new ListTag();
@@ -314,6 +384,7 @@ public final class NarrativeProgressData extends SavedData {
     private static NarrativeProgressData load(CompoundTag tag) {
         Map<String, NarrativeProgress> stories = decodeStoryProgress(tag, TAG_STORIES);
         Map<String, NarrativeProgress> randomBooks = decodeStoryProgress(tag, TAG_RANDOM_BOOKS);
+        Map<String, NarrativeProgress> startingBooksSeen = decodeStoryProgress(tag, TAG_STARTING_BOOKS_SEEN);
         Set<UUID> startingBookReceived = new HashSet<>();
         // Backwards-compatible: missing `starting_book_received` tag means no
         // players have been marked yet. On first post-update login each
@@ -327,7 +398,7 @@ public final class NarrativeProgressData extends SavedData {
                 startingBookReceived.add(entry.getUUID(TAG_UUID));
             }
         }
-        return new NarrativeProgressData(stories, randomBooks, startingBookReceived);
+        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, startingBookReceived);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

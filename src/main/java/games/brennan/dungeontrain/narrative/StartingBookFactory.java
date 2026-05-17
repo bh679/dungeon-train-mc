@@ -37,27 +37,154 @@ public final class StartingBookFactory {
     private static final long SALT_BOOK_PICK    = 0x57A47E8B00C0FFEEL;
     /** Splittable-mix salt for the variant-pick stage. */
     private static final long SALT_VARIANT_PICK = 0x57A47E8B0AF1ED01L;
+    /** Splittable-mix salt for the respawn-cycling tuple pick. */
+    private static final long SALT_RESPAWN_PICK = 0x57A47E8B0CFCEDA7L;
 
     private StartingBookFactory() {}
 
     /**
-     * Pick a book from the pool, pick a variant from that book, and build an
-     * unstamped vanilla {@link Items#WRITTEN_BOOK} stack ready to drop into a
-     * player's inventory. Deterministic per {@code rollSeed}.
+     * One leaf option in the respawn-cycling pool: a specific
+     * {@code (book, variantIndex)} pair. {@code fromRespawnPool} is true when
+     * the source pool was RESPAWN, false when it came from DEFAULT — the
+     * respawn picker uses this to decide whether to mark the seen-set.
+     */
+    private record Tuple(RandomBookFile book, int variantIndex, boolean fromRespawnPool) {}
+
+    /**
+     * Pick a book from the DEFAULT context pool, pick a variant from that
+     * book, and build an unstamped vanilla {@link Items#WRITTEN_BOOK} stack
+     * ready to drop into a player's inventory. Deterministic per
+     * {@code rollSeed}.
      *
      * <p>Returns {@link Optional#empty()} when the pool is empty (or every
      * book weight is 0) — caller should log a warning and skip rather than
      * substituting a placeholder.</p>
      */
     public static Optional<ItemStack> rollFromPool(long rollSeed) {
+        return rollFromPool(rollSeed, StartingBookContext.DEFAULT);
+    }
+
+    /**
+     * Context-aware variant of {@link #rollFromPool(long)}. Rolls from the
+     * pool for {@code context}, falling back to the DEFAULT pool when the
+     * context pool is empty or has zero total weight (see
+     * {@link StartingBookRegistry#pickWeighted(long, StartingBookContext)}).
+     *
+     * <p>Two-stage splittable-mix on {@code rollSeed} — same family used by
+     * {@link RandomBookFactory#rollFromPool} — so the book-pick and the
+     * variant-pick are independent: re-rolling with the same seed for a
+     * different context still picks the variant deterministically given the
+     * resolved book.</p>
+     */
+    public static Optional<ItemStack> rollFromPool(long rollSeed, StartingBookContext context) {
         long bookSeed = mix(rollSeed, SALT_BOOK_PICK);
-        Optional<RandomBookFile> bookOpt = StartingBookRegistry.pickWeighted(bookSeed);
+        Optional<RandomBookFile> bookOpt = StartingBookRegistry.pickWeighted(bookSeed, context);
         if (bookOpt.isEmpty()) return Optional.empty();
         RandomBookFile book = bookOpt.get();
         long variantSeed = mix(rollSeed, SALT_VARIANT_PICK);
         int variantIndex = book.pickVariantIndex(variantSeed);
         String body = book.variants().get(variantIndex);
         return Optional.of(buildUnstampedBook(book, body, variantIndex));
+    }
+
+    /**
+     * Respawn-specific roll with cycling semantics.
+     *
+     * <p>While any {@code (book, variantIndex)} tuple in the RESPAWN pool
+     * is unseen by this world, the roll is restricted to those unseen
+     * tuples — every respawn delivers a fresh respawn variant. Once every
+     * RESPAWN tuple has been seen at least once, the picker permanently
+     * widens to the union of {RESPAWN, DEFAULT} tuples; the seen-set is
+     * not reset. A DEFAULT-side pick in this combined phase does NOT
+     * advance the seen-set (only respawn picks do — but the seen-set is
+     * already full at that point so it's a no-op).</p>
+     *
+     * <p>Side-effect: marks the picked tuple via
+     * {@link NarrativeProgressData#markStartingBookVariantSeen} when the
+     * pick came from RESPAWN.</p>
+     *
+     * <p>Empty-pool fallback: if the RESPAWN pool is empty (no books
+     * authored yet), defer to {@link #rollFromPool(long, StartingBookContext)}
+     * with RESPAWN — which falls back to DEFAULT — exactly matching the
+     * pre-cycling shipping behaviour for unconfigured installs.</p>
+     */
+    public static Optional<ItemStack> rollForRespawn(long rollSeed, NarrativeProgressData data) {
+        List<Tuple> respawnTuples = enumerateTuples(StartingBookContext.RESPAWN, true);
+        if (respawnTuples.isEmpty()) {
+            // No respawn books authored — fall back to default pool. No
+            // cycling state to maintain.
+            return rollFromPool(rollSeed, StartingBookContext.RESPAWN);
+        }
+        long pickSeed = mix(rollSeed, SALT_RESPAWN_PICK);
+
+        List<Tuple> unseen = new ArrayList<>(respawnTuples.size());
+        for (Tuple t : respawnTuples) {
+            if (!data.hasSeenStartingBookVariant(t.book().basename(), t.variantIndex())) {
+                unseen.add(t);
+            }
+        }
+        Tuple pick;
+        if (!unseen.isEmpty()) {
+            pick = pickTupleWeighted(unseen, pickSeed);
+        } else {
+            // Every respawn tuple seen — widen permanently to RESPAWN +
+            // DEFAULT. Default-side tuples carry fromRespawnPool=false so
+            // we know not to mark them seen.
+            List<Tuple> combined = new ArrayList<>(respawnTuples.size() + 16);
+            combined.addAll(respawnTuples);
+            combined.addAll(enumerateTuples(StartingBookContext.DEFAULT, false));
+            if (combined.isEmpty()) return Optional.empty();
+            pick = pickTupleWeighted(combined, pickSeed);
+        }
+        if (pick.fromRespawnPool()) {
+            data.markStartingBookVariantSeen(pick.book().basename(), pick.variantIndex());
+        }
+        String body = pick.book().variants().get(pick.variantIndex());
+        return Optional.of(buildUnstampedBook(pick.book(), body, pick.variantIndex()));
+    }
+
+    /**
+     * Enumerate every {@code (book, variantIndex)} tuple in the given
+     * context pool. The tuples retain their source-pool tag via
+     * {@link Tuple#fromRespawnPool} for the cycling mark logic.
+     */
+    private static List<Tuple> enumerateTuples(StartingBookContext context, boolean fromRespawnPool) {
+        List<RandomBookFile> books = StartingBookRegistry.booksIn(context);
+        List<Tuple> out = new ArrayList<>();
+        for (RandomBookFile book : books) {
+            int n = book.variants().size();
+            for (int v = 0; v < n; v++) {
+                out.add(new Tuple(book, v, fromRespawnPool));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Weighted-by-book pick across a tuple list. Each tuple inherits its
+     * parent book's {@code weight} — so a higher-weight book gets more
+     * total share AND that share is split evenly across its variants
+     * (matches the original two-stage roll's weighting semantics).
+     *
+     * <p>Books with {@code weight==0} are still enumerable but contribute
+     * zero share; they only get picked when every other book is also
+     * zero-weight (in which case we degrade to first-in-list).</p>
+     */
+    private static Tuple pickTupleWeighted(List<Tuple> tuples, long seed) {
+        long total = 0L;
+        for (Tuple t : tuples) total += Math.max(0, t.book().weight());
+        if (total <= 0) {
+            // All tuples are zero-weight — degrade to first.
+            return tuples.get(0);
+        }
+        long unsigned = seed & 0x7FFFFFFFFFFFFFFFL;
+        long target = unsigned % total;
+        for (Tuple t : tuples) {
+            target -= Math.max(0, t.book().weight());
+            if (target < 0) return t;
+        }
+        // Numerical edge — return last.
+        return tuples.get(tuples.size() - 1);
     }
 
     /**
