@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
+import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StartingBookTag;
@@ -92,8 +94,25 @@ public final class StartingBookEvents {
     /** Pickup delay on the dropped book (ticks) — gives the strike a beat to play out. */
     private static final int BOOK_PICKUP_DELAY_TICKS = 20;
 
-    /** Player UUID → ticks remaining until the strike fires. */
-    private static final Map<UUID, Integer> PENDING_STRIKE = new ConcurrentHashMap<>();
+    /**
+     * In-flight welcome strike. {@code context == null} means "resolve at
+     * fire time" — used by the login path because the world's social state
+     * (have any other players welcomed?) might change during the deferral
+     * window. The respawn path knows its context up front (RESPAWN).
+     */
+    private static final class PendingStrike {
+        int ticksRemaining;
+        /** Resolved at enqueue (RESPAWN) or at fire time ({@code null} until then). */
+        StartingBookContext context;
+
+        PendingStrike(int ticks, StartingBookContext context) {
+            this.ticksRemaining = ticks;
+            this.context = context;
+        }
+    }
+
+    /** Player UUID → pending strike (carries ticks + optional pre-resolved context). */
+    private static final Map<UUID, PendingStrike> PENDING_STRIKE = new ConcurrentHashMap<>();
 
     /**
      * How long a closed-and-thrown starting book burns before it's consumed
@@ -143,8 +162,9 @@ public final class StartingBookEvents {
         if (overworld == null) return;
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
         if (data.hasReceivedStartingBook(player.getUUID())) return;
-        // Defer — see class javadoc for the timing rationale.
-        PENDING_STRIKE.put(player.getUUID(), STRIKE_DELAY_TICKS);
+        // Defer — see class javadoc for the timing rationale. Context resolved
+        // at fire time (null here) so we see the freshest world state.
+        PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, null));
     }
 
     @SubscribeEvent
@@ -154,7 +174,8 @@ public final class StartingBookEvents {
         // would be jarring.
         if (event.isEndConquered()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        PENDING_STRIKE.put(player.getUUID(), STRIKE_DELAY_TICKS);
+        // Respawn context is unambiguous; pre-resolve at enqueue.
+        PENDING_STRIKE.put(player.getUUID(), new PendingStrike(STRIKE_DELAY_TICKS, StartingBookContext.RESPAWN));
     }
 
     /**
@@ -178,20 +199,20 @@ public final class StartingBookEvents {
 
         // ---- Pending strike queue (login / respawn deferred fire) ----
         if (!PENDING_STRIKE.isEmpty()) {
-            Iterator<Map.Entry<UUID, Integer>> it = PENDING_STRIKE.entrySet().iterator();
+            Iterator<Map.Entry<UUID, PendingStrike>> it = PENDING_STRIKE.entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<UUID, Integer> entry = it.next();
+                Map.Entry<UUID, PendingStrike> entry = it.next();
                 ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
                 if (player == null) {
                     it.remove();
                     continue;
                 }
-                int remaining = entry.getValue() - 1;
-                if (remaining <= 0) {
-                    fireLightningAndDropBook(player);
+                PendingStrike ps = entry.getValue();
+                ps.ticksRemaining--;
+                if (ps.ticksRemaining <= 0) {
+                    StartingBookContext ctx = ps.context != null ? ps.context : resolveLoginContext(player);
+                    fireLightningAndDropBook(player, ctx);
                     it.remove();
-                } else {
-                    entry.setValue(remaining);
                 }
             }
         }
@@ -440,9 +461,9 @@ public final class StartingBookEvents {
     }
 
     /**
-     * Roll a book from {@link StartingBookRegistry}, compute a strike point
-     * {@value #STRIKE_DISTANCE} blocks in front of the player along their
-     * view direction (XZ-only), and spawn:
+     * Roll a book from {@link StartingBookRegistry} for {@code context},
+     * compute a strike point {@value #STRIKE_DISTANCE} blocks in front of
+     * the player along their view direction (XZ-only), and spawn:
      * <ol>
      *   <li>A colored particle column (visual tint for the strike).</li>
      *   <li>A {@code setVisualOnly} {@link LightningBolt} (screen flash + sound).</li>
@@ -450,11 +471,14 @@ public final class StartingBookEvents {
      *       impulse so it pops out of the strike crater.</li>
      * </ol>
      *
-     * <p>Also marks the player as having received their welcome strike in
-     * {@link NarrativeProgressData} — idempotent, so it's safe to call from
-     * both the first-login and respawn paths.</p>
+     * <p>After the strike fires the player is recorded in two places:
+     * {@link NarrativeProgressData#markStartingBookReceived} (per-world,
+     * suppresses next plain-login give) and
+     * {@link PlayerPlayedMarker#markPlayed} (per-installation, switches the
+     * next-world context from DEFAULT to NEW_WORLD). Both calls are
+     * idempotent so respawn-path re-fires are safe.</p>
      */
-    private static void fireLightningAndDropBook(ServerPlayer player) {
+    private static void fireLightningAndDropBook(ServerPlayer player, StartingBookContext context) {
         if (StartingBookRegistry.count() == 0) {
             LOGGER.warn("[DungeonTrain] StartingBook: pool is empty — skipping strike for {}",
                 player.getName().getString());
@@ -463,10 +487,24 @@ public final class StartingBookEvents {
         long seed = player.serverLevel().getGameTime()
             ^ player.getUUID().getLeastSignificantBits()
             ^ (player.getUUID().getMostSignificantBits() << 1);
-        Optional<ItemStack> bookOpt = StartingBookFactory.rollFromPool(seed);
+        // Respawn cycles through the RESPAWN pool until exhausted, then
+        // widens to RESPAWN + DEFAULT — needs world state for the
+        // seen-set. Other contexts just roll their (context, fallback)
+        // pair.
+        Optional<ItemStack> bookOpt;
+        if (context == StartingBookContext.RESPAWN) {
+            ServerLevel overworld = overworldOf(player);
+            if (overworld != null) {
+                bookOpt = StartingBookFactory.rollForRespawn(seed, NarrativeProgressData.get(overworld));
+            } else {
+                bookOpt = StartingBookFactory.rollFromPool(seed, context);
+            }
+        } else {
+            bookOpt = StartingBookFactory.rollFromPool(seed, context);
+        }
         if (bookOpt.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] StartingBook: rollFromPool empty (zero total weight?) — skipping strike for {}",
-                player.getName().getString());
+            LOGGER.warn("[DungeonTrain] StartingBook: rollFromPool empty for context {} (zero total weight in pool + default fallback?) — skipping strike for {}",
+                context, player.getName().getString());
             return;
         }
         ItemStack book = bookOpt.get();
@@ -479,16 +517,74 @@ public final class StartingBookEvents {
         spawnVisualLightning(level, landPos);
         spawnBookEntity(level, landPos, book);
 
-        // Idempotent — safe to call repeatedly (e.g. respawn path).
+        // Both marks are idempotent — safe on respawn-path re-fires.
         ServerLevel overworld = overworldOf(player);
         if (overworld != null) {
             NarrativeProgressData.get(overworld).markStartingBookReceived(player.getUUID());
         }
+        PlayerPlayedMarker.markPlayed(player.getUUID());
 
-        LOGGER.info("[DungeonTrain] StartingBook: lightning strike for {} ({}) at ({}, {}, {}) color=({}, {}, {})",
-            player.getName().getString(), player.getUUID(),
+        LOGGER.info("[DungeonTrain] StartingBook: lightning strike for {} ({}) ctx={} at ({}, {}, {}) color=({}, {}, {})",
+            player.getName().getString(), player.getUUID(), context,
             String.format("%.1f", landPos.x), String.format("%.1f", landPos.y), String.format("%.1f", landPos.z),
             String.format("%.2f", color.x), String.format("%.2f", color.y), String.format("%.2f", color.z));
+    }
+
+    /**
+     * Resolve the welcome-strike context for a player on the login path,
+     * read at strike-fire time so the world state is current.
+     *
+     * <p>Two-step decision:</p>
+     * <ol>
+     *   <li><b>Scenario detection</b> — read the world's
+     *       {@code startingBookReceived} set (others welcomed?) and the
+     *       player's gamedir marker (played before?). Yields one of:
+     *       JOINED-scenario, NEW-WORLD-scenario, or first-ever.</li>
+     *   <li><b>Alternating filter</b> — apply parity rules to the
+     *       per-player counters (see {@link PlayerPlayedMarker}):
+     *       <ul>
+     *         <li>JOINED scenario: count is even → JOINED_WORLD, odd → DEFAULT.</li>
+     *         <li>NEW-WORLD scenario: count is odd → NEW_WORLD, even → DEFAULT.</li>
+     *       </ul>
+     *       Counter is incremented in both branches — the parity is a
+     *       property of the world-creation / world-join event, not of
+     *       which pool actually rolled.</li>
+     * </ol>
+     *
+     * <p>First-ever players (no marker) → always DEFAULT and no counters
+     * touched. The post-fire {@link PlayerPlayedMarker#markPlayed} write
+     * flips them out of first-ever for next time.</p>
+     */
+    public static StartingBookContext resolveLoginContext(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        ServerLevel overworld = overworldOf(player);
+        boolean othersHere = false;
+        if (overworld != null) {
+            othersHere = NarrativeProgressData.get(overworld).anyOtherPlayerReceivedStartingBook(uuid);
+        }
+
+        if (othersHere) {
+            int count = PlayerPlayedMarker.joinedWorldCount(uuid);
+            PlayerPlayedMarker.incrementJoinedWorldCount(uuid);
+            return (count % 2 == 0) ? StartingBookContext.JOINED_WORLD : StartingBookContext.DEFAULT;
+        }
+        if (PlayerPlayedMarker.hasPlayed(uuid)) {
+            int count = PlayerPlayedMarker.newWorldCount(uuid);
+            PlayerPlayedMarker.incrementNewWorldCount(uuid);
+            return (count % 2 == 1) ? StartingBookContext.NEW_WORLD : StartingBookContext.DEFAULT;
+        }
+        return StartingBookContext.DEFAULT;
+    }
+
+    /**
+     * Test entry point — fire the welcome strike immediately with an
+     * explicit context, bypassing the deferral queue and the per-player
+     * gate. Used by the {@code /narrative startingbook fire <context>}
+     * command. NOT subject to {@link NarrativeProgressData#hasReceivedStartingBook}
+     * — testers want to fire as often as they like.
+     */
+    public static void forceFireForTest(ServerPlayer player, StartingBookContext context) {
+        fireLightningAndDropBook(player, context);
     }
 
     /**

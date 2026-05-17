@@ -12,8 +12,10 @@ import games.brennan.dungeontrain.narrative.Letter;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
+import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.narrative.RandomBookFile;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
+import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
@@ -79,6 +81,16 @@ public final class NarrativeCommand {
     private static final SuggestionProvider<CommandSourceStack> STARTING_BOOK_SUGGESTIONS =
         (ctx, builder) -> SharedSuggestionProvider.suggest(StartingBookRegistry.basenames(), builder);
 
+    /** Tab-completion source: the four starting-book context names (folder form). */
+    private static final SuggestionProvider<CommandSourceStack> STARTING_BOOK_CONTEXT_SUGGESTIONS =
+        (ctx, builder) -> {
+            java.util.List<String> names = new java.util.ArrayList<>();
+            for (StartingBookContext c : StartingBookContext.values()) {
+                names.add(c.folderName().isEmpty() ? "default" : c.folderName());
+            }
+            return SharedSuggestionProvider.suggest(names, builder);
+        };
+
     private NarrativeCommand() {}
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
@@ -132,11 +144,18 @@ public final class NarrativeCommand {
                 .then(Commands.literal("reload").executes(NarrativeCommand::runStartingBookReload))
                 .then(Commands.literal("reset").executes(NarrativeCommand::runStartingBookReset))
                 .then(Commands.literal("give")
-                    // No basename — pool-weighted random pick.
+                    // No basename — pool-weighted random pick (DEFAULT context).
                     .executes(NarrativeCommand::runStartingBookGiveRandom)
                     .then(Commands.argument("basename", StringArgumentType.string())
                         .suggests(STARTING_BOOK_SUGGESTIONS)
-                        .executes(NarrativeCommand::runStartingBookGiveExplicit))));
+                        .executes(NarrativeCommand::runStartingBookGiveExplicit)))
+                // fire <context> — trigger a welcome strike immediately with
+                // an explicit context, bypassing the deferral queue. Test-only;
+                // for Gate 2 manual coverage of all four context paths.
+                .then(Commands.literal("fire")
+                    .then(Commands.argument("context", StringArgumentType.string())
+                        .suggests(STARTING_BOOK_CONTEXT_SUGGESTIONS)
+                        .executes(NarrativeCommand::runStartingBookFire))));
     }
 
     private static int runList(CommandContext<CommandSourceStack> ctx) {
@@ -350,9 +369,44 @@ public final class NarrativeCommand {
         ServerLevel overworld = player.serverLevel().getServer().overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
         data.resetStartingBookReceived(player.getUUID());
+        // Also clear the respawn-cycling variant-seen-set so the next
+        // respawn rolls fresh — testers rely on this to re-exercise the
+        // cycle without restarting the server.
+        data.resetStartingBookVariantsSeen();
         ctx.getSource().sendSuccess(() -> Component.literal(
-            "Starting-book first-login flag reset for " + player.getName().getString() + " — next login will give a fresh welcome book"
+            "Starting-book state reset for " + player.getName().getString()
+                + " — first-login flag cleared, respawn cycle reset"
         ).withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /**
+     * Force a welcome strike for the calling player with an explicit
+     * context. Bypasses both the deferral queue and the
+     * per-player-per-world receipt gate. Use this in Gate 2 testing to hit
+     * each of the four context paths without naturally setting up the
+     * triggers (new world / multi-player / kill-respawn).
+     */
+    private static int runStartingBookFire(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String raw = StringArgumentType.getString(ctx, "context");
+        Optional<StartingBookContext> contextOpt = StartingBookContext.fromString(raw);
+        if (contextOpt.isEmpty()) {
+            ctx.getSource().sendFailure(Component.literal(
+                "Unknown context '" + raw + "'. Try: default, new_world, joined_world, respawn."));
+            return 0;
+        }
+        StartingBookContext context = contextOpt.get();
+        if (StartingBookRegistry.count() == 0) {
+            ctx.getSource().sendFailure(Component.literal("Starting-book pool is empty."));
+            return 0;
+        }
+        StartingBookEvents.forceFireForTest(player, context);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+            "Fired welcome strike with context " + context.name()
+                + " (pool=" + StartingBookRegistry.countFor(context) + " books; "
+                + "fallback to default if empty)"
+        ).withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
 
