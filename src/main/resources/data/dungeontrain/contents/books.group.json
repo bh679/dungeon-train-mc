@@ -41,6 +41,10 @@
     {
       "id": "seating_face_in",
       "weight": 2
+    },
+    {
+      "id": "cake",
+      "weight": 1
     }
   ]
 }
