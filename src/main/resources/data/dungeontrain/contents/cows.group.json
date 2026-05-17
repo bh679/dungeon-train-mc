@@ -36,7 +36,7 @@
     },
     {
       "id": "fox",
-      "weight": 2
+      "weight": 1
     },
     {
       "id": "donkey",
@@ -52,6 +52,10 @@
     },
     {
       "id": "panda",
+      "weight": 1
+    },
+    {
+      "id": "snowman",
       "weight": 1
     }
   ]
