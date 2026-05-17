@@ -31,6 +31,7 @@ import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.naming.NameComposer;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
@@ -67,6 +68,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_ENCH_VALUE  = 0xBADDCAFE0FF1CE00L;
     /** Salt for the random-book placeholder substitution. */
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
+    /** Salt for the procedural name composer (naturally-spawned items). */
+    private static final long SALT_NAME        = 0x4E414D4544585742L;
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -602,6 +605,10 @@ public final class ContainerContentsRoller {
                 EnchantmentHelper.enchantItem(rs, stack, level, nonTreasure.get().stream());
             }
         }
+
+        long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
+        RandomSource nameRng = RandomSource.create(nameSeed);
+        NameComposer.applyName(stack, nameRng);
 
         return stack;
     }

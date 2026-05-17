@@ -1,0 +1,8 @@
+{
+  "id": "dungeontrain:leggings",
+  "applies_to": "minecraft:leg_armor",
+  "tiers": {
+    "plain": "dungeontrain:weapon_name_short",
+    "enchanted": "dungeontrain:weapon_name_full"
+  }
+}

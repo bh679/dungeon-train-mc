@@ -1,0 +1,8 @@
+{
+  "id": "dungeontrain:sword",
+  "applies_to": "minecraft:swords",
+  "tiers": {
+    "plain": "dungeontrain:weapon_name_short",
+    "enchanted": "dungeontrain:weapon_name_full"
+  }
+}

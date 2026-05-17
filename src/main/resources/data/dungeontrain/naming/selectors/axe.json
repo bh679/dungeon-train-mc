@@ -1,0 +1,8 @@
+{
+  "id": "dungeontrain:axe",
+  "applies_to": "minecraft:axes",
+  "tiers": {
+    "plain": "dungeontrain:weapon_name_short",
+    "enchanted": "dungeontrain:weapon_name_full"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "dungeontrain:mc_dimensions",
+  "entries": [
+    { "text": "Overworld" },
+    { "text": "The Nether" },
+    { "text": "The End" },
+    { "text": "The Void" },
+    { "text": "The Far Lands" }
+  ]
+}

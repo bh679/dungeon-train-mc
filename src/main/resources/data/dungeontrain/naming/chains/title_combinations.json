@@ -1,0 +1,50 @@
+{
+  "id": "dungeontrain:title_combinations",
+  "segments": [
+    {
+      "refs": [
+        { "ref": "dungeontrain:title_prefix", "weight": 1.0 }
+      ],
+      "chance": 1.0,
+      "connection": "",
+      "newline": false
+    },
+    {
+      "refs": [
+        { "ref": "dungeontrain:title_post_prefix",       "weight": 0.12 },
+        { "ref": "dungeontrain:food",                    "weight": 0.10 },
+        { "ref": "dungeontrain:titles",                  "weight": 0.09 },
+        { "ref": "dungeontrain:places",                  "weight": 0.08 },
+        { "ref": "dungeontrain:material_or_element",     "weight": 0.10 },
+        { "ref": "dungeontrain:animals",                 "weight": 0.10 },
+        { "ref": "dungeontrain:technology",              "weight": 0.10 },
+        { "ref": "dungeontrain:names",                   "weight": 0.10 },
+        { "ref": "dungeontrain:math",                    "weight": 0.07 },
+        { "ref": "dungeontrain:music",                   "weight": 0.07 },
+        { "ref": "dungeontrain:discord_people",          "weight": 0.06 },
+        { "ref": "dungeontrain:colors",                  "weight": 0.05 },
+        { "ref": "dungeontrain:feelings",                "weight": 0.03 },
+        { "ref": "dungeontrain:wholesome_things",        "weight": 0.03 },
+
+        { "ref": "dungeontrain:mc_biomes",               "weight": 0.043 },
+        { "ref": "dungeontrain:mc_technoblade",          "weight": 0.038 },
+        { "ref": "dungeontrain:mc_dimensions",           "weight": 0.025 },
+        { "ref": "dungeontrain:mc_hostile_mobs",         "weight": 0.024 },
+        { "ref": "dungeontrain:mc_animals",              "weight": 0.023 },
+        { "ref": "dungeontrain:mc_structures",           "weight": 0.023 },
+        { "ref": "dungeontrain:mc_lore",                 "weight": 0.023 },
+        { "ref": "dungeontrain:mc_minigames",            "weight": 0.021 },
+        { "ref": "dungeontrain:mc_villager_professions", "weight": 0.016 },
+        { "ref": "dungeontrain:mc_events",               "weight": 0.013 },
+        { "ref": "dungeontrain:mc_skins",                "weight": 0.009 },
+        { "ref": "dungeontrain:mc_music_discs",          "weight": 0.008 },
+        { "ref": "dungeontrain:mc_potions_effects",      "weight": 0.004 },
+        { "ref": "dungeontrain:mc_enchantments",         "weight": 0.003 },
+        { "ref": "dungeontrain:mc_streamers",            "weight": 0.002 }
+      ],
+      "chance": 1.0,
+      "connection": " of ",
+      "newline": false
+    }
+  ]
+}

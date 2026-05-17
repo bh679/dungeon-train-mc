@@ -1,0 +1,200 @@
+{
+  "id": "dungeontrain:title_prefix",
+  "entries": [
+    {
+      "text": "Princess"
+    },
+    {
+      "text": "Prince"
+    },
+    {
+      "text": "Queen"
+    },
+    {
+      "text": "King"
+    },
+    {
+      "text": "Lord"
+    },
+    {
+      "text": "Lady"
+    },
+    {
+      "text": "Master"
+    },
+    {
+      "text": "Lordess"
+    },
+    {
+      "text": "Servant"
+    },
+    {
+      "text": "God"
+    },
+    {
+      "text": "Goddess"
+    },
+    {
+      "text": "Wraith"
+    },
+    {
+      "text": "Ghost"
+    },
+    {
+      "text": "Titan"
+    },
+    {
+      "text": "Son"
+    },
+    {
+      "text": "Father"
+    },
+    {
+      "text": "Mother"
+    },
+    {
+      "text": "Daughter"
+    },
+    {
+      "text": "Sister"
+    },
+    {
+      "text": "Brother"
+    },
+    {
+      "text": "Lover"
+    },
+    {
+      "text": "Bringer"
+    },
+    {
+      "text": "Destroyer"
+    },
+    {
+      "text": "Gladiator"
+    },
+    {
+      "text": "Barbarian"
+    },
+    {
+      "text": "Stalker"
+    },
+    {
+      "text": "Plagued"
+    },
+    {
+      "text": "Doombringer"
+    },
+    {
+      "text": "Blazeguard"
+    },
+    {
+      "text": "Princess"
+    },
+    {
+      "text": "Developer"
+    },
+    {
+      "text": "Lead Developer"
+    },
+    {
+      "text": "Creator"
+    },
+    {
+      "text": "Owner"
+    },
+    {
+      "text": "Inventor"
+    },
+    {
+      "text": "Emperor"
+    },
+    {
+      "text": "Conqueror"
+    },
+    {
+      "text": "Captain"
+    },
+    {
+      "text": "Doctor"
+    },
+    {
+      "text": "PhD"
+    },
+    {
+      "text": "Graduate"
+    },
+    {
+      "text": "Master Chef"
+    },
+    {
+      "text": "Majesty"
+    },
+    {
+      "text": "Mayor"
+    },
+    {
+      "text": "Vice Chancellor"
+    },
+
+    { "text": "Professor" },
+    { "text": "Scholar" },
+
+    { "text": "Baron" },
+    { "text": "Baroness" },
+    { "text": "Duke" },
+    { "text": "Duchess" },
+    { "text": "Sir" },
+    { "text": "Dame" },
+    { "text": "Count" },
+    { "text": "Countess" },
+
+    { "text": "General" },
+    { "text": "Knight" },
+    { "text": "Squire" },
+    { "text": "Champion" },
+    { "text": "World Champion" },
+    { "text": "Overlord" },
+    { "text": "World Overlord" },
+    { "text": "Supreme Overlord" },
+    { "text": "Supreme World Overlord" },
+
+    { "text": "Wizard" },
+    { "text": "Witch" },
+    { "text": "Necromancer" },
+    { "text": "Paladin" },
+    { "text": "Bard" },
+    { "text": "Sage" },
+    { "text": "Hermit" },
+    { "text": "Druid" },
+    { "text": "Alchemist" },
+    { "text": "Oracle" },
+    { "text": "Shaman" },
+
+    { "text": "Bishop" },
+    { "text": "Saint" },
+    { "text": "Prophet" },
+    { "text": "High Priest" },
+    { "text": "Pope" },
+
+    { "text": "Founder" },
+    { "text": "President" },
+    { "text": "Boss" },
+    { "text": "Smith" },
+    { "text": "Hunter" },
+    { "text": "Ranger" },
+    { "text": "Brewer" },
+    { "text": "Tinker" },
+    { "text": "Big Cheese" },
+    { "text": "Top Dog" },
+    { "text": "Goblin" },
+    { "text": "Imp" },
+    { "text": "Champ" },
+    { "text": "Chief" },
+    { "text": "The Honourable" },
+    { "text": "Pal" },
+    { "text": "Buddy" },
+    { "text": "Bro" },
+    { "text": "Sis" }
+  ]
+}
