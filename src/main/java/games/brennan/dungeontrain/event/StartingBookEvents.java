@@ -26,6 +26,9 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -117,22 +120,27 @@ public final class StartingBookEvents {
     /**
      * How long a closed-and-thrown starting book burns before it's consumed
      * (ticks). 60 ticks = 3 s — long enough for the player to see the flames
-     * + the block fire, short enough that it doesn't feel like the book is
-     * lingering. Vanilla fire on a non-flammable surface decays in ~1-2 s,
-     * so the book outlives the fire only on its supporting block — which is
-     * exactly what we want (the fire is "tied" to the burning book).
+     * + the block-fire visual, short enough that it doesn't feel like the
+     * book is lingering. The block-fire visual is rendered client-side only
+     * via {@link ClientboundBlockUpdatePacket} (see
+     * {@link #sendClientFireUpdate}) — the server never actually places a
+     * {@link Blocks#FIRE} block, so the burn has no game-side effects (no
+     * fire spread, no entity damage, no chunk state change).
      */
     private static final int BURN_DURATION_TICKS = 60;
 
     /** Tracking entry for one in-progress book burn. */
     private static final class BurnState {
         int ticksRemaining;
-        /** World pos of the fire block we set, or {@code null} if not set yet. */
-        BlockPos fireBlockPos;
+        /** Render anchor for the client-only fire block, or {@code null} until the item settles. */
+        BlockPos flameRenderPos;
+        /** Dimension containing {@link #flameRenderPos} — needed to clear the visual after the entity is gone. */
+        ResourceKey<Level> flameRenderLevelKey;
 
         BurnState(int ticks) {
             this.ticksRemaining = ticks;
-            this.fireBlockPos = null;
+            this.flameRenderPos = null;
+            this.flameRenderLevelKey = null;
         }
     }
 
@@ -228,11 +236,17 @@ public final class StartingBookEvents {
      * <ul>
      *   <li>Locate the {@link ItemEntity} via its UUID across all loaded
      *       server levels.</li>
-     *   <li>If the entity is gone (despawn / chunk unload / pickup), drop
-     *       tracking and extinguish our fire block if we set one.</li>
-     *   <li>Otherwise: emit flame + smoke particles, set a fire block on the
-     *       supporting surface (once), decrement the timer.</li>
-     *   <li>When the timer hits zero: discard the entity and extinguish.</li>
+     *   <li>If the entity is gone (despawn / chunk unload / pickup), clear
+     *       the client-only fire visual (if anchored) and drop tracking.</li>
+     *   <li>Otherwise: emit the existing flame + smoke particles around the
+     *       item, and (once the item has settled on a sturdy surface) send
+     *       a client-only {@link Blocks#FIRE} block update at that surface
+     *       each tick — the vanilla "block on fire" animation renders on
+     *       clients while the server keeps the position as air, so the
+     *       burn has no game-side effects.</li>
+     *   <li>Decrement the timer.</li>
+     *   <li>When the timer hits zero: clear the client-only fire, play the
+     *       extinguish sound + smoke poof, and discard the entity.</li>
      * </ul>
      */
     private static void tickBurnEntities(MinecraftServer server) {
@@ -244,10 +258,7 @@ public final class StartingBookEvents {
 
             ItemEntity itemEntity = findItemEntity(server, entityUuid);
             if (itemEntity == null || itemEntity.isRemoved()) {
-                // Entity is gone — clean up the fire block if we set one.
-                if (state.fireBlockPos != null) {
-                    extinguishIfFire(server, state.fireBlockPos);
-                }
+                clearClientFireVisual(server, state);
                 it.remove();
                 continue;
             }
@@ -266,24 +277,33 @@ public final class StartingBookEvents {
                     1, 0.08, 0.05, 0.08, 0.01);
             }
 
-            // Set a fire block on top of the supporting surface, once the
-            // item has settled. Subsequent ticks re-check that the fire
-            // block is still ours (a passing player can break / replace it).
-            if (itemEntity.onGround() && state.fireBlockPos == null) {
-                BlockPos firePos = pickFirePosFor(itemLevel, itemEntity);
-                if (firePos != null) {
-                    itemLevel.setBlockAndUpdate(firePos, Blocks.FIRE.defaultBlockState());
-                    state.fireBlockPos = firePos;
+            // Anchor the visual block-fire position once the item settles.
+            if (itemEntity.onGround() && state.flameRenderPos == null) {
+                BlockPos picked = pickFirePosFor(itemLevel, itemEntity);
+                if (picked != null) {
+                    state.flameRenderPos = picked;
+                    state.flameRenderLevelKey = itemLevel.dimension();
                 }
+            }
+
+            // Send a client-only FIRE block update each tick. The server
+            // still has AIR at this position, so no fire spread, no damage,
+            // no chunk state change — clients just see the vanilla "block
+            // on fire" animation. Re-send each tick so any incidental chunk
+            // refresh that re-asserts the server state (air) doesn't leave
+            // the visual stuck off. Skip if the server has a non-air block
+            // at this position (player placed something there during the
+            // burn — leave their block alone).
+            if (state.flameRenderPos != null
+                && itemLevel.getBlockState(state.flameRenderPos).isAir()) {
+                sendClientFireUpdate(itemLevel, state.flameRenderPos,
+                    Blocks.FIRE.defaultBlockState());
             }
 
             // Tick down. When zero: book is "consumed", clean up.
             state.ticksRemaining--;
             if (state.ticksRemaining <= 0) {
-                if (state.fireBlockPos != null) {
-                    extinguishIfFire(server, state.fireBlockPos);
-                }
-                // Sound + smoke poof for the consume moment.
+                clearClientFireVisual(server, state);
                 itemLevel.playSound(null, itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(),
                     SoundEvents.FIRE_EXTINGUISH, SoundSource.BLOCKS, 0.6f, 1.2f);
                 itemLevel.sendParticles(ParticleTypes.LARGE_SMOKE,
@@ -293,6 +313,36 @@ public final class StartingBookEvents {
                 it.remove();
             }
         }
+    }
+
+    /**
+     * Send a client-only block update for {@code state} at {@code pos} to
+     * every player tracking the chunk that contains {@code pos}. The server
+     * level is unchanged — only clients' local copies of that block change.
+     *
+     * <p>Use to render the vanilla fire animation without placing a real
+     * {@link Blocks#FIRE} block on the server: no fire spread, no damage,
+     * no neighbor updates, no chunk state diff.</p>
+     */
+    private static void sendClientFireUpdate(ServerLevel level, BlockPos pos, BlockState state) {
+        ClientboundBlockUpdatePacket packet = new ClientboundBlockUpdatePacket(pos, state);
+        for (ServerPlayer player : level.getChunkSource().chunkMap.getPlayers(new ChunkPos(pos), false)) {
+            player.connection.send(packet);
+        }
+    }
+
+    /**
+     * Clear our client-only fire visual (if anchored): tell each tracking
+     * client to render the block as whatever the server actually has at
+     * that position now (typically air, but could be a player-placed block
+     * if the player built there during the burn).
+     */
+    private static void clearClientFireVisual(MinecraftServer server, BurnState state) {
+        if (state.flameRenderPos == null || state.flameRenderLevelKey == null) return;
+        ServerLevel level = server.getLevel(state.flameRenderLevelKey);
+        if (level == null) return;
+        sendClientFireUpdate(level, state.flameRenderPos,
+            level.getBlockState(state.flameRenderPos));
     }
 
     /**
@@ -309,20 +359,21 @@ public final class StartingBookEvents {
     }
 
     /**
-     * Decide where to place the fire block for a burning item entity:
-     * the air block above the entity's resting position, provided the
-     * block below it is a sturdy surface (so vanilla fire won't decay
-     * before the book burns out).
+     * Decide where to render the visual block-fire for a burning item entity:
+     * the air block above the entity's resting position, provided the block
+     * below it is a sturdy surface (so the flame layer sits on something the
+     * player would expect to "catch fire").
      *
-     * <p>Returns {@code null} when no suitable spot exists — the book
-     * keeps burning visually (particles) but no block fire is set.</p>
+     * <p>Returns {@code null} when no suitable spot exists — the book keeps
+     * burning visually (the per-item flame + smoke particles still emit),
+     * but no block-fire layer is rendered.</p>
      */
     private static BlockPos pickFirePosFor(ServerLevel level, ItemEntity itemEntity) {
         BlockPos itemPos = itemEntity.blockPosition();
-        // If the item is resting on a block (typical), put fire on top of that
-        // block — i.e. at the item's own block position when the item sits
-        // just above ground. Use the air check to pick the highest air
-        // position adjacent to the supporting surface.
+        // If the item is resting on a block (typical), put the flame on top
+        // of that block — i.e. at the item's own block position when the
+        // item sits just above ground. Use the air check to pick the highest
+        // air position adjacent to the supporting surface.
         BlockPos firePos = itemPos;
         BlockState atItem = level.getBlockState(itemPos);
         if (!atItem.isAir()) {
@@ -334,21 +385,6 @@ public final class StartingBookEvents {
         BlockState support = level.getBlockState(supportPos);
         if (!support.isFaceSturdy(level, supportPos, Direction.UP)) return null;
         return firePos;
-    }
-
-    /**
-     * Set the block at {@code pos} to air <em>only</em> if it's currently a
-     * fire block. Guards against extinguishing fire the player started
-     * elsewhere, or a fire block that's already been replaced.
-     */
-    private static void extinguishIfFire(MinecraftServer server, BlockPos pos) {
-        for (ServerLevel level : server.getAllLevels()) {
-            BlockState state = level.getBlockState(pos);
-            if (state.is(Blocks.FIRE)) {
-                level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
-                return;
-            }
-        }
     }
 
     /**
