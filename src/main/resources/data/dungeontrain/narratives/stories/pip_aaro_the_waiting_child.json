@@ -1,0 +1,14 @@
+{
+  "id": "pip_aaro_the_waiting_child",
+  "character": "Pip Aaro",
+  "story": "The Waiting Child",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "My name is Pip. I am eight.\n\nI am on a train I dont know. The seats smell like Grandmas coat.\n\nA rat gave me this paper. A real rat. With clothes.\n\nI am looking for Mum.\n\nA little bit scared. Only a little bit.\n\nPip"
+      ]
+    }
+  ]
+}

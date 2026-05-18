@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l1-a",
-      "label": "Pip - Letter 1 variant A (the BBC-accent rat)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "My name is Pip. I am eight.\n\nI am on a train I dont know. The seats smell like Grandmas coat.\n\nA rat gave me this paper. A real rat. With clothes.\n\nI am looking for Mum.\n\nA little bit scared. Only a little bit.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 1 variant A (the BBC-accent rat)"
-    },
-    {
       "id": "pip-l1-b",
       "label": "Pip - Letter 1 variant B (the orange book)",
       "type": "add_variant",
@@ -186,6 +169,11 @@
       "id": "quiet-rules-of-the-train",
       "applied_at": "2026-05-18T11:23:31Z",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json"
+    },
+    {
+      "id": "pip-l1-a",
+      "applied_at": "2026-05-18T13:20:26Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
 }
