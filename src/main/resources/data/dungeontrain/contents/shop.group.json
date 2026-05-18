@@ -17,6 +17,10 @@
     {
       "id": "archer",
       "weight": 1
+    },
+    {
+      "id": "weaponssmith",
+      "weight": 1
     }
   ]
 }
