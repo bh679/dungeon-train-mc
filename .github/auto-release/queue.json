@@ -39,10 +39,10 @@
       "commit_message": "content(narrative): add random book 'Passenger Fragments I'"
     },
     {
-      "id": "starting-book-quiet-rules",
-      "label": "Add starting book: Quiet Rules of the Train",
+      "id": "quiet-rules-of-the-train",
+      "label": "Add random book: Quiet Rules of the Train",
       "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/starting_books/quiet_rules.json",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json",
       "content": {
         "id": "quiet_rules",
         "title": "Quiet Rules of the Train",
@@ -53,7 +53,7 @@
           "There are rules to this train, though no-one will tell you them.\n\nDon't open a chest you've already opened.\nDon't follow the same passenger for too long.\nWhen the lanterns dim twice in a row, keep walking.\n\nThese are the rules I have made for myself.\nThey may not be yours.\nBut you will make your own, soon enough."
         ]
       },
-      "commit_message": "content(narrative): add starting book 'Quiet Rules of the Train'"
+      "commit_message": "content(narrative): add random book 'Quiet Rules of the Train'"
     }
   ],
   "applied": []
