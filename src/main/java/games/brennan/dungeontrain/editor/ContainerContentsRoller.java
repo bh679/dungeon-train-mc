@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.naming.NameComposer;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
@@ -70,6 +71,16 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     /** Salt for the procedural name composer (naturally-spawned items). */
     private static final long SALT_NAME        = 0x4E414D4544585742L;
+    /** Salt for the leather-dye chance roll (leather armor only). */
+    private static final long SALT_DYE_CHANCE    = 0xDEADD13DC0DEC0DEL;
+    /** Salt for picking which vanilla DyeColor to apply when the dye chance hits. */
+    private static final long SALT_DYE_VALUE     = 0xC010D1E1C010D1E2L;
+    /** Salt for the armor-trim chance roll (any ArmorItem). */
+    private static final long SALT_TRIM_CHANCE   = 0x7411C0DE5A1750CCL;
+    /** Salt for picking the trim pattern from the registry. */
+    private static final long SALT_TRIM_PATTERN  = 0x7411B0BB1EA110CEL;
+    /** Salt for picking the trim material via weighted selection. */
+    private static final long SALT_TRIM_MATERIAL = 0x7411DECAFC0FFEE5L;
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -609,6 +620,21 @@ public final class ContainerContentsRoller {
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
         RandomSource nameRng = RandomSource.create(nameSeed);
         NameComposer.applyName(stack, nameRng);
+
+        RandomSource dyeChanceRng = RandomSource.create(
+            mix(localPos, worldSeed, carriageIndex, slot, SALT_DYE_CHANCE));
+        RandomSource dyeValueRng = RandomSource.create(
+            mix(localPos, worldSeed, carriageIndex, slot, SALT_DYE_VALUE));
+        ArmorAppearanceRoller.maybeApplyDye(stack, dyeChanceRng, dyeValueRng);
+
+        RandomSource trimChanceRng = RandomSource.create(
+            mix(localPos, worldSeed, carriageIndex, slot, SALT_TRIM_CHANCE));
+        RandomSource trimPatternRng = RandomSource.create(
+            mix(localPos, worldSeed, carriageIndex, slot, SALT_TRIM_PATTERN));
+        RandomSource trimMaterialRng = RandomSource.create(
+            mix(localPos, worldSeed, carriageIndex, slot, SALT_TRIM_MATERIAL));
+        ArmorAppearanceRoller.maybeApplyTrim(
+            stack, trimChanceRng, trimPatternRng, trimMaterialRng, registries);
 
         return stack;
     }
