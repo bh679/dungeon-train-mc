@@ -1,0 +1,230 @@
+{
+  "pending": [
+    {
+      "id": "faulthursts-asides-i",
+      "label": "Add random book: Faulthurst's Asides I",
+      "type": "new_file",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/faulthursts_asides_i.json",
+      "content": {
+        "id": "faulthursts_asides_i",
+        "title": "Faulthurst's Asides I",
+        "author": "Faulthurst",
+        "generation": 0,
+        "weight": 2,
+        "variants": [
+          "I've been counting the carriages.\n\nNot for any productive reason. I lose track around eighty-something and start over. I think it gives me a sense of progress, even though I am, in objective terms, going nowhere.\n\nIf you find yourself doing the same, I would not call it foolish. I would call it human.",
+          "Someone once asked me whether the train ever stops.\n\nI told them I'd never seen it stop. They asked if I'd ever felt it stop. I told them no. They asked if perhaps it had stopped right now and we simply couldn't feel it.\n\nI have not slept well since.",
+          "The slimes are not, in any meaningful sense, evil.\n\nThey are slimes. They do what slimes do. They press themselves against you in the only way they know how, and the only way they know how happens to involve teeth.\n\nIt is not personal. Almost nothing on this train is personal, which is, in its own way, comforting."
+        ]
+      },
+      "commit_message": "content(narrative): add random book 'Faulthurst's Asides I'"
+    },
+    {
+      "id": "passenger-fragments-i",
+      "label": "Add random book: Passenger Fragments I",
+      "type": "new_file",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/passenger_fragments_i.json",
+      "content": {
+        "id": "passenger_fragments_i",
+        "title": "Passenger Fragments I",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1,
+        "variants": [
+          "Found this notebook on a bench between cars 47 and 48.\n\nThe handwriting is not mine. The dates inside don't match any calendar I recognise. But the entries describe this exact train.\n\nI've decided to keep it.",
+          "The lanterns flicker differently in the carriages where the rails curve. I don't know if that means anything. I just know I notice it now.",
+          "Met a woman in the dining car who claimed she had been on the train for nine years. I asked how she kept track. She said she didn't. I asked how she knew it was nine.\n\nShe said someone told her."
+        ]
+      },
+      "commit_message": "content(narrative): add random book 'Passenger Fragments I'"
+    },
+    {
+      "id": "quiet-rules-of-the-train",
+      "label": "Add random book: Quiet Rules of the Train",
+      "type": "new_file",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json",
+      "content": {
+        "id": "quiet_rules",
+        "title": "Quiet Rules of the Train",
+        "author": "Unknown",
+        "generation": 0,
+        "weight": 1,
+        "variants": [
+          "There are rules to this train, though no-one will tell you them.\n\nDon't open a chest you've already opened.\nDon't follow the same passenger for too long.\nWhen the lanterns dim twice in a row, keep walking.\n\nThese are the rules I have made for myself.\nThey may not be yours.\nBut you will make your own, soon enough."
+        ]
+      },
+      "commit_message": "content(narrative): add random book 'Quiet Rules of the Train'"
+    },
+    {
+      "id": "pip-l1-a",
+      "label": "Pip - Letter 1 variant A (the BBC-accent rat)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Letter One"
+      },
+      "variant": "My name is Pip. I am eight.\n\nI am on a train I dont know. The seats smell like Grandmas coat.\n\nA rat gave me this paper. A real rat. With clothes.\n\nI am looking for Mum.\n\nA little bit scared. Only a little bit.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 1 variant A (the BBC-accent rat)"
+    },
+    {
+      "id": "pip-l1-b",
+      "label": "Pip - Letter 1 variant B (the orange book)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Letter One"
+      },
+      "variant": "I fell asleep on a train with Mum. I woke up and Mum was gone.\n\nThe train is different now. My bag is different. The orange book is not in it.\n\nA rat gave me this paper. He had a vest.\n\nI am going to find Mum. There are so many carriages.\n\nI am not crying.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 1 variant B (the orange book)"
+    },
+    {
+      "id": "pip-l2-a",
+      "label": "Pip - Letter 2 variant A (the man in the yellow coat)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Letter Two"
+      },
+      "variant": "I asked a man where the conductor is.\n\nHe had a yellow coat. He laughed. He said sweetheart there is no conductor. He said the train does not stop.\n\nI dont believe him. Trains stop.\n\nThe man in the yellow coat sleeps a lot now. I think he is sad.\n\nI am not going to be like that.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 2 variant A (the man in the yellow coat)"
+    },
+    {
+      "id": "pip-l2-b",
+      "label": "Pip - Letter 2 variant B (the lost notebook)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Letter Two"
+      },
+      "variant": "I found a notebook under a seat.\n\nSomeone counted the carriages. They got to 384 and stopped. They said there is no point looking for the front.\n\nI dont know what they meant. Trains have a front.\n\nI am keeping the notebook. It is like having someone to talk to.\n\nThey sounded tired. I am not tired yet.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 2 variant B (the lost notebook)"
+    },
+    {
+      "id": "pip-l3-a",
+      "label": "Pip - Letter 3 variant A (the pretend people)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Letter Three"
+      },
+      "variant": "Some of the people on the train are pretend.\n\nThey look real. But they dont see you. I waved at a lady and she walked right past me.\n\nSome people ARE there. The man in the yellow coat. The rat. A lady who gave me an apple.\n\nI am keeping a list of the real people. There are four. I am probably one too.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 3 variant A (the pretend people)"
+    },
+    {
+      "id": "pip-l3-b",
+      "label": "Pip - Letter 3 variant B (the plan with no back)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Letter Three"
+      },
+      "variant": "I made a plan.\n\nWalk one way. Dont turn around. Then I would be at the back of the train.\n\nI walked a long time. Forty seven carriages. I did not look back.\n\nThere was no back. The end looked like where I started. Same Grandma smell.\n\nI dont understand. I want Mum.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 3 variant B (the plan with no back)"
+    },
+    {
+      "id": "pip-l4-a",
+      "label": "Pip - Letter 4 variant A (Soren the apple lady)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Letter Four"
+      },
+      "variant": "The lady with the apple is my friend now. Her name is Soren.\n\nShe has been on the train a long long time. She wont say how long.\n\nSoren asked about Mum. I told her. She got quiet. Then she said your Mum sounds wonderful.\n\nShe said it the same way the man in the yellow coat said the train doesnt stop.\n\nI am still going to find Mum.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 4 variant A (Soren the apple lady)"
+    },
+    {
+      "id": "pip-l4-b",
+      "label": "Pip - Letter 4 variant B (Pebble the slime)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Letter Four"
+      },
+      "variant": "There is a slime in my carriage. I named her Pebble.\n\nShe is small and green. Soren said she is too small to be dangerous yet. I dont believe that about Pebble.\n\nShe follows me to the door but doesnt go through. I think she thinks the door is a wall.\n\nMum would say a slime is a monster. Mum is wrong about Pebble.\n\nI miss Mum.\n\nBut I have Pebble.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 4 variant B (Pebble the slime)"
+    },
+    {
+      "id": "pip-l5-a",
+      "label": "Pip - Letter 5 variant A (sitting beside the door)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Letter Five"
+      },
+      "variant": "Soren told me about the door.\n\nShe said there is a door on the train that goes outside. She said if I find it I should go through it.\n\nI thought about it for a long time. About Mum. About Pebble.\n\nIf Mum is on this train I have to keep looking. If she isnt I cant reach her anyway.\n\nWhen I find the door I am going to sit next to it. And wait.\n\nSoren said okay sweetheart. Like she meant it this time.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 5 variant A (sitting beside the door)"
+    },
+    {
+      "id": "pip-l5-b",
+      "label": "Pip - Letter 5 variant B (the message Mum will find)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+      "story_meta": {
+        "id": "pip_aaro_the_waiting_child",
+        "character": "Pip Aaro",
+        "story": "The Waiting Child"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Letter Five"
+      },
+      "variant": "I wrote a letter for Mum.\n\nSoren said sometimes people pass through the same carriage many times. So I am leaving it where everyone goes.\n\nIt says my name. It says I have a friend called Soren and a slime called Pebble.\n\nIt says I am okay. It says I am waiting.\n\nMum will find it. Mums find things.\n\nPip",
+      "commit_message": "content(narrative): Pip Letter 5 variant B (the message Mum will find)"
+    }
+  ],
+  "applied": []
+}

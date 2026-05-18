@@ -13,6 +13,11 @@ on:
         description: "Tag to create + release (e.g. v0.142.0). Will be created from main HEAD — must NOT already exist."
         required: true
         type: string
+      auto:
+        description: "Set true when dispatched by the auto-release cascade. Manual dispatches leave this false so auto-release-reset.yml resets the cascade anchor."
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   release:
