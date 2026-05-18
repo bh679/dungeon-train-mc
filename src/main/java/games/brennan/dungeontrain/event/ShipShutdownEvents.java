@@ -8,13 +8,18 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
 
+import java.lang.reflect.Field;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Workaround for an upstream Sable bug where
@@ -27,21 +32,38 @@ import java.util.List;
  * their plots"). The user-visible symptom is the "Saving world…" screen
  * hanging indefinitely after clicking Save and Quit.
  *
- * <p>On {@link ServerStoppingEvent} (which fires before {@code stopServer()}),
- * we delete every DT-managed train (one {@link ManagedShip} per carriage)
- * via {@link Shipyard#delete}. Sable queues each sub-level for removal; we
- * then pump {@link ServerSubLevelContainer#tick} in an unconditional 20-tick
- * loop. A single tick processes one round of changes and is not enough to
- * fully drain several sub-levels removed at once — leftover
- * {@code PlotChunkHolder}s would keep {@code ChunkMap.hasWork()} true and
- * the vanilla shutdown wait loop would spin forever. An earlier revision
- * short-circuited the loop when {@code container.getAllSubLevels()} no
- * longer reported any {@code isRemoved()} entries, but that broke out
- * after 1 tick on the "create world → immediate Save-and-Quit" path and
- * left vanilla spinning on "Saving worlds" — Sable evicts sub-levels from
- * its own list before the chunk-map holders drain. Always running the
- * full budget costs up to ~1 s on every clean shutdown that touches DT
- * sub-levels but provably terminates.
+ * <p>Diagnostic evidence (captured 2026-05-18 via {@link ShutdownDiagnostics})
+ * on a fresh DT world with no train interaction at all: 1086 chunks in
+ * {@code updatingChunkMap} at {@code ServerStopping}, 176 drained in 2 s,
+ * then 910 leaked {@code PlotChunkHolder}s stalled for 58+ seconds with the
+ * server thread spinning RUNNABLE in {@code ChunkMap.processUnloads}. Vanilla
+ * never recovers — the user has to kill the JVM.
+ *
+ * <p>On {@link ServerStoppingEvent} (which fires before {@code stopServer()})
+ * we do three things, in order:
+ * <ol>
+ *   <li>Delete every DT-managed train (one {@link ManagedShip} per carriage)
+ *       via {@link Shipyard#delete}, queueing each sub-level for Sable
+ *       removal.</li>
+ *   <li>Pump {@link ServerSubLevelContainer#tick} for ~1 s wall-clock so
+ *       Sable's own cleanup can process the markRemoved() calls above.
+ *       This handles the well-behaved path.</li>
+ *   <li>Sweep {@code ChunkMap.updatingChunkMap} reflectively, removing any
+ *       remaining entries whose class is exactly Sable's
+ *       {@code PlotChunkHolder}. These are the leaked holders the Sable
+ *       mixin filter missed — directly removing them lets vanilla's
+ *       {@code hasWork()} return false and the wait loop exit.</li>
+ * </ol>
+ *
+ * <p>Why the sweep is safe:
+ * <ul>
+ *   <li>Same thread, no concurrency — runs inside the {@code ServerStoppingEvent}
+ *       handler on the Server thread, before vanilla's wait loop starts.</li>
+ *   <li>Class-name match is exact ({@value #PLOT_CHUNK_HOLDER_CLASS}); vanilla
+ *       {@code ChunkHolder} and any other-mod subclass are untouched.</li>
+ *   <li>Reflection wrapped in try/catch — failures degrade to a single warn
+ *       log; sweep no-ops, same broken behaviour as before the fix.</li>
+ * </ul>
  *
  * <p>Acceptable side effects:
  * <ul>
@@ -67,12 +89,16 @@ public final class ShipShutdownEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    private static final String PLOT_CHUNK_HOLDER_CLASS = "dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder";
+    private static Field updatingChunkMapField;
+
     private ShipShutdownEvents() {}
 
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         long t0 = System.nanoTime();
         int totalDeleted = 0;
+        int totalSwept = 0;
 
         for (ServerLevel level : event.getServer().getAllLevels()) {
             Shipyard shipyard = Shipyards.of(level);
@@ -86,65 +112,26 @@ public final class ShipShutdownEvents {
             }
 
             // Pump Sable's container so the markRemoved() calls above are
-            // processed before vanilla's shutdown wait loop. A single tick
-            // only runs one processChanges() pass and leaves PlotChunkHolders
-            // in ChunkMap.updatingChunkMap when several sub-levels are removed
-            // at once — vanilla's wait-for-no-work loop then spins forever.
-            //
-            // No early break: we always run the full {@code fullDrainTicks}.
-            // The old break-when-{@code !anyRemoved} heuristic broke out after
-            // 1 tick in the "create world → immediate Save-and-Quit" stress
-            // path (Sable evicts sub-levels from its own list before the
-            // {@code PlotChunkHolder}s drain from {@code ChunkMap.updatingChunkMap}),
-            // leaving the vanilla shutdown loop spinning on "Saving worlds".
-            // Cost of the brute-force drain: up to {@code fullDrainTicks * 50ms}
-            // (~1 s) on every clean shutdown that touches DT sub-levels.
-            //
-            // TODO(smarter-drain): replace the fixed-tick budget with a
-            // condition that directly observes the thing vanilla actually
-            // waits on — {@code ChunkMap.hasWork()} (or equivalently, that
-            // {@code ChunkMap.updatingChunkMap} contains no {@code PlotChunkHolder}
-            // entries for the now-removed plots). Both are private; reaching
-            // them needs either an accessor mixin we add or reflection through
-            // {@code ServerLevel.getChunkSource().chunkMap}. Worth doing once
-            // upstream Sable lands a proper fix and we can compare behaviours;
-            // until then the brute-force loop is simpler and provably terminates.
-            //   Sable hook point:  {@code dev.ryanhcode.sable.plot.ChunkMapMixin}
-            //   Vanilla wait site: {@code net.minecraft.server.MinecraftServer.stopServer}
-            //                      → {@code chunkMap.hasWork()} polled by
-            //                      {@code waitUntilNextTick} during shutdown
-            //   Upstream issue:    https://github.com/ryanhcode/sable/issues/679
-            // Always drain when a Sable container exists. Heuristics on
-            // {@code findAll()} / {@code getAllSubLevels()} are unreliable
-            // because Sable EVICTS removed sub-levels from its own list
-            // before its chunk-map cleanup (running on OTHER threads)
-            // finishes. After eviction the list is empty but
-            // {@code ChunkMap.hasWork()} can stay true — vanilla's
-            // shutdown wait loop then spins forever on "Saving worlds".
-            //
-            // The drain is wall-clock-bound: {@code container.tick()} is
-            // a synchronous queue-pump that returns instantly when
-            // nothing's queued, but Sable's chunk-map cleanup runs on
-            // OTHER threads. Looping for ~1 s with {@code Thread.yield()}
-            // gives those threads CPU time to drain. 500 ms proved
-            // intermittently insufficient in testing — the conservative
-            // 1 s budget reliably avoids the hang. Total shutdown cost:
-            // ~3 s on the 3-dim default world, acceptable for stability.
+            // processed on Sable's side. ~1 s wall-clock with Thread.yield()
+            // gives Sable's background cleanup threads CPU time. This handles
+            // the well-behaved path; any PlotChunkHolders that leak past it
+            // are caught by the sweep below.
             ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
             if (container != null) {
-                final long drainNanos = 1_000_000_000L; // 1 s
+                final long drainNanos = 1_000_000_000L;
                 long deadline = System.nanoTime() + drainNanos;
-                int ticks = 0;
                 while (System.nanoTime() < deadline) {
                     container.tick();
-                    ticks++;
                     Thread.yield();
                 }
-                if (deletedHere > 0) {
-                    LOGGER.info("[DungeonTrain] Drained {} sub-level removals over {} ticks (~{}ms wall) for {}",
-                        deletedHere, ticks, drainNanos / 1_000_000, level.dimension().location());
-                }
             }
+
+            int sweptHere = sweepLeakedPlotChunkHolders(level);
+            if (sweptHere > 0) {
+                LOGGER.info("[DungeonTrain] Swept {} leaked PlotChunkHolders from updatingChunkMap in {}",
+                    sweptHere, level.dimension().location());
+            }
+            totalSwept += sweptHere;
 
             if (deletedHere > 0) {
                 LOGGER.info("[DungeonTrain] Shutdown cleanup: deleted {} train sub-levels in {}",
@@ -154,7 +141,34 @@ public final class ShipShutdownEvents {
         }
 
         long elapsedMs = (System.nanoTime() - t0) / 1_000_000;
-        LOGGER.info("[DungeonTrain] ServerStopping: deleted {} train sub-levels across all levels in {}ms",
-            totalDeleted, elapsedMs);
+        LOGGER.info("[DungeonTrain] ServerStopping: deleted {} train sub-levels, swept {} leaked PlotChunkHolders across all levels in {}ms",
+            totalDeleted, totalSwept, elapsedMs);
+    }
+
+    private static int sweepLeakedPlotChunkHolders(ServerLevel level) {
+        try {
+            if (updatingChunkMapField == null) {
+                updatingChunkMapField = ChunkMap.class.getDeclaredField("updatingChunkMap");
+                updatingChunkMapField.setAccessible(true);
+            }
+            ChunkMap chunkMap = level.getChunkSource().chunkMap;
+            Object raw = updatingChunkMapField.get(chunkMap);
+            if (!(raw instanceof Map<?, ?>)) return 0;
+            @SuppressWarnings("unchecked")
+            Map<Long, ChunkHolder> map = (Map<Long, ChunkHolder>) raw;
+            int removed = 0;
+            Iterator<Map.Entry<Long, ChunkHolder>> it = map.entrySet().iterator();
+            while (it.hasNext()) {
+                ChunkHolder holder = it.next().getValue();
+                if (holder != null && PLOT_CHUNK_HOLDER_CLASS.equals(holder.getClass().getName())) {
+                    it.remove();
+                    removed++;
+                }
+            }
+            return removed;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] PlotChunkHolder sweep failed (non-fatal — vanilla wait loop may still hang)", t);
+            return 0;
+        }
     }
 }
