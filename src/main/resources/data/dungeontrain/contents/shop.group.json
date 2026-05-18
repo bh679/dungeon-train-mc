@@ -4,6 +4,22 @@
   "variants": [
     {
       "id": "library",
+      "weight": 3
+    },
+    {
+      "id": "armorer",
+      "weight": 1
+    },
+    {
+      "id": "smith",
+      "weight": 1
+    },
+    {
+      "id": "archer",
+      "weight": 1
+    },
+    {
+      "id": "weaponssmith",
       "weight": 1
     }
   ]
