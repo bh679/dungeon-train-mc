@@ -42,6 +42,23 @@ repositories {
             includeGroup 'maven.modrinth'
         }
     }
+
+    // AdventureItemNames is GitHub-Releases-only until Modrinth/CurseForge
+    // approval lands. Ivy patternLayout maps the coordinates
+    // bh679:adventureitemnames:<v> to the release asset URL
+    // https://github.com/bh679/adventureitemnames-mc/releases/download/v<v>/adventureitemnames-neoforge-<v>.jar.
+    // metadataSources { artifact() } lets Gradle resolve directly from the jar
+    // (no ivy.xml exists at the URL). content { includeGroup } scopes probes to
+    // bh679 only so Gradle won't hit GitHub for every dependency.
+    ivy {
+        name = 'GitHubReleases'
+        url = 'https://github.com/'
+        patternLayout {
+            artifact '[organization]/[module]-mc/releases/download/v[revision]/[module]-neoforge-[revision].[ext]'
+        }
+        metadataSources { artifact() }
+        content { includeGroup 'bh679' }
+    }
 }
 
 neoForge {
@@ -147,6 +164,27 @@ dependencies {
     // neoforge.mods.toml so the loader prompts the user.
     implementation "maven.modrinth:sable:${sable_version}"
 
+    // AdventureItemNames — sibling mod by the same author, bundled via jarJar
+    // until it lands on Modrinth/CurseForge (PolyForm Shield 1.0.0 applies but
+    // we own the copyright, so bundling is unrestricted — distinct from Sable
+    // above).
+    //
+    // `implementation` (not `additionalRuntimeClasspath` like joml-primitives)
+    // because AIN ships its own `META-INF/neoforge.mods.toml` and must be
+    // discoverable by FML as a *mod* on every runtime classpath — including
+    // the JUnit test launcher (the `unitTest` block at line 91), which inherits
+    // from `runtimeClasspath` but not from the moddev-specific
+    // `additionalRuntimeClasspath`. Sable above uses the same `implementation`
+    // pattern for the same reason; joml-primitives is a plain library (no
+    // mods.toml) so `additionalRuntimeClasspath` suffices for it.
+    //
+    // jarJar embeds the jar at `META-INF/jarjar/` in the shipped mod jar so
+    // end users get AIN automatically. Version range cannot be used here
+    // because Ivy with `metadataSources { artifact() }` has nothing to
+    // enumerate — pin the exact version, bump via gradle.properties.
+    implementation "bh679:adventureitemnames:${adventureitemnames_version}"
+    jarJar(group: 'bh679', name: 'adventureitemnames', version: adventureitemnames_version)
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -200,17 +238,18 @@ def gitBranch = { ->
 // Generate neoforge.mods.toml + dungeontrain_version.properties + pack.mcmeta from templates.
 tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
-        minecraft_version       : minecraft_version,
-        minecraft_version_range : minecraft_version_range,
-        neo_version             : neo_version,
-        loader_version_range    : loader_version_range,
-        mod_id                  : mod_id,
-        mod_name                : mod_name,
-        mod_license             : mod_license,
-        mod_version             : mod_version,
-        mod_authors             : mod_authors,
-        mod_description         : mod_description,
-        git_branch              : gitBranch,
+        minecraft_version          : minecraft_version,
+        minecraft_version_range    : minecraft_version_range,
+        neo_version                : neo_version,
+        loader_version_range       : loader_version_range,
+        mod_id                     : mod_id,
+        mod_name                   : mod_name,
+        mod_license                : mod_license,
+        mod_version                : mod_version,
+        mod_authors                : mod_authors,
+        mod_description            : mod_description,
+        git_branch                 : gitBranch,
+        adventureitemnames_version : adventureitemnames_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

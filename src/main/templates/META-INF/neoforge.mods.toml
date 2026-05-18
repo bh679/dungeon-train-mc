@@ -21,6 +21,13 @@ logoFile="logo.png"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
+    modId="adventureitemnames"
+    type="required"
+    versionRange="[${adventureitemnames_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
     versionRange="[${neo_version},)"

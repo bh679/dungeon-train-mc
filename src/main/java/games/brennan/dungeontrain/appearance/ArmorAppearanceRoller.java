@@ -21,7 +21,7 @@ import java.util.Optional;
 
 /**
  * Cosmetic decoration for naturally-spawned armor. Sibling to
- * {@link games.brennan.dungeontrain.naming.NameComposer} — invoked from
+ * {@link games.brennan.adventureitemnames.api.NameComposer} — invoked from
  * {@link games.brennan.dungeontrain.editor.ContainerContentsRoller#rollItemStack}
  * with deterministically-seeded RNGs.
  *

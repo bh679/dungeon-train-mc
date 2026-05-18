@@ -46,7 +46,8 @@ public enum TrackKind {
     PILLAR_TOP("pillar_top", "pillars/top"),
     PILLAR_MIDDLE("pillar_middle", "pillars/middle"),
     PILLAR_BOTTOM("pillar_bottom", "pillars/bottom"),
-    ADJUNCT_STAIRS("adjunct_stairs", "pillars/adjunct_stairs");
+    ADJUNCT_STAIRS("adjunct_stairs", "pillars/adjunct_stairs"),
+    ADJUNCT_STAIRS_ENTRANCE("adjunct_stairs_entrance", "pillars/adjunct_stairs_entrance");
 
     /** The default ("built-in") variant name present even when the disk is empty. */
     public static final String DEFAULT_NAME = "default";
@@ -119,6 +120,8 @@ public enum TrackKind {
             case PILLAR_BOTTOM -> new Vec3i(1, PillarSection.BOTTOM.height(), worldDims.width());
             case ADJUNCT_STAIRS ->
                 new Vec3i(PillarAdjunct.STAIRS.xSize(), PillarAdjunct.STAIRS.ySize(), PillarAdjunct.STAIRS.zSize());
+            case ADJUNCT_STAIRS_ENTRANCE ->
+                new Vec3i(PillarAdjunct.STAIRS_ENTRANCE.xSize(), PillarAdjunct.STAIRS_ENTRANCE.ySize(), PillarAdjunct.STAIRS_ENTRANCE.zSize());
         };
     }
 

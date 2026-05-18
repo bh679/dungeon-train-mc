@@ -1,78 +1,6 @@
 {
   "pending": [
     {
-      "id": "faulthursts-asides-i",
-      "label": "Add random book: Faulthurst's Asides I",
-      "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/random_books/faulthursts_asides_i.json",
-      "content": {
-        "id": "faulthursts_asides_i",
-        "title": "Faulthurst's Asides I",
-        "author": "Faulthurst",
-        "generation": 0,
-        "weight": 2,
-        "variants": [
-          "I've been counting the carriages.\n\nNot for any productive reason. I lose track around eighty-something and start over. I think it gives me a sense of progress, even though I am, in objective terms, going nowhere.\n\nIf you find yourself doing the same, I would not call it foolish. I would call it human.",
-          "Someone once asked me whether the train ever stops.\n\nI told them I'd never seen it stop. They asked if I'd ever felt it stop. I told them no. They asked if perhaps it had stopped right now and we simply couldn't feel it.\n\nI have not slept well since.",
-          "The slimes are not, in any meaningful sense, evil.\n\nThey are slimes. They do what slimes do. They press themselves against you in the only way they know how, and the only way they know how happens to involve teeth.\n\nIt is not personal. Almost nothing on this train is personal, which is, in its own way, comforting."
-        ]
-      },
-      "commit_message": "content(narrative): add random book 'Faulthurst's Asides I'"
-    },
-    {
-      "id": "passenger-fragments-i",
-      "label": "Add random book: Passenger Fragments I",
-      "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/random_books/passenger_fragments_i.json",
-      "content": {
-        "id": "passenger_fragments_i",
-        "title": "Passenger Fragments I",
-        "author": "Anonymous",
-        "generation": 0,
-        "weight": 1,
-        "variants": [
-          "Found this notebook on a bench between cars 47 and 48.\n\nThe handwriting is not mine. The dates inside don't match any calendar I recognise. But the entries describe this exact train.\n\nI've decided to keep it.",
-          "The lanterns flicker differently in the carriages where the rails curve. I don't know if that means anything. I just know I notice it now.",
-          "Met a woman in the dining car who claimed she had been on the train for nine years. I asked how she kept track. She said she didn't. I asked how she knew it was nine.\n\nShe said someone told her."
-        ]
-      },
-      "commit_message": "content(narrative): add random book 'Passenger Fragments I'"
-    },
-    {
-      "id": "quiet-rules-of-the-train",
-      "label": "Add random book: Quiet Rules of the Train",
-      "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json",
-      "content": {
-        "id": "quiet_rules",
-        "title": "Quiet Rules of the Train",
-        "author": "Unknown",
-        "generation": 0,
-        "weight": 1,
-        "variants": [
-          "There are rules to this train, though no-one will tell you them.\n\nDon't open a chest you've already opened.\nDon't follow the same passenger for too long.\nWhen the lanterns dim twice in a row, keep walking.\n\nThese are the rules I have made for myself.\nThey may not be yours.\nBut you will make your own, soon enough."
-        ]
-      },
-      "commit_message": "content(narrative): add random book 'Quiet Rules of the Train'"
-    },
-    {
-      "id": "pip-l1-a",
-      "label": "Pip - Letter 1 variant A (the BBC-accent rat)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "My name is Pip. I am eight.\n\nI am on a train I dont know. The seats smell like Grandmas coat.\n\nA rat gave me this paper. A real rat. With clothes.\n\nI am looking for Mum.\n\nA little bit scared. Only a little bit.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 1 variant A (the BBC-accent rat)"
-    },
-    {
       "id": "pip-l1-b",
       "label": "Pip - Letter 1 variant B (the orange book)",
       "type": "add_variant",
@@ -226,5 +154,26 @@
       "commit_message": "content(narrative): Pip Letter 5 variant B (the message Mum will find)"
     }
   ],
-  "applied": []
+  "applied": [
+    {
+      "id": "faulthursts-asides-i",
+      "applied_at": "2026-05-18T07:23:18Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/faulthursts_asides_i.json"
+    },
+    {
+      "id": "passenger-fragments-i",
+      "applied_at": "2026-05-18T09:17:05Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/passenger_fragments_i.json"
+    },
+    {
+      "id": "quiet-rules-of-the-train",
+      "applied_at": "2026-05-18T11:23:31Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json"
+    },
+    {
+      "id": "pip-l1-a",
+      "applied_at": "2026-05-18T13:20:26Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    }
+  ]
 }
