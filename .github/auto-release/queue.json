@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l1-b",
-      "label": "Pip - Letter 1 variant B (the orange book)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "I fell asleep on a train with Mum. I woke up and Mum was gone.\n\nThe train is different now. My bag is different. The orange book is not in it.\n\nA rat gave me this paper. He had a vest.\n\nI am going to find Mum. There are so many carriages.\n\nI am not crying.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 1 variant B (the orange book)"
-    },
-    {
       "id": "pip-l2-a",
       "label": "Pip - Letter 2 variant A (the man in the yellow coat)",
       "type": "add_variant",
@@ -173,6 +156,11 @@
     {
       "id": "pip-l1-a",
       "applied_at": "2026-05-18T13:20:26Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l1-b",
+      "applied_at": "2026-05-18T15:09:20Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
