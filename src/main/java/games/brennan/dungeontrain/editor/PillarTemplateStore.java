@@ -288,6 +288,7 @@ public final class PillarTemplateStore {
     public static TrackKind adjunctKind(PillarAdjunct adjunct) {
         return switch (adjunct) {
             case STAIRS -> TrackKind.ADJUNCT_STAIRS;
+            case STAIRS_ENTRANCE -> TrackKind.ADJUNCT_STAIRS_ENTRANCE;
         };
     }
 

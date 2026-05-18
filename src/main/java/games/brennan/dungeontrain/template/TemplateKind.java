@@ -18,6 +18,7 @@ public enum TemplateKind {
     TRACK,
     PILLAR,
     STAIRS,
+    STAIRS_ENTRANCE,
     TUNNEL;
 
     public String id() {

@@ -22,16 +22,20 @@ import java.util.Locale;
  * cross-registering an adjunct as a section.</p>
  */
 public enum PillarAdjunct implements TemplateType {
-    STAIRS(3, 8, 3);
+    STAIRS(3, 8, 3, TemplateKind.STAIRS),
+    /** Above-ground entrance/pavilion stamped over a down-stairs shaft top. */
+    STAIRS_ENTRANCE(5, 8, 5, TemplateKind.STAIRS_ENTRANCE);
 
     private final int xSize;
     private final int ySize;
     private final int zSize;
+    private final TemplateKind kind;
 
-    PillarAdjunct(int xSize, int ySize, int zSize) {
+    PillarAdjunct(int xSize, int ySize, int zSize, TemplateKind kind) {
         this.xSize = xSize;
         this.ySize = ySize;
         this.zSize = zSize;
+        this.kind = kind;
     }
 
     /** Extent along the X axis (along the direction of track travel). */
@@ -61,10 +65,6 @@ public enum PillarAdjunct implements TemplateType {
 
     @Override
     public TemplateKind kind() {
-        // Stairs is the only adjunct today and the user-facing taxonomy
-        // treats it as its own template kind. Future non-stairs adjuncts
-        // would either get their own TemplateKind or revert this to a
-        // generic ADJUNCT kind.
-        return TemplateKind.STAIRS;
+        return kind;
     }
 }

@@ -138,6 +138,8 @@ public final class TrackSidePlots {
             case TUNNEL_SECTION -> Y_BASELINE;
             case TUNNEL_PORTAL -> Y_BASELINE + TunnelPlacer.HEIGHT + EditorLayout.GAP;
             case ADJUNCT_STAIRS -> Y_BASELINE;
+            case ADJUNCT_STAIRS_ENTRANCE -> Y_BASELINE
+                + games.brennan.dungeontrain.track.PillarAdjunct.STAIRS.ySize() + EditorLayout.GAP;
             case PILLAR_BOTTOM -> Y_BASELINE;
             case PILLAR_MIDDLE -> Y_BASELINE + PillarSection.BOTTOM.height() + EditorLayout.GAP;
             case PILLAR_TOP -> Y_BASELINE
@@ -151,7 +153,7 @@ public final class TrackSidePlots {
         return switch (kind) {
             case TILE -> X_TRACK;
             case TUNNEL_SECTION, TUNNEL_PORTAL -> X_TUNNELS;
-            case ADJUNCT_STAIRS -> X_STAIRS;
+            case ADJUNCT_STAIRS, ADJUNCT_STAIRS_ENTRANCE -> X_STAIRS;
             case PILLAR_TOP, PILLAR_MIDDLE, PILLAR_BOTTOM -> X_PILLARS;
         };
     }

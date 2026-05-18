@@ -325,6 +325,9 @@ public final class TrackVariantRegistry {
         ADJUNCT_ADAPTERS.put(PillarAdjunct.STAIRS,
             makeAdapter(TrackKind.ADJUNCT_STAIRS, TemplateKind.STAIRS,
                 n -> new Template.Adjunct(PillarAdjunct.STAIRS, n)));
+        ADJUNCT_ADAPTERS.put(PillarAdjunct.STAIRS_ENTRANCE,
+            makeAdapter(TrackKind.ADJUNCT_STAIRS_ENTRANCE, TemplateKind.STAIRS_ENTRANCE,
+                n -> new Template.Adjunct(PillarAdjunct.STAIRS_ENTRANCE, n)));
     }
 
     private static final EnumMap<TunnelVariant, TemplateRegistry<Template.Tunnel>> TUNNEL_ADAPTERS

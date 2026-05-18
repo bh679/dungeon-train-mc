@@ -97,12 +97,29 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // which becomes opaque (bed/rail) as soon as placeTracksForChunk
             // runs. Order matters.
             TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
+            // Down-stairs precompute — must run BEFORE
+            // placeTunnelSpaceAtWorldgen because the underground
+            // qualification probe at ceilingY+1 reads inside the tunnel
+            // template's Y-extent (bedY..bedY+13). After tunnel placement
+            // the probe sees tunnel-stamped blocks (not underground
+            // material) and reports false negatives everywhere a tunnel
+            // just landed. Reservations + surface-Y probes happen here on
+            // raw terrain; carving + stamping is deferred until after
+            // tunnel placement so the bottom 3 stair rows (inside tunnel
+            // template footprint) win over the tunnel template's air
+            // cells.
+            java.util.List<TrackGenerator.DownStairsTarget> downStairsTargets =
+                TrackGenerator.precomputeDownStairsTargets(level, serverLevel, chunkPos.x, chunkPos.z, g);
             TrackGenerator.placeTracksForChunk(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
             // Tunnel space — single-phase per-column NBT placement (or
             // LegacyTunnelPaint fallback when NBTs missing). Underground
             // qualification reads at ceilingY+5, well above the bed/rails,
             // so order vs. tracks doesn't matter.
             TunnelGenerator.placeTunnelSpaceAtWorldgen(level, serverLevel, chunkPos.x, chunkPos.z, g);
+            // Down-stairs placement — runs AFTER tunnel placement so the
+            // bottom 3 stair rows overwrite tunnel-template airspace
+            // cells that would otherwise clobber the stair stamp.
+            TrackGenerator.placeDownStairsForTargets(level, serverLevel, downStairsTargets, g);
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] TrackBedFeature.place failed at chunk {}", ctx.origin(), t);
