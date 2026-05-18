@@ -119,8 +119,6 @@
     }
   },
   "links": {
-    "4,0,4": "armorer",
-    "4,0,3": "armorer",
     "0,0,3": "amorer_chest",
     "1,0,3": "armorer_barrel"
   }
