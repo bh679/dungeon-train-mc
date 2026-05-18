@@ -1,25 +1,6 @@
 {
   "pending": [
     {
-      "id": "passenger-fragments-i",
-      "label": "Add random book: Passenger Fragments I",
-      "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/random_books/passenger_fragments_i.json",
-      "content": {
-        "id": "passenger_fragments_i",
-        "title": "Passenger Fragments I",
-        "author": "Anonymous",
-        "generation": 0,
-        "weight": 1,
-        "variants": [
-          "Found this notebook on a bench between cars 47 and 48.\n\nThe handwriting is not mine. The dates inside don't match any calendar I recognise. But the entries describe this exact train.\n\nI've decided to keep it.",
-          "The lanterns flicker differently in the carriages where the rails curve. I don't know if that means anything. I just know I notice it now.",
-          "Met a woman in the dining car who claimed she had been on the train for nine years. I asked how she kept track. She said she didn't. I asked how she knew it was nine.\n\nShe said someone told her."
-        ]
-      },
-      "commit_message": "content(narrative): add random book 'Passenger Fragments I'"
-    },
-    {
       "id": "quiet-rules-of-the-train",
       "label": "Add random book: Quiet Rules of the Train",
       "type": "new_file",
@@ -212,6 +193,11 @@
       "id": "faulthursts-asides-i",
       "applied_at": "2026-05-18T07:23:18Z",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/faulthursts_asides_i.json"
+    },
+    {
+      "id": "passenger-fragments-i",
+      "applied_at": "2026-05-18T09:17:05Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/passenger_fragments_i.json"
     }
   ]
 }
