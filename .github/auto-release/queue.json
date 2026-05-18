@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "quiet-rules-of-the-train",
-      "label": "Add random book: Quiet Rules of the Train",
-      "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json",
-      "content": {
-        "id": "quiet_rules",
-        "title": "Quiet Rules of the Train",
-        "author": "Unknown",
-        "generation": 0,
-        "weight": 1,
-        "variants": [
-          "There are rules to this train, though no-one will tell you them.\n\nDon't open a chest you've already opened.\nDon't follow the same passenger for too long.\nWhen the lanterns dim twice in a row, keep walking.\n\nThese are the rules I have made for myself.\nThey may not be yours.\nBut you will make your own, soon enough."
-        ]
-      },
-      "commit_message": "content(narrative): add random book 'Quiet Rules of the Train'"
-    },
-    {
       "id": "pip-l1-a",
       "label": "Pip - Letter 1 variant A (the BBC-accent rat)",
       "type": "add_variant",
@@ -198,6 +181,11 @@
       "id": "passenger-fragments-i",
       "applied_at": "2026-05-18T09:17:05Z",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/passenger_fragments_i.json"
+    },
+    {
+      "id": "quiet-rules-of-the-train",
+      "applied_at": "2026-05-18T11:23:31Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/quiet_rules.json"
     }
   ]
 }
