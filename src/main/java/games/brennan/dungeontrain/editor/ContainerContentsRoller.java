@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
-import games.brennan.dungeontrain.naming.NameComposer;
+import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
