@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -66,6 +67,16 @@ public final class VillagerTrainSpawnEvents {
         Entity entity = event.getEntity();
         if (!(entity instanceof Villager villager)) return;
         if (!isOnTrain(villager)) return;
+
+        // Train villagers are spawned via CarriageContentsPlacer's NBT path
+        // (EntityType.create(nbt, level) + level.addFreshEntity), which never
+        // calls Mob#finalizeSpawn — so AIN's MobSpawnMixin never fires on
+        // them. Bridge that gap here. applyMobName is idempotent (no-ops if
+        // CustomName is already set), so chunk-reload re-fires of this event
+        // don't re-roll names; covers nitwit/jobless villagers too since
+        // we apply before the profession-based early returns below.
+        NameComposer.applyMobName(villager, villager.getRandom());
+
         if (villager.getTags().contains(REROLLED_TAG)) return;
 
         VillagerData data = villager.getVillagerData();
