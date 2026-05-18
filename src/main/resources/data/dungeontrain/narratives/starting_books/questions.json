@@ -1,10 +1,10 @@
 {
   "id": "questions",
-  "title": "Questions",
+  "title": "Dungeon Train Questions",
   "author": "Brennan Hatton",
   "generation": 0,
   "weight": 1,
   "variants": [
-    "Questions?\nWelcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n\nYou wont find answers in this stack of paper.\n\nThe anwsers simply are not here.\n\nI ask the questions, you find the answers.\n\nSo \"what is the question\" you ask?\n\nPerhaps that is the answer."
+    "Questions?\nWelcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n\nYou wont find answers in this stack of paper.\n\nThe answers simply are not here.\n\nI ask the questions, you find the answers.\n\nSo \"what is the question\" you ask?\n\nPerhaps that is the answer."
   ]
 }
