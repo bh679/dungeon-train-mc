@@ -74,12 +74,31 @@ jobs:
 
       - run: ./gradlew build --no-daemon
 
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          gh api -X POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPO/releases/generate-notes" \
+            -f tag_name="$TAG" \
+            -f target_commitish=main \
+            --jq .body > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Initial release — no prior tag to diff against." > release-notes.md
+          fi
+          echo "::group::Generated release notes"
+          cat release-notes.md
+          echo "::endgroup::"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: Dungeon Train ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
-          generate_release_notes: true
+          body_path: release-notes.md
           files: build/libs/dungeontrain-*.jar
           fail_on_unmatched_files: true
           prerelease: ${{ steps.release_type.outputs.prerelease == 'true' }}
@@ -139,6 +158,7 @@ jobs:
           name: Dungeon Train ${{ env.RELEASE_TAG }}
           version: ${{ env.RELEASE_TAG }}
           version-type: ${{ steps.release_type.outputs.type }}
+          changelog-file: release-notes.md
           loaders: neoforge
           game-versions: 1.21.1
           dependencies: |
