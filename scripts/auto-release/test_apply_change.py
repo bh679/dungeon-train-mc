@@ -158,6 +158,119 @@ def test_state_last_auto_release_updated():
         shutil.rmtree(ws)
 
 
+STORY_TARGET = "src/main/resources/data/dungeontrain/narratives/stories/test_story.json"
+STORY_META = {"id": "test_story", "character": "Tester", "story": "The Test"}
+
+
+def add_variant_item(item_id, letter_index, letter_label, variant_text, commit_suffix=""):
+    return {
+        "id": item_id,
+        "label": f"Test {item_id}",
+        "type": "add_variant",
+        "target": STORY_TARGET,
+        "story_meta": STORY_META,
+        "letter": {"index": letter_index, "label": letter_label},
+        "variant": variant_text,
+        "commit_message": f"test: add variant {commit_suffix or item_id}",
+    }
+
+
+def test_add_variant_creates_file_on_first_call():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [add_variant_item("v1", 1, "Letter One", "first text")], "applied": []}
+        seed_workspace(ws, queue)
+        r = run(ws, 1_700_000_000)
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        with open(os.path.join(ws, STORY_TARGET)) as f:
+            story = json.load(f)
+        assert story["id"] == "test_story"
+        assert story["character"] == "Tester"
+        assert story["story"] == "The Test"
+        assert len(story["letters"]) == 1
+        assert story["letters"][0]["index"] == 1
+        assert story["letters"][0]["label"] == "Letter One"
+        assert story["letters"][0]["variants"] == ["first text"]
+        print("OK  test_add_variant_creates_file_on_first_call")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_variant_appends_to_existing_letter():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [
+            add_variant_item("v1", 1, "Letter One", "first text"),
+            add_variant_item("v2", 1, "Letter One", "second text"),
+        ], "applied": []}
+        seed_workspace(ws, queue)
+        assert run(ws, 1_700_000_000).returncode == 0
+        assert run(ws, 1_700_003_600).returncode == 0
+        with open(os.path.join(ws, STORY_TARGET)) as f:
+            story = json.load(f)
+        assert len(story["letters"]) == 1
+        assert story["letters"][0]["variants"] == ["first text", "second text"]
+        print("OK  test_add_variant_appends_to_existing_letter")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_variant_creates_new_letter_and_keeps_sorted():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [
+            add_variant_item("v2", 2, "Letter Two", "two text"),
+            add_variant_item("v1", 1, "Letter One", "one text"),
+            add_variant_item("v3", 3, "Letter Three", "three text"),
+        ], "applied": []}
+        seed_workspace(ws, queue)
+        for i in range(3):
+            assert run(ws, 1_700_000_000 + i * 3600).returncode == 0
+        with open(os.path.join(ws, STORY_TARGET)) as f:
+            story = json.load(f)
+        indices = [l["index"] for l in story["letters"]]
+        assert indices == [1, 2, 3], f"letters not sorted: {indices}"
+        print("OK  test_add_variant_creates_new_letter_and_keeps_sorted")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_variant_rejects_story_meta_mismatch():
+    ws, _ = make_workspace()
+    try:
+        bad = add_variant_item("v2", 1, "Letter One", "second")
+        bad["story_meta"] = {"id": "different_story", "character": "Tester", "story": "The Test"}
+        queue = {"pending": [
+            add_variant_item("v1", 1, "Letter One", "first"),
+            bad,
+        ], "applied": []}
+        seed_workspace(ws, queue)
+        assert run(ws, 1_700_000_000).returncode == 0
+        r2 = run(ws, 1_700_003_600)
+        assert r2.returncode != 0
+        assert "existing id" in r2.stderr, r2.stderr
+        print("OK  test_add_variant_rejects_story_meta_mismatch")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_variant_rejects_letter_label_mismatch():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [
+            add_variant_item("v1", 1, "Letter One", "first"),
+            add_variant_item("v2", 1, "Letter ONE",  "second"),  # wrong label
+        ], "applied": []}
+        seed_workspace(ws, queue)
+        assert run(ws, 1_700_000_000).returncode == 0
+        r2 = run(ws, 1_700_003_600)
+        assert r2.returncode != 0
+        assert "label mismatch" in r2.stderr, r2.stderr
+        print("OK  test_add_variant_rejects_letter_label_mismatch")
+    finally:
+        shutil.rmtree(ws)
+
+
 def main():
     tests = [
         test_queue_pop_two_items_then_auto_balance,
@@ -165,6 +278,11 @@ def main():
         test_refuses_overwrite_existing_file,
         test_refuses_target_outside_data_dir,
         test_state_last_auto_release_updated,
+        test_add_variant_creates_file_on_first_call,
+        test_add_variant_appends_to_existing_letter,
+        test_add_variant_creates_new_letter_and_keeps_sorted,
+        test_add_variant_rejects_story_meta_mismatch,
+        test_add_variant_rejects_letter_label_mismatch,
     ]
     failed = 0
     for t in tests:

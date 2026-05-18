@@ -34,9 +34,14 @@ resets the anchor and starts the cascade over.
 ## Adding a queue item
 
 Edit `queue.json` and add an object to `pending[]`. Each item must match
-`schema/queue-item.schema.json`. Only `type: "new_file"` is supported at v1.
+`schema/queue-item.schema.json`. Two types are supported:
 
-Example:
+| `type` | Effect | Use for |
+|---|---|---|
+| `new_file` | Writes `content` as a brand-new file at `target`. Refuses to overwrite. | One-shot additions: a single random_book, a single starting_book, a one-letter narrative. |
+| `add_variant` | Appends `variant` to `letters[<letter.index>].variants[]` in the story file at `target`. Creates the file and/or letter if missing. | Multi-letter character stories — schedule one variant per cascade fire so the story file grows visibly across releases. |
+
+### `new_file` example
 
 ```json
 {
@@ -65,6 +70,32 @@ chore(auto): content(narrative): add random book 'Musings of Faulthurst II' (aut
 
 The `chore(auto):` prefix is what `version-bump.yml` watches for to avoid MINOR-bumping
 on top of an auto-release commit.
+
+### `add_variant` example
+
+```json
+{
+  "id": "pip-l1-a",
+  "label": "Pip - Letter 1 variant A (the BBC-accent rat)",
+  "type": "add_variant",
+  "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
+  "story_meta": {
+    "id": "pip_aaro_the_waiting_child",
+    "character": "Pip Aaro",
+    "story": "The Waiting Child"
+  },
+  "letter": {
+    "index": 1,
+    "label": "Letter One"
+  },
+  "variant": "My name is Pip. I am eight.\n\n...\n\nPip",
+  "commit_message": "content(narrative): Pip Letter 1 variant A"
+}
+```
+
+Each variant of a multi-letter story becomes its own queue item, so the story file grows
+one variant per cascade fire. Safety: `story_meta` and the letter `label` must match the
+existing file once it has been created — divergence is a hard fail.
 
 Open a normal PR with the queue addition. The cascade will pick it up on the next fire.
 

@@ -4,8 +4,7 @@
   "title": "Auto-Release Queue Item",
   "description": "A single purely-additive change consumed by one auto-release cascade tick.",
   "type": "object",
-  "required": ["id", "label", "type", "target", "content", "commit_message"],
-  "additionalProperties": false,
+  "required": ["id", "label", "type", "target", "commit_message"],
   "properties": {
     "id": {
       "type": "string",
@@ -14,27 +13,61 @@
     },
     "label": {
       "type": "string",
-      "minLength": 1,
-      "description": "Human-readable description shown in the auto-release commit body."
+      "minLength": 1
     },
     "type": {
       "type": "string",
-      "enum": ["new_file"],
-      "description": "Only 'new_file' supported at v1. Workflow refuses to overwrite an existing file at 'target'."
+      "enum": ["new_file", "add_variant"]
     },
     "target": {
       "type": "string",
       "pattern": "^src/main/resources/data/dungeontrain/.+\\.json$",
       "description": "Relative path inside the repo. Must be under the mod's data dir and end with .json."
     },
-    "content": {
-      "description": "The complete file contents to write at 'target'. JSON object or array."
-    },
     "commit_message": {
       "type": "string",
-      "minLength": 1,
-      "pattern": "^[a-z]+(\\([a-z0-9-]+\\))?: ",
-      "description": "Conventional-commits style. The auto-release wrapper appends ' [skip ci]'."
+      "minLength": 1
     }
-  }
+  },
+  "oneOf": [
+    {
+      "title": "new_file — create a brand-new file. Refuses to overwrite.",
+      "properties": {
+        "type": {"const": "new_file"},
+        "content": {"description": "Complete file contents. JSON object or array."}
+      },
+      "required": ["content"]
+    },
+    {
+      "title": "add_variant — append one variant to a multi-letter story file. Creates the file/letter if missing.",
+      "properties": {
+        "type": {"const": "add_variant"},
+        "story_meta": {
+          "type": "object",
+          "required": ["id", "character", "story"],
+          "properties": {
+            "id": {"type": "string"},
+            "character": {"type": "string"},
+            "story": {"type": "string"}
+          },
+          "description": "Story-level metadata. Must match existing file's metadata when appending."
+        },
+        "letter": {
+          "type": "object",
+          "required": ["index", "label"],
+          "properties": {
+            "index": {"type": "integer", "minimum": 1},
+            "label": {"type": "string"}
+          },
+          "description": "Letter to append to. Created if no existing letter has this index."
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The variant text to append to letters[<letter.index>].variants[]."
+        }
+      },
+      "required": ["story_meta", "letter", "variant"]
+    }
+  ]
 }

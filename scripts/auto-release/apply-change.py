@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Apply one auto-release cascade tick.
 
-If queue.json.pending[] is non-empty: pop pending[0], write its content as a
-new file at item.target, append the id to applied[].
+If queue.json.pending[] is non-empty: pop pending[0] and apply it based on type:
+  - new_file:    write item.content as a brand-new file at item.target.
+  - add_variant: append item.variant to letters[<letter.index>].variants[] in
+                 item.target. Creates the file/letter if missing. Used to grow
+                 a multi-letter story file incrementally across cascade fires.
 
 Otherwise: rotate to one entry in auto_balancing.json and nudge its weight by
 +/-1 (clamped to [1, 20], flips direction at the boundary so it never sticks).
@@ -69,18 +72,84 @@ def fail(msg):
     sys.exit(1)
 
 
-def apply_queue_item(item):
-    if item.get("type") != "new_file":
-        fail(f"unsupported queue item type: {item.get('type')!r}")
-    target = item.get("target", "")
+def _validate_target(target):
     if not target.startswith(ALLOWED_TARGET_PREFIX):
         fail(f"target {target!r} not under {ALLOWED_TARGET_PREFIX}")
     if not target.endswith(".json"):
         fail(f"target {target!r} must end with .json")
+
+
+def apply_new_file(item):
+    target = item.get("target", "")
+    _validate_target(target)
     if Path(target).exists():
         fail(f"target {target!r} already exists - refusing to overwrite")
     Path(target).parent.mkdir(parents=True, exist_ok=True)
     write_json(target, item["content"])
+
+
+def apply_add_variant(item):
+    """Append one variant to a story file. Creates the file/letter if missing.
+
+    Idempotency / safety: when the target file exists, the story_meta and the
+    letter label must match the existing data. Mismatch -> hard fail.
+    """
+    target = item.get("target", "")
+    _validate_target(target)
+
+    story_meta = item.get("story_meta") or {}
+    letter_meta = item.get("letter") or {}
+    variant = item.get("variant")
+
+    for field in ("id", "character", "story"):
+        if not story_meta.get(field):
+            fail(f"add_variant: story_meta.{field} required")
+    if letter_meta.get("index") is None or not letter_meta.get("label"):
+        fail("add_variant: letter.index and letter.label required")
+    if not isinstance(variant, str) or not variant:
+        fail("add_variant: variant must be a non-empty string")
+
+    letter_index = letter_meta["index"]
+    letter_label = letter_meta["label"]
+
+    if Path(target).exists():
+        with open(target) as f:
+            story = json.load(f)
+        for key in ("id", "character", "story"):
+            if story.get(key) != story_meta[key]:
+                fail(f"{target}: existing {key}={story.get(key)!r} != queue {story_meta[key]!r}")
+        letters = story.setdefault("letters", [])
+    else:
+        story = {
+            "id": story_meta["id"],
+            "character": story_meta["character"],
+            "story": story_meta["story"],
+            "letters": [],
+        }
+        letters = story["letters"]
+        Path(target).parent.mkdir(parents=True, exist_ok=True)
+
+    letter = next((l for l in letters if l.get("index") == letter_index), None)
+    if letter is None:
+        letter = {"index": letter_index, "label": letter_label, "variants": []}
+        letters.append(letter)
+        letters.sort(key=lambda l: l.get("index", 0))
+    else:
+        if letter.get("label") != letter_label:
+            fail(f"letter {letter_index} label mismatch: existing {letter.get('label')!r} != queue {letter_label!r}")
+
+    letter.setdefault("variants", []).append(variant)
+    write_json(target, story)
+
+
+def apply_queue_item(item):
+    item_type = item.get("type", "new_file")
+    if item_type == "new_file":
+        apply_new_file(item)
+    elif item_type == "add_variant":
+        apply_add_variant(item)
+    else:
+        fail(f"unsupported queue item type: {item_type!r}")
 
 
 def nudge_auto_balance(state, now_epoch):
