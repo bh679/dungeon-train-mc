@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bh679/dungeon-train-mc/.github/auto-release/schema/queue-item.schema.json",
+  "title": "Auto-Release Queue Item",
+  "description": "A single purely-additive change consumed by one auto-release cascade tick.",
+  "type": "object",
+  "required": ["id", "label", "type", "target", "content", "commit_message"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Unique slug. Must not collide with any prior 'applied' entry."
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable description shown in the auto-release commit body."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["new_file"],
+      "description": "Only 'new_file' supported at v1. Workflow refuses to overwrite an existing file at 'target'."
+    },
+    "target": {
+      "type": "string",
+      "pattern": "^src/main/resources/data/dungeontrain/.+\\.json$",
+      "description": "Relative path inside the repo. Must be under the mod's data dir and end with .json."
+    },
+    "content": {
+      "description": "The complete file contents to write at 'target'. JSON object or array."
+    },
+    "commit_message": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z]+(\\([a-z0-9-]+\\))?: ",
+      "description": "Conventional-commits style. The auto-release wrapper appends ' [skip ci]'."
+    }
+  }
+}

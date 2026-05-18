@@ -1,0 +1,130 @@
+name: Auto-Release Cascade
+
+# Hourly tapering cascade of micro-releases anchored on the last real release.
+# Each fire pops one queue item OR nudges the auto-balancing loot table, then
+# bumps PATCH and dispatches release.yml with auto=true.
+#
+# See .github/auto-release/README.md for the cadence and queue schema.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Apply the change locally but don't commit/push/dispatch."
+        required: false
+        type: boolean
+        default: false
+      force:
+        description: "Skip should-fire check (still respects 14d window via apply step needing valid state)."
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: auto-release-cascade
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  cascade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Decide whether to fire
+        id: decide
+        env:
+          STATE_FILE: .github/auto-release/state.json
+        run: python3 scripts/auto-release/should-fire.py
+
+      - name: Exit early if not firing
+        if: steps.decide.outputs.fire != 'true' && inputs.force != true
+        run: |
+          echo "Skip cascade tick: ${{ steps.decide.outputs.reason }}"
+
+      - name: Apply change
+        if: steps.decide.outputs.fire == 'true' || inputs.force == true
+        id: apply
+        run: python3 scripts/auto-release/apply-change.py
+
+      - name: Bump PATCH in gradle.properties
+        if: steps.decide.outputs.fire == 'true' || inputs.force == true
+        id: bump
+        run: |
+          set -euo pipefail
+          CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+          if ! echo "$CURRENT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::mod_version=$CURRENT is not strict X.Y.Z — refusing to auto-bump"
+            exit 1
+          fi
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
+          NEW="$MAJOR.$MINOR.$((PATCH + 1))"
+          sed -i "s/^mod_version=.*/mod_version=$NEW/" gradle.properties
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NEW" >> "$GITHUB_OUTPUT"
+          echo "Bumped mod_version: $CURRENT -> $NEW"
+
+      - name: Commit and push
+        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run != true
+        env:
+          COMMIT_MSG: ${{ steps.apply.outputs.commit_message }}
+          NEW_VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Apply-change writes to known dirs: .github/auto-release/, the loot
+          # table, and (for new_file items) somewhere under src/main/resources/data/dungeontrain/.
+          # gradle.properties was bumped above. -A covers all.
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::error::no changes staged — apply-change.py produced no diff"
+            exit 1
+          fi
+          git commit -m "$COMMIT_MSG (auto v$NEW_VERSION) [skip ci]"
+          git push origin HEAD:main
+
+      - name: Verify push landed
+        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run != true
+        run: |
+          set -euo pipefail
+          LOCAL=$(git rev-parse HEAD)
+          REMOTE=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+          if [ "$LOCAL" != "$REMOTE" ]; then
+            echo "::error::push verification failed (local=$LOCAL remote=$REMOTE)"
+            exit 1
+          fi
+          echo "Push verified: $LOCAL"
+
+      - name: Dispatch Release workflow
+        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.bump.outputs.tag }}
+        run: |
+          gh workflow run release.yml -f tag="$TAG" -f auto=true
+          echo "Dispatched release.yml with tag=$TAG auto=true"
+
+      - name: Dry-run summary
+        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run == true
+        env:
+          COMMIT_MSG: ${{ steps.apply.outputs.commit_message }}
+          NEW_VERSION: ${{ steps.bump.outputs.version }}
+          KIND: ${{ steps.apply.outputs.change_kind }}
+          APPLIED_ID: ${{ steps.apply.outputs.applied_id }}
+        run: |
+          echo "DRY RUN — change_kind=$KIND  applied_id=$APPLIED_ID"
+          echo "DRY RUN — would commit: $COMMIT_MSG (auto v$NEW_VERSION) [skip ci]"
+          echo "DRY RUN — would dispatch release.yml tag=v$NEW_VERSION auto=true"
+          echo "DRY RUN — diff preview:"
+          git --no-pager diff --stat
