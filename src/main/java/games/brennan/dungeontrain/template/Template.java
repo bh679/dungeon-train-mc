@@ -580,10 +580,7 @@ public sealed interface Template
 
         @Override
         public TemplateKind kind() {
-            // Stairs is the only adjunct today — model that explicitly so
-            // Phase 2 can route it to the future stairs-specific store
-            // without losing the structural distinction from pillar.
-            return TemplateKind.STAIRS;
+            return adjunct.kind();
         }
 
         @Override

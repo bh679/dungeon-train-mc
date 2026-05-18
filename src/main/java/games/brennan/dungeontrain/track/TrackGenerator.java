@@ -12,6 +12,9 @@ import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.tunnel.TunnelGenerator;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
+import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StairsRegistryData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
@@ -33,8 +36,11 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Optional;
@@ -1060,15 +1066,45 @@ public final class TrackGenerator {
         LOGGER.info("[stairs] PLACED centerX={} deepestGroundY={} flipped={} side={}",
             centerX, deepestGroundY, flipped, flipped ? "-Z" : "+Z");
 
-        // Mirror.LEFT_RIGHT negates local Z around stamp origin; shifting
-        // origin by +(STAIRS_Z - 1) keeps the mirrored footprint at
-        // [originZ .. originZ + STAIRS_Z - 1]. Same trick as the runtime
-        // variant and as TunnelPlacer's portal mirror.
+        stampStairsDescendingWorldgen(
+            level, template, stairsSidecar,
+            originX, originZ, topInclusive, deepestGroundY,
+            flipped, worldSeed, centerX
+        );
+    }
+
+    /**
+     * Stamps the 3×8×3 stairs template repeatedly from {@code topInclusive}
+     * down to {@code floorY}, forming a continuous descending staircase.
+     * Each iteration places one 8-row stamp, clipped to fit the remaining
+     * vertical extent. Shared between the up-stairs path
+     * ({@link #placeStairsBesidePillarWorldgen}) and the down-stairs path
+     * ({@link #placeDownStairsForTargets}).
+     *
+     * <p>Up-stairs: {@code topInclusive = bedY + 2}, {@code floorY} = ground
+     * level below the pillar (terrain is open below).
+     * Down-stairs: {@code topInclusive = surfaceY - 1}, {@code floorY =
+     * bedY + 2} (terrain is solid above; caller must pre-carve the shaft).</p>
+     *
+     * <p>Mirror.LEFT_RIGHT negates local Z around stamp origin; shifting
+     * origin by +(STAIRS_Z - 1) keeps the mirrored footprint at
+     * [originZ .. originZ + STAIRS_Z - 1]. Same trick as the runtime
+     * variant and as TunnelPlacer's portal mirror.</p>
+     */
+    private static void stampStairsDescendingWorldgen(
+        WorldGenLevel level,
+        StructureTemplate template,
+        TrackVariantBlocks stairsSidecar,
+        int originX, int originZ,
+        int topInclusive, int floorY,
+        boolean flipped,
+        long worldSeed, int centerX
+    ) {
         int stampOriginZ = !flipped ? originZ + STAIRS_Z - 1 : originZ;
 
         int currentTop = topInclusive;
-        while (currentTop >= deepestGroundY) {
-            int remaining = currentTop - deepestGroundY + 1;
+        while (currentTop >= floorY) {
+            int remaining = currentTop - floorY + 1;
             int copyHeight = Math.min(STAIRS_Y, remaining);
             int bottomY = currentTop - copyHeight + 1;
 
@@ -1120,6 +1156,402 @@ public final class TrackGenerator {
             }
 
             currentTop -= STAIRS_Y;
+        }
+    }
+
+    /**
+     * Reserved slot for a down-stair placement, produced by
+     * {@link #precomputeDownStairsTargets} and consumed by
+     * {@link #placeDownStairsForTargets}. The split exists because the
+     * underground-qualification probe at {@code ceilingY+1} reads inside the
+     * tunnel template's Y-extent — must read raw terrain BEFORE
+     * {@link TunnelGenerator#placeTunnelSpaceAtWorldgen}; the carve+stamp
+     * must run AFTER tunnel placement so the bottom 3 stair rows
+     * (Y bedY+2..+4, inside the tunnel template footprint) win over
+     * tunnel-template air cells.
+     *
+     * @param centerX   world X of the stair's central column.
+     * @param flipped   {@code true} = -Z side (originZ = trackZMin - STAIRS_Z);
+     *                  {@code false} = +Z side (originZ = trackZMax + 1).
+     * @param surfaceY  Y of the first AIR block above the surface (the
+     *                  block at surfaceY-1 is the topmost solid; the carved
+     *                  shaft spans bedY+2..surfaceY-1 inclusive).
+     */
+    public record DownStairsTarget(int centerX, boolean flipped, int surfaceY) {}
+
+    /**
+     * Per-chunk precompute for the down-stairs placement pass. Probes the
+     * raw terrain for underground qualification (using
+     * {@link TunnelGenerator#isColumnUndergroundWorldgen}) at this X plus a
+     * 5-block buffer on each side (keeps stairs away from tunnel portals).
+     * Atomically reserves cross-chunk-safe spacing slots in
+     * {@link StairsRegistryData} so up-stairs and down-stairs never cluster
+     * within {@link #MIN_STAIRS_SPACING} blocks of each other.
+     *
+     * <p>Must be called BEFORE {@link TunnelGenerator#placeTunnelSpaceAtWorldgen}
+     * in the same {@code Feature.place()} invocation — the
+     * {@code ceilingY+1} probe reads inside the tunnel template's Y-extent
+     * ({@code bedY..bedY+13}), so post-tunnel probes would see
+     * tunnel-stamped blocks (which are not underground material) and
+     * report false negatives.</p>
+     *
+     * @return list of reserved targets to place after tunnel generation
+     *         finishes for this chunk. Empty list when no qualifying X
+     *         columns exist (the common case for above-ground chunks).
+     */
+    public static List<DownStairsTarget> precomputeDownStairsTargets(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        int chunkX,
+        int chunkZ,
+        TrackGeometry g
+    ) {
+        if (isShipyardChunk(chunkX, chunkZ)) return Collections.emptyList();
+
+        int chunkMinX = chunkX << 4;
+        int chunkMaxX = chunkMinX + 15;
+        int chunkMinZ = chunkZ << 4;
+        int chunkMaxZ = chunkMinZ + 15;
+
+        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return Collections.emptyList();
+
+        int minBuildHeight = level.getMinBuildHeight();
+        int maxBuildHeight = level.getMaxBuildHeight();
+        if (g.bedY() < minBuildHeight || g.bedY() >= maxBuildHeight) return Collections.emptyList();
+
+        int probeZ = g.trackCenterZ();
+        if (probeZ < chunkMinZ || probeZ > chunkMaxZ) return Collections.emptyList();
+
+        TunnelGeometry tg = TunnelGeometry.from(g);
+
+        // Surface probe Y cap — 64 blocks above the tunnel ceiling. Matches
+        // 8 stamp iterations (STAIRS_Y * 8 = 64) — well beyond typical
+        // mountain heights and bounded against pathological terrain.
+        int surfaceProbeCap = Math.min(g.bedY() + 64, maxBuildHeight - 1);
+        int floorY = g.bedY() + 2;
+
+        ServerLevel ow = serverLevel.getServer().overworld();
+        StairsRegistryData registry = StairsRegistryData.get(ow);
+
+        List<DownStairsTarget> targets = new ArrayList<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int worldX = chunkMinX; worldX <= chunkMaxX; worldX++) {
+            // Snap to tunnel section X edges — stairs land at the seam
+            // between tunnel sections rather than mid-section. Tunnel
+            // sections tile {@link TunnelPlacer#LENGTH}-cols flush along
+            // X; pinning stair candidates to multiples of LENGTH makes the
+            // shaft line up with section boundaries visually.
+            if (Math.floorMod(worldX, TunnelPlacer.LENGTH) != 0) continue;
+            // Center column must be underground. Cheap fast-reject for
+            // most above-ground chunks (no further reads if false).
+            if (!TunnelGenerator.isColumnUndergroundWorldgen(level, worldX, tg, false)) continue;
+            // 5-block buffer on each side keeps the stair shaft away from
+            // tunnel portals (which are stamped at run boundaries with a
+            // ±~5-block pyramid that would clip the stair shaft). Reads
+            // at worldX±5 stay well inside the ±16 worldgen 3×3 window.
+            if (!TunnelGenerator.isColumnUndergroundWorldgen(level, worldX - 5, tg, false)) continue;
+            if (!TunnelGenerator.isColumnUndergroundWorldgen(level, worldX + 5, tg, false)) continue;
+
+            // Reserve first to determine the side. Surface Y depends on
+            // {@code flipped} (we probe at the stair's actual centerZ on
+            // the assigned side, not at the corridor center), so we need
+            // the side before probing. Slot is consumed even if the probe
+            // ultimately rejects — acceptable trade-off, see method
+            // javadoc.
+            Boolean reservedSide = registry.tryReserveStairs(worldX, MIN_STAIRS_SPACING);
+            if (reservedSide == null) {
+                LOGGER.debug("[downstairs.elig] worldX={} reject=registry_conflict", worldX);
+                continue;
+            }
+            int centerStairsZ = downStairsCenterZ(reservedSide, g);
+
+            // Probe surface Y at the stair's center XZ. Strict air check
+            // (not isPassable) — skip past tree leaves, vines, and other
+            // passable-but-solid-looking blocks so the shaft opens at
+            // actual sky.
+            int surfaceY = -1;
+            for (int y = tg.ceilingY() + 1; y <= surfaceProbeCap; y++) {
+                pos.set(worldX, y, centerStairsZ);
+                if (level.getBlockState(pos).isAir()) { surfaceY = y; break; }
+            }
+            if (surfaceY < 0) {
+                LOGGER.debug("[downstairs.elig] worldX={} reject=no_air_below_cap cap={}",
+                    worldX, surfaceProbeCap);
+                continue;
+            }
+            // Shaft must be at least SHORT_PILLAR_THRESHOLD + 2 tall to be
+            // worth carving. Below that the staircase is shorter than the
+            // template's one stamp and looks pointless.
+            if (surfaceY - floorY < SHORT_PILLAR_THRESHOLD + 2) {
+                LOGGER.debug("[downstairs.elig] worldX={} reject=shaft_too_short surfaceY={} floorY={}",
+                    worldX, surfaceY, floorY);
+                continue;
+            }
+
+            LOGGER.info("[downstairs.elig] worldX={} chunk=({},{}) PASS surfaceY={} side={}",
+                worldX, chunkX, chunkZ, surfaceY, reservedSide ? "-Z" : "+Z");
+            targets.add(new DownStairsTarget(worldX, reservedSide, surfaceY));
+        }
+
+        return targets;
+    }
+
+    /**
+     * Consumes the {@link DownStairsTarget} list produced by
+     * {@link #precomputeDownStairsTargets} and stamps each down-stairs
+     * shaft + staircase. Must be called AFTER
+     * {@link TunnelGenerator#placeTunnelSpaceAtWorldgen} in the same
+     * {@code Feature.place()} invocation so the bottom 3 stair rows
+     * overwrite the tunnel template's airspace cells (otherwise the tunnel
+     * template's air stamps clobber the freshly placed stair blocks).
+     *
+     * <p>For each target:
+     * <ol>
+     *   <li>Load the stairs template + sidecar (reuses up-stairs
+     *       {@code adjunct_stairs/*.nbt} — visually a descending staircase
+     *       either direction).</li>
+     *   <li>Carve a 3×height×3 air shaft from {@code bedY+2} up to
+     *       {@code surfaceY-1}. This punches through the rock above the
+     *       tunnel ceiling AND through the tunnel template's ceiling/wall
+     *       at the stair Z columns.</li>
+     *   <li>Anchor any sand/gravel directly at the shaft top (at
+     *       {@code surfaceY}) so it converts to its stable equivalent and
+     *       can't tick-fall into the shaft.</li>
+     *   <li>Stamp the descending staircase via
+     *       {@link #stampStairsDescendingWorldgen}.</li>
+     * </ol>
+     * </p>
+     */
+    public static void placeDownStairsForTargets(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        List<DownStairsTarget> targets,
+        TrackGeometry g
+    ) {
+        if (targets.isEmpty()) return;
+        long worldSeed = level.getSeed();
+        for (DownStairsTarget target : targets) {
+            placeDownStairsAtTarget(level, serverLevel, target, g, worldSeed);
+        }
+    }
+
+    private static void placeDownStairsAtTarget(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        DownStairsTarget target,
+        TrackGeometry g,
+        long worldSeed
+    ) {
+        int centerX = target.centerX();
+        boolean flipped = target.flipped();
+        int surfaceY = target.surfaceY();
+
+        String stairsName = TrackVariantRegistry.pickName(
+            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
+        Optional<StructureTemplate> templateOpt =
+            PillarTemplateStore.getAdjunctFor(serverLevel,
+                PillarAdjunct.STAIRS, stairsName);
+        if (templateOpt.isEmpty()) {
+            LOGGER.info("[downstairs] centerX={} reject=template_missing name={}", centerX, stairsName);
+            return;
+        }
+        StructureTemplate template = templateOpt.get();
+        TrackVariantBlocks stairsSidecar = TrackVariantBlocks.loadFor(
+            TrackKind.ADJUNCT_STAIRS, stairsName,
+            new Vec3i(STAIRS_X, STAIRS_Y, STAIRS_Z));
+
+        int originX = centerX - 1;
+        // Down-stairs originZ is one block FURTHER from the corridor than
+        // up-stairs (see {@link #downStairsOriginZ}). The outermost stair
+        // column lands ON the tunnel wall (Z = wallMaxZ/wallMinZ); the
+        // carve breaks the wall there to form a doorway from the corridor
+        // into the stair shaft.
+        int originZ = downStairsOriginZ(flipped, g);
+        int floorY = g.bedY() + 2;
+        int topInclusive = surfaceY - 1;
+
+        // Carve the shaft to air. Covers rock above the tunnel ceiling AND
+        // the tunnel template's stamped ceiling/wall cells at the stair Z
+        // columns (the bottom 3 rows of the carve sit inside the tunnel
+        // template's Y footprint, so the tunnel's airspace stamp is also
+        // overwritten — that's fine, all to air anyway, with the stair
+        // stamp painting the actual stair blocks afterwards).
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dx = 0; dx < STAIRS_X; dx++) {
+            for (int dz = 0; dz < STAIRS_Z; dz++) {
+                for (int y = floorY; y <= topInclusive; y++) {
+                    pos.set(originX + dx, y, originZ + dz);
+                    level.setBlock(pos, air, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+
+        // Anchor any falling block directly above the shaft top. Probe is
+        // at Y=surfaceY (the first AIR above the original surface) AND
+        // Y=surfaceY+1 (defensive against 1-block air pockets the probe
+        // may have anchored on). Both anchor calls are no-ops for air,
+        // cheap for non-fallables; only sand/gravel pay the convert cost.
+        for (int dx = 0; dx < STAIRS_X; dx++) {
+            for (int dz = 0; dz < STAIRS_Z; dz++) {
+                FallingBlockAnchor.anchorAtWorldgen(level,
+                    new BlockPos(originX + dx, surfaceY, originZ + dz));
+                FallingBlockAnchor.anchorAtWorldgen(level,
+                    new BlockPos(originX + dx, surfaceY + 1, originZ + dz));
+            }
+        }
+
+        LOGGER.info("[downstairs] PLACED centerX={} surfaceY={} floorY={} flipped={} side={}",
+            centerX, surfaceY, floorY, flipped, flipped ? "-Z" : "+Z");
+
+        stampStairsDescendingWorldgen(
+            level, template, stairsSidecar,
+            originX, originZ, topInclusive, floorY,
+            flipped, worldSeed, centerX
+        );
+
+        // Above-ground entrance — visible marker showing where the stairs
+        // emerge from the surface. Stamped after the stairs stamp so any
+        // overlap (e.g. the stair template's topmost landing row at
+        // Y=surfaceY-1) is preserved while the entrance frame above gets
+        // its own clean stamp.
+        stampDownStairsEntranceWorldgen(level, serverLevel, originX, originZ, surfaceY, flipped, worldSeed, centerX);
+    }
+
+    /**
+     * X-origin offset for down-stair placement on the assigned side.
+     * Down-stairs sit one block FURTHER from the corridor than up-stairs
+     * (compare with the inline formula in
+     * {@link #placeStairsBesidePillarWorldgen}, which uses
+     * {@code trackZMin - STAIRS_Z} / {@code trackZMax + 1}). Pushing them
+     * outward by one block aligns the outermost stair column with the
+     * tunnel wall (Z = wallMinZ/wallMaxZ): the carve breaks the wall at
+     * that Z to form a "doorway" gap that the player walks through when
+     * exiting the staircase into the corridor.
+     */
+    private static int downStairsOriginZ(boolean flipped, TrackGeometry g) {
+        return flipped ? g.trackZMin() - STAIRS_Z - 1 : g.trackZMax() + 2;
+    }
+
+    /** Center Z of the 3-wide down-stair footprint on the assigned side. */
+    private static int downStairsCenterZ(boolean flipped, TrackGeometry g) {
+        return downStairsOriginZ(flipped, g) + (STAIRS_Z - 1) / 2;
+    }
+
+    /**
+     * Vertical overlap between the down-stair entrance template and the top
+     * of the stair shaft. The bottom {@code ENTRANCE_OVERLAP_Y} rows of the
+     * entrance occupy the same Y range as the top {@code ENTRANCE_OVERLAP_Y}
+     * stair steps — lets the entrance template author blend the staircase
+     * into the entrance interior (e.g. a landing pad at the top of the
+     * stairs).
+     */
+    private static final int ENTRANCE_OVERLAP_Y = 2;
+
+    /**
+     * Above-ground entrance for a down-stair shaft. Footprint is
+     * {@link PillarAdjunct#STAIRS_ENTRANCE} (5×8×5), centered on the 3×3
+     * shaft. Y origin is {@code surfaceY - ENTRANCE_OVERLAP_Y} so the
+     * entrance's bottom {@code ENTRANCE_OVERLAP_Y} rows overlap with the
+     * top of the staircase (allowing the template to include a landing or
+     * threshold blended into the stair top).
+     *
+     * <p>Tries the NBT-loaded template first (editor-authored, picked via
+     * {@link TrackVariantRegistry#pickName}). If no template is registered,
+     * falls back to a code-based default: a stone-brick tower with a
+     * 1×2 doorway cut into the outer Z wall at player walking height
+     * (above the overlap region).</p>
+     */
+    private static void stampDownStairsEntranceWorldgen(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        int originX, int originZ, int surfaceY,
+        boolean flipped,
+        long worldSeed, int centerX
+    ) {
+        // 5×5 footprint centered on the 3×3 shaft.
+        int minX = originX - 1;
+        int minZ = originZ - 1;
+        // Drop the entrance ENTRANCE_OVERLAP_Y blocks so its bottom rows
+        // sit inside the top of the staircase shaft.
+        int entranceBaseY = surfaceY - ENTRANCE_OVERLAP_Y;
+
+        String entranceName = TrackVariantRegistry.pickName(
+            TrackKind.ADJUNCT_STAIRS_ENTRANCE, worldSeed, centerX);
+        Optional<StructureTemplate> templateOpt =
+            PillarTemplateStore.getAdjunctFor(serverLevel,
+                PillarAdjunct.STAIRS_ENTRANCE, entranceName);
+        if (templateOpt.isPresent()) {
+            StructureTemplate template = templateOpt.get();
+            TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
+                TrackKind.ADJUNCT_STAIRS_ENTRANCE, entranceName,
+                new Vec3i(PillarAdjunct.STAIRS_ENTRANCE.xSize(),
+                          PillarAdjunct.STAIRS_ENTRANCE.ySize(),
+                          PillarAdjunct.STAIRS_ENTRANCE.zSize()));
+            // Mirror across Z so an "outer-side doorway" authored on +Z
+            // also lands on the -Z side when flipped.
+            int stampOriginZ = !flipped ? minZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1 : minZ;
+            BlockPos stampOrigin = new BlockPos(minX, entranceBaseY, stampOriginZ);
+            StructurePlaceSettings settings = new StructurePlaceSettings()
+                .setIgnoreEntities(true);
+            if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
+            template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
+            // Sidecar pass — same shape as stairs stamp.
+            if (!sidecar.isEmpty()) {
+                for (var entry : sidecar.entries()) {
+                    int lx = entry.localPos().getX();
+                    int ly = entry.localPos().getY();
+                    int lz = entry.localPos().getZ();
+                    int wx = minX + lx;
+                    int wy = entranceBaseY + ly;
+                    int wz = flipped ? (minZ + lz) : (minZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1 - lz);
+                    BlockPos wpos = new BlockPos(wx, wy, wz);
+                    games.brennan.dungeontrain.editor.VariantState picked =
+                        sidecar.resolve(entry.localPos(), worldSeed, centerX);
+                    if (picked == null) continue;
+                    if (picked.isMob()) {
+                        TrackVariantMobs.warnDropped("stairs_entrance", entry.localPos(), picked.entityId());
+                        level.setBlock(wpos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                        continue;
+                    }
+                    BlockState rotated = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                        picked.state(), picked.rotation(),
+                        entry.localPos(), worldSeed, centerX,
+                        sidecar.lockIdAt(entry.localPos()));
+                    level.setBlock(wpos, rotated, Block.UPDATE_CLIENTS);
+                }
+            }
+            LOGGER.info("[downstairs.entrance] centerX={} NBT placed name={} flipped={}",
+                centerX, entranceName, flipped);
+            return;
+        }
+
+        // Fallback: code-based stone-brick tower with a 1×2 doorway on the
+        // outer Z wall at player walking height (above the overlap region).
+        LOGGER.debug("[downstairs.entrance] centerX={} no NBT template; using code-based default", centerX);
+        BlockState brick = Blocks.STONE_BRICKS.defaultBlockState();
+        int maxX = originX + STAIRS_X;       // = originX + 3 → 5 wide inclusive
+        int maxZ = originZ + STAIRS_Z;       // = originZ + 3 → 5 wide inclusive
+        int doorwayX = originX + 1;          // = middle X of 5×5 = shaft centerX
+        int doorwayZ = flipped ? minZ : maxZ;
+        // Doorway sits at the player's walking height above the surface,
+        // which is at dy = ENTRANCE_OVERLAP_Y (= world Y surfaceY) and
+        // dy = ENTRANCE_OVERLAP_Y + 1 (= player head).
+        int doorwayDyLo = ENTRANCE_OVERLAP_Y;
+        int doorwayDyHi = ENTRANCE_OVERLAP_Y + 1;
+        int ySize = PillarAdjunct.STAIRS_ENTRANCE.ySize();
+        for (int dy = 0; dy < ySize; dy++) {
+            int y = entranceBaseY + dy;
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    boolean isPerimeter =
+                        x == minX || x == maxX || z == minZ || z == maxZ;
+                    if (!isPerimeter) continue;
+                    if (x == doorwayX && z == doorwayZ && (dy == doorwayDyLo || dy == doorwayDyHi)) continue;
+                    level.setBlock(new BlockPos(x, y, z), brick, Block.UPDATE_CLIENTS);
+                }
+            }
         }
     }
 

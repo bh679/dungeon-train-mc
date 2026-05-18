@@ -353,7 +353,7 @@ public final class TunnelGenerator {
      *       still buried.</li>
      * </ul>
      */
-    static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg, boolean ext) {
+    public static boolean isColumnUndergroundWorldgen(WorldGenLevel level, int worldX, TunnelGeometry tg, boolean ext) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int probeY = tg.ceilingY() + 1;
         int centerZ = tg.centerZ();

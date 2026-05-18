@@ -444,7 +444,7 @@ public final class EditorDirtyCheck {
         return switch (model.kind()) {
             case CARRIAGE, CONTENTS -> model.id();
             case TRACK -> "track." + model.variantName();
-            case PILLAR, STAIRS, TUNNEL -> model.id() + "." + model.variantName();
+            case PILLAR, STAIRS, STAIRS_ENTRANCE, TUNNEL -> model.id() + "." + model.variantName();
             case PART -> null;
         };
     }
