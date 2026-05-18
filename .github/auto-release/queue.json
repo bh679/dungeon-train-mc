@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l2-b",
-      "label": "Pip - Letter 2 variant B (the lost notebook)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "I found a notebook under a seat.\n\nSomeone counted the carriages. They got to 384 and stopped. They said there is no point looking for the front.\n\nI dont know what they meant. Trains have a front.\n\nI am keeping the notebook. It is like having someone to talk to.\n\nThey sounded tired. I am not tired yet.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 2 variant B (the lost notebook)"
-    },
-    {
       "id": "pip-l3-a",
       "label": "Pip - Letter 3 variant A (the pretend people)",
       "type": "add_variant",
@@ -149,6 +132,11 @@
     {
       "id": "pip-l2-a",
       "applied_at": "2026-05-18T17:01:26Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l2-b",
+      "applied_at": "2026-05-18T18:41:03Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
