@@ -44,11 +44,11 @@
     },
     {
       "id": "bogged",
-      "weight": 8
+      "weight": 5
     },
     {
       "id": "zombiesrooms",
-      "weight": 10
+      "weight": 6
     }
   ]
 }
