@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:barrel",
+  "category": "loot",
+  "fillMin": 1,
+  "fillMax": 6,
+  "entries": [
+    { "id": "minecraft:coal_block", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:coal", "count": 21, "weight": 43, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:emerald_block", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:emerald", "count": 11, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+  ]
+}
