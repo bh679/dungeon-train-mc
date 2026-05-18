@@ -26,7 +26,13 @@ jobs:
     # pushes already don't trigger workflow runs (built-in GH Actions
     # safety), but this guard catches the case where someone reconfigures
     # the workflow to use a PAT later.
-    if: "${{ !startsWith(github.event.head_commit.message, 'chore(version): bump to') }}"
+    #
+    # Also skip auto-release cascade commits — those bump PATCH inline and
+    # we don't want this workflow trying to MINOR-bump on top of them. The
+    # cascade commits also include `[skip ci]` so under normal Actions
+    # behaviour they don't trigger here, but this guard is a fallback if
+    # `[skip ci]` honoring is ever disabled at the repo level.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(version): bump to') && !startsWith(github.event.head_commit.message, 'chore(auto):') }}"
     steps:
       - uses: actions/checkout@v4
         with:

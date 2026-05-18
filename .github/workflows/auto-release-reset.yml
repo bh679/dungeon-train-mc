@@ -1,0 +1,74 @@
+name: Auto-Release Cascade Reset
+
+# Fires after every successful Release workflow run that was NOT dispatched
+# by the auto-release cascade. Rewrites .github/auto-release/state.json so
+# the next cascade is anchored on this release's completion time.
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+
+concurrency:
+  group: auto-release-reset
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    # Only reset on successful manual releases. Skip auto-release runs and failures.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'workflow_dispatch' &&
+      github.event.workflow_run.inputs.auto != 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Rewrite state.json
+        env:
+          ANCHOR: ${{ github.event.workflow_run.updated_at }}
+          TAG: ${{ github.event.workflow_run.inputs.tag }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime
+
+          anchor_in = os.environ["ANCHOR"]
+          if anchor_in.endswith("Z"):
+              dt = datetime.fromisoformat(anchor_in[:-1] + "+00:00")
+          else:
+              dt = datetime.fromisoformat(anchor_in)
+          anchor_iso = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+          state = {
+              "schedule_anchor": anchor_iso,
+              "last_auto_release_at": None,
+              "last_anchor_source": f"real_release_{os.environ['TAG']}",
+          }
+          with open(".github/auto-release/state.json", "w") as f:
+              json.dump(state, f, indent=2)
+              f.write("\n")
+          PY
+
+      - name: Commit and push
+        env:
+          TAG: ${{ github.event.workflow_run.inputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet .github/auto-release/state.json; then
+            echo "No state change — skipping commit."
+            exit 0
+          fi
+          git add .github/auto-release/state.json
+          git commit -m "chore(auto): reset cascade anchor after $TAG [skip ci]"
+          git push origin HEAD:main

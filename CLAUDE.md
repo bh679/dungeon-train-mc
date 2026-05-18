@@ -187,6 +187,40 @@ and won't trigger anything.
 
 ---
 
+## Auto-Release Cascade
+
+After every real release, an automated tapering cascade of ~22 micro-releases fires over
+the following 14 days (hourly for 4h → every 5h for a day → daily for 2 weeks). Each
+fire either applies one pre-staged queue item or, when the queue is empty, nudges a
+sandbox loot-table weight labelled **auto-balancing**. The cascade keeps the mod fresh
+on Modrinth/CurseForge feeds.
+
+See `.github/auto-release/README.md` for the full schema, cadence table, and queue
+example.
+
+### Gate exception
+
+Auto-release cascade commits skip Gates 1–4 by design. They are authorised in advance by
+the act of merging the cascade system itself. Do not treat individual cascade ticks as
+gateable changes — they are scheduled, not requested.
+
+### Manual interaction
+
+| Want to … | Do this |
+|---|---|
+| Add a new content drop to the cascade | Open a normal PR adding an object to `.github/auto-release/queue.json` `pending[]` |
+| Pause the cascade | Disable the **Auto-Release Cascade** workflow in the GitHub Actions UI |
+| Force-fire a tick manually | `gh workflow run auto-release.yml -f force=true` |
+| Preview without releasing | `gh workflow run auto-release.yml -f dry_run=true` |
+
+### Discord noise (known followup)
+
+Per Gate 1 decision, cascade ticks publish through the full release pipeline (Modrinth +
+CurseForge + Discord). Discord notification fatigue is a known concern — a future PR may
+add a quieter "cascade tick" embed variant gated on the `auto` input.
+
+---
+
 ## Documentation (Product Engineer)
 
 After Gate 3 merge, update the relevant wiki page in `github.com/bh679/dungeon-train-mc/wiki`:
