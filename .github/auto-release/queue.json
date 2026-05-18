@@ -1,25 +1,6 @@
 {
   "pending": [
     {
-      "id": "faulthursts-asides-i",
-      "label": "Add random book: Faulthurst's Asides I",
-      "type": "new_file",
-      "target": "src/main/resources/data/dungeontrain/narratives/random_books/faulthursts_asides_i.json",
-      "content": {
-        "id": "faulthursts_asides_i",
-        "title": "Faulthurst's Asides I",
-        "author": "Faulthurst",
-        "generation": 0,
-        "weight": 2,
-        "variants": [
-          "I've been counting the carriages.\n\nNot for any productive reason. I lose track around eighty-something and start over. I think it gives me a sense of progress, even though I am, in objective terms, going nowhere.\n\nIf you find yourself doing the same, I would not call it foolish. I would call it human.",
-          "Someone once asked me whether the train ever stops.\n\nI told them I'd never seen it stop. They asked if I'd ever felt it stop. I told them no. They asked if perhaps it had stopped right now and we simply couldn't feel it.\n\nI have not slept well since.",
-          "The slimes are not, in any meaningful sense, evil.\n\nThey are slimes. They do what slimes do. They press themselves against you in the only way they know how, and the only way they know how happens to involve teeth.\n\nIt is not personal. Almost nothing on this train is personal, which is, in its own way, comforting."
-        ]
-      },
-      "commit_message": "content(narrative): add random book 'Faulthurst's Asides I'"
-    },
-    {
       "id": "passenger-fragments-i",
       "label": "Add random book: Passenger Fragments I",
       "type": "new_file",
@@ -226,5 +207,11 @@
       "commit_message": "content(narrative): Pip Letter 5 variant B (the message Mum will find)"
     }
   ],
-  "applied": []
+  "applied": [
+    {
+      "id": "faulthursts-asides-i",
+      "applied_at": "2026-05-18T07:23:18Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/faulthursts_asides_i.json"
+    }
+  ]
 }
