@@ -16,6 +16,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.joml.primitives.AABBdc;
@@ -2022,6 +2023,26 @@ public final class TrainCarriageAppender {
         int spawned = 0;
         Vector3dc velocity = realVelocity;
 
+        // Pre-warm chunks for the full planned eager-fill footprint. Without
+        // this, the first clearSubLevelVolume / placeAt inside each spawnGroup
+        // pays a synchronous worldgen wait for every fresh chunk it touches —
+        // the same root cause TrackGenerator already mitigates (see comment at
+        // TrackGenerator placeTrackColumn: "500ms tracks= spikes when flying
+        // over freshly-streaming chunks"). One up-front pass pays the worldgen
+        // wait once per chunk instead of once per touch.
+        int forwardGroupsToSpawn = Math.max(0,
+            (neededMax - trainMax + groupSize - 1) / groupSize);
+        int backwardGroupsToSpawn = Math.max(0,
+            (trainMin - neededMin + groupSize - 1) / groupSize);
+        int gapPerGroupCeil = (int) Math.ceil(EAGER_FILL_GAP_BLOCKS);
+        int forwardReach = forwardGroupsToSpawn * (subLevelStride + gapPerGroupCeil);
+        int backwardReach = backwardGroupsToSpawn * (subLevelStride + gapPerGroupCeil);
+        int prewarmXMin = (int) Math.floor(backwardRefX) - backwardReach - subLevelStride;
+        int prewarmXMax = (int) Math.ceil(forwardRefX) + forwardReach + subLevelStride;
+        int prewarmZMin = placeZ;
+        int prewarmZMax = placeZ + dims.width() - 1;
+        prewarmEagerFillChunks(level, prewarmXMin, prewarmXMax, prewarmZMin, prewarmZMax);
+
         // Spawn one group in BOTH directions per iteration so the train
         // grows symmetrically (forward AND backward together) rather than
         // filling one end completely before the other starts. Each iteration
@@ -2107,6 +2128,35 @@ public final class TrainCarriageAppender {
         Vector3d worldOrigin = new Vector3d(shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ());
         ship.shipToWorld(worldOrigin);
         return worldOrigin.x;
+    }
+
+    /**
+     * Force every chunk in the rectangle {@code [xMin..xMax] × [zMin..zMax]} to
+     * {@link ChunkStatus#FULL} synchronously before the eager-fill spawn loop
+     * runs. Each {@code spawnGroup} subsequently performs ~1800 setBlock /
+     * getBlockState calls inside its footprint; without pre-warm, those calls
+     * hitting a not-yet-FULL chunk pay a per-block synchronous worldgen wait
+     * (the same pathology TrackGenerator avoids with a similar deferred-load
+     * pattern). Pre-warming amortises the worldgen cost: each chunk is brought
+     * to FULL exactly once, and the subsequent block-touches are cheap.
+     */
+    private static void prewarmEagerFillChunks(
+        ServerLevel level, int xMin, int xMax, int zMin, int zMax
+    ) {
+        int cxMin = xMin >> 4;
+        int cxMax = xMax >> 4;
+        int czMin = zMin >> 4;
+        int czMax = zMax >> 4;
+        long t0 = System.nanoTime();
+        int loaded = 0;
+        for (int cx = cxMin; cx <= cxMax; cx++) {
+            for (int cz = czMin; cz <= czMax; cz++) {
+                level.getChunk(cx, cz, ChunkStatus.FULL, true);
+                loaded++;
+            }
+        }
+        LOGGER.info("[DungeonTrain] Eager fill pre-warmed {} chunks (X[{},{}] Z[{},{}]) in {}ms",
+            loaded, cxMin, cxMax, czMin, czMax, (System.nanoTime() - t0) / 1_000_000);
     }
 
     /**
