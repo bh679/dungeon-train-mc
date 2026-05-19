@@ -4,11 +4,31 @@
     {
       "rolls": 1,
       "entries": [
-        { "type": "minecraft:item", "name": "minecraft:wheat",  "weight": 10 },
-        { "type": "minecraft:item", "name": "minecraft:potato", "weight": 10 },
-        { "type": "minecraft:item", "name": "minecraft:carrot", "weight": 10 },
-        { "type": "minecraft:item", "name": "minecraft:bread",  "weight":  5 },
-        { "type": "minecraft:item", "name": "minecraft:apple",  "weight":  5 }
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:wheat",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:potato",
+          "weight": 11
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:carrot",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:bread",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:apple",
+          "weight": 5
+        }
       ]
     }
   ]
