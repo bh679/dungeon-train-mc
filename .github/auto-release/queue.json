@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l4-b",
-      "label": "Pip - Letter 4 variant B (Pebble the slime)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "There is a slime in my carriage. I named her Pebble.\n\nShe is small and green. Soren said she is too small to be dangerous yet. I dont believe that about Pebble.\n\nShe follows me to the door but doesnt go through. I think she thinks the door is a wall.\n\nMum would say a slime is a monster. Mum is wrong about Pebble.\n\nI miss Mum.\n\nBut I have Pebble.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 4 variant B (Pebble the slime)"
-    },
-    {
       "id": "pip-l5-a",
       "label": "Pip - Letter 5 variant A (sitting beside the door)",
       "type": "add_variant",
@@ -101,6 +84,11 @@
     {
       "id": "pip-l4-a",
       "applied_at": "2026-05-19T05:25:21Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l4-b",
+      "applied_at": "2026-05-19T07:19:24Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
