@@ -2,11 +2,13 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -35,21 +37,24 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * TitleScreen quick-world shortcut. The "New World" button is always installed
- * alongside Singleplayer; the branch only decides which is the default-visible
- * one, and Shift swaps the pair.
+ * TitleScreen first-row layout. Always installs three replacement widgets in
+ * the vanilla Singleplayer slot and toggles their visibility based on
+ * {@link VersionInfo#BRANCH} + Shift modifier. Vanilla Singleplayer is always
+ * hidden — the settings icon is the single entry point into
+ * {@link SelectWorldScreen}.
  *
- * <p>Default visibility, by {@link VersionInfo#BRANCH}:</p>
- * <ul>
- *     <li>{@code main} (release-equivalent commits — see {@code build.gradle}'s
- *         {@code gitBranch}): Singleplayer visible by default; Shift reveals New World.</li>
- *     <li>any other branch: New World visible by default; Shift reveals Singleplayer.</li>
- * </ul>
+ * <p>Visibility matrix:</p>
+ * <pre>
+ *   Branch | Shift | First row
+ *   -------+-------+------------------------------------------------
+ *   main   | any   | [ New World (survival, DT preset) | settings ]
+ *   dev    | no    | [ New World (creative, DT preset) ]
+ *   dev    | yes   | [ New World (survival, DT preset) | settings ]
+ * </pre>
  *
- * <p>"main" is determined at build time by commit-hash equivalence with the
+ * <p>"main" is decided at build time by commit-hash equivalence with the
  * local {@code main} ref, so worktrees built straight off main also register
- * as release. New World launches a fresh creative-mode world using the
- * Dungeon Train default preset.</p>
+ * as release.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class DevQuickWorldHandler {
@@ -57,13 +62,19 @@ public final class DevQuickWorldHandler {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Component SINGLEPLAYER_KEY = Component.translatable("menu.singleplayer");
     private static final Component NEW_WORLD_LABEL = Component.literal("New World");
+    private static final Component SETTINGS_ICON_LABEL =
+            Component.literal("⚙").withStyle(ChatFormatting.BOLD);
+
+    private static final int GAP = 4;
 
     private static final ResourceKey<WorldPreset> DT_DEFAULT_PRESET = ResourceKey.create(
             Registries.WORLD_PRESET,
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train"));
 
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
-    private static WeakReference<Button> newWorldRef = new WeakReference<>(null);
+    private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);
+    private static WeakReference<Button> survivalNewWorldRef = new WeakReference<>(null);
+    private static WeakReference<Button> settingsIconRef = new WeakReference<>(null);
     private static WeakReference<Screen> screenRef = new WeakReference<>(null);
 
     private DevQuickWorldHandler() {}
@@ -77,26 +88,41 @@ public final class DevQuickWorldHandler {
         Button singleplayer = findSingleplayerButton(event);
         if (singleplayer == null) {
             LOGGER.warn("Quick-world: singleplayer button not found on TitleScreen; skipping.");
-            singleplayerRef = new WeakReference<>(null);
-            newWorldRef = new WeakReference<>(null);
-            screenRef = new WeakReference<>(null);
+            clearRefs();
             return;
         }
 
-        Button newWorld = Button.builder(NEW_WORLD_LABEL,
-                        b -> launchFreshWorld(titleScreen))
-                .bounds(singleplayer.getX(), singleplayer.getY(),
-                        singleplayer.getWidth(), singleplayer.getHeight())
-                .build();
-        boolean defaultNW = defaultsToNewWorld();
-        newWorld.visible = defaultNW;
-        singleplayer.visible = !defaultNW;
+        int spX = singleplayer.getX();
+        int spY = singleplayer.getY();
+        int spW = singleplayer.getWidth();
+        int spH = singleplayer.getHeight();
+        int iconW = spH; // square button (~10% of vanilla 200px width)
+        int wideW = spW - iconW - GAP;
 
-        event.addListener(newWorld);
+        Button creativeNewWorld = Button.builder(NEW_WORLD_LABEL,
+                        b -> launchCreativeWorld(titleScreen))
+                .bounds(spX, spY, spW, spH)
+                .build();
+
+        Button survivalNewWorld = Button.builder(NEW_WORLD_LABEL,
+                        b -> launchSurvivalWorld(titleScreen))
+                .bounds(spX, spY, wideW, spH)
+                .build();
+
+        Button settingsIcon = buildSettingsIcon(
+                spX + wideW + GAP, spY, iconW, spH, titleScreen);
+
+        event.addListener(creativeNewWorld);
+        event.addListener(survivalNewWorld);
+        event.addListener(settingsIcon);
 
         singleplayerRef = new WeakReference<>(singleplayer);
-        newWorldRef = new WeakReference<>(newWorld);
+        creativeNewWorldRef = new WeakReference<>(creativeNewWorld);
+        survivalNewWorldRef = new WeakReference<>(survivalNewWorld);
+        settingsIconRef = new WeakReference<>(settingsIcon);
         screenRef = new WeakReference<>(titleScreen);
+
+        applyVisibility(currentMode());
     }
 
     @SubscribeEvent
@@ -104,15 +130,29 @@ public final class DevQuickWorldHandler {
         if (event.getScreen() != screenRef.get()) {
             return;
         }
+        applyVisibility(currentMode());
+    }
+
+    private static void applyVisibility(FirstRowMode mode) {
         Button sp = singleplayerRef.get();
-        Button nw = newWorldRef.get();
-        if (sp == null || nw == null) {
+        Button creative = creativeNewWorldRef.get();
+        Button survival = survivalNewWorldRef.get();
+        Button settings = settingsIconRef.get();
+        if (sp == null || creative == null || survival == null || settings == null) {
             return;
         }
-        boolean shift = Screen.hasShiftDown();
-        boolean showNewWorld = defaultsToNewWorld() != shift;
-        nw.visible = showNewWorld;
-        sp.visible = !showNewWorld;
+        sp.visible = false;
+        boolean showRow = mode == FirstRowMode.SURVIVAL_ROW;
+        creative.visible = !showRow;
+        survival.visible = showRow;
+        settings.visible = showRow;
+    }
+
+    private static Button buildSettingsIcon(int x, int y, int w, int h, Screen parent) {
+        Button.OnPress onPress = b -> Minecraft.getInstance().setScreen(new SelectWorldScreen(parent));
+        return Button.builder(SETTINGS_ICON_LABEL, onPress)
+                .bounds(x, y, w, h)
+                .build();
     }
 
     private static Button findSingleplayerButton(ScreenEvent.Init.Post event) {
@@ -126,7 +166,10 @@ public final class DevQuickWorldHandler {
     }
 
     static void launchFreshWorld(Screen lastScreen) {
-        Minecraft mc = Minecraft.getInstance();
+        launchCreativeWorld(lastScreen);
+    }
+
+    private static void launchCreativeWorld(Screen lastScreen) {
         String name = "Dev World " + System.currentTimeMillis();
         LevelSettings settings = new LevelSettings(
                 name,
@@ -136,22 +179,58 @@ public final class DevQuickWorldHandler {
                 true,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT);
+        openLevel(name, settings, lastScreen);
+    }
+
+    private static void launchSurvivalWorld(Screen lastScreen) {
+        String name = "World " + System.currentTimeMillis();
+        LevelSettings settings = new LevelSettings(
+                name,
+                GameType.SURVIVAL,
+                false,
+                Difficulty.NORMAL,
+                false,
+                new GameRules(),
+                WorldDataConfiguration.DEFAULT);
+        openLevel(name, settings, lastScreen);
+    }
+
+    private static void openLevel(String name, LevelSettings settings, Screen lastScreen) {
+        Minecraft mc = Minecraft.getInstance();
         WorldOptions options = WorldOptions.defaultWithRandomSeed();
-        Function<RegistryAccess, WorldDimensions> dims = registryAccess -> {
+        WorldOpenFlows flows = mc.createWorldOpenFlows();
+        flows.createFreshLevel(name, settings, options, dtPresetDimensions(), lastScreen);
+    }
+
+    private static Function<RegistryAccess, WorldDimensions> dtPresetDimensions() {
+        return registryAccess -> {
             Registry<WorldPreset> presetRegistry =
                     registryAccess.registryOrThrow(Registries.WORLD_PRESET);
             Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(DT_DEFAULT_PRESET);
             if (dt.isPresent()) {
                 return dt.get().value().createWorldDimensions();
             }
-            LOGGER.warn("Dev quick-world: DT default preset not in registry; falling back to NORMAL.");
+            LOGGER.warn("Quick-world: DT default preset not in registry; falling back to NORMAL.");
             return WorldPresets.createNormalWorldDimensions(registryAccess);
         };
-        WorldOpenFlows flows = mc.createWorldOpenFlows();
-        flows.createFreshLevel(name, settings, options, dims, lastScreen);
     }
 
-    private static boolean defaultsToNewWorld() {
-        return !"main".equals(VersionInfo.BRANCH);
+    private static FirstRowMode currentMode() {
+        boolean main = "main".equals(VersionInfo.BRANCH);
+        boolean shift = Screen.hasShiftDown();
+        return (main || shift) ? FirstRowMode.SURVIVAL_ROW : FirstRowMode.CREATIVE_QUICK;
+    }
+
+    private static void clearRefs() {
+        singleplayerRef = new WeakReference<>(null);
+        creativeNewWorldRef = new WeakReference<>(null);
+        survivalNewWorldRef = new WeakReference<>(null);
+        settingsIconRef = new WeakReference<>(null);
+        screenRef = new WeakReference<>(null);
+    }
+
+    private enum FirstRowMode {
+        CREATIVE_QUICK,
+        SURVIVAL_ROW
     }
 }
