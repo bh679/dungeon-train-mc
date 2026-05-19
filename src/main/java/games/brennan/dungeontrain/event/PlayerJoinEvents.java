@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
@@ -253,11 +254,31 @@ public final class PlayerJoinEvents {
             double cdx = player.getX() - boot.x();
             double cdz = player.getZ() - boot.z();
             if (cdx * cdx + cdz * cdz < 4.0) {
+                // Wait for Sable to bind the seed sub-level into
+                // {@code Shipyards.findAll()} before running the eager fill.
+                // {@code TrainBootstrapEvents.onServerStarted} queues the
+                // seed's plot-load asynchronously, so for the first ~1-2
+                // overworld ticks after server-started the seed exists in
+                // the spawn-time registry but is invisible to
+                // {@code Trains.byTrainId}. Without this gate, eager fill
+                // silently skips and the per-tick appender takes over (the
+                // ~30s slow ramp we're trying to replace). Mirrors the
+                // {@code findTrain == null → return false} retry pattern
+                // used by the non-cached path below.
+                if (findTrain(trainLevel) == null) {
+                    return false; // retry next tick
+                }
                 player.teleportTo(trainLevel, boot.x(), boot.y(), boot.z(), boot.yaw(), boot.pitch());
                 LOGGER.info("[DungeonTrain] Login spawn (cached bootstrap placement) for {}: pos=({}, {}, {}) yaw={} pitch={}",
                     player.getName().getString(),
                     String.format("%.1f", boot.x()), boot.y(), String.format("%.1f", boot.z()),
                     String.format("%.1f", boot.yaw()), String.format("%.1f", boot.pitch()));
+                // Eager-fill the seed train to this player's render-distance
+                // target NOW, instead of letting the per-tick appender extend
+                // it one group per ~60 ticks. Bootstrap placed only the seed
+                // group; without this the player sees the train grow
+                // progressively over the next ~30 seconds.
+                TrainCarriageAppender.eagerFillForFirstJoin(trainLevel, player);
                 return true;
             }
         }
