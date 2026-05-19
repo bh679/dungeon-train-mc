@@ -10,6 +10,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.LockIconButton;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -48,6 +50,23 @@ public final class DungeonTrainOptionsScreen extends Screen {
     private EditBox heightField;
     private CycleButton<CarriageGenerationMode> modeButton;
     private EditBox groupSizeField;
+    private LockIconButton dimsLockButton;
+
+    // Train Dimensions is a deprecated control — start locked, require an explicit
+    // unlock confirmation to edit. This flag rides on the screen instance so the
+    // unlocked state survives the init() re-run after a ConfirmScreen returns.
+    private boolean dimsUnlocked = false;
+
+    // Snapshots of in-flight field values, captured right before opening the
+    // ConfirmScreen so the init() re-run on return can restore them instead of
+    // resetting to PendingWorldChoices/defaults. Cleared after init() consumes them.
+    private Boolean pendingStartsWithTrain;
+    private String pendingTrainY;
+    private String pendingLength;
+    private String pendingWidth;
+    private String pendingHeight;
+    private CarriageGenerationMode pendingMode;
+    private String pendingGroupSize;
 
     public DungeonTrainOptionsScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.options.title"));
@@ -59,18 +78,18 @@ public final class DungeonTrainOptionsScreen extends Screen {
         int centerX = this.width / 2;
         int topY = this.height / 2 - 110;
 
-        boolean initialChecked = PendingWorldChoices.isPresent()
-            ? PendingWorldChoices.startsWithTrain()
-            : true;
+        boolean initialChecked = pendingStartsWithTrain != null
+            ? pendingStartsWithTrain
+            : (PendingWorldChoices.isPresent() ? PendingWorldChoices.startsWithTrain() : true);
         int initialY = PendingWorldChoices.isPresent()
             ? PendingWorldChoices.trainY()
             : DungeonTrainConfig.DEFAULT_TRAIN_Y;
         CarriageDims initialDims = PendingWorldChoices.isPresent()
             ? PendingWorldChoices.dims()
             : CarriageDims.DEFAULT;
-        CarriageGenerationMode initialMode = PendingWorldChoices.isPresent()
-            ? PendingWorldChoices.generationMode()
-            : DungeonTrainConfig.DEFAULT_GENERATION_MODE;
+        CarriageGenerationMode initialMode = pendingMode != null
+            ? pendingMode
+            : (PendingWorldChoices.isPresent() ? PendingWorldChoices.generationMode() : DungeonTrainConfig.DEFAULT_GENERATION_MODE);
         int initialGroupSize = PendingWorldChoices.isPresent()
             ? PendingWorldChoices.groupSize()
             : DungeonTrainConfig.DEFAULT_GROUP_SIZE;
@@ -88,17 +107,29 @@ public final class DungeonTrainOptionsScreen extends Screen {
         trainYField = new EditBox(this.font, centerX + 10, topY + ROW_GAP,
             FIELD_WIDTH, FIELD_HEIGHT,
             Component.translatable("gui.dungeontrain.options.train_y"));
-        trainYField.setValue(Integer.toString(initialY));
+        trainYField.setValue(pendingTrainY != null ? pendingTrainY : Integer.toString(initialY));
         trainYField.setFilter(DungeonTrainOptionsScreen::isSignedIntegerInput);
         addRenderableWidget(trainYField);
 
-        // Row 3 — three side-by-side dim fields: L × W × H. Each field is
-        // narrow so all three fit on one row under a single label.
+        // Row 3 — three side-by-side dim fields: L × W × H plus a lock toggle.
+        // The fields are narrow so all three fit on one row under a single
+        // label; the LockIconButton sits to the right of the height field.
         int dimsRowY = topY + ROW_GAP * 2;
         int dimsStartX = centerX + 10;
-        lengthField = makeDimField(dimsStartX, dimsRowY, initialDims.length(), "length");
-        widthField = makeDimField(dimsStartX + DIM_FIELD_WIDTH + 10, dimsRowY, initialDims.width(), "width");
-        heightField = makeDimField(dimsStartX + (DIM_FIELD_WIDTH + 10) * 2, dimsRowY, initialDims.height(), "height");
+        lengthField = makeDimField(dimsStartX, dimsRowY,
+            pendingLength != null ? pendingLength : Integer.toString(initialDims.length()), "length");
+        widthField = makeDimField(dimsStartX + DIM_FIELD_WIDTH + 10, dimsRowY,
+            pendingWidth != null ? pendingWidth : Integer.toString(initialDims.width()), "width");
+        heightField = makeDimField(dimsStartX + (DIM_FIELD_WIDTH + 10) * 2, dimsRowY,
+            pendingHeight != null ? pendingHeight : Integer.toString(initialDims.height()), "height");
+
+        dimsLockButton = new LockIconButton(
+            dimsStartX + (DIM_FIELD_WIDTH + 10) * 3, dimsRowY,
+            b -> onDimsLockPressed());
+        dimsLockButton.setLocked(!dimsUnlocked);
+        addRenderableWidget(dimsLockButton);
+
+        applyDimsLockState();
 
         // Row 4 — generation mode cycle button.
         modeButton = CycleButton.<CarriageGenerationMode>builder(DungeonTrainOptionsScreen::modeLabel)
@@ -117,10 +148,15 @@ public final class DungeonTrainOptionsScreen extends Screen {
         groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 4,
             DIM_FIELD_WIDTH, FIELD_HEIGHT,
             Component.translatable("gui.dungeontrain.options.group_size"));
-        groupSizeField.setValue(Integer.toString(initialGroupSize));
+        groupSizeField.setValue(pendingGroupSize != null ? pendingGroupSize : Integer.toString(initialGroupSize));
         groupSizeField.setFilter(DungeonTrainOptionsScreen::isPositiveIntegerInput);
         addRenderableWidget(groupSizeField);
         refreshGroupSizeVisibility();
+
+        // Snapshots have been consumed by this init() pass; clear so the next
+        // init() (e.g. window resize) reflects the live widget state, not
+        // stale values from the previous round-trip.
+        clearPendingSnapshots();
 
         addRenderableWidget(Button.builder(Component.literal("Done"), b -> saveAndClose())
             .bounds(centerX - 105, topY + ROW_GAP * 6 + 10, 100, 20)
@@ -131,13 +167,66 @@ public final class DungeonTrainOptionsScreen extends Screen {
             .build());
     }
 
-    private EditBox makeDimField(int x, int y, int initial, String suffix) {
+    private EditBox makeDimField(int x, int y, String initial, String suffix) {
         EditBox box = new EditBox(this.font, x, y, DIM_FIELD_WIDTH, FIELD_HEIGHT,
             Component.translatable("gui.dungeontrain.options.carriage_" + suffix));
-        box.setValue(Integer.toString(initial));
+        box.setValue(initial);
         box.setFilter(DungeonTrainOptionsScreen::isPositiveIntegerInput);
         addRenderableWidget(box);
         return box;
+    }
+
+    private void applyDimsLockState() {
+        if (lengthField != null) lengthField.setEditable(dimsUnlocked);
+        if (widthField  != null) widthField.setEditable(dimsUnlocked);
+        if (heightField != null) heightField.setEditable(dimsUnlocked);
+        if (dimsLockButton != null) dimsLockButton.setLocked(!dimsUnlocked);
+    }
+
+    private void onDimsLockPressed() {
+        if (!dimsUnlocked) {
+            // Unlocking is the dangerous direction — gate it behind a confirm.
+            // Snapshot in-flight field values first; the ConfirmScreen will
+            // trigger an init() re-run on return that would otherwise reset
+            // anything the user has typed.
+            snapshotPendingValues();
+            Minecraft mc = Minecraft.getInstance();
+            mc.setScreen(new ConfirmScreen(
+                    proceed -> {
+                        if (proceed) {
+                            dimsUnlocked = true;
+                        }
+                        mc.setScreen(this);
+                    },
+                    Component.translatable("gui.dungeontrain.options.dims_unlock_warning.title"),
+                    Component.translatable("gui.dungeontrain.options.dims_unlock_warning.message"),
+                    Component.translatable("gui.dungeontrain.options.dims_unlock_warning.yes"),
+                    Component.translatable("gui.dungeontrain.options.dims_unlock_warning.no")));
+        } else {
+            // Re-locking is safe — flip without warning, no re-init needed.
+            dimsUnlocked = false;
+            applyDimsLockState();
+        }
+    }
+
+    private void snapshotPendingValues() {
+        if (startsWithTrainBox != null) pendingStartsWithTrain = startsWithTrainBox.selected();
+        if (trainYField != null)        pendingTrainY = trainYField.getValue();
+        if (lengthField != null)        pendingLength = lengthField.getValue();
+        if (widthField != null)         pendingWidth = widthField.getValue();
+        if (heightField != null)        pendingHeight = heightField.getValue();
+        if (modeButton != null)         pendingMode = modeButton.getValue();
+        if (groupSizeField != null)     pendingGroupSize = groupSizeField.getValue();
+    }
+
+    private void clearPendingSnapshots() {
+        pendingStartsWithTrain = null;
+        pendingTrainY = null;
+        pendingLength = null;
+        pendingWidth = null;
+        pendingHeight = null;
+        pendingMode = null;
+        pendingGroupSize = null;
     }
 
     /**
