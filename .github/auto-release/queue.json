@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l4-a",
-      "label": "Pip - Letter 4 variant A (Soren the apple lady)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "The lady with the apple is my friend now. Her name is Soren.\n\nShe has been on the train a long long time. She wont say how long.\n\nSoren asked about Mum. I told her. She got quiet. Then she said your Mum sounds wonderful.\n\nShe said it the same way the man in the yellow coat said the train doesnt stop.\n\nI am still going to find Mum.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 4 variant A (Soren the apple lady)"
-    },
-    {
       "id": "pip-l4-b",
       "label": "Pip - Letter 4 variant B (Pebble the slime)",
       "type": "add_variant",
@@ -113,6 +96,11 @@
     {
       "id": "pip-l3-b",
       "applied_at": "2026-05-19T03:12:29Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l4-a",
+      "applied_at": "2026-05-19T05:25:21Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
