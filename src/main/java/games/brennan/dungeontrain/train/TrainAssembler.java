@@ -195,6 +195,7 @@ public final class TrainAssembler {
             throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
         }
 
+        long tStart = System.nanoTime();
         int length = dims.length();
         int halfPadLen = CarriagePlacer.halfPadLen(dims);
         boolean wrapWithPads = groupSize > 1;
@@ -202,6 +203,7 @@ public final class TrainAssembler {
         int enclosedStartOffset = wrapWithPads ? halfPadLen : 0;
 
         int cleared = clearSubLevelVolume(level, origin, subLevelLength, dims);
+        long tAfterClear = System.nanoTime();
         if (cleared > 0) {
             LOGGER.debug("[DungeonTrain] Cleared {} world blocks in sub-level footprint anchorPIdx={} groupSize={} subLevelLength={} at {}",
                 cleared, anchorPIdx, groupSize, subLevelLength, origin);
@@ -243,8 +245,10 @@ public final class TrainAssembler {
             blocks.addAll(CarriagePlacer.placeHalfFlatbedPad(
                 level, frontPadOrigin, CarriagePlacer.HalfPadSide.FRONT, dims));
         }
+        long tAfterPlace = System.nanoTime();
 
         ManagedShip ship = Shipyards.of(level).assemble(blocks, 1.0);
+        long tAfterAssemble = System.nanoTime();
 
         // Resolve the sub-level's shipyard origin = the back pad's
         // lowest-X corner in shipyard coords (or, for groupSize == 1,
@@ -286,6 +290,7 @@ public final class TrainAssembler {
             pendingEntities[slot] = new PendingContentsEntitySpawn(
                 carriageShipyardOrigin, variant, dims, genCfg, carriagePIdx);
         }
+        long tAfterContents = System.nanoTime();
 
         TrainTransformProvider provider = new TrainTransformProvider(
             velocity, shipyardOrigin, level.dimension(), anchorPIdx, groupSize, dims, trainId);
@@ -312,10 +317,16 @@ public final class TrainAssembler {
         // already own." The registry is the authoritative answer.
         Trains.registerSpawned(trainId, anchorPIdx, ship);
 
-        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={}",
+        long tEnd = System.nanoTime();
+        LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
             anchorPIdx, groupSize, summariseVariants(enclosedBySlot),
             wrapWithPads ? "back+front" : "none",
-            trainId, ship.id(), shipyardOrigin, blocks.size());
+            trainId, ship.id(), shipyardOrigin, blocks.size(),
+            (tAfterClear - tStart) / 1_000_000,
+            (tAfterPlace - tAfterClear) / 1_000_000,
+            (tAfterAssemble - tAfterPlace) / 1_000_000,
+            (tAfterContents - tAfterAssemble) / 1_000_000,
+            (tEnd - tStart) / 1_000_000);
 
         return ship;
     }
