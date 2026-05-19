@@ -293,6 +293,18 @@ public final class TrainAssembler {
         ship.setKinematicDriver(provider);
         ship.setStatic(true);
 
+        // Pre-seed spawnGameTick at the ACTUAL spawn moment, not when Sable
+        // first calls nextTransform (which can lag many ticks for far-from-
+        // player carriages and leaves them permanently behind by
+        // velocity * lateTicks blocks — see
+        // {@link TrainTransformProvider#preSeedSpawnTick} for the full
+        // explanation). NOTE: we deliberately do NOT pre-seed spawnWorldPos
+        // — Sable's pose translation uses the block-AABB centre (see
+        // {@code SableShipyard.computeAnchor}), not the back-pad corner —
+        // so spawnWorldPos must come from {@code input.currentPosition()}
+        // on first kinematic tick to stay in Sable's coordinate frame.
+        provider.preSeedSpawnTick(level.getGameTime());
+
         // Register in the spawn-time truth source. Sable's SubLevelContainer
         // is lazy after assembly (a freshly-assembled sub-level can take
         // several ticks to appear in getAllSubLevels()), so the appender

@@ -236,6 +236,38 @@ public final class TrainTransformProvider implements KinematicDriver {
         return shipyardOrigin;
     }
 
+    /**
+     * Pre-seed {@link #spawnGameTick} to the ACTUAL game tick when this
+     * carriage was assembled — not the (potentially much later) tick when
+     * Sable first calls {@link #nextTransform}.
+     *
+     * <p>Why: the deterministic position formula
+     * {@code canonicalPos = spawnWorldPos + velocity * (currentTick - spawnGameTick) * PHYSICS_DT}
+     * uses {@code spawnGameTick} as its time origin. If we let
+     * {@code nextTransform}'s lazy init capture {@code spawnGameTick} on
+     * the FIRST kinematic call, far-from-player carriages whose first
+     * tick is delayed by N game ticks would have their time origin set N
+     * ticks late, leaving them permanently behind the rest of the train
+     * by {@code velocity * N} blocks — the field-observed eager-fill
+     * overlap pattern.</p>
+     *
+     * <p>{@link #spawnWorldPos} and {@link #canonicalPos} are STILL
+     * captured lazily from {@code input.currentPosition()} on first
+     * kinematic tick: Sable uses the block-AABB centre as the pose
+     * translation reference (see {@code SableShipyard.computeAnchor}), and
+     * synthesising that centre at spawn time is fragile across carriage
+     * variants. By only pre-seeding the tick, the position reference
+     * stays in Sable's native coordinate frame and the formula simply
+     * extrapolates forward from the correct centre by the correct amount
+     * of elapsed time.</p>
+     *
+     * <p>Idempotent: only writes when {@code spawnGameTick == -1}.</p>
+     */
+    public void preSeedSpawnTick(long currentGameTick) {
+        if (this.spawnGameTick != -1L) return;
+        this.spawnGameTick = currentGameTick;
+    }
+
     public ResourceKey<Level> getDimensionKey() {
         return dimensionKey;
     }
@@ -550,8 +582,17 @@ public final class TrainTransformProvider implements KinematicDriver {
             // in whatever rotation Sable's physics produced between
             // assembly and the first kinematic tick.
             lockedRotation = new Quaterniond();
+            // spawnWorldPos: captured from Sable's currentPosition (= block
+            // AABB centre — same reference Sable uses for the pose
+            // translation; see SableShipyard.computeAnchor).
             spawnWorldPos = new Vector3d(input.currentPosition());
-            spawnGameTick = currentGameTick;
+            // spawnGameTick: only overwrite if NOT pre-seeded by
+            // {@link #preSeedSpawnTick}. If pre-seeded, keep the actual
+            // spawn-time tick so canonicalPos starts ticking from the
+            // correct time origin even when Sable's first tick is delayed.
+            if (spawnGameTick == -1L) {
+                spawnGameTick = currentGameTick;
+            }
             canonicalPos = new Vector3d(spawnWorldPos);
             lockedPositionInModel = new Vector3d(input.currentPositionInModel());
             JITTER_LOGGER.info(
