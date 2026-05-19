@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -101,9 +102,8 @@ public final class TitleScreenLayoutHandler {
         quit.setY(rowY);
         quit.setWidth(thirdW);
 
-        Button editor = Button.builder(EDITOR_LABEL, b -> openEditor(titleScreen))
-                .bounds(slotX, slotY, halfW, slotH)
-                .build();
+        DarkTintedButton editor = new DarkTintedButton(slotX, slotY, halfW, slotH,
+                EDITOR_LABEL, b -> openEditor(titleScreen));
         event.addListener(editor);
 
         Button discord = Button.builder(DISCORD_LABEL, b -> openDiscord(titleScreen))
