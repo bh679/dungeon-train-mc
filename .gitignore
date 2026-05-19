@@ -34,6 +34,9 @@ saves/
 # Generated
 src/generated/
 
+# Gate 2 testing artifacts (screenshots, previews)
+test-results/
+
 # Local Claude state
 .claude/settings.local.json
 .claude/hook-versions.json
