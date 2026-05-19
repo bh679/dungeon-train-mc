@@ -40,7 +40,7 @@ import java.util.Map;
  * never recovers — the user has to kill the JVM.
  *
  * <p>On {@link ServerStoppingEvent} (which fires before {@code stopServer()})
- * we do three things, in order:
+ * we do four things, in order:
  * <ol>
  *   <li>Delete every DT-managed train (one {@link ManagedShip} per carriage)
  *       via {@link Shipyard#delete}, queueing each sub-level for Sable
@@ -51,9 +51,19 @@ import java.util.Map;
  *   <li>Sweep {@code ChunkMap.updatingChunkMap} reflectively, removing any
  *       remaining entries whose class is exactly Sable's
  *       {@code PlotChunkHolder}. These are the leaked holders the Sable
- *       mixin filter missed — directly removing them lets vanilla's
- *       {@code hasWork()} return false and the wait loop exit.</li>
+ *       mixin filter missed.</li>
+ *   <li>Drain any <em>remaining</em> vanilla {@link ChunkHolder}s from
+ *       {@code updatingChunkMap}, but only after invoking
+ *       {@link ChunkMap#saveAllChunks(boolean)} reflectively to flush
+ *       their persistent block/entity state to disk. Vanilla overworld
+ *       chunks with non-clearable tickets ({@code FORCED}, {@code START},
+ *       mod tickets) otherwise pin the wait loop. See
+ *       {@link #drainRemainingChunkHolders} for the diagnostic that
+ *       captured this scenario.</li>
  * </ol>
+ *
+ * <p>Together, steps 3 and 4 ensure {@code hasWork()} returns {@code false}
+ * before vanilla's wait loop iterates, letting shutdown proceed cleanly.
  *
  * <p>Why the sweep is safe:
  * <ul>
@@ -76,6 +86,9 @@ import java.util.Map;
  *       which is regenerated.</li>
  *   <li>Players riding carriages get teleported back to a corridor-side
  *       spawn on next login by {@link PlayerJoinEvents}.</li>
+ *   <li>Vanilla chunk data (blocks, entities) is persisted via the
+ *       pre-drain {@code saveAllChunks(true)} call, so block changes made
+ *       up to the moment of shutdown survive the drain.</li>
  * </ul>
  *
  * <p>Common-scope (NOT {@code Dist}-gated) so dedicated servers also benefit
@@ -98,7 +111,8 @@ public final class ShipShutdownEvents {
     public static void onServerStopping(ServerStoppingEvent event) {
         long t0 = System.nanoTime();
         int totalDeleted = 0;
-        int totalSwept = 0;
+        int totalPlotSwept = 0;
+        int totalVanillaSwept = 0;
 
         for (ServerLevel level : event.getServer().getAllLevels()) {
             Shipyard shipyard = Shipyards.of(level);
@@ -126,12 +140,19 @@ public final class ShipShutdownEvents {
                 }
             }
 
-            int sweptHere = sweepLeakedPlotChunkHolders(level);
-            if (sweptHere > 0) {
+            int plotSweptHere = sweepLeakedPlotChunkHolders(level);
+            if (plotSweptHere > 0) {
                 LOGGER.info("[DungeonTrain] Swept {} leaked PlotChunkHolders from updatingChunkMap in {}",
-                    sweptHere, level.dimension().location());
+                    plotSweptHere, level.dimension().location());
             }
-            totalSwept += sweptHere;
+            totalPlotSwept += plotSweptHere;
+
+            int vanillaSweptHere = drainRemainingChunkHolders(level);
+            if (vanillaSweptHere > 0) {
+                LOGGER.info("[DungeonTrain] Drained {} remaining vanilla ChunkHolders from updatingChunkMap in {} (after pre-save)",
+                    vanillaSweptHere, level.dimension().location());
+            }
+            totalVanillaSwept += vanillaSweptHere;
 
             if (deletedHere > 0) {
                 LOGGER.info("[DungeonTrain] Shutdown cleanup: deleted {} train sub-levels in {}",
@@ -141,8 +162,8 @@ public final class ShipShutdownEvents {
         }
 
         long elapsedMs = (System.nanoTime() - t0) / 1_000_000;
-        LOGGER.info("[DungeonTrain] ServerStopping: deleted {} train sub-levels, swept {} leaked PlotChunkHolders across all levels in {}ms",
-            totalDeleted, totalSwept, elapsedMs);
+        LOGGER.info("[DungeonTrain] ServerStopping: deleted {} train sub-levels, swept {} PlotChunkHolders, drained {} vanilla ChunkHolders across all levels in {}ms",
+            totalDeleted, totalPlotSwept, totalVanillaSwept, elapsedMs);
     }
 
     private static int sweepLeakedPlotChunkHolders(ServerLevel level) {
@@ -169,6 +190,79 @@ public final class ShipShutdownEvents {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] PlotChunkHolder sweep failed (non-fatal — vanilla wait loop may still hang)", t);
             return 0;
+        }
+    }
+
+    /**
+     * Second-pass drain for any vanilla {@link ChunkHolder}s that remain in
+     * {@code updatingChunkMap} after the PlotChunkHolder sweep above.
+     *
+     * <p>Observed scenario (2026-05-19, fresh world with 300+ overworld
+     * chunks generated): {@code updatingChunkMap=2094} at
+     * {@code ServerStopping}; vanilla drained 303 in the first ~2 s of its
+     * wait loop, then stalled at {@code updatingChunkMap=1791} for 58+
+     * seconds with {@code pendingUnloads=0} the whole time and the Server
+     * thread {@code RUNNABLE} in {@code ChunkMap.processUnloads}. Same shape
+     * as the Sable {@code PlotChunkHolder} hang but for vanilla holders —
+     * these chunks hold tickets ({@code FORCED}, {@code START}, mod-added)
+     * that {@code removeTicketsOnClosing()} doesn't clear, so they never
+     * land in {@code toDrop}.
+     *
+     * <p>Safety: vanilla {@code ChunkHolder}s carry persistent player data
+     * (block changes, entity state). Yanking them without saving would risk
+     * data loss. Mitigated by calling
+     * {@link net.minecraft.server.level.ServerChunkCache#save(boolean)}
+     * with {@code flush=true} immediately before the drain. That public API
+     * runs {@code runDistanceManagerUpdates()} (benign during shutdown) and
+     * then iterates {@code visibleChunkMap} synchronously, flushing the
+     * I/O worker before returning. {@code visibleChunkMap} holds the same
+     * {@code ChunkHolder} instances as {@code updatingChunkMap}, so the
+     * on-disk state matches what we're about to clear.
+     *
+     * <p>After the drain, {@code hasWork()} returns {@code false} because
+     * {@code updatingChunkMap.isEmpty()} is now true. Vanilla's wait loop
+     * exits on its next iteration and shutdown proceeds normally to
+     * {@code level.close()}.
+     *
+     * <p>If the pre-save throws, we still drain — chunks in
+     * {@code visibleChunkMap} are likely already on disk from the most
+     * recent autosave tick, and a hung world is worse than slightly stale
+     * data. The warn log captures the failure for follow-up.
+     */
+    private static int drainRemainingChunkHolders(ServerLevel level) {
+        try {
+            if (updatingChunkMapField == null) {
+                updatingChunkMapField = ChunkMap.class.getDeclaredField("updatingChunkMap");
+                updatingChunkMapField.setAccessible(true);
+            }
+            ChunkMap chunkMap = level.getChunkSource().chunkMap;
+            Object raw = updatingChunkMapField.get(chunkMap);
+            if (!(raw instanceof Map<?, ?>)) return 0;
+            @SuppressWarnings("unchecked")
+            Map<Long, ChunkHolder> map = (Map<Long, ChunkHolder>) raw;
+            int remaining = map.size();
+            if (remaining == 0) return 0;
+
+            preSave(level);
+
+            map.clear();
+            return remaining;
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Vanilla ChunkHolder drain failed (non-fatal — vanilla wait loop may still hang)", t);
+            return 0;
+        }
+    }
+
+    private static void preSave(ServerLevel level) {
+        try {
+            long t0 = System.nanoTime();
+            level.getChunkSource().save(true);
+            long elapsedMs = (System.nanoTime() - t0) / 1_000_000;
+            LOGGER.info("[DungeonTrain] Pre-drain save(flush=true) on {} took {}ms",
+                level.dimension().location(), elapsedMs);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Pre-drain save failed on {} — proceeding with drain anyway",
+                level.dimension().location(), t);
         }
     }
 }
