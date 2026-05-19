@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l3-b",
-      "label": "Pip - Letter 3 variant B (the plan with no back)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "I made a plan.\n\nWalk one way. Dont turn around. Then I would be at the back of the train.\n\nI walked a long time. Forty seven carriages. I did not look back.\n\nThere was no back. The end looked like where I started. Same Grandma smell.\n\nI dont understand. I want Mum.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 3 variant B (the plan with no back)"
-    },
-    {
       "id": "pip-l4-a",
       "label": "Pip - Letter 4 variant A (Soren the apple lady)",
       "type": "add_variant",
@@ -125,6 +108,11 @@
     {
       "id": "pip-l3-a",
       "applied_at": "2026-05-18T23:26:49Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l3-b",
+      "applied_at": "2026-05-19T03:12:29Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
