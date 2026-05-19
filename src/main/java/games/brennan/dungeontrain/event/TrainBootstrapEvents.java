@@ -2,12 +2,14 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
+import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
@@ -35,6 +37,13 @@ import org.slf4j.Logger;
  * commits any pending world-creation choices into
  * {@link DungeonTrainWorldData} first. Common-scope (not Dist-gated) so
  * dedicated servers also get the auto-spawn.
+ *
+ * Now extends the train to the server-configured carriage window via
+ * {@link TrainCarriageAppender#eagerFillForBootstrap} immediately after the
+ * seed is spawned, so the full train is in place before the player ever sees
+ * a frame. Previously this eager fill ran post-login and produced a visible
+ * ~8 s "stuck at 100%" freeze; running it here shifts that cost into the
+ * world-load phase where the player perceives it as load time.
  *
  * The initial carriage window is centred on the train origin ({@code pIdx=0}).
  * Whichever side the player is later teleported to, the rolling-window
@@ -66,6 +75,23 @@ public final class TrainBootstrapEvents {
             return;
         }
 
+        // Show loading-screen text from this point on. Chunk prep is
+        // already at 100% by the time ServerStartedEvent fires, so without
+        // this the player stares at a finished progress bar with no
+        // indication that DT is still working. The indicator is cleared
+        // in the finally block below regardless of which step threw.
+        BootstrapProgress.setPhase("Spawning Dungeon Train...");
+        try {
+            doBootstrap(event, overworld, data);
+        } finally {
+            BootstrapProgress.clear();
+        }
+    }
+
+    private static void doBootstrap(
+        ServerStartedEvent event, ServerLevel overworld, DungeonTrainWorldData data
+    ) {
+
         StartingDimension startingDim = data.startingDimension();
         ServerLevel target = event.getServer().getLevel(startingDim.levelKey());
         if (target == null) {
@@ -86,20 +112,40 @@ public final class TrainBootstrapEvents {
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
         int configCount = DungeonTrainConfig.getNumCarriages();
-        // Bootstrap only places the seed group; the appender retargets to
-        // each player's render distance on the first tick. When config = 0
-        // (auto), use a benign positive seed so the seed-anchor math in
+        // Bootstrap only places the seed group; the eager-fill pass below
+        // extends to the server-configured window. When config = 0 (auto),
+        // use a benign positive seed so the seed-anchor math in
         // TrainAssembler.spawnTrain doesn't degenerate.
         int seedCount = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
         LOGGER.info("[DungeonTrain] Bootstrap auto-spawning seed for {} carriages at {} in {} dims={}x{}x{} (configCount={})",
             seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
+        BootstrapProgress.setPhase("Spawning seed train...");
+        ManagedShip seedShip = null;
         try {
-            TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
+            seedShip = TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
         }
 
+        BootstrapProgress.setPhase("Anchoring world spawn...");
         anchorWorldSpawnNearCorridor(target, dims, trainY);
+
+        // Eager-fill the train to the server-configured window NOW (while
+        // the world-load phase is still blocking the client's loading
+        // screen), so the player's first rendered frame already shows the
+        // assembled train. Previously this ran in PlayerJoinEvents.tryPlace
+        // and produced a visible ~8 s "stuck at 100%" freeze post-login.
+        // A failure here is non-fatal: the per-tick appender extends the
+        // train at gameplay speed as a fallback. The eager-fill itself
+        // updates {@link BootstrapProgress} to the counted "Assembling
+        // train" phase, overwriting the indeterminate text set above.
+        if (seedShip != null) {
+            try {
+                TrainCarriageAppender.eagerFillForBootstrap(target, seedShip);
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] Bootstrap eager-fill failed — per-tick appender will extend gradually instead", t);
+            }
+        }
     }
 
     /**

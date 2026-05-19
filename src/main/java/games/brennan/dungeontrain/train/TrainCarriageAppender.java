@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.SableConfig;
+import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.CarriageIndexPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -155,7 +156,7 @@ public final class TrainCarriageAppender {
 
     /**
      * Per-seam visible gap (in blocks, as a bias passed to ceil/floor rounding)
-     * applied by {@link #eagerFillForFirstJoin}. Slightly larger than
+     * applied by {@link #eagerFillForBootstrap}. Slightly larger than
      * {@link #MIN_GAP_BLOCKS} so eager-filled seams are visibly separated
      * (≥1 block visible gap once integer rounding lands), matching what the
      * normal per-tick appender produces over time.
@@ -1860,23 +1861,36 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * One-shot eager fill for first-time login on a fresh world. Extends the
-     * seed train (placed by {@link games.brennan.dungeontrain.event.TrainBootstrapEvents})
-     * immediately to the joining player's target carriage window, instead of
-     * letting {@link #updateTrain}'s per-tick path grow it over ~30+ seconds.
+     * One-shot eager fill at world-load time, called from
+     * {@link games.brennan.dungeontrain.event.TrainBootstrapEvents#onServerStarted}
+     * immediately after the seed group is spawned. Extends the seed train to
+     * the server's configured view-distance window so the player's first
+     * rendered frame already shows a fully-assembled train — instead of
+     * spending the post-login ~8s in a synchronous spawn burst (the "stuck
+     * at 100%" freeze that motivated this refactor) or growing it gradually
+     * over ~30+ seconds via {@link #updateTrain}.
+     *
+     * <p>Caller passes the seed {@link ManagedShip} returned by
+     * {@link TrainAssembler#spawnTrain} directly — at this point Sable's
+     * {@code Shipyards.findAll()} is still empty for 1–2 ticks (lazy plot
+     * bind), so {@link Trains#byTrainId} can't find the freshly-spawned
+     * seed. The seed reference and {@link Trains#knownAnchors} /
+     * {@link Trains#knownGroups} (synchronous registry populated inside
+     * {@link TrainAssembler#spawnGroup}) are the authoritative sources we
+     * use instead.</p>
      *
      * <p>Bypasses {@link #isLanePlacementGateClear} (the 60-tick
-     * placement-success gate). Safe at first-join because:
+     * placement-success gate). Safe at bootstrap because:
      * <ul>
-     *   <li>{@link Trains#knownAnchors} (registry, not Sable's visible list)
-     *       guarantees no duplicate spawns at the same anchor.</li>
+     *   <li>{@link Trains#knownAnchors} guarantees no duplicate spawns at
+     *       the same anchor.</li>
      *   <li>New origins are computed via deterministic stride math from a
      *       fixed reference carriage's stored {@code getShipyardOrigin} —
-     *       not via {@code shipToWorld}/AABB inspection — so Sable's
-     *       lazy plot-load lag doesn't corrupt placement.</li>
-     *   <li>At first-join the train has barely moved (velocity 2 blocks/s ×
-     *       a few ticks ≪ one block), so the registry-frame stride math
-     *       is exact w.r.t. the world.</li>
+     *       not via {@code shipToWorld}/AABB inspection — so Sable's lazy
+     *       plot-load lag doesn't corrupt placement.</li>
+     *   <li>At bootstrap the train hasn't ticked yet (game time hasn't
+     *       advanced since {@code preSeedSpawnTick}), so the registry-frame
+     *       stride math is exact w.r.t. the world.</li>
      * </ul></p>
      *
      * <p>Skips {@link #markCollidingNeighbours} and {@link #adjustForCollisions}
@@ -1884,36 +1898,60 @@ public final class TrainCarriageAppender {
      * for groups whose sub-levels haven't been bound by Sable yet. The
      * stride math produces non-overlapping placements by construction.</p>
      *
-     * <p>Multi-player late joiners are NOT handled here; they're caught by
-     * the normal per-tick appender path via {@link #onLevelTick}.</p>
+     * <p>The actual joining player's render distance may exceed the
+     * server-configured value used here; the per-tick appender path via
+     * {@link #onLevelTick} extends the train further if needed once the
+     * player connects.</p>
      */
-    public static void eagerFillForFirstJoin(ServerLevel level, ServerPlayer player) {
-        Map<UUID, List<Trains.Carriage>> trainsById = Trains.byTrainId(level);
-        if (trainsById.isEmpty()) {
-            LOGGER.debug("[DungeonTrain] Eager fill skipped — no trains in level {}",
-                level.dimension().location());
+    public static void eagerFillForBootstrap(ServerLevel level, ManagedShip seedShip) {
+        if (seedShip == null) {
+            LOGGER.debug("[DungeonTrain] Bootstrap eager fill skipped — null seedShip");
             return;
         }
-        for (List<Trains.Carriage> train : trainsById.values()) {
-            eagerFillTrain(level, train, player);
+        try {
+            eagerFillTrainAtBootstrap(level, seedShip);
+        } finally {
+            // Always clear so a thrown exception during the loop doesn't
+            // leave the loading-screen indicator stuck on the player's
+            // client when they retry. The fill itself is wrapped in
+            // try/catch by the caller (TrainBootstrapEvents.onServerStarted),
+            // so any throw is already logged there.
+            BootstrapProgress.clear();
         }
     }
 
     /**
-     * Eager-fill setup for a single train. Computes the target anchor
-     * range, freezes the existing carriages (so the train doesn't move
-     * during placement), and stores the state in
-     * {@link #ACTIVE_EAGER_FILLS}. {@link #stepActiveEagerFills} drains
-     * the state at one forward + one backward spawn per tick until done,
-     * then restores velocity. This spreads the heavy per-spawn cost
-     * across ticks instead of blocking the server for ~8 s.
+     * Bootstrap-context eager-fill for a single train. Called once from
+     * {@link #eagerFillForBootstrap} with the seed {@link ManagedShip}
+     * directly (Sable hasn't bound it into {@code Shipyards.findAll()} yet,
+     * so {@code Trains.byTrainId} would return empty here).
+     *
+     * <p>Differs from a player-driven eager fill in three places:</p>
+     * <ul>
+     *   <li>Target carriage count comes from
+     *       {@link #bootstrapTargetFromServerViewDistance} (the server's
+     *       {@code view-distance} property), not the joining player's
+     *       render distance — there is no joining player yet.</li>
+     *   <li>{@code playerPIdx} is hard-coded to {@code 0}. The cached
+     *       world-spawn placement
+     *       ({@link games.brennan.dungeontrain.event.PlayerJoinEvents#computeAndCacheBootstrapPlacement})
+     *       puts the player near {@code X = 0}, which sits at or near the
+     *       seed group's anchor pIdx of 0. If the joining player ends up
+     *       slightly offset, the per-tick appender retargets on first
+     *       tick.</li>
+     *   <li>Mark-placed iterates
+     *       {@link Trains#knownGroups}{@code .values()} (synchronous
+     *       registry) instead of {@link Trains#findById} (Sable-binding
+     *       dependent).</li>
+     * </ul>
      */
-    private static void eagerFillTrain(
-        ServerLevel level, List<Trains.Carriage> train, ServerPlayer player
+    private static void eagerFillTrainAtBootstrap(
+        ServerLevel level, ManagedShip seedShip
     ) {
-        if (train.isEmpty()) return;
-        Trains.Carriage reference = train.get(0);
-        TrainTransformProvider refProvider = reference.provider();
+        if (!(seedShip.getKinematicDriver() instanceof TrainTransformProvider refProvider)) {
+            LOGGER.warn("[DungeonTrain] Bootstrap eager fill: seedShip has no TrainTransformProvider — skipping");
+            return;
+        }
         if (refProvider.isAppenderDisabled()) return;
 
         UUID trainId = refProvider.getTrainId();
@@ -1925,7 +1963,7 @@ public final class TrainCarriageAppender {
         int configCount = DungeonTrainConfig.getNumCarriages();
         int rawTargetCount = (configCount > 0)
             ? configCount
-            : eagerFillTargetFromRenderDistance(player, length);
+            : bootstrapTargetFromServerViewDistance(level, length);
 
         // Cap to Sable's sub-level tracking range. Sable culls any sub-level
         // farther than {@code SUB_LEVEL_TRACKING_RANGE} blocks (default 320)
@@ -1945,31 +1983,35 @@ public final class TrainCarriageAppender {
             (int) ((trackingRange * 2.0) / Math.max(1, length)));
         int targetCount = Math.min(rawTargetCount, trackingCap);
         if (targetCount < rawTargetCount) {
-            LOGGER.info("[DungeonTrain] Eager fill: capped target {} → {} carriages by SableConfig.SUB_LEVEL_TRACKING_RANGE={} blocks (length={})",
+            LOGGER.info("[DungeonTrain] Bootstrap eager fill: capped target {} → {} carriages by SableConfig.SUB_LEVEL_TRACKING_RANGE={} blocks (length={})",
                 rawTargetCount, targetCount, trackingRange, length);
         }
 
-        // Compute the player's pIdx via worldToShip on the reference's
-        // shipyard frame — same approach as {@link #updateTrain} at lines
-        // 1300+. shipyardOrigin is in SHIPYARD space (Sable maps the train
-        // into a far-off plot region, e.g. x≈20.4M for the seed); we MUST
-        // convert through Sable, not subtract world coords from shipyard
-        // coords. Safe because {@link Trains#byTrainId} only returned this
-        // train if Sable has bound its sub-level.
+        // At bootstrap there is no joining player to read a position from.
+        // The cached world-spawn placement puts the player at X ≈ 0, which
+        // is the seed group's anchor pIdx. Use 0 directly; the per-tick
+        // appender retargets on the first player tick if they end up
+        // offset.
+        int playerPIdx = 0;
+
         int halfPadLen = CarriagePlacer.halfPadLen(dims);
-        int enclosedStartOffset = (groupSize > 1) ? halfPadLen : 0;
         BlockPos refShipyardOrigin = refProvider.getShipyardOrigin();
-        int refAnchorAtStart = refProvider.getPIdx();
-        Vector3d playerLocal = new Vector3d(player.getX(), player.getY(), player.getZ());
-        reference.ship().worldToShip(playerLocal);
-        int playerPIdx = (int) Math.floor(
-            (playerLocal.x - refShipyardOrigin.getX() - enclosedStartOffset) / (double) length
-        ) + refAnchorAtStart;
 
         int halfBack = (targetCount - 1) / 2;
         int halfFront = targetCount - halfBack - 1;
         int neededMin = playerPIdx - halfBack;
         int neededMax = playerPIdx + halfFront;
+
+        // Initialise the loading-screen progress indicator. The displayed
+        // total is the group-aligned carriage count we'll actually place
+        // (seed + ceil(halfFront/groupSize) forward groups + ceil(halfBack/
+        // groupSize) backward groups, each × groupSize) — matches what the
+        // loop produces so the indicator ends at "N / N" rather than
+        // overshooting (target carriages 35 + groupSize 3 → 39 actual).
+        int forwardGroupsToFill = Math.max(0, Math.ceilDiv(Math.max(0, neededMax), groupSize));
+        int backwardGroupsToFill = Math.max(0, Math.ceilDiv(Math.max(0, -neededMin), groupSize));
+        int alignedTotalCarriages = (1 + forwardGroupsToFill + backwardGroupsToFill) * groupSize;
+        BootstrapProgress.start("Assembling train", alignedTotalCarriages, groupSize);
 
         int startMin = Integer.MAX_VALUE;
         int startMax = Integer.MIN_VALUE;
@@ -1978,7 +2020,7 @@ public final class TrainCarriageAppender {
             if (a > startMax) startMax = a;
         }
         if (startMin == Integer.MAX_VALUE) {
-            LOGGER.warn("[DungeonTrain] Eager fill: trainId={} has no registered anchors — skipping", trainId);
+            LOGGER.warn("[DungeonTrain] Bootstrap eager fill: trainId={} has no registered anchors — skipping", trainId);
             return;
         }
         int trainMin = startMin;
@@ -1990,7 +2032,7 @@ public final class TrainCarriageAppender {
         int subLevelStride = (groupSize > 1) ? (groupSize * length + 2 * halfPadLen) : length;
         Vector3d refWorldOrigin = new Vector3d(
             refShipyardOrigin.getX(), refShipyardOrigin.getY(), refShipyardOrigin.getZ());
-        reference.ship().shipToWorld(refWorldOrigin);
+        seedShip.shipToWorld(refWorldOrigin);
         int placeY = (int) Math.round(refWorldOrigin.y);
         int placeZ = (int) Math.round(refWorldOrigin.z);
 
@@ -2007,7 +2049,7 @@ public final class TrainCarriageAppender {
         double forwardRefX = worldXOfAnchor(trainId, trainMax);
         double backwardRefX = worldXOfAnchor(trainId, trainMin);
         if (Double.isNaN(forwardRefX) || Double.isNaN(backwardRefX)) {
-            LOGGER.warn("[DungeonTrain] Eager fill: could not resolve world X for edge anchors trainMax={} trainMin={} trainId={} — skipping",
+            LOGGER.warn("[DungeonTrain] Bootstrap eager fill: could not resolve world X for edge anchors trainMax={} trainMin={} trainId={} — skipping",
                 trainMax, trainMin, trainId);
             return;
         }
@@ -2036,7 +2078,7 @@ public final class TrainCarriageAppender {
             if (needsForward) {
                 int forwardAnchor = trainMax + groupSize;
                 if (Trains.knownAnchors(trainId).contains(forwardAnchor)) {
-                    LOGGER.warn("[DungeonTrain] Eager fill: refused to re-spawn known forward anchor={} trainId={}", forwardAnchor, trainId);
+                    LOGGER.warn("[DungeonTrain] Bootstrap eager fill: refused to re-spawn known forward anchor={} trainId={}", forwardAnchor, trainId);
                     break;
                 }
                 double idealX = forwardRefX + subLevelStride;
@@ -2044,6 +2086,7 @@ public final class TrainCarriageAppender {
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, forwardAnchor, groupSize, dims, trainId);
                 markEagerFilledPlaced(newShip);
+                BootstrapProgress.advance(groupSize);
                 forwardRefX = placeX;
                 trainMax = forwardAnchor;
                 spawned++;
@@ -2051,7 +2094,7 @@ public final class TrainCarriageAppender {
             if (needsBackward) {
                 int backwardAnchor = trainMin - groupSize;
                 if (Trains.knownAnchors(trainId).contains(backwardAnchor)) {
-                    LOGGER.warn("[DungeonTrain] Eager fill: refused to re-spawn known backward anchor={} trainId={}", backwardAnchor, trainId);
+                    LOGGER.warn("[DungeonTrain] Bootstrap eager fill: refused to re-spawn known backward anchor={} trainId={}", backwardAnchor, trainId);
                     break;
                 }
                 double idealX = backwardRefX - subLevelStride;
@@ -2059,6 +2102,7 @@ public final class TrainCarriageAppender {
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, backwardAnchor, groupSize, dims, trainId);
                 markEagerFilledPlaced(newShip);
+                BootstrapProgress.advance(groupSize);
                 backwardRefX = placeX;
                 trainMin = backwardAnchor;
                 spawned++;
@@ -2074,26 +2118,29 @@ public final class TrainCarriageAppender {
         // exempt, they move in lockstep via their shared targetVelocity and
         // the deterministic canonicalPos = spawnWorldPos + velocity*elapsedTicks
         // formula — the train behaves as one rigid group, exactly what
-        // dropping them all in at once requires to stay stable. Also marks
-        // the seed itself (which may not have hit its natural 60-tick settle
-        // window if first-join happened quickly after server-start).
-        for (Trains.Carriage c : Trains.findById(level, trainId)) {
-            if (!c.provider().isPlacedSuccessfully()) {
-                c.provider().markPlacedSuccessfully();
+        // dropping them all in at once requires to stay stable.
+        //
+        // Iterates {@code Trains.knownGroups} (synchronous spawn-time
+        // registry) instead of {@code Trains.findById} — Sable hasn't bound
+        // any of these sub-levels into Shipyards.findAll() yet at bootstrap,
+        // so a Shipyards-backed lookup would return nothing.
+        for (ManagedShip ship : Trains.knownGroups(trainId).values()) {
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider p
+                && !p.isPlacedSuccessfully()) {
+                p.markPlacedSuccessfully();
             }
         }
 
-        LOGGER.info("[DungeonTrain] Eager fill for {} on trainId={}: playerPIdx={} target={} need=[{},{}] spawned {} group(s), anchor range [{},{}] -> [{},{}] (groupSize={})",
-            player.getName().getString(), trainId, playerPIdx, targetCount, neededMin, neededMax, spawned, startMin, startMax, trainMin, trainMax, groupSize);
+        LOGGER.info("[DungeonTrain] Bootstrap eager fill on trainId={}: playerPIdx={} target={} need=[{},{}] spawned {} group(s), anchor range [{},{}] -> [{},{}] (groupSize={})",
+            trainId, playerPIdx, targetCount, neededMin, neededMax, spawned, startMin, startMax, trainMin, trainMax, groupSize);
     }
 
     /**
      * Resolve the current world X of a specific anchor by looking up its
      * registered {@link ManagedShip} and {@code shipToWorld}-ing its
-     * stored shipyard origin. Used by {@link #eagerFillForFirstJoin} to
+     * stored shipyard origin. Used by {@link #eagerFillForBootstrap} to
      * initialise the rolling forward/backward reference X from the actual
-     * train edges (rather than the seed), which matters when the per-tick
-     * appender has already extended the train before the eager fill runs.
+     * train edges as registered, rather than recomputing from the seed.
      *
      * <p>Returns {@link Double#NaN} if the anchor isn't in the registry or
      * its driver isn't a {@link TrainTransformProvider} — the caller bails
@@ -2148,24 +2195,26 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * Eager-fill variant: same render-distance math as
-     * {@link #autoTargetFromRenderDistance} but WITHOUT the
-     * {@link DungeonTrainConfig#MAX_CARRIAGES} ceiling. The per-tick appender
-     * caps each player's rolling window at 50 carriages because letting an
-     * uncapped window grow under chunk-render-distance pressure could thrash
-     * Sable's plot loader during gameplay. At first-join we want to actually
-     * fill what the player can see, even at high rd settings (rd ≥ 16
-     * chunks → unclamped target ≥ 57 carriages at length=9).
+     * Bootstrap eager-fill variant: same {@code × 16 × 2 / length} math as
+     * {@link #autoTargetFromRenderDistance} but sourced from the server's
+     * {@code view-distance} property (via
+     * {@code level.getServer().getPlayerList().getViewDistance()}) rather
+     * than any individual player — at bootstrap time no player has joined
+     * yet. Falls back to a hardcoded 10-chunk floor if the server reports 0
+     * (defensive; in practice the server-properties default is always set).
      *
-     * <p>Still respects {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR} so
-     * very-low-rd values still produce a sensible train.</p>
+     * <p>WITHOUT the {@link DungeonTrainConfig#MAX_CARRIAGES} ceiling — the
+     * per-tick appender caps each player's rolling window at 50 carriages
+     * because letting an uncapped window grow under chunk-render-distance
+     * pressure could thrash Sable's plot loader during gameplay, but at
+     * world load we want to fill what the player will actually see.</p>
+     *
+     * <p>Still respects {@link DungeonTrainConfig#MIN_CARRIAGES_AUTO_FLOOR}
+     * so very-low view-distance values still produce a sensible train.</p>
      */
-    private static int eagerFillTargetFromRenderDistance(ServerPlayer player, int carriageLength) {
-        int rdChunks = player.requestedViewDistance();
-        if (rdChunks <= 0) {
-            rdChunks = player.serverLevel().getServer().getPlayerList().getViewDistance();
-            if (rdChunks <= 0) rdChunks = 10;
-        }
+    private static int bootstrapTargetFromServerViewDistance(ServerLevel level, int carriageLength) {
+        int rdChunks = level.getServer().getPlayerList().getViewDistance();
+        if (rdChunks <= 0) rdChunks = 10;
         int rdBlocks = rdChunks * 16;
         int target = (rdBlocks * 2) / Math.max(1, carriageLength);
         return Math.max(DungeonTrainConfig.MIN_CARRIAGES_AUTO_FLOOR, target);
