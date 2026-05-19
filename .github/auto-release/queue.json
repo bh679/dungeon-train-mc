@@ -1,40 +1,6 @@
 {
   "pending": [
     {
-      "id": "pip-l4-b",
-      "label": "Pip - Letter 4 variant B (Pebble the slime)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "There is a slime in my carriage. I named her Pebble.\n\nShe is small and green. Soren said she is too small to be dangerous yet. I dont believe that about Pebble.\n\nShe follows me to the door but doesnt go through. I think she thinks the door is a wall.\n\nMum would say a slime is a monster. Mum is wrong about Pebble.\n\nI miss Mum.\n\nBut I have Pebble.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 4 variant B (Pebble the slime)"
-    },
-    {
-      "id": "pip-l5-a",
-      "label": "Pip - Letter 5 variant A (sitting beside the door)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json",
-      "story_meta": {
-        "id": "pip_aaro_the_waiting_child",
-        "character": "Pip Aaro",
-        "story": "The Waiting Child"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Letter Five"
-      },
-      "variant": "Soren told me about the door.\n\nShe said there is a door on the train that goes outside. She said if I find it I should go through it.\n\nI thought about it for a long time. About Mum. About Pebble.\n\nIf Mum is on this train I have to keep looking. If she isnt I cant reach her anyway.\n\nWhen I find the door I am going to sit next to it. And wait.\n\nSoren said okay sweetheart. Like she meant it this time.\n\nPip",
-      "commit_message": "content(narrative): Pip Letter 5 variant A (sitting beside the door)"
-    },
-    {
       "id": "pip-l5-b",
       "label": "Pip - Letter 5 variant B (the message Mum will find)",
       "type": "add_variant",
@@ -101,6 +67,16 @@
     {
       "id": "pip-l4-a",
       "applied_at": "2026-05-19T05:25:21Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l4-b",
+      "applied_at": "2026-05-19T07:19:24Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "pip-l5-a",
+      "applied_at": "2026-05-19T09:15:18Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
     }
   ]
