@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -110,6 +111,15 @@ public final class TrainBootstrapEvents {
         BlockPos trainOrigin = new BlockPos(0, trainY, 0);
         CarriageDims dims = data.dims();
         Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
+
+        // Pre-load all carriage body, parts, and half-flatbed templates into
+        // their in-memory caches BEFORE any spawn runs. Otherwise the first
+        // spawn touching each variant pays a synchronous NBT-load-from-disk
+        // on the server thread (observed: 5-2500 ms place= variance per
+        // spawnGroup during the bootstrap eager-fill). One up-front pass
+        // amortises the disk reads outside the per-spawn budget.
+        BootstrapProgress.setPhase("Loading carriage templates...");
+        CarriagePlacer.warmTemplateCaches(target, dims);
 
         int configCount = DungeonTrainConfig.getNumCarriages();
         // Bootstrap only places the seed group; the eager-fill pass below

@@ -472,6 +472,43 @@ public final class CarriagePlacer {
     }
 
     /**
+     * Eagerly populate the body, parts, and half-flatbed template caches so
+     * subsequent {@link #placeAt} / {@link #placeHalfFlatbedPad} calls hit the
+     * in-memory cache instead of paying a first-access NBT-load-from-disk hit.
+     *
+     * <p>Without this, the first spawn touching a given variant pays the disk
+     * read on the server thread — manifesting as per-spawn variance of
+     * 5-2500 ms during the bootstrap eager-fill. Warming once up-front
+     * collapses that variance into a single, observable phase.</p>
+     *
+     * <p>Called from {@link games.brennan.dungeontrain.event.TrainBootstrapEvents}
+     * during {@code ServerStartedEvent} before any train is spawned. Idempotent;
+     * subsequent calls are cheap cache hits.</p>
+     */
+    public static void warmTemplateCaches(ServerLevel level, CarriageDims dims) {
+        long t0 = System.nanoTime();
+        int bodyHits = 0;
+        int partHits = 0;
+        for (CarriageVariant variant : CarriageVariantRegistry.allVariants()) {
+            CarriageTemplateStore.get(level, variant, dims);
+            bodyHits++;
+            Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
+            if (assignment.isEmpty()) continue;
+            CarriagePartAssignment a = assignment.get();
+            for (CarriagePartKind kind : CarriagePartKind.values()) {
+                for (String name : a.names(kind)) {
+                    if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
+                    CarriagePartTemplateStore.get(level, kind, name, dims);
+                    partHits++;
+                }
+            }
+        }
+        getOrBuildHalfFlatbedTemplate(level, dims);
+        LOGGER.info("[DungeonTrain] Template caches warmed: {} body, {} part, +half-flatbed in {}ms",
+            bodyHits, partHits, (System.nanoTime() - t0) / 1_000_000);
+    }
+
+    /**
      * Resolve the half-sized flatbed template for {@code dims}, deriving
      * it from the full FLATBED's stored NBT on first call and caching
      * the result. {@code Optional.empty()} marks "FLATBED has no NBT
