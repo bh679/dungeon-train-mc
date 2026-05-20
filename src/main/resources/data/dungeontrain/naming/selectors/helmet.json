@@ -1,8 +1,0 @@
-{
-  "id": "dungeontrain:helmet",
-  "applies_to": "minecraft:head_armor",
-  "tiers": {
-    "plain": "dungeontrain:weapon_name_short",
-    "enchanted": "dungeontrain:weapon_name_full"
-  }
-}

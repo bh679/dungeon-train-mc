@@ -1,8 +1,0 @@
-{
-  "id": "dungeontrain:hoe",
-  "applies_to": "minecraft:hoes",
-  "tiers": {
-    "plain": "dungeontrain:weapon_name_short",
-    "enchanted": "dungeontrain:weapon_name_full"
-  }
-}

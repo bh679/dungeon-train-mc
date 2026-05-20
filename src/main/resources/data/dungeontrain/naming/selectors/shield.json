@@ -1,8 +1,0 @@
-{
-  "id": "dungeontrain:shield",
-  "applies_to": "dungeontrain:shields",
-  "tiers": {
-    "plain": "dungeontrain:weapon_name_short",
-    "enchanted": "dungeontrain:weapon_name_full"
-  }
-}
