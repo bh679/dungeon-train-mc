@@ -213,11 +213,15 @@ gateable changes — they are scheduled, not requested.
 | Force-fire a tick manually | `gh workflow run auto-release.yml -f force=true` |
 | Preview without releasing | `gh workflow run auto-release.yml -f dry_run=true` |
 
-### Discord noise (known followup)
+### Discord notifications
 
-Per Gate 1 decision, cascade ticks publish through the full release pipeline (Modrinth +
-CurseForge + Discord). Discord notification fatigue is a known concern — a future PR may
-add a quieter "cascade tick" embed variant gated on the `auto` input.
+Cascade ticks publish to Modrinth + CurseForge only. Discord is suppressed on any release
+dispatched with `auto=true` (the cascade always passes this flag), so the cascade keeps
+the Modrinth/CurseForge "recently updated" feeds fresh without pinging the Discord
+server. Discord notifications fire only for manual releases (`auto=false`, the default).
+
+If cascade-tick Discord pings ever become useful — e.g. a richer embed style that
+clearly distinguishes auto ticks from real releases — that would be a future addition.
 
 ---
 
