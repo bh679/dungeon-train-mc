@@ -209,8 +209,8 @@ gateable changes — they are scheduled, not requested.
 | Want to … | Do this |
 |---|---|
 | Add a new content drop to the cascade | Open a normal PR adding an object to `.github/auto-release/queue.json` `pending[]` |
-| Pause the cascade | Disable the **Auto-Release Cascade** workflow in the GitHub Actions UI |
-| Force-fire a tick manually | `gh workflow run auto-release.yml -f force=true` |
+| Pause the cascade (hard kill — blocks scheduled + force dispatches) | `gh variable set AUTO_RELEASE_ENABLED --body false` (or set via Settings → Variables). Resume with `gh variable delete AUTO_RELEASE_ENABLED` |
+| Force-fire a tick manually | `gh workflow run auto-release.yml -f force=true` (still respects the kill switch) |
 | Preview without releasing | `gh workflow run auto-release.yml -f dry_run=true` |
 
 ### Discord noise (known followup)

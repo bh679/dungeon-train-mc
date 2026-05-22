@@ -101,12 +101,39 @@ Open a normal PR with the queue addition. The cascade will pick it up on the nex
 
 ## Pausing the cascade
 
-To pause: disable the `auto-release.yml` workflow in the GitHub Actions UI
-(Actions → Auto-Release Cascade → ⋯ → Disable workflow).
+### Kill switch (recommended)
 
-To skip a single tick: leave `queue.json.pending` empty and accept the auto-balancing
-default, or temporarily set `state.json.last_auto_release_at` to a recent timestamp so
-`should-fire.sh` decides not enough time has elapsed.
+Set the repo variable `AUTO_RELEASE_ENABLED` to the string `false`. This is a **hard
+kill**: it skips both scheduled ticks and `workflow_dispatch` runs (including
+`force=true` and `dry_run=true`). When the cascade is disabled, a small
+`disabled-notice` job runs in place of `cascade` and emits a notice annotation on the
+run summary so the paused state is visible in the Actions UI.
+
+From the CLI:
+
+```bash
+gh variable set AUTO_RELEASE_ENABLED --body false   # pause
+gh variable delete AUTO_RELEASE_ENABLED             # resume (or set to 'true')
+```
+
+Or in the UI: **Settings → Secrets and variables → Actions → Variables tab → New
+repository variable**, name `AUTO_RELEASE_ENABLED`, value `false`.
+
+The comparison is case-sensitive and the only "off" value is the lowercase string
+`false`. Anything else — unset, `"true"`, `"FALSE"`, `"0"`, `"no"` — is treated as
+*enabled*, which is the default behaviour.
+
+Note: this only stops the **cascade**. Real releases via
+`gh workflow run release.yml -f tag=v...` are unaffected.
+
+### Other ways to pause
+
+- **Disable the workflow entirely** via Actions → Auto-Release Cascade → ⋯ →
+  Disable workflow. Coarser than the kill switch — also stops manual dispatches from
+  even running — but useful if you want the workflow gone from the UI.
+- **Skip a single tick** by leaving `queue.json.pending` empty and accepting the
+  auto-balancing default, or by temporarily setting `state.json.last_auto_release_at`
+  to a recent timestamp so `should-fire.py` decides not enough time has elapsed.
 
 ## Cancelling on real release
 
