@@ -168,6 +168,7 @@ jobs:
           game-versions: 1.21.1
           dependencies: |
             sable(required)
+            adventure-item-names(embedded)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
