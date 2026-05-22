@@ -32,6 +32,10 @@ permissions:
 
 jobs:
   cascade:
+    # Kill switch: set repo variable AUTO_RELEASE_ENABLED=false to disable the
+    # entire cascade (scheduled ticks AND workflow_dispatch with force=true).
+    # Unset or any value other than 'false' = enabled (default behaviour).
+    if: vars.AUTO_RELEASE_ENABLED != 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -128,3 +132,16 @@ jobs:
           echo "DRY RUN — would dispatch release.yml tag=v$NEW_VERSION auto=true"
           echo "DRY RUN — diff preview:"
           git --no-pager diff --stat
+
+  disabled-notice:
+    # Leaves a visible breadcrumb in the Actions UI when the cascade is killed
+    # via the AUTO_RELEASE_ENABLED repo variable. Skipped jobs alone are easy
+    # to miss; this job surfaces a notice annotation on every tick the kill
+    # switch is active.
+    if: vars.AUTO_RELEASE_ENABLED == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cascade is disabled
+        run: |
+          echo "::notice::Auto-release cascade is DISABLED via repo variable AUTO_RELEASE_ENABLED=false."
+          echo "::notice::Unset the variable, or set it to 'true', to re-enable."
