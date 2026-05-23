@@ -26,6 +26,18 @@ public final class RandomBookTag {
     public static final String NBT_BOOK = "dt_random_book";
     /** Variant index inside the book, 1-based to match the {@code Letter} convention. */
     public static final String NBT_VARIANT = "dt_random_book_variant";
+    /**
+     * "Has been held" marker. Set on a random book the first time it lands
+     * in a player's mainhand or offhand slot (see {@code NarrativeBookEvents
+     * .onEquipmentChange}). The burn flow gates on this so a random book
+     * dropping out of a broken pot / chest / hopper doesn't ignite until a
+     * player has actually picked it up.
+     *
+     * <p>Sticky: never cleared once set. Survives inventory moves, so a book
+     * that was held then tucked into a backpack still burns when later
+     * Q-thrown or dropped on death.</p>
+     */
+    public static final String NBT_HELD = "dt_random_book_held";
 
     private RandomBookTag() {}
 
@@ -35,6 +47,29 @@ public final class RandomBookTag {
             tag.putString(NBT_BOOK, bookBasename);
             tag.putInt(NBT_VARIANT, variantIndex);
         });
+    }
+
+    /**
+     * Idempotently flag {@code stack} as "has been held by a player".
+     * Subsequent drops will burn. No-op if the stack already carries the
+     * marker.
+     */
+    public static void markHeld(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(NBT_HELD, true));
+    }
+
+    /**
+     * True when {@code stack} has been held by a player at least once (see
+     * {@link #markHeld}). Safe to call on any stack — returns {@code false}
+     * for empty / non-random-book stacks.
+     */
+    public static boolean isHeld(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null || cd.isEmpty()) return false;
+        CompoundTag tag = cd.copyTag();
+        return tag.contains(NBT_HELD, Tag.TAG_BYTE) && tag.getBoolean(NBT_HELD);
     }
 
     /**
