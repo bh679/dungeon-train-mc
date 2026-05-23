@@ -103,11 +103,17 @@ public final class NarrativeBookEvents {
      * <ul>
      *   <li>Stack must be a {@link RandomBookTag}-stamped vanilla written book.</li>
      *   <li>If the world has not yet seen this {@code (basename, variantIndex)},
-     *       mark it seen and leave the stack as-is.</li>
+     *       mark it seen and leave the stack content as-is.</li>
      *   <li>If the world HAS seen it, ask {@link RandomBookFactory#pickUnseenForWorld}
      *       for an alternative tuple and swap the stack's content. The
      *       picker resets the world's tracking automatically when every
      *       loaded variant has been seen (silent cycle).</li>
+     *   <li>After any content resolution, stamp the
+     *       {@link RandomBookTag#NBT_HELD} "has been held" marker so the
+     *       burn flow (see {@link games.brennan.dungeontrain.narrative.BurnableBookTag})
+     *       can fire on subsequent drops. Random books that have never
+     *       reached a held hand slot stay non-burnable, so chest / pot
+     *       drops don't ignite on the floor.</li>
      * </ul>
      */
     @SubscribeEvent
@@ -131,6 +137,7 @@ public final class NarrativeBookEvents {
             data.markRandomBookSeen(id.basename(), id.variantIndex());
             LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {})",
                 id.basename(), id.variantIndex(), player.getName().getString());
+            RandomBookTag.markHeld(stack);
             return;
         }
 
@@ -140,14 +147,17 @@ public final class NarrativeBookEvents {
         long seed = overworld.getGameTime() ^ player.getUUID().getLeastSignificantBits();
         Optional<RandomBookFactory.PickedBook> alt =
             RandomBookFactory.pickUnseenForWorld(data, seed);
-        if (alt.isEmpty()) return;  // pool empty — leave as-is
-
-        RandomBookFactory.replaceStackContent(stack, alt.get());
-        data.markRandomBookSeen(alt.get().book().basename(), alt.get().variantIndex());
-        LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} (held by {})",
-            id.basename(), id.variantIndex(),
-            alt.get().book().basename(), alt.get().variantIndex(),
-            player.getName().getString());
+        if (alt.isPresent()) {
+            RandomBookFactory.replaceStackContent(stack, alt.get());
+            data.markRandomBookSeen(alt.get().book().basename(), alt.get().variantIndex());
+            LOGGER.info("[DungeonTrain] RandomBook: swapped seen {} v{} -> {} v{} (held by {})",
+                id.basename(), id.variantIndex(),
+                alt.get().book().basename(), alt.get().variantIndex(),
+                player.getName().getString());
+        }
+        // Stamp held even when the pool is empty and we left the stack as-is
+        // — the player still held it; subsequent drops should burn.
+        RandomBookTag.markHeld(stack);
     }
 
     private static ServerLevel overworldOf(Player player) {
