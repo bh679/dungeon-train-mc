@@ -2,12 +2,12 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
-import games.brennan.dungeontrain.narrative.StartingBookTag;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -390,16 +390,17 @@ public final class StartingBookEvents {
     /**
      * Server-side entry point for {@link games.brennan.dungeontrain.net.StartingBookClosedPacket}.
      * The client just closed a {@code BookViewScreen} that was showing a
-     * stamped starting book. Find one such book in the player's inventory,
-     * remove it, and drop it forward as if thrown.
+     * burnable book (starting book OR random book — see
+     * {@link BurnableBookTag}). Find one such book in the player's
+     * inventory, remove it, and drop it forward as if thrown.
      *
      * <p>The drop itself is sufficient — {@link #onEntityJoinLevel} sees the
-     * resulting {@link ItemEntity}, recognises the {@link StartingBookTag}
-     * marker, and registers it for the burn lifecycle. No manual
-     * {@link #BURN_ENTITIES} {@code put} needed here.</p>
+     * resulting {@link ItemEntity}, recognises it as burnable via
+     * {@link BurnableBookTag#isBurnable}, and registers it for the burn
+     * lifecycle. No manual {@link #BURN_ENTITIES} {@code put} needed here.</p>
      */
     public static void handleStartingBookClosed(ServerPlayer player) {
-        ItemStack stack = findAndRemoveStartingBook(player);
+        ItemStack stack = findAndRemoveBurnableBook(player);
         if (stack.isEmpty()) {
             // Client says we closed one, but we can't find it — probably a
             // race against another mutator (death drop, dropAll, etc.).
@@ -418,23 +419,26 @@ public final class StartingBookEvents {
             dropped.setDeltaMovement(dir.scale(0.3));
             player.serverLevel().addFreshEntity(dropped);
         }
-        LOGGER.info("[DungeonTrain] StartingBook: {} closed a starting book — drop spawned (burn registered via EntityJoinLevelEvent)",
+        LOGGER.info("[DungeonTrain] BurnableBook: {} closed a burnable book — drop spawned (burn registered via EntityJoinLevelEvent)",
             player.getName().getString());
     }
 
     /**
      * Burn-on-drop hook. Fires every time an {@link Entity} is added to a
      * level (Q-throw, death-drop, hopper-eject, our own close-handler drop,
-     * anything that calls {@code Level.addFreshEntity}). When the entity is
-     * an {@link ItemEntity} carrying a stamped starting book, register it
-     * in {@link #BURN_ENTITIES} so the burn lifecycle picks it up on the
-     * next tick.
+     * chest break, anything that calls {@code Level.addFreshEntity}). When
+     * the entity is an {@link ItemEntity} carrying a burnable book
+     * ({@link BurnableBookTag} — starting OR random; stories excluded),
+     * register it in {@link #BURN_ENTITIES} so the burn lifecycle picks it
+     * up on the next tick.
      *
      * <p>Filters that block registration:</p>
      * <ul>
      *   <li>Client side — server-only state.</li>
      *   <li>Non-{@code ItemEntity} entities.</li>
-     *   <li>Stacks without the {@link StartingBookTag} marker.</li>
+     *   <li>Stacks that aren't burnable per {@link BurnableBookTag#isBurnable}
+     *       — narrative ("story") books, vanilla written books, foreign
+     *       items, etc.</li>
      *   <li>Entities flagged {@link #ENTITY_TAG_SPAWN_BOOK} — the lightning
      *       strike's welcome book. Without this skip, the welcome book would
      *       catch fire the moment the strike lands.</li>
@@ -447,7 +451,7 @@ public final class StartingBookEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof ItemEntity item)) return;
         ItemStack stack = item.getItem();
-        if (!StartingBookTag.isStartingBook(stack)) return;
+        if (!BurnableBookTag.isBurnable(stack)) return;
         if (item.getPersistentData().getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;
         if (BURN_ENTITIES.containsKey(item.getUUID())) return;
 
@@ -462,25 +466,25 @@ public final class StartingBookEvents {
         level.playSound(null, item.getX(), item.getY(), item.getZ(),
             SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);
 
-        LOGGER.info("[DungeonTrain] StartingBook: detected dropped starting book — burning entity {} ({} ticks)",
+        LOGGER.info("[DungeonTrain] BurnableBook: detected dropped burnable book — burning entity {} ({} ticks)",
             item.getUUID(), BURN_DURATION_TICKS);
     }
 
     /**
      * Scan the player's hands (mainhand → offhand) then full inventory for
-     * the first {@link ItemStack} carrying the {@link StartingBookTag} marker,
-     * remove it from its slot, and return a copy. Returns
-     * {@link ItemStack#EMPTY} when nothing matches.
+     * the first {@link ItemStack} that is burnable per
+     * {@link BurnableBookTag#isBurnable}, remove it from its slot, and
+     * return a copy. Returns {@link ItemStack#EMPTY} when nothing matches.
      */
-    private static ItemStack findAndRemoveStartingBook(ServerPlayer player) {
+    private static ItemStack findAndRemoveBurnableBook(ServerPlayer player) {
         ItemStack mainhand = player.getMainHandItem();
-        if (StartingBookTag.isStartingBook(mainhand)) {
+        if (BurnableBookTag.isBurnable(mainhand)) {
             ItemStack copy = mainhand.copy();
             mainhand.setCount(0);  // empty the slot in-place
             return copy;
         }
         ItemStack offhand = player.getOffhandItem();
-        if (StartingBookTag.isStartingBook(offhand)) {
+        if (BurnableBookTag.isBurnable(offhand)) {
             ItemStack copy = offhand.copy();
             offhand.setCount(0);
             return copy;
@@ -488,7 +492,7 @@ public final class StartingBookEvents {
         Inventory inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
-            if (StartingBookTag.isStartingBook(s)) {
+            if (BurnableBookTag.isBurnable(s)) {
                 inv.setItem(i, ItemStack.EMPTY);
                 return s;
             }
