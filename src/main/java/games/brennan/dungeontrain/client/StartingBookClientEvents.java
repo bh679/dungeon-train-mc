@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.narrative.StartingBookTag;
+import games.brennan.dungeontrain.narrative.BurnableBookTag;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.StartingBookClosedPacket;
 import net.minecraft.client.Minecraft;
@@ -13,7 +13,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
- * Client-side close detection for starting books.
+ * Client-side close detection for burnable books (starting books AND random
+ * books from train chests). Stories — {@link games.brennan.dungeontrain.narrative.NarrativeBookTag}
+ * — are deliberately excluded.
  *
  * <p>Vanilla {@code BookViewScreen} is a pure-client screen — opening or
  * closing a written book never reaches the server (the screen consumes the
@@ -21,14 +23,18 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  * the drop-and-burn flow when the player closes the screen, we hook
  * {@link ScreenEvent.Closing} on the client and send a custom
  * {@link StartingBookClosedPacket} when the closing screen is a
- * {@link BookViewScreen} AND the local player has a stamped starting book
- * in <em>hand</em>.</p>
+ * {@link BookViewScreen} AND the local player has a burnable book in
+ * <em>hand</em>.</p>
+ *
+ * <p>"Burnable" is decided by {@link BurnableBookTag#isBurnable} — currently
+ * starting OR random books. The packet name is historical; it now signals
+ * "any burnable book closed", and the server scans both tag types.</p>
  *
  * <p>Detection scope: <b>mainhand + offhand only</b> — not the full
  * inventory. Vanilla written books can only be opened via right-click on
  * an in-hand stack, so the book the player just closed must still be in
  * a hand slot. Checking the full inventory would falsely trigger the burn
- * if the player closed a different written book while a starting book was
+ * if the player closed a different written book while a burnable book was
  * tucked away in the hotbar.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -41,8 +47,8 @@ public final class StartingBookClientEvents {
         if (!(event.getScreen() instanceof BookViewScreen)) return;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
-        if (!StartingBookTag.isStartingBook(player.getMainHandItem())
-            && !StartingBookTag.isStartingBook(player.getOffhandItem())) {
+        if (!BurnableBookTag.isBurnable(player.getMainHandItem())
+            && !BurnableBookTag.isBurnable(player.getOffhandItem())) {
             return;
         }
         DungeonTrainNet.sendToServer(new StartingBookClosedPacket());
