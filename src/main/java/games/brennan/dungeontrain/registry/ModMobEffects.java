@@ -1,0 +1,29 @@
+package games.brennan.dungeontrain.registry;
+
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.world.effect.MobEffect;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredRegister;
+
+/**
+ * Mod-side {@link MobEffect} registry. Mirrors {@link ModSounds}'s
+ * {@link DeferredRegister} pattern.
+ */
+public final class ModMobEffects {
+
+    public static final DeferredRegister<MobEffect> MOB_EFFECTS =
+        DeferredRegister.create(Registries.MOB_EFFECT, DungeonTrain.MOD_ID);
+
+    public static final DeferredHolder<MobEffect, WarmthOfTheFireEffect> WARMTH_OF_THE_FIRE =
+        MOB_EFFECTS.register("warmth_of_the_fire", WarmthOfTheFireEffect::new);
+
+    private ModMobEffects() {}
+
+    /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
+    public static void register(IEventBus modBus) {
+        MOB_EFFECTS.register(modBus);
+    }
+}
