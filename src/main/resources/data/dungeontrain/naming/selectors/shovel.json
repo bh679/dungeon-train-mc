@@ -1,8 +1,0 @@
-{
-  "id": "dungeontrain:shovel",
-  "applies_to": "minecraft:shovels",
-  "tiers": {
-    "plain": "dungeontrain:weapon_name_short",
-    "enchanted": "dungeontrain:weapon_name_full"
-  }
-}
