@@ -1,28 +1,19 @@
 {
   "schemaVersion": 1,
   "excluded": [
-    "2ndlevel",
     "armor",
-    "barrel",
     "books",
-    "chest",
     "cows",
     "craft",
     "default",
     "dirt",
-    "enchant",
+    "ender",
     "enemies",
-    "fire",
-    "kitchen",
     "maze",
+    "modern",
     "narrative",
     "nature",
-    "pigs",
-    "sand",
-    "sheep",
     "shop",
-    "smelt",
-    "upgrade",
     "vase"
   ]
 }

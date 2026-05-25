@@ -13,6 +13,10 @@
     {
       "id": "campire",
       "weight": 40
+    },
+    {
+      "id": "campfire_comfortable",
+      "weight": 1
     }
   ]
 }
