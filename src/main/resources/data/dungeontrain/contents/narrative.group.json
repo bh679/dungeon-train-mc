@@ -9,6 +9,10 @@
     {
       "id": "dungeonnarrative",
       "weight": 1
+    },
+    {
+      "id": "campire",
+      "weight": 40
     }
   ]
 }
