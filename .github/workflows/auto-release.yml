@@ -111,13 +111,17 @@ jobs:
           echo "Push verified: $LOCAL"
 
       - name: Dispatch Release workflow
+        # notify_discord=false: cascade ticks silence the Discord webhook so the
+        # release channel doesn't get spammed by ~22 micro-releases per cascade.
+        # Modrinth + CurseForge uploads still fire (that's the point of the cascade —
+        # to keep the mod fresh on "recently updated" feeds).
         if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.bump.outputs.tag }}
         run: |
-          gh workflow run release.yml -f tag="$TAG" -f auto=true
-          echo "Dispatched release.yml with tag=$TAG auto=true"
+          gh workflow run release.yml -f tag="$TAG" -f auto=true -f notify_discord=false
+          echo "Dispatched release.yml with tag=$TAG auto=true notify_discord=false"
 
       - name: Dry-run summary
         if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run == true
@@ -129,7 +133,7 @@ jobs:
         run: |
           echo "DRY RUN — change_kind=$KIND  applied_id=$APPLIED_ID"
           echo "DRY RUN — would commit: $COMMIT_MSG (auto v$NEW_VERSION) [skip ci]"
-          echo "DRY RUN — would dispatch release.yml tag=v$NEW_VERSION auto=true"
+          echo "DRY RUN — would dispatch release.yml tag=v$NEW_VERSION auto=true notify_discord=false"
           echo "DRY RUN — diff preview:"
           git --no-pager diff --stat
 
