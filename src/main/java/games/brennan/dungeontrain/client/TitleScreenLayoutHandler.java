@@ -27,8 +27,9 @@ import java.net.URI;
  * split of <b>Mods | Options | Quit Game</b>.
  *
  * <p>Discord opens {@value #DISCORD_URL} via {@link ConfirmLinkScreen}. The
- * Editor button launches a fresh creative world (same path as
- * {@link DevQuickWorldHandler#launchFreshWorld(Screen)}) and arms
+ * Editor button launches a fresh creative world via
+ * {@link DevQuickWorldHandler#launchEditorWorld(Screen)} — which names the
+ * world "train editor N" using the lowest unused index — and arms
  * {@link EditorDevMode#queueOnForNextStart()} so editor mode is forced on
  * after the server finishes starting, regardless of the
  * {@code CarriageTemplateStore.sourceTreeAvailable()} gate.</p>
@@ -134,6 +135,6 @@ public final class TitleScreenLayoutHandler {
         LOGGER.info("TitleScreenLayout: Train Editor button clicked — queueing devmode + auto-open and launching fresh world");
         EditorDevMode.queueOnForNextStart();
         EditorAutoOpenHandler.queueAutoOpen();
-        DevQuickWorldHandler.launchFreshWorld(parent);
+        DevQuickWorldHandler.launchEditorWorld(parent);
     }
 }

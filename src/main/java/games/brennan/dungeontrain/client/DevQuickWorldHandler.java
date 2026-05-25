@@ -26,6 +26,7 @@ import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.levelgen.WorldOptions;
 import net.minecraft.world.level.levelgen.presets.WorldPreset;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
+import net.minecraft.world.level.storage.LevelStorageSource;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -64,6 +65,8 @@ public final class DevQuickWorldHandler {
     private static final Component NEW_WORLD_LABEL = Component.literal("New World");
     private static final Component SETTINGS_ICON_LABEL =
             Component.literal("⚙").withStyle(ChatFormatting.BOLD);
+
+    private static final String EDITOR_WORLD_PREFIX = "train editor ";
 
     private static final int GAP = 4;
 
@@ -165,8 +168,26 @@ public final class DevQuickWorldHandler {
         return null;
     }
 
-    static void launchFreshWorld(Screen lastScreen) {
-        launchCreativeWorld(lastScreen);
+    static void launchEditorWorld(Screen lastScreen) {
+        String name = nextEditorWorldName();
+        LevelSettings settings = new LevelSettings(
+                name,
+                GameType.CREATIVE,
+                false,
+                Difficulty.NORMAL,
+                true,
+                new GameRules(),
+                WorldDataConfiguration.DEFAULT);
+        openLevel(name, settings, lastScreen);
+    }
+
+    private static String nextEditorWorldName() {
+        LevelStorageSource source = Minecraft.getInstance().getLevelSource();
+        int i = 1;
+        while (source.levelExists(EDITOR_WORLD_PREFIX + i)) {
+            i++;
+        }
+        return EDITOR_WORLD_PREFIX + i;
     }
 
     private static void launchCreativeWorld(Screen lastScreen) {
