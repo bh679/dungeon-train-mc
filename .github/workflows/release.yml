@@ -19,7 +19,7 @@ on:
         type: boolean
         default: false
       notify_discord:
-        description: "Send Discord notification on completion. Set false to silence one release (e.g. quick hotfix that doesn't warrant a server-wide ping). Defaults to true so the auto-release cascade and standard manual releases keep notifying."
+        description: "Send Discord notification on completion. Defaults to true for manual releases. The auto-release cascade always dispatches with notify_discord=false to keep the release channel quiet — only real (operator-dispatched) releases ping Discord. Override to false on a manual run to silence one hotfix."
         required: false
         type: boolean
         default: true
@@ -188,8 +188,9 @@ jobs:
       # always() so partial-failure releases still notify (with ⚠️ markers
       # on the platforms that didn't get the upload). RELEASE_TAG guard
       # suppresses notify if the workflow exploded before tag verification.
-      # notify_discord guard: set false at dispatch to silence one release
-      # without removing the webhook secret.
+      # notify_discord guard: the auto-release cascade always passes
+      # notify_discord=false so cascade ticks skip this step entirely; manual
+      # releases default to true and can override to false for a quiet hotfix.
       - name: Notify Discord
         if: ${{ always() && steps.discord_check.outputs.ready == 'true' && env.RELEASE_TAG != '' && inputs.notify_discord }}
         env:
