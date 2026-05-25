@@ -22,9 +22,24 @@ import org.jetbrains.annotations.Nullable;
  * mineshafts, strongholds, dungeons) vanilla {@code BlockBehaviour.onRemove}
  * overrides still drop container contents as item entities.</p>
  *
- * <p>This helper removes the block entity first so the {@code onRemove}
- * subclass overrides see no container, then writes the new state with
- * {@link Block#UPDATE_CLIENTS} only.</p>
+ * <p>{@link #setBlockSilent} removes the block entity first so the
+ * {@code onRemove} subclass overrides see no container, then writes the new
+ * state with {@link Block#UPDATE_CLIENTS} | {@link Block#UPDATE_SUPPRESS_DROPS}.
+ * The shape-update cascade still runs, which keeps fences/rails/redstone
+ * properly connected to neighbours after placement.</p>
+ *
+ * <p>{@link #setBlockSilentNoCascade} additionally sets
+ * {@link Block#UPDATE_KNOWN_SHAPE}, which short-circuits the shape-update
+ * cascade entirely (see {@code Level.markAndNotifyBlock}). This is the only
+ * way to fully suppress plant drops during in-place block swaps: plants
+ * ({@code BushBlock} subclasses — saplings, flowers, tall grass) whose
+ * {@code updateShape} returns {@code AIR} for a missing substrate are
+ * routed through {@code Block.updateOrDestroy → level.destroyBlock(…, dropBlock=true)},
+ * and the subFlags computed by {@code markAndNotifyBlock} strip
+ * {@code UPDATE_SUPPRESS_DROPS} ({@code flags & ~(UPDATE_NEIGHBORS | UPDATE_SUPPRESS_DROPS)}),
+ * so the suppress flag does not reach the cascade. Skipping the cascade
+ * outright is the only reliable fix. Use this variant in the editor
+ * variant preview ticker that cycles cells through plant entries.</p>
  */
 public final class SilentBlockOps {
 
@@ -43,7 +58,7 @@ public final class SilentBlockOps {
         if (existing.hasBlockEntity()) {
             level.removeBlockEntity(pos);
         }
-        level.setBlock(pos, newState, Block.UPDATE_CLIENTS);
+        level.setBlock(pos, newState, Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
     }
 
     /**
@@ -73,5 +88,39 @@ public final class SilentBlockOps {
     /** Clear the block at {@code pos} to air silently. */
     public static void clearBlockSilent(ServerLevel level, BlockPos pos) {
         setBlockSilent(level, pos, AIR);
+    }
+
+    /**
+     * Like {@link #setBlockSilent(ServerLevel, BlockPos, BlockState, CompoundTag)}
+     * but additionally sets {@link Block#UPDATE_KNOWN_SHAPE} so the
+     * neighbour shape-update cascade is skipped. Required for in-place
+     * swaps that include plant blocks ({@code BushBlock} subclasses): the
+     * cascade otherwise destroys plants whose substrate or paired half is
+     * (or appears) missing and drops their items as side effects, and the
+     * cascade subFlags strip {@link Block#UPDATE_SUPPRESS_DROPS} so that
+     * flag alone cannot stop those drops.
+     *
+     * <p>Caller-visible trade-off: adjacent blocks whose visual shape
+     * depends on this position (fences connecting, redstone wires
+     * re-routing, rails curving) will <b>not</b> re-evaluate after the
+     * swap. Only use this when the swap is a transient preview / editor
+     * cycle frame where neighbour visual updates do not matter.</p>
+     */
+    public static void setBlockSilentNoCascade(ServerLevel level, BlockPos pos, BlockState newState, @Nullable CompoundTag beNbt) {
+        BlockState existing = level.getBlockState(pos);
+        if (existing.hasBlockEntity()) {
+            level.removeBlockEntity(pos);
+        }
+        level.setBlock(pos, newState,
+            Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS);
+        if (beNbt == null || !newState.hasBlockEntity()) return;
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be == null) return;
+        CompoundTag positioned = beNbt.copy();
+        positioned.putInt("x", pos.getX());
+        positioned.putInt("y", pos.getY());
+        positioned.putInt("z", pos.getZ());
+        be.loadWithComponents(positioned, level.registryAccess());
+        be.setChanged();
     }
 }

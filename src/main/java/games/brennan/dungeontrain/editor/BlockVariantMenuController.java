@@ -551,7 +551,7 @@ public final class BlockVariantMenuController {
 
         for (BlockPos target : targets) {
             BlockPos worldPos = plot.origin().offset(target);
-            SilentBlockOps.setBlockSilent(level, worldPos, picked.state(), picked.blockEntityNbt());
+            SilentBlockOps.setBlockSilentNoCascade(level, worldPos, picked.state(), picked.blockEntityNbt());
         }
     }
 

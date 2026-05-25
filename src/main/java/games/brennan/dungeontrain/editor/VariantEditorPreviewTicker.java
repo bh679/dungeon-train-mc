@@ -98,7 +98,7 @@ public final class VariantEditorPreviewTicker {
             BlockPos worldPos = plot.origin().offset(localPos);
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
-                SilentBlockOps.setBlockSilent(level, worldPos, toShow, picked.blockEntityNbt());
+                SilentBlockOps.setBlockSilentNoCascade(level, worldPos, toShow, picked.blockEntityNbt());
             }
         }
     }
