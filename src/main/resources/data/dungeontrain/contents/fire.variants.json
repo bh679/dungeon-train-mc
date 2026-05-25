@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 7,
+  "variants": {
+    "3,0,2": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,3": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,4": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,0": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,1": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,2": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "5,0,0": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "5,0,1": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "5,0,2": [{"state": "minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", "weight": 5}, {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "5,0,3": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,0,3": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "4,0,1": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,0,1": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,0,1": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,0,2": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "2,0,3": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "1,0,3": ["minecraft:fire[age=0,east=false,north=false,south=false,up=false,west=false]", {"state": "minecraft:command_block[conditional=false,facing=north]", "rotation": {"mode": "lock", "dirs": ["north"]}}]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 7,
+  "variants": {
+    "2,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "3,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "4,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "5,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "6,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "6,0,3": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "6,0,2": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "6,0,1": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "6,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "5,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "4,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "3,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "2,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "1,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "0,0,0": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "0,0,1": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "0,0,2": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "0,0,3": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "0,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "1,0,4": { "lockId": 1, "states": ["minecraft:stone_bricks", "minecraft:netherrack", "minecraft:magma_block"] },
+    "1,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "2,0,1": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "3,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "4,0,3": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "5,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}]
+  }
+}

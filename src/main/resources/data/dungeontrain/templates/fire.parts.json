@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 2,
+  "floor": [
+    {
+      "name": "magma",
+      "weight": 1
+    }
+  ],
+  "walls": [
+    {
+      "name": "standard",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "cracked",
+      "weight": 1
+    },
+    {
+      "name": "smallwindows",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "slotwindow",
+      "weight": 1,
+      "sideMode": "either"
+    }
+  ],
+  "roof": [
+    {
+      "name": "cracked",
+      "weight": 1
+    },
+    {
+      "name": "open",
+      "weight": 1
+    },
+    {
+      "name": "standard",
+      "weight": 1
+    }
+  ],
+  "doors": [
+    {
+      "name": "cracked",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "irondoor",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "standard",
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "wooddoor",
+      "weight": 1,
+      "sideMode": "either"
+    }
+  ]
+}
