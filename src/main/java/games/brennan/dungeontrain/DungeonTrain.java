@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModItems;
+import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.neoforged.bus.api.IEventBus;
@@ -39,6 +40,7 @@ public class DungeonTrain {
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);
+        ModMobEffects.register(modBus);
         ModSounds.register(modBus);
 
         modContainer.registerConfig(
