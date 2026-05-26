@@ -11,6 +11,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -32,6 +33,12 @@ import org.slf4j.Logger;
  * Mirrors the {@code VillagerTrainSpawnEvents} pattern — same
  * {@code loadedFromDisk()} skip and sticky-tag idempotency.</p>
  *
+ * <p>Hostile-only: only mobs implementing {@link Enemy} are considered.
+ * Passive and neutral carriage mobs (villagers, cows, sheep, …) keep their
+ * vanilla / variant equipment and never receive carriage potion buffs;
+ * villager trade rerolling is handled separately by
+ * {@code VillagerTrainSpawnEvents}.</p>
+ *
  * <p>Carriage variant mobs that pre-supply armor/effects via NBT are honoured —
  * the applier only fills empty equipment slots and only adds effects per the
  * configured tier's chance rolls.</p>
@@ -52,6 +59,7 @@ public final class MobDifficultyEvents {
 
         Entity entity = event.getEntity();
         if (!(entity instanceof Mob mob)) return;
+        if (!(mob instanceof Enemy)) return;
         if (!isOnTrain(mob)) return;
         if (!DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) return;
 
