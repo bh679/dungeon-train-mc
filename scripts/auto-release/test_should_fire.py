@@ -104,6 +104,20 @@ def test_stopped_after_14d():
     )
 
 
+def test_cascade_stopped_flag_short_circuits():
+    # Even inside phase A (which would normally fire), the flag stops the cascade.
+    state = make_state(T0, None)
+    state["cascade_stopped"] = True
+    expect(run(state, T0 + 1800), "false", "stopped", "cascade_stopped flag")
+
+
+def test_cascade_stopped_false_is_ignored():
+    # Explicit false should behave the same as the field being absent.
+    state = make_state(T0, None)
+    state["cascade_stopped"] = False
+    expect(run(state, T0 + 1800), "true", "A", "cascade_stopped=false is no-op")
+
+
 def main():
     tests = [
         test_uninitialized,
@@ -117,6 +131,8 @@ def main():
         test_phase_c_too_soon_after_b,
         test_phase_c_fires_after_24h,
         test_stopped_after_14d,
+        test_cascade_stopped_flag_short_circuits,
+        test_cascade_stopped_false_is_ignored,
     ]
     failed = 0
     for t in tests:

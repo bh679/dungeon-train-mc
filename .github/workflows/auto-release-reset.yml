@@ -52,6 +52,7 @@ jobs:
               "schedule_anchor": anchor_iso,
               "last_auto_release_at": None,
               "last_anchor_source": f"real_release_{os.environ['TAG']}",
+              "cascade_stopped": False,
           }
           with open(".github/auto-release/state.json", "w") as f:
               json.dump(state, f, indent=2)

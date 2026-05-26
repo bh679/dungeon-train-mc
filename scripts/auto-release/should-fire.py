@@ -64,6 +64,11 @@ def main():
                      reason=f"state file not found at {STATE_FILE}")
         return 0
 
+    if state.get("cascade_stopped"):
+        write_output(fire="false", phase="stopped",
+                     reason="cascade stopped pending next real release")
+        return 0
+
     now = int(os.environ.get("NOW_EPOCH", time.time()))
     anchor = parse_iso(state.get("schedule_anchor"))
 

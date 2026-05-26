@@ -24,20 +24,30 @@ def write_json(path, obj):
         json.dump(obj, f, indent=2)
 
 
-def run(ws, now_epoch):
+def run(ws, now_epoch, **extra_env):
     env = {
         **os.environ,
         "STATE_FILE": os.path.join(ws, ".github/auto-release/state.json"),
         "QUEUE_FILE": os.path.join(ws, ".github/auto-release/queue.json"),
         "LOOT_FILE": os.path.join(ws, "src/main/resources/data/dungeontrain/loot_table/chests/auto_balancing.json"),
+        "GRADLE_PROPERTIES_FILE": os.path.join(ws, "gradle.properties"),
         "NOW_EPOCH": str(now_epoch),
     }
     env.pop("GITHUB_OUTPUT", None)
+    # Default tests to an empty AIN release list so try_ain_bump never reaches
+    # `gh release list` (which would hit the network / require auth). Tests
+    # that need AIN behaviour override this explicitly.
+    env.setdefault("AIN_RELEASES_OVERRIDE", "[]")
+    for k, v in extra_env.items():
+        if v is None:
+            env.pop(k, None)
+        else:
+            env[k] = v
     return subprocess.run([sys.executable, SCRIPT], cwd=ws, env=env,
                           capture_output=True, text=True)
 
 
-def seed_workspace(ws, queue, loot_weight=10):
+def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0"):
     write_json(os.path.join(ws, ".github/auto-release/state.json"),
                {"schedule_anchor": "2026-05-18T12:00:00Z", "last_auto_release_at": None,
                 "last_anchor_source": "test"})
@@ -45,6 +55,12 @@ def seed_workspace(ws, queue, loot_weight=10):
     write_json(os.path.join(ws, "src/main/resources/data/dungeontrain/loot_table/chests/auto_balancing.json"),
                {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [
                    {"type": "minecraft:item", "name": "minecraft:wheat", "weight": loot_weight}]}]})
+    with open(os.path.join(ws, "gradle.properties"), "w") as f:
+        f.write(f"mod_version=0.219.0\n{'adventureitemnames_version'}={ain_version}\nsable_version=1.2.1+mc1.21.1\n")
+
+
+def ain_releases_json(*versions):
+    return json.dumps([{"tagName": f"v{v}"} for v in versions])
 
 
 def test_queue_pop_two_items_then_auto_balance():
@@ -271,6 +287,196 @@ def test_add_variant_rejects_letter_label_mismatch():
         shutil.rmtree(ws)
 
 
+def read_ain_version(ws):
+    with open(os.path.join(ws, "gradle.properties")) as f:
+        for line in f:
+            if line.startswith("adventureitemnames_version="):
+                return line.split("=", 1)[1].strip()
+    return None
+
+
+def read_state(ws):
+    with open(os.path.join(ws, ".github/auto-release/state.json")) as f:
+        return json.load(f)
+
+
+def test_ain_bump_steps_to_next_version_skipping_queue():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "should-not-run", "label": "x", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/x.json",
+                              "content": {"x": 1}, "commit_message": "test: x"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.20.0")
+        r = run(ws, 1_700_000_000,
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.18.0", "0.21.0", "0.22.0", "0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=ain_bump" in r.stdout, r.stdout
+        assert "commit_message=chore(auto): bump AIN 0.20.0 -> 0.21.0" in r.stdout, r.stdout
+        assert "ain_from=0.20.0" in r.stdout
+        assert "ain_to=0.21.0" in r.stdout
+        assert read_ain_version(ws) == "0.21.0"
+        # Queue must be untouched — AIN ticks don't consume queue items.
+        with open(os.path.join(ws, ".github/auto-release/queue.json")) as f:
+            q = json.load(f)
+        assert len(q["pending"]) == 1 and q["pending"][0]["id"] == "should-not-run"
+        print("OK  test_ain_bump_steps_to_next_version_skipping_queue")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_ain_at_latest_falls_through_to_queue_in_always_mode():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "book-a", "label": "Add A", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/a.json",
+                              "content": {"id": "a"}, "commit_message": "test: a"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.25.0")
+        r = run(ws, 1_700_000_000,
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.24.0", "0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=queue" in r.stdout, r.stdout
+        assert read_ain_version(ws) == "0.25.0", "AIN should not have moved"
+        print("OK  test_ain_at_latest_falls_through_to_queue_in_always_mode")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ain_stops_when_no_update_available():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "book-a", "label": "Add A", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/a.json",
+                              "content": {"id": "a"}, "commit_message": "test: a"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.25.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ain",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        state = read_state(ws)
+        assert state.get("cascade_stopped") is True, f"flag not set: {state}"
+        # Queue item must NOT have been consumed.
+        with open(os.path.join(ws, ".github/auto-release/queue.json")) as f:
+            q = json.load(f)
+        assert len(q["pending"]) == 1, "queue should be untouched in ain mode"
+        print("OK  test_mode_ain_stops_when_no_update_available")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ain_still_bumps_when_update_available():
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.20.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ain",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.21.0", "0.22.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=ain_bump" in r.stdout, r.stdout
+        assert read_ain_version(ws) == "0.21.0"
+        state = read_state(ws)
+        assert not state.get("cascade_stopped"), "should not have stopped"
+        print("OK  test_mode_ain_still_bumps_when_update_available")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_with_content_stops_when_queue_empty_and_ain_latest():
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.25.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="with-content",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        assert read_state(ws).get("cascade_stopped") is True
+        # Loot file must NOT have been nudged.
+        loot_path = os.path.join(ws, "src/main/resources/data/dungeontrain/loot_table/chests/auto_balancing.json")
+        with open(loot_path) as f:
+            assert json.load(f)["pools"][0]["entries"][0]["weight"] == 10
+        print("OK  test_mode_with_content_stops_when_queue_empty_and_ain_latest")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_with_content_applies_queue():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "book-a", "label": "Add A", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/a.json",
+                              "content": {"id": "a"}, "commit_message": "test: a"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.25.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="with-content",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=queue" in r.stdout, r.stdout
+        assert not read_state(ws).get("cascade_stopped")
+        print("OK  test_mode_with_content_applies_queue")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_always_falls_through_to_auto_balance():
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.25.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="always",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=auto_balance" in r.stdout, r.stdout
+        assert not read_state(ws).get("cascade_stopped")
+        print("OK  test_mode_always_falls_through_to_auto_balance")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_skip_ain_bypasses_ain_check():
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.20.0")
+        r = run(ws, 1_700_000_000, SKIP_AIN="1",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.21.0", "0.22.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        # SKIP_AIN should prevent the bump even though one is available.
+        assert "change_kind=ain_bump" not in r.stdout, r.stdout
+        assert "change_kind=auto_balance" in r.stdout, r.stdout
+        assert read_ain_version(ws) == "0.20.0", "AIN should not have moved"
+        print("OK  test_skip_ain_bypasses_ain_check")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_unknown_mode_defaults_to_always():
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.25.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="bogus-mode",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=auto_balance" in r.stdout, r.stdout
+        print("OK  test_unknown_mode_defaults_to_always")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_ain_bump_handles_v_prefixed_and_invalid_tags():
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.20.0")
+        # Mix of valid + invalid tags. Invalid (latest-snapshot) is filtered out.
+        override = json.dumps([
+            {"tagName": "v0.21.0"},
+            {"tagName": "latest-snapshot"},
+            {"tagName": "v0.22.0"},
+            {"tagName": "0.23.0"},
+        ])
+        r = run(ws, 1_700_000_000, AIN_RELEASES_OVERRIDE=override)
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=ain_bump" in r.stdout
+        assert "ain_to=0.21.0" in r.stdout
+        print("OK  test_ain_bump_handles_v_prefixed_and_invalid_tags")
+    finally:
+        shutil.rmtree(ws)
+
+
 def main():
     tests = [
         test_queue_pop_two_items_then_auto_balance,
@@ -283,6 +489,16 @@ def main():
         test_add_variant_creates_new_letter_and_keeps_sorted,
         test_add_variant_rejects_story_meta_mismatch,
         test_add_variant_rejects_letter_label_mismatch,
+        test_ain_bump_steps_to_next_version_skipping_queue,
+        test_ain_at_latest_falls_through_to_queue_in_always_mode,
+        test_mode_ain_stops_when_no_update_available,
+        test_mode_ain_still_bumps_when_update_available,
+        test_mode_with_content_stops_when_queue_empty_and_ain_latest,
+        test_mode_with_content_applies_queue,
+        test_mode_always_falls_through_to_auto_balance,
+        test_skip_ain_bypasses_ain_check,
+        test_unknown_mode_defaults_to_always,
+        test_ain_bump_handles_v_prefixed_and_invalid_tags,
     ]
     failed = 0
     for t in tests:
