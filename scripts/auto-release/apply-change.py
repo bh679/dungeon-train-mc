@@ -2,23 +2,32 @@
 """Apply one auto-release cascade tick.
 
 Priority order each tick (modulated by AUTO_RELEASE_MODE):
-  1. AIN catch-up bump: if `adventureitemnames_version` in gradle.properties is
-     behind the latest GitHub release, bump it by ONE version step. The workflow
-     verifies the build before committing; on build failure the workflow reverts
-     and re-runs this script with SKIP_AIN=1.
+  1. Sibling-mod catch-up bumps, in declared order (AIN, then AIS): for each
+     sibling, if its version in gradle.properties is behind the latest GitHub
+     release, bump it by ONE version step. First hit wins; the rest of the
+     tick is skipped. The workflow verifies the build before committing; on
+     build failure the workflow reverts and re-runs this script with the
+     failing sibling's SKIP_<NAME>=1 so the tick falls through to a different
+     sibling or the queue.
   2. Queue item: pop pending[0] from queue.json and apply by type (new_file or
      add_variant).
   3. Mode fallback:
        - always:       nudge auto_balancing.json weight (existing behaviour).
        - with-content: mark cascade stopped (no commit, no release).
        - ain:          mark cascade stopped (no commit, no release).
+       - ais:          mark cascade stopped (no commit, no release).
+
+Modes `ain` and `ais` are sibling-gated: they ONLY consider their own sibling
+mod's bump and ignore the other. Modes `always` and `with-content` consider
+all siblings.
 
 "Stopped" sets state.cascade_stopped=true. should-fire.py refuses to fire while
 the flag is set; auto-release-reset.yml clears it on the next real release.
 
 Writes step outputs to stdout AND $GITHUB_OUTPUT:
   commit_message, label, change_kind, applied_id
-AIN bumps additionally emit: ain_from, ain_to.
+Sibling bumps additionally emit <name_lower>_from / <name_lower>_to
+(e.g. ain_from / ain_to, ais_from / ais_to).
 
 Env overrides (for testing):
   STATE_FILE              default: .github/auto-release/state.json
@@ -26,10 +35,12 @@ Env overrides (for testing):
   LOOT_FILE               default: src/main/resources/data/dungeontrain/loot_table/chests/auto_balancing.json
   GRADLE_PROPERTIES_FILE  default: gradle.properties
   NOW_EPOCH               default: current UTC epoch
-  AUTO_RELEASE_MODE       default: always (case-insensitive: always|with-content|ain)
-  SKIP_AIN                default: unset; "1" disables AIN check (used by the
-                          workflow fallback after a failed gradle build)
+  AUTO_RELEASE_MODE       default: always (case-insensitive: always|with-content|ain|ais)
+  SKIP_AIN                default: unset; "1" disables AIN check
+  SKIP_AIS                default: unset; "1" disables AIS check
+                          (used by the workflow fallback after a failed gradle build)
   AIN_RELEASES_OVERRIDE   default: unset; JSON array of {tagName: "v..."}
+  AIS_RELEASES_OVERRIDE   default: unset; same shape as AIN_RELEASES_OVERRIDE
                           bypasses the `gh release list` subprocess (tests use
                           this; CI relies on the real subprocess)
 """
@@ -52,12 +63,22 @@ GRADLE_PROPERTIES_FILE = os.environ.get("GRADLE_PROPERTIES_FILE", "gradle.proper
 ALLOWED_TARGET_PREFIX = "src/main/resources/data/dungeontrain/"
 WEIGHT_MIN, WEIGHT_MAX = 1, 20
 
-AIN_REPO = "bh679/adventureitemnames-mc"
-AIN_VERSION_KEY = "adventureitemnames_version"
+# Sibling-mod auto-bump config. Order matters: each tick tries siblings in
+# this order and the first one with a newer release wins. Each entry:
+#   (name, version_key_in_gradle_properties, github_repo,
+#    test_override_env_var, workflow_skip_env_var)
+SIBLING_MODS = (
+    ("AIN", "adventureitemnames_version", "bh679/adventureitemnames-mc",
+     "AIN_RELEASES_OVERRIDE", "SKIP_AIN"),
+    ("AIS", "adventureitemstats_version", "bh679/adventureitemstats-mc",
+     "AIS_RELEASES_OVERRIDE", "SKIP_AIS"),
+)
+
 MODE_ALWAYS = "always"
 MODE_WITH_CONTENT = "with-content"
 MODE_AIN = "ain"
-VALID_MODES = {MODE_ALWAYS, MODE_WITH_CONTENT, MODE_AIN}
+MODE_AIS = "ais"
+VALID_MODES = {MODE_ALWAYS, MODE_WITH_CONTENT, MODE_AIN, MODE_AIS}
 
 
 def parse_iso(s):
@@ -219,62 +240,64 @@ def parse_semver(s):
         return None
 
 
-def read_ain_current_version():
-    """Read adventureitemnames_version=X.Y.Z from gradle.properties.
+def read_sibling_version(version_key):
+    """Read <version_key>=X.Y.Z from gradle.properties.
 
     Returns the version string (e.g. "0.25.0") or None if not found / invalid.
     """
     try:
         with open(GRADLE_PROPERTIES_FILE) as f:
             for line in f:
-                if line.startswith(AIN_VERSION_KEY + "="):
-                    return line[len(AIN_VERSION_KEY) + 1:].strip()
+                if line.startswith(version_key + "="):
+                    return line[len(version_key) + 1:].strip()
     except FileNotFoundError:
         return None
     return None
 
 
-def write_ain_version(new_version):
-    """Replace the adventureitemnames_version line in-place. Preserves other
-    lines byte-for-byte."""
+def write_sibling_version(version_key, new_version):
+    """Replace the <version_key>=... line in-place. Preserves other lines
+    byte-for-byte."""
     with open(GRADLE_PROPERTIES_FILE) as f:
         lines = f.readlines()
     found = False
     for i, line in enumerate(lines):
-        if line.startswith(AIN_VERSION_KEY + "="):
+        if line.startswith(version_key + "="):
             # Preserve trailing newline if present.
             suffix = "\n" if line.endswith("\n") else ""
-            lines[i] = f"{AIN_VERSION_KEY}={new_version}{suffix}"
+            lines[i] = f"{version_key}={new_version}{suffix}"
             found = True
             break
     if not found:
-        fail(f"{GRADLE_PROPERTIES_FILE}: {AIN_VERSION_KEY} line not found")
+        fail(f"{GRADLE_PROPERTIES_FILE}: {version_key} line not found")
     with open(GRADLE_PROPERTIES_FILE, "w") as f:
         f.writelines(lines)
 
 
-def fetch_ain_releases():
-    """Return a list of version-string tags (e.g. ["0.25.0", "0.24.0", ...]).
+def fetch_sibling_releases(repo, override_env):
+    """Return a list of version-string tags from <repo>'s GitHub releases.
 
-    Order is whatever `gh release list` returns; the caller sorts. Failures
-    return an empty list with a warning — the cascade falls through gracefully.
+    Tests inject the list via <override_env> (e.g. AIN_RELEASES_OVERRIDE); CI
+    relies on the real `gh release list` subprocess. Order is whatever the
+    source returns; the caller sorts. Failures return an empty list with a
+    warning — the cascade falls through gracefully.
     """
-    override = os.environ.get("AIN_RELEASES_OVERRIDE")
+    override = os.environ.get(override_env)
     if override is not None:
         try:
             data = json.loads(override)
         except json.JSONDecodeError as e:
-            print(f"::warning::AIN_RELEASES_OVERRIDE not valid JSON: {e}", file=sys.stderr)
+            print(f"::warning::{override_env} not valid JSON: {e}", file=sys.stderr)
             return []
     else:
         try:
             result = subprocess.run(
-                ["gh", "release", "list", "--repo", AIN_REPO,
+                ["gh", "release", "list", "--repo", repo,
                  "--json", "tagName", "-L", "200"],
                 capture_output=True, text=True, timeout=30, check=True,
             )
         except (subprocess.SubprocessError, FileNotFoundError) as e:
-            print(f"::warning::gh release list failed: {e}", file=sys.stderr)
+            print(f"::warning::gh release list failed for {repo}: {e}", file=sys.stderr)
             return []
         try:
             data = json.loads(result.stdout)
@@ -292,22 +315,23 @@ def fetch_ain_releases():
     return versions
 
 
-def try_ain_bump():
-    """Bump adventureitemnames_version by ONE version step.
+def try_sibling_bump(name, version_key, repo, override_env):
+    """Bump <version_key> by ONE version step toward <repo>'s latest release.
 
     Returns a dict of outputs (commit_message, label, change_kind, applied_id,
-    ain_from, ain_to) on success, or None if no newer version is available.
+    <name_lower>_from, <name_lower>_to) on success, or None if no newer
+    version is available.
     """
-    current = read_ain_current_version()
+    current = read_sibling_version(version_key)
     if current is None:
-        print(f"::warning::could not read {AIN_VERSION_KEY} from {GRADLE_PROPERTIES_FILE}", file=sys.stderr)
+        print(f"::warning::could not read {version_key} from {GRADLE_PROPERTIES_FILE}", file=sys.stderr)
         return None
     current_tuple = parse_semver(current)
     if current_tuple is None:
-        print(f"::warning::current AIN version {current!r} not strict X.Y.Z", file=sys.stderr)
+        print(f"::warning::current {name} version {current!r} not strict X.Y.Z", file=sys.stderr)
         return None
 
-    available = fetch_ain_releases()
+    available = fetch_sibling_releases(repo, override_env)
     if not available:
         return None
 
@@ -319,14 +343,15 @@ def try_ain_bump():
         return None
 
     new_version = greater[0]
-    write_ain_version(new_version)
+    write_sibling_version(version_key, new_version)
+    lower = name.lower()
     return {
-        "commit_message": f"chore(auto): bump AIN {current} -> {new_version}",
-        "label": f"AIN bump: {current} -> {new_version}",
-        "change_kind": "ain_bump",
-        "applied_id": f"ain-{new_version}",
-        "ain_from": current,
-        "ain_to": new_version,
+        "commit_message": f"chore(auto): bump {name} {current} -> {new_version}",
+        "label": f"{name} bump: {current} -> {new_version}",
+        "change_kind": f"{lower}_bump",
+        "applied_id": f"{lower}-{new_version}",
+        f"{lower}_from": current,
+        f"{lower}_to": new_version,
     }
 
 
@@ -367,25 +392,37 @@ def main():
     now_epoch = int(os.environ.get("NOW_EPOCH", time.time()))
     now_iso = iso_now(now_epoch)
     mode = parse_mode()
-    skip_ain = os.environ.get("SKIP_AIN") == "1"
 
     with open(STATE_FILE) as f:
         state = json.load(f)
     with open(QUEUE_FILE) as f:
         queue = json.load(f)
 
-    # 1. AIN catch-up (unless explicitly skipped after a failed build).
-    if not skip_ain:
-        ain_result = try_ain_bump()
-        if ain_result is not None:
+    # 1. Sibling-mod catch-up — try each sibling in declared order. First hit
+    #    wins and the tick returns. Each sibling can be skipped via SKIP_<NAME>
+    #    (used by the workflow's revert-after-build-failure path) or by mode
+    #    gating: mode=ain limits to AIN only, mode=ais limits to AIS only.
+    for name, version_key, repo, override_env, skip_env in SIBLING_MODS:
+        if os.environ.get(skip_env) == "1":
+            continue
+        if mode == MODE_AIN and name != "AIN":
+            continue
+        if mode == MODE_AIS and name != "AIS":
+            continue
+        result = try_sibling_bump(name, version_key, repo, override_env)
+        if result is not None:
             state["last_auto_release_at"] = now_iso
             write_json(STATE_FILE, state)
-            write_output(**ain_result)
+            write_output(**result)
             return 0
 
-    # 2. Mode `ain` stops here when no bump is available.
+    # 2. Sibling-gated modes stop here when their sibling has no update.
     if mode == MODE_AIN:
         stopped = mark_cascade_stopped(state, "no AIN update available (mode=ain)")
+        write_output(**stopped)
+        return 0
+    if mode == MODE_AIS:
+        stopped = mark_cascade_stopped(state, "no AIS update available (mode=ais)")
         write_output(**stopped)
         return 0
 
@@ -399,7 +436,7 @@ def main():
 
     # 4. Mode `with-content` stops when nothing is queued.
     if mode == MODE_WITH_CONTENT:
-        stopped = mark_cascade_stopped(state, "queue empty and AIN up to date (mode=with-content)")
+        stopped = mark_cascade_stopped(state, "queue empty and all siblings up to date (mode=with-content)")
         write_output(**stopped)
         return 0
 

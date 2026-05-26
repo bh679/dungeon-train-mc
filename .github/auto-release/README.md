@@ -126,9 +126,10 @@ Or via the UI: **Settings → Secrets and variables → Actions → Variables ta
 | Value | Behaviour |
 |---|---|
 | `false` | **Hard kill.** The cascade job is skipped entirely (scheduled and dispatch). A `disabled-notice` job emits an annotation so the paused state is visible in the Actions UI. |
-| `always` | Fire every cadence tick. Priority: AIN bump → queue item → auto-balance loot nudge. Same behaviour as before this mode selector existed. |
-| `with-content` | Fire only when there is something to ship. Priority: AIN bump → queue item → **stop**. When the cascade has nothing to do it sets `state.cascade_stopped=true` and waits for the next real release. |
-| `ain` | Fire only when AIN can be bumped. Priority: AIN bump → **stop**. Queue items are ignored — push them via the next real release if you want them to ship. |
+| `always` | Fire every cadence tick. Priority: AIN bump → AIS bump → queue item → auto-balance loot nudge. |
+| `with-content` | Fire only when there is something to ship. Priority: AIN bump → AIS bump → queue item → **stop**. When the cascade has nothing to do it sets `state.cascade_stopped=true` and waits for the next real release. |
+| `ain` | Fire only when AIN can be bumped. Priority: AIN bump → **stop**. AIS and queue items are ignored. |
+| `ais` | Fire only when AIS can be bumped. Priority: AIS bump → **stop**. AIN and queue items are ignored. |
 | unset / `true` / anything else | Treated as `always` (back-compat default). |
 
 Parsing is case-insensitive; `false` is matched literally so the job-level guard still
@@ -155,29 +156,43 @@ schedule and clearing the flag), and the cascade resumes.
   `state.json.last_auto_release_at` to a recent timestamp so `should-fire.py` decides
   not enough time has elapsed.
 
-## AIN dependency catch-up
+## Sibling-mod dependency catch-up
 
-DT bundles [Adventure Item Names](https://github.com/bh679/adventureitemnames-mc) via
-NeoForge jarJar — the resolved version comes from `adventureitemnames_version` in
-`gradle.properties`. AIN ships its own cascade and outpaces DT, so each DT auto-tick
-checks whether DT's `adventureitemnames_version` is behind the latest AIN release. If
-so:
+DT bundles two sibling mods via NeoForge jarJar — their resolved versions come from
+`adventureitemnames_version` and `adventureitemstats_version` in `gradle.properties`:
 
-1. `apply-change.py` reads `gradle.properties`, runs `gh release list --repo bh679/adventureitemnames-mc`,
+- **AIN** — [Adventure Item Names](https://github.com/bh679/adventureitemnames-mc)
+- **AIS** — [Adventure Item Stats](https://github.com/bh679/adventureitemstats-mc)
+
+Each sibling ships its own cascade and tends to outpace DT, so each DT auto-tick
+checks them **in order** (AIN first, then AIS). The first sibling with a newer
+GitHub release wins the tick; the rest are deferred to the next tick. If neither
+is behind, the cascade falls through to a queue item or mode-dependent fallback.
+
+For the picked sibling:
+
+1. `apply-change.py` reads `gradle.properties`, runs `gh release list --repo bh679/<sibling>-mc`,
    finds the **smallest** semver greater than current (always one step, never a leap),
-   and rewrites the line.
-2. The workflow runs `./gradlew build` to verify the new AIN jar resolves and DT still
+   and rewrites that sibling's version line.
+2. The workflow runs `./gradlew build` to verify the new jar resolves and DT still
    compiles. The build cache from `gradle/actions/setup-gradle@v3` keeps this fast on
    repeat ticks.
 3. On build success, the cascade commits the bump alongside the PATCH bump and
-   dispatches `release.yml`. Commit message: `chore(auto): bump AIN <old> -> <new>`.
+   dispatches `release.yml`. Commit message: `chore(auto): bump AIN <old> -> <new>`
+   or `chore(auto): bump AIS <old> -> <new>`.
 4. On build failure, the workflow runs `git checkout -- gradle.properties .github/auto-release/state.json`
-   to revert and re-runs `apply-change.py` with `SKIP_AIN=1` so the tick falls through
-   to its mode-dependent fallback.
+   to revert and re-runs `apply-change.py` with the failing sibling's `SKIP_<NAME>=1`
+   (`SKIP_AIN=1` or `SKIP_AIS=1`) so the tick falls through to the next sibling, the
+   queue, or its mode-dependent fallback.
 
-Failures (network blips, AIN repo unreachable, malformed tag) are treated as
+Failures (network blips, sibling repo unreachable, malformed tag) are treated as
 "no bump available" — they are logged as warnings and the cascade falls through
 without erroring.
+
+To extend with another sibling mod in the future: add an entry to `SIBLING_MODS`
+in [apply-change.py](../../scripts/auto-release/apply-change.py), add parallel
+verify+fallback steps to [auto-release.yml](../workflows/auto-release.yml), and add
+the version property + jarJar + mods.toml dep blocks (see how AIS was added).
 
 ## Cancelling on real release
 
