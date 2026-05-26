@@ -45,6 +45,12 @@ public final class DungeonTrainConfig {
     public static final CarriageGenerationMode DEFAULT_GENERATION_MODE = CarriageGenerationMode.RANDOM_GROUPED;
     public static final int DEFAULT_GROUP_SIZE = CarriageGenerationConfig.DEFAULT_GROUP_SIZE;
 
+    public static final boolean DEFAULT_DIFFICULTY_ENABLED = true;
+    public static final int MIN_CARRIAGES_PER_TIER = 1;
+    public static final int MAX_CARRIAGES_PER_TIER = 1000;
+    public static final int DEFAULT_CARRIAGES_PER_TIER = 20;
+    public static final boolean DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS = false;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
@@ -53,6 +59,9 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue GENERATE_TUNNELS;
     public static final ModConfigSpec.EnumValue<CarriageGenerationMode> GENERATION_MODE;
     public static final ModConfigSpec.IntValue GROUP_SIZE;
+    public static final ModConfigSpec.BooleanValue DIFFICULTY_ENABLED;
+    public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
+    public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -65,6 +74,9 @@ public final class DungeonTrainConfig {
         GENERATE_TUNNELS = pair.getLeft().generateTunnels;
         GENERATION_MODE = pair.getLeft().generationMode;
         GROUP_SIZE = pair.getLeft().groupSize;
+        DIFFICULTY_ENABLED = pair.getLeft().difficultyEnabled;
+        CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
+        DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
     }
 
     private DungeonTrainConfig() {}
@@ -95,7 +107,19 @@ public final class DungeonTrainConfig {
                         CarriageGenerationConfig.MIN_GROUP_SIZE,
                         CarriageGenerationConfig.MAX_GROUP_SIZE);
         b.pop();
-        return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize);
+        b.push("difficulty");
+        ModConfigSpec.BooleanValue difficultyEnabled = b
+                .comment("Enable carriage-index-based difficulty progression. When true, mobs spawned by carriage variants receive armor, weapons, potion effects, and enchantments based on their carriage's tier.")
+                .define("difficultyEnabled", DEFAULT_DIFFICULTY_ENABLED);
+        ModConfigSpec.IntValue carriagesPerTier = b
+                .comment("Number of carriages per tier step. tierIndex = floor(abs(pIdx) / carriagesPerTier), clamped to the loaded tier list. Game default 20; set to 1 for fast-paced/testing progression.")
+                .defineInRange("carriagesPerTier", DEFAULT_CARRIAGES_PER_TIER, MIN_CARRIAGES_PER_TIER, MAX_CARRIAGES_PER_TIER);
+        ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
+                .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
+                .define("difficultyAffectsBabyMobs", DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS);
+        b.pop();
+        return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
+                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs);
     }
 
     /**
@@ -133,6 +157,18 @@ public final class DungeonTrainConfig {
 
     public static int getGroupSize() {
         return isLoaded() ? GROUP_SIZE.get() : DEFAULT_GROUP_SIZE;
+    }
+
+    public static boolean getDifficultyEnabled() {
+        return isLoaded() ? DIFFICULTY_ENABLED.get() : DEFAULT_DIFFICULTY_ENABLED;
+    }
+
+    public static int getCarriagesPerTier() {
+        return isLoaded() ? CARRIAGES_PER_TIER.get() : DEFAULT_CARRIAGES_PER_TIER;
+    }
+
+    public static boolean getDifficultyAffectsBabyMobs() {
+        return isLoaded() ? DIFFICULTY_AFFECTS_BABY_MOBS.get() : DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS;
     }
 
     public static void setNumCarriages(int value) {
@@ -182,6 +218,25 @@ public final class DungeonTrainConfig {
         GROUP_SIZE.save();
     }
 
+    public static void setDifficultyEnabled(boolean value) {
+        if (!isLoaded()) return;
+        DIFFICULTY_ENABLED.set(value);
+        DIFFICULTY_ENABLED.save();
+    }
+
+    public static void setCarriagesPerTier(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_CARRIAGES_PER_TIER, Math.min(MAX_CARRIAGES_PER_TIER, value));
+        CARRIAGES_PER_TIER.set(clamped);
+        CARRIAGES_PER_TIER.save();
+    }
+
+    public static void setDifficultyAffectsBabyMobs(boolean value) {
+        if (!isLoaded()) return;
+        DIFFICULTY_AFFECTS_BABY_MOBS.set(value);
+        DIFFICULTY_AFFECTS_BABY_MOBS.save();
+    }
+
     private record Holder(
             ModConfigSpec.IntValue numCarriages,
             ModConfigSpec.DoubleValue speed,
@@ -189,6 +244,9 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue generateTracks,
             ModConfigSpec.BooleanValue generateTunnels,
             ModConfigSpec.EnumValue<CarriageGenerationMode> generationMode,
-            ModConfigSpec.IntValue groupSize
+            ModConfigSpec.IntValue groupSize,
+            ModConfigSpec.BooleanValue difficultyEnabled,
+            ModConfigSpec.IntValue carriagesPerTier,
+            ModConfigSpec.BooleanValue difficultyAffectsBabyMobs
     ) {}
 }
