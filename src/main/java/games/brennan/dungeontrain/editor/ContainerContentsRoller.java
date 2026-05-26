@@ -33,6 +33,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.adventureitemnames.api.NameComposer;
+import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
@@ -71,6 +72,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     /** Salt for the procedural name composer (naturally-spawned items). */
     private static final long SALT_NAME        = 0x4E414D4544585742L;
+    /** Salt for the AIS Gaussian stat roller (naturally-spawned items). */
+    private static final long SALT_STATS       = 0x5354415453534447L;
     /** Salt for the leather-dye chance roll (leather armor only). */
     private static final long SALT_DYE_CHANCE    = 0xDEADD13DC0DEC0DEL;
     /** Salt for picking which vanilla DyeColor to apply when the dye chance hits. */
@@ -620,6 +623,10 @@ public final class ContainerContentsRoller {
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
         RandomSource nameRng = RandomSource.create(nameSeed);
         NameComposer.applyName(stack, nameRng);
+
+        long statsSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_STATS);
+        RandomSource statsRng = RandomSource.create(statsSeed);
+        StatsModifier.applyStats(stack, statsRng);
 
         RandomSource dyeChanceRng = RandomSource.create(
             mix(localPos, worldSeed, carriageIndex, slot, SALT_DYE_CHANCE));

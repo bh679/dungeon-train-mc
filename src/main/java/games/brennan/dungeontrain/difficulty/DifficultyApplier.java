@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.difficulty;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.adventureitemnames.api.NameComposer;
+import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
@@ -143,6 +145,8 @@ public final class DifficultyApplier {
                 EnchantmentHelper.enchantItem(rng, stack, enchant.maxLevel(), tag.get().stream());
             }
         }
+        NameComposer.applyName(stack, rng);
+        StatsModifier.applyStats(stack, rng);
         mob.setItemSlot(slot, stack);
         mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
     }
