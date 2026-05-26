@@ -1,13 +1,18 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
+import games.brennan.dungeontrain.net.BoardingProgressPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
@@ -41,6 +46,12 @@ public final class BoardingProgressEvents {
     /** Per-level scan period. Players don't cross carriage groups faster than this. */
     private static final int SCAN_PERIOD_TICKS = 10;
 
+    /**
+     * Last broadcast value of {@code travelledCarriageIndex} — guards against
+     * pushing the HUD packet every tick when nothing changed.
+     */
+    private static int lastBroadcastTravelled = Integer.MIN_VALUE;
+
     private BoardingProgressEvents() {}
 
     @SubscribeEvent
@@ -62,6 +73,7 @@ public final class BoardingProgressEvents {
 
         if (boarded.isEmpty()) {
             data.clearLeader();
+            broadcastIfChanged(data);
             return;
         }
 
@@ -77,6 +89,33 @@ public final class BoardingProgressEvents {
             Map.Entry<UUID, Integer> first = boarded.entrySet().iterator().next();
             data.setLeader(first.getKey(), first.getValue());
         }
+
+        broadcastIfChanged(data);
+    }
+
+    /**
+     * Initial sync — give the joining player's HUD a value to show before
+     * the next tick-driven broadcast fires.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        BoardingProgressData data = BoardingProgressData.get(player.serverLevel());
+        DungeonTrainNet.sendTo(player, packetFor(data));
+    }
+
+    private static void broadcastIfChanged(BoardingProgressData data) {
+        int travelled = data.travelledCarriageIndex();
+        if (travelled == lastBroadcastTravelled) return;
+        lastBroadcastTravelled = travelled;
+        PacketDistributor.sendToAllPlayers(packetFor(data));
+    }
+
+    private static BoardingProgressPacket packetFor(BoardingProgressData data) {
+        int travelled = data.travelledCarriageIndex();
+        int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
+        int tier = Math.abs(travelled) / carriagesPerTier;
+        return new BoardingProgressPacket(travelled, tier);
     }
 
     /**
