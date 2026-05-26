@@ -191,10 +191,11 @@ and won't trigger anything.
 
 After every real release, an automated tapering cascade of ~22 micro-releases fires over
 the following 14 days (hourly for 4h → every 5h for a day → daily for 2 weeks). Each tick
-prefers, in order: **AIN one-step dependency bump** → queue item → mode-dependent
-fallback. AIN bumps run `./gradlew build` to verify before committing; failures revert
-and the tick falls through. In `always` mode the fallback nudges a sandbox loot-table
-weight ("auto-balancing"); in `with-content` and `ain` modes the cascade stops itself
+prefers, in order: **AIN one-step dependency bump** → **AIS one-step dependency bump** →
+queue item → mode-dependent fallback. Sibling-mod bumps run `./gradlew build` to verify
+before committing; failures revert (with `SKIP_AIN=1` / `SKIP_AIS=1` set) and the tick
+falls through. In `always` mode the fallback nudges a sandbox loot-table weight
+("auto-balancing"); in `with-content`, `ain`, and `ais` modes the cascade stops itself
 when there is nothing to do, waiting for the next real release to resume.
 
 See `.github/auto-release/README.md` for the full schema, cadence table, mode matrix,

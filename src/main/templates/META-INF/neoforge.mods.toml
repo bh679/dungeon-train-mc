@@ -28,6 +28,13 @@ logoFile="logo.png"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
+    modId="adventureitemstats"
+    type="required"
+    versionRange="[${adventureitemstats_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
     versionRange="[${neo_version},)"

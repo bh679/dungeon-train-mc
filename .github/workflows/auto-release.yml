@@ -80,7 +80,7 @@ jobs:
 
       - name: Fallback after AIN build failure
         if: steps.apply.outputs.change_kind == 'ain_bump' && steps.ain_build.outcome == 'failure'
-        id: apply_fallback
+        id: apply_fallback_ain
         env:
           AUTO_RELEASE_MODE: ${{ vars.AUTO_RELEASE_ENABLED }}
           SKIP_AIN: "1"
@@ -92,6 +92,26 @@ jobs:
           git checkout -- gradle.properties .github/auto-release/state.json
           python3 scripts/auto-release/apply-change.py
 
+      - name: Verify AIS bump builds
+        if: steps.apply.outputs.change_kind == 'ais_bump'
+        id: ais_build
+        continue-on-error: true
+        run: ./gradlew build
+
+      - name: Fallback after AIS build failure
+        if: steps.apply.outputs.change_kind == 'ais_bump' && steps.ais_build.outcome == 'failure'
+        id: apply_fallback_ais
+        env:
+          AUTO_RELEASE_MODE: ${{ vars.AUTO_RELEASE_ENABLED }}
+          SKIP_AIS: "1"
+          AIS_FROM: ${{ steps.apply.outputs.ais_from }}
+          AIS_TO: ${{ steps.apply.outputs.ais_to }}
+        run: |
+          set -euo pipefail
+          echo "::warning::AIS bump $AIS_FROM -> $AIS_TO failed gradle build — reverting and falling through."
+          git checkout -- gradle.properties .github/auto-release/state.json
+          python3 scripts/auto-release/apply-change.py
+
       - name: Compose final outputs
         if: steps.decide.outputs.fire == 'true' || inputs.force == true
         id: final
@@ -99,16 +119,24 @@ jobs:
           PRIMARY_KIND: ${{ steps.apply.outputs.change_kind }}
           PRIMARY_MSG: ${{ steps.apply.outputs.commit_message }}
           PRIMARY_ID: ${{ steps.apply.outputs.applied_id }}
-          BUILD_OUTCOME: ${{ steps.ain_build.outcome }}
-          FALLBACK_KIND: ${{ steps.apply_fallback.outputs.change_kind }}
-          FALLBACK_MSG: ${{ steps.apply_fallback.outputs.commit_message }}
-          FALLBACK_ID: ${{ steps.apply_fallback.outputs.applied_id }}
+          AIN_BUILD_OUTCOME: ${{ steps.ain_build.outcome }}
+          AIS_BUILD_OUTCOME: ${{ steps.ais_build.outcome }}
+          AIN_FALLBACK_KIND: ${{ steps.apply_fallback_ain.outputs.change_kind }}
+          AIN_FALLBACK_MSG: ${{ steps.apply_fallback_ain.outputs.commit_message }}
+          AIN_FALLBACK_ID: ${{ steps.apply_fallback_ain.outputs.applied_id }}
+          AIS_FALLBACK_KIND: ${{ steps.apply_fallback_ais.outputs.change_kind }}
+          AIS_FALLBACK_MSG: ${{ steps.apply_fallback_ais.outputs.commit_message }}
+          AIS_FALLBACK_ID: ${{ steps.apply_fallback_ais.outputs.applied_id }}
         run: |
           set -euo pipefail
-          if [ "$PRIMARY_KIND" = "ain_bump" ] && [ "$BUILD_OUTCOME" = "failure" ]; then
-            KIND="$FALLBACK_KIND"
-            MSG="$FALLBACK_MSG"
-            ID="$FALLBACK_ID"
+          if [ "$PRIMARY_KIND" = "ain_bump" ] && [ "$AIN_BUILD_OUTCOME" = "failure" ]; then
+            KIND="$AIN_FALLBACK_KIND"
+            MSG="$AIN_FALLBACK_MSG"
+            ID="$AIN_FALLBACK_ID"
+          elif [ "$PRIMARY_KIND" = "ais_bump" ] && [ "$AIS_BUILD_OUTCOME" = "failure" ]; then
+            KIND="$AIS_FALLBACK_KIND"
+            MSG="$AIS_FALLBACK_MSG"
+            ID="$AIS_FALLBACK_ID"
           else
             KIND="$PRIMARY_KIND"
             MSG="$PRIMARY_MSG"

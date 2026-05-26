@@ -34,10 +34,11 @@ def run(ws, now_epoch, **extra_env):
         "NOW_EPOCH": str(now_epoch),
     }
     env.pop("GITHUB_OUTPUT", None)
-    # Default tests to an empty AIN release list so try_ain_bump never reaches
-    # `gh release list` (which would hit the network / require auth). Tests
-    # that need AIN behaviour override this explicitly.
+    # Default tests to an empty sibling-mod release list so try_sibling_bump
+    # never reaches `gh release list` (which would hit the network / require
+    # auth). Tests that need sibling-mod behaviour override these explicitly.
     env.setdefault("AIN_RELEASES_OVERRIDE", "[]")
+    env.setdefault("AIS_RELEASES_OVERRIDE", "[]")
     for k, v in extra_env.items():
         if v is None:
             env.pop(k, None)
@@ -47,7 +48,7 @@ def run(ws, now_epoch, **extra_env):
                           capture_output=True, text=True)
 
 
-def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0"):
+def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0", ais_version="0.1.0"):
     write_json(os.path.join(ws, ".github/auto-release/state.json"),
                {"schedule_anchor": "2026-05-18T12:00:00Z", "last_auto_release_at": None,
                 "last_anchor_source": "test"})
@@ -56,10 +57,19 @@ def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0"):
                {"type": "minecraft:chest", "pools": [{"rolls": 1, "entries": [
                    {"type": "minecraft:item", "name": "minecraft:wheat", "weight": loot_weight}]}]})
     with open(os.path.join(ws, "gradle.properties"), "w") as f:
-        f.write(f"mod_version=0.219.0\n{'adventureitemnames_version'}={ain_version}\nsable_version=1.2.1+mc1.21.1\n")
+        f.write(
+            f"mod_version=0.219.0\n"
+            f"adventureitemnames_version={ain_version}\n"
+            f"adventureitemstats_version={ais_version}\n"
+            f"sable_version=1.2.1+mc1.21.1\n"
+        )
 
 
 def ain_releases_json(*versions):
+    return json.dumps([{"tagName": f"v{v}"} for v in versions])
+
+
+def ais_releases_json(*versions):
     return json.dumps([{"tagName": f"v{v}"} for v in versions])
 
 
@@ -477,6 +487,143 @@ def test_ain_bump_handles_v_prefixed_and_invalid_tags():
         shutil.rmtree(ws)
 
 
+# ---------------------------------------------------------------------------
+# AIS (sibling-mod) tests — parallel to the AIN tests above.
+# ---------------------------------------------------------------------------
+
+
+def read_ais_version(ws):
+    with open(os.path.join(ws, "gradle.properties")) as f:
+        for line in f:
+            if line.startswith("adventureitemstats_version="):
+                return line.split("=", 1)[1].strip()
+    return None
+
+
+def test_ais_bump_when_ain_at_latest():
+    """AIN current, AIS behind → AIS bump applies."""
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "should-not-run", "label": "x", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/x.json",
+                              "content": {"x": 1}, "commit_message": "test: x"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.25.0", ais_version="0.1.0")
+        r = run(ws, 1_700_000_000,
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.0", "0.1.1", "0.1.2"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=ais_bump" in r.stdout, r.stdout
+        assert "commit_message=chore(auto): bump AIS 0.1.0 -> 0.1.1" in r.stdout, r.stdout
+        assert "ais_from=0.1.0" in r.stdout
+        assert "ais_to=0.1.1" in r.stdout
+        assert read_ais_version(ws) == "0.1.1"
+        # Queue must be untouched — sibling-mod ticks don't consume queue items.
+        with open(os.path.join(ws, ".github/auto-release/queue.json")) as f:
+            q = json.load(f)
+        assert len(q["pending"]) == 1 and q["pending"][0]["id"] == "should-not-run"
+        print("OK  test_ais_bump_when_ain_at_latest")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_ain_takes_priority_when_both_behind():
+    """When both sibling mods are behind, AIN wins this tick (AIS untouched)."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.20.0", ais_version="0.1.0")
+        r = run(ws, 1_700_000_000,
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.21.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.5"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=ain_bump" in r.stdout, r.stdout
+        assert read_ain_version(ws) == "0.21.0", "AIN should have moved"
+        assert read_ais_version(ws) == "0.1.0", "AIS must NOT move when AIN bumps"
+        print("OK  test_ain_takes_priority_when_both_behind")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ais_stops_when_no_ais_update():
+    """mode=ais + AIS at latest → cascade stops (queue not consumed)."""
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "book-a", "label": "Add A", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/a.json",
+                              "content": {"id": "a"}, "commit_message": "test: a"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.20.0", ais_version="0.1.2")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ais",
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.2"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        assert read_state(ws).get("cascade_stopped") is True
+        # Queue untouched.
+        with open(os.path.join(ws, ".github/auto-release/queue.json")) as f:
+            q = json.load(f)
+        assert len(q["pending"]) == 1, "queue should be untouched in ais mode"
+        print("OK  test_mode_ais_stops_when_no_ais_update")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ais_ignores_ain_update():
+    """mode=ais: even if AIN has an update available, AIN must not bump
+    (and AIS at latest → stop)."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.20.0", ais_version="0.1.2")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ais",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.21.0", "0.22.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.2"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        assert read_ain_version(ws) == "0.20.0", "AIN must not move under mode=ais"
+        print("OK  test_mode_ais_ignores_ain_update")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ain_ignores_ais_update():
+    """mode=ain: even if AIS has an update available, AIS must not bump
+    (and AIN at latest → stop). Back-compat guarantee for existing mode=ain
+    users who don't expect AIS to participate."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.25.0", ais_version="0.1.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ain",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.1", "0.1.2"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        assert read_ais_version(ws) == "0.1.0", "AIS must not move under mode=ain"
+        print("OK  test_mode_ain_ignores_ais_update")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_skip_ais_bypasses_ais_check():
+    """SKIP_AIS=1 prevents AIS bump even when one is available — used by the
+    workflow's revert-after-build-failure path. AIN bump still considered."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.25.0", ais_version="0.1.0")
+        r = run(ws, 1_700_000_000, SKIP_AIS="1",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.1", "0.1.2"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        # SKIP_AIS prevents the AIS bump even though one is available;
+        # AIN is at latest, so falls through to auto_balance.
+        assert "change_kind=ais_bump" not in r.stdout, r.stdout
+        assert "change_kind=auto_balance" in r.stdout, r.stdout
+        assert read_ais_version(ws) == "0.1.0", "AIS should not have moved"
+        print("OK  test_skip_ais_bypasses_ais_check")
+    finally:
+        shutil.rmtree(ws)
+
+
 def main():
     tests = [
         test_queue_pop_two_items_then_auto_balance,
@@ -499,6 +646,12 @@ def main():
         test_skip_ain_bypasses_ain_check,
         test_unknown_mode_defaults_to_always,
         test_ain_bump_handles_v_prefixed_and_invalid_tags,
+        test_ais_bump_when_ain_at_latest,
+        test_ain_takes_priority_when_both_behind,
+        test_mode_ais_stops_when_no_ais_update,
+        test_mode_ais_ignores_ain_update,
+        test_mode_ain_ignores_ais_update,
+        test_skip_ais_bypasses_ais_check,
     ]
     failed = 0
     for t in tests:
