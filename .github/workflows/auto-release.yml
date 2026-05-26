@@ -9,7 +9,7 @@ name: Auto-Release Cascade
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "47 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
