@@ -462,6 +462,12 @@ public final class CarriagePlacer {
             // 2-tall paired-half block whose cascade would drop an item.
             Optional<PartRegionFilterProcessor> filter = PartRegionFilterProcessor.forVariant(
                 level, origin, variant, dims, seed, carriageIndex, flatbedAtBack, flatbedAtFront);
+            // Silent-clear claimed cells first so any leftover content (rolling-
+            // window cycle, returning to a saved chunk) doesn't show through
+            // the parts template's air cells (e.g. an open-doorway frame).
+            // Without this pre-clear, the base filter alone leaves whatever
+            // was previously in those cells untouched.
+            filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
             stampTemplate(level, origin, stored.get(), filter.orElse(null));
             return "stored";
         }

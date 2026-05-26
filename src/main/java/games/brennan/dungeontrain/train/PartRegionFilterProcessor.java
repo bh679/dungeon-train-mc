@@ -3,10 +3,13 @@ package games.brennan.dungeontrain.train;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
@@ -99,6 +102,36 @@ public final class PartRegionFilterProcessor extends StructureProcessor {
         }
         if (boxes.isEmpty()) return Optional.empty();
         return Optional.of(new PartRegionFilterProcessor(carriageOrigin, boxes));
+    }
+
+    /**
+     * Silently air-out every cell inside any claimed box. Run this BEFORE
+     * {@code template.placeInWorld(... processor ...)} so the placement
+     * region starts clean: the base stamp's filter then skips placing
+     * blocks into those cells, the parts overlay's template stamps the
+     * frame, and the parts template's air cells (open doorways) stay air
+     * because nothing was there to begin with.
+     *
+     * <p>Uses {@link SilentBlockOps#setBlockSilentNoCascade} so the
+     * cascade can't drop paired halves left over from a prior carriage
+     * (rolling-window cycle, returning to a saved chunk, etc.).</p>
+     */
+    public void clearClaimedCellsSilently(ServerLevel level) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (BoundingBox box : claimedLocalBoxes) {
+            for (int dx = box.minX(); dx <= box.maxX(); dx++) {
+                for (int dy = box.minY(); dy <= box.maxY(); dy++) {
+                    for (int dz = box.minZ(); dz <= box.maxZ(); dz++) {
+                        cursor.set(
+                            carriageOrigin.getX() + dx,
+                            carriageOrigin.getY() + dy,
+                            carriageOrigin.getZ() + dz);
+                        SilentBlockOps.setBlockSilentNoCascade(level, cursor, air, null);
+                    }
+                }
+            }
+        }
     }
 
     @Override
