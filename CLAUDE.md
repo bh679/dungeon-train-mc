@@ -190,13 +190,15 @@ and won't trigger anything.
 ## Auto-Release Cascade
 
 After every real release, an automated tapering cascade of ~22 micro-releases fires over
-the following 14 days (hourly for 4h → every 5h for a day → daily for 2 weeks). Each
-fire either applies one pre-staged queue item or, when the queue is empty, nudges a
-sandbox loot-table weight labelled **auto-balancing**. The cascade keeps the mod fresh
-on Modrinth/CurseForge feeds.
+the following 14 days (hourly for 4h → every 5h for a day → daily for 2 weeks). Each tick
+prefers, in order: **AIN one-step dependency bump** → queue item → mode-dependent
+fallback. AIN bumps run `./gradlew build` to verify before committing; failures revert
+and the tick falls through. In `always` mode the fallback nudges a sandbox loot-table
+weight ("auto-balancing"); in `with-content` and `ain` modes the cascade stops itself
+when there is nothing to do, waiting for the next real release to resume.
 
-See `.github/auto-release/README.md` for the full schema, cadence table, and queue
-example.
+See `.github/auto-release/README.md` for the full schema, cadence table, mode matrix,
+and queue example.
 
 ### Gate exception
 
@@ -209,9 +211,11 @@ gateable changes — they are scheduled, not requested.
 | Want to … | Do this |
 |---|---|
 | Add a new content drop to the cascade | Open a normal PR adding an object to `.github/auto-release/queue.json` `pending[]` |
-| Pause the cascade (hard kill — blocks scheduled + force dispatches) | `gh variable set AUTO_RELEASE_ENABLED --body false` (or set via Settings → Variables). Resume with `gh variable delete AUTO_RELEASE_ENABLED` |
+| Switch cascade mode | `gh variable set AUTO_RELEASE_ENABLED --body <always\|with-content\|ain>`. `always` is the current default; `with-content` only releases when there is AIN/queue content; `ain` only releases for AIN catch-up. |
+| Pause the cascade (hard kill — blocks scheduled + force dispatches) | `gh variable set AUTO_RELEASE_ENABLED --body false` (or set via Settings → Variables). Resume with `gh variable delete AUTO_RELEASE_ENABLED` or pick a mode. |
 | Force-fire a tick manually | `gh workflow run auto-release.yml -f force=true` (still respects the kill switch) |
 | Preview without releasing | `gh workflow run auto-release.yml -f dry_run=true` |
+| Resume a stopped cascade | Ship the next real release. `auto-release-reset.yml` clears `cascade_stopped` and re-anchors `state.json`. |
 
 ### Discord notifications
 
