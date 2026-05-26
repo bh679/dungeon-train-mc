@@ -84,8 +84,7 @@ public final class DifficultyApplier {
         // Tier 0 = vanilla baseline; no equipment, effects, or enchantments.
         // Real progression starts at tier 1 once the player has actually
         // travelled `carriagesPerTier` carriages while boarded.
-        if (tierIndex == 0) return false;
-        DifficultyTier tier = DifficultyTierRegistry.tierFor(tierIndex);
+        DifficultyTier tier = ProceduralTiers.tierFor(tierIndex);
         if (tier == null) return false;
 
         boolean armorOk = supportsArmor(mob);
