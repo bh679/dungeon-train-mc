@@ -29,7 +29,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind kind,
                                        String name, int delta) implements CustomPacketPayload {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY }
+    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY, CYCLE_END_MODE }
 
     public static final Type<PartAssignmentEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_assignment_edit"));

@@ -145,7 +145,8 @@ public final class CarriagePlacer {
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
         String base = stampBase(level, origin, variant, dims);
-        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0);
+        // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour.
+        String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false);
         return finishPlace(level, origin, variant, dims, base, overlay);
     }
 
@@ -168,7 +169,7 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex
     ) {
-        return placeAt(level, origin, variant, dims, config, carriageIndex, true);
+        return placeAt(level, origin, variant, dims, config, carriageIndex, true, false, false);
     }
 
     /**
@@ -189,8 +190,32 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents
     ) {
+        return placeAt(level, origin, variant, dims, config, carriageIndex, applyContents, false, false);
+    }
+
+    /**
+     * 9-arg spawn variant — same as {@link #placeAt(ServerLevel, BlockPos,
+     * CarriageVariant, CarriageDims, CarriageGenerationConfig, int, boolean)}
+     * but also takes the flatbed-neighbour flags used by the door part
+     * picker. {@code flatbedAtBack}/{@code flatbedAtFront} say whether
+     * this carriage's BACK/FRONT door faces a flatbed (or half-flatbed
+     * pad). Authors can tag a door variant {@code end} or {@code mid} to
+     * restrict it to one or the other; see {@link CarriagePartAssignment.EndMode}.
+     *
+     * <p>Used by {@link TrainAssembler#spawnGroup} where the slot's
+     * position within the group determines flatbed adjacency. Other call
+     * sites that don't know the group context pass {@code (false, false)}
+     * via the 7-arg overload, which is the LOOPING / RANDOM fallback —
+     * end/mid tags become no-ops and the picker sees the full pool.</p>
+     */
+    public static Set<BlockPos> placeAt(
+        ServerLevel level, BlockPos origin, CarriageVariant variant,
+        CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
+        boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront
+    ) {
         String base = stampBase(level, origin, variant, dims);
-        String overlay = stampPartsOverlay(level, origin, variant, dims, config.seed(), carriageIndex);
+        String overlay = stampPartsOverlay(level, origin, variant, dims,
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront);
 
         // Variant-block overlays are position-based and assume a stable NBT-
         // backed basis. legacyPlaceAt's hardcoded geometry doesn't qualify,
@@ -658,7 +683,8 @@ public final class CarriagePlacer {
      * when no overlay ran.
      */
     private static String stampPartsOverlay(ServerLevel level, BlockPos origin, CarriageVariant variant,
-                                             CarriageDims dims, long seed, int carriageIndex) {
+                                             CarriageDims dims, long seed, int carriageIndex,
+                                             boolean flatbedAtBack, boolean flatbedAtFront) {
         Optional<CarriagePartAssignment> assignment = CarriageVariantPartsStore.get(variant);
         if (assignment.isEmpty()) return null;
         CarriagePartAssignment a = assignment.get();
@@ -668,9 +694,12 @@ public final class CarriagePlacer {
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             // Pick once per placement so walls / doors honour the per-entry
             // SideMode (BOTH = mirror; ONE = always pick a different name
-            // for the other side; EITHER = seeded coin-flip). Floor / roof
-            // resolves to a single-element list and behaves as before.
-            java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex);
+            // for the other side; EITHER = seeded coin-flip). Door entries
+            // additionally filter by EndMode against the flatbed-neighbour
+            // flags. Floor / roof resolves to a single-element list and
+            // behaves as before.
+            java.util.List<String> picks = a.pickPerPlacement(
+                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront);
             boolean stamped = false;
             for (String picked : picks) {
                 if (!CarriagePartKind.NONE.equals(picked)

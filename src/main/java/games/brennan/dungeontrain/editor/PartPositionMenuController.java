@@ -299,6 +299,12 @@ public final class PartPositionMenuController {
      * {@link CarriagePartPlacer#placeAtPerPlacement} skips them and
      * leaves the existing stamp in place.
      *
+     * <p>{@link CarriagePartPlacer#placeAtPerPlacement} erases the target
+     * placement's region to air before stamping, so sparse templates
+     * (e.g. an "open" doorway with only a frame block) fully replace
+     * the previously-previewed door instead of mixing with it through
+     * the template's air positions.</p>
+     *
      * <p>Seed 0 / carriageIndex 0 matches
      * {@link CarriageEditor#stampPlot}'s deterministic editor stamp, so
      * any {@code CarriagePartVariantBlocks} sidecar overlay lands on the
@@ -393,6 +399,7 @@ public final class PartPositionMenuController {
                 List.of(CarriagePartAssignment.WeightedName.of(CarriagePartKind.NONE)));
             case BUMP_WEIGHT -> current.withWeight(packet.kind(), packet.name(), packet.delta());
             case CYCLE_SIDE_MODE -> current.cycleSideMode(packet.kind(), packet.name());
+            case CYCLE_END_MODE -> current.cycleEndMode(packet.kind(), packet.name());
             // Unreachable — PREVIEW_ENTRY is handled by an early return above.
             // Kept here so the switch stays exhaustive over the Op enum.
             case PREVIEW_ENTRY -> current;

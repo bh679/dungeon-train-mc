@@ -75,12 +75,16 @@ public final class PartPositionMenuRenderer {
     static final double COLUMN_WIDTH = 1.6;
     /** Minimum panel width — guarantees the four-cell toolbar can fit "Remove" / "Cancel" / "Clear" labels without text overlap. */
     static final double MIN_PANEL_WIDTH = 2.4;
+    /** Bumped minimum for door rows so the extra end-mode cell ("end+mid" label) doesn't crowd the name text. */
+    static final double DOOR_MIN_PANEL_WIDTH = 3.0;
     /** Width of the X chip on the right of each entry row when remove-mode is on. */
     static final double X_CELL_WIDTH = 0.30;
     /** Width of the weight cell on the right side of each entry row. */
     static final double WEIGHT_CELL_WIDTH = 0.40;
     /** Width of the side-mode cell (walls/doors only) — fits "(1|2)" with padding. */
     static final double SIDE_MODE_CELL_WIDTH = 0.50;
+    /** Width of the end-mode cell (doors only) — fits "end+mid" with padding. */
+    static final double END_MODE_CELL_WIDTH = 0.60;
     /** Text scale matches CommandMenuRenderer's. */
     static final double TEXT_SCALE = 0.012;
 
@@ -141,7 +145,10 @@ public final class PartPositionMenuRenderer {
         List<WeightedName> entries = PartPositionMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + PartPositionMenu.ROWS_PER_COLUMN - 1) / PartPositionMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(MIN_PANEL_WIDTH, colCount * COLUMN_WIDTH);
+        // Doors get an extra cell per row — bump the minimum so the name
+        // text doesn't get squeezed when the assignment is small.
+        double minPanelW = PartPositionMenu.kindHasEndMode(kind) ? DOOR_MIN_PANEL_WIDTH : MIN_PANEL_WIDTH;
+        double panelW = Math.max(minPanelW, colCount * COLUMN_WIDTH);
         // Show only the rows we actually have (capped at ROWS_PER_COLUMN);
         // avoids reserving a full 10-row column when the assignment is small.
         int displayedRows = Math.min(n, PartPositionMenu.ROWS_PER_COLUMN);
@@ -201,6 +208,7 @@ public final class PartPositionMenuRenderer {
         // entry row matches the toolbar above it.
         double colActualW = panelW / colCount;
         boolean showSideMode = PartPositionMenu.kindHasSideMode(kind);
+        boolean showEndMode  = PartPositionMenu.kindHasEndMode(kind);
         double gridTop = toolbarBottom;
         for (int i = 0; i < n; i++) {
             int col = i / PartPositionMenu.ROWS_PER_COLUMN;
@@ -220,12 +228,16 @@ public final class PartPositionMenuRenderer {
 
             // Layout cells, right-to-left:
             //   [X] (rightmost, in remove-mode only)
+            //   end-mode cell (only for doors)
             //   side-mode cell (only for walls/doors)
             //   weight cell
             //   name cell (fills the remaining left space)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
+            double endCellW  = showEndMode ? END_MODE_CELL_WIDTH : 0.0;
             double sideCellW = showSideMode ? SIDE_MODE_CELL_WIDTH : 0.0;
-            double sideCellR = colXR - xCellW;
+            double endCellR  = colXR - xCellW;
+            double endCellL  = endCellR - endCellW;
+            double sideCellR = endCellL;
             double sideCellL = sideCellR - sideCellW;
             double weightCellR = sideCellL;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
@@ -260,6 +272,18 @@ public final class PartPositionMenuRenderer {
                 drawCenteredText(ps, buffer, font, entry.sideMode().label(),
                     (sideCellL + sideCellR) / 2.0, rowCY,
                     sideHover ? 0xFF000000 : 0xFFFFFFFF);
+            }
+
+            // End-mode cell (doors only) — click cycles BOTH→END→MID. Amber
+            // tint so it's visually distinct from the blue side-mode cell.
+            if (showEndMode) {
+                boolean endHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_END_MODE && hovered.index() == i;
+                int endTint = endHover ? 0xC0FFAA33 : 0x60AA6622;
+                drawQuad(ps, buffer, endCellL + 0.005, rowBottom + 0.005,
+                    endCellR - 0.005, rowTop - 0.005, endTint);
+                drawCenteredText(ps, buffer, font, entry.endMode().label(),
+                    (endCellL + endCellR) / 2.0, rowCY,
+                    endHover ? 0xFF000000 : 0xFFFFFFFF);
             }
 
             // X cell (remove mode only)

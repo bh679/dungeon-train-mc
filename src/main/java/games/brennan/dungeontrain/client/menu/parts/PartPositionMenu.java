@@ -43,6 +43,7 @@ public final class PartPositionMenu {
         ENTRY_NAME,
         ENTRY_WEIGHT,
         ENTRY_SIDE_MODE,
+        ENTRY_END_MODE,
         ENTRY_REMOVE_X,
         SEARCH_FIELD,
         SEARCH_RESULT,
@@ -52,6 +53,11 @@ public final class PartPositionMenu {
     /** True for kinds where the side-mode cell is rendered and interactive (walls / doors). */
     public static boolean kindHasSideMode(CarriagePartKind kind) {
         return kind == CarriagePartKind.WALLS || kind == CarriagePartKind.DOORS;
+    }
+
+    /** True for kinds where the end-mode cell is rendered and interactive (doors only). */
+    public static boolean kindHasEndMode(CarriagePartKind kind) {
+        return kind == CarriagePartKind.DOORS;
     }
 
     /** A specific cell hit by the raycast. */

@@ -81,6 +81,7 @@ public final class CarriagePartPlacer {
                                            CarriagePartKind kind, List<String> names, CarriageDims dims,
                                            long seed, int carriageIndex) {
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        Vec3i placementSize = kind.dims(dims);
         for (int i = 0; i < placements.size(); i++) {
             String name = i < names.size() ? names.get(i) : null;
             if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
@@ -89,6 +90,24 @@ public final class CarriagePartPlacer {
             StructureTemplate template = stored.get();
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
+            // Erase the placement region first so sparse parts templates
+            // (e.g. an "open" doorway with only a frame block) fully
+            // replace whatever the base carriage NBT wrote at this
+            // placement, instead of leaving the base's blocks visible
+            // through the parts template's air positions. Vanilla
+            // StructureTemplate captures with toIgnore=AIR, so
+            // placeInWorld below skips air cells in the palette — without
+            // a pre-erase, the parts overlay can't ever clear a base
+            // block. Erase covers the placement's full bounding box;
+            // mirror axes are 1-thick for both walls and doors so the
+            // forward iteration covers the same cells either side.
+            for (int dx = 0; dx < placementSize.getX(); dx++) {
+                for (int dy = 0; dy < placementSize.getY(); dy++) {
+                    for (int dz = 0; dz < placementSize.getZ(); dz++) {
+                        level.setBlock(stampOrigin.offset(dx, dy, dz), AIR, 3);
+                    }
+                }
+            }
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
