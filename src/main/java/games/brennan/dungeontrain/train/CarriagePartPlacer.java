@@ -81,6 +81,7 @@ public final class CarriagePartPlacer {
                                            CarriagePartKind kind, List<String> names, CarriageDims dims,
                                            long seed, int carriageIndex) {
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
+        Vec3i placementSize = kind.dims(dims);
         for (int i = 0; i < placements.size(); i++) {
             String name = i < names.size() ? names.get(i) : null;
             if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
@@ -89,15 +90,33 @@ public final class CarriagePartPlacer {
             StructureTemplate template = stored.get();
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-            // No pre-erase. The base carriage stamp now skips cells claimed
-            // by assigned parts (see PartRegionFilterProcessor), so the
-            // placement region is already air when we arrive. Sparse parts
-            // (an "open" doorway with only a frame block) keep working
-            // because vanilla StructureTemplate's toIgnore=AIR skip leaves
-            // the already-air cells alone. The previous flag-3 erase loop
-            // would have dropped paired-half blocks (doors, tall flowers,
-            // beds) via the shape-update cascade — base-stamp filtering
-            // removes the need for that loop entirely.
+            // Silent pre-erase. Sparse parts templates ("open" doorway with
+            // only a frame block) need the placement region cleared first
+            // because vanilla StructureTemplate captures with toIgnore=AIR,
+            // so placeInWorld below skips air cells in the palette — without
+            // a pre-erase, the overlay can't ever clear an existing block
+            // sitting in a cell the template wants to leave open.
+            //
+            // Uses SilentBlockOps.setBlockSilentNoCascade so any 2-tall
+            // paired-half block already in the region (door / tall flower
+            // / bed) doesn't drop via the shape-update cascade — the
+            // previous flag-3 erase loop was the source of the visible
+            // "door places, then breaks and drops a frame" symptom.
+            //
+            // This pre-erase runs for both call paths:
+            //   * train assembly (after stampBase, where the base filter
+            //     usually leaves these cells already air — no-op here)
+            //   * in-carriage part swap via PartPositionMenuController,
+            //     where no base stamp runs first and the previous variant's
+            //     blocks are still in the cells.
+            for (int dx = 0; dx < placementSize.getX(); dx++) {
+                for (int dy = 0; dy < placementSize.getY(); dy++) {
+                    for (int dz = 0; dz < placementSize.getZ(); dz++) {
+                        SilentBlockOps.setBlockSilentNoCascade(
+                            level, stampOrigin.offset(dx, dy, dz), AIR, null);
+                    }
+                }
+            }
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
