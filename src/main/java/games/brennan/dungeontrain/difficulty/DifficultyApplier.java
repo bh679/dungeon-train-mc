@@ -81,6 +81,10 @@ public final class DifficultyApplier {
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng) {
         int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
         int tierIndex = Math.abs(carriageIndex) / carriagesPerTier;
+        // Tier 0 = vanilla baseline; no equipment, effects, or enchantments.
+        // Real progression starts at tier 1 once the player has actually
+        // travelled `carriagesPerTier` carriages while boarded.
+        if (tierIndex == 0) return false;
         DifficultyTier tier = DifficultyTierRegistry.tierFor(tierIndex);
         if (tier == null) return false;
 
