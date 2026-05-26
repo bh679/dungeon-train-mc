@@ -492,6 +492,210 @@
       },
       "variant": "I have stopped.\n\nA small carriage. Near the back. Or the front. The light is the same in both directions.\n\nA window. A latch. I have been looking at it a long while.\n\nThe three heads are here. Not at the glass now. A little way out. Waiting.\n\nI am not going to walk again. I am going to lift the latch.\n\nI have lifted it.\n\nThe window is open. The night is cold. The cedar smells stronger when the air moves.\n\nLeaving this here.\n\nLeaving the window open too.",
       "commit_message": "content(narrative): Edda Letter 6 variant B"
+    },
+    {
+      "id": "soll-l1-a",
+      "label": "Soll Letter 1 variant A (loadout, S. Marra)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Letter One"
+      },
+      "variant": "Day One. Loadout.\n\nIron sword, x2 (one back-up per the notebook).\nBow, 64 arrows.\nEnchanted leather, full set, Protection I.\nEnder pearls, x16.\nBed, x1.\nRaw potatoes, x32.\n\nThe notebook calls for gold apples. The town had none. I will source them en route.\n\nThe rat is real. I have logged him.\n\nDay One.\n\n- S. Marra",
+      "commit_message": "content(narrative): Soll Letter 1 variant A"
+    },
+    {
+      "id": "soll-l1-b",
+      "label": "Soll Letter 1 variant B (loadout, snuck out)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Letter One"
+      },
+      "variant": "Day One. Loadout.\n\nIron sword, x2.\nBow, 64 arrows.\nEnchanted leather, Prot I.\nEnder pearls, x16.\nBed.\nPotatoes, x32.\n\nThe notebook says gold apples are non-negotiable. The town had none. I left before anyone noticed I was gone.\n\nA rat in a vest gave me this paper. He looked sad. I do not know what to log him as.\n\nI am ready.\n\n- Soll Marra",
+      "commit_message": "content(narrative): Soll Letter 1 variant B"
+    },
+    {
+      "id": "soll-l2-a",
+      "label": "Soll Letter 2 variant A (notebook, bringing it)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Letter Two"
+      },
+      "variant": "The notebook is Halric's. He started it twenty-six years ago, the year before he met me.\n\nSpecs for the End. Pillar heights. Crystal cages. Cage break order. Bed-blast yields. Pearl trajectories.\n\nHe never went.\n\nHe died in spring. Lung-thing. The notebook calls it \"cessation, non-combat.\"\n\nThe dragon never met Halric.\n\nI am bringing it to her.\n\n- S. Marra",
+      "commit_message": "content(narrative): Soll Letter 2 variant A"
+    },
+    {
+      "id": "soll-l2-b",
+      "label": "Soll Letter 2 variant B (notebook, bringing him)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Letter Two"
+      },
+      "variant": "The notebook is Halric's. He started writing it the year before I was born. Twenty-six years of specs and no dragon at the end.\n\nPillar heights. Crystal cages. Cage break order. Bed-blast yields. Pearl trajectories. The whole fight, on paper.\n\nHe died in spring. The notebook calls it \"cessation, non-combat.\" I think it was his lungs. He coughed a lot. He never said the word.\n\nThe dragon never met Halric.\n\nI am bringing him to her.\n\n- Soll",
+      "commit_message": "content(narrative): Soll Letter 2 variant B"
+    },
+    {
+      "id": "soll-l3-a",
+      "label": "Soll Letter 3 variant A (drill one, what ready feels like)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Letter Three"
+      },
+      "variant": "Drill One. Carriage 14.\n\nTarget: zombie, no armour.\nRange: 9 blocks.\nCover: a bench.\nBow: full draw, two seconds.\n\nHalric's perch-cycle adapts. The carriage lamp stands in for the crystal. Drop the crystal first. Pivot. Loose.\n\nResult: one shot. Notebook target time eleven seconds. Mine, four.\n\nThe notebook does not say what ready feels like.\n\n- S. Marra",
+      "commit_message": "content(narrative): Soll Letter 3 variant A"
+    },
+    {
+      "id": "soll-l3-b",
+      "label": "Soll Letter 3 variant B (drill one, the lamp swung)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Letter Three"
+      },
+      "variant": "Drill One. Carriage fourteen.\n\nI picked a zombie because the notebook starts with crystals and I do not have a crystal. The lamp on the wall was the right shape.\n\nBench cover. Nine blocks. Full draw. Pivot. Loose.\n\nThe zombie went down in one. Halric's target time was eleven seconds. I took four.\n\nI was ready, then. Then I sat on the bench and the carriage was quiet and the lamp swung a little.\n\nI do not know what I expected.\n\n- Soll",
+      "commit_message": "content(narrative): Soll Letter 3 variant B"
+    },
+    {
+      "id": "soll-l4-a",
+      "label": "Soll Letter 4 variant A (sighting, fourth apprentice)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Letter Four"
+      },
+      "variant": "Carriage 28. Encounter.\n\nPassenger: female, mid-fifties, grey wool coat. Apparently real.\n\nShe asked my name. I gave Halric's title. Apprentice of Halric.\n\nShe said, \"Halric. So you're his fourth.\"\n\nI did not know there had been three.\n\nI noted her seat number. I moved on.\n\nSighting closed.\n\n- S. Marra",
+      "commit_message": "content(narrative): Soll Letter 4 variant A"
+    },
+    {
+      "id": "soll-l4-b",
+      "label": "Soll Letter 4 variant B (witness, fletcher with cough)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Letter Four"
+      },
+      "variant": "Carriage twenty-eight. A woman in a grey coat asked my name.\n\nI gave Halric's title. Apprentice of Halric.\n\nShe said, \"Halric? The fletcher with the cough?\"\n\nI did not know he was a fletcher. I have one of his bows in my pack.\n\nI should have sat down. I should have asked her what else she knew. I did not. I walked to the next carriage and I am sitting here writing.\n\nShe is still in seat 14. I think.\n\n- Soll",
+      "commit_message": "content(narrative): Soll Letter 4 variant B"
+    },
+    {
+      "id": "soll-l5-a",
+      "label": "Soll Letter 5 variant A (eye of ender, train not in a direction)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Letter Five"
+      },
+      "variant": "Attempt 47. Eye of ender.\n\nThrow vector: forward, twenty-five degrees off horizontal. Per notebook page nine.\n\nThe eye held position. Six seconds. It rotated counter-clockwise, then resolved.\n\nBearing: north-by-north-east.\n\nI changed carriage. I threw again.\n\nBearing: north-by-north-east.\n\nThe carriage faces south.\n\nThe eye is reading a direction. The train is not in a direction.\n\nI have stopped throwing.\n\n- S. Marra",
+      "commit_message": "content(narrative): Soll Letter 5 variant A"
+    },
+    {
+      "id": "soll-l5-b",
+      "label": "Soll Letter 5 variant B (eye of ender, will not fly)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Letter Five"
+      },
+      "variant": "The eye of ender will not fly.\n\nI threw it forty-seven times. Forward. Up. Sideways. Out the door.\n\nThe eye hovers. It spins. It does not pick a direction. Halric wrote that an eye always picks. The eye, page nine: \"the only honest thing in a stronghold approach.\"\n\nIt is being honest. There is no stronghold.\n\nI sat with the eye in my hand. It was warm. It is not warm now.\n\nI do not know which way I am going.\n\n- Soll",
+      "commit_message": "content(narrative): Soll Letter 5 variant B"
+    },
+    {
+      "id": "soll-l6-a",
+      "label": "Soll Letter 6 variant A (closed notebook, Soll Marra)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 6,
+        "label": "Letter Six"
+      },
+      "variant": "I have closed the notebook.\n\nThe cover is brown leather. There are names inside the front board. I did not look at them.\n\nI am writing on the back page. Halric did not write here.\n\nI am nineteen. I have never seen a dragon. I do not want to kill her.\n\nI am going to keep walking until I find a window with the right kind of light. Then I am going to sit.\n\nSoll Marra",
+      "commit_message": "content(narrative): Soll Letter 6 variant A"
+    },
+    {
+      "id": "soll-l6-b",
+      "label": "Soll Letter 6 variant B (closed notebook, Soll)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
+      "story_meta": {
+        "id": "soll_marra_the_borrowed_champion",
+        "character": "Soll Marra",
+        "story": "The Borrowed Champion"
+      },
+      "letter": {
+        "index": 6,
+        "label": "Letter Six"
+      },
+      "variant": "I closed the notebook.\n\nThe back page is empty. I sat with it open for a long time.\n\nHalric is not in the back page. Halric is in the front pages. I have read them too many times.\n\nI am nineteen. I have never seen a dragon. I do not want to kill her.\n\nI do not know where this train is going. I think that is alright.\n\nI am going to find a window.\n\nSoll",
+      "commit_message": "content(narrative): Soll Letter 6 variant B"
     }
   ],
   "applied": [
