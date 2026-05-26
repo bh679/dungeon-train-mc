@@ -36,6 +36,9 @@ public final class VersionHudOverlay {
     // Forge routes the render call through a different thread in the future.
     private static volatile boolean carriagePresent = false;
     private static volatile int carriageIndex = 0;
+    private static volatile boolean boardingProgressPresent = false;
+    private static volatile int travelledCarriageIndex = 0;
+    private static volatile int difficultyTier = 0;
 
     private VersionHudOverlay() {}
 
@@ -47,6 +50,17 @@ public final class VersionHudOverlay {
     public static void setCarriageIndex(boolean present, int pIdx) {
         carriagePresent = present;
         carriageIndex = pIdx;
+    }
+
+    /**
+     * Called from {@code BoardingProgressPacket.handle} on the client main
+     * thread. Drives the dev-HUD "Diff:" read-out for the boarding-gated
+     * difficulty system.
+     */
+    public static void setBoardingProgress(int travelled, int tier) {
+        travelledCarriageIndex = travelled;
+        difficultyTier = tier;
+        boardingProgressPresent = true;
     }
 
     @SubscribeEvent
@@ -70,17 +84,36 @@ public final class VersionHudOverlay {
                 : VersionInfo.DISPLAY;
             HudText.drawScaled(graphics, mc.font, text, 4, 4, 0xFFFFFFFF, true);
 
-            // Second line: distance from THIS group (the one the player is
-            // standing in) to the next-higher-pIdx group in the same train.
-            // Only shown when the player is in a tracked carriage AND that
-            // carriage's group is not the leading group of its train.
+            int line = 1;
+
+            // Diff lines: shows the boarding-gated difficulty progression
+            // counter ("diff-car") and the tier it resolves to ("diff-level").
+            if (boardingProgressPresent) {
+                String carText = "  Diff-Car: " + formatSigned(travelledCarriageIndex);
+                HudText.drawScaled(graphics, mc.font, carText,
+                    4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
+                    0xFFFFD080, true);
+                line++;
+                String levelText = "  Diff-Level: " + difficultyTier;
+                HudText.drawScaled(graphics, mc.font, levelText,
+                    4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
+                    0xFFFFD080, true);
+                line++;
+            }
+
+            // Distance from THIS group (the one the player is standing in)
+            // to the next-higher-pIdx group in the same train. Only shown
+            // when the player is in a tracked carriage AND that carriage's
+            // group is not the leading group of its train.
             if (carriagePresent && DebugFlagsState.hudDistance()) {
                 CarriageGroupGapPacket.Entry gap = CarriageGroupGapState.findByCarriage(carriageIndex);
                 if (gap != null) {
                     String gapText = String.format(Locale.ROOT,
                         "  Δx to next group: %.2f blocks", gap.distance());
-                    HudText.drawScaled(graphics, mc.font, gapText, 4, 4 + HudText.scaledLineHeight(mc.font) + 1,
+                    HudText.drawScaled(graphics, mc.font, gapText,
+                        4, 4 + (HudText.scaledLineHeight(mc.font) + 1) * line,
                         0xFFCCFFCC, true);
+                    line++;
                 }
             }
         };
