@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "netherrack",
+      "weight": 1
+    }
+  ]
+}
