@@ -49,7 +49,7 @@
       "sideMode": "either"
     },
     {
-      "name": "open",
+      "name": "open_wall",
       "weight": 10,
       "sideMode": "either",
       "endMode": "mid"
