@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "tiers": [
+    {
+      "name": "rookie",
+      "armor": {
+        "helmet":     [{"item": "minecraft:leather_helmet",     "weight": 5}],
+        "chestplate": [{"item": "minecraft:leather_chestplate", "weight": 5}],
+        "leggings":   [{"item": "minecraft:leather_leggings",   "weight": 5}],
+        "boots":      [{"item": "minecraft:leather_boots",      "weight": 5}],
+        "slotChance": 0.25
+      },
+      "weapon": {
+        "mainhand": [
+          {"item": "minecraft:wooden_sword", "weight": 5},
+          {"item": "minecraft:wooden_axe",   "weight": 2}
+        ],
+        "chance": 0.4
+      },
+      "effects": [],
+      "enchant": {"maxLevel": 0, "chance": 0.0, "treasure": false}
+    },
+    {
+      "name": "veteran",
+      "armor": {
+        "helmet":     [{"item": "minecraft:chainmail_helmet",     "weight": 6}, {"item": "minecraft:iron_helmet",     "weight": 2}],
+        "chestplate": [{"item": "minecraft:chainmail_chestplate", "weight": 6}, {"item": "minecraft:iron_chestplate", "weight": 2}],
+        "leggings":   [{"item": "minecraft:chainmail_leggings",   "weight": 6}, {"item": "minecraft:iron_leggings",   "weight": 2}],
+        "boots":      [{"item": "minecraft:chainmail_boots",      "weight": 6}, {"item": "minecraft:iron_boots",      "weight": 2}],
+        "slotChance": 0.5
+      },
+      "weapon": {
+        "mainhand": [
+          {"item": "minecraft:stone_sword", "weight": 5},
+          {"item": "minecraft:iron_sword",  "weight": 2},
+          {"item": "minecraft:stone_axe",   "weight": 2}
+        ],
+        "chance": 0.6
+      },
+      "effects": [
+        {"id": "minecraft:speed", "amplifier": 0, "durationTicks": -1, "chance": 0.3}
+      ],
+      "enchant": {"maxLevel": 5, "chance": 0.3, "treasure": false}
+    },
+    {
+      "name": "elite",
+      "armor": {
+        "helmet":     [{"item": "minecraft:iron_helmet",     "weight": 5}],
+        "chestplate": [{"item": "minecraft:iron_chestplate", "weight": 5}],
+        "leggings":   [{"item": "minecraft:iron_leggings",   "weight": 5}],
+        "boots":      [{"item": "minecraft:iron_boots",      "weight": 5}],
+        "slotChance": 0.75
+      },
+      "weapon": {
+        "mainhand": [
+          {"item": "minecraft:iron_sword", "weight": 5},
+          {"item": "minecraft:iron_axe",   "weight": 3}
+        ],
+        "chance": 0.8
+      },
+      "effects": [
+        {"id": "minecraft:speed",    "amplifier": 0, "durationTicks": -1, "chance": 0.5},
+        {"id": "minecraft:strength", "amplifier": 0, "durationTicks": -1, "chance": 0.4}
+      ],
+      "enchant": {"maxLevel": 10, "chance": 0.5, "treasure": false}
+    },
+    {
+      "name": "champion",
+      "armor": {
+        "helmet":     [{"item": "minecraft:diamond_helmet",     "weight": 5}],
+        "chestplate": [{"item": "minecraft:diamond_chestplate", "weight": 5}],
+        "leggings":   [{"item": "minecraft:diamond_leggings",   "weight": 5}],
+        "boots":      [{"item": "minecraft:diamond_boots",      "weight": 5}],
+        "slotChance": 1.0
+      },
+      "weapon": {
+        "mainhand": [
+          {"item": "minecraft:diamond_sword", "weight": 5},
+          {"item": "minecraft:diamond_axe",   "weight": 3}
+        ],
+        "chance": 1.0
+      },
+      "effects": [
+        {"id": "minecraft:strength",        "amplifier": 1, "durationTicks": -1, "chance": 0.75},
+        {"id": "minecraft:resistance",      "amplifier": 0, "durationTicks": -1, "chance": 0.6},
+        {"id": "minecraft:fire_resistance", "amplifier": 0, "durationTicks": -1, "chance": 0.5}
+      ],
+      "enchant": {"maxLevel": 15, "chance": 0.75, "treasure": false}
+    },
+    {
+      "name": "nightmare",
+      "armor": {
+        "helmet":     [{"item": "minecraft:netherite_helmet",     "weight": 5}],
+        "chestplate": [{"item": "minecraft:netherite_chestplate", "weight": 5}],
+        "leggings":   [{"item": "minecraft:netherite_leggings",   "weight": 5}],
+        "boots":      [{"item": "minecraft:netherite_boots",      "weight": 5}],
+        "slotChance": 1.0
+      },
+      "weapon": {
+        "mainhand": [
+          {"item": "minecraft:netherite_sword", "weight": 5},
+          {"item": "minecraft:netherite_axe",   "weight": 3}
+        ],
+        "chance": 1.0
+      },
+      "effects": [
+        {"id": "minecraft:strength",        "amplifier": 2, "durationTicks": -1, "chance": 1.0},
+        {"id": "minecraft:resistance",      "amplifier": 1, "durationTicks": -1, "chance": 1.0},
+        {"id": "minecraft:fire_resistance", "amplifier": 0, "durationTicks": -1, "chance": 1.0},
+        {"id": "minecraft:speed",           "amplifier": 1, "durationTicks": -1, "chance": 0.8}
+      ],
+      "enchant": {"maxLevel": 25, "chance": 1.0, "treasure": false}
+    }
+  ]
+}
