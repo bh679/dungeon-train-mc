@@ -225,10 +225,22 @@ public final class TrainAssembler {
             CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg);
             enclosedBySlot[slot] = variant;
 
+            // Within a spawnGroup call, the enclosed run is wrapped by
+            // half-flatbed pads when groupSize > 1. Slot 0's BACK door
+            // and slot N-1's FRONT door therefore face flatbed-like
+            // geometry; inner slots face other enclosed carriages.
+            // For groupSize == 1, the lone carriage has no pads (per
+            // wrapWithPads above) — its neighbours come from whatever
+            // sits adjacent in the world, which the placer doesn't
+            // currently know about, so both flags stay false.
+            boolean flatbedAtBack  = wrapWithPads && slot == 0;
+            boolean flatbedAtFront = wrapWithPads && slot == groupSize - 1;
+
             // applyContents=false: defer until after assembly so entities
             // land in shipyard space, not world space.
             Set<BlockPos> carriageBlocks = CarriagePlacer.placeAt(
-                level, carriageOrigin, variant, dims, genCfg, carriagePIdx, false);
+                level, carriageOrigin, variant, dims, genCfg, carriagePIdx,
+                false, flatbedAtBack, flatbedAtFront);
             if (carriageBlocks.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] spawnGroup produced empty enclosed block set anchorPIdx={} slot={} carriagePIdx={} variant={} at {}",
                     anchorPIdx, slot, carriagePIdx, variant.id(), carriageOrigin);

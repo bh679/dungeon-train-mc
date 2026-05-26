@@ -83,7 +83,12 @@ public final class PartPositionMenuRaycast {
         List<WeightedName> entries = PartPositionMenu.entries();
         int n = entries.size();
         int colCount = Math.max(1, (n + PartPositionMenu.ROWS_PER_COLUMN - 1) / PartPositionMenu.ROWS_PER_COLUMN);
-        double panelW = Math.max(PartPositionMenuRenderer.MIN_PANEL_WIDTH, colCount * PartPositionMenuRenderer.COLUMN_WIDTH);
+        // Match the renderer's per-kind minimum so the hit-test rectangle
+        // stays aligned with the drawn cell.
+        double minPanelW = PartPositionMenu.kindHasEndMode(PartPositionMenu.kind())
+            ? PartPositionMenuRenderer.DOOR_MIN_PANEL_WIDTH
+            : PartPositionMenuRenderer.MIN_PANEL_WIDTH;
+        double panelW = Math.max(minPanelW, colCount * PartPositionMenuRenderer.COLUMN_WIDTH);
         int displayedRows = Math.min(n, PartPositionMenu.ROWS_PER_COLUMN);
         if (displayedRows == 0) displayedRows = 1;
         double gridH = displayedRows * PartPositionMenuRenderer.ROW_HEIGHT;
@@ -130,17 +135,24 @@ public final class PartPositionMenuRaycast {
 
         boolean removeMode = PartPositionMenu.removeMode();
         boolean showSideMode = PartPositionMenu.kindHasSideMode(PartPositionMenu.kind());
+        boolean showEndMode  = PartPositionMenu.kindHasEndMode(PartPositionMenu.kind());
         double colXL = -halfW + col * colActualW;
         double colXR = colXL + colActualW;
         double xCellW = removeMode ? PartPositionMenuRenderer.X_CELL_WIDTH : 0.0;
+        double endCellW  = showEndMode ? PartPositionMenuRenderer.END_MODE_CELL_WIDTH : 0.0;
         double sideCellW = showSideMode ? PartPositionMenuRenderer.SIDE_MODE_CELL_WIDTH : 0.0;
-        double sideCellR = colXR - xCellW;
+        double endCellR  = colXR - xCellW;
+        double endCellL  = endCellR - endCellW;
+        double sideCellR = endCellL;
         double sideCellL = sideCellR - sideCellW;
         double weightCellR = sideCellL;
         double weightCellL = weightCellR - PartPositionMenuRenderer.WEIGHT_CELL_WIDTH;
 
         if (removeMode && hitX >= colXR - PartPositionMenuRenderer.X_CELL_WIDTH) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_REMOVE_X, idx);
+        }
+        if (showEndMode && hitX >= endCellL && hitX <= endCellR) {
+            return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_END_MODE, idx);
         }
         if (showSideMode && hitX >= sideCellL && hitX <= sideCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_SIDE_MODE, idx);

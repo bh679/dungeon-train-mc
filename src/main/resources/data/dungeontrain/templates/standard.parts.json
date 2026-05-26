@@ -47,6 +47,12 @@
       "name": "wooddoor",
       "weight": 3,
       "sideMode": "either"
+    },
+    {
+      "name": "open",
+      "weight": 10,
+      "sideMode": "either",
+      "endMode": "mid"
     }
   ]
 }

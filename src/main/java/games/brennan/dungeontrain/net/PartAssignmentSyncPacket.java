@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.train.CarriagePartAssignment.EndMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -72,6 +73,7 @@ public record PartAssignmentSyncPacket(
             buf.writeUtf(e.name());
             buf.writeVarInt(e.weight());
             buf.writeByte(e.sideMode().ordinal());
+            buf.writeByte(e.endMode().ordinal());
         }
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
@@ -100,7 +102,10 @@ public record PartAssignmentSyncPacket(
             byte modeOrd = buf.readByte();
             SideMode mode = (modeOrd >= 0 && modeOrd < SideMode.values().length)
                 ? SideMode.values()[modeOrd] : SideMode.BOTH;
-            entries.add(new WeightedName(name, weight, mode));
+            byte endOrd = buf.readByte();
+            EndMode endMode = (endOrd >= 0 && endOrd < EndMode.values().length)
+                ? EndMode.values()[endOrd] : EndMode.BOTH;
+            entries.add(new WeightedName(name, weight, mode, endMode));
         }
         Vec3 anchor = readVec3(buf);
         Vec3 right  = readVec3(buf);

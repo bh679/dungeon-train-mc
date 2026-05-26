@@ -4,6 +4,10 @@
     {
       "name": "magma",
       "weight": 1
+    },
+    {
+      "name": "nether",
+      "weight": 1
     }
   ],
   "walls": [

@@ -45,11 +45,18 @@
     },
     {
       "name": "wooddoor",
-      "weight": 2
+      "weight": 2,
+      "sideMode": "either"
     },
     {
       "name": "irondoor",
       "weight": 1
+    },
+    {
+      "name": "open",
+      "weight": 10,
+      "sideMode": "either",
+      "endMode": "mid"
     }
   ]
 }

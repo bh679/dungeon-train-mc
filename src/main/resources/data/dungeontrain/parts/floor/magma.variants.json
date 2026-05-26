@@ -21,10 +21,20 @@
     "0,0,3": { "lockId": 1, "states": [{"state": "minecraft:stone_bricks", "weight": 2}, {"state": "minecraft:netherrack", "weight": 2}, {"state": "minecraft:magma_block", "weight": 2}, "minecraft:polished_blackstone_bricks"] },
     "0,0,4": { "lockId": 1, "states": [{"state": "minecraft:stone_bricks", "weight": 2}, {"state": "minecraft:netherrack", "weight": 2}, {"state": "minecraft:magma_block", "weight": 2}, "minecraft:polished_blackstone_bricks"] },
     "1,0,4": { "lockId": 1, "states": [{"state": "minecraft:stone_bricks", "weight": 2}, {"state": "minecraft:netherrack", "weight": 2}, {"state": "minecraft:magma_block", "weight": 2}, "minecraft:polished_blackstone_bricks"] },
-    "1,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
-    "2,0,1": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
-    "3,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
-    "4,0,3": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
-    "5,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}]
+    "1,0,2": [{"state": "minecraft:magma_block", "weight": 2}, {"state": "minecraft:netherrack", "weight": 10}],
+    "2,0,1": [{"state": "minecraft:magma_block", "weight": 2}, {"state": "minecraft:netherrack", "weight": 10}],
+    "3,0,2": [{"state": "minecraft:magma_block", "weight": 2}, {"state": "minecraft:netherrack", "weight": 10}],
+    "4,0,3": [{"state": "minecraft:magma_block", "weight": 2}, {"state": "minecraft:netherrack", "weight": 10}],
+    "5,0,2": [{"state": "minecraft:magma_block", "weight": 2}, {"state": "minecraft:netherrack", "weight": 10}],
+    "1,0,1": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "2,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "1,0,3": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "2,0,3": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "3,0,3": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "3,0,1": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "4,0,1": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "5,0,1": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "4,0,2": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}],
+    "5,0,3": ["minecraft:magma_block", {"state": "minecraft:netherrack", "weight": 10}]
   }
 }

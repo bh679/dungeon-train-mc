@@ -97,33 +97,89 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     }
 
     /**
-     * A candidate name with its pick weight and side-mode constraint.
-     * Weight is clamped to {@code [MIN_WEIGHT, MAX_WEIGHT]}; sideMode
-     * defaults to {@link SideMode#BOTH} so legacy entries (and floor / roof
-     * entries that don't care) match the original mirroring behaviour.
+     * Where along a carriage group a door variant is allowed to render.
+     * Only meaningful for {@link CarriagePartKind#DOORS} — other kinds
+     * accept the field but ignore it at pick time.
+     *
+     * <ul>
+     *   <li>{@link #BOTH} — no position constraint; eligible for both placements.</li>
+     *   <li>{@link #END} — eligible only on a placement that faces a flatbed (sub-level boundary / half-flatbed pad).</li>
+     *   <li>{@link #MID} — eligible only on a placement that faces another enclosed carriage.</li>
+     * </ul>
+     *
+     * <p>In generation modes without guaranteed flatbed neighbours
+     * (LOOPING / RANDOM), the placer passes {@code flatbedAtBack=false,
+     * flatbedAtFront=false}; an {@code END} entry therefore matches
+     * nothing and a {@code MID} entry matches everything. The picker
+     * falls back to the unfiltered pool when filtering empties a
+     * placement, so authors can't accidentally produce an empty door
+     * stamp.</p>
      */
-    public record WeightedName(String name, int weight, SideMode sideMode) {
+    public enum EndMode {
+        BOTH("end+mid"),
+        END("end"),
+        MID("mid");
+
+        private final String label;
+        EndMode(String label) { this.label = label; }
+        public String label() { return label; }
+
+        /** Cycle order used by the menu's click-to-cycle: BOTH → END → MID → BOTH. */
+        public EndMode next() {
+            return switch (this) {
+                case BOTH -> END;
+                case END -> MID;
+                case MID -> BOTH;
+            };
+        }
+
+        public static EndMode fromId(String s) {
+            if (s == null) return BOTH;
+            return switch (s.toLowerCase(Locale.ROOT)) {
+                case "both", "end+mid", "all" -> BOTH;
+                case "end" -> END;
+                case "mid" -> MID;
+                default -> BOTH;
+            };
+        }
+    }
+
+    /**
+     * A candidate name with its pick weight, side-mode constraint, and
+     * end-mode constraint. Weight is clamped to {@code [MIN_WEIGHT,
+     * MAX_WEIGHT]}; sideMode defaults to {@link SideMode#BOTH} and
+     * endMode defaults to {@link EndMode#BOTH} so legacy entries (and
+     * floor / roof / wall entries that don't care about position-along-
+     * the-group) match the original mirroring behaviour.
+     */
+    public record WeightedName(String name, int weight, SideMode sideMode, EndMode endMode) {
         public WeightedName {
             name = (name == null || name.isBlank())
                 ? CarriagePartKind.NONE
                 : name.toLowerCase(Locale.ROOT);
             weight = clampWeight(weight);
             if (sideMode == null) sideMode = SideMode.BOTH;
+            if (endMode == null) endMode = EndMode.BOTH;
         }
 
-        /** Default-weight, BOTH-side entry — used by callers that don't care about side mode. */
+        /** Default-weight, BOTH-side, BOTH-end entry. */
         public static WeightedName of(String name) {
-            return new WeightedName(name, MIN_WEIGHT, SideMode.BOTH);
+            return new WeightedName(name, MIN_WEIGHT, SideMode.BOTH, EndMode.BOTH);
         }
 
-        /** Default-weight entry with explicit side mode. */
+        /** Default-weight entry with explicit side mode (endMode defaults to BOTH). */
         public static WeightedName of(String name, SideMode sideMode) {
-            return new WeightedName(name, MIN_WEIGHT, sideMode);
+            return new WeightedName(name, MIN_WEIGHT, sideMode, EndMode.BOTH);
         }
 
-        /** 2-arg back-compat constructor — defaults sideMode to BOTH. */
+        /** 2-arg back-compat constructor — defaults sideMode and endMode to BOTH. */
         public WeightedName(String name, int weight) {
-            this(name, weight, SideMode.BOTH);
+            this(name, weight, SideMode.BOTH, EndMode.BOTH);
+        }
+
+        /** 3-arg back-compat constructor — defaults endMode to BOTH. */
+        public WeightedName(String name, int weight, SideMode sideMode) {
+            this(name, weight, sideMode, EndMode.BOTH);
         }
     }
 
@@ -210,48 +266,85 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * entry's {@link SideMode}. For one-placement kinds (FLOOR / ROOF) this
      * is a single-element list equal to {@link #pick}.
      *
-     * <p>For two-placement kinds (WALLS / DOORS):
-     * <ol>
-     *   <li>Placement 0 is picked from the full list (same algorithm as
-     *       {@link #pick}).</li>
-     *   <li>The first pick's {@link SideMode} decides whether placement 1
-     *       mirrors it or picks separately:
-     *     <ul>
-     *       <li>{@link SideMode#BOTH} → mirror.</li>
-     *       <li>{@link SideMode#ONE} → pick separately, weighted from
-     *           entries whose mode is not {@code BOTH} (so {@code (1)}
-     *           variants are never paired with another that demands both
-     *           sides).</li>
-     *       <li>{@link SideMode#EITHER} → seeded coin-flip. Heads mirror,
-     *           tails pick separately.</li>
-     *     </ul>
-     *   </li>
-     * </ol>
-     * Determinism: every random draw is keyed on
-     * {@code (seed, carriageIndex, kind.ordinal())} with distinct mixers
-     * for the coin-flip and the second pick, so the same input always
-     * yields the same pair of names.</p>
+     * <p>Back-compat overload that assumes no flatbed neighbours — same
+     * behaviour as the original {@code pickPerPlacement}. Used by editor
+     * preview, slash commands, and any caller that doesn't know the
+     * group context. {@link EndMode#END}-tagged entries become ineligible
+     * and {@link EndMode#MID}-tagged become unconstrained, exactly the
+     * fallback chosen for LOOPING / RANDOM modes.</p>
      */
     public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex) {
+        return pickPerPlacement(kind, seed, carriageIndex, false, false);
+    }
+
+    /**
+     * Pick one name <i>per placement</i> for {@code kind}, honouring each
+     * entry's {@link SideMode} and {@link EndMode}. For DOORS, the
+     * {@code flatbedAtBack} / {@code flatbedAtFront} flags filter the
+     * candidate pool per placement before the SideMode logic runs:
+     *
+     * <ul>
+     *   <li>Placement 0 (BACK end of the carriage) keeps entries whose
+     *       {@link EndMode} is {@link EndMode#BOTH}, plus
+     *       {@link EndMode#END} iff {@code flatbedAtBack}, plus
+     *       {@link EndMode#MID} iff {@code !flatbedAtBack}.</li>
+     *   <li>Placement 1 (FRONT end) uses the same predicate with
+     *       {@code flatbedAtFront}.</li>
+     * </ul>
+     *
+     * If a placement's filtered pool ends up empty (e.g. all entries are
+     * {@code MID} but the placement faces a flatbed), the picker falls
+     * back to the unfiltered list rather than producing an empty stamp.
+     *
+     * <p>For non-DOORS kinds the flags are ignored — only doors use the
+     * per-end constraint today.</p>
+     *
+     * <p>Determinism: every random draw is keyed on
+     * {@code (seed, carriageIndex, kind.ordinal())} with distinct mixers
+     * for the two placements, so identical inputs always yield identical
+     * picks. The end-mode filter is a pure function of {@code (list,
+     * flatbedAtBack, flatbedAtFront)} with no random component.</p>
+     */
+    public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex,
+                                         boolean flatbedAtBack, boolean flatbedAtFront) {
         boolean twoPlacements = kind == CarriagePartKind.WALLS || kind == CarriagePartKind.DOORS;
         if (!twoPlacements) {
             return List.of(pick(kind, seed, carriageIndex));
         }
 
         List<WeightedName> list = entries(kind);
+        // End-mode filter applies to DOORS only; WALLS keep their full list.
+        boolean applyEndFilter = kind == CarriagePartKind.DOORS;
+        List<WeightedName> poolBack  = applyEndFilter ? filterByEndMode(list, flatbedAtBack)  : list;
+        List<WeightedName> poolFront = applyEndFilter ? filterByEndMode(list, flatbedAtFront) : list;
+
         long mixed0 = seed ^ ((long) carriageIndex * MIX) ^ ((long) kind.ordinal() * 0xC6BC279692B5C323L);
-        String first = list.size() == 1 ? list.get(0).name() : weightedPick(list, mixed0);
+        String first = poolBack.size() == 1 ? poolBack.get(0).name() : weightedPick(poolBack, mixed0);
         if (CarriagePartKind.NONE.equals(first)) {
             return List.of(first, first);
         }
 
+        // Look up the first pick's SideMode from the full list (an entry's
+        // sideMode is independent of which placement it ends up at).
         SideMode firstMode = SideMode.BOTH;
         for (WeightedName e : list) {
             if (e.name().equals(first)) { firstMode = e.sideMode(); break; }
         }
 
+        // End-mode can also force a separate pick: if {@code first} survived
+        // the back filter but not the front filter, we cannot mirror it
+        // even when SideMode=BOTH would normally want to.
+        boolean firstEligibleForFront = false;
+        for (WeightedName e : poolFront) {
+            if (e.name().equals(first)) { firstEligibleForFront = true; break; }
+        }
+
         boolean separate;
-        if (firstMode == SideMode.BOTH) {
+        if (!firstEligibleForFront) {
+            // End-mode disallows mirroring — override SideMode and pick a
+            // distinct variant for the front placement.
+            separate = true;
+        } else if (firstMode == SideMode.BOTH) {
             separate = false;
         } else if (firstMode == SideMode.ONE) {
             separate = true;
@@ -263,25 +356,52 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
 
         if (!separate) return List.of(first, first);
 
-        // Eligible for placement 1 when picking separately: any entry whose
-        // sideMode allows it to be used as a single ({@link SideMode#ONE} /
-        // {@link SideMode#EITHER}). BOTH-only entries are excluded — they
-        // would by definition demand the other side too.
+        // Eligible pool for the front pick when separating:
+        //   - If SideMode forced the separation (firstMode != BOTH but
+        //     firstEligibleForFront): exclude BOTH-only entries so the
+        //     second pick doesn't itself demand mirroring back to the first
+        //     placement.
+        //   - If EndMode forced the separation (!firstEligibleForFront):
+        //     any entry in poolFront is fine — including BOTH-sideMode
+        //     entries, which simply render once at the front and accept
+        //     that the back has a different variant.
         List<WeightedName> eligible = new ArrayList<>();
-        for (WeightedName e : list) {
-            if (e.sideMode() != SideMode.BOTH) eligible.add(e);
+        if (!firstEligibleForFront) {
+            eligible.addAll(poolFront);
+        } else {
+            for (WeightedName e : poolFront) {
+                if (e.sideMode() != SideMode.BOTH) eligible.add(e);
+            }
         }
         if (eligible.isEmpty()) {
             // No eligible separate variant — degrade to the same pick on
-            // both sides. This only happens if the list has only BOTH
-            // entries, which contradicts the first pick being non-BOTH;
-            // included as a defensive fallback.
+            // both sides. Defensive fallback for pathological lists.
             return List.of(first, first);
         }
 
         long secondSeed = seed ^ ((long) carriageIndex * 0xDEADBEEF12345678L) ^ ((long) kind.ordinal() * 0xC6BC279692B5C323L);
         String second = weightedPick(eligible, secondSeed);
         return List.of(first, second);
+    }
+
+    /**
+     * Filter {@code list} to entries whose {@link EndMode} matches the
+     * placement's flatbed-neighbour status. Empty result falls back to
+     * the unfiltered list so the picker always has something to draw
+     * from (an author who tags every entry {@code MID} on a single-slot
+     * group still gets a door stamp).
+     */
+    private static List<WeightedName> filterByEndMode(List<WeightedName> list, boolean flatbedNeighbour) {
+        List<WeightedName> out = new ArrayList<>(list.size());
+        for (WeightedName e : list) {
+            EndMode m = e.endMode();
+            if (m == EndMode.BOTH
+                || (m == EndMode.END && flatbedNeighbour)
+                || (m == EndMode.MID && !flatbedNeighbour)) {
+                out.add(e);
+            }
+        }
+        return out.isEmpty() ? list : out;
     }
 
     /** Weighted-cumulative pick from a non-empty list. Returns the first entry's name when total weight is 0. */
@@ -372,7 +492,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), clampWeight(e.weight() + delta), e.sideMode()));
+                updated.add(new WeightedName(e.name(), clampWeight(e.weight() + delta), e.sideMode(), e.endMode()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -395,7 +515,31 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode().next()));
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode().next(), e.endMode()));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        if (!changed) return this;
+        return with(kind, updated);
+    }
+
+    /**
+     * Cycle the end-mode of {@code name} in {@code kind}'s list to its
+     * {@link EndMode#next} value. Returns {@code this} unchanged if the
+     * name isn't in the list. Floor/roof/wall entries accept the call
+     * but the field is functionally ignored at runtime — only DOORS
+     * applies end-mode filtering in {@link #pickPerPlacement}.
+     */
+    public CarriagePartAssignment cycleEndMode(CarriagePartKind kind, String name) {
+        List<WeightedName> existing = entries(kind);
+        String norm = (name == null) ? CarriagePartKind.NONE : name.toLowerCase(Locale.ROOT);
+        List<WeightedName> updated = new ArrayList<>(existing.size());
+        boolean changed = false;
+        for (WeightedName e : existing) {
+            if (!changed && e.name().equals(norm)) {
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode().next()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -435,11 +579,14 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             JsonObject obj = new JsonObject();
             obj.addProperty("name", e.name());
             obj.addProperty("weight", e.weight());
-            // Only emit sideMode when it differs from the default — keeps
-            // generated parts.json files compact for floor/roof entries
-            // and pre-existing two-side variants.
+            // Only emit sideMode / endMode when they differ from the
+            // default — keeps generated parts.json files compact for
+            // floor/roof entries and pre-existing two-side variants.
             if (e.sideMode() != SideMode.BOTH) {
                 obj.addProperty("sideMode", e.sideMode().name().toLowerCase(Locale.ROOT));
+            }
+            if (e.endMode() != EndMode.BOTH) {
+                obj.addProperty("endMode", e.endMode().name().toLowerCase(Locale.ROOT));
             }
             arr.add(obj);
         }
@@ -492,7 +639,10 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             SideMode mode = obj.has("sideMode") && obj.get("sideMode").isJsonPrimitive()
                 ? SideMode.fromId(obj.get("sideMode").getAsString())
                 : SideMode.BOTH;
-            out.add(new WeightedName(name, weight, mode));
+            EndMode endMode = obj.has("endMode") && obj.get("endMode").isJsonPrimitive()
+                ? EndMode.fromId(obj.get("endMode").getAsString())
+                : EndMode.BOTH;
+            out.add(new WeightedName(name, weight, mode, endMode));
         }
         if (out.isEmpty()) return List.of(WeightedName.of(CarriagePartKind.NONE));
         return out;
