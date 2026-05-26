@@ -4,9 +4,11 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
@@ -16,14 +18,19 @@ import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import org.slf4j.Logger;
 
 /**
- * Applies difficulty progression to DT carriage mobs at spawn time.
+ * Applies difficulty progression to DT carriage mobs at spawn time, scaled
+ * by {@link BoardingProgressData#travelledCarriageIndex()} — i.e. how far
+ * players have actually travelled while boarded, not the absolute carriage
+ * the mob spawned in. Mobs spawned during off-train periods inherit the
+ * frozen counter value.
  *
  * <p>Listens on server-side {@link EntityJoinLevelEvent}, filters to mobs
- * carrying the {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX} tag, reads
- * the stamped carriage index from NBT ({@link
- * CarriageContentsPlacer#NBT_SPAWN_CARRIAGE_PIDX}), and delegates to {@link
- * DifficultyApplier#apply}. Mirrors the {@link VillagerTrainSpawnEvents}
- * pattern — same {@code loadedFromDisk()} skip and sticky-tag idempotency.</p>
+ * carrying the {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX} tag and
+ * the {@link CarriageContentsPlacer#NBT_SPAWN_CARRIAGE_PIDX} NBT marker
+ * (still used as a DT-mob discriminator even though the value is no longer
+ * read for tier math), then delegates to {@link DifficultyApplier#apply}.
+ * Mirrors the {@code VillagerTrainSpawnEvents} pattern — same
+ * {@code loadedFromDisk()} skip and sticky-tag idempotency.</p>
  *
  * <p>Carriage variant mobs that pre-supply armor/effects via NBT are honoured —
  * the applier only fills empty equipment slots and only adds effects per the
@@ -39,7 +46,7 @@ public final class MobDifficultyEvents {
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         Level level = event.getLevel();
-        if (level.isClientSide) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
         if (event.loadedFromDisk()) return;
         if (!DungeonTrainConfig.getDifficultyEnabled()) return;
 
@@ -50,12 +57,13 @@ public final class MobDifficultyEvents {
 
         CompoundTag persistent = mob.getPersistentData();
         if (!persistent.contains(CarriageContentsPlacer.NBT_SPAWN_CARRIAGE_PIDX)) return;
-        int carriagePIdx = persistent.getInt(CarriageContentsPlacer.NBT_SPAWN_CARRIAGE_PIDX);
 
-        boolean applied = DifficultyApplier.apply(mob, carriagePIdx, mob.getRandom());
+        int travelled = BoardingProgressData.get(serverLevel).travelledCarriageIndex();
+
+        boolean applied = DifficultyApplier.apply(mob, travelled, mob.getRandom());
         if (applied && DebugFlags.logLootRolls()) {
-            LOGGER.info("[DungeonTrain] Difficulty applied: uuid={} type={} pIdx={}",
-                    mob.getUUID(), mob.getType().getDescriptionId(), carriagePIdx);
+            LOGGER.info("[DungeonTrain] Difficulty applied: uuid={} type={} travelledCarriageIndex={}",
+                    mob.getUUID(), mob.getType().getDescriptionId(), travelled);
         }
     }
 
