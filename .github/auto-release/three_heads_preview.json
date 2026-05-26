@@ -1,0 +1,79 @@
+{
+  "_preview_note": "PREVIEW of the compiled story file. The cascade will build this up one variant per tick from the 17 pending queue entries. Do NOT load this directly — it lives outside the mod data dir on purpose. Final target: src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Three Heads",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "Mira,\n\nYour hands were always covered in chalk.\n\nYou drew lines on everything.\n\nYou said straight lines kept the world honest.\n\nYou believed it.\n\nI think I did too.\n\n- Corren",
+        "Mira.\n\nYou laughed quiet.\n\nLike you were trying not to wake something.\n\nBram never knew when you were joking.\n\ni did.\n\n- corren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Letter Two",
+      "variants": [
+        "Mira.\n\nThe soul-sand was cold.\n\nI do not remember the heat after.\n\nYou said something.\n\nI think you said my name.\n\nI think you said Run.\nI did not turn around.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Letter Three",
+      "variants": [
+        "Bram.\n\nYou laughed like falling.\n\nSudden. Loud. Always too loud.\n\nYou said you laughed so the dark would know you were there.\n\nIt always did.\n\n- Corren",
+        "Bram.\n\nYour shield was too big for you.\n\nYou walked sideways through doors.\n\nEsa called it the table.\n\nYou said the table never let anyone down.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Letter Four",
+      "variants": [
+        "Bram.\n\nThe first skull was yours.\n\nYou picked it up.\n\nYou shouted something.\n\nI could not hear over the fire.\n\nThe wheels on this train make three notes.\n\nThe first one is yours Bram.\n\n- Corren",
+        "Bram.\n\ni wrote this five times.\n\neach time i get to the skull and the pen stops.\n\nyou held it up. you grinned.\n\nyou said it weighed nothing.\n\ni think it weighed a lot.\n\nThe wheels on this train make three notes.\n\nThe first one is yours Bram.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Letter Five",
+      "variants": [
+        "Esa.\n\nYour hands were cold from brewing.\n\nThe rest of you was warm.\n\nMira said you were the only warm one of us.\n\nShe was right.\n\n- Corren",
+        "Esa.\n\nYou sang while you bandaged.\n\nOld songs. None of us knew them.\n\nYou said you made them up as you went.\n\nWe pretended to believe you.\n\n- Corren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Letter Six",
+      "variants": [
+        "Esa.\n\nYour hand was on my back.\n\nCold from brewing.\n\nYou pushed once.\n\nI stumbled to safety.\n\nYou did not push again.\n\nYou were already gone, I think.\n\nBefore the push.\n\n- Corren",
+        "Esa.\n\nThere are people on this train who have lived longer than me.\n\nnone of them look right.\n\ni do not want to know what i look like.\n\nyou would have told me.\n\nyou would have said sit down Corren and let me see.\n\n- corren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Letter Seven",
+      "variants": [
+        "I do not know how I got out.\n\nThe portal was broken. I remember that.\n\nI do not remember walking through.\n\nI came up in a field. Tall grass. The train was already there.\n\nIt was moving.\n\nIt had always been moving. I know that now.\n\nI ran beside it. I jumped for the nearest door.\n\nI do not know how I caught it.\n\nI thought I had made it.\n\nI have been making it for weeks now.\n\nThe train does not stop.\n\nThere is no off.\n\n- Corren",
+        "the heat behind me. the cold ahead.\n\ni did not know which way was up.\n\ni remember falling onto grass.\n\nthe grass was not on fire.\n\nthat seemed important.\n\nthen a building.\n\ni did not know the building.\n\ni know all the buildings in this region.\n\ni mapped this region.\n\na train was at the building.\n\nthe doors were open.\n\ni was alive and the doors were open.\n\nthese felt like related facts.\n\n- corren"
+      ]
+    },
+    {
+      "index": 8,
+      "label": "Letter Eight",
+      "variants": [
+        "I have heard it for weeks now.\n\nA screech. Three voices, almost layered.\n\nSometimes one comes alone. Sometimes all three.\n\nAnd the blasts.\n\nI feel them in the floor before I hear them.\n\nThey never break anything I can see.\n\nI do not know where they land.\n\nI walk forward.\n\nThe screech comes again. Two carriages back.\n\nAlways from there.\n\nNever further.\n\nI am sure.\n\n- Corren",
+        "there is a sound.\n\ni have heard it for weeks.\n\nit is not the wheels.\n\nthe wheels carry music. three notes.\n\nthis one carries something else.\n\nit screams.\n\nthree voices. almost in time. never quite.\n\nand there are blasts.\n\ni feel them in the floor. they do not break anything.\n\ni have asked the others on the train.\n\nnone of them hear it.\n\nonly i hear it.\n\nit is for me.\n\nit has time.\n\n- corren"
+      ]
+    },
+    {
+      "index": 9,
+      "label": "Letter Nine",
+      "variants": [
+        "Oh.. oh no.\n\nMira.\n\nYou would have noticed it before I did.\n\nThe screech is in front of me now.\n\nThere is not supposed to be a front.\n\nBram would have stood in front.\n\nHe would have laughed at it.\n\nHe always laughed at things that were too big to fight.\n\nEsa would have brewed something.\n\nFire resistance. Swiftness. The right thing.\n\nShe always brewed the right thing.\n\nI walked forward for weeks.\n\nI was walking toward it.\n\nThe train has no front.\n\nEvery step forward was a step closer.\n\nI can see it now.\n\nThree heads. Three voices.\n\nThe fourth voice will be mine.\n\nI think it has been mine for weeks.\n\n- Corren",
+        "its here.\n\nmira.\n\nit was not behind me.\n\nit was in front.\n\nit was always in front.\n\nyou would have seen this. you saw everything first.\n\nbram would have stood in front of me.\n\nhe would have laughed.\n\nhe laughed at things too big to fight.\n\nit would have worked. for a moment.\n\nesa would have put her hand on my back.\n\ncold.\n\nshe would have pushed.\n\ni would have gone.\n\ni walked toward it.\n\ni thought i was walking away.\n\nthe train has no front. you would have laughed at me for forgetting that.\n\ni can see it.\n\nthree heads. three of you.\n\nbram. esa. you.\n\ni am the fourth.\n\ni have been the fourth all along.\n\n- corren"
+      ]
+    }
+  ]
+}
