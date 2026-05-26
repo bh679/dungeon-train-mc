@@ -50,7 +50,7 @@
     },
     {
       "name": "open",
-      "weight": 10,
+      "weight": 12,
       "sideMode": "either",
       "endMode": "mid"
     }
