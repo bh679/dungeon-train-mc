@@ -53,8 +53,8 @@
       "weight": 1
     },
     {
-      "name": "open",
-      "weight": 12,
+      "name": "open_wall",
+      "weight": 8,
       "sideMode": "either",
       "endMode": "mid"
     }

@@ -90,21 +90,30 @@ public final class CarriagePartPlacer {
             StructureTemplate template = stored.get();
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-            // Erase the placement region first so sparse parts templates
-            // (e.g. an "open" doorway with only a frame block) fully
-            // replace whatever the base carriage NBT wrote at this
-            // placement, instead of leaving the base's blocks visible
-            // through the parts template's air positions. Vanilla
-            // StructureTemplate captures with toIgnore=AIR, so
-            // placeInWorld below skips air cells in the palette — without
-            // a pre-erase, the parts overlay can't ever clear a base
-            // block. Erase covers the placement's full bounding box;
-            // mirror axes are 1-thick for both walls and doors so the
-            // forward iteration covers the same cells either side.
+            // Silent pre-erase. Sparse parts templates ("open" doorway with
+            // only a frame block) need the placement region cleared first
+            // because vanilla StructureTemplate captures with toIgnore=AIR,
+            // so placeInWorld below skips air cells in the palette — without
+            // a pre-erase, the overlay can't ever clear an existing block
+            // sitting in a cell the template wants to leave open.
+            //
+            // Uses SilentBlockOps.setBlockSilentNoCascade so any 2-tall
+            // paired-half block already in the region (door / tall flower
+            // / bed) doesn't drop via the shape-update cascade — the
+            // previous flag-3 erase loop was the source of the visible
+            // "door places, then breaks and drops a frame" symptom.
+            //
+            // This pre-erase runs for both call paths:
+            //   * train assembly (after stampBase, where the base filter
+            //     usually leaves these cells already air — no-op here)
+            //   * in-carriage part swap via PartPositionMenuController,
+            //     where no base stamp runs first and the previous variant's
+            //     blocks are still in the cells.
             for (int dx = 0; dx < placementSize.getX(); dx++) {
                 for (int dy = 0; dy < placementSize.getY(); dy++) {
                     for (int dz = 0; dz < placementSize.getZ(); dz++) {
-                        level.setBlock(stampOrigin.offset(dx, dy, dz), AIR, 3);
+                        SilentBlockOps.setBlockSilentNoCascade(
+                            level, stampOrigin.offset(dx, dy, dz), AIR, null);
                     }
                 }
             }
@@ -231,13 +240,23 @@ public final class CarriagePartPlacer {
     /**
      * Erase a part-kind-sized footprint at {@code plotOrigin}. Used by the
      * part editor to clear its plot before restamping a template on enter.
+     *
+     * <p>Uses {@link SilentBlockOps#setBlockSilentNoCascade} so the
+     * shape-update cascade is short-circuited — without that, clearing the
+     * lower half of a door (or any 2-tall paired-half block: tall flowers,
+     * sunflowers, beds) would trigger the upper half's
+     * {@code DoorBlock.updateShape → Block.updateOrDestroy → destroyBlock(true)}
+     * chain and drop the block as an item with break particles + sound.
+     * The next {@code stampCurrent} call still uses flag 3 so neighbour
+     * shape updates propagate correctly after the restamp.</p>
      */
     public static void eraseAt(ServerLevel level, BlockPos plotOrigin, CarriagePartKind kind, CarriageDims dims) {
         Vec3i size = kind.dims(dims);
         for (int dx = 0; dx < size.getX(); dx++) {
             for (int dy = 0; dy < size.getY(); dy++) {
                 for (int dz = 0; dz < size.getZ(); dz++) {
-                    level.setBlock(plotOrigin.offset(dx, dy, dz), AIR, 3);
+                    SilentBlockOps.setBlockSilentNoCascade(
+                        level, plotOrigin.offset(dx, dy, dz), AIR, null);
                 }
             }
         }

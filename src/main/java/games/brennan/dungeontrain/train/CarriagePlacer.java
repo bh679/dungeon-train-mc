@@ -23,6 +23,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
@@ -144,8 +145,8 @@ public final class CarriagePlacer {
      * preview is stable across re-entries.</p>
      */
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
-        String base = stampBase(level, origin, variant, dims);
         // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour.
+        String base = stampBase(level, origin, variant, dims, 0L, 0, false, false);
         String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false);
         return finishPlace(level, origin, variant, dims, base, overlay);
     }
@@ -213,7 +214,8 @@ public final class CarriagePlacer {
         CarriageDims dims, CarriageGenerationConfig config, int carriageIndex,
         boolean applyContents, boolean flatbedAtBack, boolean flatbedAtFront
     ) {
-        String base = stampBase(level, origin, variant, dims);
+        String base = stampBase(level, origin, variant, dims,
+            config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront);
         String overlay = stampPartsOverlay(level, origin, variant, dims,
             config.seed(), carriageIndex, flatbedAtBack, flatbedAtFront);
 
@@ -450,10 +452,23 @@ public final class CarriagePlacer {
      * {@link #placeHalfFlatbedPad}, OUTSIDE the integer carriage-slot
      * grid.</p>
      */
-    private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
+    private static String stampBase(ServerLevel level, BlockPos origin, CarriageVariant variant,
+                                    CarriageDims dims, long seed, int carriageIndex,
+                                    boolean flatbedAtBack, boolean flatbedAtFront) {
         Optional<StructureTemplate> stored = CarriageTemplateStore.get(level, variant, dims);
         if (stored.isPresent()) {
-            stampTemplate(level, origin, stored.get());
+            // Filter cells the parts overlay will claim — keeps the base from
+            // stamping (and the parts overlay from having to pre-erase) any
+            // 2-tall paired-half block whose cascade would drop an item.
+            Optional<PartRegionFilterProcessor> filter = PartRegionFilterProcessor.forVariant(
+                level, origin, variant, dims, seed, carriageIndex, flatbedAtBack, flatbedAtFront);
+            // Silent-clear claimed cells first so any leftover content (rolling-
+            // window cycle, returning to a saved chunk) doesn't show through
+            // the parts template's air cells (e.g. an open-doorway frame).
+            // Without this pre-clear, the base filter alone leaves whatever
+            // was previously in those cells untouched.
+            filter.ifPresent(p -> p.clearClaimedCellsSilently(level));
+            stampTemplate(level, origin, stored.get(), filter.orElse(null));
             return "stored";
         }
         if (variant instanceof CarriageVariant.Builtin b) {
@@ -916,7 +931,13 @@ public final class CarriagePlacer {
     }
 
     private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template) {
+        stampTemplate(level, origin, template, null);
+    }
+
+    private static void stampTemplate(ServerLevel level, BlockPos origin, StructureTemplate template,
+                                      StructureProcessor processor) {
         StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
+        if (processor != null) settings.addProcessor(processor);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
     }
 
