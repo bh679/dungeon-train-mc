@@ -494,6 +494,346 @@
       "commit_message": "content(narrative): Edda Letter 6 variant B"
     },
     {
+      "id": "halen-l1-a",
+      "label": "Halen - Sighting 41 variant A (Edda Maer interview)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Sighting Forty-One"
+      },
+      "variant": "Sighting Forty-One.\n\nWitness: Edda Maer. Carriage 114. Long aboard.\n\nReports: figure in the doorway. Eyes white. Train at full motion. Five seconds. Gone.\n\nCross-questioned three times. Story did not move. Detail held.\n\nThe witness will not retract. Forty entries did. This may be the forty-first.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 1 variant A"
+    },
+    {
+      "id": "halen-l1-b",
+      "label": "Halen - Sighting 41 variant B (the laugh)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Sighting Forty-One"
+      },
+      "variant": "Sighting Forty-One.\n\nA man across from me asked what I was writing.\n\nI said: field notes.\n\nHe said: about what.\n\nI said: the white-eyed man.\n\nHe laughed.\n\nIt was the laugh of a person who has never seen him. I have catalogued the laugh.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 1 variant B"
+    },
+    {
+      "id": "halen-l2-a",
+      "label": "Halen - Sighting 43 variant A (stubborn witness Pell Cordoba)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Sighting Forty-Three"
+      },
+      "variant": "Sighting Forty-Three.\n\nWitness: Pell Cordoba. Insists.\n\nI offered her: lamp afterimage. Carriage flicker. Eye fatigue from the tunnels.\n\nShe said: I have lived underground. I know lamps.\n\nI offered her: a man wearing eye protection. Some mining cults do.\n\nShe said: he had no shadow. The lanterns made shadows. He did not.\n\nI closed the entry without an explanation.\n\nThis is unusual for me.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 2 variant A"
+    },
+    {
+      "id": "halen-l2-b",
+      "label": "Halen - Sighting 43 variant B (four witnesses, same sentence)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Sighting Forty-Three"
+      },
+      "variant": "Sighting Forty-Three.\n\nToday I have interviewed four. Independent. No cross-contamination.\n\nCarriage 87: white eyes through the door glass.\n\nCarriage 154: white eyes through the door glass.\n\nCarriage 226: white eyes through the door glass.\n\nCarriage 401: white eyes through the door glass.\n\nI have written the same sentence four times.\n\nFour different witnesses wrote it before me.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 2 variant B"
+    },
+    {
+      "id": "halen-l3-a",
+      "label": "Halen - Sighting 48 variant A (Joren Vask, hypnagogic theory)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Sighting Forty-Eight"
+      },
+      "variant": "Sighting Forty-Eight.\n\nWitness: Joren Vask. Carriage 519.\n\nCould not finish the interview. Twice put down the pen and stared at the floor.\n\nThree witnesses today have done this. Same posture. Same delay.\n\nHypothesis: prolonged tunnel exposure produces a recurring hypnagogic figure. The white eyes are the afterimage of carriage lamps on the cone cells.\n\nThe trauma is real. The figure is not.\n\nThis is the most coherent theory I have constructed in years.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 3 variant A"
+    },
+    {
+      "id": "halen-l3-b",
+      "label": "Halen - Sighting 48 variant B (folie a deux at scale)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Sighting Forty-Eight"
+      },
+      "variant": "Sighting Forty-Eight.\n\nWorking hypothesis.\n\nSustained tunnel-flicker. Disrupted circadian rhythm. Shared narrative exposure between strangers.\n\nThese conditions produce a folie a deux at scale. The white-eyed man is the train's local hallucination. Every long-haul population invents one.\n\nThe trauma is real. The figure is shared because the conditions are shared.\n\nThis is the entry I have been waiting to write for eleven years.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 3 variant B"
+    },
+    {
+      "id": "halen-l4-a",
+      "label": "Halen - Sighting 61 variant A (clocking the witness)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Sighting Sixty-One"
+      },
+      "variant": "Sighting Sixty-One.\n\nI entered Carriage 47. A woman was eating.\n\nI knew before she looked up.\n\nThe way she held the spoon. The way her eyes did not move toward the door glass when the train flickered.\n\nI sat down. I said: when did you see him.\n\nShe said: yesterday.\n\nThe interview took two minutes.\n\nI am very good at this.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 4 variant A"
+    },
+    {
+      "id": "halen-l4-b",
+      "label": "Halen - Sighting 61 variant B (catalogue of signs)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Sighting Sixty-One"
+      },
+      "variant": "Sighting Sixty-One.\n\nThe signs I now recognise:\n\nThe flinch at carriage flicker. The half-second of held breath at a door opening. The avoidance of door glass.\n\nThe way they hold their cup with two hands.\n\nI enter a carriage and read the room.\n\nThree witnesses today. None disagreed with my opening question.\n\nEleven years. This is the year it has all paid off.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 4 variant B"
+    },
+    {
+      "id": "halen-l5-a",
+      "label": "Halen - Sighting 78 variant A (Sora Penn, letting the lie stand)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Sighting Seventy-Eight"
+      },
+      "variant": "Sighting Seventy-Eight.\n\nWitness: Sora Penn. Carriage 488.\n\nClaims she has seen nothing.\n\nShe has the spoon-hold. The door-glass avoidance. The half-second of held breath.\n\nShe has every sign in my notebook.\n\nI thanked her for her time. I did not contradict her.\n\nShe wanted to be left thinking she was fine.\n\nI left her thinking that.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 5 variant A"
+    },
+    {
+      "id": "halen-l5-b",
+      "label": "Halen - Sighting 78 variant B (the quiet, no verb fits)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Sighting Seventy-Eight"
+      },
+      "variant": "Sighting Seventy-Eight.\n\nSome of them are trying to hide it now.\n\nThey mention the name without meaning to. They look at door glass and then look away too fast.\n\nOne man said the word \"shadow\" three times in five minutes. Unprompted.\n\nI do not press. I write the entry afterward.\n\nI used to think I was studying them.\n\nI am no longer sure what the verb should be.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 5 variant B"
+    },
+    {
+      "id": "halen-l6-a",
+      "label": "Halen - Sighting 92 variant A (unrecordable, Witness: myself)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 6,
+        "label": "Sighting Ninety-Two"
+      },
+      "variant": "Sighting Ninety-Two.\n\nWitness: myself.\n\nCarriage 612. Door glass. Late.\n\nSomething stood. Or did not.\n\nThe carriage flickered. The figure flickered with it. Then neither.\n\nThis is the kind of entry I have closed in retraction forty times.\n\nI cannot record eye colour. I cannot record duration. I cannot record absence of shadow.\n\nI can record that I stopped walking.\n\nI record the witness response. This is one.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 6 variant A"
+    },
+    {
+      "id": "halen-l6-b",
+      "label": "Halen - Sighting 92 variant B (marginal collapse, brackets)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 6,
+        "label": "Sighting Ninety-Two"
+      },
+      "variant": "Sighting Ninety-Two.\n\nWitness: H. Pent.\n\n[The interviewer is also the witness. This invalidates the entry.]\n\nTwo carriages back. Through the door glass. A figure. Eyes white. Five seconds.\n\n[The entry is recorded anyway.]\n\nI cannot trust my own observation. I cannot dismiss it either.\n\nI have spent the night in the corridor.\n\n- H.P.",
+      "commit_message": "content(narrative): Halen Letter 6 variant B"
+    },
+    {
+      "id": "halen-l7-a",
+      "label": "Halen - Sighting 140 variant A (methodical archive search)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 7,
+        "label": "Sighting One Hundred & Forty"
+      },
+      "variant": "Sighting One Hundred & Forty.\n\nReturned to cabin. Opened archive crate.\n\nI am looking for my own sighting in someone else's entry. A precedent.\n\nCross-ref: Sighting 17. Sighting 22. Sighting 41.\n\nSighting 17 \u2014 witness could not record duration. Could not record eye colour. The match is exact.\n\nIt should be a relief.\n\nIt is not. The date line is in different ink. I do not remember changing pens.\n\nProbably nothing.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 7 variant A"
+    },
+    {
+      "id": "halen-l7-b",
+      "label": "Halen - Sighting 140 variant B (Sighting 17 quoted excerpt)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 7,
+        "label": "Sighting One Hundred & Forty"
+      },
+      "variant": "Sighting One Hundred & Forty.\n\nWhat I saw last week \u2014 if I saw anything \u2014 should be in here somewhere. A precedent. Some other witness with the same gaps.\n\nI found Sighting 17.\n\n\"Witness reports figure in mine shaft. Eyes white. Six seconds. Subject cannot account for the time after.\"\n\nI do not remember interviewing this person.\n\nThe phrasing is mine. The handwriting is mine.\n\nThe dates do not line up with my field trips that year.\n\nProbably nothing.\n\n- H.P.",
+      "commit_message": "content(narrative): Halen Letter 7 variant B"
+    },
+    {
+      "id": "halen-l8-a",
+      "label": "Halen - Sighting 211 variant A (the dates are wrong)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 8,
+        "label": "Sighting Two Hundred & Eleven"
+      },
+      "variant": "Sighting Two Hundred & Eleven.\n\nThe dates are wrong.\n\nSighting 22 is dated three months before I was hired.\n\nSighting 31 describes the train. I did not know the train existed.\n\nSighting 41 describes Edda Maer. I met Edda four weeks ago.\n\nI have not slept. The number above this entry is a guess.\n\nThe notebook is not what I thought it was.\n\n- H.P.",
+      "commit_message": "content(narrative): Halen Letter 8 variant A"
+    },
+    {
+      "id": "halen-l8-b",
+      "label": "Halen - Sighting 211 variant B (notebook contains my future)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 8,
+        "label": "Sighting Two Hundred & Eleven"
+      },
+      "variant": "Sighting Two Hundred & Eleven.\n\nI am holding a notebook that contains my future.\n\nSighting 41, dated nine years ago, reads:\n\n\"Witness: Edda Maer. Carriage 114. Long aboard.\"\n\nI wrote that sentence last week.\n\n[The page has aged.]\n[The binding is original.]\n[The ink is mine.]\n\nI have stopped knowing how to date these entries.\n\n- H.P.",
+      "commit_message": "content(narrative): Halen Letter 8 variant B"
+    },
+    {
+      "id": "halen-l9-a",
+      "label": "Halen - Sighting 240 variant A (interview reversed, dining carriage)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 9,
+        "label": "Sighting Two Hundred & Forty"
+      },
+      "variant": "Sighting Two Hundred & Forty.\n\nA woman sat across from me in the dining carriage.\n\nShe asked: have you seen him.\n\nShe looked at me the way I have looked at four hundred people.\n\nI said: I do not know what you mean.\n\nIt was Sora Penn's line. I wrote it down four weeks ago. I am hearing it in my own voice.\n\nI did not finish the meal. I returned to my cabin. I have not opened the door since.\n\nThe notebook is open.\n\n- H.P.",
+      "commit_message": "content(narrative): Halen Letter 9 variant A"
+    },
+    {
+      "id": "halen-l9-b",
+      "label": "Halen - Sighting 240 variant B (catalogued, paranoia)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 9,
+        "label": "Sighting Two Hundred & Forty"
+      },
+      "variant": "Sighting Two Hundred & Forty.\n\nI have been catalogued.\n\nThey look at me the way I taught myself to look at them.\n\nThe way they hold their cups. The small slow turns toward door glass.\n\nIn the corridor today, a man stepped back from me. He had the recognition.\n\nHe did not ask. He knew.\n\nI will not write what he knew.\n\nI will not write what I saw.\n\nI am writing about the notes.\n\n- H.",
+      "commit_message": "content(narrative): Halen Letter 9 variant B"
+    },
+    {
+      "id": "halen-l10-a",
+      "label": "Halen - Sighting \u2014 variant A (composed acceptance, finale)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 10,
+        "label": "Sighting \u2014"
+      },
+      "variant": "Sighting \u2014\n\nI have stopped numbering.\n\nI went back to the earliest entries.\n\nSighting 1 is dated thirty-seven years ago.\n\nI am thirty-seven.\n\nSighting 1 is in my handwriting. The same loop on the y. The same comma habit.\n\nI do not remember being six.\n\nI do not remember being eight, ten, twelve. I remember adult things. I remember nothing before the field.\n\nOn the inside of the back cover, in a hand I have never seen, are five words:\n\n\"I gave you the notebook.\"\n\nI have been reading and writing this notebook all of my life. I did not write this line.\n\nI do not know who did.\n\n- H. Pent",
+      "commit_message": "content(narrative): Halen Letter 10 variant A (finale)"
+    },
+    {
+      "id": "halen-l10-b",
+      "label": "Halen - Sighting \u2014 variant B (fragmented confession, finale)",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
+      "story_meta": {
+        "id": "halen_pent_white_eyed_man",
+        "character": "Halen Pent",
+        "story": "The White-Eyed Man"
+      },
+      "letter": {
+        "index": 10,
+        "label": "Sighting \u2014"
+      },
+      "variant": "Sighting \u2014\n\n[I have stopped numbering.]\n\nThe earliest entry. Sighting 1.\n\nThe date. Thirty-seven years ago.\n\nI am thirty-seven.\n\n[The handwriting is mine.]\n\n[I do not remember being six.]\n[I do not remember being twelve.]\n[I do not remember being twenty.]\n\nThe first thing I remember is the field. I was already a folklorist. I had already been writing in this notebook.\n\nInside the back cover, written in a hand I do not know:\n\n\"I gave you the notebook.\"\n\nI have been answering it my whole life.\n\n-",
+      "commit_message": "content(narrative): Halen Letter 10 variant B (finale)"
+    },
+    {
       "id": "soll-l1-a",
       "label": "Soll Letter 1 variant A (loadout, S. Marra)",
       "type": "add_variant",
