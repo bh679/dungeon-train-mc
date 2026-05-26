@@ -38,6 +38,13 @@ import java.util.UUID;
  * counter resumes advancing relative to that boarding entry, never jumping
  * to absorb the carriage-index gap.</p>
  *
+ * <p>Gap tolerance: the AABB check is padded horizontally by
+ * {@link #HORIZONTAL_PADDING} to bridge the small joints between adjacent
+ * carriage groups, and the leader is held for {@link #OFF_TRAIN_GRACE_SCANS}
+ * scans after they fall out of every AABB before being cleared — so a
+ * player walking continuously across the train doesn't have each
+ * cross-group delta eaten by a momentary "off-train" reset.</p>
+ *
  * <p>Throttled to once every {@link #SCAN_PERIOD_TICKS} ticks per level.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -47,10 +54,28 @@ public final class BoardingProgressEvents {
     private static final int SCAN_PERIOD_TICKS = 10;
 
     /**
+     * Scans the leader can be off every carriage AABB before we conclude
+     * they actually disembarked (vs briefly traversing a joint between
+     * carriage groups). 6 scans × 10 ticks ≈ 3 seconds.
+     */
+    private static final int OFF_TRAIN_GRACE_SCANS = 6;
+
+    /**
+     * Horizontal pad applied to each carriage's worldAABB before the
+     * containment check, in blocks. Joints between adjacent carriage groups
+     * are tiny but non-zero; without this pad, the player flickers
+     * "off-train" once per group boundary and we lose the cross-group delta.
+     */
+    private static final double HORIZONTAL_PADDING = 1.0;
+
+    /**
      * Last broadcast value of {@code travelledCarriageIndex} — guards against
      * pushing the HUD packet every tick when nothing changed.
      */
     private static int lastBroadcastTravelled = Integer.MIN_VALUE;
+
+    /** Transient: consecutive scans the active leader has been off every AABB. */
+    private static int leaderOffTrainScans = 0;
 
     private BoardingProgressEvents() {}
 
@@ -70,27 +95,54 @@ public final class BoardingProgressEvents {
         }
 
         BoardingProgressData data = BoardingProgressData.get(level);
-
-        if (boarded.isEmpty()) {
-            data.clearLeader();
-            broadcastIfChanged(data);
-            return;
-        }
-
         UUID leader = data.activeLeaderUUID();
+
         if (leader != null && boarded.containsKey(leader)) {
+            // Happy path: leader currently in a carriage AABB. Apply delta.
             int current = boarded.get(leader);
             int delta = current - data.lastLeaderCarriage();
             data.advance(delta, current);
+            leaderOffTrainScans = 0;
+        } else if (leader != null) {
+            // Leader exists but isn't in any AABB right now. Could be a
+            // brief joint between carriage groups, or they actually jumped
+            // off. Hold the leader for OFF_TRAIN_GRACE_SCANS before
+            // concluding they disembarked.
+            boolean leaderOnline = level.getServer().getPlayerList().getPlayer(leader) != null;
+            if (!leaderOnline) {
+                handOffOrClear(data, boarded);
+                leaderOffTrainScans = 0;
+            } else {
+                leaderOffTrainScans++;
+                if (leaderOffTrainScans > OFF_TRAIN_GRACE_SCANS) {
+                    handOffOrClear(data, boarded);
+                    leaderOffTrainScans = 0;
+                }
+                // Within grace: keep leader + lastLeaderCarriage, do nothing.
+            }
         } else {
-            // No leader or leader disembarked — hand off to first boarded player.
-            // First entry of a LinkedHashMap matches level.players() iteration order,
-            // which is stable across ticks for the same player set.
-            Map.Entry<UUID, Integer> first = boarded.entrySet().iterator().next();
-            data.setLeader(first.getKey(), first.getValue());
+            // No leader. Promote any boarded player to leader; otherwise idle.
+            leaderOffTrainScans = 0;
+            if (!boarded.isEmpty()) {
+                Map.Entry<UUID, Integer> first = boarded.entrySet().iterator().next();
+                data.setLeader(first.getKey(), first.getValue());
+            }
         }
 
         broadcastIfChanged(data);
+    }
+
+    /**
+     * Either promote a remaining boarded player to leader (multiplayer
+     * hand-off) or clear the leader and freeze the counter.
+     */
+    private static void handOffOrClear(BoardingProgressData data, Map<UUID, Integer> boarded) {
+        if (boarded.isEmpty()) {
+            data.clearLeader();
+        } else {
+            Map.Entry<UUID, Integer> first = boarded.entrySet().iterator().next();
+            data.setLeader(first.getKey(), first.getValue());
+        }
     }
 
     /**
@@ -120,8 +172,9 @@ public final class BoardingProgressEvents {
 
     /**
      * Find which carriage's worldAABB contains the player, or null if none.
-     * Y check is padded by 1 to count players standing on a carriage roof
-     * as "on the train."
+     * Horizontal bounds are padded by {@link #HORIZONTAL_PADDING} to bridge
+     * the small joints between adjacent carriage groups; Y is padded above
+     * by 1 to count players standing on a carriage roof as "on the train."
      */
     @Nullable
     private static Integer findPlayerCarriagePIdx(List<Trains.Carriage> carriages, ServerPlayer player) {
@@ -130,9 +183,9 @@ public final class BoardingProgressEvents {
         double pz = player.getZ();
         for (Trains.Carriage c : carriages) {
             AABBdc bb = c.ship().worldAABB();
-            if (px < bb.minX() || px > bb.maxX()) continue;
+            if (px < bb.minX() - HORIZONTAL_PADDING || px > bb.maxX() + HORIZONTAL_PADDING) continue;
             if (py < bb.minY() || py > bb.maxY() + 1.0) continue;
-            if (pz < bb.minZ() || pz > bb.maxZ()) continue;
+            if (pz < bb.minZ() - HORIZONTAL_PADDING || pz > bb.maxZ() + HORIZONTAL_PADDING) continue;
             return c.provider().getPIdx();
         }
         return null;
