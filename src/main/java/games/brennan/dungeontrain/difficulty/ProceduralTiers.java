@@ -10,17 +10,17 @@ import java.util.List;
  * replacing the prior 5-rung data-driven {@code tiers.json} ladder with a
  * smooth procedural curve.
  *
- * <p>Levels 1–100 ramp through five armor and five weapon material bands
+ * <p>Levels 1–50 ramp through five armor and five weapon material bands
  * (leather → chainmail → iron → diamond → netherite). Bands overlap so
- * transitions are gradual: at level 2 you see rare leather; by level 10
- * leather is common and chainmail starts appearing rarely; by level 100
+ * transitions are gradual: at level 1 you see rare leather; by level 5
+ * leather is common and chainmail starts appearing rarely; by level 50
  * everything is netherite. Golden gear sprinkles in at a constant low
  * weight as a flavor "rare drop" across all levels.</p>
  *
- * <p>Above level 100 the gear pools stay pinned to netherite. Additional
+ * <p>Above level 50 the gear pools stay pinned to netherite. Additional
  * potion effects layer in at progressively higher levels, and effect
- * amplifiers tick up every 50 levels — keeping post-cap progression
- * meaningful well beyond level 200.</p>
+ * amplifiers tick up every 25 levels — keeping post-cap progression
+ * meaningful well beyond level 100.</p>
  */
 public final class ProceduralTiers {
 
@@ -54,21 +54,22 @@ public final class ProceduralTiers {
         }
     }
 
-    // Armor material progression. Each material peaks for ~20 levels
-    // and overlaps with the next by ~10–15 levels.
-    private static final MaterialCurve LEATHER   = new MaterialCurve(1,   5,  15,  30);
-    private static final MaterialCurve CHAINMAIL = new MaterialCurve(10, 20,  35,  55);
-    private static final MaterialCurve IRON      = new MaterialCurve(25, 40,  60,  80);
-    private static final MaterialCurve DIAMOND   = new MaterialCurve(50, 70,  90, TOP);
-    private static final MaterialCurve NETHERITE = new MaterialCurve(75,100, TOP, TOP);
+    // Armor material progression. Each material peaks for ~10 levels and
+    // overlaps with the next by ~5–8 levels. Halved from the original
+    // 100-level scale so netherite caps at level 50.
+    private static final MaterialCurve LEATHER   = new MaterialCurve(1,   3,   8,  15);
+    private static final MaterialCurve CHAINMAIL = new MaterialCurve(5,  10,  18,  28);
+    private static final MaterialCurve IRON      = new MaterialCurve(13, 20,  30,  40);
+    private static final MaterialCurve DIAMOND   = new MaterialCurve(25, 35,  45, TOP);
+    private static final MaterialCurve NETHERITE = new MaterialCurve(38, 50, TOP, TOP);
 
     // Weapons. Same shape, slightly earlier ramps (you arm before you
     // armor up in DT progression).
-    private static final MaterialCurve WOOD_W       = new MaterialCurve(1,   5,  10,  20);
-    private static final MaterialCurve STONE_W      = new MaterialCurve(10, 20,  30,  45);
-    private static final MaterialCurve IRON_W       = new MaterialCurve(25, 40,  55,  75);
-    private static final MaterialCurve DIAMOND_W    = new MaterialCurve(50, 70,  85, TOP);
-    private static final MaterialCurve NETHERITE_W  = new MaterialCurve(75,100, TOP, TOP);
+    private static final MaterialCurve WOOD_W       = new MaterialCurve(1,   3,   5,  10);
+    private static final MaterialCurve STONE_W      = new MaterialCurve(5,  10,  15,  23);
+    private static final MaterialCurve IRON_W       = new MaterialCurve(13, 20,  28,  38);
+    private static final MaterialCurve DIAMOND_W    = new MaterialCurve(25, 35,  43, TOP);
+    private static final MaterialCurve NETHERITE_W  = new MaterialCurve(38, 50, TOP, TOP);
 
     /** Golden gear stays at a constant low weight at every level — flavor sprinkle. */
     private static final int GOLDEN_WEIGHT = 2;
@@ -94,19 +95,20 @@ public final class ProceduralTiers {
 
     /**
      * Effects in order of when they enter the pool. The first four mirror
-     * the prior data-driven tiers; the remainder kick in above level 100
-     * to keep difficulty climbing once gear is maxed at netherite.
+     * the prior data-driven tiers; the remainder kick in above level 50
+     * to keep difficulty climbing once gear is maxed at netherite. All
+     * thresholds halved from the original 100-level scale.
      */
     private static final List<EffectCurve> EFFECTS = List.of(
-        new EffectCurve("minecraft:speed",            30,  50, 30, 0.80),
-        new EffectCurve("minecraft:strength",         50,  50, 40, 0.90),
-        new EffectCurve("minecraft:resistance",       70,  50, 50, 0.80),
-        new EffectCurve("minecraft:fire_resistance",  80, TOP, 40, 0.70),
-        new EffectCurve("minecraft:regeneration",    100,  50, 50, 0.70),
-        new EffectCurve("minecraft:jump_boost",      120,  50, 50, 0.60),
-        new EffectCurve("minecraft:haste",           140,  50, 50, 0.60),
-        new EffectCurve("minecraft:absorption",      160,  50, 50, 0.70),
-        new EffectCurve("minecraft:slow_falling",    180, TOP, 50, 0.50)
+        new EffectCurve("minecraft:speed",           15,  25, 15, 0.80),
+        new EffectCurve("minecraft:strength",        25,  25, 20, 0.90),
+        new EffectCurve("minecraft:resistance",      35,  25, 25, 0.80),
+        new EffectCurve("minecraft:fire_resistance", 40, TOP, 20, 0.70),
+        new EffectCurve("minecraft:regeneration",    50,  25, 25, 0.70),
+        new EffectCurve("minecraft:jump_boost",      60,  25, 25, 0.60),
+        new EffectCurve("minecraft:haste",           70,  25, 25, 0.60),
+        new EffectCurve("minecraft:absorption",      80,  25, 25, 0.70),
+        new EffectCurve("minecraft:slow_falling",    90, TOP, 25, 0.50)
     );
 
     private ProceduralTiers() {}
@@ -128,7 +130,7 @@ public final class ProceduralTiers {
     }
 
     private static DifficultyTier.ArmorSet armorSet(int level) {
-        double slotChance = Math.min(1.0, level / 25.0);
+        double slotChance = Math.min(1.0, level / 12.5);
         return new DifficultyTier.ArmorSet(
             armorPool(level, "helmet"),
             armorPool(level, "chestplate"),
@@ -165,7 +167,7 @@ public final class ProceduralTiers {
         addIfPositive(pool, "minecraft:diamond_axe",   DIAMOND_W.weight(level)   / 2);
         addIfPositive(pool, "minecraft:netherite_axe", NETHERITE_W.weight(level) / 2);
 
-        double chance = Math.min(1.0, level / 20.0);
+        double chance = Math.min(1.0, level / 10.0);
         return new DifficultyTier.WeaponSet(pool, chance);
     }
 
@@ -186,9 +188,9 @@ public final class ProceduralTiers {
 
     private static DifficultyTier.EnchantSpec enchantAt(int level) {
         // Vanilla enchanting-table levels cap at 30; we let it climb past
-        // that for post-cap (level > 100) progression.
-        int maxLevel = Math.min(50, level / 2);
-        double chance = Math.min(1.0, level / 75.0);
+        // that for post-cap (level > 50) progression.
+        int maxLevel = Math.min(50, level);
+        double chance = Math.min(1.0, level / 37.5);
         return new DifficultyTier.EnchantSpec(maxLevel, chance, false);
     }
 
