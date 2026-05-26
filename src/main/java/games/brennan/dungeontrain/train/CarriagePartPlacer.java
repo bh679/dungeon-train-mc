@@ -81,7 +81,6 @@ public final class CarriagePartPlacer {
                                            CarriagePartKind kind, List<String> names, CarriageDims dims,
                                            long seed, int carriageIndex) {
         List<CarriagePartKind.Placement> placements = kind.placements(dims);
-        Vec3i placementSize = kind.dims(dims);
         for (int i = 0; i < placements.size(); i++) {
             String name = i < names.size() ? names.get(i) : null;
             if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;
@@ -90,24 +89,15 @@ public final class CarriagePartPlacer {
             StructureTemplate template = stored.get();
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-            // Erase the placement region first so sparse parts templates
-            // (e.g. an "open" doorway with only a frame block) fully
-            // replace whatever the base carriage NBT wrote at this
-            // placement, instead of leaving the base's blocks visible
-            // through the parts template's air positions. Vanilla
-            // StructureTemplate captures with toIgnore=AIR, so
-            // placeInWorld below skips air cells in the palette — without
-            // a pre-erase, the parts overlay can't ever clear a base
-            // block. Erase covers the placement's full bounding box;
-            // mirror axes are 1-thick for both walls and doors so the
-            // forward iteration covers the same cells either side.
-            for (int dx = 0; dx < placementSize.getX(); dx++) {
-                for (int dy = 0; dy < placementSize.getY(); dy++) {
-                    for (int dz = 0; dz < placementSize.getZ(); dz++) {
-                        level.setBlock(stampOrigin.offset(dx, dy, dz), AIR, 3);
-                    }
-                }
-            }
+            // No pre-erase. The base carriage stamp now skips cells claimed
+            // by assigned parts (see PartRegionFilterProcessor), so the
+            // placement region is already air when we arrive. Sparse parts
+            // (an "open" doorway with only a frame block) keep working
+            // because vanilla StructureTemplate's toIgnore=AIR skip leaves
+            // the already-air cells alone. The previous flag-3 erase loop
+            // would have dropped paired-half blocks (doors, tall flowers,
+            // beds) via the shape-update cascade — base-stamp filtering
+            // removes the need for that loop entirely.
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
                 .setMirror(p.mirror());
@@ -231,13 +221,23 @@ public final class CarriagePartPlacer {
     /**
      * Erase a part-kind-sized footprint at {@code plotOrigin}. Used by the
      * part editor to clear its plot before restamping a template on enter.
+     *
+     * <p>Uses {@link SilentBlockOps#setBlockSilentNoCascade} so the
+     * shape-update cascade is short-circuited — without that, clearing the
+     * lower half of a door (or any 2-tall paired-half block: tall flowers,
+     * sunflowers, beds) would trigger the upper half's
+     * {@code DoorBlock.updateShape → Block.updateOrDestroy → destroyBlock(true)}
+     * chain and drop the block as an item with break particles + sound.
+     * The next {@code stampCurrent} call still uses flag 3 so neighbour
+     * shape updates propagate correctly after the restamp.</p>
      */
     public static void eraseAt(ServerLevel level, BlockPos plotOrigin, CarriagePartKind kind, CarriageDims dims) {
         Vec3i size = kind.dims(dims);
         for (int dx = 0; dx < size.getX(); dx++) {
             for (int dy = 0; dy < size.getY(); dy++) {
                 for (int dz = 0; dz < size.getZ(); dz++) {
-                    level.setBlock(plotOrigin.offset(dx, dy, dz), AIR, 3);
+                    SilentBlockOps.setBlockSilentNoCascade(
+                        level, plotOrigin.offset(dx, dy, dz), AIR, null);
                 }
             }
         }
