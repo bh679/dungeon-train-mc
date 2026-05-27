@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Rerolls trade offers and weighted-randomizes the level (1-5; 2-3 most common,
+ * Rerolls trade offers and weighted-randomizes the level (1-5; 1-2 most common,
  * 5 rare) of villagers spawned on the train with a profession. Sticky: a
  * {@code dungeontrain_trades_rerolled} tag is added after the first roll so
  * chunk reloads don't re-roll.
@@ -59,11 +59,12 @@ public final class VillagerTrainSpawnEvents {
 
     /**
      * Per-level pick weights, indexed by {@code level - 1}. Sums to 100 so the
-     * table reads as percentages: L1 15%, L2 35%, L3 30%, L4 15%, L5 5%.
-     * The curve favours Apprentice/Journeyman trades and makes Master-tier
-     * (and the strongest enchanted-gear/mending trades it gates) genuinely rare.
+     * table reads as percentages: L1 30%, L2 35%, L3 20%, L4 10%, L5 5%.
+     * The curve makes Novice/Apprentice the typical roll, tapers through
+     * Journeyman/Expert, and keeps Master-tier (and the strongest
+     * enchanted-gear / mending trades it gates) genuinely rare.
      */
-    private static final int[] LEVEL_WEIGHTS = {15, 35, 30, 15, 5};
+    private static final int[] LEVEL_WEIGHTS = {30, 35, 20, 10, 5};
     private static final int TOTAL_WEIGHT = 100;
 
     private VillagerTrainSpawnEvents() {}

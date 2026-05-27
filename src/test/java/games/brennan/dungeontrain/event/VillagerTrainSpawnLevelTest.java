@@ -22,7 +22,7 @@ final class VillagerTrainSpawnLevelTest {
      * would silently pass if we shared the constant, so the test asserts
      * against the *contract* (a fixed table) rather than the implementation.
      */
-    private static final int[] EXPECTED_WEIGHTS = {15, 35, 30, 15, 5};
+    private static final int[] EXPECTED_WEIGHTS = {30, 35, 20, 10, 5};
 
     @Test
     @DisplayName("pickLevel returns a value in [1, 5] across many samples")
