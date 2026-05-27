@@ -170,6 +170,10 @@ jobs:
             sable(required)
             adventure-item-names(embedded)
             adventure-items-stats(embedded)
+          curseforge-dependencies: |
+            sable(required)
+            adventure-item-names(embedded)
+            adventure-item-stats(embedded)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
