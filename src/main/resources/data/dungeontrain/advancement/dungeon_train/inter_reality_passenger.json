@@ -2,8 +2,8 @@
   "parent": "dungeontrain:dungeon_train/root",
   "display": {
     "icon": { "id": "minecraft:ender_pearl" },
-    "title": { "translate": "advancements.dungeontrain.dungeon_train.inter_dimensional_passenger.title" },
-    "description": { "translate": "advancements.dungeontrain.dungeon_train.inter_dimensional_passenger.description" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.inter_reality_passenger.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.inter_reality_passenger.description" },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true,
