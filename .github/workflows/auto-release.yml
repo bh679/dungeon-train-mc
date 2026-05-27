@@ -156,84 +156,203 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Final: change_kind=$KIND applied_id=$ID"
 
-      - name: Bump PATCH in gradle.properties
-        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && steps.final.outputs.change_kind != 'stopped'
-        id: bump
-        run: |
-          set -euo pipefail
-          CURRENT=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
-          if ! echo "$CURRENT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::mod_version=$CURRENT is not strict X.Y.Z — refusing to auto-bump"
-            exit 1
-          fi
-          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT" | cut -d. -f2)
-          PATCH=$(echo "$CURRENT" | cut -d. -f3)
-          NEW="$MAJOR.$MINOR.$((PATCH + 1))"
-          sed -i "s/^mod_version=.*/mod_version=$NEW/" gradle.properties
-          echo "version=$NEW" >> "$GITHUB_OUTPUT"
-          echo "tag=v$NEW" >> "$GITHUB_OUTPUT"
-          echo "Bumped mod_version: $CURRENT -> $NEW"
-
-      - name: Commit and push (release tick)
-        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && steps.final.outputs.change_kind != 'stopped' && inputs.dry_run != true
+      - name: Finalize and push (with race retry)
+        # Unified step: PATCH bump (release ticks) or no bump (stopped ticks),
+        # then commit + push with retry-on-race. If main moves between our
+        # checkout and our push (e.g. Gate 3 merge lands mid-tick), we reset
+        # to fresh main, re-run apply-change.py against the new state, and
+        # retry. Up to 3 attempts; on exhaustion we exit cleanly so the next
+        # scheduled tick (every 20 min) picks up fresh state.
+        #
+        # Build verification is NOT re-run on retry — apply-change is
+        # deterministic against main's queue.json / gradle.properties, so the
+        # retry's bump (if any) is usually identical to the original. The
+        # rare edge case (a new AIN/AIS release dropping mid-tick) is logged.
+        if: (steps.decide.outputs.fire == 'true' || inputs.force == true)
+        id: commit_push
         env:
-          COMMIT_MSG: ${{ steps.final.outputs.commit_message }}
-          NEW_VERSION: ${{ steps.bump.outputs.version }}
+          INITIAL_CHANGE_KIND: ${{ steps.final.outputs.change_kind }}
+          INITIAL_COMMIT_MSG: ${{ steps.final.outputs.commit_message }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
+
+          CHANGE_KIND="$INITIAL_CHANGE_KIND"
+          COMMIT_MSG="$INITIAL_COMMIT_MSG"
+          NEW_VERSION=""
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # Apply-change writes to known dirs: .github/auto-release/, gradle.properties
-          # (AIN bump), the loot table, and (for new_file items) somewhere under
-          # src/main/resources/data/dungeontrain/. PATCH bump above also touches
-          # gradle.properties. -A covers all.
-          git add -A
-          if git diff --cached --quiet; then
-            echo "::error::no changes staged — apply-change.py produced no diff"
-            exit 1
-          fi
-          git commit -m "$COMMIT_MSG (auto v$NEW_VERSION) [skip ci]"
-          git push origin HEAD:main
 
-      - name: Commit stopped state
-        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && steps.final.outputs.change_kind == 'stopped' && inputs.dry_run != true
-        env:
-          COMMIT_MSG: ${{ steps.final.outputs.commit_message }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/auto-release/state.json
-          if git diff --cached --quiet; then
-            echo "::notice::Cascade already stopped — state.json unchanged."
+          bump_patch() {
+            local current
+            current=$(grep '^mod_version=' gradle.properties | cut -d= -f2)
+            if ! echo "$current" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "::error::mod_version=$current is not strict X.Y.Z — refusing to auto-bump" >&2
+              return 1
+            fi
+            local major minor patch new
+            major=$(echo "$current" | cut -d. -f1)
+            minor=$(echo "$current" | cut -d. -f2)
+            patch=$(echo "$current" | cut -d. -f3)
+            new="$major.$minor.$((patch + 1))"
+            sed -i "s/^mod_version=.*/mod_version=$new/" gradle.properties
+            echo "Bumped mod_version: $current -> $new" >&2
+            echo "$new"
+          }
+
+          # finalize_commit return codes:
+          #   0 — commit built and staged
+          #   1 — hard failure (bad gradle.properties, no diff, etc.)
+          #   2 — nothing to do (stopped state already current)
+          finalize_commit() {
+            if [ "$CHANGE_KIND" = "stopped" ]; then
+              # Stopped ticks only touch state.json. No PATCH bump.
+              git add .github/auto-release/state.json
+              if git diff --cached --quiet; then
+                return 2
+              fi
+              git commit -m "$COMMIT_MSG [skip ci]"
+              return 0
+            fi
+            # Release ticks: bump PATCH then commit everything.
+            NEW_VERSION=$(bump_patch) || return 1
+            # Apply-change writes to known dirs: .github/auto-release/,
+            # gradle.properties (AIN/AIS bump), the loot table, and (for
+            # new_file items) somewhere under src/main/resources/data/dungeontrain/.
+            # PATCH bump above also touches gradle.properties. -A covers all.
+            git add -A
+            if git diff --cached --quiet; then
+              echo "::error::no changes staged — apply-change.py produced no diff" >&2
+              return 1
+            fi
+            git commit -m "$COMMIT_MSG (auto v$NEW_VERSION) [skip ci]"
+            return 0
+          }
+
+          emit_outputs() {
+            local push_status="$1"
+            {
+              echo "final_change_kind=$CHANGE_KIND"
+              echo "commit_message=$COMMIT_MSG"
+              echo "push_succeeded=$push_status"
+              if [ "$CHANGE_KIND" != "stopped" ] && [ -n "$NEW_VERSION" ]; then
+                echo "version=$NEW_VERSION"
+                echo "tag=v$NEW_VERSION"
+              fi
+            } >> "$GITHUB_OUTPUT"
+          }
+
+          # Initial finalize attempt
+          rc=0
+          finalize_commit || rc=$?
+          case $rc in
+            0) ;;
+            2)
+              echo "::notice::Stopped state already current — state.json unchanged"
+              emit_outputs "skipped"
+              exit 0
+              ;;
+            *) exit 1 ;;
+          esac
+
+          # Dry-run: emit outputs, undo the local commit so the dry-run
+          # summary's `git diff --stat` can see the modifications. Use
+          # --mixed (default) so changes become unstaged.
+          if [ "$DRY_RUN" = "true" ]; then
+            emit_outputs "dry_run"
+            git reset HEAD~1
+            echo "::notice::dry_run=true; commit built locally but not pushed"
             exit 0
           fi
-          git commit -m "$COMMIT_MSG [skip ci]"
-          git push origin HEAD:main
-          echo "::notice::Cascade stopped — no release dispatched. Next real release will resume the cascade."
 
-      - name: Verify push landed
-        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && steps.final.outputs.change_kind != 'stopped' && inputs.dry_run != true
-        run: |
-          set -euo pipefail
-          LOCAL=$(git rev-parse HEAD)
-          REMOTE=$(git ls-remote origin refs/heads/main | awk '{print $1}')
-          if [ "$LOCAL" != "$REMOTE" ]; then
-            echo "::error::push verification failed (local=$LOCAL remote=$REMOTE)"
-            exit 1
-          fi
-          echo "Push verified: $LOCAL"
+          # Push with retry loop. Up to 3 attempts.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "::notice::Push succeeded on attempt $attempt"
+              # Verify the push actually landed on the remote.
+              local_head=$(git rev-parse HEAD)
+              remote_head=$(git ls-remote origin refs/heads/main | awk '{print $1}')
+              if [ "$local_head" != "$remote_head" ]; then
+                echo "::error::push verification failed (local=$local_head remote=$remote_head)" >&2
+                exit 1
+              fi
+              echo "Push verified: $local_head"
+              if [ "$CHANGE_KIND" = "stopped" ]; then
+                echo "::notice::Cascade stopped — no release dispatched. Next real release will resume the cascade."
+              fi
+              emit_outputs "true"
+              exit 0
+            fi
+
+            if [ "$attempt" = "3" ]; then break; fi
+
+            echo "::warning::Push attempt $attempt rejected — recovering from race on main"
+            sleep $((attempt * 5))
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Re-run apply-change.py against fresh main. Use a tempfile for
+            # GITHUB_OUTPUT so the rerun doesn't pollute step.apply.outputs
+            # (those reflect the original tick).
+            TMP_OUT=$(mktemp)
+            if ! GITHUB_OUTPUT="$TMP_OUT" python3 scripts/auto-release/apply-change.py; then
+              echo "::warning::apply-change.py failed on retry $attempt — aborting recovery" >&2
+              rm -f "$TMP_OUT"
+              break
+            fi
+            NEW_KIND=$(grep '^change_kind=' "$TMP_OUT" | tail -1 | cut -d= -f2-)
+            NEW_MSG=$(grep '^commit_message=' "$TMP_OUT" | tail -1 | cut -d= -f2-)
+            rm -f "$TMP_OUT"
+
+            if [ -z "$NEW_KIND" ]; then
+              echo "::warning::apply-change.py produced no change_kind on retry — aborting recovery" >&2
+              break
+            fi
+
+            if [ "$NEW_KIND" != "$CHANGE_KIND" ]; then
+              echo "::warning::Retry produced different change kind ($CHANGE_KIND -> $NEW_KIND)"
+            fi
+            if { [ "$NEW_KIND" = "ain_bump" ] || [ "$NEW_KIND" = "ais_bump" ]; } && [ "$NEW_KIND" != "$CHANGE_KIND" ]; then
+              echo "::warning::Retry produced $NEW_KIND but original tick was $CHANGE_KIND — build NOT re-verified for the new bump"
+            fi
+
+            CHANGE_KIND="$NEW_KIND"
+            COMMIT_MSG="$NEW_MSG"
+            NEW_VERSION=""
+
+            rc=0
+            finalize_commit || rc=$?
+            case $rc in
+              0) ;;
+              2)
+                echo "::notice::Retry produced stopped state already current — nothing to push"
+                emit_outputs "skipped"
+                exit 0
+                ;;
+              *) exit 1 ;;
+            esac
+          done
+
+          echo "::warning::Push failed after 3 attempts; next scheduled tick will retry from fresh state"
+          emit_outputs "false"
+          exit 0
 
       - name: Dispatch Release workflow
         # notify_discord=false: cascade ticks silence the Discord webhook so the
         # release channel doesn't get spammed by ~22 micro-releases per cascade.
         # Modrinth + CurseForge uploads still fire (that's the point of the cascade —
         # to keep the mod fresh on "recently updated" feeds).
-        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && steps.final.outputs.change_kind != 'stopped' && inputs.dry_run != true
+        #
+        # Gated on push_succeeded=true so a race-exhausted tick doesn't dispatch
+        # a release for a tag that never landed on main. final_change_kind reflects
+        # the kind that was actually committed (may differ from steps.final.outputs
+        # if a retry produced a different change after main moved).
+        if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && steps.commit_push.outputs.final_change_kind != 'stopped' && steps.commit_push.outputs.push_succeeded == 'true' && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.bump.outputs.tag }}
+          TAG: ${{ steps.commit_push.outputs.tag }}
         run: |
           gh workflow run release.yml -f tag="$TAG" -f auto=true -f notify_discord=false
           echo "Dispatched release.yml with tag=$TAG auto=true notify_discord=false"
@@ -241,9 +360,9 @@ jobs:
       - name: Dry-run summary
         if: (steps.decide.outputs.fire == 'true' || inputs.force == true) && inputs.dry_run == true
         env:
-          COMMIT_MSG: ${{ steps.final.outputs.commit_message }}
-          NEW_VERSION: ${{ steps.bump.outputs.version }}
-          KIND: ${{ steps.final.outputs.change_kind }}
+          COMMIT_MSG: ${{ steps.commit_push.outputs.commit_message }}
+          NEW_VERSION: ${{ steps.commit_push.outputs.version }}
+          KIND: ${{ steps.commit_push.outputs.final_change_kind }}
           APPLIED_ID: ${{ steps.final.outputs.applied_id }}
           AIN_FROM: ${{ steps.apply.outputs.ain_from }}
           AIN_TO: ${{ steps.apply.outputs.ain_to }}
