@@ -21,7 +21,8 @@ import java.util.Locale;
  * {@link games.brennan.dungeontrain.net.CarriageIndexPacket}). Respects F1
  * (hideGui); F3 debug overlay draws over this, which is intentional.
  *
- * <p>The companion {@link VersionMenuOverlay} handles the main menu case.</p>
+ * <p>The companion {@link games.brennan.dungeontrain.client.version.VersionStatusButton}
+ * handles the main menu case (and also folds in the GitHub release-check status).</p>
  */
 @EventBusSubscriber(
         modid = DungeonTrain.MOD_ID,
