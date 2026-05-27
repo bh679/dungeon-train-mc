@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "selfWeight": 10,
+  "selfWeight": 3,
   "variants": [
     {
       "id": "seatingnarrative",
@@ -16,7 +16,15 @@
     },
     {
       "id": "campfire_comfortable",
-      "weight": 1
+      "weight": 8
+    },
+    {
+      "id": "duefire",
+      "weight": 4
+    },
+    {
+      "id": "fireside",
+      "weight": 4
     }
   ]
 }
