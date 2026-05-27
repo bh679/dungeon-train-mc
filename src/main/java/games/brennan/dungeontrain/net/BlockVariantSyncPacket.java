@@ -59,21 +59,33 @@ public record BlockVariantSyncPacket(
      * added from a saved loot-prefab item; the editor renders it as the
      * row label and the spawn pipeline rolls contents from the linked
      * pool (see {@code LootPrefabStore}).</p>
+     *
+     * <p>{@code halfMode} ordinal: 0=TOP, 1=RANDOM, 2=BOTTOM — matches
+     * {@link games.brennan.dungeontrain.editor.VariantHalf.Mode#ordinal()}.
+     * Out-of-range values on read are treated as RANDOM (the
+     * {@code VariantHalf.NONE} default).</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
-                        @Nullable String entityId) {
+                        @Nullable String entityId, byte halfMode) {
 
         /** Backward-compat constructor for call sites that don't carry a loot link. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
                      byte rotMode, byte rotDirMask) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, null, null);
+            this(stateString, beNbt, weight, rotMode, rotDirMask, null, null, (byte) 1);
         }
 
         /** Backward-compat constructor for call sites that don't carry an entity id. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
                      byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, null);
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, null, (byte) 1);
+        }
+
+        /** Backward-compat constructor for call sites that don't carry a halfMode (defaults to RANDOM = 1). */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId, (byte) 1);
         }
 
         /** True for v7 mob entries — the C-menu renders the spawn-egg icon for these rows. */
@@ -126,6 +138,7 @@ public record BlockVariantSyncPacket(
             boolean hasEid = e.entityId() != null && !e.entityId().isEmpty();
             buf.writeBoolean(hasEid);
             if (hasEid) buf.writeUtf(e.entityId(), 128);
+            buf.writeByte(e.halfMode());
         }
     }
 
@@ -155,7 +168,9 @@ public record BlockVariantSyncPacket(
             String linkedLootPrefabId = hasLink ? buf.readUtf(128) : null;
             boolean hasEid = buf.readBoolean();
             String entityId = hasEid ? buf.readUtf(128) : null;
-            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId));
+            byte halfMode = buf.readByte();
+            entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
+                linkedLootPrefabId, entityId, halfMode));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }

@@ -156,13 +156,16 @@ public final class BlockVariantMenuRaycast {
 
         BlockVariantSyncPacket.Entry entry = entries.get(idx);
         BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
-        boolean rotatable = parsed != null && RotationApplier.canRotate(parsed);
+        boolean rotatable = parsed != null && !entry.isMob() && RotationApplier.canRotate(parsed);
+        boolean halfable = parsed != null && !entry.isMob() && RotationApplier.canFlip(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
         double rotDirsCellR = weightCellL;
         double rotDirsCellL = showDirs ? rotDirsCellR - BlockVariantMenuRenderer.ROT_DIRS_CELL_WIDTH : rotDirsCellR;
         double rotModeCellR = rotDirsCellL;
         double rotModeCellL = rotatable ? rotModeCellR - BlockVariantMenuRenderer.ROT_MODE_CELL_WIDTH : rotModeCellR;
+        double halfModeCellR = rotModeCellL;
+        double halfModeCellL = halfable ? halfModeCellR - BlockVariantMenuRenderer.HALF_MODE_CELL_WIDTH : halfModeCellR;
 
         if (removeMode && hitX >= colXR - BlockVariantMenuRenderer.X_CELL_WIDTH) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_REMOVE_X, idx);
@@ -175,6 +178,9 @@ public final class BlockVariantMenuRaycast {
         }
         if (rotatable && hitX >= rotModeCellL && hitX <= rotModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ROT_MODE, idx);
+        }
+        if (halfable && hitX >= halfModeCellL && hitX <= halfModeCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_HALF_MODE, idx);
         }
         return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_NAME, idx);
     }

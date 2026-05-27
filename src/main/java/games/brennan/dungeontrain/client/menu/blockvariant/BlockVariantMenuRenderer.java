@@ -81,6 +81,8 @@ public final class BlockVariantMenuRenderer {
     /** ~20% of {@link #COLUMN_WIDTH} so the L/R/O pill segments are comfortable click targets. */
     static final double ROT_MODE_CELL_WIDTH = 0.34;
     static final double ROT_DIRS_CELL_WIDTH = 0.32;
+    /** T/R/B pill width — matches the L/R/O pill so the two read as a pair on stairs/trapdoors. */
+    static final double HALF_MODE_CELL_WIDTH = 0.34;
     static final double TEXT_SCALE = 0.012;
     static final double POPUP_BUTTON_SIZE = 0.20;
     static final double ICON_SIZE = 0.22;
@@ -249,6 +251,7 @@ public final class BlockVariantMenuRenderer {
             //   [Weight]
             //   [RotDirs]   (only when block is rotatable AND mode != RANDOM)
             //   [RotMode]   (only when block is rotatable)
+            //   [HalfMode]  (only when block has SLAB_TYPE or HALF)
             //   [Name] (fills the remaining left)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
             BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
@@ -257,6 +260,7 @@ public final class BlockVariantMenuRenderer {
             // suppress the rotation cells explicitly to avoid an irrelevant
             // FACING editor on a mob row.
             boolean rotatable = parsed != null && !entry.isMob() && RotationApplier.canRotate(parsed);
+            boolean halfable = parsed != null && !entry.isMob() && RotationApplier.canFlip(parsed);
             VariantRotation.Mode rowMode = decodeMode(entry.rotMode());
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
@@ -265,8 +269,10 @@ public final class BlockVariantMenuRenderer {
             double rotDirsCellL = showDirs ? rotDirsCellR - ROT_DIRS_CELL_WIDTH : rotDirsCellR;
             double rotModeCellR = rotDirsCellL;
             double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
+            double halfModeCellR = rotModeCellL;
+            double halfModeCellL = halfable ? halfModeCellR - HALF_MODE_CELL_WIDTH : halfModeCellR;
             double nameCellL = colXL;
-            double nameCellR = rotModeCellL;
+            double nameCellR = halfModeCellL;
 
             // Name highlight + icon + label
             boolean nameHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_NAME && hovered.index() == i;
@@ -312,6 +318,12 @@ public final class BlockVariantMenuRenderer {
                 drawRotationCells(ps, buffer, font, i, entry,
                     rotModeCellL, rotModeCellR, rotDirsCellL, rotDirsCellR,
                     rowBottom, rowTop, rowCY, hovered, showDirs);
+            }
+
+            // Half-mode pill (slabs / stairs / trapdoors)
+            if (halfable) {
+                drawHalfModeCell(ps, buffer, font, i, entry,
+                    halfModeCellL, halfModeCellR, rowBottom, rowTop, rowCY, hovered);
             }
 
             // Weight cell
@@ -472,11 +484,63 @@ public final class BlockVariantMenuRenderer {
         }
     }
 
+    /**
+     * Draw the per-row half-mode pill — T/R/B (Top / Random / Bottom) for
+     * blocks with SLAB_TYPE or HALF. Distinct tints from the rotation pill
+     * (amber/blue/teal) so the two read as separate controls when both are
+     * shown on stairs / trapdoors.
+     */
+    private static void drawHalfModeCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                         int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                         double cellL, double cellR,
+                                         double rowBottom, double rowTop, double rowCY,
+                                         BlockVariantMenu.Hit hovered) {
+        games.brennan.dungeontrain.editor.VariantHalf.Mode mode = decodeHalfMode(entry.halfMode());
+        boolean modeHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_HALF_MODE && hovered.index() == rowIndex;
+
+        double pillBot = rowBottom + 0.02;
+        double pillTop = rowTop - 0.02;
+        double segW = (cellR - cellL - 0.02) / 3.0;
+        for (int seg = 0; seg < 3; seg++) {
+            double sL = cellL + 0.01 + seg * segW;
+            double sR = sL + segW - 0.005;
+            boolean active = seg == mode.ordinal();
+            int tint;
+            if (active) {
+                tint = switch (seg) {
+                    case 0 -> modeHover ? 0xC0FFCC55 : 0x80CC9933; // TOP amber
+                    case 1 -> modeHover ? 0xC066AAFF : 0x8033679B; // RANDOM blue (shared with rotation R)
+                    default -> modeHover ? 0xC066CCAA : 0x80339977; // BOTTOM teal
+                };
+            } else {
+                tint = modeHover ? 0x60AAAAAA : 0x30777777;
+            }
+            drawQuad(ps, buffer, sL, pillBot, sR, pillTop, tint);
+            String label = switch (seg) {
+                case 0 -> "T";
+                case 1 -> "R";
+                default -> "B";
+            };
+            drawCenteredText(ps, buffer, font, label,
+                (sL + sR) / 2.0, rowCY,
+                active ? 0xFFFFFFFF : 0xFF888888);
+        }
+    }
+
     /** Decode wire byte → mode enum, defaulting to RANDOM on out-of-range. */
     static VariantRotation.Mode decodeMode(byte raw) {
         int ord = raw & 0xFF;
         VariantRotation.Mode[] values = VariantRotation.Mode.values();
         if (ord < 0 || ord >= values.length) return VariantRotation.Mode.RANDOM;
+        return values[ord];
+    }
+
+    /** Decode wire byte → half mode enum, defaulting to RANDOM on out-of-range. */
+    static games.brennan.dungeontrain.editor.VariantHalf.Mode decodeHalfMode(byte raw) {
+        int ord = raw & 0xFF;
+        games.brennan.dungeontrain.editor.VariantHalf.Mode[] values =
+            games.brennan.dungeontrain.editor.VariantHalf.Mode.values();
+        if (ord < 0 || ord >= values.length) return games.brennan.dungeontrain.editor.VariantHalf.Mode.RANDOM;
         return values[ord];
     }
 

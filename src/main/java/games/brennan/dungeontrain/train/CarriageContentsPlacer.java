@@ -287,7 +287,7 @@ public final class CarriageContentsPlacer {
             } else {
                 net.minecraft.world.level.block.state.BlockState rotated =
                     games.brennan.dungeontrain.editor.RotationApplier.apply(
-                        picked.state(), picked.rotation(),
+                        picked.state(), picked.rotation(), picked.half(),
                         entry.localPos(), seed, carriageIndex,
                         sidecar.lockIdAt(entry.localPos()));
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(

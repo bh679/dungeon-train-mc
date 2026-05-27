@@ -56,7 +56,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                            VariantRotation rotation, @Nullable String linkedLootPrefabId,
-                           @Nullable ResourceLocation entityId) {
+                           @Nullable ResourceLocation entityId, VariantHalf half) {
 
     public VariantState {
         if (entityId != null) {
@@ -77,22 +77,30 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (linkedLootPrefabId != null && linkedLootPrefabId.isEmpty()) {
             linkedLootPrefabId = null;
         }
+        if (half == null) half = VariantHalf.NONE;
+    }
+
+    /** Six-arg overload defaulting {@code half} to {@link VariantHalf#NONE}. */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
+                        VariantRotation rotation, @Nullable String linkedLootPrefabId,
+                        @Nullable ResourceLocation entityId) {
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, VariantHalf.NONE);
     }
 
     /** Five-arg overload defaulting {@code entityId} to {@code null} (block entry). */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                         VariantRotation rotation, @Nullable String linkedLootPrefabId) {
-        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, null);
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, null, VariantHalf.NONE);
     }
 
     /** Four-arg overload defaulting {@code linkedLootPrefabId} and {@code entityId} to {@code null}. */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight, VariantRotation rotation) {
-        this(state, blockEntityNbt, weight, rotation, null, null);
+        this(state, blockEntityNbt, weight, rotation, null, null, VariantHalf.NONE);
     }
 
     /** Three-arg overload defaulting rotation to {@link VariantRotation#NONE}. */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight) {
-        this(state, blockEntityNbt, weight, VariantRotation.NONE, null, null);
+        this(state, blockEntityNbt, weight, VariantRotation.NONE, null, null, VariantHalf.NONE);
     }
 
     /**
@@ -102,12 +110,12 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
      * unchanged.
      */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt) {
-        this(state, blockEntityNbt, 1, VariantRotation.NONE, null, null);
+        this(state, blockEntityNbt, 1, VariantRotation.NONE, null, null, VariantHalf.NONE);
     }
 
     /** State-only constructor — equivalent to a v1 entry (weight 1, no NBT, default rotation, no link). */
     public static VariantState of(BlockState state) {
-        return new VariantState(state, null, 1, VariantRotation.NONE, null, null);
+        return new VariantState(state, null, 1, VariantRotation.NONE, null, null, VariantHalf.NONE);
     }
 
     /**
@@ -128,7 +136,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
                                       int weight, VariantRotation rotation) {
         if (entityId == null) throw new IllegalArgumentException("entityId");
         return new VariantState(Blocks.COMMAND_BLOCK.defaultBlockState(),
-            entityNbt, weight, rotation, null, entityId);
+            entityNbt, weight, rotation, null, entityId, VariantHalf.NONE);
     }
 
     public boolean hasBlockEntityData() {
@@ -148,21 +156,26 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     /** True when the entry has no extras over v1 — drives bare-string vs object-form JSON serialisation. */
     public boolean isPlainBareString() {
         return blockEntityNbt == null && weight == 1 && rotation.isDefault()
-            && linkedLootPrefabId == null && entityId == null;
+            && linkedLootPrefabId == null && entityId == null && half.isDefault();
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half);
+    }
+
+    /** Return a copy with {@code half} replaced. */
+    public VariantState withHalf(VariantHalf newHalf) {
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf);
     }
 }

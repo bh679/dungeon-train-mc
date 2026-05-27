@@ -50,6 +50,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       mask. {@code entryIndex} = row, {@code delta} = new dirMask
  *       (6-bit). Mode is preserved (LOCK collapses multi-bit to lowest;
  *       OPTIONS with mask 0 falls back to RANDOM).</li>
+ *   <li>{@link Op#SET_HALF_MODE} — set entry's half-mode for slabs / stairs
+ *       / trapdoors. {@code entryIndex} = row, {@code delta} = next mode
+ *       ordinal (matches
+ *       {@link games.brennan.dungeontrain.editor.VariantHalf.Mode#ordinal()}).</li>
  *   <li>{@link Op#OPEN_LINKED_CONTAINER} — click on a linked variant's
  *       row name. {@code entryIndex} = row. Server previews the variant
  *       at the cell, sets the cell-level container link to the variant's
@@ -68,7 +72,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
 
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
-                     OPEN_LINKED_CONTAINER }
+                     OPEN_LINKED_CONTAINER, SET_HALF_MODE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
