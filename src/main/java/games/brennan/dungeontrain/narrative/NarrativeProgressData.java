@@ -157,7 +157,7 @@ public final class NarrativeProgressData extends SavedData {
      */
     public boolean markRandomBookSeen(String bookBasename, int variantIndex) {
         NarrativeProgress p = randomBooksSeen.computeIfAbsent(bookBasename, k -> new NarrativeProgress());
-        boolean changed = p.markRead(variantIndex);
+        boolean changed = p.markSeen(variantIndex);
         if (changed) setDirty();
         return changed;
     }
@@ -189,7 +189,7 @@ public final class NarrativeProgressData extends SavedData {
      */
     public boolean markStartingBookVariantSeen(String bookBasename, int variantIndex) {
         NarrativeProgress p = startingBooksSeen.computeIfAbsent(bookBasename, k -> new NarrativeProgress());
-        boolean changed = p.markRead(variantIndex);
+        boolean changed = p.markSeen(variantIndex);
         if (changed) setDirty();
         return changed;
     }

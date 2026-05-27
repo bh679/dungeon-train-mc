@@ -194,13 +194,7 @@ public final class AchievementEvents {
 
     /**
      * True when every random-book file whose basename contains
-     * {@code "faulthurst"} has all reachable variants marked seen.
-     *
-     * <p><b>Caveat:</b> {@link NarrativeProgress#markRead} rejects index
-     * less than 1, so variant 0 is unreachable through the existing
-     * tracking layer. We require indices 1..size-1 only. If/when that
-     * latent bug is fixed (separate follow-up), tighten this to require
-     * all indices 0..size-1.</p>
+     * {@code "faulthurst"} has every variant marked seen.
      */
     private static boolean allFaulthurstSeen(NarrativeProgressData data) {
         boolean anyFaulthurst = false;
@@ -210,11 +204,10 @@ public final class AchievementEvents {
             RandomBookFile file = RandomBookRegistry.getByBasename(basename).orElse(null);
             if (file == null) return false;
             int total = file.variants().size();
-            if (total <= 1) continue; // only variant 0 exists, unreachable — count as complete.
             Set<Integer> seen = data.randomBookSnapshot()
                 .getOrDefault(basename, new NarrativeProgress())
                 .readLetters();
-            for (int i = 1; i < total; i++) {
+            for (int i = 0; i < total; i++) {
                 if (!seen.contains(i)) return false;
             }
         }
