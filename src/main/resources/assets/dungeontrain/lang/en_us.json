@@ -84,6 +84,12 @@
   "advancements.dungeontrain.dungeon_train.carts_1000.description": "Traverse 1,000 carriages in a single life.",
   "advancements.dungeontrain.dungeon_train.carts_10000.title": "Nearing Infinity",
   "advancements.dungeontrain.dungeon_train.carts_10000.description": "Traverse 10,000 carriages in a single life.",
+  "advancements.dungeontrain.dungeon_train.enjoying_the_ride.title": "Enjoying the Ride",
+  "advancements.dungeontrain.dungeon_train.enjoying_the_ride.description": "Spend two hours on board the train. Time accumulates across every world.",
+  "advancements.dungeontrain.dungeon_train.settling_in.title": "Settling In",
+  "advancements.dungeontrain.dungeon_train.settling_in.description": "Keep riding. Time spent on the train accumulates across every world.",
+  "advancements.dungeontrain.dungeon_train.i_live_here_now.title": "I Live Here Now",
+  "advancements.dungeontrain.dungeon_train.i_live_here_now.description": "The platform has long since gone. The horizon is just track. The train is home.",
 
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Build the train you ride.",

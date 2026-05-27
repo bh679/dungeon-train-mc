@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
+import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
@@ -134,6 +135,18 @@ public final class AchievementEvents {
         ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, newCount);
     }
 
+    // ---------------- Train-time milestones ----------------
+
+    /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code totalTicks} is the player's cumulative
+     * {@link games.brennan.dungeontrain.advancement.GlobalPlayerStats#trainTicks}
+     * across all worlds and sessions.
+     */
+    public static void notifyTrainTime(ServerPlayer player, long totalTicks) {
+        ModAdvancementTriggers.TRAIN_TIME.get().trigger(player, totalTicks);
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**
@@ -259,6 +272,28 @@ public final class AchievementEvents {
             LOGGER.info("[DungeonTrain] Replayed {} criteria from global store for {}",
                 replayed, player.getName().getString());
         }
+    }
+
+    /**
+     * Flush this player's cumulative stats (train-time) to disk on logout
+     * so a crash before server-stop doesn't lose their session's accrual.
+     * Also evict from the in-memory cache — the next login re-loads.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        GlobalPlayerStats.flush(player.getUUID());
+        GlobalPlayerStats.evict(player.getUUID());
+    }
+
+    /**
+     * Final flush on server stop. Catches every cached player at once;
+     * complements the per-player logout flush for the case where the server
+     * shuts down while players are still online.
+     */
+    @SubscribeEvent
+    public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        GlobalPlayerStats.flushAll();
     }
 
     @SubscribeEvent

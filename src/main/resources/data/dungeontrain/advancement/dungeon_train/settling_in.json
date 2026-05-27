@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/enjoying_the_ride",
+  "display": {
+    "icon": { "id": "minecraft:red_bed" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.settling_in.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.settling_in.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:train_time",
+      "conditions": { "thresholdTicks": 720000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

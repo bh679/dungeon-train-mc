@@ -34,6 +34,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<EditorActionTrigger> EDITOR_ACTION =
         TRIGGERS.register("editor_action", EditorActionTrigger::new);
 
+    public static final Supplier<TrainTimeTrigger> TRAIN_TIME =
+        TRIGGERS.register("train_time", TrainTimeTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {

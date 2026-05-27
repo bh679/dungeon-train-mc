@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
@@ -92,6 +93,19 @@ public final class BoardingProgressEvents {
         for (ServerPlayer player : level.players()) {
             Integer pIdx = findPlayerCarriagePIdx(carriages, player);
             if (pIdx != null) boarded.put(player.getUUID(), pIdx);
+        }
+
+        // Cumulative time-on-train: every boarded player accrues
+        // SCAN_PERIOD_TICKS into their global stats. Drives the train-time
+        // advancement tier (2h / 10h / 24h).
+        if (!boarded.isEmpty()) {
+            for (UUID uuid : boarded.keySet()) {
+                long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
+                ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
+                if (p != null) {
+                    AchievementEvents.notifyTrainTime(p, newTotal);
+                }
+            }
         }
 
         BoardingProgressData data = BoardingProgressData.get(level);
