@@ -46,11 +46,23 @@ Env overrides (for testing):
 """
 import json
 import os
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+from siblings import (
+    MODE_AIN,
+    MODE_AIS,
+    MODE_ALWAYS,
+    MODE_WITH_CONTENT,
+    SIBLING_MODS,
+    fetch_sibling_releases,
+    parse_mode,
+    parse_semver,
+    read_sibling_version,
+    write_sibling_version,
+)
 
 STATE_FILE = os.environ.get("STATE_FILE", ".github/auto-release/state.json")
 QUEUE_FILE = os.environ.get("QUEUE_FILE", ".github/auto-release/queue.json")
@@ -58,27 +70,9 @@ LOOT_FILE = os.environ.get(
     "LOOT_FILE",
     "src/main/resources/data/dungeontrain/loot_table/chests/auto_balancing.json",
 )
-GRADLE_PROPERTIES_FILE = os.environ.get("GRADLE_PROPERTIES_FILE", "gradle.properties")
 
 ALLOWED_TARGET_PREFIX = "src/main/resources/data/dungeontrain/"
 WEIGHT_MIN, WEIGHT_MAX = 1, 20
-
-# Sibling-mod auto-bump config. Order matters: each tick tries siblings in
-# this order and the first one with a newer release wins. Each entry:
-#   (name, version_key_in_gradle_properties, github_repo,
-#    test_override_env_var, workflow_skip_env_var)
-SIBLING_MODS = (
-    ("AIN", "adventureitemnames_version", "bh679/adventureitemnames-mc",
-     "AIN_RELEASES_OVERRIDE", "SKIP_AIN"),
-    ("AIS", "adventureitemstats_version", "bh679/adventureitemstats-mc",
-     "AIS_RELEASES_OVERRIDE", "SKIP_AIS"),
-)
-
-MODE_ALWAYS = "always"
-MODE_WITH_CONTENT = "with-content"
-MODE_AIN = "ain"
-MODE_AIS = "ais"
-VALID_MODES = {MODE_ALWAYS, MODE_WITH_CONTENT, MODE_AIN, MODE_AIS}
 
 
 def parse_iso(s):
@@ -217,102 +211,6 @@ def nudge_auto_balance(state, now_epoch):
         f"chore(auto): auto-balance {name} weight {old_w}->{new_w}",
         f"Auto-balancing: {name} weight {old_w}->{new_w}",
     )
-
-
-def parse_mode():
-    raw = os.environ.get("AUTO_RELEASE_MODE", "")
-    normalized = raw.strip().lower()
-    if normalized in VALID_MODES:
-        return normalized
-    return MODE_ALWAYS
-
-
-def parse_semver(s):
-    """Strict X.Y.Z parse. Returns (int, int, int) or None."""
-    if not isinstance(s, str):
-        return None
-    parts = s.split(".")
-    if len(parts) != 3:
-        return None
-    try:
-        return tuple(int(p) for p in parts)
-    except ValueError:
-        return None
-
-
-def read_sibling_version(version_key):
-    """Read <version_key>=X.Y.Z from gradle.properties.
-
-    Returns the version string (e.g. "0.25.0") or None if not found / invalid.
-    """
-    try:
-        with open(GRADLE_PROPERTIES_FILE) as f:
-            for line in f:
-                if line.startswith(version_key + "="):
-                    return line[len(version_key) + 1:].strip()
-    except FileNotFoundError:
-        return None
-    return None
-
-
-def write_sibling_version(version_key, new_version):
-    """Replace the <version_key>=... line in-place. Preserves other lines
-    byte-for-byte."""
-    with open(GRADLE_PROPERTIES_FILE) as f:
-        lines = f.readlines()
-    found = False
-    for i, line in enumerate(lines):
-        if line.startswith(version_key + "="):
-            # Preserve trailing newline if present.
-            suffix = "\n" if line.endswith("\n") else ""
-            lines[i] = f"{version_key}={new_version}{suffix}"
-            found = True
-            break
-    if not found:
-        fail(f"{GRADLE_PROPERTIES_FILE}: {version_key} line not found")
-    with open(GRADLE_PROPERTIES_FILE, "w") as f:
-        f.writelines(lines)
-
-
-def fetch_sibling_releases(repo, override_env):
-    """Return a list of version-string tags from <repo>'s GitHub releases.
-
-    Tests inject the list via <override_env> (e.g. AIN_RELEASES_OVERRIDE); CI
-    relies on the real `gh release list` subprocess. Order is whatever the
-    source returns; the caller sorts. Failures return an empty list with a
-    warning — the cascade falls through gracefully.
-    """
-    override = os.environ.get(override_env)
-    if override is not None:
-        try:
-            data = json.loads(override)
-        except json.JSONDecodeError as e:
-            print(f"::warning::{override_env} not valid JSON: {e}", file=sys.stderr)
-            return []
-    else:
-        try:
-            result = subprocess.run(
-                ["gh", "release", "list", "--repo", repo,
-                 "--json", "tagName", "-L", "200"],
-                capture_output=True, text=True, timeout=30, check=True,
-            )
-        except (subprocess.SubprocessError, FileNotFoundError) as e:
-            print(f"::warning::gh release list failed for {repo}: {e}", file=sys.stderr)
-            return []
-        try:
-            data = json.loads(result.stdout)
-        except json.JSONDecodeError as e:
-            print(f"::warning::gh release list returned invalid JSON: {e}", file=sys.stderr)
-            return []
-
-    versions = []
-    for entry in data:
-        tag = entry.get("tagName", "")
-        if tag.startswith("v"):
-            tag = tag[1:]
-        if parse_semver(tag) is not None:
-            versions.append(tag)
-    return versions
 
 
 def try_sibling_bump(name, version_key, repo, override_env):
