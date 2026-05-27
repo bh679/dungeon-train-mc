@@ -19,7 +19,8 @@
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
     "client.LevelLoadingScreenProgressMixin",
-    "client.AdvancementsScreenAccessor"
+    "client.AdvancementsScreenAccessor",
+    "client.AdvancementWidgetHideDescMixin"
   ],
   "server": [],
   "injectors": {
