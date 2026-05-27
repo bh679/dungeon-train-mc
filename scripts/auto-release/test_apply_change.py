@@ -624,6 +624,103 @@ def test_skip_ais_bypasses_ais_check():
         shutil.rmtree(ws)
 
 
+def test_rerun_after_reset_pops_same_queue_item():
+    """Models the workflow's race-recovery path: apply-change runs, then the
+    push is rejected, so we 'git reset --hard' (revert queue.json + state.json
+    to seed state) and re-run apply-change against fresh state. The second
+    run must pop the SAME queue item and produce the SAME applied_id."""
+    ws, _ = make_workspace()
+    try:
+        # Seed two pending items; we only care about pending[0].
+        queue = {"pending": [
+            {"id": "book-a", "label": "Add A", "type": "new_file",
+             "target": "src/main/resources/data/dungeontrain/narratives/random_books/book_a.json",
+             "content": {"id": "book_a", "title": "A"},
+             "commit_message": "content(narrative): add book A"},
+            {"id": "book-b", "label": "Add B", "type": "new_file",
+             "target": "src/main/resources/data/dungeontrain/narratives/random_books/book_b.json",
+             "content": {"id": "book_b", "title": "B"},
+             "commit_message": "content(narrative): add book B"},
+        ], "applied": []}
+        seed_workspace(ws, queue)
+
+        # Snapshot the seed state.json/queue.json (the post-reset baseline).
+        state_path = os.path.join(ws, ".github/auto-release/state.json")
+        queue_path = os.path.join(ws, ".github/auto-release/queue.json")
+        with open(state_path) as f:
+            seed_state = json.load(f)
+        with open(queue_path) as f:
+            seed_queue = json.load(f)
+
+        # First run: pops book-a.
+        r1 = run(ws, 1_700_000_000)
+        assert r1.returncode == 0, f"r1 failed: {r1.stderr}"
+        assert "commit_message=chore(auto): content(narrative): add book A" in r1.stdout, r1.stdout
+        assert "applied_id=book-a" in r1.stdout, r1.stdout
+
+        # Simulate `git reset --hard origin/main`: revert state.json and
+        # queue.json to seed state, and remove the new file written by apply.
+        write_json(state_path, seed_state)
+        write_json(queue_path, seed_queue)
+        target_a = os.path.join(ws, "src/main/resources/data/dungeontrain/narratives/random_books/book_a.json")
+        if os.path.exists(target_a):
+            os.unlink(target_a)
+
+        # Second run: must pop the SAME book-a item.
+        r2 = run(ws, 1_700_000_005)
+        assert r2.returncode == 0, f"r2 failed: {r2.stderr}"
+        assert "commit_message=chore(auto): content(narrative): add book A" in r2.stdout, \
+            f"retry did not produce same commit_message: {r2.stdout}"
+        assert "applied_id=book-a" in r2.stdout, \
+            f"retry did not produce same applied_id: {r2.stdout}"
+        assert "change_kind=queue" in r2.stdout, r2.stdout
+        assert os.path.exists(target_a), "retry did not re-write book A"
+        print("OK  test_rerun_after_reset_pops_same_queue_item")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_rerun_after_reset_redoes_same_ain_bump():
+    """Race-recovery variant for sibling-mod bumps: when the original tick
+    bumped AIN, the retry must produce the SAME bump (since gradle.properties
+    on fresh main still has the same AIN version — Gate 3 PRs don't touch it)."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []}, ain_version="0.20.0")
+
+        gradle_path = os.path.join(ws, "gradle.properties")
+        state_path = os.path.join(ws, ".github/auto-release/state.json")
+        with open(gradle_path) as f:
+            seed_gradle = f.read()
+        with open(state_path) as f:
+            seed_state = json.load(f)
+
+        # First run: bumps AIN 0.20.0 -> 0.21.0
+        r1 = run(ws, 1_700_000_000,
+                 AIN_RELEASES_OVERRIDE=ain_releases_json("0.21.0", "0.22.0"))
+        assert r1.returncode == 0, f"r1 failed: {r1.stderr}"
+        assert "change_kind=ain_bump" in r1.stdout, r1.stdout
+        assert "ain_to=0.21.0" in r1.stdout
+        assert read_ain_version(ws) == "0.21.0"
+
+        # Reset to seed state.
+        with open(gradle_path, "w") as f:
+            f.write(seed_gradle)
+        write_json(state_path, seed_state)
+
+        # Second run: must redo the SAME bump.
+        r2 = run(ws, 1_700_000_005,
+                 AIN_RELEASES_OVERRIDE=ain_releases_json("0.21.0", "0.22.0"))
+        assert r2.returncode == 0, f"r2 failed: {r2.stderr}"
+        assert "change_kind=ain_bump" in r2.stdout, r2.stdout
+        assert "ain_from=0.20.0" in r2.stdout
+        assert "ain_to=0.21.0" in r2.stdout
+        assert read_ain_version(ws) == "0.21.0"
+        print("OK  test_rerun_after_reset_redoes_same_ain_bump")
+    finally:
+        shutil.rmtree(ws)
+
+
 def main():
     tests = [
         test_queue_pop_two_items_then_auto_balance,
@@ -652,6 +749,8 @@ def main():
         test_mode_ais_ignores_ain_update,
         test_mode_ain_ignores_ais_update,
         test_skip_ais_bypasses_ais_check,
+        test_rerun_after_reset_pops_same_queue_item,
+        test_rerun_after_reset_redoes_same_ain_bump,
     ]
     failed = 0
     for t in tests:
