@@ -149,12 +149,30 @@ public final class AchievementEvents {
         ServerLevel overworld = server.overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
+        if (anyStoryRead(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "any_story");
+        }
         if (allFaulthurstSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
         }
         if (allStoriesRead(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
         }
+    }
+
+    /**
+     * True when at least one story is fully read (every letter marked).
+     * Drives the {@code collecting_stories} milestone — the player's first
+     * complete story.
+     */
+    private static boolean anyStoryRead(NarrativeProgressData data) {
+        for (String basename : StoryRegistry.basenames()) {
+            StoryFile file = StoryRegistry.getByBasename(basename).orElse(null);
+            if (file == null) continue;
+            NarrativeProgress p = data.progressFor(basename);
+            if (p.isComplete(file.letters().size())) return true;
+        }
+        return false;
     }
 
     /**

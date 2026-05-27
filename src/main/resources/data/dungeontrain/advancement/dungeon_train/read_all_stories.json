@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/collecting_stories",
   "display": {
     "icon": { "id": "minecraft:knowledge_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.read_all_stories.title" },

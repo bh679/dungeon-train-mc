@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.collecting_stories.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.collecting_stories.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "dungeontrain:story_set_completed",
+      "conditions": { "setId": "any_story" }
+    }
+  },
+  "requirements": [["completed"]]
+}
