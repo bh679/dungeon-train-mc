@@ -271,12 +271,36 @@ public final class AchievementEvents {
      * Flush this player's cumulative stats (train-time) to disk on logout
      * so a crash before server-stop doesn't lose their session's accrual.
      * Also evict from the in-memory cache — the next login re-loads.
+     *
+     * <p>Also reconciles the global achievement sidecar: any
+     * {@code dungeontrain:*} advancement currently in the sidecar but
+     * NOT in this world's vanilla state has been revoked via
+     * {@code /advancement revoke} (since login-replay would otherwise
+     * keep them in sync). Drop revoked entries from the sidecar so the
+     * revoke sticks across worlds.</p>
      */
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        GlobalPlayerStats.flush(player.getUUID());
-        GlobalPlayerStats.evict(player.getUUID());
+        UUID uuid = player.getUUID();
+        GlobalPlayerStats.flush(uuid);
+        GlobalPlayerStats.evict(uuid);
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerAdvancementManager mgr = server.getAdvancements();
+        Set<ResourceLocation> sidecar = GlobalAchievementStore.read(uuid);
+        int removed = 0;
+        for (ResourceLocation id : sidecar) {
+            if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) continue;
+            AdvancementHolder holder = mgr.get(id);
+            if (holder == null) continue;
+            if (player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
+            if (GlobalAchievementStore.remove(uuid, id)) removed++;
+        }
+        if (removed > 0) {
+            LOGGER.info("[DungeonTrain] Logout reconcile: removed {} revoked advancement(s) from sidecar for {}",
+                removed, player.getName().getString());
+        }
     }
 
     /**

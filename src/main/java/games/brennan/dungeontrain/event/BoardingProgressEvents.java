@@ -97,13 +97,17 @@ public final class BoardingProgressEvents {
 
         // Cumulative time-on-train: every boarded player accrues
         // SCAN_PERIOD_TICKS into their global stats. Drives the train-time
-        // advancement tier (2h / 10h / 24h).
+        // advancement tier (2h / 10h / 24h). Also fires the "boarded"
+        // signal that unlocks the Dungeon Train tab's root advancement
+        // (All aboard) — first boarding earns the tab.
         if (!boarded.isEmpty()) {
             for (UUID uuid : boarded.keySet()) {
                 long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                 ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
                 if (p != null) {
                     AchievementEvents.notifyTrainTime(p, newTotal);
+                    games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                        .trigger(p, "boarded");
                 }
             }
         }

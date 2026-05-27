@@ -10,9 +10,10 @@
     "hidden": false
   },
   "criteria": {
-    "tick": {
-      "trigger": "minecraft:tick"
+    "boarded": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "boarded" }
     }
   },
-  "requirements": [["tick"]]
+  "requirements": [["boarded"]]
 }

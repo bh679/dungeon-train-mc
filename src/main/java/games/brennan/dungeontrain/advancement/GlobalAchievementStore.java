@@ -103,6 +103,20 @@ public final class GlobalAchievementStore {
         return true;
     }
 
+    /**
+     * Remove {@code advancement} from the sidecar if present. Lets
+     * {@code /advancement revoke} stick across logout — without this, the
+     * login-replay would immediately re-grant a revoked advancement.
+     *
+     * @return {@code true} when the file was actually mutated.
+     */
+    public static synchronized boolean remove(UUID playerUuid, ResourceLocation advancement) {
+        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid));
+        if (!current.remove(advancement)) return false;
+        writeAtomic(playerUuid, current);
+        return true;
+    }
+
     private static void writeAtomic(UUID playerUuid, Set<ResourceLocation> granted) {
         Path path = file(playerUuid);
         try {
