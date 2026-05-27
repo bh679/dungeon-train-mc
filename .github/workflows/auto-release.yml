@@ -64,6 +64,8 @@ jobs:
         id: decide
         env:
           STATE_FILE: .github/auto-release/state.json
+          AUTO_RELEASE_MODE: ${{ vars.AUTO_RELEASE_ENABLED }}
+          GH_TOKEN: ${{ github.token }}
         run: python3 scripts/auto-release/should-fire.py
 
       - name: Exit early if not firing
