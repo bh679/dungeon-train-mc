@@ -112,5 +112,13 @@
   "advancements.dungeontrain.editor.saved_package.title": "Packaged",
   "advancements.dungeontrain.editor.saved_package.description": "Save your authored content as a package.",
   "advancements.dungeontrain.editor.exported_package.title": "Ship It",
-  "advancements.dungeontrain.editor.exported_package.description": "Export a package zip ready to share."
+  "advancements.dungeontrain.editor.exported_package.description": "Export a package zip ready to share.",
+  "advancements.dungeontrain.editor.made_track.title": "Trackmaker",
+  "advancements.dungeontrain.editor.made_track.description": "Save a new track tile variant.",
+  "advancements.dungeontrain.editor.made_tunnel.title": "Tunnel Vision",
+  "advancements.dungeontrain.editor.made_tunnel.description": "Save a new tunnel variant.",
+  "advancements.dungeontrain.editor.made_pillar.title": "Pillar of the Community",
+  "advancements.dungeontrain.editor.made_pillar.description": "Save a new pillar section variant.",
+  "advancements.dungeontrain.editor.made_stair.title": "Step By Step",
+  "advancements.dungeontrain.editor.made_stair.description": "Save a new stair (pillar adjunct) variant."
 }

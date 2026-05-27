@@ -203,6 +203,8 @@ public final class TrackEditor {
         // clean on the next /dt editor unsaved-list query.
         captureSnapshot(overworld, origin, name, dims);
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_track");
         LOGGER.info("[DungeonTrain] Track editor save: {} -> tile/{} ({}x{}x{})",
             player.getName().getString(), name,
             TrackPlacer.TILE_LENGTH, TrackPlacer.HEIGHT, dims.width());
