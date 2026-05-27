@@ -4,6 +4,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
+import games.brennan.dungeontrain.client.version.LauncherDetector;
+import games.brennan.dungeontrain.client.version.VersionCheckState;
+import games.brennan.dungeontrain.client.version.VersionStatusButton;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import net.minecraft.Util;
@@ -64,6 +67,16 @@ public final class TitleScreenLayoutHandler {
         }
         LOGGER.info("TitleScreenLayout: Init.Post fired on TitleScreen@{}",
                 System.identityHashCode(titleScreen));
+
+        // Combined version label + release-check widget — top-left, the same
+        // spot the old VersionMenuOverlay used. Runs independently of the
+        // Editor/Discord reshuffle below so the version line still appears
+        // even if a third-party mod has already rewritten the menu. The
+        // LauncherDetector touch warms its cache so the detected source is
+        // logged early for diagnostics, not lazily on first click.
+        VersionCheckState.ensureChecked();
+        LauncherDetector.source();
+        event.addListener(new VersionStatusButton(4, 4));
 
         // Defensive: if the user bailed mid-world-load, the auto-open flag
         // would still be armed. Reaching the title screen means we have no
