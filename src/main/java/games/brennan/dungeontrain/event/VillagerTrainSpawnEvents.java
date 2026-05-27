@@ -25,9 +25,10 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Rerolls trade offers and randomizes the level (1-5) of villagers spawned
- * on the train with a profession. Sticky: a {@code dungeontrain_trades_rerolled}
- * tag is added after the first roll so chunk reloads don't re-roll.
+ * Rerolls trade offers and weighted-randomizes the level (1-5; 2-3 most common,
+ * 5 rare) of villagers spawned on the train with a profession. Sticky: a
+ * {@code dungeontrain_trades_rerolled} tag is added after the first roll so
+ * chunk reloads don't re-roll.
  *
  * <p>Hooks {@link EntityJoinLevelEvent} on the server side, filters to entities
  * carrying the {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX} tag (set
@@ -55,6 +56,15 @@ public final class VillagerTrainSpawnEvents {
 
     /** Listings sampled per level when regenerating offers (vanilla default). */
     private static final int OFFERS_PER_LEVEL = 2;
+
+    /**
+     * Per-level pick weights, indexed by {@code level - 1}. Sums to 100 so the
+     * table reads as percentages: L1 15%, L2 35%, L3 30%, L4 15%, L5 5%.
+     * The curve favours Apprentice/Journeyman trades and makes Master-tier
+     * (and the strongest enchanted-gear/mending trades it gates) genuinely rare.
+     */
+    private static final int[] LEVEL_WEIGHTS = {15, 35, 30, 15, 5};
+    private static final int TOTAL_WEIGHT = 100;
 
     private VillagerTrainSpawnEvents() {}
 
@@ -86,13 +96,28 @@ public final class VillagerTrainSpawnEvents {
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
         if (tradeMap == null) return;
 
-        int newLevel = villager.getRandom().nextInt(MAX_LEVEL) + 1;
+        int newLevel = pickLevel(villager.getRandom());
         villager.setVillagerData(data.setLevel(newLevel));
         villager.setOffers(generateOffersFor(villager, tradeMap, newLevel));
         villager.addTag(REROLLED_TAG);
 
         LOGGER.info("[DungeonTrain] Rerolled train villager: uuid={} profession={} level={}",
             villager.getUUID(), profession, newLevel);
+    }
+
+    /**
+     * Pick a villager level in {@code [1, MAX_LEVEL]} via a weighted cumulative
+     * scan over {@link #LEVEL_WEIGHTS}. Package-private for unit tests; the
+     * caller is responsible for passing a {@link RandomSource}.
+     */
+    static int pickLevel(RandomSource rng) {
+        int roll = rng.nextInt(TOTAL_WEIGHT);
+        int cumulative = 0;
+        for (int i = 0; i < LEVEL_WEIGHTS.length; i++) {
+            cumulative += LEVEL_WEIGHTS[i];
+            if (roll < cumulative) return i + 1;
+        }
+        return MAX_LEVEL;
     }
 
     private static boolean isOnTrain(Entity entity) {
