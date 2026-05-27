@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l1-a",
-      "label": "Corren - Letter 1 variant A (her chalk lines)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Mira,\n\nYour hands were always covered in chalk.\n\nYou drew lines on everything.\n\nYou said straight lines kept the world honest.\n\nYou believed it.\n\nI think I did too.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 1 variant A"
-    },
-    {
       "id": "corren-l1-b",
       "label": "Corren - Letter 1 variant B (her quiet laugh)",
       "type": "add_variant",
@@ -1103,6 +1086,11 @@
       "id": "pip-l5-b",
       "applied_at": "2026-05-19T11:07:42Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/pip_aaro_the_waiting_child.json"
+    },
+    {
+      "id": "corren-l1-a",
+      "applied_at": "2026-05-27T12:16:07Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
 }
