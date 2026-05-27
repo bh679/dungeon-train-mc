@@ -46,6 +46,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue ALL_SCALE;
     public static final ModConfigSpec.DoubleValue WORLDSPACE_CHANNEL;
     public static final ModConfigSpec.DoubleValue HUD_CHANNEL;
+    public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
+    public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -54,6 +56,8 @@ public final class ClientDisplayConfig {
         ALL_SCALE = pair.getLeft().allScale;
         WORLDSPACE_CHANNEL = pair.getLeft().worldspaceChannel;
         HUD_CHANNEL = pair.getLeft().hudChannel;
+        DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
+        DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
     }
 
     private ClientDisplayConfig() {}
@@ -70,7 +74,17 @@ public final class ClientDisplayConfig {
                 .comment("Base scale for 2D HUD overlays (top-left version line, editor status bar). Effective scale = hudChannel * allScale.")
                 .defineInRange("hudChannel", DEFAULT_HUD_CHANNEL, MIN_SCALE, MAX_SCALE);
         b.pop();
-        return new Holder(allScale, worldspaceChannel, hudChannel);
+
+        b.push("developerPopup");
+        ModConfigSpec.BooleanValue developerPopupShownBefore = b
+                .comment("Whether the developer welcome popup has been surfaced at least once on this install. Used to gate the \"Don't ask again\" button — it only appears on returning showings, not the first time.")
+                .define("shownBefore", false);
+        ModConfigSpec.BooleanValue developerPopupOptedOut = b
+                .comment("Whether the player has clicked \"Don't ask again\" on the developer welcome popup. When true, the popup is permanently suppressed regardless of play/quit cycles. Reset by manually editing this file back to false.")
+                .define("optedOut", false);
+        b.pop();
+
+        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut);
     }
 
     /**
@@ -148,9 +162,35 @@ public final class ClientDisplayConfig {
         return Math.round(value * 10.0) / 10.0;
     }
 
+    // ----- Developer welcome popup state -----
+
+    /** Has the popup been shown at least once on this install? */
+    public static boolean isDeveloperPopupShownBefore() {
+        return isLoaded() && DEVELOPER_POPUP_SHOWN_BEFORE.get();
+    }
+
+    public static void setDeveloperPopupShownBefore(boolean value) {
+        if (!isLoaded()) return;
+        DEVELOPER_POPUP_SHOWN_BEFORE.set(value);
+        DEVELOPER_POPUP_SHOWN_BEFORE.save();
+    }
+
+    /** Has the player permanently opted out of the popup? */
+    public static boolean isDeveloperPopupOptedOut() {
+        return isLoaded() && DEVELOPER_POPUP_OPTED_OUT.get();
+    }
+
+    public static void setDeveloperPopupOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        DEVELOPER_POPUP_OPTED_OUT.set(value);
+        DEVELOPER_POPUP_OPTED_OUT.save();
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
-            ModConfigSpec.DoubleValue hudChannel
+            ModConfigSpec.DoubleValue hudChannel,
+            ModConfigSpec.BooleanValue developerPopupShownBefore,
+            ModConfigSpec.BooleanValue developerPopupOptedOut
     ) {}
 }
