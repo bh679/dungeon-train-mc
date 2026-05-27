@@ -33,10 +33,29 @@ public final class NarrativeProgress {
     /**
      * Mark {@code letterIndex} (1-based) as read. Returns {@code true} when
      * this caused a state change (idempotent on repeat reads).
+     *
+     * <p>Use this for story-letter tracking (letters are authored 1-based in
+     * JSON). For 0-based variant tracking (random books, starting-book
+     * variants) use {@link #markSeen(int)} instead — this method's floor on
+     * {@code < 1} silently drops variant 0.</p>
      */
     public boolean markRead(int letterIndex) {
         if (letterIndex < 1) return false;
         return readLetters.add(letterIndex);
+    }
+
+    /**
+     * Mark {@code index} (0-based) as seen. Returns {@code true} when this
+     * caused a state change (idempotent on repeat marks). Rejects negative
+     * indices defensively — they don't appear at any current call site.
+     *
+     * <p>Use this for 0-based variant tracking (random-book variant indices,
+     * starting-book variant indices). For 1-based letter tracking use
+     * {@link #markRead(int)}.</p>
+     */
+    public boolean markSeen(int index) {
+        if (index < 0) return false;
+        return readLetters.add(index);
     }
 
     /** Remove every letter from the read set. */

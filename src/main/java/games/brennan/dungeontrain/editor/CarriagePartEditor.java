@@ -263,6 +263,11 @@ public final class CarriagePartEditor {
             throw new IOException("Part '" + kind.id() + ":" + name + "' is already registered.");
         }
 
+        // Track the source part's name so we can mirror its variant-blocks
+        // sidecar onto the new template after the structural copy lands.
+        // Null for BLANK (nothing to copy); populated for CURRENT/STANDARD.
+        String[] sourceNameHolder = new String[]{null};
+
         StructureTemplate seed = switch (source) {
             case BLANK -> null;
             case CURRENT -> {
@@ -278,6 +283,7 @@ public final class CarriagePartEditor {
                 if (srcOrigin == null) {
                     throw new IOException("Could not locate plot for source '" + kind.id() + ":" + loc.name() + "'.");
                 }
+                sourceNameHolder[0] = loc.name();
                 yield captureTemplate(overworld, srcOrigin, kind, dims);
             }
             case STANDARD -> {
@@ -289,9 +295,11 @@ public final class CarriagePartEditor {
                 if (stored.isEmpty()) {
                     throw new IOException("Standard " + kind.id() + " template '" + stdName + "' is missing on disk.");
                 }
+                sourceNameHolder[0] = stdName;
                 yield stored.get();
             }
         };
+        String sourceName = sourceNameHolder[0];
 
         // Allocate the next free slot before registering so the index lands at
         // the end of the list (allocation depends on registeredNames().size()).
@@ -309,6 +317,15 @@ public final class CarriagePartEditor {
 
         StructureTemplate captured = captureTemplate(overworld, targetOrigin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, captured);
+
+        // Mirror the source's variant-blocks sidecar onto the new template so
+        // the duplicate keeps the "pick from these alternatives per cell"
+        // authoring data — same shape as CarriageEditor.duplicate and
+        // CarriageContentsEditor.duplicate. Without this, the geometry copies
+        // but each cell loses its randomized-state list.
+        if (sourceName != null) {
+            copyVariantSidecar(kind, sourceName, name, dims);
+        }
 
         CarriageEditor.rememberReturn(player);
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
@@ -335,6 +352,33 @@ public final class CarriagePartEditor {
         if (names.contains("standard")) return "standard";
         if (names.isEmpty()) return null;
         return names.get(0);
+    }
+
+    /**
+     * Copy the variant-blocks sidecar from {@code sourceName} onto
+     * {@code targetName} so a "new part from current/standard" duplicate
+     * keeps the per-cell "pick from these alternatives" authoring data.
+     * No-op when the source sidecar is empty. Package-private for tests.
+     *
+     * <p>Mirrors the same logic baked inline into
+     * {@link CarriageEditor#duplicate} and
+     * {@link CarriageContentsEditor#duplicate}. Lock-id groupings are not
+     * carried across — the {@link CarriageVariantBlocks.Entry} record only
+     * exposes {@code (localPos, states)}, matching the precedent. A follow-up
+     * change can promote lockIds across all three duplicate paths together.
+     */
+    static void copyVariantSidecar(CarriagePartKind kind, String sourceName, String targetName, CarriageDims dims) throws IOException {
+        Vec3i partSize = kind.dims(dims);
+        CarriagePartVariantBlocks sourceSidecar =
+            CarriagePartVariantBlocks.loadFor(kind, sourceName, partSize);
+        if (sourceSidecar.isEmpty()) return;
+        CarriagePartVariantBlocks copy = CarriagePartVariantBlocks.empty();
+        for (CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
+            copy.put(e.localPos(), e.states());
+        }
+        copy.save(kind, targetName);
+        LOGGER.info("[DungeonTrain] Part editor copyVariantSidecar: {} entries copied from {}:{} to {}:{}",
+            sourceSidecar.size(), kind.id(), sourceName, kind.id(), targetName);
     }
 
     /**
@@ -372,6 +416,8 @@ public final class CarriagePartEditor {
 
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_carriage_part");
         LOGGER.info("[DungeonTrain] Part editor save: {} -> {}:{} template",
             player.getName().getString(), kind.id(), name);
 

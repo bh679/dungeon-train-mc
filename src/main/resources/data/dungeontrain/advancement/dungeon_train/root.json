@@ -1,0 +1,19 @@
+{
+  "display": {
+    "icon": { "id": "minecraft:minecart" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.root.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.root.description" },
+    "frame": "task",
+    "background": "minecraft:textures/gui/advancements/backgrounds/adventure.png",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "boarded": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "boarded" }
+    }
+  },
+  "requirements": [["boarded"]]
+}

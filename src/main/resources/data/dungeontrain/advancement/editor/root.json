@@ -1,0 +1,19 @@
+{
+  "display": {
+    "icon": { "id": "dungeontrain:variant_clipboard" },
+    "title": { "translate": "advancements.dungeontrain.editor.root.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.root.description" },
+    "frame": "task",
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "entered_editor": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "entered_editor" }
+    }
+  },
+  "requirements": [["entered_editor"]]
+}

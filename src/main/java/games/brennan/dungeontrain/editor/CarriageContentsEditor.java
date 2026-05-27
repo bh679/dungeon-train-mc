@@ -328,6 +328,8 @@ public final class CarriageContentsEditor {
             interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ()
         );
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "saved_contents_variant");
         LOGGER.info("[DungeonTrain] Contents editor save: {} -> {} template interior={}x{}x{}",
             player.getName().getString(), contents.id(),
             Math.max(0, dims.length() - 2), Math.max(0, dims.height() - 2), Math.max(0, dims.width() - 2));
@@ -390,6 +392,8 @@ public final class CarriageContentsEditor {
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_contents");
         LOGGER.info("[DungeonTrain] Contents editor createBlank: {} created '{}' at {}",
             player.getName().getString(), target.id(), targetOrigin);
         return targetOrigin;

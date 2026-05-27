@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/root",
+  "display": {
+    "icon": { "id": "minecraft:stone_brick_wall" },
+    "title": { "translate": "advancements.dungeontrain.editor.made_pillar.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.made_pillar.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "made_pillar" }
+    }
+  },
+  "requirements": [["action"]]
+}

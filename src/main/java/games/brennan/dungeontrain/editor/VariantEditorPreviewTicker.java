@@ -9,6 +9,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Half;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -142,24 +145,41 @@ public final class VariantEditorPreviewTicker {
      * Pure function: given a picked variant entry and the current preview
      * tick, return the BlockState to display in the world.
      * <ul>
-     *   <li>LOCK with a direction → that direction.</li>
+     *   <li>LOCK with a direction → that direction; HALF/SLAB_TYPE preserved.</li>
      *   <li>RANDOM → cycle 1Hz over directions valid for the block's
-     *       rotation property.</li>
+     *       rotation property, and cycle HALF/SLAB_TYPE so each direction
+     *       shows in both upright and upside-down form over one full
+     *       period (mirrors {@link RotationApplier#apply} in RANDOM mode).</li>
      *   <li>OPTIONS → cycle 1Hz over the intersection of the author's
-     *       selected dirs and the property-valid set.</li>
+     *       selected dirs and the property-valid set; HALF/SLAB_TYPE preserved.</li>
      *   <li>No rotation property OR mode RANDOM with no valid dirs →
-     *       return the base state unchanged.</li>
+     *       return the base state unchanged (slabs still flip via the
+     *       HALF/SLAB_TYPE pass when in RANDOM mode).</li>
      * </ul>
      */
     static BlockState computePreviewState(VariantState picked, long previewTick) {
         VariantRotation rot = picked.rotation();
         BlockState base = picked.state();
+        BlockState afterFacing = pickFacingPreview(rot, base, previewTick);
+        // RANDOM mode also cycles HALF / SLAB_TYPE so the editor preview
+        // shows the upside-down version too. LOCK/OPTIONS preserve the
+        // captured flip — author has explicit orientation control there.
+        if (rot.mode() == VariantRotation.Mode.RANDOM) {
+            return cycleFlipPreview(afterFacing, base, previewTick);
+        }
+        return afterFacing;
+    }
+
+    /**
+     * Direction-pick portion of {@link #computePreviewState} — extracted so
+     * the RANDOM branch can layer the flip cycle on top without re-flowing
+     * the early-return paths.
+     */
+    private static BlockState pickFacingPreview(VariantRotation rot, BlockState base, long previewTick) {
         int validMask = RotationApplier.validDirMask(base);
-        // Non-rotatable block: every mode degrades to "show base".
         if (validMask == VariantRotation.ALL_DIRS_MASK) {
-            // Either the block has FACING (all 6 valid) or no rotation
-            // property — distinguish via canRotate to avoid cycling
-            // a block that wouldn't actually change.
+            // No rotation property → no facing to cycle. The HALF/SLAB_TYPE
+            // pass (when in RANDOM mode) still flips slabs.
             if (!RotationApplier.canRotate(base)) return base;
         }
 
@@ -181,5 +201,34 @@ public final class VariantEditorPreviewTicker {
         if (options.isEmpty()) return base;
         int dirIdx = (int) (previewTick % options.size());
         return RotationApplier.applyDirection(base, options.get(dirIdx));
+    }
+
+    /**
+     * Cycle HALF / SLAB_TYPE between TOP and BOTTOM for the editor preview.
+     * Period = one full facing sweep (so each direction appears in both
+     * upright and flipped form over one cycle). For blocks with no facing
+     * (slabs), period = 2 ticks → 2 seconds at 1 Hz.
+     *
+     * <p>SLAB_TYPE only ever picks TOP or BOTTOM — never DOUBLE. Matches
+     * {@link RotationApplier#apply}'s flip pass at spawn time.</p>
+     */
+    static BlockState cycleFlipPreview(BlockState afterFacing, BlockState base, long previewTick) {
+        boolean hasHalf = afterFacing.hasProperty(BlockStateProperties.HALF);
+        boolean hasSlab = afterFacing.hasProperty(BlockStateProperties.SLAB_TYPE);
+        if (!hasHalf && !hasSlab) return afterFacing;
+
+        int numDirs = RotationApplier.canRotate(base)
+            ? Integer.bitCount(RotationApplier.validDirMask(base))
+            : 1;
+        boolean top = ((previewTick / numDirs) & 1L) != 0L;
+
+        BlockState out = afterFacing;
+        if (hasHalf) {
+            out = out.setValue(BlockStateProperties.HALF, top ? Half.TOP : Half.BOTTOM);
+        }
+        if (hasSlab) {
+            out = out.setValue(BlockStateProperties.SLAB_TYPE, top ? SlabType.TOP : SlabType.BOTTOM);
+        }
+        return out;
     }
 }

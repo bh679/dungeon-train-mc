@@ -102,6 +102,11 @@ public final class PackageCommand {
         if (result.success()) {
             source.sendSuccess(() -> Component.literal(result.message()).withStyle(ChatFormatting.GREEN), true);
             LOGGER.info("[DungeonTrain] /dungeontrain package save {} -> {}", name, result.message());
+            net.minecraft.server.level.ServerPlayer sp = source.getPlayer();
+            if (sp != null) {
+                games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                    .trigger(sp, "saved_package");
+            }
             return 1;
         }
         source.sendFailure(Component.literal(result.message()).withStyle(ChatFormatting.RED));

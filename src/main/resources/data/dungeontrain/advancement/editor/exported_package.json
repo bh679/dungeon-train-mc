@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/saved_package",
+  "display": {
+    "icon": { "id": "minecraft:writable_book" },
+    "title": { "translate": "advancements.dungeontrain.editor.exported_package.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.exported_package.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "exported_package" }
+    }
+  },
+  "requirements": [["action"]]
+}

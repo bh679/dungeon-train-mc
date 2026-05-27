@@ -42,6 +42,11 @@ public final class ExportCommand {
             UserContentExporter.Result result = UserContentExporter.export();
             Component message = formatSuccess(result);
             source.sendSuccess(() -> message, false);
+            net.minecraft.server.level.ServerPlayer sp = source.getPlayer();
+            if (sp != null) {
+                games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                    .trigger(sp, "exported_package");
+            }
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Export failed: {}", e.toString());

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/root",
+  "display": {
+    "icon": { "id": "minecraft:tube_coral_block" },
+    "title": { "translate": "advancements.dungeontrain.editor.made_tunnel.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.made_tunnel.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "made_tunnel" }
+    }
+  },
+  "requirements": [["action"]]
+}

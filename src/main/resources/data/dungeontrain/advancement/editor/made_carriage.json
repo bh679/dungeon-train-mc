@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/root",
+  "display": {
+    "icon": { "id": "minecraft:minecart" },
+    "title": { "translate": "advancements.dungeontrain.editor.made_carriage.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.made_carriage.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "made_carriage" }
+    }
+  },
+  "requirements": [["action"]]
+}
