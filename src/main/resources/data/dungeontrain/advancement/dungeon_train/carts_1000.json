@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:chest_minecart" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.carts_1000.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.carts_1000.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:carts_in_run",
+      "conditions": { "threshold": 1000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

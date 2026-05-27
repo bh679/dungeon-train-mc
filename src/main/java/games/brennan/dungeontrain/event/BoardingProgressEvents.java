@@ -102,6 +102,14 @@ public final class BoardingProgressEvents {
             int current = boarded.get(leader);
             int delta = current - data.lastLeaderCarriage();
             data.advance(delta, current);
+            // Tick the per-player carts-since-death counter so the
+            // carts_in_run advancement fires once the leader has actually
+            // traversed forward. Negative / zero deltas no-op inside the
+            // notify helper.
+            ServerPlayer leaderPlayer = level.getServer().getPlayerList().getPlayer(leader);
+            if (leaderPlayer != null) {
+                AchievementEvents.notifyCartAdvance(leaderPlayer, delta);
+            }
             leaderOffTrainScans = 0;
         } else if (leader != null) {
             // Leader exists but isn't in any AABB right now. Could be a

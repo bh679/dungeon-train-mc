@@ -88,6 +88,7 @@ public final class NarrativeBookEvents {
         if (changed) {
             LOGGER.info("[DungeonTrain] Narrative: world marked {} letter {} read (by {})",
                 id.storyBasename(), id.letterIndex(), player.getName().getString());
+            games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
         }
     }
 
@@ -137,6 +138,7 @@ public final class NarrativeBookEvents {
             data.markRandomBookSeen(id.basename(), id.variantIndex());
             LOGGER.info("[DungeonTrain] RandomBook: world marked {} variant {} seen (by {})",
                 id.basename(), id.variantIndex(), player.getName().getString());
+            games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
             RandomBookTag.markHeld(stack);
             return;
         }
@@ -154,6 +156,7 @@ public final class NarrativeBookEvents {
                 id.basename(), id.variantIndex(),
                 alt.get().book().basename(), alt.get().variantIndex(),
                 player.getName().getString());
+            games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
         }
         // Stamp held even when the pool is empty and we left the stack as-is
         // — the player still held it; subsequent drops should burn.
