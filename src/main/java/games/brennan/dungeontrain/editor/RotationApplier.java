@@ -6,6 +6,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.block.state.properties.Half;
+import net.minecraft.world.level.block.state.properties.SlabType;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -36,6 +38,15 @@ public final class RotationApplier {
     /** Mix constant differing from the state-picker's so rolls are independent. */
     private static final long ROT_SEED_SALT = 0x94D049BB133111EBL;
 
+    /**
+     * Mix constant for the upside-down flip roll on stairs / trapdoors
+     * ({@link BlockStateProperties#HALF}) and slabs
+     * ({@link BlockStateProperties#SLAB_TYPE}). Distinct from
+     * {@link #ROT_SEED_SALT} so flip rolls don't correlate with FACING rolls
+     * for the same block position.
+     */
+    private static final long FLIP_SEED_SALT = 0x2545F4914F6CDD1DL;
+
     private RotationApplier() {}
 
     /**
@@ -57,7 +68,28 @@ public final class RotationApplier {
         BlockState base, VariantRotation rot,
         BlockPos localPos, long worldSeed, int carriageIndex, int lockId
     ) {
-        if (rot == null || rot.isDefault()) return base;
+        if (rot == null) return base;
+        BlockState facingApplied = applyFacing(base, rot, localPos, worldSeed, carriageIndex, lockId);
+        // RANDOM mode (including the default NONE) also rolls HALF/SLAB_TYPE so
+        // stairs / trapdoors / slabs flip upside-down. LOCK and OPTIONS leave
+        // the captured flip value untouched — those modes mean "author has
+        // explicit control over orientation."
+        if (rot.mode() == VariantRotation.Mode.RANDOM) {
+            return randomizeFlip(facingApplied, localPos, worldSeed, carriageIndex, lockId);
+        }
+        return facingApplied;
+    }
+
+    /**
+     * The original facing-only pick. Extracted so {@link #apply} can layer the
+     * flip roll on top — keeps the determinism contract for facing
+     * unchanged and avoids re-flowing the early-return paths.
+     */
+    private static BlockState applyFacing(
+        BlockState base, VariantRotation rot,
+        BlockPos localPos, long worldSeed, int carriageIndex, int lockId
+    ) {
+        if (rot.isDefault()) return base;
         Rotatable rotatable = findRotatable(base);
         if (rotatable == null) return base;
 
@@ -286,5 +318,46 @@ public final class RotationApplier {
             ^ ROT_SEED_SALT;
         int idx = new Random(seed).nextInt(options.size());
         return options.get(idx);
+    }
+
+    /**
+     * In RANDOM mode, also flip the upside-down axis on blocks that expose
+     * one: {@link BlockStateProperties#HALF} (stairs, trapdoors) and
+     * {@link BlockStateProperties#SLAB_TYPE} (slabs).
+     *
+     * <p>SLAB_TYPE rolls between TOP and BOTTOM only — DOUBLE is never
+     * randomly selected. A captured DOUBLE slab demotes to TOP/BOTTOM here,
+     * which matches the "random orientation" intent (the author chose
+     * RANDOM, not "preserve special double-height"). Authors who need a
+     * stable DOUBLE slab should add it as a non-RANDOM variant.
+     *
+     * <p>Uses a separate {@link #FLIP_SEED_SALT} so the flip roll is
+     * statistically independent of the facing roll for the same block —
+     * stairs spawn evenly across all (facing × half) combinations.
+     */
+    private static BlockState randomizeFlip(BlockState state, BlockPos localPos,
+                                            long worldSeed, int carriageIndex, int lockId) {
+        if (state == null) return null;
+        boolean hasHalf = state.hasProperty(BlockStateProperties.HALF);
+        boolean hasSlab = state.hasProperty(BlockStateProperties.SLAB_TYPE);
+        if (!hasHalf && !hasSlab) return state;
+
+        long posOrLock = lockId > 0
+            ? (long) lockId * 0xBF58476D1CE4E5B9L
+            : (((long) localPos.getX() * 31L + localPos.getY()) * 31L + localPos.getZ()) * 0xBF58476D1CE4E5B9L;
+        long seed = worldSeed
+            ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
+            ^ posOrLock
+            ^ FLIP_SEED_SALT;
+        boolean top = new Random(seed).nextBoolean();
+
+        BlockState out = state;
+        if (hasHalf) {
+            out = out.setValue(BlockStateProperties.HALF, top ? Half.TOP : Half.BOTTOM);
+        }
+        if (hasSlab) {
+            out = out.setValue(BlockStateProperties.SLAB_TYPE, top ? SlabType.TOP : SlabType.BOTTOM);
+        }
+        return out;
     }
 }
