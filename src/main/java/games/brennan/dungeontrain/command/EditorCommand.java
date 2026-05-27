@@ -3708,6 +3708,30 @@ public final class EditorCommand {
             source.sendFailure(Component.literal("Save failed: " + e.getMessage()));
             return 0;
         }
+
+        // Mirror the source variant's variant-blocks sidecar onto the new
+        // variant so the duplicate keeps the per-cell "pick from these
+        // alternatives" authoring data. Same shape as CarriageEditor.duplicate
+        // and CarriageContentsEditor.duplicate. No-op when the source has no
+        // sidecar (e.g. duplicating the synthetic "default").
+        try {
+            net.minecraft.core.Vec3i expectedSize = kind.dims(dims);
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks sourceSidecar =
+                games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, sourceName, expectedSize);
+            if (!sourceSidecar.isEmpty()) {
+                games.brennan.dungeontrain.track.variant.TrackVariantBlocks copy =
+                    games.brennan.dungeontrain.track.variant.TrackVariantBlocks.empty();
+                for (games.brennan.dungeontrain.editor.CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
+                    copy.put(e.localPos(), e.states());
+                }
+                copy.save(kind, key);
+            }
+        } catch (java.io.IOException e) {
+            source.sendFailure(Component.literal(
+                "Variant sidecar copy failed: " + e.getMessage()).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+
         games.brennan.dungeontrain.track.variant.TrackVariantRegistry.register(kind, key);
         restampPlotForKind(overworld, kind, dims);
         teleportToPlot(player, overworld, kind, key, dims);
