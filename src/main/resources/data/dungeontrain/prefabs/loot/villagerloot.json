@@ -2,10 +2,11 @@
   "schemaVersion": 4,
   "block": "minecraft:chest",
   "category": "loot",
+  "fillMin": 1,
   "fillMax": 6,
   "entries": [
-    { "id": "minecraft:emerald", "count": 20, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:emerald_block", "count": 5, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:emerald", "count": 8, "weight": 38, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:emerald_block", "count": 2, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "dungeontrain:random_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:bread", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:white_bed", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },

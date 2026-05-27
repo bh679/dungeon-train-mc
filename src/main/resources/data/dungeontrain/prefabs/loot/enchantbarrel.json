@@ -2,11 +2,12 @@
   "schemaVersion": 4,
   "block": "minecraft:barrel",
   "category": "loot",
+  "fillMin": 1,
   "fillMax": 6,
   "entries": [
     { "id": "minecraft:book", "count": 4, "weight": 10, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 10 },
     { "id": "minecraft:experience_bottle", "count": 20, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:lapis_lazuli", "count": 15, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:lapis_lazuli", "count": 15, "weight": 7, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:lapis_block", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:paper", "count": 3, "weight": 25, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:leather", "count": 6, "weight": 7, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
