@@ -171,6 +171,38 @@ public final class AchievementEvents {
         if (allStoriesRead(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
         }
+        if (allStartingBooksSeen(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_starting_books");
+        }
+    }
+
+    /**
+     * True when every variant of every starting book registered in
+     * {@link games.brennan.dungeontrain.narrative.StartingBookRegistry}
+     * has been marked seen. Drives the {@code inter_dimensional_passenger}
+     * milestone — the player has received every possible starting book
+     * across enough respawn / login strikes.
+     */
+    private static boolean allStartingBooksSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
+        java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames();
+        if (all.isEmpty()) return false;
+        java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
+            data.startingBookSeenSnapshot();
+        for (String basename : all) {
+            var bookOpt = games.brennan.dungeontrain.narrative.StartingBookRegistry.getByBasename(basename);
+            if (bookOpt.isEmpty()) return false;
+            int total = bookOpt.get().variants().size();
+            if (total == 0) continue;
+            games.brennan.dungeontrain.narrative.NarrativeProgress p =
+                snapshot.getOrDefault(basename, new games.brennan.dungeontrain.narrative.NarrativeProgress());
+            // Variant indices are 0-based and the NarrativeProgress.markRead
+            // variant-0 fix landed in PR #290, so the full 0..total-1 range
+            // must be in the seen-set for completion.
+            for (int i = 0; i < total; i++) {
+                if (!p.readLetters().contains(i)) return false;
+            }
+        }
+        return true;
     }
 
     /**

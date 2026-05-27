@@ -563,6 +563,10 @@ public final class StartingBookEvents {
             NarrativeProgressData.get(overworld).markStartingBookReceived(player.getUUID());
         }
         PlayerPlayedMarker.markPlayed(player.getUUID());
+        // The strike just marked a starting-book variant as seen (inside
+        // rollForRespawn). Re-evaluate the all-starting-books milestone —
+        // vanilla advancement dedupe ensures one-grant semantics.
+        games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
 
         LOGGER.info("[DungeonTrain] StartingBook: lightning strike for {} ({}) ctx={} at ({}, {}, {}) color=({}, {}, {})",
             player.getName().getString(), player.getUUID(), context,
