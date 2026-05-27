@@ -1,0 +1,14 @@
+{
+  "id": "corren_vale_three_heads",
+  "character": "Corren Vale",
+  "story": "Three Heads",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "Mira,\n\nYour hands were always covered in chalk.\n\nYou drew lines on everything.\n\nYou said straight lines kept the world honest.\n\nYou believed it.\n\nI think I did too.\n\n- Corren"
+      ]
+    }
+  ]
+}

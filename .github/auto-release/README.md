@@ -31,6 +31,23 @@ Anchored on the timestamp of the last real release:
 Each fire bumps **PATCH only** (`0.193.0` → `0.193.1` → `0.193.2`…). A new real release
 resets the anchor and starts the cascade over.
 
+### Sibling-pending override
+
+While AIN or AIS has a GitHub release that DT is behind on, the cascade pins to
+**phase A (hourly)** regardless of elapsed time since the anchor — siblings ship
+updates fast, and we want them in the bundled jar without sitting in B/C cadence
+for hours. The override is filtered by [cascade mode](#cascade-modes): in
+`mode=ain` only AIN-pending pins hourly, in `mode=ais` only AIS, in `always` and
+`with-content` either sibling triggers it.
+
+The **14-day stopped cap still wins** — after 14d the cascade stops even if
+siblings remain behind. The next real release re-anchors the schedule and the
+override resumes governing cadence.
+
+Transient failures (network, malformed release, missing `gradle.properties`)
+fall through to time-based phasing — the cascade is never falsely pinned to
+hourly on a flaky `gh release list` call.
+
 ## Files
 
 - `queue.json` — `{ pending: [...], applied: [...] }`. The workflow pops `pending[0]`,
