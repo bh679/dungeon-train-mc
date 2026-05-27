@@ -11,18 +11,29 @@ Phases (anchored on last real release):
   C — daily:      h in (28, 336], interval 24h
   stopped:        h > 336 (14d)
 
+Sibling-pending override: when AIN or AIS (filtered by AUTO_RELEASE_MODE)
+has a GitHub release that DT is behind on, the cascade pins to phase A
+(hourly) regardless of elapsed time. The 14d stopped boundary still wins
+— after 14d the cascade stops even if siblings remain behind.
+
 Writes outputs in GitHub Actions step output format (key=value) to stdout
 AND to $GITHUB_OUTPUT if set.
 
 Env overrides (for testing):
-  STATE_FILE   default: .github/auto-release/state.json
-  NOW_EPOCH    default: current UTC epoch
+  STATE_FILE              default: .github/auto-release/state.json
+  GRADLE_PROPERTIES_FILE  default: gradle.properties
+  AUTO_RELEASE_MODE       default: always
+  AIN_RELEASES_OVERRIDE   default: unset; JSON array of {tagName: "v..."}
+  AIS_RELEASES_OVERRIDE   default: unset; same shape
+  NOW_EPOCH               default: current UTC epoch
 """
 import json
 import os
 import sys
 import time
 from datetime import datetime, timezone
+
+from siblings import parse_mode, pending_sibling_update
 
 STATE_FILE = os.environ.get("STATE_FILE", ".github/auto-release/state.json")
 
@@ -84,32 +95,48 @@ def main():
                      reason=f"anchor is in the future (h={h:.2f})")
         return 0
 
-    phase = interval = None
-    for name, upper_h, ival in PHASES:
-        if h <= upper_h:
-            phase, interval = name, ival
-            break
-
-    if phase is None:
+    # 14d stopped boundary wins over sibling override — bounded cascade lifetime.
+    if h > PHASES[-1][1]:
         write_output(fire="false", phase="stopped",
                      reason=f"cascade window elapsed (h={h:.2f} > 336)")
         return 0
+
+    # Sibling-pending override: pin to phase A while AIN/AIS (filtered by mode)
+    # has a release DT is behind on.
+    mode = parse_mode()
+    pending = pending_sibling_update(mode)
+    override_note = None
+    if pending is not None:
+        phase, interval = "A", 3600
+        override_note = f"{pending} update pending"
+    else:
+        phase = interval = None
+        for name, upper_h, ival in PHASES:
+            if h <= upper_h:
+                phase, interval = name, ival
+                break
 
     last_fire = parse_iso(state.get("last_auto_release_at"))
     threshold = int(interval * THRESHOLD_FACTOR)
 
     if last_fire is None:
-        write_output(fire="true", phase=phase,
-                     reason=f"first fire in phase {phase} (h={h:.2f})")
+        reason = f"first fire in phase {phase} (h={h:.2f})"
+        if override_note:
+            reason = f"{override_note}; {reason}"
+        write_output(fire="true", phase=phase, reason=reason)
         return 0
 
     elapsed = now - last_fire
     if elapsed >= threshold:
-        write_output(fire="true", phase=phase,
-                     reason=f"phase {phase}: elapsed={elapsed}s >= threshold={threshold}s")
+        reason = f"phase {phase}: elapsed={elapsed}s >= threshold={threshold}s"
+        if override_note:
+            reason = f"{override_note}; {reason}"
+        write_output(fire="true", phase=phase, reason=reason)
     else:
-        write_output(fire="false", phase=phase,
-                     reason=f"phase {phase}: elapsed={elapsed}s < threshold={threshold}s")
+        reason = f"phase {phase}: elapsed={elapsed}s < threshold={threshold}s"
+        if override_note:
+            reason = f"{override_note}; {reason}"
+        write_output(fire="false", phase=phase, reason=reason)
     return 0
 
 
