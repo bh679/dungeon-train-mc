@@ -364,6 +364,8 @@ public final class CarriageEditor {
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, dims);
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_carriage");
         LOGGER.info("[DungeonTrain] Editor createBlank: {} created '{}' at {}",
             player.getName().getString(), target.id(), targetOrigin);
         return targetOrigin;

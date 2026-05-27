@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/made_contents",
+  "display": {
+    "icon": { "id": "minecraft:trapped_chest" },
+    "title": { "translate": "advancements.dungeontrain.editor.made_contents_variant.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.made_contents_variant.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "made_contents_variant" }
+    }
+  },
+  "requirements": [["action"]]
+}

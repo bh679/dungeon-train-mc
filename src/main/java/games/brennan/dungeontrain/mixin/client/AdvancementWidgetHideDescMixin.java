@@ -67,7 +67,11 @@ public abstract class AdvancementWidgetHideDescMixin {
         if (advancementNode == null) return false;
         ResourceLocation id = advancementNode.holder().id();
         if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return false;
-        if (id.getPath().endsWith("/root")) return false;
+        String path = id.getPath();
+        if (path.endsWith("/root")) return false;
+        // Editor tab: descriptions stay visible — they document the
+        // editor's capabilities and double as discoverability hints.
+        if (path.startsWith("editor/")) return false;
         // Earned → reveal.
         return progress == null || !progress.isDone();
     }

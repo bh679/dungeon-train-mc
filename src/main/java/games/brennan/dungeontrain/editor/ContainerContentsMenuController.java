@@ -557,6 +557,12 @@ public final class ContainerContentsMenuController {
                 plot.key(), e.toString());
             actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
         }
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "used_contents_variant");
+        if (packet.op() == ContainerContentsEditPacket.Op.ADD) {
+            games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                .trigger(player, "made_contents_variant");
+        }
 
         // Re-roll the local chest so the edit takes visible effect immediately.
         // The linked-template path re-rolls via ContainerContentsLinkPropagator;

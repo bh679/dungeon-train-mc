@@ -31,6 +31,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<StorySetCompletedTrigger> STORY_SET_COMPLETED =
         TRIGGERS.register("story_set_completed", StorySetCompletedTrigger::new);
 
+    public static final Supplier<EditorActionTrigger> EDITOR_ACTION =
+        TRIGGERS.register("editor_action", EditorActionTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/used_block_variant",
+  "display": {
+    "icon": { "id": "minecraft:iron_bars" },
+    "title": { "translate": "advancements.dungeontrain.editor.used_block_variant_lock.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.used_block_variant_lock.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "used_block_variant_lock" }
+    }
+  },
+  "requirements": [["action"]]
+}
