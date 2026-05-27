@@ -5,14 +5,15 @@
     "description": { "translate": "advancements.dungeontrain.editor.root.description" },
     "frame": "task",
     "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
-    "show_toast": false,
-    "announce_to_chat": false,
+    "show_toast": true,
+    "announce_to_chat": true,
     "hidden": false
   },
   "criteria": {
-    "tick": {
-      "trigger": "minecraft:tick"
+    "entered_editor": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "entered_editor" }
     }
   },
-  "requirements": [["tick"]]
+  "requirements": [["entered_editor"]]
 }

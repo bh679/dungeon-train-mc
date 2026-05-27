@@ -5,8 +5,8 @@
     "description": { "translate": "advancements.dungeontrain.dungeon_train.root.description" },
     "frame": "task",
     "background": "minecraft:textures/gui/advancements/backgrounds/adventure.png",
-    "show_toast": false,
-    "announce_to_chat": false,
+    "show_toast": true,
+    "announce_to_chat": true,
     "hidden": false
   },
   "criteria": {
