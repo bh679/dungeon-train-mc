@@ -18,7 +18,8 @@
     "client.CreativeModeInventoryScreenAccessor",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
-    "client.LevelLoadingScreenProgressMixin"
+    "client.LevelLoadingScreenProgressMixin",
+    "client.AdvancementsScreenAccessor"
   ],
   "server": [],
   "injectors": {
