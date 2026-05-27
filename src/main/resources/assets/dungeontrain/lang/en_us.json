@@ -67,6 +67,7 @@
   "subtitles.dungeontrain.train_engine": "Train engine chugs",
   "block.dungeontrain.narrative_lectern": "Narrative Lectern",
 
+  "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.dungeon_train.root.title": "Dungeon Train",
   "advancements.dungeontrain.dungeon_train.root.description": "All aboard.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Bottomless Compartments",
