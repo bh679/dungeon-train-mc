@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
+import games.brennan.dungeontrain.client.menu.PulsingDiscordButton;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -107,9 +109,17 @@ public final class TitleScreenLayoutHandler {
                 EDITOR_LABEL, b -> openEditor(titleScreen));
         event.addListener(editor);
 
-        Button discord = Button.builder(DISCORD_LABEL, b -> openDiscord(titleScreen))
-                .bounds(slotX + halfW + GAP, slotY, halfW, slotH)
-                .build();
+        // If the player opted out of the developer welcome popup, keep the
+        // Discord affordance gently visible via a pulsing blue border —
+        // they can still find their way to the channel without being
+        // re-prompted by a modal.
+        boolean optedOut = ClientDisplayConfig.isDeveloperPopupOptedOut();
+        Button discord = optedOut
+                ? new PulsingDiscordButton(slotX + halfW + GAP, slotY, halfW, slotH,
+                        DISCORD_LABEL, b -> openDiscord(titleScreen))
+                : Button.builder(DISCORD_LABEL, b -> openDiscord(titleScreen))
+                        .bounds(slotX + halfW + GAP, slotY, halfW, slotH)
+                        .build();
         event.addListener(discord);
     }
 
