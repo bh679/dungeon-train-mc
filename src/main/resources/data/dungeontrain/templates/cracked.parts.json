@@ -9,7 +9,13 @@
   "walls": [
     {
       "name": "cracked",
-      "weight": 1
+      "weight": 1,
+      "sideMode": "either"
+    },
+    {
+      "name": "broken",
+      "weight": 1,
+      "sideMode": "either"
     }
   ],
   "roof": [
@@ -21,7 +27,13 @@
   "doors": [
     {
       "name": "cracked",
-      "weight": 1
+      "weight": 10,
+      "sideMode": "either"
+    },
+    {
+      "name": "broken",
+      "weight": 1,
+      "sideMode": "either"
     }
   ]
 }
