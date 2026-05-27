@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:chest" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.chests_100_unique.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.chests_100_unique.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:unique_chests_opened",
+      "conditions": { "threshold": 100 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

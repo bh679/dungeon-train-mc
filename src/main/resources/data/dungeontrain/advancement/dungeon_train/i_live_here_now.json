@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/settling_in",
+  "display": {
+    "icon": { "id": "minecraft:painting" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.i_live_here_now.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.i_live_here_now.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:train_time",
+      "conditions": { "thresholdTicks": 1728000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

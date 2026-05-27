@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
@@ -94,6 +95,23 @@ public final class BoardingProgressEvents {
             if (pIdx != null) boarded.put(player.getUUID(), pIdx);
         }
 
+        // Cumulative time-on-train: every boarded player accrues
+        // SCAN_PERIOD_TICKS into their global stats. Drives the train-time
+        // advancement tier (2h / 10h / 24h). Also fires the "boarded"
+        // signal that unlocks the Dungeon Train tab's root advancement
+        // (All aboard) — first boarding earns the tab.
+        if (!boarded.isEmpty()) {
+            for (UUID uuid : boarded.keySet()) {
+                long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
+                ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
+                if (p != null) {
+                    AchievementEvents.notifyTrainTime(p, newTotal);
+                    games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                        .trigger(p, "boarded");
+                }
+            }
+        }
+
         BoardingProgressData data = BoardingProgressData.get(level);
         UUID leader = data.activeLeaderUUID();
 
@@ -102,6 +120,14 @@ public final class BoardingProgressEvents {
             int current = boarded.get(leader);
             int delta = current - data.lastLeaderCarriage();
             data.advance(delta, current);
+            // Tick the per-player carts-since-death counter so the
+            // carts_in_run advancement fires once the leader has actually
+            // traversed forward. Negative / zero deltas no-op inside the
+            // notify helper.
+            ServerPlayer leaderPlayer = level.getServer().getPlayerList().getPlayer(leader);
+            if (leaderPlayer != null) {
+                AchievementEvents.notifyCartAdvance(leaderPlayer, delta);
+            }
             leaderOffTrainScans = 0;
         } else if (leader != null) {
             // Leader exists but isn't in any AABB right now. Could be a

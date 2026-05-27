@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:editor/used_contents_variant",
+  "display": {
+    "icon": { "id": "minecraft:shulker_box" },
+    "title": { "translate": "advancements.dungeontrain.editor.saved_contents_variant.title" },
+    "description": { "translate": "advancements.dungeontrain.editor.saved_contents_variant.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": { "actionId": "saved_contents_variant" }
+    }
+  },
+  "requirements": [["action"]]
+}

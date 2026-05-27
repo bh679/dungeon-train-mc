@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:clock" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.enjoying_the_ride.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.enjoying_the_ride.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:train_time",
+      "conditions": { "thresholdTicks": 144000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

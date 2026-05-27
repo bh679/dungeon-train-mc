@@ -218,6 +218,8 @@ public final class BlockVariantMenuController {
         // states-list mutation pipeline since it doesn't touch states.
         if (packet.op() == BlockVariantEditPacket.Op.CYCLE_LOCK_ID) {
             cycleLockId(player, plot, localPos);
+            games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                .trigger(player, "used_block_variant_lock");
             return;
         }
         if (packet.op() == BlockVariantEditPacket.Op.COPY) {
@@ -455,6 +457,8 @@ public final class BlockVariantMenuController {
             actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
             // Fall through — still re-sync so the client reflects committed state.
         }
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "used_block_variant");
 
         // CLEAR / REMOVE-to-empty drop the cell, which also drops its
         // lockId (CarriageVariantBlocks.remove). Refresh the all-faces

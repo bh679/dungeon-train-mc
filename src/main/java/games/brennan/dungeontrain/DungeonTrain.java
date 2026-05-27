@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
@@ -42,6 +44,11 @@ public class DungeonTrain {
         ModFeatures.register(modBus);
         ModMobEffects.register(modBus);
         ModSounds.register(modBus);
+
+        // Global achievements (advancements) — custom criterion triggers
+        // + per-player run-state attachment.
+        ModAdvancementTriggers.register(modBus);
+        ModDataAttachments.register(modBus);
 
         modContainer.registerConfig(
                 ModConfig.Type.SERVER,

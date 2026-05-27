@@ -252,6 +252,8 @@ public final class TunnelEditor {
         // Refresh the dirty-check baseline.
         captureTunnelSnapshot(overworld, origin, variant, name);
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_tunnel");
         LOGGER.info("[DungeonTrain] Editor save: {} -> tunnel_{}/{} template",
             player.getName().getString(),
             variant.name().toLowerCase(java.util.Locale.ROOT), name);

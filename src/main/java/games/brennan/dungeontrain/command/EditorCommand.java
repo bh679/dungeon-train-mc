@@ -1487,6 +1487,8 @@ public final class EditorCommand {
     private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "entered_editor");
 
         if (category == EditorCategory.ARCHITECTURE) {
             source.sendSuccess(() -> Component.literal(
@@ -1716,6 +1718,8 @@ public final class EditorCommand {
     private static int runEnterCarriage(CommandSourceStack source, CarriageVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "entered_editor");
         try {
             CarriageEditor.enter(player, variant);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
@@ -1736,6 +1740,8 @@ public final class EditorCommand {
     private static int runEnterTunnel(CommandSourceStack source, TunnelVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "entered_editor");
         try {
             TunnelEditor.enter(player, variant);
             source.sendSuccess(() -> Component.literal(

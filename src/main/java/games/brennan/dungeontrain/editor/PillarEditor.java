@@ -252,6 +252,8 @@ public final class PillarEditor {
         // Refresh the dirty-check baseline.
         captureSectionSnapshot(overworld, origin, section, name, dims);
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_pillar");
         LOGGER.info("[DungeonTrain] Pillar editor save: {} -> {}/{} (1x{}x{})",
             player.getName().getString(), section.id(), name,
             section.height(), dims.width());
@@ -433,6 +435,8 @@ public final class PillarEditor {
         // Refresh the dirty-check baseline.
         captureAdjunctSnapshot(overworld, origin, adjunct, name);
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_stair");
         LOGGER.info("[DungeonTrain] Pillar editor save adjunct: {} -> {}/{} ({}x{}x{})",
             player.getName().getString(), adjunct.id(), name,
             adjunct.xSize(), adjunct.ySize(), adjunct.zSize());

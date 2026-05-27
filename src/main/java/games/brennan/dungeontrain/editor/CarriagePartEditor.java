@@ -416,6 +416,8 @@ public final class CarriagePartEditor {
 
         PART_SESSIONS.put(player.getUUID(), new PartSession(kind, name));
 
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "made_carriage_part");
         LOGGER.info("[DungeonTrain] Part editor save: {} -> {}:{} template",
             player.getName().getString(), kind.id(), name);
 
