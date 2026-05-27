@@ -91,6 +91,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_LOOT_PREFAB = "lp";
     /** Per-entry entity id (v7 schema, mob entries). Absent for block entries. */
     private static final String NBT_ENTITY_ID = "eid";
+    /** Per-entry half-mode ordinal (slabs / stairs / trapdoors). Absent when default RANDOM. */
+    private static final String NBT_HALF_MODE = "hm";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -262,6 +264,9 @@ public final class VariantClipboardItem extends Item {
             if (s.linkedLootPrefabId() != null) {
                 entry.putString(NBT_LOOT_PREFAB, s.linkedLootPrefabId());
             }
+            if (!s.half().isDefault()) {
+                entry.putByte(NBT_HALF_MODE, (byte) s.half().mode().ordinal());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -353,6 +358,15 @@ public final class VariantClipboardItem extends Item {
             }
             CompoundTag beNbt = entry.contains(NBT_BENBT, Tag.TAG_COMPOUND)
                 ? entry.getCompound(NBT_BENBT) : null;
+            games.brennan.dungeontrain.editor.VariantHalf half = games.brennan.dungeontrain.editor.VariantHalf.NONE;
+            if (entry.contains(NBT_HALF_MODE, Tag.TAG_BYTE)) {
+                int ord = entry.getByte(NBT_HALF_MODE) & 0xFF;
+                games.brennan.dungeontrain.editor.VariantHalf.Mode[] modes =
+                    games.brennan.dungeontrain.editor.VariantHalf.Mode.values();
+                if (ord >= 0 && ord < modes.length) {
+                    half = new games.brennan.dungeontrain.editor.VariantHalf(modes[ord]);
+                }
+            }
             // v7 mob entry: presence of NBT_ENTITY_ID drives the mob branch.
             if (entry.contains(NBT_ENTITY_ID, Tag.TAG_STRING)) {
                 String eidStr = entry.getString(NBT_ENTITY_ID);
@@ -361,7 +375,7 @@ public final class VariantClipboardItem extends Item {
                     LOGGER.warn("[DungeonTrain] VariantClipboard: skipping bad entity id '{}'", eidStr);
                     continue;
                 }
-                out.add(VariantState.ofMob(eid, beNbt, weight, rotation));
+                out.add(VariantState.ofMob(eid, beNbt, weight, rotation).withHalf(half));
                 continue;
             }
             String stateStr = entry.getString(NBT_STATE);
@@ -379,7 +393,7 @@ public final class VariantClipboardItem extends Item {
                 String raw = entry.getString(NBT_LOOT_PREFAB);
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
-            out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab));
+            out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half));
         }
         return out;
     }

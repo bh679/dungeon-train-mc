@@ -61,6 +61,7 @@ public final class BlockVariantMenu {
         ENTRY_REMOVE_X,
         ENTRY_ROT_MODE,
         ENTRY_ROT_DIRS,
+        ENTRY_HALF_MODE,
         ROT_DIR_OPTION,
         SEARCH_FIELD,
         SEARCH_RESULT,

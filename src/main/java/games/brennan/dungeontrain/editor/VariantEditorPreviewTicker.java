@@ -161,13 +161,35 @@ public final class VariantEditorPreviewTicker {
         VariantRotation rot = picked.rotation();
         BlockState base = picked.state();
         BlockState afterFacing = pickFacingPreview(rot, base, previewTick);
-        // RANDOM mode also cycles HALF / SLAB_TYPE so the editor preview
-        // shows the upside-down version too. LOCK/OPTIONS preserve the
-        // captured flip — author has explicit orientation control there.
+        VariantHalf half = picked.half();
+        // Explicit TOP/BOTTOM always wins — author has authored a fixed
+        // orientation, show it directly.
+        if (half.mode() == VariantHalf.Mode.TOP) return applyHalfPreview(afterFacing, true);
+        if (half.mode() == VariantHalf.Mode.BOTTOM) return applyHalfPreview(afterFacing, false);
+        // halfMode == RANDOM (default). For backwards-compat with v7
+        // semantics, gate the flip cycle on the rotation mode: only cycle
+        // when facing is also RANDOM. LOCK / OPTIONS preserve captured HALF
+        // — matches the spawn-time legacy applier and the historical
+        // editor preview.
         if (rot.mode() == VariantRotation.Mode.RANDOM) {
             return cycleFlipPreview(afterFacing, base, previewTick);
         }
         return afterFacing;
+    }
+
+    /**
+     * Force a specific half ({@code top} = TOP, otherwise BOTTOM) on the
+     * preview state. No-op for blocks without HALF/SLAB_TYPE.
+     */
+    private static BlockState applyHalfPreview(BlockState afterFacing, boolean top) {
+        BlockState out = afterFacing;
+        if (afterFacing.hasProperty(BlockStateProperties.HALF)) {
+            out = out.setValue(BlockStateProperties.HALF, top ? Half.TOP : Half.BOTTOM);
+        }
+        if (afterFacing.hasProperty(BlockStateProperties.SLAB_TYPE)) {
+            out = out.setValue(BlockStateProperties.SLAB_TYPE, top ? SlabType.TOP : SlabType.BOTTOM);
+        }
+        return out;
     }
 
     /**

@@ -115,7 +115,17 @@ public final class CarriageVariantBlocks {
      *       distance gate). The {@code state} field is omitted from JSON
      *       for mob entries (the schema infers the AIR sentinel). v6
      *       entries load with {@code entityId == null} and re-save
-     *       diff-clean.</li>
+     *       diff-clean.
+     *       <p>v7 also gained an additive (no schema bump) optional
+     *       {@code "half"} field: {@code "top" | "random" | "bottom"} for
+     *       blocks with {@code SLAB_TYPE} or {@code HALF} (slabs, stairs,
+     *       trapdoors). When absent, the value is derived from the captured
+     *       state + rotation mode: LOCK preserves captured half (TOP or
+     *       BOTTOM), RANDOM rolls TOP/BOTTOM (matching the historical
+     *       {@code randomizeFlip} call). Unknown values silently coerce to
+     *       {@code random}. The {@code "double"} half — used by full-height
+     *       slabs — is not representable; capture a DOUBLE slab as a
+     *       separate variant with the field omitted.</p></li>
      * </ul>
      */
     public static final int CURRENT_SCHEMA_VERSION = 7;
@@ -363,7 +373,13 @@ public final class CarriageVariantBlocks {
                     mobWeight = rawW < 1 ? 1 : rawW;
                 }
                 VariantRotation mobRot = parseRotation(obj.get("rotation"), contextId, contextPos);
-                return VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
+                // Mob entries never have SLAB_TYPE / HALF (the state is the
+                // COMMAND_BLOCK sentinel), but parse the field for round-trip
+                // fidelity in case future schema lets mobs carry it.
+                VariantHalf mobHalf = parseHalf(obj.get("half"), contextId, contextPos);
+                if (mobHalf == null) mobHalf = VariantHalf.NONE;
+                VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
+                return mob.withHalf(mobHalf);
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -396,10 +412,19 @@ public final class CarriageVariantBlocks {
                 String raw = obj.get("lootPrefab").getAsString().trim();
                 if (!raw.isEmpty()) lootPrefab = raw;
             }
+            // v7 additive field — null when the entry predates "half" or the
+            // field is malformed. migrateHalfFromRotation derives the value
+            // from the captured state + rotation mode so historical prefabs
+            // spawn identically (LOCK preserves captured half, RANDOM keeps
+            // rolling).
+            VariantHalf parsedHalf = parseHalf(obj.get("half"), contextId, contextPos);
+            VariantHalf half = parsedHalf != null
+                ? parsedHalf
+                : migrateHalfFromRotation(base.state(), rotation);
             // v3 entries had a per-entry "locked" field; v4 moved locking
             // to the cell level. Old "locked" values are silently dropped
             // on read — the file rewrites cleanly without it.
-            return new VariantState(base.state(), nbt, weight, rotation, lootPrefab);
+            return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -914,6 +939,9 @@ public final class CarriageVariantBlocks {
                 sb.append(", \"rotation\": ");
                 appendRotationJson(sb, s.rotation());
             }
+            if (!s.half().isDefault()) {
+                sb.append(", \"half\": \"").append(halfModeName(s.half().mode())).append("\"");
+            }
             sb.append("}");
             return;
         }
@@ -941,6 +969,9 @@ public final class CarriageVariantBlocks {
         }
         if (s.linkedLootPrefabId() != null) {
             sb.append(", \"lootPrefab\": \"").append(escapeJson(s.linkedLootPrefabId())).append("\"");
+        }
+        if (!s.half().isDefault()) {
+            sb.append(", \"half\": \"").append(halfModeName(s.half().mode())).append("\"");
         }
         sb.append("}");
     }
@@ -979,6 +1010,65 @@ public final class CarriageVariantBlocks {
             }
         }
         return new VariantRotation(mode, dirMask);
+    }
+
+    /**
+     * Parse an optional {@code "half"} string ({@code "top"} / {@code "random"} /
+     * {@code "bottom"}). Returns {@code null} when the field is missing or
+     * malformed — callers apply the v7 read-time migration that derives the
+     * value from the captured state's {@code SLAB_TYPE} / {@code HALF}
+     * property and the existing rotation mode.
+     */
+    private static VariantHalf parseHalf(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonPrimitive()) return null;
+        String raw = el.getAsString().trim();
+        if (raw.isEmpty()) return null;
+        try {
+            return new VariantHalf(VariantHalf.Mode.valueOf(raw.toUpperCase(Locale.ROOT)));
+        } catch (IllegalArgumentException ignored) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown half mode '{}', defaulting to random.",
+                contextId, contextPos, raw);
+            return VariantHalf.NONE;
+        }
+    }
+
+    /**
+     * Derive a {@link VariantHalf} for a v7 file that predates the
+     * {@code "half"} field. Mirrors the historical {@code randomizeFlip}
+     * gating so existing prefabs spawn identically to before:
+     * <ul>
+     *   <li>{@code rotMode == RANDOM} → {@code RANDOM} (today's
+     *       randomizeFlip fires).</li>
+     *   <li>{@code rotMode == LOCK} → read the captured state's
+     *       {@code SLAB_TYPE} / {@code HALF}; TOP → {@code TOP}, otherwise
+     *       {@code BOTTOM}. Preserves the captured upside-down-ness.</li>
+     *   <li>{@code rotMode == OPTIONS} → {@code RANDOM} (OPTIONS didn't
+     *       fire randomizeFlip historically; no clean preserve-captured
+     *       semantic to migrate, so default to the safer roll).</li>
+     * </ul>
+     * Returns {@link VariantHalf#NONE} for blocks without SLAB_TYPE/HALF —
+     * the value is a no-op at spawn time for those.
+     */
+    private static VariantHalf migrateHalfFromRotation(BlockState captured, VariantRotation rotation) {
+        if (captured == null) return VariantHalf.NONE;
+        boolean hasHalf = captured.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HALF);
+        boolean hasSlab = captured.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.SLAB_TYPE);
+        if (!hasHalf && !hasSlab) return VariantHalf.NONE;
+        if (rotation.mode() != VariantRotation.Mode.LOCK) return VariantHalf.NONE;
+        boolean top;
+        if (hasHalf) {
+            top = captured.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HALF)
+                == net.minecraft.world.level.block.state.properties.Half.TOP;
+        } else {
+            top = captured.getValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.SLAB_TYPE)
+                == net.minecraft.world.level.block.state.properties.SlabType.TOP;
+        }
+        return top ? VariantHalf.top() : VariantHalf.bottom();
+    }
+
+    /** Lowercase enum name for the {@code "half"} JSON field. */
+    private static String halfModeName(VariantHalf.Mode mode) {
+        return mode.name().toLowerCase(Locale.ROOT);
     }
 
     /**

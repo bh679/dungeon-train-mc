@@ -59,23 +59,66 @@ public final class RotationApplier {
     }
 
     /**
-     * Apply a deterministic rotation pick. Returns {@code base} unchanged
-     * when (a) {@code rot.isDefault()}, (b) the block exposes no rotation
-     * property, or (c) the chosen property has no valid direction in the
-     * configured mask.
+     * True when {@code base} has either {@link BlockStateProperties#SLAB_TYPE}
+     * (slabs) or {@link BlockStateProperties#HALF} (stairs, trapdoors) — i.e.
+     * the half/orientation pill should be shown for this block.
+     */
+    public static boolean canFlip(BlockState base) {
+        if (base == null) return false;
+        return base.hasProperty(BlockStateProperties.SLAB_TYPE)
+            || base.hasProperty(BlockStateProperties.HALF);
+    }
+
+    /**
+     * Apply a deterministic rotation pick + half override.
+     *
+     * <p>halfMode semantics:
+     * <ul>
+     *   <li>{@link VariantHalf.Mode#TOP} / {@link VariantHalf.Mode#BOTTOM}
+     *       — force the half explicitly, regardless of rotation mode.
+     *       Author has authored a fixed orientation per entry.</li>
+     *   <li>{@link VariantHalf.Mode#RANDOM} (the default) — defer to the
+     *       rotation mode for v7 backwards-compat: only roll the flip when
+     *       rotation is also RANDOM; LOCK / OPTIONS preserve the captured
+     *       half. The JSON-read migration in {@code CarriageVariantBlocks}
+     *       upgrades existing prefabs to explicit TOP/BOTTOM so this
+     *       fallback only kicks in for freshly-captured entries that the
+     *       author hasn't customised yet.</li>
+     * </ul>
+     */
+    public static BlockState apply(
+        BlockState base, VariantRotation rot, VariantHalf half,
+        BlockPos localPos, long worldSeed, int carriageIndex, int lockId
+    ) {
+        if (rot == null) rot = VariantRotation.NONE;
+        if (half == null) half = VariantHalf.NONE;
+        BlockState facingApplied = applyFacing(base, rot, localPos, worldSeed, carriageIndex, lockId);
+        if (half.mode() == VariantHalf.Mode.RANDOM
+            && rot.mode() != VariantRotation.Mode.RANDOM) {
+            // halfMode default + LOCK/OPTIONS rotation → preserve captured
+            // half (v7 semantics).
+            return facingApplied;
+        }
+        return applyHalf(facingApplied, half, localPos, worldSeed, carriageIndex, lockId);
+    }
+
+    /**
+     * Legacy 6-arg apply (rotation only). Preserves the v7 behaviour
+     * exactly: RANDOM rotation rolls the half flip; LOCK / OPTIONS rotation
+     * preserves the captured half. New callers should use the 7-arg
+     * {@link #apply(BlockState, VariantRotation, VariantHalf, BlockPos, long, int, int)}
+     * and pass {@link VariantState#half()} so each entry's authored
+     * halfMode is honoured.
      */
     public static BlockState apply(
         BlockState base, VariantRotation rot,
         BlockPos localPos, long worldSeed, int carriageIndex, int lockId
     ) {
-        if (rot == null) return base;
+        if (rot == null) rot = VariantRotation.NONE;
         BlockState facingApplied = applyFacing(base, rot, localPos, worldSeed, carriageIndex, lockId);
-        // RANDOM mode (including the default NONE) also rolls HALF/SLAB_TYPE so
-        // stairs / trapdoors / slabs flip upside-down. LOCK and OPTIONS leave
-        // the captured flip value untouched — those modes mean "author has
-        // explicit control over orientation."
         if (rot.mode() == VariantRotation.Mode.RANDOM) {
-            return randomizeFlip(facingApplied, localPos, worldSeed, carriageIndex, lockId);
+            return applyHalf(facingApplied, VariantHalf.NONE,
+                localPos, worldSeed, carriageIndex, lockId);
         }
         return facingApplied;
     }
@@ -321,35 +364,53 @@ public final class RotationApplier {
     }
 
     /**
-     * In RANDOM mode, also flip the upside-down axis on blocks that expose
-     * one: {@link BlockStateProperties#HALF} (stairs, trapdoors) and
-     * {@link BlockStateProperties#SLAB_TYPE} (slabs).
+     * Apply the per-entry {@link VariantHalf} override to a block that
+     * exposes {@link BlockStateProperties#HALF} (stairs, trapdoors) or
+     * {@link BlockStateProperties#SLAB_TYPE} (slabs). Returns {@code state}
+     * unchanged when the block has neither property — the override is a
+     * no-op for non-flippable blocks.
+     *
+     * <ul>
+     *   <li>{@link VariantHalf.Mode#TOP} — force top half.</li>
+     *   <li>{@link VariantHalf.Mode#BOTTOM} — force bottom half.</li>
+     *   <li>{@link VariantHalf.Mode#RANDOM} — roll TOP/BOTTOM with the
+     *       existing {@link #FLIP_SEED_SALT} seed so the historical
+     *       per-position randomisation is preserved bit-for-bit.</li>
+     * </ul>
      *
      * <p>SLAB_TYPE rolls between TOP and BOTTOM only — DOUBLE is never
-     * randomly selected. A captured DOUBLE slab demotes to TOP/BOTTOM here,
-     * which matches the "random orientation" intent (the author chose
-     * RANDOM, not "preserve special double-height"). Authors who need a
-     * stable DOUBLE slab should add it as a non-RANDOM variant.
-     *
-     * <p>Uses a separate {@link #FLIP_SEED_SALT} so the flip roll is
-     * statistically independent of the facing roll for the same block —
-     * stairs spawn evenly across all (facing × half) combinations.
+     * selected. A captured DOUBLE slab demotes to TOP/BOTTOM here under
+     * any non-default mode. Authors who need a stable DOUBLE slab should
+     * leave halfMode at its default ({@link VariantHalf.Mode#RANDOM}) when
+     * the captured state isn't DOUBLE, or capture a DOUBLE state and rely
+     * on the JSON migration to keep RANDOM (which on a DOUBLE block still
+     * runs the flip roll — same behaviour as v7).</p>
      */
-    private static BlockState randomizeFlip(BlockState state, BlockPos localPos,
-                                            long worldSeed, int carriageIndex, int lockId) {
+    public static BlockState applyHalf(BlockState state, VariantHalf half,
+                                       BlockPos localPos, long worldSeed,
+                                       int carriageIndex, int lockId) {
         if (state == null) return null;
+        if (half == null) half = VariantHalf.NONE;
         boolean hasHalf = state.hasProperty(BlockStateProperties.HALF);
         boolean hasSlab = state.hasProperty(BlockStateProperties.SLAB_TYPE);
         if (!hasHalf && !hasSlab) return state;
 
-        long posOrLock = lockId > 0
-            ? (long) lockId * 0xBF58476D1CE4E5B9L
-            : (((long) localPos.getX() * 31L + localPos.getY()) * 31L + localPos.getZ()) * 0xBF58476D1CE4E5B9L;
-        long seed = worldSeed
-            ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
-            ^ posOrLock
-            ^ FLIP_SEED_SALT;
-        boolean top = new Random(seed).nextBoolean();
+        boolean top;
+        switch (half.mode()) {
+            case TOP -> top = true;
+            case BOTTOM -> top = false;
+            case RANDOM -> {
+                long posOrLock = lockId > 0
+                    ? (long) lockId * 0xBF58476D1CE4E5B9L
+                    : (((long) localPos.getX() * 31L + localPos.getY()) * 31L + localPos.getZ()) * 0xBF58476D1CE4E5B9L;
+                long seed = worldSeed
+                    ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
+                    ^ posOrLock
+                    ^ FLIP_SEED_SALT;
+                top = new Random(seed).nextBoolean();
+            }
+            default -> top = false;
+        }
 
         BlockState out = state;
         if (hasHalf) {
