@@ -193,6 +193,18 @@ public final class BlockVariantMenuInputHandler {
                     BlockVariantEditPacket.Op.SET_ROTATION_MODE, variantId, local, hit.index(), "", nextOrd));
                 BlockVariantMenu.closeRotPopup();
             }
+            case ENTRY_HALF_MODE -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                int currentOrd = e.halfMode() & 0xFF;
+                int modeCount = games.brennan.dungeontrain.editor.VariantHalf.Mode.values().length;
+                if (currentOrd >= modeCount) {
+                    currentOrd = games.brennan.dungeontrain.editor.VariantHalf.Mode.RANDOM.ordinal();
+                }
+                int nextOrd = (currentOrd + 1) % modeCount;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_HALF_MODE, variantId, local, hit.index(), "", nextOrd));
+            }
             case ENTRY_ROT_DIRS -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());

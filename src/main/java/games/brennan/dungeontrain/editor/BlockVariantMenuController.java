@@ -187,7 +187,8 @@ public final class BlockVariantMenuController {
             entries.add(new BlockVariantSyncPacket.Entry(
                 stateStr, beNbt, s.weight(),
                 (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
-                s.linkedLootPrefabId(), entityId));
+                s.linkedLootPrefabId(), entityId,
+                (byte) s.half().mode().ordinal()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -423,6 +424,18 @@ public final class BlockVariantMenuController {
                 VariantRotation prev = mutated.get(idx).rotation();
                 VariantRotation next = new VariantRotation(prev.mode(), newMask);
                 mutated.set(idx, mutated.get(idx).withRotation(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_HALF_MODE -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                int ord = packet.delta();
+                VariantHalf.Mode[] modes = VariantHalf.Mode.values();
+                if (ord < 0 || ord >= modes.length) return;
+                VariantHalf next = new VariantHalf(modes[ord]);
+                mutated.set(idx, mutated.get(idx).withHalf(next));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
