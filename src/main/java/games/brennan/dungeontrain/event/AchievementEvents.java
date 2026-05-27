@@ -21,6 +21,7 @@ import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
@@ -281,20 +282,33 @@ public final class AchievementEvents {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerAdvancementManager mgr = server.getAdvancements();
+        // Suppress vanilla's chat broadcast on each award() by temporarily
+        // disabling the gamerule that gates it. Toasts are already silenced
+        // by vanilla: the first flushDirty packet after login carries
+        // isFirstPacket=true → shouldReset=true, and the client skips toast
+        // emission for reset packets.
+        GameRules.BooleanValue announce =
+            server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS);
+        boolean wasAnnouncing = announce.get();
+        if (wasAnnouncing) announce.set(false, server);
         int replayed = 0;
-        for (ResourceLocation id : granted) {
-            AdvancementHolder holder = mgr.get(id);
-            if (holder == null) {
-                LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping",
-                    id);
-                continue;
+        try {
+            for (ResourceLocation id : granted) {
+                AdvancementHolder holder = mgr.get(id);
+                if (holder == null) {
+                    LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping",
+                        id);
+                    continue;
+                }
+                for (String key : holder.value().criteria().keySet()) {
+                    if (player.getAdvancements().award(holder, key)) replayed++;
+                }
             }
-            for (String key : holder.value().criteria().keySet()) {
-                if (player.getAdvancements().award(holder, key)) replayed++;
-            }
+        } finally {
+            if (wasAnnouncing) announce.set(true, server);
         }
         if (replayed > 0) {
-            LOGGER.info("[DungeonTrain] Replayed {} criteria from global store for {}",
+            LOGGER.info("[DungeonTrain] Replayed {} criteria from global store for {} (silent)",
                 replayed, player.getName().getString());
         }
     }
