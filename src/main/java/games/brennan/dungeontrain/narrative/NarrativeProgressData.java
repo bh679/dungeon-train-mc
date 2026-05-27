@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.narrative;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -56,6 +57,8 @@ public final class NarrativeProgressData extends SavedData {
     private static final String TAG_STARTING_BOOK_RECEIVED = "starting_book_received";
     /** Key for a per-entry UUID inside the starting-book-received list. */
     private static final String TAG_UUID = "uuid";
+    /** Root-level list of recently-started narrative basenames, oldest-first. */
+    private static final String TAG_RECENT_NARRATIVE_STARTS = "recent_narrative_starts";
 
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
@@ -76,18 +79,33 @@ public final class NarrativeProgressData extends SavedData {
      */
     private final Set<UUID> startingBookReceived;
 
+    /**
+     * Recently-started narratives (oldest first). Pushed to from
+     * {@link #markRead} the moment a story's read-count transitions
+     * {@code 0 → 1}. Drives the silent-cycle cooldown in
+     * {@link #cycleAndPick(long)} and the (effective-no-op pre-cycle, load-
+     * bearing post-cycle) recency filter in {@link #randomUncompletedStory}.
+     *
+     * <p>Window size is {@code StoryRegistry.count() / 2} computed at push
+     * time, so reloading more or fewer stories doesn't leave the queue
+     * out of date — the shrink-on-push semantics evict overflow as needed.</p>
+     */
+    private final RecentStartsQueue recentNarrativeStarts;
+
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>(), new RecentStartsQueue());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
                                   Map<String, NarrativeProgress> randomBooksSeen,
                                   Map<String, NarrativeProgress> startingBooksSeen,
-                                  Set<UUID> startingBookReceived) {
+                                  Set<UUID> startingBookReceived,
+                                  RecentStartsQueue recentNarrativeStarts) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
         this.startingBookReceived = startingBookReceived;
+        this.recentNarrativeStarts = recentNarrativeStarts;
     }
 
     public static NarrativeProgressData get(ServerLevel overworld) {
@@ -110,12 +128,43 @@ public final class NarrativeProgressData extends SavedData {
      * Mark {@code letterIndex} read for the story. Returns {@code true} when
      * state changed (caller can decide whether to log). Always calls
      * {@link #setDirty()} so the .dat file persists.
+     *
+     * <p>When the read causes the story's read-count to transition
+     * {@code 0 → 1} (i.e., this letter is the first of the story to be
+     * read in this world), the story basename is pushed onto
+     * {@link #recentNarrativeStarts} for the silent-cycle cooldown.</p>
      */
     public boolean markRead(String storyBasename, int letterIndex) {
         NarrativeProgress p = byStory.computeIfAbsent(storyBasename, k -> new NarrativeProgress());
+        int countBefore = p.readCount();
         boolean changed = p.markRead(letterIndex);
-        if (changed) setDirty();
+        if (changed) {
+            setDirty();
+            if (countBefore == 0) {
+                pushNarrativeStart(storyBasename);
+            }
+        }
         return changed;
+    }
+
+    /**
+     * Push {@code storyBasename} onto the recently-started queue with a
+     * window size of {@code totalStories / 2}. Marks the SavedData dirty.
+     */
+    private void pushNarrativeStart(String storyBasename) {
+        int maxSize = StoryRegistry.count() / 2;
+        recentNarrativeStarts.push(storyBasename, maxSize);
+        setDirty();
+    }
+
+    /** True when {@code storyBasename} is in the recently-started cooldown queue. */
+    public boolean isRecentlyStartedNarrative(String storyBasename) {
+        return recentNarrativeStarts.contains(storyBasename);
+    }
+
+    /** Oldest-first snapshot of the recently-started cooldown queue. */
+    public List<String> recentNarrativeStartsSnapshot() {
+        return recentNarrativeStarts.snapshot();
     }
 
     /**
@@ -317,7 +366,16 @@ public final class NarrativeProgressData extends SavedData {
      * no in-progress story — same lectern shows the same first-read story
      * on re-clicks (until something actually advances).
      *
-     * <p>Empty when every loaded story is complete.</p>
+     * <p>Stories in the {@link #recentNarrativeStarts} cooldown queue are
+     * filtered out first; if the filter empties the candidate list, the
+     * unfiltered uncompleted list is used. Pre-cycle this filter is
+     * effectively a no-op (in-queue stories are normally in-progress or
+     * complete and so don't appear in {@code uncompleted}), but immediately
+     * after a silent cycle every story is uncompleted again — at that point
+     * this filter is what keeps the just-finished titles out of the pick.</p>
+     *
+     * <p>Empty when every loaded story is complete. Callers should chain to
+     * {@link #cycleAndPick(long)} for the silent-cycle fallback.</p>
      */
     public Optional<String> randomUncompletedStory(long randomSeed) {
         List<String> uncompleted = new java.util.ArrayList<>();
@@ -330,10 +388,48 @@ public final class NarrativeProgressData extends SavedData {
             }
         }
         if (uncompleted.isEmpty()) return Optional.empty();
+        List<String> pool = filterRecent(uncompleted);
         // Deterministic mix so the lectern seed produces a stable index
         // across re-clicks until state advances.
-        int idx = Math.floorMod(randomSeed, uncompleted.size());
-        return Optional.of(uncompleted.get(idx));
+        int idx = Math.floorMod(randomSeed, pool.size());
+        return Optional.of(pool.get(idx));
+    }
+
+    /**
+     * Silent-cycle fallback for when every story is complete. Clears
+     * per-story read state (without touching the recently-started queue)
+     * and picks from the full story set minus the cooldown queue.
+     *
+     * <p>The recently-started queue is intentionally preserved across the
+     * cycle — that's what lets the picker avoid the just-finished titles
+     * on the first post-cycle pick. If filtering empties the candidate
+     * list (e.g., a degenerate case where every story is in the queue),
+     * falls back to the full registry list so the lectern still resolves
+     * something rather than stalling.</p>
+     *
+     * <p>Returns {@link Optional#empty()} only when the registry holds zero
+     * stories (a packaging fault).</p>
+     */
+    public Optional<String> cycleAndPick(long randomSeed) {
+        List<String> all = StoryRegistry.basenames();
+        if (all.isEmpty()) return Optional.empty();
+        resetAll(); // silent cycle — clears byStory + setDirty()
+        List<String> pool = filterRecent(all);
+        int idx = Math.floorMod(randomSeed, pool.size());
+        return Optional.of(pool.get(idx));
+    }
+
+    /**
+     * Drop entries that are in the recently-started cooldown queue. Falls
+     * back to the input list when every entry is filtered out, so callers
+     * never end up with an empty pool when a non-empty one was provided.
+     */
+    private List<String> filterRecent(List<String> input) {
+        List<String> filtered = new java.util.ArrayList<>(input.size());
+        for (String b : input) {
+            if (!recentNarrativeStarts.contains(b)) filtered.add(b);
+        }
+        return filtered.isEmpty() ? input : filtered;
     }
 
     @Override
@@ -350,6 +446,13 @@ public final class NarrativeProgressData extends SavedData {
             startedList.add(entry);
         }
         tag.put(TAG_STARTING_BOOK_RECEIVED, startedList);
+
+        // Recently-started cooldown queue, oldest-first.
+        ListTag recentList = new ListTag();
+        for (String name : recentNarrativeStarts.snapshot()) {
+            recentList.add(StringTag.valueOf(name));
+        }
+        tag.put(TAG_RECENT_NARRATIVE_STARTS, recentList);
         return tag;
     }
 
@@ -398,7 +501,17 @@ public final class NarrativeProgressData extends SavedData {
                 startingBookReceived.add(entry.getUUID(TAG_UUID));
             }
         }
-        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, startingBookReceived);
+        RecentStartsQueue recentNarrativeStarts = new RecentStartsQueue();
+        // Backwards-compatible: missing tag → empty queue, identical to fresh-world behaviour.
+        if (tag.contains(TAG_RECENT_NARRATIVE_STARTS, Tag.TAG_LIST)) {
+            ListTag recentList = tag.getList(TAG_RECENT_NARRATIVE_STARTS, Tag.TAG_STRING);
+            java.util.List<String> initial = new java.util.ArrayList<>(recentList.size());
+            for (int i = 0; i < recentList.size(); i++) {
+                initial.add(recentList.getString(i));
+            }
+            recentNarrativeStarts.load(initial);
+        }
+        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, startingBookReceived, recentNarrativeStarts);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

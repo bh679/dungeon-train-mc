@@ -42,9 +42,10 @@ import java.util.Optional;
  *           advance world progress, then delegate to vanilla.</li>
  *     </ul>
  *   </li>
- *   <li>If every story is complete for the world, the right-click no-ops
- *       and shows an action-bar message — and the lectern stays "empty"
- *       until more content loads.</li>
+ *   <li>When every story is complete for the world, {@link BookFactory}
+ *       silently cycles per-story progress and picks a fresh book from the
+ *       full registry minus the recently-started cooldown queue — lecterns
+ *       keep working past completion, no "all complete" stall.</li>
  *   <li>On break, drops only the lectern item — the rotating book is
  *       transient w.r.t. block loot (the BE is destroyed with the block,
  *       so the lock dies with the lectern).</li>
@@ -94,8 +95,12 @@ public class NarrativeLecternBlock extends LecternBlock {
         ServerLevel overworld = sl.getServer().overworld();
         Optional<ItemStack> resolved = BookFactory.buildOrRandomForLectern(overworld, pos.asLong());
         if (resolved.isEmpty()) {
+            // Reachable only when zero stories are registered (packaging
+            // fault). The silent-cycle fallback in BookFactory keeps lecterns
+            // working past completion, so this is no longer a normal
+            // end-of-content state.
             sp.displayClientMessage(
-                Component.literal("All narratives complete.").withStyle(ChatFormatting.YELLOW),
+                Component.literal("No narratives available.").withStyle(ChatFormatting.YELLOW),
                 /*actionBar*/ true);
             return InteractionResult.CONSUME;
         }

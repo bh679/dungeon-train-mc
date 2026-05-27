@@ -118,7 +118,12 @@ public final class BookFactory {
      *   <li>Otherwise — a random pick from the world's uncompleted stories,
      *       seeded by {@code lecternSeed} so the same lectern shows the same
      *       story across re-clicks until something actually advances.</li>
-     *   <li>If every story is complete → {@link Optional#empty()}.</li>
+     *   <li>If every story is complete — silent-cycle: per-story read state
+     *       is reset and the pick is taken from the full story set minus the
+     *       recently-started cooldown queue. Lecterns keep working past
+     *       completion; the queue prevents the just-finished story from
+     *       being re-picked back-to-back.</li>
+     *   <li>If no stories are registered at all → {@link Optional#empty()}.</li>
      * </ol>
      *
      * <p>The returned ItemStack is stamped with the identity NBT just like
@@ -139,6 +144,9 @@ public final class BookFactory {
         Optional<String> chosen = data.currentInProgressStory();
         if (chosen.isEmpty()) {
             chosen = data.randomUncompletedStory(lecternSeed);
+        }
+        if (chosen.isEmpty()) {
+            chosen = data.cycleAndPick(lecternSeed);
         }
         if (chosen.isEmpty()) return Optional.empty();
 
