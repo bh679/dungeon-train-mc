@@ -17,6 +17,8 @@
   "dungeontrain.floor_y.label": "Floor Y",
   "dungeontrain.floor_y.value": "Y = %s",
   "dungeontrain.floor_y.tooltip": "Bedrock floor elevation. Lower values preserve more of the vanilla deepslate/diamond zone; higher values improve performance. World top stays at Y=320.",
+  "gui.dungeontrain.version.update": "— Update to v%s available",
+  "gui.dungeontrain.version.error": "— update check failed",
   "gui.dungeontrain.death.new_world": "New World",
   "gui.dungeontrain.death.same_world": "Same World",
   "gui.dungeontrain.death.confirm_title": "Respawning is currently buggy",
