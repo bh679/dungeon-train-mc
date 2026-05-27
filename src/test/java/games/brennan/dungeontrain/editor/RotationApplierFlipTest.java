@@ -249,4 +249,147 @@ final class RotationApplierFlipTest {
         assertEquals(EnumSet.of(Half.TOP, Half.BOTTOM), seen,
             "RANDOM trapdoor should produce both TOP and BOTTOM");
     }
+
+    // ============================================================
+    // Editor preview cycle — mirrors the spawn-time behavior so the
+    // author sees flipped variants in the editor world too.
+    // ============================================================
+
+    private static VariantState variant(BlockState state, VariantRotation rotation) {
+        return new VariantState(state, null, 1, rotation, null, null);
+    }
+
+    @Test
+    @DisplayName("Preview RANDOM stair: cycles all 8 (facing × half) combinations over 8 ticks")
+    void preview_random_stair_cyclesAllCombinations() {
+        BlockState bottomStair = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(BlockStateProperties.HALF, Half.BOTTOM);
+        VariantState entry = variant(bottomStair, VariantRotation.NONE);
+
+        Map<String, Integer> seen = new HashMap<>();
+        Half halfAt0 = null;
+        Half halfAt4 = null;
+        for (long tick = 0; tick < 8; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            Direction f = out.getValue(BlockStateProperties.HORIZONTAL_FACING);
+            Half h = out.getValue(BlockStateProperties.HALF);
+            seen.merge(f.name() + "|" + h.name(), 1, Integer::sum);
+            if (tick == 0) halfAt0 = h;
+            if (tick == 4) halfAt4 = h;
+        }
+        assertEquals(8, seen.size(),
+            "expected all 8 (facing × half) pairs over 8 ticks, got " + seen);
+        // HALF cycle period = numDirs (4) → flips after the first full facing sweep.
+        assertNotEquals(halfAt0, halfAt4,
+            "HALF should toggle after one full facing sweep (tick 0 vs tick 4)");
+    }
+
+    @Test
+    @DisplayName("Preview RANDOM stair: ticks 0..3 share one HALF, ticks 4..7 share the other")
+    void preview_random_stair_halfHoldsForFullSweep() {
+        BlockState stair = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(BlockStateProperties.HALF, Half.BOTTOM);
+        VariantState entry = variant(stair, VariantRotation.NONE);
+
+        Half firstSweep = VariantEditorPreviewTicker.computePreviewState(entry, 0)
+            .getValue(BlockStateProperties.HALF);
+        for (long tick = 0; tick < 4; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            assertEquals(firstSweep, out.getValue(BlockStateProperties.HALF),
+                "HALF should hold across the first 4-tick facing sweep (tick " + tick + ")");
+        }
+        Half secondSweep = VariantEditorPreviewTicker.computePreviewState(entry, 4)
+            .getValue(BlockStateProperties.HALF);
+        for (long tick = 4; tick < 8; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            assertEquals(secondSweep, out.getValue(BlockStateProperties.HALF),
+                "HALF should hold across the second 4-tick sweep (tick " + tick + ")");
+        }
+        assertNotEquals(firstSweep, secondSweep,
+            "first and second 4-tick sweeps must show different halves");
+    }
+
+    @Test
+    @DisplayName("Preview RANDOM slab: SLAB_TYPE alternates every tick, never DOUBLE")
+    void preview_random_slab_alternatesEveryTick() {
+        BlockState slab = Blocks.STONE_BRICK_SLAB.defaultBlockState()
+            .setValue(BlockStateProperties.SLAB_TYPE, SlabType.BOTTOM);
+        VariantState entry = variant(slab, VariantRotation.NONE);
+
+        EnumSet<SlabType> seen = EnumSet.noneOf(SlabType.class);
+        SlabType prev = null;
+        for (long tick = 0; tick < 10; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            SlabType t = out.getValue(BlockStateProperties.SLAB_TYPE);
+            assertNotEquals(SlabType.DOUBLE, t,
+                "preview slab must never be DOUBLE (tick " + tick + ")");
+            seen.add(t);
+            if (prev != null) {
+                assertNotEquals(prev, t,
+                    "slab preview should flip every tick (tick " + tick + ")");
+            }
+            prev = t;
+        }
+        assertEquals(EnumSet.of(SlabType.TOP, SlabType.BOTTOM), seen,
+            "preview slab in RANDOM mode should produce both TOP and BOTTOM");
+    }
+
+    @Test
+    @DisplayName("Preview LOCK stair: captured HALF preserved across all ticks")
+    void preview_lock_stair_preservesHalf() {
+        BlockState topStair = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(BlockStateProperties.HALF, Half.TOP);
+        VariantState entry = variant(topStair, VariantRotation.lock(Direction.NORTH));
+
+        for (long tick = 0; tick < 20; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            assertEquals(Half.TOP, out.getValue(BlockStateProperties.HALF),
+                "LOCK preview must preserve captured HALF=TOP (tick " + tick + ")");
+        }
+    }
+
+    @Test
+    @DisplayName("Preview OPTIONS stair: captured HALF preserved across all ticks")
+    void preview_options_stair_preservesHalf() {
+        BlockState bottomStair = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(BlockStateProperties.HALF, Half.BOTTOM);
+        int northSouth = VariantRotation.maskOf(Direction.NORTH)
+            | VariantRotation.maskOf(Direction.SOUTH);
+        VariantState entry = variant(bottomStair, VariantRotation.options(northSouth));
+
+        for (long tick = 0; tick < 20; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            assertEquals(Half.BOTTOM, out.getValue(BlockStateProperties.HALF),
+                "OPTIONS preview must preserve captured HALF=BOTTOM (tick " + tick + ")");
+        }
+    }
+
+    @Test
+    @DisplayName("Preview plain stone: unchanged across ticks (no flip property)")
+    void preview_plainStone_noFlip() {
+        BlockState stone = Blocks.STONE.defaultBlockState();
+        VariantState entry = variant(stone, VariantRotation.NONE);
+
+        for (long tick = 0; tick < 20; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            assertEquals(stone, out, "plain stone preview must not change (tick " + tick + ")");
+        }
+    }
+
+    @Test
+    @DisplayName("Preview RANDOM DOUBLE slab: cycles TOP/BOTTOM, never stays DOUBLE")
+    void preview_random_doubleSlab_demotes() {
+        BlockState doubleSlab = Blocks.STONE_BRICK_SLAB.defaultBlockState()
+            .setValue(BlockStateProperties.SLAB_TYPE, SlabType.DOUBLE);
+        VariantState entry = variant(doubleSlab, VariantRotation.NONE);
+
+        for (long tick = 0; tick < 10; tick++) {
+            BlockState out = VariantEditorPreviewTicker.computePreviewState(entry, tick);
+            SlabType t = out.getValue(BlockStateProperties.SLAB_TYPE);
+            assertNotEquals(SlabType.DOUBLE, t,
+                "DOUBLE slab preview must demote in RANDOM (tick " + tick + ")");
+            assertTrue(t == SlabType.TOP || t == SlabType.BOTTOM,
+                "demoted slab must be TOP or BOTTOM (got " + t + " at tick " + tick + ")");
+        }
+    }
 }
