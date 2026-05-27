@@ -9,6 +9,13 @@ name: Auto-Release Cascade
 
 on:
   schedule:
+    # Three redundant fires per hour. GitHub Actions schedule events are
+    # best-effort and frequently drop or delay individual ticks; spreading
+    # the trigger across :07, :27, :47 means an entire hour is only missed
+    # if all three are dropped. should-fire.py + the concurrency block
+    # below ensure duplicates within the threshold window self-skip.
+    - cron: "7 * * * *"
+    - cron: "27 * * * *"
     - cron: "47 * * * *"
   workflow_dispatch:
     inputs:
