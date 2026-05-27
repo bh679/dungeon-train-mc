@@ -65,5 +65,11 @@
   "gui.dungeontrain.prefab_save.save": "Save",
   "gui.dungeontrain.prefab_save.cancel": "Cancel",
   "subtitles.dungeontrain.train_engine": "Train engine chugs",
-  "block.dungeontrain.narrative_lectern": "Narrative Lectern"
+  "block.dungeontrain.narrative_lectern": "Narrative Lectern",
+  "gui.dungeontrain.developer_popup.title": "A message from the developer",
+  "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
+  "gui.dungeontrain.developer_popup.message": "Hey! What do you think of the game? I'd love to chat with you in Discord about what you think it needs :)",
+  "gui.dungeontrain.developer_popup.discord": "Chat on Discord",
+  "gui.dungeontrain.developer_popup.close": "Maybe later",
+  "gui.dungeontrain.developer_popup.dont_ask_again": "Don't ask again"
 }
