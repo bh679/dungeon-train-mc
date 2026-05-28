@@ -158,6 +158,16 @@ public final class AchievementEvents {
         ModAdvancementTriggers.RANDOM_BOOKS_READ.get().trigger(player, totalReads);
     }
 
+    /**
+     * Called from {@link games.brennan.dungeontrain.narrative.NarrativeBookEvents}
+     * after every starting-book held-right-click. {@code totalReads} is the
+     * player's cumulative {@link GlobalPlayerStats#startingBooksRead} across
+     * all worlds and sessions. Re-reads count.
+     */
+    public static void notifyStartingBooksRead(ServerPlayer player, long totalReads) {
+        ModAdvancementTriggers.STARTING_BOOKS_READ.get().trigger(player, totalReads);
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**
@@ -185,17 +195,20 @@ public final class AchievementEvents {
         if (allStoriesRead(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
         }
+        if (allStartingBookTitlesSeen(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "starting_books_all_titles");
+        }
         if (allStartingBooksSeen(data)) {
-            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_starting_books");
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "starting_books_all_variants");
         }
     }
 
     /**
      * True when every variant of every starting book registered in
      * {@link games.brennan.dungeontrain.narrative.StartingBookRegistry}
-     * has been marked seen. Drives the {@code inter_dimensional_passenger}
-     * milestone — the player has received every possible starting book
-     * across enough respawn / login strikes.
+     * has been marked seen. Drives the {@code starting_books_all_variants}
+     * milestone ("Inter-Reality Passenger") — the player has received every
+     * possible starting book across enough respawn / login strikes.
      */
     private static boolean allStartingBooksSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
         java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames();
@@ -215,6 +228,28 @@ public final class AchievementEvents {
             for (int i = 0; i < total; i++) {
                 if (!p.readLetters().contains(i)) return false;
             }
+        }
+        return true;
+    }
+
+    /**
+     * True when every starting book has at least one variant marked seen.
+     * Drives the {@code starting_books_all_titles} milestone ("Welcome Back")
+     * — weaker than {@link #allStartingBooksSeen}; requires every title to
+     * have been encountered at least once, not every variant.
+     */
+    private static boolean allStartingBookTitlesSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
+        java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames();
+        if (all.isEmpty()) return false;
+        java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
+            data.startingBookSeenSnapshot();
+        for (String basename : all) {
+            var bookOpt = games.brennan.dungeontrain.narrative.StartingBookRegistry.getByBasename(basename);
+            if (bookOpt.isEmpty()) return false;
+            if (bookOpt.get().variants().isEmpty()) continue;
+            games.brennan.dungeontrain.narrative.NarrativeProgress p =
+                snapshot.getOrDefault(basename, new games.brennan.dungeontrain.narrative.NarrativeProgress());
+            if (p.readLetters().isEmpty()) return false;
         }
         return true;
     }

@@ -32,8 +32,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *       "I Live Here Now", and "Help, I Can't Get Off" milestones.</li>
  *   <li>{@code randomBooksRead} — total right-clicks on random-book items.
  *       Re-reads count. Drives the "Taking Notes" milestone.</li>
+ *   <li>{@code startingBooksRead} — total right-clicks on starting-book
+ *       items. Re-reads count. Drives the "The Same But Different"
+ *       milestone.</li>
  * </ul>
- * Both counters accrue across worlds and sessions; switching worlds does
+ * All counters accrue across worlds and sessions; switching worlds does
  * not reset them.</p>
  *
  * <p>Disk-I/O strategy: in-memory cache backs all reads/writes during a
@@ -47,13 +50,14 @@ public final class GlobalPlayerStats {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String DIR_NAME = "dungeontrain-stats";
 
-    public record Data(long trainTicks, long randomBooksRead) {
+    public record Data(long trainTicks, long randomBooksRead, long startingBooksRead) {
         public static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
             Codec.LONG.optionalFieldOf("trainTicks", 0L).forGetter(Data::trainTicks),
-            Codec.LONG.optionalFieldOf("randomBooksRead", 0L).forGetter(Data::randomBooksRead)
+            Codec.LONG.optionalFieldOf("randomBooksRead", 0L).forGetter(Data::randomBooksRead),
+            Codec.LONG.optionalFieldOf("startingBooksRead", 0L).forGetter(Data::startingBooksRead)
         ).apply(in, Data::new));
 
-        public static final Data EMPTY = new Data(0L, 0L);
+        public static final Data EMPTY = new Data(0L, 0L, 0L);
     }
 
     /** In-memory cache. Holds the full {@link Data} record per UUID. */
@@ -75,6 +79,11 @@ public final class GlobalPlayerStats {
         return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).randomBooksRead();
     }
 
+    /** Current accumulated starting-book read count for {@code uuid}. Reads disk on first access. */
+    public static long startingBooksRead(UUID uuid) {
+        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).startingBooksRead();
+    }
+
     /**
      * Add {@code delta} ticks to the player's cumulative train-time counter
      * and return the new total. Delta must be non-negative; negatives are
@@ -85,7 +94,7 @@ public final class GlobalPlayerStats {
         if (delta <= 0) return trainTicks(uuid);
         Data updated = CACHE.compute(uuid, (k, existing) -> {
             Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks() + delta, base.randomBooksRead());
+            return new Data(base.trainTicks() + delta, base.randomBooksRead(), base.startingBooksRead());
         });
         return updated.trainTicks();
     }
@@ -98,9 +107,22 @@ public final class GlobalPlayerStats {
         if (delta <= 0) return randomBooksRead(uuid);
         Data updated = CACHE.compute(uuid, (k, existing) -> {
             Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead() + delta);
+            return new Data(base.trainTicks(), base.randomBooksRead() + delta, base.startingBooksRead());
         });
         return updated.randomBooksRead();
+    }
+
+    /**
+     * Add {@code delta} reads to the player's cumulative starting-book read
+     * counter and return the new total. Monotone-increasing.
+     */
+    public static long addStartingBooksRead(UUID uuid, long delta) {
+        if (delta <= 0) return startingBooksRead(uuid);
+        Data updated = CACHE.compute(uuid, (k, existing) -> {
+            Data base = existing != null ? existing : loadFromDisk(k);
+            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead() + delta);
+        });
+        return updated.startingBooksRead();
     }
 
     /** Flush a single player's cached stats to disk. No-op if not in cache. */

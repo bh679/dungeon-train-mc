@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/the_same_but_different",
+  "display": {
+    "icon": { "id": "minecraft:popped_chorus_fruit" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.welcome_back.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.welcome_back.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "dungeontrain:story_set_completed",
+      "conditions": { "setId": "starting_books_all_titles" }
+    }
+  },
+  "requirements": [["completed"]]
+}

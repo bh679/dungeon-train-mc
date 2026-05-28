@@ -104,6 +104,27 @@ public final class NarrativeBookEvents {
         AchievementEvents.notifyRandomBooksRead(player, newTotal);
     }
 
+    /**
+     * Increments the player's cumulative starting-book read counter on every
+     * held-right-click of a starting-book item. Re-reads count. Drives the
+     * "The Same But Different" milestone via
+     * {@link AchievementEvents#notifyStartingBooksRead}.
+     *
+     * <p>Filter is {@link StartingBookTag#isStartingBook}; no overlap with
+     * {@link #onRightClickRandomBookItem} because
+     * {@link StartingBookFactory} never stamps {@link RandomBookTag}.</p>
+     */
+    @SubscribeEvent
+    public static void onRightClickStartingBookItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getLevel().isClientSide) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty()) return;
+        if (!StartingBookTag.isStartingBook(stack)) return;
+        long newTotal = GlobalPlayerStats.addStartingBooksRead(player.getUUID(), 1L);
+        AchievementEvents.notifyStartingBooksRead(player, newTotal);
+    }
+
     private static void recordRead(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;

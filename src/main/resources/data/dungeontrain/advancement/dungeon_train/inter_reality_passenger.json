@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/welcome_back",
   "display": {
     "icon": { "id": "minecraft:ender_pearl" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.inter_reality_passenger.title" },
@@ -12,7 +12,7 @@
   "criteria": {
     "completed": {
       "trigger": "dungeontrain:story_set_completed",
-      "conditions": { "setId": "all_starting_books" }
+      "conditions": { "setId": "starting_books_all_variants" }
     }
   },
   "requirements": [["completed"]]
