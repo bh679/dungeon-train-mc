@@ -11,6 +11,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 import org.slf4j.Logger;
@@ -306,28 +307,7 @@ public final class TrainAssembler {
 
         TrainTransformProvider provider = new TrainTransformProvider(
             velocity, shipyardOrigin, level.dimension(), anchorPIdx, groupSize, dims, trainId);
-        provider.setPendingContentsEntitySpawns(pendingEntities);
-        ship.setKinematicDriver(provider);
-        ship.setStatic(true);
-
-        // Pre-seed spawnGameTick at the ACTUAL spawn moment, not when Sable
-        // first calls nextTransform (which can lag many ticks for far-from-
-        // player carriages and leaves them permanently behind by
-        // velocity * lateTicks blocks — see
-        // {@link TrainTransformProvider#preSeedSpawnTick} for the full
-        // explanation). NOTE: we deliberately do NOT pre-seed spawnWorldPos
-        // — Sable's pose translation uses the block-AABB centre (see
-        // {@code SableShipyard.computeAnchor}), not the back-pad corner —
-        // so spawnWorldPos must come from {@code input.currentPosition()}
-        // on first kinematic tick to stay in Sable's coordinate frame.
-        provider.preSeedSpawnTick(level.getGameTime());
-
-        // Register in the spawn-time truth source. Sable's SubLevelContainer
-        // is lazy after assembly (a freshly-assembled sub-level can take
-        // several ticks to appear in getAllSubLevels()), so the appender
-        // can't trust Trains.byTrainId for "what anchors does this train
-        // already own." The registry is the authoritative answer.
-        Trains.registerSpawned(trainId, anchorPIdx, ship);
+        attachDriver(level, ship, provider, pendingEntities);
 
         long tEnd = System.nanoTime();
         LOGGER.info("[DungeonTrain] Spawned group anchorPIdx={} groupSize={} enclosed=[{}] pads={} trainId={} ship id={} shipyardOrigin={} blocks={} timing(ms): clear={} place={} assemble={} contents={} total={}",
@@ -341,6 +321,60 @@ public final class TrainAssembler {
             (tEnd - tStart) / 1_000_000);
 
         return ship;
+    }
+
+    /**
+     * Attach a {@link TrainTransformProvider} to a {@link ManagedShip}, apply
+     * the kinematic-locked + static-pose pattern, pre-seed the spawn tick to
+     * the current game time, and register the carriage in {@link Trains}.
+     *
+     * <p>Shared by two call sites:
+     * <ul>
+     *   <li>{@link #spawnGroup} — fresh carriage spawns. Passes the per-slot
+     *       {@code pendingEntities} array so the appender's clean-tick
+     *       handler can fire entity spawns later, once the placement-collision
+     *       tracker is satisfied.</li>
+     *   <li>{@code games.brennan.dungeontrain.portal.PortalTransitService}
+     *       (Phase 8) — carriages reconstituted in the destination dimension
+     *       after a cross-dim transit. Passes {@code null} for pendingEntities
+     *       because content entities are physically migrated by the transit
+     *       service rather than respawned.</li>
+     * </ul>
+     *
+     * <p>Why pre-seed {@code spawnGameTick}: the deterministic position formula
+     * inside {@link TrainTransformProvider#nextTransform} uses
+     * {@code spawnGameTick} as its time origin. If we let Sable's first
+     * nextTransform call lazily capture it instead, far-from-player carriages
+     * whose first tick is delayed by N game ticks would end up permanently
+     * behind by {@code velocity * N} blocks — see {@code preSeedSpawnTick}'s
+     * own javadoc for the full picture.</p>
+     *
+     * <p>We deliberately do NOT pre-seed {@code spawnWorldPos} — Sable's pose
+     * translation uses the block-AABB centre (see
+     * {@code SableShipyard.computeAnchor}), so the position reference must
+     * come from {@code input.currentPosition()} on first kinematic tick to
+     * stay in Sable's native coordinate frame.</p>
+     */
+    static void attachDriver(
+        ServerLevel level,
+        ManagedShip ship,
+        TrainTransformProvider provider,
+        @Nullable PendingContentsEntitySpawn[] pendingEntities
+    ) {
+        if (pendingEntities != null) {
+            provider.setPendingContentsEntitySpawns(pendingEntities);
+        }
+        ship.setKinematicDriver(provider);
+        ship.setStatic(true);
+
+        provider.preSeedSpawnTick(level.getGameTime());
+
+        // Sable's SubLevelContainer is lazy after assembly (a freshly-
+        // assembled sub-level can take several ticks to appear in
+        // getAllSubLevels()), so the appender can't trust Trains.byTrainId
+        // for "what anchors does this train already own." The registry is
+        // the authoritative answer at spawn time.
+        Trains.registerSpawned(provider.getTrainId(), provider.getPIdx(), ship);
     }
 
     private static String summariseVariants(CarriageVariant[] variants) {
