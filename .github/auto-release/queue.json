@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l3-a",
-      "label": "Corren - Letter 3 variant A (Bram's laugh)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "Bram.\n\nYou laughed like falling.\n\nSudden. Loud. Always too loud.\n\nYou said you laughed so the dark would know you were there.\n\nIt always did.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 3 variant A"
-    },
-    {
       "id": "corren-l3-b",
       "label": "Corren - Letter 3 variant B (Bram's shield)",
       "type": "add_variant",
@@ -1066,6 +1049,11 @@
     {
       "id": "corren-l2",
       "applied_at": "2026-05-28T05:53:15Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l3-a",
+      "applied_at": "2026-05-28T06:15:13Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
