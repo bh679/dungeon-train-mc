@@ -6,10 +6,11 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -83,11 +84,23 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
-            // Defensive dimension guard — biome modifier targets exactly
-            // one dimension by tag, but a 3rd-party datapack could
-            // mis-attach our modifier.
-            StartingDimension expected = data.startingDimension();
-            if (!serverLevel.dimension().equals(expected.levelKey())) {
+            // Phase 4 of plans/sorted-squishing-fern.md (cross-dim portals)
+            // requires track + tunnel gen in EVERY dim the train can transit
+            // to. Removed the prior "must match starting dim" guard: the
+            // three NeoForge biome modifiers under
+            // data/dungeontrain/neoforge/biome_modifier/ already restrict
+            // this feature to overworld/nether/end biome tags, so modded
+            // dims with their own biome registries won't accidentally
+            // trigger gen.
+            //
+            // Light residual defensive guard: require the dim to be one
+            // of the three vanilla dims. Catches the third-party-datapack
+            // mis-attach case the previous guard handled, without breaking
+            // legitimate cross-dim travel.
+            ResourceKey<Level> dimKey = serverLevel.dimension();
+            if (!dimKey.equals(Level.OVERWORLD)
+                && !dimKey.equals(Level.NETHER)
+                && !dimKey.equals(Level.END)) {
                 return false;
             }
 
