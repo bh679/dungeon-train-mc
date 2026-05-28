@@ -105,6 +105,10 @@ public final class WorldLifecycleEvents {
         games.brennan.dungeontrain.train.Trains.clearRegistry();
         games.brennan.dungeontrain.train.TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
+        // In-memory per-train portal-spawn counters (PortalRegistry itself
+        // persists via SavedData; only the "blocks since last spawn" tracker
+        // is transient).
+        games.brennan.dungeontrain.portal.PortalSpawner.clearState();
         PillarTemplateStore.clearCache();
         TrackTemplateStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();

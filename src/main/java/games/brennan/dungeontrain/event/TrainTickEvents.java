@@ -98,6 +98,12 @@ public final class TrainTickEvents {
         }
         long tAfterKill = System.nanoTime();
 
+        // Auto-spawn dimensional portals every PORTAL_INTERVAL_BLOCKS of
+        // forward progress per train. Cheap O(trains) pass that emits at
+        // most one portal per train per tick. See plans/sorted-squishing-fern.md.
+        games.brennan.dungeontrain.portal.PortalSpawner.tick(level, trainsById);
+        long tAfterPortals = System.nanoTime();
+
         // ShipyardShifter intentionally NOT invoked on the per-carriage
         // architecture: it would shift each carriage's pivot independently
         // and cause inter-carriage drift. Sable has no 128-chunk shipyard
@@ -129,13 +135,14 @@ public final class TrainTickEvents {
             int totalCarriages = 0;
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             JITTER_LOGGER.debug(
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms tracks={}ms tunnels={}ms trains={} carriages={}",
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms portals={}ms tracks={}ms tunnels={}ms trains={} carriages={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
                 (tAfterFindTrains - tAfterOverlay) / 1_000_000,
                 (tAfterKill - tAfterFindTrains) / 1_000_000,
-                (tAfterTracks - tAfterKill) / 1_000_000,
+                (tAfterPortals - tAfterKill) / 1_000_000,
+                (tAfterTracks - tAfterPortals) / 1_000_000,
                 (tAfterTunnels - tAfterTracks) / 1_000_000,
                 trainsById.size(), totalCarriages);
         }
