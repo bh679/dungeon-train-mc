@@ -1,4 +1,6 @@
 {
+  "block.dungeontrain.dimensional_portal_frame": "Dimensional Portal Frame",
+  "block.dungeontrain.dimensional_portal_core": "Dimensional Portal Core",
   "effect.dungeontrain.warmth_of_the_fire": "Warmth Of The Fire",
   "effect.dungeontrain.warmth_of_the_fire.description": "Slow Healing",
   "generator.dungeontrain.dungeon_train": "Dungeon Train",

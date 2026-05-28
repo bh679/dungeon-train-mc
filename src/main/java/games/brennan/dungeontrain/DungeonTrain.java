@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -38,7 +39,13 @@ public class DungeonTrain {
         // narrative_lectern + its BlockItem — first block-registry in the
         // project. NarrativeLecternHooks (mod-bus) attaches it to vanilla
         // BlockEntityType.LECTERN's valid blocks.
+        // Also: dimensional_portal_frame + dimensional_portal_core (Phase 1
+        // of the cross-dimension train portal feature).
         ModBlocks.register(modBus);
+        // First BE type in the project — backs the dimensional portal core.
+        // Must register AFTER ModBlocks so the BE-type builder can resolve
+        // its valid-block reference at registry-event time.
+        ModBlockEntities.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);
