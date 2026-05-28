@@ -575,7 +575,7 @@
         "index": 7,
         "label": "Sighting One Hundred & Forty"
       },
-      "variant": "Sighting One Hundred & Forty.\n\nReturned to cabin. Opened archive crate.\n\nI am looking for my own sighting in someone else's entry. A precedent.\n\nCross-ref: Sighting 17. Sighting 22. Sighting 41.\n\nSighting 17 \u2014 witness could not record duration. Could not record eye colour. The match is exact.\n\nIt should be a relief.\n\nIt is not. The date line is in different ink. I do not remember changing pens.\n\nProbably nothing.\n\n- H. Pent",
+      "variant": "Sighting One Hundred & Forty.\n\nReturned to cabin. Opened archive crate.\n\nI am looking for my own sighting in someone else's entry. A precedent.\n\nCross-ref: Sighting 17. Sighting 22. Sighting 41.\n\nSighting 17 — witness could not record duration. Could not record eye colour. The match is exact.\n\nIt should be a relief.\n\nIt is not. The date line is in different ink. I do not remember changing pens.\n\nProbably nothing.\n\n- H. Pent",
       "commit_message": "content(narrative): Halen Letter 7 variant A"
     },
     {
@@ -592,7 +592,7 @@
         "index": 7,
         "label": "Sighting One Hundred & Forty"
       },
-      "variant": "Sighting One Hundred & Forty.\n\nWhat I saw last week \u2014 if I saw anything \u2014 should be in here somewhere. A precedent. Some other witness with the same gaps.\n\nI found Sighting 17.\n\n\"Witness reports figure in mine shaft. Eyes white. Six seconds. Subject cannot account for the time after.\"\n\nI do not remember interviewing this person.\n\nThe phrasing is mine. The handwriting is mine.\n\nThe dates do not line up with my field trips that year.\n\nProbably nothing.\n\n- H.P.",
+      "variant": "Sighting One Hundred & Forty.\n\nWhat I saw last week — if I saw anything — should be in here somewhere. A precedent. Some other witness with the same gaps.\n\nI found Sighting 17.\n\n\"Witness reports figure in mine shaft. Eyes white. Six seconds. Subject cannot account for the time after.\"\n\nI do not remember interviewing this person.\n\nThe phrasing is mine. The handwriting is mine.\n\nThe dates do not line up with my field trips that year.\n\nProbably nothing.\n\n- H.P.",
       "commit_message": "content(narrative): Halen Letter 7 variant B"
     },
     {
@@ -665,7 +665,7 @@
     },
     {
       "id": "halen-l10-a",
-      "label": "Halen - Sighting \u2014 variant A (composed acceptance, finale)",
+      "label": "Halen - Sighting — variant A (composed acceptance, finale)",
       "type": "add_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
       "story_meta": {
@@ -675,14 +675,14 @@
       },
       "letter": {
         "index": 10,
-        "label": "Sighting \u2014"
+        "label": "Sighting —"
       },
-      "variant": "Sighting \u2014\n\nI have stopped numbering.\n\nI went back to the earliest entries.\n\nSighting 1 is dated thirty-seven years ago.\n\nI am thirty-seven.\n\nSighting 1 is in my handwriting. The same loop on the y. The same comma habit.\n\nI do not remember being six.\n\nI do not remember being eight, ten, twelve. I remember adult things. I remember nothing before the field.\n\nOn the inside of the back cover, in a hand I have never seen, are five words:\n\n\"I gave you the notebook.\"\n\nI have been reading and writing this notebook all of my life. I did not write this line.\n\nI do not know who did.\n\n- H. Pent",
+      "variant": "Sighting —\n\nI have stopped numbering.\n\nI went back to the earliest entries.\n\nSighting 1 is dated thirty-seven years ago.\n\nI am thirty-seven.\n\nSighting 1 is in my handwriting. The same loop on the y. The same comma habit.\n\nI do not remember being six.\n\nI do not remember being eight, ten, twelve. I remember adult things. I remember nothing before the field.\n\nOn the inside of the back cover, in a hand I have never seen, are five words:\n\n\"I gave you the notebook.\"\n\nI have been reading and writing this notebook all of my life. I did not write this line.\n\nI do not know who did.\n\n- H. Pent",
       "commit_message": "content(narrative): Halen Letter 10 variant A (finale)"
     },
     {
       "id": "halen-l10-b",
-      "label": "Halen - Sighting \u2014 variant B (fragmented confession, finale)",
+      "label": "Halen - Sighting — variant B (fragmented confession, finale)",
       "type": "add_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
       "story_meta": {
@@ -692,9 +692,9 @@
       },
       "letter": {
         "index": 10,
-        "label": "Sighting \u2014"
+        "label": "Sighting —"
       },
-      "variant": "Sighting \u2014\n\n[I have stopped numbering.]\n\nThe earliest entry. Sighting 1.\n\nThe date. Thirty-seven years ago.\n\nI am thirty-seven.\n\n[The handwriting is mine.]\n\n[I do not remember being six.]\n[I do not remember being twelve.]\n[I do not remember being twenty.]\n\nThe first thing I remember is the field. I was already a folklorist. I had already been writing in this notebook.\n\nInside the back cover, written in a hand I do not know:\n\n\"I gave you the notebook.\"\n\nI have been answering it my whole life.\n\n-",
+      "variant": "Sighting —\n\n[I have stopped numbering.]\n\nThe earliest entry. Sighting 1.\n\nThe date. Thirty-seven years ago.\n\nI am thirty-seven.\n\n[The handwriting is mine.]\n\n[I do not remember being six.]\n[I do not remember being twelve.]\n[I do not remember being twenty.]\n\nThe first thing I remember is the field. I was already a folklorist. I had already been writing in this notebook.\n\nInside the back cover, written in a hand I do not know:\n\n\"I gave you the notebook.\"\n\nI have been answering it my whole life.\n\n-",
       "commit_message": "content(narrative): Halen Letter 10 variant B (finale)"
     },
     {
@@ -1053,7 +1053,7 @@
     },
     {
       "id": "field-notes-k1",
-      "label": "Adventurer's Field Notes - variant k1 (books burn \u2014 the fact)",
+      "label": "Adventurer's Field Notes - variant k1 (books burn — the fact)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1063,12 +1063,12 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "You'll read this once. Just so you know.\n\nWhatever book you pick up here, however carefully you treat it \u2014 once you've read it, it burns. Pages first, then the binding, then the smell of paper, in that order.\n\nI've gotten used to it. I don't promise you will.",
+      "variant": "You'll read this once. Just so you know.\n\nWhatever book you pick up here, however carefully you treat it — once you've read it, it burns. Pages first, then the binding, then the smell of paper, in that order.\n\nI've gotten used to it. I don't promise you will.",
       "commit_message": "content(narrative): field-notes variant k1"
     },
     {
       "id": "field-notes-k2",
-      "label": "Adventurer's Field Notes - variant k2 (books burn \u2014 theory of redundancy)",
+      "label": "Adventurer's Field Notes - variant k2 (books burn — theory of redundancy)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1078,12 +1078,12 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "My theory on the burning books \u2014 and you'll have to forgive me, I've only got the one \u2014 is that the train doesn't like being remembered.\n\nYou read it. You remember what it said. The book becomes redundant. The train collects redundant things. That's all this is.\n\nI have no evidence for any of that. But it sounds right when I say it out loud.",
+      "variant": "My theory on the burning books — and you'll have to forgive me, I've only got the one — is that the train doesn't like being remembered.\n\nYou read it. You remember what it said. The book becomes redundant. The train collects redundant things. That's all this is.\n\nI have no evidence for any of that. But it sounds right when I say it out loud.",
       "commit_message": "content(narrative): field-notes variant k2"
     },
     {
       "id": "field-notes-k3",
-      "label": "Adventurer's Field Notes - variant k3 (books burn \u2014 grief over unfinished)",
+      "label": "Adventurer's Field Notes - variant k3 (books burn — grief over unfinished)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1098,7 +1098,7 @@
     },
     {
       "id": "field-notes-k4",
-      "label": "Adventurer's Field Notes - variant k4 (books burn \u2014 meta closure)",
+      "label": "Adventurer's Field Notes - variant k4 (books burn — meta closure)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1108,7 +1108,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "I write these knowing they'll burn after you read them.\n\nThat's the deal. I'm okay with it. If a thing has to be temporary to exist at all, then temporary is the form it takes.\n\nJust \u2014 read it. Then let it go.",
+      "variant": "I write these knowing they'll burn after you read them.\n\nThat's the deal. I'm okay with it. If a thing has to be temporary to exist at all, then temporary is the form it takes.\n\nJust — read it. Then let it go.",
       "commit_message": "content(narrative): field-notes variant k4"
     },
     {
@@ -1128,7 +1128,7 @@
     },
     {
       "id": "field-notes-l2",
-      "label": "Adventurer's Field Notes - variant l2 (chests beside tunnel tracks \u2014 tools)",
+      "label": "Adventurer's Field Notes - variant l2 (chests beside tunnel tracks — tools)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1183,7 +1183,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "The moss carriages are the worst for finding chests. The moss is patient. It grows over hinges, over latches, sometimes over the whole lid until the chest looks like a green stone.\n\nIf you see a green stone in a moss carriage that isn't quite the right shape \u2014 that's a chest. Trust me. Or don't. You'll trip over the next one anyway.",
+      "variant": "The moss carriages are the worst for finding chests. The moss is patient. It grows over hinges, over latches, sometimes over the whole lid until the chest looks like a green stone.\n\nIf you see a green stone in a moss carriage that isn't quite the right shape — that's a chest. Trust me. Or don't. You'll trip over the next one anyway.",
       "commit_message": "content(narrative): field-notes variant o"
     },
     {
@@ -1213,12 +1213,12 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "I've started finding other people's notes.\n\nNot many. Maybe one every few hours, or every few carriages \u2014 the distance between them is never regular. They turn up at campfires. Almost always at campfires. Like the writer needed to warm up before they could think clearly.\n\nI'd say it makes me feel less alone. It doesn't. It just makes me feel like I'm slightly behind.",
+      "variant": "I've started finding other people's notes.\n\nNot many. Maybe one every few hours, or every few carriages — the distance between them is never regular. They turn up at campfires. Almost always at campfires. Like the writer needed to warm up before they could think clearly.\n\nI'd say it makes me feel less alone. It doesn't. It just makes me feel like I'm slightly behind.",
       "commit_message": "content(narrative): field-notes variant q"
     },
     {
       "id": "field-notes-r",
-      "label": "Adventurer's Field Notes - variant r (campfires heal \u2014 that's why)",
+      "label": "Adventurer's Field Notes - variant r (campfires heal — that's why)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1228,7 +1228,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "Always by a campfire. Always.\n\nThe campfires here heal you \u2014 I assume you know that by now, or you wouldn't have made it this far. So the writer is stopping where it's safe to think.\n\nI do the same now. I write these by campfires too. That's why you found this one.",
+      "variant": "Always by a campfire. Always.\n\nThe campfires here heal you — I assume you know that by now, or you wouldn't have made it this far. So the writer is stopping where it's safe to think.\n\nI do the same now. I write these by campfires too. That's why you found this one.",
       "commit_message": "content(narrative): field-notes variant r"
     },
     {
@@ -1258,12 +1258,12 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "I wonder if someone is following my notes the way I'm following theirs.\n\nIf you are \u2014 and I have no real reason to think you are not \u2014 hello. The campfire's a good place to read this. Wait until the fire's settled. Don't rush.",
+      "variant": "I wonder if someone is following my notes the way I'm following theirs.\n\nIf you are — and I have no real reason to think you are not — hello. The campfire's a good place to read this. Wait until the fire's settled. Don't rush.",
       "commit_message": "content(narrative): field-notes variant t"
     },
     {
       "id": "field-notes-k5",
-      "label": "Adventurer's Field Notes - variant k5 (books burn \u2014 the smell)",
+      "label": "Adventurer's Field Notes - variant k5 (books burn — the smell)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1278,7 +1278,7 @@
     },
     {
       "id": "field-notes-k6",
-      "label": "Adventurer's Field Notes - variant k6 (books burn \u2014 slow read)",
+      "label": "Adventurer's Field Notes - variant k6 (books burn — slow read)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1288,12 +1288,12 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "I read the next one as slowly as I could. One word at a time, mouthing each one.\n\nIt still burned at the end. But it burned more slowly, in a way that felt \u2014 and I am almost certain about this \u2014 almost grateful.\n\nI don't know what to do with that information.",
+      "variant": "I read the next one as slowly as I could. One word at a time, mouthing each one.\n\nIt still burned at the end. But it burned more slowly, in a way that felt — and I am almost certain about this — almost grateful.\n\nI don't know what to do with that information.",
       "commit_message": "content(narrative): field-notes variant k6"
     },
     {
       "id": "field-notes-k7",
-      "label": "Adventurer's Field Notes - variant k7 (books burn \u2014 tried not reading)",
+      "label": "Adventurer's Field Notes - variant k7 (books burn — tried not reading)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1308,7 +1308,7 @@
     },
     {
       "id": "field-notes-k8",
-      "label": "Adventurer's Field Notes - variant k8 (books burn \u2014 afterimage)",
+      "label": "Adventurer's Field Notes - variant k8 (books burn — afterimage)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1323,7 +1323,7 @@
     },
     {
       "id": "field-notes-k9",
-      "label": "Adventurer's Field Notes - variant k9 (books burn \u2014 read aloud to campfire)",
+      "label": "Adventurer's Field Notes - variant k9 (books burn — read aloud to campfire)",
       "type": "add_random_book_variant",
       "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
       "random_book_meta": {
@@ -1378,7 +1378,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "There are no more.\n\nWhatever they were leaving, this was the last one. I've checked the next three campfires. Nothing.\n\nEither they made it out \u2014 and I don't believe in that \u2014 or this is where they stopped. I'm taking the last note with me. It deserves a witness.",
+      "variant": "There are no more.\n\nWhatever they were leaving, this was the last one. I've checked the next three campfires. Nothing.\n\nEither they made it out — and I don't believe in that — or this is where they stopped. I'm taking the last note with me. It deserves a witness.",
       "commit_message": "content(narrative): field-notes variant w"
     },
     {
@@ -1419,11 +1419,11 @@
       "random_book_meta": {
         "id": "tally_of_the_fallen",
         "title": "Tally",
-        "author": "\u2014",
+        "author": "—",
         "generation": 0,
         "weight": 1
       },
-      "variant": "Day 1 \u2014 3 slimes. 1 zombie. Found bread.\nDay 4 \u2014 Lost count of slimes. Found a sword. Better than mine.\nDay 12 \u2014 Stopped writing days.\nDay ? \u2014 Found another one of these books. Wasn't mine. Handwriting almost was.",
+      "variant": "Day 1 — 3 slimes. 1 zombie. Found bread.\nDay 4 — Lost count of slimes. Found a sword. Better than mine.\nDay 12 — Stopped writing days.\nDay ? — Found another one of these books. Wasn't mine. Handwriting almost was.",
       "commit_message": "content(narrative): tally variant a"
     },
     {
@@ -1434,7 +1434,7 @@
       "random_book_meta": {
         "id": "tally_of_the_fallen",
         "title": "Tally",
-        "author": "\u2014",
+        "author": "—",
         "generation": 0,
         "weight": 1
       },
@@ -1453,8 +1453,113 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "If you find this on me, I'm sorry about the smell.\n\nI came in through a door I can't describe anymore. I think I was looking for something specific. I don't remember what. I remember being sure, and that's the part that bothers me \u2014 that being sure can fade so completely.\n\nTake the sword if its still here. It's not enchanted but it swings true and I sharpened it last night, which apparently was a waste of effort but at least it's a gift now.\n\nDon't follow my route. There's nothing useful behind me. Everything I found, I'm wearing.\n\nWhatever you came in looking for \u2014 write it down. Now. Before the train decides you didn't.",
+      "variant": "If you find this on me, I'm sorry about the smell.\n\nI came in through a door I can't describe anymore. I think I was looking for something specific. I don't remember what. I remember being sure, and that's the part that bothers me — that being sure can fade so completely.\n\nTake the sword if its still here. It's not enchanted but it swings true and I sharpened it last night, which apparently was a waste of effort but at least it's a gift now.\n\nDon't follow my route. There's nothing useful behind me. Everything I found, I'm wearing.\n\nWhatever you came in looking for — write it down. Now. Before the train decides you didn't.",
       "commit_message": "content(narrative): for-next variant a"
+    },
+    {
+      "id": "complaint-log-a",
+      "label": "Complaint Log - variant a (sticky chest hinges)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Every chest hinge\non this train\nis slightly sticky.\n\nNot enough to be broken.\nEnough to notice.\nI checked twelve carriages.\nIt is consistent across them.\n\nA stuck hinge can be oiled.\nA working hinge can be ignored.\nThis one cannot be either.",
+      "commit_message": "content(narrative): complaint-log variant a"
+    },
+    {
+      "id": "complaint-log-b",
+      "label": "Complaint Log - variant b (slime residue on boots)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Slime leaves a film\nthat does not wash off.\nI have tried.\n\nHot water, sand, dry rags.\nThe film is still there.\nMy boots squeak now.\nThey did not used to squeak.\n\nThere are no new boots\non the train.\nI have looked.\nThe slimes are still there.\nI step in them every morning.",
+      "commit_message": "content(narrative): complaint-log variant b"
+    },
+    {
+      "id": "complaint-log-c",
+      "label": "Complaint Log - variant c (lanterns and candles underfoot)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Lanterns on the floor.\nCandles in doorways.\nAlways at ankle height.\n\nWhoever placed them\ndid not walk back through.\nI have tripped sixteen times\nthat I will admit to.\n\nI memorise where they are.\nThe carriages repeat\nin new arrangements.\nThe lanterns move with them.\nThe bruises do not.",
+      "commit_message": "content(narrative): complaint-log variant c"
+    },
+    {
+      "id": "complaint-log-d",
+      "label": "Complaint Log - variant d (someone moves the lanterns)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "In carriage 213,\nthe lanterns are not\nwhere I left them.\n\nThe one by the door\nhas moved to the other side.\nThe two at the back\nare a hand's width closer.\nOne is missing.\nA different one is here.\n\nI waited three nights.\nNothing moved.\nOn the fourth I slept.\nThey moved.",
+      "commit_message": "content(narrative): complaint-log variant d"
+    },
+    {
+      "id": "complaint-log-e",
+      "label": "Complaint Log - variant e (snorers, bench-by-bench audit)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Fifteen sleeping cars\nI have surveyed.\nI will sleep in four.\n\nCar 2341, bench three:\nsnores with a whistle.\nCar 6792, bench eight:\nsnores with a cough.\nCar 9847, bench one:\nsnores the same tune\nevery night.\n\nI sleep in the other four.\nSome nights a new snorer\nfinds my bench.\nSome nights an old one\nmoves to mine.\nThe system is failing.",
+      "commit_message": "content(narrative): complaint-log variant e"
+    },
+    {
+      "id": "complaint-log-f",
+      "label": "Complaint Log - variant f (tough mobs, lousy loot)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "A thing in iron armour.\nIt dropped a bone.\n\nThree crossbowmen.\nBetween them, one emerald.\nA thing in chainmail.\nIt dropped a potato.\n\nThe loot does not justify\nthe swing of the sword.\nI keep swinging.",
+      "commit_message": "content(narrative): complaint-log variant f"
+    },
+    {
+      "id": "complaint-log-g",
+      "label": "Complaint Log - variant g (the dirt cart, landing-page variant)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/complaint_log.json",
+      "random_book_meta": {
+        "id": "complaint_log",
+        "title": "Complaint Log",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Once, by accident,\nI dug out a dirt cart\nand found a chest inside.\n\nI have dug out\nforty-three dirt carts since.\nI have used shovels.\nI have used my hands.\nI have dug them slowly.\nI have dug them fast.\nThey have all been empty.\n\nI have tried not looking.\nI have tried looking away.\nI have tried digging blind.\nI have tried whistling.\nI have tried silence.\nI have tried thinking of soup.\nI have tried thinking of nothing.\nThe train knows\nwhen I am looking.",
+      "commit_message": "content(narrative): complaint-log variant g"
     }
   ],
   "applied": [
