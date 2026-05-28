@@ -50,6 +50,13 @@ public final class NarrativeProgressData extends SavedData {
     private static final String TAG_RANDOM_BOOKS = "random_books";
     /** Per-world (basename → seen-variant indices) for the starting-book pool — RESPAWN cycling. */
     private static final String TAG_STARTING_BOOKS_SEEN = "starting_books_seen";
+    /**
+     * Per-world (storyBasename#letterIndex → seen-variant indices) for
+     * narrative-story letters. Drives the {@code read_all_story_variants}
+     * achievement. Flat-key shape so the existing {@link #encodeStoryProgress}
+     * / {@link #decodeStoryProgress} helpers serialize it unchanged.
+     */
+    private static final String TAG_STORY_VARIANTS = "story_variants";
     private static final String TAG_STORY_ID = "id";
     private static final String TAG_STORY_READ = "read";
     /** Root-level list of UUIDs that have already received their first-login welcome book. */
@@ -60,6 +67,13 @@ public final class NarrativeProgressData extends SavedData {
     private final Map<String, NarrativeProgress> byStory;
     /** World-wide seen-variant tracking for the random-book pool. */
     private final Map<String, NarrativeProgress> randomBooksSeen;
+    /**
+     * World-wide seen-variant tracking for narrative-story letters. Keyed
+     * {@code storyBasename + "#" + letterIndex}; values are the set of
+     * variant indices the world has shown for that letter. Drives the
+     * {@code read_all_story_variants} achievement.
+     */
+    private final Map<String, NarrativeProgress> storyVariantsSeen;
     /**
      * World-wide seen-variant tracking for the <em>starting-book</em> pool.
      * Drives the RESPAWN cycling rule: while any RESPAWN-pool variant is
@@ -77,16 +91,18 @@ public final class NarrativeProgressData extends SavedData {
     private final Set<UUID> startingBookReceived;
 
     private NarrativeProgressData() {
-        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>());
+        this(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashSet<>());
     }
 
     private NarrativeProgressData(Map<String, NarrativeProgress> byStory,
                                   Map<String, NarrativeProgress> randomBooksSeen,
                                   Map<String, NarrativeProgress> startingBooksSeen,
+                                  Map<String, NarrativeProgress> storyVariantsSeen,
                                   Set<UUID> startingBookReceived) {
         this.byStory = byStory;
         this.randomBooksSeen = randomBooksSeen;
         this.startingBooksSeen = startingBooksSeen;
+        this.storyVariantsSeen = storyVariantsSeen;
         this.startingBookReceived = startingBookReceived;
     }
 
@@ -166,6 +182,65 @@ public final class NarrativeProgressData extends SavedData {
     public void resetRandomBookProgress() {
         if (!randomBooksSeen.isEmpty()) {
             randomBooksSeen.clear();
+            setDirty();
+        }
+    }
+
+    // ---------------- Story-letter variant tracking ----------------
+
+    /**
+     * Flat-key encoding for the {@link #storyVariantsSeen} map. Mirrors the
+     * {@code basename → Set<variantIndex>} shape used by {@link #randomBooksSeen}
+     * so {@link #encodeStoryProgress} / {@link #decodeStoryProgress} can
+     * serialize both with no schema change.
+     */
+    private static String storyVariantKey(String storyBasename, int letterIndex) {
+        return storyBasename + "#" + letterIndex;
+    }
+
+    /**
+     * True when the world has already shown
+     * {@code (storyBasename, letterIndex, variantIndex)} to any player.
+     * Used by the {@code read_all_story_variants} completion scan.
+     */
+    public boolean hasSeenStoryVariant(String storyBasename, int letterIndex, int variantIndex) {
+        NarrativeProgress p = storyVariantsSeen.get(storyVariantKey(storyBasename, letterIndex));
+        return p != null && p.readLetters().contains(variantIndex);
+    }
+
+    /**
+     * Mark {@code (storyBasename, letterIndex, variantIndex)} seen for the
+     * world. Returns {@code true} when state changed. Calls {@link #setDirty()}
+     * so the .dat file persists.
+     */
+    public boolean markStoryVariantSeen(String storyBasename, int letterIndex, int variantIndex) {
+        NarrativeProgress p = storyVariantsSeen.computeIfAbsent(
+            storyVariantKey(storyBasename, letterIndex),
+            k -> new NarrativeProgress()
+        );
+        boolean changed = p.markSeen(variantIndex);
+        if (changed) setDirty();
+        return changed;
+    }
+
+    /**
+     * Snapshot of every {@code (story, letter)} pair the world has shown at
+     * least one variant of. Key shape is {@link #storyVariantKey(String, int)}
+     * ({@code basename#letterIndex}). Used by the achievement-completion
+     * scan in {@code AchievementEvents}.
+     */
+    public Map<String, NarrativeProgress> storyVariantsSnapshot() {
+        Map<String, NarrativeProgress> out = new HashMap<>(storyVariantsSeen.size());
+        for (var e : storyVariantsSeen.entrySet()) {
+            out.put(e.getKey(), new NarrativeProgress(e.getValue().readLetters()));
+        }
+        return out;
+    }
+
+    /** Clear story-letter variant tracking for the world. */
+    public void resetStoryVariantsSeen() {
+        if (!storyVariantsSeen.isEmpty()) {
+            storyVariantsSeen.clear();
             setDirty();
         }
     }
@@ -341,6 +416,7 @@ public final class NarrativeProgressData extends SavedData {
         tag.put(TAG_STORIES, encodeStoryProgress(byStory));
         tag.put(TAG_RANDOM_BOOKS, encodeStoryProgress(randomBooksSeen));
         tag.put(TAG_STARTING_BOOKS_SEEN, encodeStoryProgress(startingBooksSeen));
+        tag.put(TAG_STORY_VARIANTS, encodeStoryProgress(storyVariantsSeen));
 
         // Per-player starting-book receipts — flat list of UUIDs.
         ListTag startedList = new ListTag();
@@ -380,11 +456,18 @@ public final class NarrativeProgressData extends SavedData {
      * per-player {@code players} list from the old story schema is silently
      * dropped — by design, "each new world starts fresh" per the approved
      * plan.
+     *
+     * <p>Package-private so {@code NarrativeProgressDataTest} can round-trip
+     * {@link #save} output without a {@link ServerLevel} mock.</p>
      */
-    private static NarrativeProgressData load(CompoundTag tag) {
+    static NarrativeProgressData load(CompoundTag tag) {
         Map<String, NarrativeProgress> stories = decodeStoryProgress(tag, TAG_STORIES);
         Map<String, NarrativeProgress> randomBooks = decodeStoryProgress(tag, TAG_RANDOM_BOOKS);
         Map<String, NarrativeProgress> startingBooksSeen = decodeStoryProgress(tag, TAG_STARTING_BOOKS_SEEN);
+        // Missing tag → empty map (back-compat with worlds saved before the
+        // per-variant tracking landed). The achievement won't fire on those
+        // worlds until variants are encountered post-update.
+        Map<String, NarrativeProgress> storyVariants = decodeStoryProgress(tag, TAG_STORY_VARIANTS);
         Set<UUID> startingBookReceived = new HashSet<>();
         // Backwards-compatible: missing `starting_book_received` tag means no
         // players have been marked yet. On first post-update login each
@@ -398,7 +481,7 @@ public final class NarrativeProgressData extends SavedData {
                 startingBookReceived.add(entry.getUUID(TAG_UUID));
             }
         }
-        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, startingBookReceived);
+        return new NarrativeProgressData(stories, randomBooks, startingBooksSeen, storyVariants, startingBookReceived);
     }
 
     /** Inverse of {@link #encodeStoryProgress}; tolerates missing tag (returns empty). */

@@ -21,6 +21,10 @@ import java.util.Optional;
  *   <li>{@code all_stories} — every letter of every {@code StoryFile} in
  *       {@link games.brennan.dungeontrain.narrative.StoryRegistry} is
  *       marked read.</li>
+ *   <li>{@code all_story_variants} — every variant of every letter of every
+ *       {@code StoryFile} is marked seen. Strictly stronger than
+ *       {@code all_stories}; drives the "Every Reality, Every Word"
+ *       challenge advancement.</li>
  * </ul>
  *
  * <p>JSON shape:
