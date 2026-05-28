@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l3-a",
-      "label": "Edda - Letter 3 variant A (the library car experiment)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "I walked forward four carriages. I am writing from a reading nook in what may be a library car. Some of the books are real. Some are spine-only and glued to the wall.\n\nIt is here too. At my window. Not the one I left. This new one.\n\nThe same three heads. The middle one tilted slightly off centre, as if listening.\n\nI walked to the other side of the car. That window was dark. I came back. It was at mine again.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 3 variant A"
-    },
-    {
       "id": "edda-l3-b",
       "label": "Edda - Letter 3 variant B (bright with bone)",
       "type": "add_variant",
@@ -2137,6 +2120,11 @@
     {
       "id": "edda-l2-b",
       "applied_at": "2026-05-28T20:09:39Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l3-a",
+      "applied_at": "2026-05-28T21:05:46Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
