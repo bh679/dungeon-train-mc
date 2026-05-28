@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l8-a",
-      "label": "Corren - Letter 8 variant A (the screech and the blasts)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Letter Eight"
-      },
-      "variant": "I have heard it for weeks now.\n\nA screech. Three voices, almost layered.\n\nSometimes one comes alone. Sometimes all three.\n\nAnd the blasts.\n\nI feel them in the floor before I hear them.\n\nThey never break anything I can see.\n\nI do not know where they land.\n\nI walk forward.\n\nThe screech comes again. Two carriages back.\n\nAlways from there.\n\nNever further.\n\nI am sure.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 8 variant A"
-    },
-    {
       "id": "corren-l8-b",
       "label": "Corren - Letter 8 variant B (what the wheels do not carry)",
       "type": "add_variant",
@@ -1995,7 +1978,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "The zombie walks. It does not breathe. It does not warm. The body is here. The body is not what is making it walk.\n\nMedicine asks how a body fails. The zombie offers nothing for medicine to take hold of — there is no failure. There is only persistence.\n\nThe question is not medical. It is structural. What is this thing? How does it hold together? Those are questions for someone who is not a naturalist.",
+      "variant": "The zombie walks. It does not breathe. It does not warm. The body is here. The body is not what is making it walk.\n\nMedicine asks how a body fails. The zombie offers nothing for medicine to take hold of \u2014 there is no failure. There is only persistence.\n\nThe question is not medical. It is structural. What is this thing? How does it hold together? Those are questions for someone who is not a naturalist.",
       "commit_message": "content(narrative): bestiary fragments variant a (zombie)"
     },
     {
@@ -2055,7 +2038,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "The skeleton is bone alone. No skin, no muscle, no organ. The structure that supports a body — and no body.\n\nIt holds a bow. The bow is drawn. There is no muscle to draw it. There is nothing in the chest to brace against. The bow is drawn.\n\nThe literature does not account for this. A skeleton is what remains when the body is gone — the end of inquiry. But this skeleton walks. There is nothing here to dissect. The dissection has already been done.\n\nNot by me.",
+      "variant": "The skeleton is bone alone. No skin, no muscle, no organ. The structure that supports a body \u2014 and no body.\n\nIt holds a bow. The bow is drawn. There is no muscle to draw it. There is nothing in the chest to brace against. The bow is drawn.\n\nThe literature does not account for this. A skeleton is what remains when the body is gone \u2014 the end of inquiry. But this skeleton walks. There is nothing here to dissect. The dissection has already been done.\n\nNot by me.",
       "commit_message": "content(narrative): bestiary fragments variant e (skeleton)"
     },
     {
@@ -2100,7 +2083,7 @@
         "generation": 0,
         "weight": 1
       },
-      "variant": "If you are reading this notebook, I am not. Or I have set it down and not returned.\n\nIf you came to the train to study the fauna — do not. The methods of natural history do not apply. The specimens are not specimens. They are something the methods do not have a name for — and the methods cost more than they pay.\n\nI am sorry, whoever you are. I did not know I was writing for someone to warn.",
+      "variant": "If you are reading this notebook, I am not. Or I have set it down and not returned.\n\nIf you came to the train to study the fauna \u2014 do not. The methods of natural history do not apply. The specimens are not specimens. They are something the methods do not have a name for \u2014 and the methods cost more than they pay.\n\nI am sorry, whoever you are. I did not know I was writing for someone to warn.",
       "commit_message": "content(narrative): bestiary fragments variant h (warning)"
     }
   ],
@@ -2233,6 +2216,11 @@
     {
       "id": "corren-l7-b",
       "applied_at": "2026-05-28T13:35:02Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l8-a",
+      "applied_at": "2026-05-28T14:50:18Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
