@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l7-b",
-      "label": "Corren - Letter 7 variant B (related facts)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Letter Seven"
-      },
-      "variant": "the heat behind me. the cold ahead.\n\ni did not know which way was up.\n\ni remember falling onto grass.\n\nthe grass was not on fire.\n\nthat seemed important.\n\nthen a building.\n\ni did not know the building.\n\ni know all the buildings in this region.\n\ni mapped this region.\n\na train was at the building.\n\nthe doors were open.\n\ni was alive and the doors were open.\n\nthese felt like related facts.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 7 variant B"
-    },
-    {
       "id": "corren-l8-a",
       "label": "Corren - Letter 8 variant A (the screech and the blasts)",
       "type": "add_variant",
@@ -2125,6 +2108,11 @@
     {
       "id": "corren-l7-a",
       "applied_at": "2026-05-28T13:22:42Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l7-b",
+      "applied_at": "2026-05-28T13:35:02Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
