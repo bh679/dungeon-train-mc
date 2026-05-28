@@ -297,6 +297,95 @@ def test_add_variant_rejects_letter_label_mismatch():
         shutil.rmtree(ws)
 
 
+RANDOM_BOOK_TARGET = "src/main/resources/data/dungeontrain/narratives/random_books/test_book.json"
+RANDOM_BOOK_META = {"id": "test_book", "title": "Test Book", "author": "Tester"}
+
+
+def add_random_book_variant_item(item_id, variant_text, commit_suffix="", book_meta=None):
+    return {
+        "id": item_id,
+        "label": f"Test {item_id}",
+        "type": "add_random_book_variant",
+        "target": RANDOM_BOOK_TARGET,
+        "random_book_meta": book_meta or RANDOM_BOOK_META,
+        "variant": variant_text,
+        "commit_message": f"test: add rb variant {commit_suffix or item_id}",
+    }
+
+
+def test_add_random_book_variant_creates_file_on_first_call():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [add_random_book_variant_item("v1", "first text")], "applied": []}
+        seed_workspace(ws, queue)
+        r = run(ws, 1_700_000_000)
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        with open(os.path.join(ws, RANDOM_BOOK_TARGET)) as f:
+            book = json.load(f)
+        assert book["id"] == "test_book"
+        assert book["title"] == "Test Book"
+        assert book["author"] == "Tester"
+        assert book["generation"] == 0
+        assert book["weight"] == 1
+        assert book["variants"] == ["first text"]
+        print("OK  test_add_random_book_variant_creates_file_on_first_call")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_random_book_variant_appends_to_existing():
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [
+            add_random_book_variant_item("v1", "first text"),
+            add_random_book_variant_item("v2", "second text"),
+        ], "applied": []}
+        seed_workspace(ws, queue)
+        assert run(ws, 1_700_000_000).returncode == 0
+        assert run(ws, 1_700_003_600).returncode == 0
+        with open(os.path.join(ws, RANDOM_BOOK_TARGET)) as f:
+            book = json.load(f)
+        assert book["variants"] == ["first text", "second text"]
+        print("OK  test_add_random_book_variant_appends_to_existing")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_random_book_variant_rejects_meta_mismatch():
+    ws, _ = make_workspace()
+    try:
+        bad_meta = {"id": "test_book", "title": "DIFFERENT TITLE", "author": "Tester"}
+        queue = {"pending": [
+            add_random_book_variant_item("v1", "first"),
+            add_random_book_variant_item("v2", "second", book_meta=bad_meta),
+        ], "applied": []}
+        seed_workspace(ws, queue)
+        assert run(ws, 1_700_000_000).returncode == 0
+        r2 = run(ws, 1_700_003_600)
+        assert r2.returncode != 0
+        assert "existing title" in r2.stderr, r2.stderr
+        print("OK  test_add_random_book_variant_rejects_meta_mismatch")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_add_random_book_variant_honours_custom_weight_and_generation():
+    ws, _ = make_workspace()
+    try:
+        custom_meta = {"id": "test_book", "title": "Test Book", "author": "Tester",
+                       "generation": 2, "weight": 3}
+        item = add_random_book_variant_item("v1", "first", book_meta=custom_meta)
+        seed_workspace(ws, {"pending": [item], "applied": []})
+        assert run(ws, 1_700_000_000).returncode == 0
+        with open(os.path.join(ws, RANDOM_BOOK_TARGET)) as f:
+            book = json.load(f)
+        assert book["generation"] == 2
+        assert book["weight"] == 3
+        print("OK  test_add_random_book_variant_honours_custom_weight_and_generation")
+    finally:
+        shutil.rmtree(ws)
+
+
 def read_ain_version(ws):
     with open(os.path.join(ws, "gradle.properties")) as f:
         for line in f:
@@ -733,6 +822,10 @@ def main():
         test_add_variant_creates_new_letter_and_keeps_sorted,
         test_add_variant_rejects_story_meta_mismatch,
         test_add_variant_rejects_letter_label_mismatch,
+        test_add_random_book_variant_creates_file_on_first_call,
+        test_add_random_book_variant_appends_to_existing,
+        test_add_random_book_variant_rejects_meta_mismatch,
+        test_add_random_book_variant_honours_custom_weight_and_generation,
         test_ain_bump_steps_to_next_version_skipping_queue,
         test_ain_at_latest_falls_through_to_queue_in_always_mode,
         test_mode_ain_stops_when_no_update_available,
