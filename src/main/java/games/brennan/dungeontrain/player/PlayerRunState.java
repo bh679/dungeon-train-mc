@@ -25,6 +25,12 @@ import java.util.Set;
  *       accumulated from backward (negative-delta) leader movement. The
  *       forward subtotal is derived as {@code cartsSinceDeath - cartsBackwardSinceDeath}.
  *       Drives the "The Long Way Back" achievement.</li>
+ *   <li>{@link #travelledCarriageIndex} — signed net carriages traversed by
+ *       the player as leader this life (forward positive, backward negative).
+ *       Drives mob difficulty: the spawn-time tier is computed from
+ *       {@code max(this counter)} across all online players, so a single death
+ *       resets the player's own contribution to 0 and the next mob spawn falls
+ *       back to whatever any other player still has.</li>
  * </ul>
  *
  * <p>Persisted via {@link #CODEC} so the streak survives logout / world
@@ -39,23 +45,27 @@ public final class PlayerRunState {
     public static final Codec<PlayerRunState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         BlockPos.CODEC.listOf().optionalFieldOf("uniqueChests", List.of()).forGetter(PlayerRunState::uniqueChestsList),
         Codec.INT.optionalFieldOf("cartsSinceDeath", 0).forGetter(PlayerRunState::cartsSinceDeath),
-        Codec.INT.optionalFieldOf("cartsBackwardSinceDeath", 0).forGetter(PlayerRunState::cartsBackwardSinceDeath)
+        Codec.INT.optionalFieldOf("cartsBackwardSinceDeath", 0).forGetter(PlayerRunState::cartsBackwardSinceDeath),
+        Codec.INT.optionalFieldOf("travelledCarriageIndex", 0).forGetter(PlayerRunState::travelledCarriageIndex)
     ).apply(instance, PlayerRunState::new));
 
     private final Set<BlockPos> uniqueChests;
     private int cartsSinceDeath;
     private int cartsBackwardSinceDeath;
+    private int travelledCarriageIndex;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
         this.cartsSinceDeath = 0;
         this.cartsBackwardSinceDeath = 0;
+        this.travelledCarriageIndex = 0;
     }
 
-    public PlayerRunState(List<BlockPos> uniqueChests, int cartsSinceDeath, int cartsBackwardSinceDeath) {
+    public PlayerRunState(List<BlockPos> uniqueChests, int cartsSinceDeath, int cartsBackwardSinceDeath, int travelledCarriageIndex) {
         this.uniqueChests = new HashSet<>(uniqueChests);
         this.cartsSinceDeath = cartsSinceDeath;
         this.cartsBackwardSinceDeath = cartsBackwardSinceDeath;
+        this.travelledCarriageIndex = travelledCarriageIndex;
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -119,10 +129,28 @@ public final class PlayerRunState {
         return cartsSinceDeath;
     }
 
-    /** Reset both cart counters (called on respawn). */
+    /** Signed net carriages traversed by this player as leader since their last death. */
+    public int travelledCarriageIndex() {
+        return travelledCarriageIndex;
+    }
+
+    /**
+     * Add a signed leader-anchor delta to {@link #travelledCarriageIndex}.
+     * Mirrors {@link #recordCartMovement} but preserves sign — mob difficulty
+     * uses {@code abs(travelledCarriageIndex) / carriagesPerTier} to compute
+     * tier, so backward movement reduces tier (matches the prior behavior of
+     * the now-deprecated global counter).
+     */
+    public void advanceTravelled(int signedDelta) {
+        if (signedDelta == 0) return;
+        travelledCarriageIndex += signedDelta;
+    }
+
+    /** Reset cart counters and travelled-carriage-index (called on respawn). */
     public void resetCarts() {
         cartsSinceDeath = 0;
         cartsBackwardSinceDeath = 0;
+        travelledCarriageIndex = 0;
     }
 
     /** Reset everything (called on respawn). */
