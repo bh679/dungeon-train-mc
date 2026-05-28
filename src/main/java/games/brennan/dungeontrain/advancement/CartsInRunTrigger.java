@@ -10,9 +10,13 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Optional;
 
 /**
- * Fires when a player's {@code cartsSinceDeath} counter reaches a
- * threshold. Backing state lives in
- * {@link games.brennan.dungeontrain.player.PlayerRunState#cartsSinceDeath}.
+ * Fires when the absolute global travelled-carriage counter reaches a
+ * threshold. Backing value is
+ * {@code Math.abs(BoardingProgressData.travelledCarriageIndex())} — the
+ * same counter
+ * {@link games.brennan.dungeontrain.difficulty.DifficultyApplier} uses for
+ * mob-difficulty tiering, so the achievement and the on-screen difficulty
+ * progression are coherent and survive deaths.
  *
  * <p>JSON shape:
  * <pre>{@code

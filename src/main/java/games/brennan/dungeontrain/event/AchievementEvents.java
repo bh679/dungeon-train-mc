@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.RandomBookFile;
@@ -127,15 +128,28 @@ public final class AchievementEvents {
     /**
      * Called from {@link BoardingProgressEvents} every tick the leader player
      * advances along the train. Accepts signed {@code delta}: forward
-     * (positive) and backward (negative) both contribute to the absolute
-     * per-life total; backward additionally feeds the bidirectional
-     * achievement counter.
+     * (positive) and backward (negative).
+     *
+     * <p>{@link ModAdvancementTriggers#CARTS_IN_RUN} (tiers 100 / 1000 / 10000)
+     * fires off {@code Math.abs(BoardingProgressData.travelledCarriageIndex())} —
+     * the same global counter that
+     * {@link games.brennan.dungeontrain.difficulty.DifficultyApplier} reads for
+     * mob-difficulty tiering. The on-screen difficulty progression and the
+     * achievement progression stay coherent, and progress persists across
+     * deaths (counter is never reset).</p>
+     *
+     * <p>{@link ModAdvancementTriggers#CARTS_BOTH_DIRECTIONS} ("The Long Way
+     * Back") still uses the per-life forward / backward subtotals tracked in
+     * {@link PlayerRunState} — so dying still resets that one specifically.</p>
      */
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
         if (delta == 0) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        int absoluteTotal = run.recordCartMovement(delta);
-        ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, absoluteTotal);
+        run.recordCartMovement(delta);
+        int travelledAbs = Math.abs(
+            BoardingProgressData.get(player.serverLevel()).travelledCarriageIndex()
+        );
+        ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, travelledAbs);
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
     }
