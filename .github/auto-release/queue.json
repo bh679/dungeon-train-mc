@@ -951,6 +951,561 @@
       },
       "variant": "I closed the notebook.\n\nThe back page is empty. I sat with it open for a long time.\n\nHalric is not in the back page. Halric is in the front pages. I have read them too many times.\n\nI am nineteen. I have never seen a dragon. I do not want to kill her.\n\nI do not know where this train is going. I think that is alright.\n\nI am going to find a window.\n\nSoll",
       "commit_message": "content(narrative): Soll Letter 6 variant B"
+    },
+    {
+      "id": "field-notes-a",
+      "label": "Adventurer's Field Notes - variant a (chest, three survival tips)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "If you're reading this, you found my chest. Take what's useful.\n\nThree things I wish someone had told me:\n1. The slimes don't drop loot worth the swing if you're at half hearts. Walk past.\n2. Pots aren't always empty. They aren't always full either. Break them all anyway.\n3. Don't sleep on the train. I don't know what happens. I just know I haven't met anyone who has.",
+      "commit_message": "content(narrative): field-notes variant a"
+    },
+    {
+      "id": "field-notes-b",
+      "label": "Adventurer's Field Notes - variant b (trade emeralds for food)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Trade emeralds for food before you trade them for anything else. I learned that one late.",
+      "commit_message": "content(narrative): field-notes variant b"
+    },
+    {
+      "id": "field-notes-c",
+      "label": "Adventurer's Field Notes - variant c (carriage count)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I've been keeping a count of carriages I've cleared. I'm not going to tell you the number, because the number doesn't matter and it'll only depress you.\n\nJust keep going. The one after the bad one is usually fine.",
+      "commit_message": "content(narrative): field-notes variant c"
+    },
+    {
+      "id": "field-notes-d",
+      "label": "Adventurer's Field Notes - variant d (the same librarian)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "If the librarian seems too friendly, he's the same librarian as the last one. They all are. I have no proof of this. I just know it.",
+      "commit_message": "content(narrative): field-notes variant d"
+    },
+    {
+      "id": "field-notes-e",
+      "label": "Adventurer's Field Notes - variant e (built the chest from a barrel)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "This chest used to be a barrel. I broke it down in the dining car and put it back together as a chest because I needed somewhere to leave the things I couldn't carry.\n\nThat sentence is tidier than the six hours it actually took. If the lid still closes properly, please appreciate it for a moment before you take everything.",
+      "commit_message": "content(narrative): field-notes variant e"
+    },
+    {
+      "id": "field-notes-f",
+      "label": "Adventurer's Field Notes - variant f (found chest empty, adopted it)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Found this empty in a corner. Decided it deserved to be useful.\n\nI'm not the first one who put something in it, and I won't be the last. We don't talk to each other, us adventurers, but we leave things in the same boxes. That counts as a kind of talking, I think.",
+      "commit_message": "content(narrative): field-notes variant f"
+    },
+    {
+      "id": "field-notes-g",
+      "label": "Adventurer's Field Notes - variant g (everything in here is on purpose)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Everything in here is on purpose.\n\nI picked the items I think you'll need most, based on what I needed most. I'm probably wrong about half of them. But I tried.",
+      "commit_message": "content(narrative): field-notes variant g"
+    },
+    {
+      "id": "field-notes-h",
+      "label": "Adventurer's Field Notes - variant h (hidden chest, something empties them)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I hid this one.\n\nThe chests I left in the open kept getting emptied by something I never saw. Don't tell me what you think it was. I don't want to know.\n\nTake what you want. Replace it with something useful if you can.",
+      "commit_message": "content(narrative): field-notes variant h"
+    },
+    {
+      "id": "field-notes-i",
+      "label": "Adventurer's Field Notes - variant i (chain of notes in one chest)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "There was already a book in this chest when I found it. I read it. It was someone else's notes for the next adventurer. I'm leaving it in here too.\n\nYou might be holding mine. You might be holding theirs. I can't actually remember which one I'm writing in right now.",
+      "commit_message": "content(narrative): field-notes variant i"
+    },
+    {
+      "id": "field-notes-j",
+      "label": "Adventurer's Field Notes - variant j (terse claim)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "This is my chest. Took me three carriages to find the planks.\n\nTake whatever you need. Try not to take all of it.",
+      "commit_message": "content(narrative): field-notes variant j"
+    },
+    {
+      "id": "field-notes-k1",
+      "label": "Adventurer's Field Notes - variant k1 (books burn \u2014 the fact)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "You'll read this once. Just so you know.\n\nWhatever book you pick up here, however carefully you treat it \u2014 once you've read it, it burns. Pages first, then the binding, then the smell of paper, in that order.\n\nI've gotten used to it. I don't promise you will.",
+      "commit_message": "content(narrative): field-notes variant k1"
+    },
+    {
+      "id": "field-notes-k2",
+      "label": "Adventurer's Field Notes - variant k2 (books burn \u2014 theory of redundancy)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "My theory on the burning books \u2014 and you'll have to forgive me, I've only got the one \u2014 is that the train doesn't like being remembered.\n\nYou read it. You remember what it said. The book becomes redundant. The train collects redundant things. That's all this is.\n\nI have no evidence for any of that. But it sounds right when I say it out loud.",
+      "commit_message": "content(narrative): field-notes variant k2"
+    },
+    {
+      "id": "field-notes-k3",
+      "label": "Adventurer's Field Notes - variant k3 (books burn \u2014 grief over unfinished)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "There's a book I read four carriages back. It burned in my hands before I could finish the last page.\n\nI think about it more than I should. Not because the words were important. Because I'll never know what the last words were.",
+      "commit_message": "content(narrative): field-notes variant k3"
+    },
+    {
+      "id": "field-notes-k4",
+      "label": "Adventurer's Field Notes - variant k4 (books burn \u2014 meta closure)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I write these knowing they'll burn after you read them.\n\nThat's the deal. I'm okay with it. If a thing has to be temporary to exist at all, then temporary is the form it takes.\n\nJust \u2014 read it. Then let it go.",
+      "commit_message": "content(narrative): field-notes variant k4"
+    },
+    {
+      "id": "field-notes-l1",
+      "label": "Adventurer's Field Notes - variant l1 (tunnels good for hiding chests)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Tunnels are good for chests.\n\nNobody slows down in a tunnel. The light from your lantern moves with you and everything outside that lantern is decided afterwards. Push a chest into a corner of one and most people won't notice it on the way through.\n\nI noticed. So now you've noticed.",
+      "commit_message": "content(narrative): field-notes variant l1"
+    },
+    {
+      "id": "field-notes-l2",
+      "label": "Adventurer's Field Notes - variant l2 (chests beside tunnel tracks \u2014 tools)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Sometimes there are chests on the side of the tracks in the tunnels. Not on the train. Tucked against the tunnel wall, where the train doesn't reach.\n\nThey almost never have anything I'd call good. Pickaxes mostly. Spare rails. Shovels with the handles worn smooth.\n\nSomebody built these tunnels. Somebody is still maintaining them. I try not to think about who.",
+      "commit_message": "content(narrative): field-notes variant l2"
+    },
+    {
+      "id": "field-notes-m",
+      "label": "Adventurer's Field Notes - variant m (ice carriage chest)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "This was an ice carriage. Whole car full of it, packed solid. I chipped this chest out with the pickaxe end of an axe I shouldn't have been using like that.\n\nThere's water under the floor now. I'm leaving before someone asks me about it.",
+      "commit_message": "content(narrative): field-notes variant m"
+    },
+    {
+      "id": "field-notes-n",
+      "label": "Adventurer's Field Notes - variant n (mud-buried chest)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Found a chest half-buried in mud. Couldn't tell if someone put it there or if the mud rose up around it.\n\nBoth options bothered me equally so I stopped thinking about it and just dug.",
+      "commit_message": "content(narrative): field-notes variant n"
+    },
+    {
+      "id": "field-notes-o",
+      "label": "Adventurer's Field Notes - variant o (moss-covered chests)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "The moss carriages are the worst for finding chests. The moss is patient. It grows over hinges, over latches, sometimes over the whole lid until the chest looks like a green stone.\n\nIf you see a green stone in a moss carriage that isn't quite the right shape \u2014 that's a chest. Trust me. Or don't. You'll trip over the next one anyway.",
+      "commit_message": "content(narrative): field-notes variant o"
+    },
+    {
+      "id": "field-notes-p",
+      "label": "Adventurer's Field Notes - variant p (thin hallway, look up)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Some carriages are built thin. Hallway-thin. Just enough room to walk and nothing else.\n\nLook up. There's almost always a space above. Hatches, false ceilings, a foot or two of crawl. Half of what I've found on this train was found by looking up in a place that didn't seem to be hiding anything.\n\nThe other half was found by tripping.",
+      "commit_message": "content(narrative): field-notes variant p"
+    },
+    {
+      "id": "field-notes-q",
+      "label": "Adventurer's Field Notes - variant q (finding others' notes by campfires)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I've started finding other people's notes.\n\nNot many. Maybe one every few hours, or every few carriages \u2014 the distance between them is never regular. They turn up at campfires. Almost always at campfires. Like the writer needed to warm up before they could think clearly.\n\nI'd say it makes me feel less alone. It doesn't. It just makes me feel like I'm slightly behind.",
+      "commit_message": "content(narrative): field-notes variant q"
+    },
+    {
+      "id": "field-notes-r",
+      "label": "Adventurer's Field Notes - variant r (campfires heal \u2014 that's why)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Always by a campfire. Always.\n\nThe campfires here heal you \u2014 I assume you know that by now, or you wouldn't have made it this far. So the writer is stopping where it's safe to think.\n\nI do the same now. I write these by campfires too. That's why you found this one.",
+      "commit_message": "content(narrative): field-notes variant r"
+    },
+    {
+      "id": "field-notes-s",
+      "label": "Adventurer's Field Notes - variant s (might be following someone dead)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I might be following someone who's already dead.\n\nI keep finding their notes by campfires, but I don't know if they're still ahead of me or if I'm just walking through a trail of things they left a long time ago.\n\nThe newest note I've found doesn't have a date. None of them do.",
+      "commit_message": "content(narrative): field-notes variant s"
+    },
+    {
+      "id": "field-notes-t",
+      "label": "Adventurer's Field Notes - variant t (someone is following me too)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I wonder if someone is following my notes the way I'm following theirs.\n\nIf you are \u2014 and I have no real reason to think you are not \u2014 hello. The campfire's a good place to read this. Wait until the fire's settled. Don't rush.",
+      "commit_message": "content(narrative): field-notes variant t"
+    },
+    {
+      "id": "field-notes-k5",
+      "label": "Adventurer's Field Notes - variant k5 (books burn \u2014 the smell)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "You'll learn the smell.\n\nIt's not the smell of a campfire. It's not the smell of wood. It's the smell of words evaporating, if you'll let me get poetic for a second.\n\nAfter a while you stop noticing. Then you smell it on yourself and realise you've been carrying it for days.",
+      "commit_message": "content(narrative): field-notes variant k5"
+    },
+    {
+      "id": "field-notes-k6",
+      "label": "Adventurer's Field Notes - variant k6 (books burn \u2014 slow read)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I read the next one as slowly as I could. One word at a time, mouthing each one.\n\nIt still burned at the end. But it burned more slowly, in a way that felt \u2014 and I am almost certain about this \u2014 almost grateful.\n\nI don't know what to do with that information.",
+      "commit_message": "content(narrative): field-notes variant k6"
+    },
+    {
+      "id": "field-notes-k7",
+      "label": "Adventurer's Field Notes - variant k7 (books burn \u2014 tried not reading)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I found a book and didn't open it.\n\nI carried it for two days, in my pack, and every time I thought about it I felt a kind of itch. Not on my skin. Inside the thought.\n\nOn day three I read it. I had to. I don't know if the book made me, or if I made me. I suspect they were the same thing by that point.",
+      "commit_message": "content(narrative): field-notes variant k7"
+    },
+    {
+      "id": "field-notes-k8",
+      "label": "Adventurer's Field Notes - variant k8 (books burn \u2014 afterimage)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "There's a moment, right after a book finishes burning, where you can still see the page. Not on the floor. In your eye. Like a window has been closed and your eye remembers the shape of the light.\n\nIf you blink, you lose it. If you don't blink, your eyes water. Either way it's gone in under a minute.\n\nI have started reading the last page twice.",
+      "commit_message": "content(narrative): field-notes variant k8"
+    },
+    {
+      "id": "field-notes-k9",
+      "label": "Adventurer's Field Notes - variant k9 (books burn \u2014 read aloud to campfire)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I tried reading one to a campfire. Out loud.\n\nThe book still burned at the end, but I think the campfire heard. The flame leaned a different way for a moment. Maybe I imagined it.\n\nI have nothing else to base this on. Try it. Tell me what you see.",
+      "commit_message": "content(narrative): field-notes variant k9"
+    },
+    {
+      "id": "field-notes-u",
+      "label": "Adventurer's Field Notes - variant u (knowing their hand, no names)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I know their handwriting now. I knew it before I knew their name. Then I realised they hadn't given me a name in any of the notes I've found.\n\nThat bothered me for a day. Then I realised I've never given anyone mine either.",
+      "commit_message": "content(narrative): field-notes variant u"
+    },
+    {
+      "id": "field-notes-v",
+      "label": "Adventurer's Field Notes - variant v (almost catching them)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Found one tonight that still had the warm-paper smell. Like it had been written in the last hour.\n\nI sat by the same campfire and waited. Nothing came. I'm not sure what I expected.\n\nEventually I wrote this and left, in the hope that whoever I'm chasing might do the same thing someday and find me by accident instead of effort.",
+      "commit_message": "content(narrative): field-notes variant v"
+    },
+    {
+      "id": "field-notes-w",
+      "label": "Adventurer's Field Notes - variant w (trail goes cold)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "There are no more.\n\nWhatever they were leaving, this was the last one. I've checked the next three campfires. Nothing.\n\nEither they made it out \u2014 and I don't believe in that \u2014 or this is where they stopped. I'm taking the last note with me. It deserves a witness.",
+      "commit_message": "content(narrative): field-notes variant w"
+    },
+    {
+      "id": "field-notes-x",
+      "label": "Adventurer's Field Notes - variant x (trail picks back up)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I thought I'd lost the trail. Two days, no notes.\n\nThen today, by a campfire I almost didn't bother stopping at, there it was. Same handwriting. Same way of crossing the sevens.\n\nThey're alive. Or someone is. I'm not asking too many questions about which.",
+      "commit_message": "content(narrative): field-notes variant x"
+    },
+    {
+      "id": "field-notes-y",
+      "label": "Adventurer's Field Notes - variant y (disagreement)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+      "random_book_meta": {
+        "id": "adventurers_field_notes",
+        "title": "Adventurer's Field Notes",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I disagree with the one who wrote before me.\n\nThey think the slimes are worth fighting. They are not. I've left a note next to theirs saying so. Whoever finds this last gets to decide.\n\nDisagreement is a kind of company too, I think.",
+      "commit_message": "content(narrative): field-notes variant y"
+    },
+    {
+      "id": "tally-a",
+      "label": "Tally - variant a (kill log days 1-?)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/tally_of_the_fallen.json",
+      "random_book_meta": {
+        "id": "tally_of_the_fallen",
+        "title": "Tally",
+        "author": "\u2014",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Day 1 \u2014 3 slimes. 1 zombie. Found bread.\nDay 4 \u2014 Lost count of slimes. Found a sword. Better than mine.\nDay 12 \u2014 Stopped writing days.\nDay ? \u2014 Found another one of these books. Wasn't mine. Handwriting almost was.",
+      "commit_message": "content(narrative): tally variant a"
+    },
+    {
+      "id": "tally-b",
+      "label": "Tally - variant b (kills today: too many)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/tally_of_the_fallen.json",
+      "random_book_meta": {
+        "id": "tally_of_the_fallen",
+        "title": "Tally",
+        "author": "\u2014",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "Kills today: too many.\nKills total: don't ask.\nDeaths: one. So far. Mine.",
+      "commit_message": "content(narrative): tally variant b"
+    },
+    {
+      "id": "for-next-a",
+      "label": "For the Next One - variant a (letter on the body)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/for_the_next_one.json",
+      "random_book_meta": {
+        "id": "for_the_next_one",
+        "title": "For the Next One",
+        "author": "Anonymous Adventurer",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "If you find this on me, I'm sorry about the smell.\n\nI came in through a door I can't describe anymore. I think I was looking for something specific. I don't remember what. I remember being sure, and that's the part that bothers me \u2014 that being sure can fade so completely.\n\nTake the sword if its still here. It's not enchanted but it swings true and I sharpened it last night, which apparently was a waste of effort but at least it's a gift now.\n\nDon't follow my route. There's nothing useful behind me. Everything I found, I'm wearing.\n\nWhatever you came in looking for \u2014 write it down. Now. Before the train decides you didn't.",
+      "commit_message": "content(narrative): for-next variant a"
     }
   ],
   "applied": [

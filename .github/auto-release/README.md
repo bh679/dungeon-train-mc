@@ -60,12 +60,13 @@ hourly on a flaky `gh release list` call.
 ## Adding a queue item
 
 Edit `queue.json` and add an object to `pending[]`. Each item must match
-`schema/queue-item.schema.json`. Two types are supported:
+`schema/queue-item.schema.json`. Three types are supported:
 
 | `type` | Effect | Use for |
 |---|---|---|
 | `new_file` | Writes `content` as a brand-new file at `target`. Refuses to overwrite. | One-shot additions: a single random_book, a single starting_book, a one-letter narrative. |
 | `add_variant` | Appends `variant` to `letters[<letter.index>].variants[]` in the story file at `target`. Creates the file and/or letter if missing. | Multi-letter character stories — schedule one variant per cascade fire so the story file grows visibly across releases. |
+| `add_random_book_variant` | Appends `variant` to the top-level `variants[]` array in the random_book file at `target`. Creates the file from `random_book_meta` if missing. | Random books (flat `variants[]` arrays) — schedule one variant per cascade fire so the book grows visibly across releases. |
 
 ### `new_file` example
 
@@ -122,6 +123,32 @@ on top of an auto-release commit.
 Each variant of a multi-letter story becomes its own queue item, so the story file grows
 one variant per cascade fire. Safety: `story_meta` and the letter `label` must match the
 existing file once it has been created — divergence is a hard fail.
+
+### `add_random_book_variant` example
+
+```json
+{
+  "id": "field-notes-a",
+  "label": "Add field-notes variant A (chest tips)",
+  "type": "add_random_book_variant",
+  "target": "src/main/resources/data/dungeontrain/narratives/random_books/adventurers_field_notes.json",
+  "random_book_meta": {
+    "id": "adventurers_field_notes",
+    "title": "Adventurer's Field Notes",
+    "author": "Anonymous Adventurer",
+    "generation": 0,
+    "weight": 1
+  },
+  "variant": "If you're reading this, you found my chest. Take what's useful.\n\n...",
+  "commit_message": "content(narrative): field notes variant A"
+}
+```
+
+Random books use a flat top-level `variants[]` array (no letters). The first queue item
+for a given random_book file creates the file from `random_book_meta` (with defaults
+`generation=0`, `weight=1` if omitted); subsequent items append to `variants[]`. Safety:
+`random_book_meta.id`, `title`, and `author` must match the existing file once it has
+been created — divergence is a hard fail.
 
 Open a normal PR with the queue addition. The cascade will pick it up on the next fire.
 
