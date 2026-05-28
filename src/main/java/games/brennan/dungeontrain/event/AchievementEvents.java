@@ -126,14 +126,18 @@ public final class AchievementEvents {
 
     /**
      * Called from {@link BoardingProgressEvents} every tick the leader player
-     * advances along the train. Positive {@code delta} only (backward
-     * movement does not decrement the achievement counter).
+     * advances along the train. Accepts signed {@code delta}: forward
+     * (positive) and backward (negative) both contribute to the absolute
+     * per-life total; backward additionally feeds the bidirectional
+     * achievement counter.
      */
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
-        if (delta <= 0) return;
+        if (delta == 0) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        int newCount = run.incrementCarts(delta);
-        ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, newCount);
+        int absoluteTotal = run.recordCartMovement(delta);
+        ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, absoluteTotal);
+        ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
+            .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
     }
 
     // ---------------- Train-time milestones ----------------
