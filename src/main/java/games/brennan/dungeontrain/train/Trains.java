@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -26,6 +28,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * the collection of sub-levels that share a trainId. This class centralises
  * the grouping/lead/tail/min-max-pIdx logic so per-tick consumers don't
  * each reimplement it.</p>
+ *
+ * <h2>Dimension awareness (Phase 6 refactor)</h2>
+ * <p>The spawn-time registry is keyed by {@code (ResourceKey<Level>, UUID)}
+ * so a {@code trainId} that exists in multiple dimensions (e.g. mid-transit
+ * across a dimensional portal) is tracked independently per dim. Same UUID
+ * + different dims = logically different trains operated by independent
+ * appenders, even though they share an identity tag.</p>
+ *
+ * <p>All registry methods take a {@code ResourceKey<Level> dim} first
+ * parameter. The legacy no-dim signatures were removed — every call site
+ * either had a {@code ServerLevel} in scope (passes
+ * {@code level.dimension()}) or could derive dim from a {@link Carriage} /
+ * {@link ManagedShip}'s driver (passes
+ * {@code provider.getDimensionKey()}).</p>
  *
  * <h2>Lead vs tail</h2>
  * <ul>
@@ -54,47 +70,56 @@ public final class Trains {
 
     /**
      * Authoritative registry of every carriage group ever spawned via
-     * {@link TrainAssembler#spawnGroup}, keyed by trainId then anchor pIdx.
-     * Sourced ONLY by {@link TrainAssembler#spawnGroup} on success and
+     * {@link TrainAssembler#spawnGroup} (and after Phase 8 of the portal
+     * feature, via {@code PortalTransitService}), keyed by (dim, trainId,
+     * anchor pIdx).
+     *
+     * <p>Sourced ONLY by {@link TrainAssembler#attachDriver} on success and
      * cleared by {@link TrainAssembler#deleteAllTrains} (and by
      * {@code WorldLifecycleEvents.onServerStopped} for cross-session
      * safety). The appender's wait-for-Sable-settle check reads back the
      * stored {@link ManagedShip} references to detect when a freshly-
      * spawned sub-level has ticked at least once (its {@code worldAABB}
-     * becomes non-zero) before allowing the next auto spawn.
+     * becomes non-zero) before allowing the next auto spawn.</p>
      */
-    private static final Map<UUID, Map<Integer, ManagedShip>> SPAWNED_GROUPS = new ConcurrentHashMap<>();
+    private static final Map<ResourceKey<Level>, Map<UUID, Map<Integer, ManagedShip>>> SPAWNED_GROUPS =
+        new ConcurrentHashMap<>();
 
     private Trains() {}
 
     /**
      * Record a freshly-spawned carriage group in the registry. Called
-     * from {@link TrainAssembler#spawnGroup} after a successful
-     * {@link Shipyards#assemble} + driver-attach pass.
+     * from {@link TrainAssembler#attachDriver} after a successful
+     * driver-attach pass (either fresh spawn or reconstituted transit).
      */
-    public static void registerSpawned(UUID trainId, int anchorPIdx, ManagedShip ship) {
+    public static void registerSpawned(ResourceKey<Level> dim, UUID trainId, int anchorPIdx, ManagedShip ship) {
         SPAWNED_GROUPS
+            .computeIfAbsent(dim, k -> new ConcurrentHashMap<>())
             .computeIfAbsent(trainId, k -> new ConcurrentHashMap<>())
             .put(anchorPIdx, ship);
     }
 
     /**
-     * Snapshot of every anchor pIdx known to belong to {@code trainId}.
-     * Returns an empty set for an unknown trainId. Defensive copy.
+     * Snapshot of every anchor pIdx known to belong to {@code (dim, trainId)}.
+     * Returns an empty set for an unknown pair. Defensive copy.
      */
-    public static Set<Integer> knownAnchors(UUID trainId) {
-        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+    public static Set<Integer> knownAnchors(ResourceKey<Level> dim, UUID trainId) {
+        Map<UUID, Map<Integer, ManagedShip>> dimMap = SPAWNED_GROUPS.get(dim);
+        if (dimMap == null) return Set.of();
+        Map<Integer, ManagedShip> map = dimMap.get(trainId);
         if (map == null) return Set.of();
         return new HashSet<>(map.keySet());
     }
 
     /**
-     * Snapshot of every registered group for {@code trainId} as
+     * Snapshot of every registered group for {@code (dim, trainId)} as
      * {@code (anchorPIdx, ship)} pairs. Returns an empty map for an
-     * unknown trainId. Defensive copy.
+     * unknown pair. Defensive copy.
      */
-    public static Map<Integer, ManagedShip> knownGroups(UUID trainId) {
-        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+    public static Map<Integer, ManagedShip> knownGroups(ResourceKey<Level> dim, UUID trainId) {
+        Map<UUID, Map<Integer, ManagedShip>> dimMap = SPAWNED_GROUPS.get(dim);
+        if (dimMap == null) return Map.of();
+        Map<Integer, ManagedShip> map = dimMap.get(trainId);
         if (map == null) return Map.of();
         return new LinkedHashMap<>(map);
     }
@@ -105,7 +130,7 @@ public final class Trains {
      * but subsequently culled by Sable before placement could complete
      * and never reloaded. Without this, the registry's grow-only nature
      * left those anchors permanently inflating
-     * {@link #knownAnchors(UUID)}, so every future spawn was placed past
+     * {@link #knownAnchors(ResourceKey, UUID)}, so every future spawn was placed past
      * the ghosts and the train showed a visible gap. Caller must have
      * confirmed via {@code Shipyards.findAll()} that the anchor's
      * sub-level is no longer loaded before invoking this. Returns the
@@ -113,13 +138,25 @@ public final class Trains {
      * anchor wasn't in the registry) so the caller can perform any
      * needed Sable-side cleanup.
      */
-    public static ManagedShip unregisterGroup(UUID trainId, int anchorPIdx) {
-        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+    public static ManagedShip unregisterGroup(ResourceKey<Level> dim, UUID trainId, int anchorPIdx) {
+        Map<UUID, Map<Integer, ManagedShip>> dimMap = SPAWNED_GROUPS.get(dim);
+        if (dimMap == null) return null;
+        Map<Integer, ManagedShip> map = dimMap.get(trainId);
         if (map == null) return null;
-        return map.remove(anchorPIdx);
+        ManagedShip removed = map.remove(anchorPIdx);
+        // Prune empty inner maps so a long-lived server doesn't accumulate
+        // empty buckets per (dim, trainId).
+        if (map.isEmpty()) dimMap.remove(trainId);
+        if (dimMap.isEmpty()) SPAWNED_GROUPS.remove(dim);
+        return removed;
     }
 
-    /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
+    /**
+     * Clear every train registration across every dimension. Wired to
+     * server stop and to {@code TrainAssembler.deleteAllTrains}. No
+     * per-dim variant — server stop must wipe everything regardless of
+     * which dims had trains.
+     */
     public static void clearRegistry() {
         SPAWNED_GROUPS.clear();
     }
@@ -193,7 +230,7 @@ public final class Trains {
      * Highest CARRIAGE pIdx in the train (the very front carriage of the
      * lead group), or {@link Integer#MIN_VALUE} on empty.
      *
-     * <p>For groups of size > 1 this is the lead group's anchor pIdx +
+     * <p>For groups of size &gt; 1 this is the lead group's anchor pIdx +
      * (groupSize − 1) — the group's last carriage. For groupSize=1 it
      * matches the lead's anchor pIdx exactly.</p>
      */

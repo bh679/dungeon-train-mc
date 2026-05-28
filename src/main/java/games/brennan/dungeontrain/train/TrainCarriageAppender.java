@@ -13,7 +13,9 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.Blocks;
@@ -774,7 +776,9 @@ public final class TrainCarriageAppender {
                 spawnedBackward);
             if (g < best) best = g;
         }
-        Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+        // Phase 6: dim-keyed registry. self.provider().getDimensionKey() is
+        // authoritative — every carriage of a train shares the same dim.
+        Map<Integer, ManagedShip> registry = Trains.knownGroups(self.provider().getDimensionKey(), trainId);
         for (ManagedShip ship : registry.values()) {
             if (!seen.add(ship.id())) continue;
             AABBdc o = ship.worldAABB();
@@ -892,7 +896,8 @@ public final class TrainCarriageAppender {
             }
         }
         if (!colliding) {
-            Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+            // Phase 6: dim-keyed registry. Carriage provider's dim is the source of truth.
+            Map<Integer, ManagedShip> registry = Trains.knownGroups(provider.getDimensionKey(), trainId);
             for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
                 ManagedShip ship = e.getValue();
                 if (!seen.add(ship.id())) continue;
@@ -1355,7 +1360,7 @@ public final class TrainCarriageAppender {
         // (often returning just one or two of the four bootstrap groups).
         // Without this guard, the appender requests anchors that already
         // exist and stacks duplicate sub-levels at the same world position.
-        Set<Integer> knownAnchors = Trains.knownAnchors(trainId);
+        Set<Integer> knownAnchors = Trains.knownAnchors(level.dimension(), trainId);
         int trainMaxAnchor;
         int trainMinAnchor;
         if (knownAnchors.isEmpty()) {
@@ -1404,7 +1409,7 @@ public final class TrainCarriageAppender {
             }
         }
         if (refreshedAnchors) {
-            knownAnchors = Trains.knownAnchors(trainId);
+            knownAnchors = Trains.knownAnchors(level.dimension(), trainId);
             if (!knownAnchors.isEmpty()) {
                 int maxA = Integer.MIN_VALUE;
                 int minA = Integer.MAX_VALUE;
@@ -1713,7 +1718,7 @@ public final class TrainCarriageAppender {
         }
         if (visibleMin == Integer.MAX_VALUE) return false;
 
-        Set<Integer> known = Trains.knownAnchors(trainId);
+        Set<Integer> known = Trains.knownAnchors(level.dimension(), trainId);
         int finalVisibleMin = visibleMin;
         int finalVisibleMax = visibleMax;
         java.util.List<Integer> toRemove = new java.util.ArrayList<>();
@@ -1725,7 +1730,7 @@ public final class TrainCarriageAppender {
         Shipyard shipyard = Shipyards.of(level);
         int deletedSableShips = 0;
         for (int a : toRemove) {
-            ManagedShip ship = Trains.unregisterGroup(trainId, a);
+            ManagedShip ship = Trains.unregisterGroup(level.dimension(), trainId, a);
             if (ship != null) {
                 shipyard.delete(ship);
                 deletedSableShips++;
@@ -2016,7 +2021,7 @@ public final class TrainCarriageAppender {
 
         int startMin = Integer.MAX_VALUE;
         int startMax = Integer.MIN_VALUE;
-        for (int a : Trains.knownAnchors(trainId)) {
+        for (int a : Trains.knownAnchors(level.dimension(), trainId)) {
             if (a < startMin) startMin = a;
             if (a > startMax) startMax = a;
         }
@@ -2047,8 +2052,8 @@ public final class TrainCarriageAppender {
         // per-tick-added group at the same X — the overlap observed in
         // the field. Look up the live world X for {@code trainMax} and
         // {@code trainMin} from the registry instead.
-        double forwardRefX = worldXOfAnchor(trainId, trainMax);
-        double backwardRefX = worldXOfAnchor(trainId, trainMin);
+        double forwardRefX = worldXOfAnchor(level.dimension(), trainId, trainMax);
+        double backwardRefX = worldXOfAnchor(level.dimension(), trainId, trainMin);
         if (Double.isNaN(forwardRefX) || Double.isNaN(backwardRefX)) {
             LOGGER.warn("[DungeonTrain] Bootstrap eager fill: could not resolve world X for edge anchors trainMax={} trainMin={} trainId={} — skipping",
                 trainMax, trainMin, trainId);
@@ -2098,7 +2103,7 @@ public final class TrainCarriageAppender {
 
             if (needsForward) {
                 int forwardAnchor = trainMax + groupSize;
-                if (Trains.knownAnchors(trainId).contains(forwardAnchor)) {
+                if (Trains.knownAnchors(level.dimension(), trainId).contains(forwardAnchor)) {
                     LOGGER.warn("[DungeonTrain] Bootstrap eager fill: refused to re-spawn known forward anchor={} trainId={}", forwardAnchor, trainId);
                     break;
                 }
@@ -2114,7 +2119,7 @@ public final class TrainCarriageAppender {
             }
             if (needsBackward) {
                 int backwardAnchor = trainMin - groupSize;
-                if (Trains.knownAnchors(trainId).contains(backwardAnchor)) {
+                if (Trains.knownAnchors(level.dimension(), trainId).contains(backwardAnchor)) {
                     LOGGER.warn("[DungeonTrain] Bootstrap eager fill: refused to re-spawn known backward anchor={} trainId={}", backwardAnchor, trainId);
                     break;
                 }
@@ -2145,7 +2150,7 @@ public final class TrainCarriageAppender {
         // registry) instead of {@code Trains.findById} — Sable hasn't bound
         // any of these sub-levels into Shipyards.findAll() yet at bootstrap,
         // so a Shipyards-backed lookup would return nothing.
-        for (ManagedShip ship : Trains.knownGroups(trainId).values()) {
+        for (ManagedShip ship : Trains.knownGroups(level.dimension(), trainId).values()) {
             if (ship.getKinematicDriver() instanceof TrainTransformProvider p
                 && !p.isPlacedSuccessfully()) {
                 p.markPlacedSuccessfully();
@@ -2167,8 +2172,8 @@ public final class TrainCarriageAppender {
      * its driver isn't a {@link TrainTransformProvider} — the caller bails
      * in that case.</p>
      */
-    private static double worldXOfAnchor(UUID trainId, int anchor) {
-        ManagedShip ship = Trains.knownGroups(trainId).get(anchor);
+    private static double worldXOfAnchor(ResourceKey<Level> dim, UUID trainId, int anchor) {
+        ManagedShip ship = Trains.knownGroups(dim, trainId).get(anchor);
         if (ship == null) return Double.NaN;
         if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) return Double.NaN;
         BlockPos shipyardOrigin = provider.getShipyardOrigin();
@@ -2417,7 +2422,12 @@ public final class TrainCarriageAppender {
             siblings.add(aabb);
             siblingsForLog.add(new long[] { id, other.provider().getPIdx() });
         }
-        Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+        // Phase 6: dim-keyed registry. All carriages in `train` share a dim;
+        // pull it from the first one (precondition: train is non-empty here,
+        // else this call site wouldn't be reachable).
+        ResourceKey<Level> dim =
+            train.get(0).provider().getDimensionKey();
+        Map<Integer, ManagedShip> registry = Trains.knownGroups(dim, trainId);
         for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
             ManagedShip ship = e.getValue();
             long id = ship.id();
@@ -2602,7 +2612,10 @@ public final class TrainCarriageAppender {
             }
         }
         if (!colliding) {
-            Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+            // Phase 6: derive dim from newShip's provider (verified above to be non-null).
+            ResourceKey<Level> dim =
+                provider.getDimensionKey();
+            Map<Integer, ManagedShip> registry = Trains.knownGroups(dim, trainId);
             for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
                 ManagedShip ship = e.getValue();
                 if (!seen.add(ship.id())) continue;

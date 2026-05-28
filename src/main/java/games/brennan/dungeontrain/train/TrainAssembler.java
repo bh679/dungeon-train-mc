@@ -373,8 +373,10 @@ public final class TrainAssembler {
         // assembled sub-level can take several ticks to appear in
         // getAllSubLevels()), so the appender can't trust Trains.byTrainId
         // for "what anchors does this train already own." The registry is
-        // the authoritative answer at spawn time.
-        Trains.registerSpawned(provider.getTrainId(), provider.getPIdx(), ship);
+        // the authoritative answer at spawn time. Keyed by dim (Phase 6
+        // refactor) so the same trainId can exist independently in
+        // multiple dimensions during a cross-dim transit.
+        Trains.registerSpawned(level.dimension(), provider.getTrainId(), provider.getPIdx(), ship);
     }
 
     private static String summariseVariants(CarriageVariant[] variants) {
