@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l7-a",
-      "label": "Corren - Letter 7 variant A (The Train)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Letter Seven"
-      },
-      "variant": "I do not know how I got out.\n\nThe portal was broken. I remember that.\n\nI do not remember walking through.\n\nI came up in a field. Tall grass. The train was already there.\n\nIt was moving.\n\nIt had always been moving. I know that now.\n\nI ran beside it. I jumped for the nearest door.\n\nI do not know how I caught it.\n\nI thought I had made it.\n\nI have been making it for weeks now.\n\nThe train does not stop.\n\nThere is no off.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 7 variant A"
-    },
-    {
       "id": "corren-l7-b",
       "label": "Corren - Letter 7 variant B (related facts)",
       "type": "add_variant",
@@ -2137,6 +2120,11 @@
     {
       "id": "corren-l6-b",
       "applied_at": "2026-05-28T12:51:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l7-a",
+      "applied_at": "2026-05-28T13:22:42Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
