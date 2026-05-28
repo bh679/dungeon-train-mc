@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l9-b",
-      "label": "Corren - Letter 9 variant B (three of you)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Letter Nine"
-      },
-      "variant": "its here.\n\nmira.\n\nit was not behind me.\n\nit was in front.\n\nit was always in front.\n\nyou would have seen this. you saw everything first.\n\nbram would have stood in front of me.\n\nhe would have laughed.\n\nhe laughed at things too big to fight.\n\nit would have worked. for a moment.\n\nesa would have put her hand on my back.\n\ncold.\n\nshe would have pushed.\n\ni would have gone.\n\ni walked toward it.\n\ni thought i was walking away.\n\nthe train has no front. you would have laughed at me for forgetting that.\n\ni can see it.\n\nthree heads. three of you.\n\nbram. esa. you.\n\ni am the fourth.\n\ni have been the fourth all along.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 9 variant B"
-    },
-    {
       "id": "edda-l1-a",
       "label": "Edda - Letter 1 variant A (a seat that is not mine)",
       "type": "add_variant",
@@ -2197,6 +2180,11 @@
     {
       "id": "corren-l9-a",
       "applied_at": "2026-05-28T15:49:55Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l9-b",
+      "applied_at": "2026-05-28T17:01:17Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
