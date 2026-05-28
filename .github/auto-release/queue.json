@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l3-b",
-      "label": "Edda - Letter 3 variant B (bright with bone)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "Four carriages forward. A library car. Some of the books are real. Some are spines glued to the wall.\n\nIt is here too. At this window. Not the one I left.\n\nSame three heads. Middle one tilted, as if listening.\n\nI crossed the car. The other window was dark. I came back. Mine was bright with bone again.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 3 variant B"
-    },
-    {
       "id": "edda-l4-a",
       "label": "Edda - Letter 4 variant A (Hollin, soul sand, what came up)",
       "type": "add_variant",
@@ -2125,6 +2108,11 @@
     {
       "id": "edda-l3-a",
       "applied_at": "2026-05-28T21:05:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l3-b",
+      "applied_at": "2026-05-28T22:02:30Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
