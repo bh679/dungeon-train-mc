@@ -51,8 +51,17 @@ public final class PortalSpawner {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Blocks of forward progress between consecutive portals along a single train's track. */
-    public static final int PORTAL_INTERVAL_BLOCKS = 1000;
+    /**
+     * Blocks of forward progress between consecutive portals along a single
+     * train's track.
+     *
+     * <p>v1 test value: 100 blocks. Tightened from the original 1000 so a
+     * quick ride during Gate-2 verification surfaces portals in seconds
+     * rather than minutes. Will be bumped back toward 500–1000 once the
+     * mechanic stabilises (see Phase 12 polish in
+     * plans/sorted-squishing-fern.md).</p>
+     */
+    public static final int PORTAL_INTERVAL_BLOCKS = 100;
 
     /**
      * Spawn the portal frame this many blocks ahead of the lead carriage so
