@@ -109,6 +109,7 @@ public final class WorldLifecycleEvents {
         // persists via SavedData; only the "blocks since last spawn" tracker
         // is transient).
         games.brennan.dungeontrain.portal.PortalSpawner.clearState();
+        games.brennan.dungeontrain.portal.CarriageTransitDetector.clearState();
         PillarTemplateStore.clearCache();
         TrackTemplateStore.clearCache();
         games.brennan.dungeontrain.track.variant.TrackVariantStore.clearCache();
