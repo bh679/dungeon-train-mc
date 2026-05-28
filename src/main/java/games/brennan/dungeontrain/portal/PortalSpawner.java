@@ -64,6 +64,18 @@ public final class PortalSpawner {
     public static final int PORTAL_INTERVAL_BLOCKS = 100;
 
     /**
+     * Distance the lead must move from its first observed position before
+     * the FIRST portal spawns. Separate from {@link #PORTAL_INTERVAL_BLOCKS}
+     * so we can surface a portal quickly after a fresh {@code /dt spawn}
+     * for testing without making all subsequent portals equally close.
+     *
+     * <p>Test value: 30 blocks. After this first portal lands, the spawner
+     * falls back to {@code PORTAL_INTERVAL_BLOCKS} for every subsequent
+     * one.</p>
+     */
+    public static final int FIRST_PORTAL_OFFSET_BLOCKS = 30;
+
+    /**
      * Spawn the portal frame this many blocks ahead of the lead carriage so
      * the train doesn't immediately hit a half-built portal during the tick
      * the frame gets placed. Should comfortably exceed one tick of forward
@@ -97,7 +109,21 @@ public final class PortalSpawner {
 
     private record DimTrainKey(ResourceKey<Level> dim, UUID trainId) {}
 
+    /**
+     * (dim, trainId) → world X at the most recent portal spawn for that
+     * train. Initially absent; seeded on first observation so the first
+     * portal lands after {@link #FIRST_PORTAL_OFFSET_BLOCKS} of motion.
+     */
     private static final Map<DimTrainKey, Double> LAST_PORTAL_X = new ConcurrentHashMap<>();
+
+    /**
+     * (dim, trainId) → true once the FIRST portal has been spawned for
+     * that train. Distinguishes "still waiting for the closer first
+     * portal" from "spawning the regular-interval second-and-beyond." We
+     * can't infer this from {@link #LAST_PORTAL_X} alone because that
+     * map's first entry is the initial baseline, not a spawn event.
+     */
+    private static final Map<DimTrainKey, Boolean> HAS_SPAWNED_FIRST = new ConcurrentHashMap<>();
 
     private PortalSpawner() {}
 
@@ -128,12 +154,18 @@ public final class PortalSpawner {
                 continue;
             }
 
-            if (leadX - lastX < PORTAL_INTERVAL_BLOCKS) continue;
+            // First portal lands at FIRST_PORTAL_OFFSET_BLOCKS; every
+            // subsequent one at PORTAL_INTERVAL_BLOCKS.
+            int threshold = HAS_SPAWNED_FIRST.getOrDefault(key, false)
+                ? PORTAL_INTERVAL_BLOCKS
+                : FIRST_PORTAL_OFFSET_BLOCKS;
+            if (leadX - lastX < threshold) continue;
 
             // Time to spawn.
             ResourceKey<Level> targetDim = nextDimInCycle(level.dimension());
             if (spawnPortalAhead(level, targetDim, lead, trainId)) {
                 LAST_PORTAL_X.put(key, leadX);
+                HAS_SPAWNED_FIRST.put(key, true);
             }
             // If spawn failed (e.g. target dim unresolvable), don't update —
             // the next tick will retry with the still-too-stale lastX, which
@@ -253,5 +285,6 @@ public final class PortalSpawner {
      */
     public static void clearState() {
         LAST_PORTAL_X.clear();
+        HAS_SPAWNED_FIRST.clear();
     }
 }
