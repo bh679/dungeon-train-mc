@@ -34,6 +34,10 @@ saves/
 # Generated
 src/generated/
 
+# Python
+__pycache__/
+*.pyc
+
 # Gate 2 testing artifacts (screenshots, previews)
 test-results/
 
