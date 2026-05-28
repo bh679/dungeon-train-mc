@@ -1660,6 +1660,396 @@
       },
       "variant": "Once, by accident,\nI dug out a dirt cart\nand found a chest inside.\n\nI have dug out\nforty-three dirt carts since.\nI have used shovels.\nI have used my hands.\nI have dug them slowly.\nI have dug them fast.\nThey have all been empty.\n\nI have tried not looking.\nI have tried looking away.\nI have tried digging blind.\nI have tried whistling.\nI have tried silence.\nI have tried thinking of soup.\nI have tried thinking of nothing.\nThe train knows\nwhen I am looking.",
       "commit_message": "content(narrative): complaint-log variant g"
+    },
+    {
+      "id": "glossary-01-pry-pause",
+      "label": "Glossary: THE PRY-PAUSE",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "THE PRY-PAUSE:\n-\nThe half-second\nbefore a chest opens.\nThe breath you hold\nwithout meaning to.\n\n\nA long pry-pause is\nthe kind we speak of —\nthe kind of a chest\nworth waiting on.\nOf shorter ones, nothing.",
+      "commit_message": "content(narrative): glossary entry THE PRY-PAUSE"
+    },
+    {
+      "id": "glossary-02-long-lean",
+      "label": "Glossary: THE LONG LEAN",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "THE LONG LEAN:\n-\nWhat is said to happen\non a curve —\nthe whole carriage\ntilts as one.\n\n\nThose who have felt one\nspeak of it unprompted.\nThe rest of us\ntrust the telling.",
+      "commit_message": "content(narrative): glossary entry THE LONG LEAN"
+    },
+    {
+      "id": "glossary-03-reboarder",
+      "label": "Glossary: A REBOARDER",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A REBOARDER:\n-\nA passenger who claims\nthey got off the train\nand came back.\n\n\nMost are lying.\nThe ones who aren't\nwon't bring it up.\nYou learn to listen\nfor the silence.",
+      "commit_message": "content(narrative): glossary entry A REBOARDER"
+    },
+    {
+      "id": "glossary-04-returned-around",
+      "label": "Glossary: RETURNED AROUND",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "RETURNED AROUND:\n-\nThe next carriage\nfeels like one\nyou'd already crossed.\nThe certainty the train\nmust have turned.\n\n\nNo-one sees it happen.\nYou feel it after.\nYou ask the next\npassenger if they did.\nThey never have.",
+      "commit_message": "content(narrative): glossary entry RETURNED AROUND"
+    },
+    {
+      "id": "glossary-05-wobbly-time",
+      "label": "Glossary: WOBBLY TIME",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "WOBBLY TIME:\n-\nTime that won't\nhold still long enough\nto be measured.\nThe only kind here.\n\n\nWe try to count it.\nTwo passengers\ncomparing notes\nwill never agree\non how long.",
+      "commit_message": "content(narrative): glossary entry WOBBLY TIME"
+    },
+    {
+      "id": "glossary-06-warning-dim",
+      "label": "Glossary: A WARNING-DIM",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A WARNING-DIM:\n-\nWhen the lanterns\ndim twice in a row.\nNo-one decided this\nmeant something —\nit just does.\n\n\nYou'll see passengers\nquicken their step\nwithout speaking.\nNothing makes them.\nMost of us do anyway.",
+      "commit_message": "content(narrative): glossary entry A WARNING-DIM"
+    },
+    {
+      "id": "glossary-07-silent-friend",
+      "label": "Glossary: A SILENT FRIEND",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A SILENT FRIEND:\n-\nA passenger who greets\nyou with a nod\nand nothing more.\nNever unkind.\nJust wordless.\n\n\nOver enough carriages\nyou come to tell\none nod from another.\nThat is friendship,\nof a kind.",
+      "commit_message": "content(narrative): glossary entry A SILENT FRIEND"
+    },
+    {
+      "id": "glossary-08-biome-slip",
+      "label": "Glossary: A BIOME-SLIP",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A BIOME-SLIP:\n-\nWhen the world outside\nchanges. Desert to\nforest. Forest to ice.\nNo-one quite sees\nit happen.\n\n\nThe slip happens\nin the looking-away.\nThe world waits\nfor you to turn\nbefore it changes.",
+      "commit_message": "content(narrative): glossary entry A BIOME-SLIP"
+    },
+    {
+      "id": "glossary-09-settle-in",
+      "label": "Glossary: TO SETTLE-IN",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "TO SETTLE-IN:\n-\nTo stay in a carriage\nlong enough\nthat you stop counting\nhow long.\n\n\nYou can tell who has.\nThey have stopped\nasking how long.\nThe question\nno longer fits.",
+      "commit_message": "content(narrative): glossary entry TO SETTLE-IN"
+    },
+    {
+      "id": "glossary-10-unstale",
+      "label": "Glossary: THE UNSTALE",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "THE UNSTALE:\n-\nBread you have carried\nfor so long\nthat it should be stale.\nIt isn't.\nIt never is.\n\n\nSome refuse to eat it\nonce they notice.\nThe rest of us\neat it anyway.",
+      "commit_message": "content(narrative): glossary entry THE UNSTALE"
+    },
+    {
+      "id": "glossary-11-denamed",
+      "label": "Glossary: THE DENAMED",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "THE DENAMED:\n-\nA passenger who can\nno longer recall\ntheir own name.\nThe carriages take it\nquietly, over time.\n\n\nYou can sit beside one\nand not know.\nThey have no name\nto give you.",
+      "commit_message": "content(narrative): glossary entry THE DENAMED"
+    },
+    {
+      "id": "glossary-12-passing-words",
+      "label": "Glossary: PASSING-WORDS",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "PASSING-WORDS:\n-\nWhat you say\nto a passenger\nyou'll never see again.\nThey don't have\nto mean anything.\n\n\nA nod will do.\nA word about weather.\nThe point is the saying,\nnot the said.",
+      "commit_message": "content(narrative): glossary entry PASSING-WORDS"
+    },
+    {
+      "id": "glossary-13-old-hold",
+      "label": "Glossary: AN OLD-HOLD",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "AN OLD-HOLD:\n-\nAn item you have kept\nso long\nyou no longer remember\nbringing it\nonto the train.\n\n\nYou forget when\nit was new to you.\nYou forget\nit was ever\nnot yours.",
+      "commit_message": "content(narrative): glossary entry AN OLD-HOLD"
+    },
+    {
+      "id": "glossary-14-threshold-hold",
+      "label": "Glossary: THE THRESHOLD-HOLD",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "THE THRESHOLD-HOLD:\n-\nThe half-second pause\nbefore you step\nfrom one carriage\ninto the next.\n\n\nWe do it without\ndeciding.\nSomething in us\nchecks the next\ncarriage is still there.",
+      "commit_message": "content(narrative): glossary entry THE THRESHOLD-HOLD"
+    },
+    {
+      "id": "glossary-15-offloading",
+      "label": "Glossary: OFFLOADING",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "OFFLOADING:\n-\nThe slow ritual\nof sitting with\nyour things\nand deciding\nwhat to drop.\n\n\nYou always know\nwhich thing to drop.\nSorting just lets\nthe hands catch up.",
+      "commit_message": "content(narrative): glossary entry OFFLOADING"
+    },
+    {
+      "id": "glossary-16-share-out",
+      "label": "Glossary: A SHARE-OUT",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A SHARE-OUT:\n-\nAn item you set down\nin a chest, on purpose,\nfor the next person\nwho opens it.\n\n\nYou leave them\nfor whoever opens\nthe chest next.\nYou don't know who.\nYou hope.",
+      "commit_message": "content(narrative): glossary entry A SHARE-OUT"
+    },
+    {
+      "id": "glossary-17-carry-down",
+      "label": "Glossary: A CARRY-DOWN",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A CARRY-DOWN:\n-\nA thing left in a chest\non purpose\nby whoever opened it\nbefore you.\nNow yours.\n\n\nYou won't meet them.\nYou won't know who.\nYou carry the thing\nforward, and maybe\nleave one back.",
+      "commit_message": "content(narrative): glossary entry A CARRY-DOWN"
+    },
+    {
+      "id": "glossary-18-two-hands-both-full",
+      "label": "Glossary: TWO HANDS BOTH FULL",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "TWO HANDS BOTH FULL:\n-\nThe moment you find\ntwo things you want,\nand only one\nwill leave with you.\n\n\nThe lesser-wanted\nbecomes a share-out.\nYou feel both\nchoices in your hands\nfor a while after.",
+      "commit_message": "content(narrative): glossary entry TWO HANDS BOTH FULL"
+    },
+    {
+      "id": "glossary-19-pocket-darling",
+      "label": "Glossary: A POCKET-DARLING",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A POCKET-DARLING:\n-\nAn item you keep\nfor its name,\nits trim, its words.\nYou will never use it.\nYou will never drop it.\n\n\nEveryone has one.\nMost of us\nhave several.\nWe rarely admit\nhow many.",
+      "commit_message": "content(narrative): glossary entry A POCKET-DARLING"
+    },
+    {
+      "id": "glossary-20-first-glint",
+      "label": "Glossary: FIRST-GLINT",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "FIRST-GLINT:\n-\nThe first half-second\nof seeing something\nin a chest\nthat you have not seen\nbefore.\n\n\nBefore you know\nwhat it is.\nBefore your hand\nreaches.\nA small light\nbehind the eyes.",
+      "commit_message": "content(narrative): glossary entry FIRST-GLINT"
+    },
+    {
+      "id": "glossary-21-golden-strike",
+      "label": "Glossary: A GOLDEN-STRIKE",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A GOLDEN-STRIKE:\n-\nThe moment you know\nthe item is one\nyou have never owned.\nThe first time\nin the holding.\n\n\nYou don't shout.\nYou don't speak.\nYou sit with it.\nThe whole carriage\nfeels brighter than\njust before.",
+      "commit_message": "content(narrative): glossary entry A GOLDEN-STRIKE"
+    },
+    {
+      "id": "glossary-22-look-past",
+      "label": "Glossary: A LOOK-PAST",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A LOOK-PAST:\n-\nAn item whose name\nyou decide not\nto read twice.\nThe kind nobody\nshould have written.\n\n\nYou look past the name.\nYou set the item back.\nLater, you try not to\nrecall what it said.\nYou pray to forget.",
+      "commit_message": "content(narrative): glossary entry A LOOK-PAST"
+    },
+    {
+      "id": "glossary-23-quick-shelve",
+      "label": "Glossary: A QUICK-SHELVE",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A QUICK-SHELVE:\n-\nAn item whose\ninscription reads\nlike a warning\nnot meant for you.\n\n\nYou shelve it fast.\nYou don't finish\nthe line.\nYou move on.\nYou don't look back.",
+      "commit_message": "content(narrative): glossary entry A QUICK-SHELVE"
+    },
+    {
+      "id": "glossary-24-inward-why",
+      "label": "Glossary: AN INWARD-WHY",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "AN INWARD-WHY:\n-\nA question you ask\nyourself\nthat you have never\nasked yourself\nbefore.\n\n\nAlways the same shape.\nNever the same answer.\nEach carriage asks them\na little louder.",
+      "commit_message": "content(narrative): glossary entry AN INWARD-WHY"
+    },
+    {
+      "id": "glossary-25-waking-doubt",
+      "label": "Glossary: THE WAKING-DOUBT",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "THE WAKING-DOUBT:\n-\nThe question\nthat arrives\nsome carriages in.\nIs any of this\nactually here?\n\n\nYou touch the wall.\nThe wall is there.\nThis does not settle\nthe question.",
+      "commit_message": "content(narrative): glossary entry THE WAKING-DOUBT"
+    },
+    {
+      "id": "glossary-26-questioneer",
+      "label": "Glossary: A QUESTIONEER",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/train_glossary_entry.json",
+      "random_book_meta": {
+        "id": "train_glossary_entry",
+        "title": "Train Glossary Entry",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 2
+      },
+      "variant": "A QUESTIONEER:\n-\nA passenger who has\nstopped finding answers\nand started finding\nquestions everywhere.\n\n\nThe chair, a question.\nThe lantern, the same.\nYou become a question\nthey ask without\nopening their mouth.",
+      "commit_message": "content(narrative): glossary entry A QUESTIONEER"
     }
   ],
   "applied": [
