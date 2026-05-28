@@ -22,7 +22,7 @@ final class VillagerTrainSpawnLevelTest {
      * would silently pass if we shared the constant, so the test asserts
      * against the *contract* (a fixed table) rather than the implementation.
      */
-    private static final int[] EXPECTED_WEIGHTS = {32, 36, 21, 10, 1};
+    private static final int[] EXPECTED_WEIGHTS = {35, 39, 23, 2, 1};
 
     @Test
     @DisplayName("pickLevel returns a value in [1, 5] across many samples")
@@ -46,10 +46,12 @@ final class VillagerTrainSpawnLevelTest {
         }
         // ±2 percentage-points tolerance per bucket — loose enough to absorb
         // single-seed luck, tight enough to fail if the weight table is wrong
-        // (e.g. swapped to uniform 20%/20%/20%/20%/20% — the L5 bucket alone
-        // sits in [-1%, 3%] at 100 000 samples, so a 20% bucket would land
-        // well outside it). At 100k samples the standard deviation for a 1%
-        // bucket is ~0.31pp, leaving ~6σ of headroom inside the ±2pp band.
+        // (e.g. swapped to uniform 20%/20%/20%/20%/20% — the L4 and L5
+        // buckets sit in [0%, 4%] and [-1%, 3%] at 100 000 samples, so a 20%
+        // bucket would land well outside either). At 100k samples the
+        // standard deviation for the 1% bucket is ~0.31pp and for the 2%
+        // bucket is ~0.44pp — both leave ~4-6σ of headroom inside the ±2pp
+        // band, so the test will not flake on the heavy-tailed distribution.
         for (int lv = 1; lv <= 5; lv++) {
             double expectedPct = EXPECTED_WEIGHTS[lv - 1];
             double observedPct = 100.0 * counts[lv] / samples;
