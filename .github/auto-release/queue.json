@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l1-a",
-      "label": "Edda - Letter 1 variant A (a seat that is not mine)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "My name is Edda Marsh.\n\nI am writing this from a seat that is not mine.\n\nMy seat was three carriages behind. I left it quickly. Not in fear. Closer to the way you leave a room when the kettle has been on too long.\n\nI will explain when I have walked further. For now: I have moved. I have begun moving.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 1 variant A"
-    },
-    {
       "id": "edda-l1-b",
       "label": "Edda - Letter 1 variant B (the unfolded shawl)",
       "type": "add_variant",
@@ -2186,6 +2169,11 @@
       "id": "corren-l9-b",
       "applied_at": "2026-05-28T17:01:17Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "edda-l1-a",
+      "applied_at": "2026-05-28T17:34:25Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
 }
