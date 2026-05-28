@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l2-b",
-      "label": "Edda - Letter 2 variant B (I have looked at worse)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "A sleeping car. The bed is made. Not by me.\n\nThree heads at the old window last night.\n\nBone-grey. Middle one larger. The two beside it turned when it did not.\n\nThey all looked in.\n\nI have looked at worse things in my life. I looked back.\n\nAfter a while they were gone. I waited. I walked.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 2 variant B"
-    },
-    {
       "id": "edda-l3-a",
       "label": "Edda - Letter 3 variant A (the library car experiment)",
       "type": "add_variant",
@@ -2149,6 +2132,11 @@
     {
       "id": "edda-l2-a",
       "applied_at": "2026-05-28T19:07:11Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l2-b",
+      "applied_at": "2026-05-28T20:09:39Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
