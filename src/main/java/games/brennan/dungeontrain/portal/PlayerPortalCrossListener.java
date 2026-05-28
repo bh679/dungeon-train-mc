@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.portal;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.train.TrainTransformProvider;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,6 +16,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -118,14 +122,27 @@ public final class PlayerPortalCrossListener {
                 continue;
             }
 
-            // Player lands at the partner's same world coords. With matching
-            // world coords on both sides (v1 design), the player materialises
-            // exactly where they crossed but in the target dim. Their
-            // currentX > portalX baseline is preserved as their target-dim
-            // baseline (via the LAST_X clear in onPlayerChangedDim), so they
-            // won't re-transit on their first target-dim tick.
+            // Compute landing position. The naive "same world coords" choice
+            // looks correct because both portals share world coords in v1,
+            // but the train in the target dim has been racing ahead of the
+            // partner portal since the first carriage transited — by the
+            // time a player crosses on foot, the target train is typically
+            // ~5–30 blocks past the partner portal in +X. Landing at the
+            // static partner portal puts the player into open air (or
+            // raw Nether/End terrain after vanilla's safe-snap shoves them
+            // down through the empty portal interior) — the "under the
+            // train" report.
+            //
+            // Fix: find the nearest train carriage in the target dim and
+            // land the player ON TOP of it at the same X,Z as that
+            // carriage. Falls back to a static "well above the partner
+            // portal" position if no train is nearby (rare — happens only
+            // before the source train has transited any carriages, e.g.
+            // when a player teleports themselves to a portal ahead of the
+            // train).
+            Vec3 landingPos = findLandingPosition(targetLevel, endpoint.pos(), pos);
             DimensionTransition transition = new DimensionTransition(
-                targetLevel, pos, sp.getDeltaMovement(),
+                targetLevel, landingPos, sp.getDeltaMovement(),
                 sp.getYRot(), sp.getXRot(),
                 DimensionTransition.DO_NOTHING);
             try {
@@ -139,6 +156,63 @@ public final class PlayerPortalCrossListener {
                 dim.location(), partner.dim().location(), endpoint.pos());
             return; // don't check other portals this tick
         }
+    }
+
+    /**
+     * Maximum block distance from the partner portal in which we consider a
+     * carriage "nearby enough" to land the player on. Should cover the
+     * typical lag between transit and player crossing — at 5 blocks/s and a
+     * worst-case 6-second crossing delay, the train can be 30 blocks past
+     * the portal. 64 gives generous headroom.
+     */
+    private static final double LANDING_SEARCH_RADIUS_SQ = 64.0 * 64.0;
+
+    /**
+     * Pick where to teleport the player on the target side. Prefers landing
+     * the player on top of the nearest carriage to the partner portal so
+     * they don't free-fall through empty target-dim terrain. Falls back to
+     * partner portal coords with a generous Y offset above the frame if no
+     * carriage is within {@link #LANDING_SEARCH_RADIUS_SQ}.
+     *
+     * <p>{@code sourcePos} is only used to inherit lateral (X,Z) drift the
+     * player had inside the portal frame — currently we ignore it and align
+     * to the carriage's own X,Z so the player lands exactly on top.</p>
+     */
+    private static Vec3 findLandingPosition(ServerLevel targetLevel, net.minecraft.core.BlockPos partnerPortalPos, Vec3 sourcePos) {
+        double portalCx = partnerPortalPos.getX() + 0.5;
+        double portalCy = partnerPortalPos.getY() + 0.5;
+        double portalCz = partnerPortalPos.getZ() + 0.5;
+
+        ManagedShip nearest = null;
+        double bestDistSq = LANDING_SEARCH_RADIUS_SQ;
+        TrainTransformProvider nearestProvider = null;
+
+        for (ManagedShip ship : Shipyards.of(targetLevel).findAll()) {
+            if (!(ship.getKinematicDriver() instanceof TrainTransformProvider provider)) continue;
+            Vector3dc p = ship.currentWorldPosition();
+            double dx = p.x() - portalCx;
+            double dy = p.y() - portalCy;
+            double dz = p.z() - portalCz;
+            double distSq = dx * dx + dy * dy + dz * dz;
+            if (distSq < bestDistSq) {
+                bestDistSq = distSq;
+                nearest = ship;
+                nearestProvider = provider;
+            }
+        }
+
+        if (nearest != null) {
+            Vector3dc p = nearest.currentWorldPosition();
+            // currentWorldPosition is the carriage AABB centre. Land on top
+            // of the carriage: centre Y + half-height + small clearance so
+            // the player's feet rest cleanly on the carriage roof.
+            double topY = p.y() + nearestProvider.dims().height() / 2.0 + 0.1;
+            return new Vec3(p.x(), topY, p.z());
+        }
+
+        // Fallback: well above the partner portal frame so the player at
+        // least doesn't materialise inside the frame's solid perimeter.
+        return new Vec3(portalCx, portalCy + 8.0, portalCz);
     }
 
     /** Drop the player's last-X tracking on dimension change. */
