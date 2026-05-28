@@ -10,13 +10,14 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Optional;
 
 /**
- * Fires when the absolute global travelled-carriage counter reaches a
+ * Fires when the absolute per-player travelled-carriage counter reaches a
  * threshold. Backing value is
- * {@code Math.abs(BoardingProgressData.travelledCarriageIndex())} — the
- * same counter
- * {@link games.brennan.dungeontrain.difficulty.DifficultyApplier} uses for
- * mob-difficulty tiering, so the achievement and the on-screen difficulty
- * progression are coherent and survive deaths.
+ * {@code Math.abs(PlayerRunState.travelledCarriageIndex())} — the same
+ * per-player counter that
+ * {@link games.brennan.dungeontrain.event.MobDifficultyEvents} reads (via
+ * {@code max} across online players) for spawn-time tier, so the achievement
+ * and the on-screen difficulty progression are coherent. Both reset on the
+ * player's death.
  *
  * <p>JSON shape:
  * <pre>{@code

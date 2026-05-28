@@ -5,7 +5,6 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
-import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.RandomBookFile;
@@ -131,25 +130,27 @@ public final class AchievementEvents {
      * (positive) and backward (negative).
      *
      * <p>{@link ModAdvancementTriggers#CARTS_IN_RUN} (tiers 100 / 1000 / 10000)
-     * fires off {@code Math.abs(BoardingProgressData.travelledCarriageIndex())} —
-     * the same global counter that
-     * {@link games.brennan.dungeontrain.difficulty.DifficultyApplier} reads for
-     * mob-difficulty tiering. The on-screen difficulty progression and the
-     * achievement progression stay coherent, and progress persists across
-     * deaths (counter is never reset).</p>
+     * fires off {@code Math.abs(PlayerRunState.travelledCarriageIndex())} —
+     * the same per-player counter that
+     * {@link games.brennan.dungeontrain.event.MobDifficultyEvents} reads for
+     * spawn-time tier (via {@code max(...)} across online players). The
+     * on-screen difficulty progression and the achievement progression now
+     * stay coherent: both reset on the player's death, both tick off the
+     * same leader delta.</p>
      *
      * <p>{@link ModAdvancementTriggers#CARTS_BOTH_DIRECTIONS} ("The Long Way
-     * Back") still uses the per-life forward / backward subtotals tracked in
-     * {@link PlayerRunState} — so dying still resets that one specifically.</p>
+     * Back") uses the per-life forward / backward subtotals (absolute deltas)
+     * tracked in {@link PlayerRunState#cartsForwardSinceDeath} /
+     * {@link PlayerRunState#cartsBackwardSinceDeath} — backward travel
+     * contributes positively there, while it subtracts from the signed
+     * {@code travelledCarriageIndex} used above.</p>
      */
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
         if (delta == 0) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.recordCartMovement(delta);
-        int travelledAbs = Math.abs(
-            BoardingProgressData.get(player.serverLevel()).travelledCarriageIndex()
-        );
-        ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, travelledAbs);
+        ModAdvancementTriggers.CARTS_IN_RUN.get()
+            .trigger(player, Math.abs(run.travelledCarriageIndex()));
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
     }
@@ -319,6 +320,10 @@ public final class AchievementEvents {
         if (event.isEndConquered()) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
+        // Per-life travelled-carriage-index is now 0; push the HUD packet
+        // immediately so the overlay reflects the reset without waiting for
+        // the next 10-tick BoardingProgressEvents scan.
+        BoardingProgressEvents.sendPlayerHudPacket(player);
         LOGGER.debug("[DungeonTrain] Respawn: reset PlayerRunState for {}", player.getName().getString());
     }
 

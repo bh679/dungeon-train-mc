@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l6-b",
-      "label": "Corren - Letter 6 variant B (the one who lived)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Letter Six"
-      },
-      "variant": "Esa.\n\nThere are people on this train who have lived longer than me.\n\nnone of them look right.\n\ni do not want to know what i look like.\n\nyou would have told me.\n\nyou would have said sit down Corren and let me see.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 6 variant B"
-    },
-    {
       "id": "corren-l7-a",
       "label": "Corren - Letter 7 variant A (The Train)",
       "type": "add_variant",
@@ -1656,7 +1639,7 @@
         "generation": 0,
         "weight": 2
       },
-      "variant": "THE PRY-PAUSE:\n-\nThe half-second\nbefore a chest opens.\nThe breath you hold\nwithout meaning to.\n\n\nA long pry-pause is\nthe kind we speak of —\nthe kind of a chest\nworth waiting on.\nOf shorter ones, nothing.",
+      "variant": "THE PRY-PAUSE:\n-\nThe half-second\nbefore a chest opens.\nThe breath you hold\nwithout meaning to.\n\n\nA long pry-pause is\nthe kind we speak of \u2014\nthe kind of a chest\nworth waiting on.\nOf shorter ones, nothing.",
       "commit_message": "content(narrative): glossary entry THE PRY-PAUSE"
     },
     {
@@ -1671,7 +1654,7 @@
         "generation": 0,
         "weight": 2
       },
-      "variant": "THE LONG LEAN:\n-\nWhat is said to happen\non a curve —\nthe whole carriage\ntilts as one.\n\n\nThose who have felt one\nspeak of it unprompted.\nThe rest of us\ntrust the telling.",
+      "variant": "THE LONG LEAN:\n-\nWhat is said to happen\non a curve \u2014\nthe whole carriage\ntilts as one.\n\n\nThose who have felt one\nspeak of it unprompted.\nThe rest of us\ntrust the telling.",
       "commit_message": "content(narrative): glossary entry THE LONG LEAN"
     },
     {
@@ -1731,7 +1714,7 @@
         "generation": 0,
         "weight": 2
       },
-      "variant": "A WARNING-DIM:\n-\nWhen the lanterns\ndim twice in a row.\nNo-one decided this\nmeant something —\nit just does.\n\n\nYou'll see passengers\nquicken their step\nwithout speaking.\nNothing makes them.\nMost of us do anyway.",
+      "variant": "A WARNING-DIM:\n-\nWhen the lanterns\ndim twice in a row.\nNo-one decided this\nmeant something \u2014\nit just does.\n\n\nYou'll see passengers\nquicken their step\nwithout speaking.\nNothing makes them.\nMost of us do anyway.",
       "commit_message": "content(narrative): glossary entry A WARNING-DIM"
     },
     {
@@ -2149,6 +2132,11 @@
     {
       "id": "corren-l6-a",
       "applied_at": "2026-05-28T12:02:39Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l6-b",
+      "applied_at": "2026-05-28T12:51:46Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
