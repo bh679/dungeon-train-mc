@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l3-b",
-      "label": "Corren - Letter 3 variant B (Bram's shield)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "Bram.\n\nYour shield was too big for you.\n\nYou walked sideways through doors.\n\nEsa called it the table.\n\nYou said the table never let anyone down.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 3 variant B"
-    },
-    {
       "id": "corren-l4-a",
       "label": "Corren - Letter 4 variant A (the first one is yours)",
       "type": "add_variant",
@@ -1054,6 +1037,11 @@
     {
       "id": "corren-l3-a",
       "applied_at": "2026-05-28T06:15:13Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l3-b",
+      "applied_at": "2026-05-28T07:39:14Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
