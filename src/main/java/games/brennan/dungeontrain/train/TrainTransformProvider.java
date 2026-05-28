@@ -5,8 +5,11 @@ import games.brennan.dungeontrain.ship.InertiaSnapshot;
 import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaterniond;
 import org.joml.Quaterniondc;
 import org.joml.Vector3d;
@@ -728,5 +731,125 @@ public final class TrainTransformProvider implements KinematicDriver {
 
         if (prevEffectivePos == null) prevEffectivePos = new Vector3d(effPos);
         else prevEffectivePos.set(effPos);
+    }
+
+    // ---------------------------------------------------------------------
+    // NBT serialization for cross-dimension transit (Phase 5 of
+    // plans/sorted-squishing-fern.md).
+    //
+    // When a carriage transits a dimensional portal, the source ServerSubLevel
+    // is captured via Sable's SubLevelSerializer.toData(), reloaded into the
+    // target ServerLevel via fullyLoad(), and then this provider must be
+    // reconstructed on the new sub-level. The sub-level's userDataTag is
+    // the natural carrier: Sable preserves it through serialize/deserialize,
+    // and our portal transit service is the only consumer.
+    //
+    // What we serialize: the seven constructor args (targetVelocity,
+    // shipyardOrigin, dimensionKey, pIdx, groupSize, dims, trainId). We do
+    // NOT serialize lazy-captured runtime state (spawnWorldPos, lockedRotation,
+    // canonical position) — those are re-derived on the destination side's
+    // first nextTransform() call, just like a fresh spawn. We also skip
+    // track/tunnel chunk queues (filledChunks, pendingChunks) — the destination
+    // dimension starts with fresh terrain; track gen runs from scratch there.
+    // ---------------------------------------------------------------------
+
+    private static final String TAG_ROOT = "DungeonTrain.TrainProvider";
+    private static final String TAG_VELOCITY = "Velocity";
+    private static final String TAG_SHIPYARD = "Shipyard";
+    private static final String TAG_DIM = "Dim";
+    private static final String TAG_PIDX = "PIdx";
+    private static final String TAG_GROUP_SIZE = "GroupSize";
+    private static final String TAG_DIMS = "Dims";
+    private static final String TAG_TRAIN_ID = "TrainId";
+
+    /**
+     * Writes this provider's state into the given (mutable) parent tag under
+     * the key {@link #TAG_ROOT}. The parent tag is typically the
+     * {@code userDataTag} of the carriage's Sable {@code ServerSubLevel}.
+     * Existing keys on the parent are preserved.
+     *
+     * <p>Idempotent: calling repeatedly with the same state produces an
+     * equivalent tag (a re-serialization, not a duplicate).</p>
+     */
+    public void writeToUserDataTag(CompoundTag parent) {
+        CompoundTag ours = new CompoundTag();
+
+        // Velocity — store the volatile read into a Vector3d snapshot so we
+        // serialize a self-consistent triple even if another thread changes
+        // targetVelocity mid-write.
+        Vector3d v = new Vector3d(this.targetVelocity);
+        CompoundTag velocityTag = new CompoundTag();
+        velocityTag.putDouble("X", v.x);
+        velocityTag.putDouble("Y", v.y);
+        velocityTag.putDouble("Z", v.z);
+        ours.put(TAG_VELOCITY, velocityTag);
+
+        ours.putIntArray(TAG_SHIPYARD,
+            new int[] { shipyardOrigin.getX(), shipyardOrigin.getY(), shipyardOrigin.getZ() });
+        ours.putString(TAG_DIM, dimensionKey.location().toString());
+        ours.putInt(TAG_PIDX, pIdx);
+        ours.putInt(TAG_GROUP_SIZE, groupSize);
+
+        ours.putIntArray(TAG_DIMS, new int[] { dims.length(), dims.width(), dims.height() });
+        ours.put(TAG_TRAIN_ID, NbtUtils.createUUID(trainId));
+
+        parent.put(TAG_ROOT, ours);
+    }
+
+    /**
+     * Reconstructs a provider from a tag previously written by
+     * {@link #writeToUserDataTag}. The {@code newDim} argument is the
+     * dimension key the destination sub-level will live in — overrides the
+     * serialized dim, since after a transit the provider's "current
+     * dimension" is the target's, not the source's.
+     *
+     * <p>Returns {@code null} if the tag is absent or malformed (missing
+     * keys, wrong array lengths, unparseable train id). Callers should
+     * treat null as "this sub-level is not a Dungeon Train carriage we own"
+     * and skip provider re-attach.</p>
+     *
+     * <p>Defensive: {@link CarriageDims#clamp} is used on the dims triple
+     * rather than the strict constructor, so a slightly out-of-range
+     * persisted value (e.g. from a config change between save and load)
+     * self-heals rather than crashing.</p>
+     */
+    @Nullable
+    public static TrainTransformProvider readFromUserDataTag(CompoundTag parent, ResourceKey<Level> newDim) {
+        if (!parent.contains(TAG_ROOT)) return null;
+        CompoundTag ours = parent.getCompound(TAG_ROOT);
+
+        if (!ours.contains(TAG_VELOCITY) || !ours.contains(TAG_SHIPYARD) ||
+            !ours.contains(TAG_PIDX) || !ours.contains(TAG_GROUP_SIZE) ||
+            !ours.contains(TAG_DIMS) || !ours.contains(TAG_TRAIN_ID)) {
+            return null;
+        }
+
+        CompoundTag velocityTag = ours.getCompound(TAG_VELOCITY);
+        Vector3d velocity = new Vector3d(
+            velocityTag.getDouble("X"),
+            velocityTag.getDouble("Y"),
+            velocityTag.getDouble("Z"));
+
+        int[] shipyardArr = ours.getIntArray(TAG_SHIPYARD);
+        if (shipyardArr.length != 3) return null;
+        BlockPos shipyard = new BlockPos(shipyardArr[0], shipyardArr[1], shipyardArr[2]);
+
+        int pIdx = ours.getInt(TAG_PIDX);
+        int groupSize = ours.getInt(TAG_GROUP_SIZE);
+        if (groupSize < 1) return null;
+
+        int[] dimsArr = ours.getIntArray(TAG_DIMS);
+        if (dimsArr.length != 3) return null;
+        CarriageDims carriageDims = CarriageDims.clamp(dimsArr[0], dimsArr[1], dimsArr[2]);
+
+        UUID trainId;
+        try {
+            trainId = NbtUtils.loadUUID(ours.get(TAG_TRAIN_ID));
+        } catch (Exception e) {
+            return null;
+        }
+
+        return new TrainTransformProvider(
+            velocity, shipyard, newDim, pIdx, groupSize, carriageDims, trainId);
     }
 }
