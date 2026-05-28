@@ -355,7 +355,7 @@ public final class TrainAssembler {
      * come from {@code input.currentPosition()} on first kinematic tick to
      * stay in Sable's native coordinate frame.</p>
      */
-    static void attachDriver(
+    public static void attachDriver(
         ServerLevel level,
         ManagedShip ship,
         TrainTransformProvider provider,
