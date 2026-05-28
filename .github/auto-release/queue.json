@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l4-a",
-      "label": "Corren - Letter 4 variant A (the first one is yours)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "Bram.\n\nThe first skull was yours.\n\nYou picked it up.\n\nYou shouted something.\n\nI could not hear over the fire.\n\nThe wheels on this train make three notes.\n\nThe first one is yours Bram.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 4 variant A"
-    },
-    {
       "id": "corren-l4-b",
       "label": "Corren - Letter 4 variant B (it weighed nothing)",
       "type": "add_variant",
@@ -1597,6 +1580,11 @@
     {
       "id": "corren-l3-b",
       "applied_at": "2026-05-28T07:39:14Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l4-a",
+      "applied_at": "2026-05-28T09:31:13Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
