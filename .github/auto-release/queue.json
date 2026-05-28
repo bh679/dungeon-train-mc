@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l1-b",
-      "label": "Edda - Letter 1 variant B (the unfolded shawl)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Edda Marsh.\n\nThis seat is warm. Not from me.\n\nMy seat is back the way I came. Three carriages, perhaps four. I did not count.\n\nMy shawl is still on it. Folded. Folding was the last thing I did not do.\n\nMore when I have walked further.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 1 variant B"
-    },
-    {
       "id": "edda-l2-a",
       "label": "Edda - Letter 2 variant A (three heads at the old window)",
       "type": "add_variant",
@@ -2173,6 +2156,11 @@
     {
       "id": "edda-l1-a",
       "applied_at": "2026-05-28T17:34:25Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l1-b",
+      "applied_at": "2026-05-28T18:34:43Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
