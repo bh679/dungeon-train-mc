@@ -111,6 +111,11 @@ public final class AchievementEvents {
         LAST_CHEST_TICK.put(uuid, tick);
 
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        // Flat per-open counter for the death-screen summary — increments on
+        // every (debounced) chest/barrel open, including repeats of the same
+        // position. Decorated-pot breaks feed the same counter from
+        // RunStatsEvents.onPotBreak.
+        run.incrementContainersOpened();
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.

@@ -6,9 +6,12 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -17,6 +20,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +82,22 @@ public final class BoardingProgressEvents {
     /** Transient: consecutive scans the active leader has been off every AABB. */
     private static int leaderOffTrainScans = 0;
 
+    /**
+     * Per-player last-known boarded position. Used to compute world-space
+     * movement deltas for {@link PlayerRunState#distanceBlocks}. Entries
+     * for players who disembark are dropped each scan so a re-boarding
+     * player doesn't book a teleport-sized jump.
+     */
+    private static final Map<UUID, Vec3> LAST_BOARDED_POS = new HashMap<>();
+
+    /**
+     * Sanity cap on a single-scan distance delta. Above this is assumed to
+     * be a teleport / dimension change rather than real movement, and we
+     * skip the accumulation. SCAN_PERIOD_TICKS = 10 ticks = 0.5 s; even
+     * sprint-jumping is well under 20 blocks in that window.
+     */
+    private static final double MAX_DELTA_PER_SCAN = 100.0;
+
     private BoardingProgressEvents() {}
 
     @SubscribeEvent
@@ -108,9 +128,14 @@ public final class BoardingProgressEvents {
                     AchievementEvents.notifyTrainTime(p, newTotal);
                     games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
                         .trigger(p, "boarded");
+                    accumulateBoardedDistance(p);
                 }
             }
         }
+        // Drop tracking for players who disembarked since last scan, so the
+        // first sample after they re-board starts a fresh delta baseline
+        // rather than booking a teleport-sized jump.
+        LAST_BOARDED_POS.keySet().retainAll(boarded.keySet());
 
         BoardingProgressData data = BoardingProgressData.get(level);
         UUID leader = data.activeLeaderUUID();
@@ -187,6 +212,25 @@ public final class BoardingProgressEvents {
         if (travelled == lastBroadcastTravelled) return;
         lastBroadcastTravelled = travelled;
         PacketDistributor.sendToAllPlayers(packetFor(data));
+    }
+
+    /**
+     * Sample the player's current world position and, if they were boarded
+     * in the previous scan, add the magnitude of the delta to their
+     * {@link PlayerRunState#distanceBlocks} counter. Naturally combines
+     * train-carried movement and on-train walking — both move the player's
+     * world position.
+     */
+    private static void accumulateBoardedDistance(ServerPlayer player) {
+        Vec3 current = new Vec3(player.getX(), player.getY(), player.getZ());
+        Vec3 last = LAST_BOARDED_POS.put(player.getUUID(), current);
+        if (last == null) return;
+        double dx = current.x - last.x;
+        double dy = current.y - last.y;
+        double dz = current.z - last.z;
+        double delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (delta <= 0.0 || delta >= MAX_DELTA_PER_SCAN || !Double.isFinite(delta)) return;
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
     }
 
     private static BoardingProgressPacket packetFor(BoardingProgressData data) {
