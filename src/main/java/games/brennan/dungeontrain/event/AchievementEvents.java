@@ -176,9 +176,42 @@ public final class AchievementEvents {
         if (allStoriesRead(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
         }
+        if (allStoryVariantsSeen(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_story_variants");
+        }
         if (allStartingBooksSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_starting_books");
         }
+    }
+
+    /**
+     * True when every variant of every letter of every story currently
+     * loaded by {@link StoryRegistry} has been marked seen in
+     * {@code data.storyVariantsSnapshot()}. Drives the
+     * {@code read_all_story_variants} ("Every Reality, Every Word")
+     * achievement. Empty registry → false.
+     */
+    private static boolean allStoryVariantsSeen(NarrativeProgressData data) {
+        java.util.List<String> all = StoryRegistry.basenames();
+        if (all.isEmpty()) return false;
+        Map<String, NarrativeProgress> snapshot = data.storyVariantsSnapshot();
+        for (String basename : all) {
+            StoryFile file = StoryRegistry.getByBasename(basename).orElse(null);
+            if (file == null) return false;
+            for (var letter : file.letters()) {
+                int totalVariants = letter.variants().size();
+                if (totalVariants == 0) continue;
+                NarrativeProgress p = snapshot.getOrDefault(
+                    basename + "#" + letter.index(),
+                    new NarrativeProgress()
+                );
+                Set<Integer> seen = p.readLetters();
+                for (int v = 0; v < totalVariants; v++) {
+                    if (!seen.contains(v)) return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**

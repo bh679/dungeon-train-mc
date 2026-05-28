@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/read_all_stories",
+  "display": {
+    "icon": { "id": "minecraft:enchanted_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.read_all_story_variants.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.read_all_story_variants.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "dungeontrain:story_set_completed",
+      "conditions": { "setId": "all_story_variants" }
+    }
+  },
+  "requirements": [["completed"]]
+}

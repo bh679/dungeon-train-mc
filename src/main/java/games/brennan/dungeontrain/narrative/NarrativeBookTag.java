@@ -27,20 +27,30 @@ public final class NarrativeBookTag {
     public static final String NBT_STORY = "dt_narrative_story";
     /** Letter index, 1-based. */
     public static final String NBT_LETTER = "dt_narrative_letter";
+    /** Variant index, 0-based. Added with the per-variant tracking work; old books missing this tag decode as -1. */
+    public static final String NBT_VARIANT = "dt_narrative_variant";
+
+    /** Sentinel returned by {@link #read} when the book pre-dates variant stamping. */
+    public static final int VARIANT_UNKNOWN = -1;
 
     private NarrativeBookTag() {}
 
     /** Stamp the identifier onto {@code stack} (creates / merges into CUSTOM_DATA). */
-    public static void stamp(ItemStack stack, String storyBasename, int letterIndex) {
+    public static void stamp(ItemStack stack, String storyBasename, int letterIndex, int variantIndex) {
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
             tag.putString(NBT_STORY, storyBasename);
             tag.putInt(NBT_LETTER, letterIndex);
+            tag.putInt(NBT_VARIANT, variantIndex);
         });
     }
 
     /**
      * Decode the identifier from {@code stack}'s CUSTOM_DATA. Empty when the
      * stack has no narrative tag (vanilla written book, foreign book, etc.).
+     *
+     * <p>Old books stamped before the variant-tracking field landed will
+     * decode with {@code variantIndex == }{@link #VARIANT_UNKNOWN}; callers
+     * should treat that as "don't mark a variant".</p>
      */
     public static Optional<NarrativeIdentity> read(ItemStack stack) {
         CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
@@ -49,9 +59,10 @@ public final class NarrativeBookTag {
         if (!tag.contains(NBT_STORY, Tag.TAG_STRING) || !tag.contains(NBT_LETTER, Tag.TAG_INT)) {
             return Optional.empty();
         }
-        return Optional.of(new NarrativeIdentity(tag.getString(NBT_STORY), tag.getInt(NBT_LETTER)));
+        int variantIndex = tag.contains(NBT_VARIANT, Tag.TAG_INT) ? tag.getInt(NBT_VARIANT) : VARIANT_UNKNOWN;
+        return Optional.of(new NarrativeIdentity(tag.getString(NBT_STORY), tag.getInt(NBT_LETTER), variantIndex));
     }
 
-    /** {@code (storyBasename, letterIndex)} pair as stamped on a book. */
-    public record NarrativeIdentity(String storyBasename, int letterIndex) {}
+    /** {@code (storyBasename, letterIndex, variantIndex)} triple as stamped on a book. */
+    public record NarrativeIdentity(String storyBasename, int letterIndex, int variantIndex) {}
 }

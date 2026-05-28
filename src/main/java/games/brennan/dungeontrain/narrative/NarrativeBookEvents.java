@@ -84,10 +84,24 @@ public final class NarrativeBookEvents {
         ServerLevel overworld = overworldOf(player);
         if (overworld == null) return;
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
-        boolean changed = data.markRead(id.storyBasename(), id.letterIndex());
-        if (changed) {
+        boolean letterNewly = data.markRead(id.storyBasename(), id.letterIndex());
+        // Variant tracking is separate from letter-completion: a player can
+        // re-read the same letter at a different lectern and reveal a fresh
+        // variant. Pre-variant-stamp books decode with VARIANT_UNKNOWN — skip
+        // the mark for them so the achievement never credits an unknown.
+        boolean variantNewly = false;
+        if (id.variantIndex() >= 0) {
+            variantNewly = data.markStoryVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
+        }
+        if (letterNewly) {
             LOGGER.info("[DungeonTrain] Narrative: world marked {} letter {} read (by {})",
                 id.storyBasename(), id.letterIndex(), player.getName().getString());
+        }
+        if (variantNewly) {
+            LOGGER.info("[DungeonTrain] Narrative: world marked {} letter {} variant {} seen (by {})",
+                id.storyBasename(), id.letterIndex(), id.variantIndex(), player.getName().getString());
+        }
+        if (letterNewly || variantNewly) {
             games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
         }
     }
