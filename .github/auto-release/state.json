@@ -1,6 +1,6 @@
 {
-  "schedule_anchor": "2026-05-28T09:37:15Z",
-  "last_auto_release_at": "2026-05-28T12:51:46Z",
-  "last_anchor_source": "manual_reset_v0.251.1",
+  "schedule_anchor": "2026-05-28T13:02:57Z",
+  "last_auto_release_at": null,
+  "last_anchor_source": "real_release_",
   "cascade_stopped": false
 }
