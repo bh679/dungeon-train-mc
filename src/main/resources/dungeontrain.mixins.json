@@ -6,7 +6,8 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
     "PlayerFudgeSpawnMixin",
-    "LightningBoltVisualOnlyMixin"
+    "LightningBoltVisualOnlyMixin",
+    "AdvancementVisibilityEvaluatorMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",
