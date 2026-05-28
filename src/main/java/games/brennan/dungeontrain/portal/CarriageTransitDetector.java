@@ -52,9 +52,14 @@ public final class CarriageTransitDetector {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Half-extent of the portal-frame Y/Z volume that counts as "passed through." */
-    private static final double FRAME_HALF_HEIGHT_BLOCKS = 3.5; // matches PortalSpawner.FRAME_HALF_HEIGHT + 0.5
-    private static final double FRAME_HALF_WIDTH_BLOCKS = 4.5;  // matches PortalSpawner.FRAME_HALF_WIDTH + 0.5
+    /**
+     * Half-extent of the portal-frame Y/Z volume that counts as "passed
+     * through." Matches {@link PortalSpawner#FRAME_HALF_HEIGHT} /
+     * {@link PortalSpawner#FRAME_HALF_WIDTH} + 0.5 so a carriage centre at
+     * exactly the frame edge is still considered "inside."
+     */
+    private static final double FRAME_HALF_HEIGHT_BLOCKS = PortalSpawner.FRAME_HALF_HEIGHT + 0.5;
+    private static final double FRAME_HALF_WIDTH_BLOCKS = PortalSpawner.FRAME_HALF_WIDTH + 0.5;
 
     /** ship.id() → last-tick world X. */
     private static final Map<Long, Double> LAST_X_BY_SHIP = new ConcurrentHashMap<>();

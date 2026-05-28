@@ -77,17 +77,23 @@ public final class PortalSpawner {
 
     /**
      * Frame half-extent in the Z (across-track) direction. Total width =
-     * {@code 2 * FRAME_HALF_WIDTH + 1}. Sized to comfortably enclose a
-     * default carriage cross-section (DT default carriage width = 7).
+     * {@code 2 * FRAME_HALF_WIDTH + 1} = 11 blocks; interior opening (frame
+     * stripped) = 9 blocks. Default carriage width is 7; 9-block interior
+     * leaves 1 block of clearance on each side.
      */
-    private static final int FRAME_HALF_WIDTH = 4;  // → 9 blocks wide
+    static final int FRAME_HALF_WIDTH = 5;   // → 11 blocks wide (9 interior)
 
     /**
-     * Frame half-extent in the Y direction. Total height =
-     * {@code 2 * FRAME_HALF_HEIGHT + 1}. Comfortably encloses a default
-     * carriage (DT default carriage height = 7).
+     * Frame half-extent in the Y direction. Total height = 11 blocks;
+     * interior opening = 9 blocks. Default carriage height is 7; 9-block
+     * interior fits the carriage with 1 block of clearance for the player
+     * riding on top.
+     *
+     * <p>v1 size note: tightened to "just fits a default carriage." If we
+     * ever bump default carriage dims past 9×9 we'll need to grow these
+     * too — see CarriageDims.MAX_WIDTH / MAX_HEIGHT.</p>
      */
-    private static final int FRAME_HALF_HEIGHT = 3; // → 7 blocks tall
+    static final int FRAME_HALF_HEIGHT = 5;  // → 11 blocks tall (9 interior)
 
     private record DimTrainKey(ResourceKey<Level> dim, UUID trainId) {}
 

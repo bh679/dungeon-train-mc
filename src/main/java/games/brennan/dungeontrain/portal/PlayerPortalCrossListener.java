@@ -58,8 +58,8 @@ public final class PlayerPortalCrossListener {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** Match the carriage detector's frame proximity values exactly. */
-    private static final double FRAME_HALF_HEIGHT_BLOCKS = 3.5;
-    private static final double FRAME_HALF_WIDTH_BLOCKS = 4.5;
+    private static final double FRAME_HALF_HEIGHT_BLOCKS = PortalSpawner.FRAME_HALF_HEIGHT + 0.5;
+    private static final double FRAME_HALF_WIDTH_BLOCKS = PortalSpawner.FRAME_HALF_WIDTH + 0.5;
 
     /**
      * Player UUID → last-tick world X in their current dim. Cleared on
