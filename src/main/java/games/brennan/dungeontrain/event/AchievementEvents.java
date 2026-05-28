@@ -127,15 +127,30 @@ public final class AchievementEvents {
     /**
      * Called from {@link BoardingProgressEvents} every tick the leader player
      * advances along the train. Accepts signed {@code delta}: forward
-     * (positive) and backward (negative) both contribute to the absolute
-     * per-life total; backward additionally feeds the bidirectional
-     * achievement counter.
+     * (positive) and backward (negative).
+     *
+     * <p>{@link ModAdvancementTriggers#CARTS_IN_RUN} (tiers 100 / 1000 / 10000)
+     * fires off {@code Math.abs(PlayerRunState.travelledCarriageIndex())} —
+     * the same per-player counter that
+     * {@link games.brennan.dungeontrain.event.MobDifficultyEvents} reads for
+     * spawn-time tier (via {@code max(...)} across online players). The
+     * on-screen difficulty progression and the achievement progression now
+     * stay coherent: both reset on the player's death, both tick off the
+     * same leader delta.</p>
+     *
+     * <p>{@link ModAdvancementTriggers#CARTS_BOTH_DIRECTIONS} ("The Long Way
+     * Back") uses the per-life forward / backward subtotals (absolute deltas)
+     * tracked in {@link PlayerRunState#cartsForwardSinceDeath} /
+     * {@link PlayerRunState#cartsBackwardSinceDeath} — backward travel
+     * contributes positively there, while it subtracts from the signed
+     * {@code travelledCarriageIndex} used above.</p>
      */
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
         if (delta == 0) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        int absoluteTotal = run.recordCartMovement(delta);
-        ModAdvancementTriggers.CARTS_IN_RUN.get().trigger(player, absoluteTotal);
+        run.recordCartMovement(delta);
+        ModAdvancementTriggers.CARTS_IN_RUN.get()
+            .trigger(player, Math.abs(run.travelledCarriageIndex()));
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
     }
