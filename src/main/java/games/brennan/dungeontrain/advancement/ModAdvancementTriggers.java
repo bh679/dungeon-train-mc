@@ -37,6 +37,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<TrainTimeTrigger> TRAIN_TIME =
         TRIGGERS.register("train_time", TrainTimeTrigger::new);
 
+    public static final Supplier<RandomBooksReadTrigger> RANDOM_BOOKS_READ =
+        TRIGGERS.register("random_books_read", RandomBooksReadTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {

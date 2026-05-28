@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/taking_notes",
+  "display": {
+    "icon": { "id": "minecraft:written_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.i_must_know.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.i_must_know.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "dungeontrain:story_set_completed",
+      "conditions": { "setId": "faulthurst_all_titles" }
+    }
+  },
+  "requirements": [["completed"]]
+}
