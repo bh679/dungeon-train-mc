@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l4-b",
-      "label": "Edda - Letter 4 variant B (Hollin stayed)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "A goods car. Crates nailed shut. The light is the only thing not boxed.\n\nHollin.\n\nHe was my husband. He dug soul sand. Sold most. Kept a little.\n\nHe dug too deep. Something came up.\n\nThree heads. Middle one larger. Tilted. As if listening.\n\nHollin stayed.\n\nI waited a long time to see that face again.\n\nNow I have.\n\nEdda",
-      "commit_message": "content(narrative): Edda Letter 4 variant B"
-    },
-    {
       "id": "edda-l5-a",
       "label": "Edda - Letter 5 variant A (the windows show what we carry)",
       "type": "add_variant",
@@ -2101,6 +2084,11 @@
     {
       "id": "edda-l4-a",
       "applied_at": "2026-05-28T23:00:12Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l4-b",
+      "applied_at": "2026-05-28T23:55:11Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
