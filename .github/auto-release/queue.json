@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l5-b",
-      "label": "Corren - Letter 5 variant B (her songs)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Letter Five"
-      },
-      "variant": "Esa.\n\nYou sang while you bandaged.\n\nOld songs. None of us knew them.\n\nYou said you made them up as you went.\n\nWe pretended to believe you.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 5 variant B"
-    },
-    {
       "id": "corren-l6-a",
       "label": "Corren - Letter 6 variant A (the push)",
       "type": "add_variant",
@@ -1561,6 +1544,11 @@
     {
       "id": "corren-l5-a",
       "applied_at": "2026-05-28T10:14:53Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l5-b",
+      "applied_at": "2026-05-28T11:19:04Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
