@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l1-b",
-      "label": "Corren - Letter 1 variant B (her quiet laugh)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Mira.\n\nYou laughed quiet.\n\nLike you were trying not to wake something.\n\nBram never knew when you were joking.\n\ni did.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 1 variant B"
-    },
-    {
       "id": "corren-l2",
       "label": "Corren - Letter 2 (what happened to Mira)",
       "type": "add_variant",
@@ -1090,6 +1073,11 @@
     {
       "id": "corren-l1-a",
       "applied_at": "2026-05-27T12:16:07Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l1-b",
+      "applied_at": "2026-05-28T01:08:59Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
