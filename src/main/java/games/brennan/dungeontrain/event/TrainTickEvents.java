@@ -102,9 +102,9 @@ public final class TrainTickEvents {
         // forward progress per train. Cheap O(trains) pass that emits at
         // most one portal per train per tick. See plans/sorted-squishing-fern.md.
         games.brennan.dungeontrain.portal.PortalSpawner.tick(level, trainsById);
-        // Detect carriages whose centre crossed a portal X-plane this tick
-        // and dispatch a TransitJob to PortalTransitService.
-        games.brennan.dungeontrain.portal.CarriageTransitDetector.tick(level, trainsById);
+        // Phase 14: carriage transit removed. Each dim has its own train
+        // sharing a trainId (spawned at bootstrap in TrainBootstrapEvents);
+        // only the player crosses portals via PlayerPortalCrossListener.
         long tAfterPortals = System.nanoTime();
 
         // ShipyardShifter intentionally NOT invoked on the per-carriage

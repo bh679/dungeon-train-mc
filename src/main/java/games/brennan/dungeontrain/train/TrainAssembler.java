@@ -61,11 +61,24 @@ public final class TrainAssembler {
      *     via {@link Trains#findById(ServerLevel, UUID)}.
      */
     public static ManagedShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
+        return spawnTrain(level, origin, velocity, count, spawnerWorldPos, dims, UUID.randomUUID());
+    }
+
+    /**
+     * Spawn variant that accepts an explicit {@code trainId}. Used by the
+     * cross-dimension mirror flow (Phase 14): bootstrap spawns one train in
+     * each of OW/Nether/End sharing a single trainId so the player crossing
+     * a portal lands on the "same" logical train in the target dim.
+     *
+     * <p>Otherwise identical to the no-trainId overload: deletes any
+     * previously-loaded carriages in {@code level} first.</p>
+     */
+    public static ManagedShip spawnTrain(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, UUID trainId) {
         int deleted = deleteExistingTrains(level);
         if (deleted > 0) {
-            LOGGER.info("[DungeonTrain] Deleted {} existing carriage(s) before spawn", deleted);
+            LOGGER.info("[DungeonTrain] Deleted {} existing carriage(s) before spawn in {}", deleted, level.dimension().location());
         }
-        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims);
+        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims, trainId);
     }
 
     /**
@@ -79,10 +92,10 @@ public final class TrainAssembler {
      */
     @SuppressWarnings("unused")
     public static ManagedShip spawnSuccessor(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, int legacyGlobalPIdxBase) {
-        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims);
+        return spawnCore(level, origin, velocity, count, spawnerWorldPos, dims, UUID.randomUUID());
     }
 
-    private static ManagedShip spawnCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims) {
+    private static ManagedShip spawnCore(ServerLevel level, BlockPos origin, Vector3dc velocity, int count, Vector3dc spawnerWorldPos, CarriageDims dims, UUID trainId) {
         if (count <= 0) {
             throw new IllegalArgumentException("Cannot spawn a train with count <= 0 (got " + count + ")");
         }
@@ -131,8 +144,6 @@ public final class TrainAssembler {
         int seedGroupIdx = Math.floorDiv(seedAnchor, groupSize);
         int seedGroupOriginX = origin.getX() + seedGroupIdx * subLevelStride - halfPadLen;
         BlockPos seedGroupOrigin = new BlockPos(seedGroupOriginX, origin.getY(), origin.getZ());
-
-        UUID trainId = UUID.randomUUID();
 
         TrackGeometry geometry = new TrackGeometry(
             origin.getY() - 2,

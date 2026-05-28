@@ -102,11 +102,6 @@ public final class TrainBootstrapEvents {
             target = overworld;
         }
 
-        if (findTrain(target) != null) {
-            LOGGER.debug("[DungeonTrain] Train already present in {} — bootstrap skipped", target.dimension().location());
-            return;
-        }
-
         int trainY = data.getTrainY();
         BlockPos trainOrigin = new BlockPos(0, trainY, 0);
         CarriageDims dims = data.dims();
@@ -127,36 +122,86 @@ public final class TrainBootstrapEvents {
         // use a benign positive seed so the seed-anchor math in
         // TrainAssembler.spawnTrain doesn't degenerate.
         int seedCount = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
-        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning seed for {} carriages at {} in {} dims={}x{}x{} (configCount={})",
-            seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
-        BootstrapProgress.setPhase("Spawning seed train...");
-        ManagedShip seedShip = null;
-        try {
-            seedShip = TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
-        } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
+
+        // Phase 14 — shared trainId across dims. The starting dim gets the
+        // primary spawn + eager-fill; the OTHER vanilla dims (OW/Nether/End
+        // minus the starting one) get a matching seed train sharing this
+        // UUID so the player crossing a portal lands on the "same" logical
+        // train in the target dim. Without this, cross-dim travel dumps
+        // the player into a dim with no train.
+        java.util.UUID trainId = java.util.UUID.randomUUID();
+
+        if (findTrain(target) == null) {
+            LOGGER.info("[DungeonTrain] Bootstrap auto-spawning seed for {} carriages at {} in {} dims={}x{}x{} (configCount={}, trainId={})",
+                seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount, trainId);
+            BootstrapProgress.setPhase("Spawning seed train...");
+            ManagedShip seedShip = null;
+            try {
+                seedShip = TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims, trainId);
+            } catch (Throwable t) {
+                LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed in starting dim {}", target.dimension().location(), t);
+            }
+
+            BootstrapProgress.setPhase("Anchoring world spawn...");
+            anchorWorldSpawnNearCorridor(target, dims, trainY);
+
+            // Eager-fill the train to the server-configured window NOW (while
+            // the world-load phase is still blocking the client's loading
+            // screen), so the player's first rendered frame already shows the
+            // assembled train. Previously this ran in PlayerJoinEvents.tryPlace
+            // and produced a visible ~8 s "stuck at 100%" freeze post-login.
+            // A failure here is non-fatal: the per-tick appender extends the
+            // train at gameplay speed as a fallback.
+            if (seedShip != null) {
+                try {
+                    TrainCarriageAppender.eagerFillForBootstrap(target, seedShip);
+                } catch (Throwable t) {
+                    LOGGER.error("[DungeonTrain] Bootstrap eager-fill failed — per-tick appender will extend gradually instead", t);
+                }
+            }
+        } else {
+            LOGGER.debug("[DungeonTrain] Train already present in starting dim {} — primary spawn skipped, but mirrors may still need creation",
+                target.dimension().location());
+            // Inherit the existing train's UUID so mirrors share it.
+            ManagedShip existing = findTrain(target);
+            if (existing != null && existing.getKinematicDriver() instanceof TrainTransformProvider tp) {
+                trainId = tp.getTrainId();
+            }
         }
 
-        BootstrapProgress.setPhase("Anchoring world spawn...");
-        anchorWorldSpawnNearCorridor(target, dims, trainY);
-
-        // Eager-fill the train to the server-configured window NOW (while
-        // the world-load phase is still blocking the client's loading
-        // screen), so the player's first rendered frame already shows the
-        // assembled train. Previously this ran in PlayerJoinEvents.tryPlace
-        // and produced a visible ~8 s "stuck at 100%" freeze post-login.
-        // A failure here is non-fatal: the per-tick appender extends the
-        // train at gameplay speed as a fallback. The eager-fill itself
-        // updates {@link BootstrapProgress} to the counted "Assembling
-        // train" phase, overwriting the indeterminate text set above.
-        if (seedShip != null) {
+        // Spawn matching seed trains in the OTHER two vanilla dims so that
+        // crossing a portal lands the player on a "copy" of the same logical
+        // train. v1 keeps the mirrors as seed-only groups; the per-tick
+        // appender extends each dim's train independently as the player
+        // visits that dim. (Phase 12 polish target: per-tick sync that
+        // mirrors block-level changes across the three dims.)
+        BootstrapProgress.setPhase("Spawning mirror trains...");
+        for (net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> mirrorDim : MIRROR_DIMS) {
+            if (mirrorDim.equals(target.dimension())) continue;
+            ServerLevel mirrorLevel = event.getServer().getLevel(mirrorDim);
+            if (mirrorLevel == null) continue;
+            if (findTrain(mirrorLevel) != null) {
+                LOGGER.debug("[DungeonTrain] Mirror dim {} already has a train — skipping", mirrorDim.location());
+                continue;
+            }
             try {
-                TrainCarriageAppender.eagerFillForBootstrap(target, seedShip);
+                ManagedShip mirrorShip = TrainAssembler.spawnTrain(
+                    mirrorLevel, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims, trainId);
+                LOGGER.info("[DungeonTrain] Spawned mirror seed train in {} (trainId={}, ship id={})",
+                    mirrorDim.location(), trainId, mirrorShip.id());
             } catch (Throwable t) {
-                LOGGER.error("[DungeonTrain] Bootstrap eager-fill failed — per-tick appender will extend gradually instead", t);
+                LOGGER.error("[DungeonTrain] Mirror train spawn failed in {} — players crossing a portal here will fall through empty air until the per-tick appender catches up",
+                    mirrorDim.location(), t);
             }
         }
     }
+
+    /** Vanilla dims we mirror trains across (Phase 14). */
+    private static final java.util.List<net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>> MIRROR_DIMS =
+        java.util.List.of(
+            net.minecraft.world.level.Level.OVERWORLD,
+            net.minecraft.world.level.Level.NETHER,
+            net.minecraft.world.level.Level.END);
 
     /**
      * Set the level's default spawn point to the precise placement that
