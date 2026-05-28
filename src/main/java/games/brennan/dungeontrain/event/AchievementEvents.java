@@ -305,6 +305,10 @@ public final class AchievementEvents {
         if (event.isEndConquered()) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
+        // Per-life travelled-carriage-index is now 0; push the HUD packet
+        // immediately so the overlay reflects the reset without waiting for
+        // the next 10-tick BoardingProgressEvents scan.
+        BoardingProgressEvents.sendPlayerHudPacket(player);
         LOGGER.debug("[DungeonTrain] Respawn: reset PlayerRunState for {}", player.getName().getString());
     }
 
