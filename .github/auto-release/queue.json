@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l8-b",
-      "label": "Corren - Letter 8 variant B (what the wheels do not carry)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Letter Eight"
-      },
-      "variant": "there is a sound.\n\ni have heard it for weeks.\n\nit is not the wheels.\n\nthe wheels carry music. three notes.\n\nthis one carries something else.\n\nit screams.\n\nthree voices. almost in time. never quite.\n\nand there are blasts.\n\ni feel them in the floor. they do not break anything.\n\ni have asked the others on the train.\n\nnone of them hear it.\n\nonly i hear it.\n\nit is for me.\n\nit has time.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 8 variant B"
-    },
-    {
       "id": "corren-l9-a",
       "label": "Corren - Letter 9 variant A (the fourth voice)",
       "type": "add_variant",
@@ -2221,6 +2204,11 @@
     {
       "id": "corren-l8-a",
       "applied_at": "2026-05-28T14:50:18Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l8-b",
+      "applied_at": "2026-05-28T15:22:39Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]
