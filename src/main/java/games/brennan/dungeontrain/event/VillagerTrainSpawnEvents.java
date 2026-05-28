@@ -59,12 +59,12 @@ public final class VillagerTrainSpawnEvents {
 
     /**
      * Per-level pick weights, indexed by {@code level - 1}. Sums to 100 so the
-     * table reads as percentages: L1 30%, L2 35%, L3 20%, L4 10%, L5 5%.
+     * table reads as percentages: L1 32%, L2 36%, L3 21%, L4 10%, L5 1%.
      * The curve makes Novice/Apprentice the typical roll, tapers through
      * Journeyman/Expert, and keeps Master-tier (and the strongest
-     * enchanted-gear / mending trades it gates) genuinely rare.
+     * enchanted-gear / mending trades it gates) vanishingly rare at 1%.
      */
-    private static final int[] LEVEL_WEIGHTS = {30, 35, 20, 10, 5};
+    private static final int[] LEVEL_WEIGHTS = {32, 36, 21, 10, 1};
     private static final int TOTAL_WEIGHT = 100;
 
     private VillagerTrainSpawnEvents() {}
