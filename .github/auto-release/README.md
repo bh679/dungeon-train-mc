@@ -19,34 +19,82 @@ feeds, exercise the release pipeline regularly, and roll AIN updates out increme
 
 ## Cadence
 
-Anchored on the timestamp of the last real release:
+### Default cadence
 
-| Phase | Window since anchor | Interval | Approx. fires |
+Anchored on the timestamp of the last real release. These are the defaults
+when the `AUTO_RELEASE_CADENCE` repo variable is unset — see
+[Customising cadence](#customising-cadence) to override.
+
+| Phase | Interval | Fires | Cumulative window |
 |---|---|---|---|
-| A — hourly | 0–4h | 1h | 4 |
-| B — every 5h | 4–28h | 5h | 5 |
-| C — daily | 28h–14d | 24h | 13 |
-| stopped | > 14d | — | — |
+| A — hourly   | 1h  | 4  | 0–4h    |
+| B — every 5h | 5h  | 5  | 4–29h   |
+| C — daily    | 24h | 13 | 29–341h (~14.2d) |
+| stopped      | —   | —  | > 341h  |
 
-Each fire bumps **PATCH only** (`0.193.0` → `0.193.1` → `0.193.2`…). A new real release
-resets the anchor and starts the cascade over.
+Each fire bumps **PATCH only** (`0.193.0` → `0.193.1` → `0.193.2`…). A new real
+release resets the anchor and starts the cascade over.
+
+### Customising cadence
+
+Set the repo variable `AUTO_RELEASE_CADENCE` to a JSON object describing the
+tier shape:
+
+```bash
+gh variable set AUTO_RELEASE_CADENCE --body '{
+  "tiers": [
+    {"name": "A", "interval_minutes": 60,   "count": 4},
+    {"name": "B", "interval_minutes": 300,  "count": 5},
+    {"name": "C", "interval_minutes": 1440, "count": 13}
+  ]
+}'
+```
+
+Or via the UI: **Settings → Secrets and variables → Actions → Variables tab**.
+
+Per-tier fields:
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | Surfaced as the `phase=` label in workflow logs. |
+| `interval_minutes` | integer ≥ 1 | Minimum gap between fires inside this tier. |
+| `count` | integer ≥ 1 | Number of fires expected at this cadence. |
+
+Two values are **derived** from the tier list rather than configured separately:
+
+- **Phase upper bound (hours)** — running cumulative sum of
+  `count × interval_minutes / 60` up to and including each tier. The last
+  tier's upper bound also serves as the cascade **stopped cap** (default
+  ~14.2d).
+- **Sibling-pending override interval** — `tiers[0].interval_minutes × 60`
+  seconds. The first tier's interval is what AIN/AIS pending updates pin to.
+
+**Fallback to defaults:** unset, malformed JSON, or any schema violation
+(empty `tiers`, missing field, `count < 1`, non-integer `interval_minutes`)
+falls back to the defaults table above and emits a `::warning::` annotation
+in the Actions log. To restore defaults from the CLI:
+
+```bash
+gh variable delete AUTO_RELEASE_CADENCE
+```
 
 ### Sibling-pending override
 
 While AIN or AIS has a GitHub release that DT is behind on, the cascade pins to
-**phase A (hourly)** regardless of elapsed time since the anchor — siblings ship
-updates fast, and we want them in the bundled jar without sitting in B/C cadence
-for hours. The override is filtered by [cascade mode](#cascade-modes): in
-`mode=ain` only AIN-pending pins hourly, in `mode=ais` only AIS, in `always` and
-`with-content` either sibling triggers it.
+**phase A (the first tier's interval — 1h by default)** regardless of elapsed
+time since the anchor — siblings ship updates fast, and we want them in the
+bundled jar without sitting in B/C cadence for hours. The override is filtered
+by [cascade mode](#cascade-modes): in `mode=ain` only AIN-pending pins to the
+first tier, in `mode=ais` only AIS, in `always` and `with-content` either
+sibling triggers it.
 
-The **14-day stopped cap still wins** — after 14d the cascade stops even if
-siblings remain behind. The next real release re-anchors the schedule and the
-override resumes governing cadence.
+The **stopped cap still wins** — past the cumulative window (default ~14.2d)
+the cascade stops even if siblings remain behind. The next real release
+re-anchors the schedule and the override resumes governing cadence.
 
 Transient failures (network, malformed release, missing `gradle.properties`)
 fall through to time-based phasing — the cascade is never falsely pinned to
-hourly on a flaky `gh release list` call.
+the first tier on a flaky `gh release list` call.
 
 ## Files
 

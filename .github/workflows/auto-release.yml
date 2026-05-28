@@ -65,6 +65,7 @@ jobs:
         env:
           STATE_FILE: .github/auto-release/state.json
           AUTO_RELEASE_MODE: ${{ vars.AUTO_RELEASE_ENABLED }}
+          AUTO_RELEASE_CADENCE: ${{ vars.AUTO_RELEASE_CADENCE }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/auto-release/should-fire.py
 
