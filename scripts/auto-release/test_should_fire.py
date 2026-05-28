@@ -68,6 +68,36 @@ def expect(out, fire, phase, context):
         raise AssertionError(f"[{context}] expected phase={phase}, got phase={out.get('phase')} (full: {out})")
 
 
+def run_with_stderr(state, now_epoch, extra_env=None):
+    """Like run(), but also returns captured stderr for warning-annotation checks."""
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(state, f)
+        state_path = f.name
+    try:
+        env = {
+            **os.environ,
+            "STATE_FILE": state_path,
+            "NOW_EPOCH": str(now_epoch),
+            "GRADLE_PROPERTIES_FILE": "/nonexistent/gradle.properties",
+            "AIN_RELEASES_OVERRIDE": "[]",
+            "AIS_RELEASES_OVERRIDE": "[]",
+        }
+        env.pop("GITHUB_OUTPUT", None)
+        env.pop("AUTO_RELEASE_MODE", None)
+        if extra_env:
+            env.update(extra_env)
+        result = subprocess.run([sys.executable, SCRIPT], env=env,
+                                capture_output=True, text=True, check=True)
+        out = {}
+        for line in result.stdout.strip().split("\n"):
+            if "=" in line:
+                k, v = line.split("=", 1)
+                out[k] = v
+        return out, result.stderr
+    finally:
+        os.unlink(state_path)
+
+
 T0 = 1_700_000_000  # arbitrary anchor epoch
 
 
@@ -107,19 +137,21 @@ def test_phase_b_fires_after_5h():
 
 
 def test_phase_c_too_soon_after_b():
-    last = T0 + 23 * 3600
-    expect(run(make_state(T0, last), T0 + 29 * 3600), "false", "C", "C too soon after B")
+    # Default cadence: B upper = 29h (4*1h + 5*5h). h=30 lands clearly in C.
+    last = T0 + 24 * 3600
+    expect(run(make_state(T0, last), T0 + 30 * 3600), "false", "C", "C too soon after B")
 
 
 def test_phase_c_fires_after_24h():
-    last = T0 + 28 * 3600
+    last = T0 + 30 * 3600
     expect(run(make_state(T0, last), last + 24 * 3600), "true", "C", "C fires after 24h")
 
 
-def test_stopped_after_14d():
+def test_stopped_after_window():
+    # Default cadence: stopped cap = 341h (~14.2d). h=14.3d lands past the cap.
     expect(
-        run(make_state(T0, T0 + int(13.9 * 86400)), T0 + int(14.1 * 86400)),
-        "false", "stopped", "stopped after 14d",
+        run(make_state(T0, T0 + int(14.0 * 86400)), T0 + int(14.3 * 86400)),
+        "false", "stopped", "stopped after default cap",
     )
 
 
@@ -250,14 +282,14 @@ def test_mode_ais_ignores_ain_pending():
         os.unlink(gradle)
 
 
-def test_sibling_check_skipped_when_stopped_past_14d():
-    # 14d cap wins over sibling override — bounded cascade lifetime.
+def test_sibling_check_skipped_when_stopped_past_cap():
+    # Stopped cap (~14.2d default) wins over sibling override — bounded lifetime.
     gradle = make_gradle(ain="0.27.0")
     try:
-        out = run(make_state(T0, T0 + int(13.9 * 86400)),
-                  T0 + int(14.1 * 86400),
+        out = run(make_state(T0, T0 + int(14.0 * 86400)),
+                  T0 + int(14.3 * 86400),
                   extra_env=sibling_env(gradle, ain_releases=["0.28.0"]))
-        expect(out, "false", "stopped", "14d cap wins over sibling override")
+        expect(out, "false", "stopped", "stopped cap wins over sibling override")
     finally:
         os.unlink(gradle)
 
@@ -278,6 +310,113 @@ def test_network_error_falls_through():
         os.unlink(gradle)
 
 
+# ---------------------------------------------------------------------------
+# AUTO_RELEASE_CADENCE override tests
+# ---------------------------------------------------------------------------
+
+
+def test_cadence_default_when_unset():
+    # Explicitly clear AUTO_RELEASE_CADENCE; default A/B/C boundaries apply.
+    out = run(make_state(T0), T0 + 1800, extra_env={"AUTO_RELEASE_CADENCE": ""})
+    expect(out, "true", "A", "default cadence — phase A first fire")
+
+
+def test_cadence_custom_config():
+    # Custom: A = 30min × 2 (upper 1h), B = 120min × 3 (upper 7h).
+    cfg = json.dumps({
+        "tiers": [
+            {"name": "A", "interval_minutes": 30, "count": 2},
+            {"name": "B", "interval_minutes": 120, "count": 3},
+        ]
+    })
+    env = {"AUTO_RELEASE_CADENCE": cfg}
+
+    # h=0.5h → still inside custom phase A (upper 1h).
+    out = run(make_state(T0), T0 + 1800, extra_env=env)
+    expect(out, "true", "A", "custom cadence — phase A at h=0.5")
+
+    # h=2h → past custom A's 1h upper, inside custom B (upper 7h).
+    out = run(make_state(T0), T0 + 2 * 3600, extra_env=env)
+    expect(out, "true", "B", "custom cadence — phase B at h=2")
+
+    # h=8h → past custom B's 7h upper → stopped (cap = 7h).
+    out = run(make_state(T0), T0 + 8 * 3600, extra_env=env)
+    expect(out, "false", "stopped", "custom cadence — stopped past cap")
+
+
+def test_cadence_malformed_json_falls_back():
+    out, stderr = run_with_stderr(
+        make_state(T0), T0 + 1800,
+        extra_env={"AUTO_RELEASE_CADENCE": "not json"},
+    )
+    expect(out, "true", "A", "malformed JSON → defaults applied")
+    if "AUTO_RELEASE_CADENCE" not in stderr or "::warning::" not in stderr:
+        raise AssertionError(
+            f"expected ::warning:: about AUTO_RELEASE_CADENCE in stderr, got: {stderr!r}"
+        )
+
+
+def test_cadence_invalid_schema_falls_back():
+    bad_configs = [
+        ("[]", "top-level array"),
+        ("{}", "missing tiers key"),
+        (json.dumps({"tiers": []}), "empty tiers"),
+        (json.dumps({"tiers": [{"name": "X", "interval_minutes": 60, "count": 0}]}),
+         "count=0"),
+        (json.dumps({"tiers": [{"name": "X", "interval_minutes": "60", "count": 1}]}),
+         "non-int interval_minutes"),
+        (json.dumps({"tiers": [{"interval_minutes": 60, "count": 1}]}),
+         "missing name"),
+        (json.dumps({"tiers": [{"name": "", "interval_minutes": 60, "count": 1}]}),
+         "empty name"),
+        (json.dumps({"tiers": [{"name": "X", "interval_minutes": 60, "count": True}]}),
+         "bool masquerading as int"),
+    ]
+    for raw, label in bad_configs:
+        out, stderr = run_with_stderr(
+            make_state(T0), T0 + 1800,
+            extra_env={"AUTO_RELEASE_CADENCE": raw},
+        )
+        expect(out, "true", "A", f"invalid schema ({label}) → defaults applied")
+        if "AUTO_RELEASE_CADENCE" not in stderr or "::warning::" not in stderr:
+            raise AssertionError(
+                f"[{label}] expected ::warning:: about AUTO_RELEASE_CADENCE in stderr, got: {stderr!r}"
+            )
+
+
+def test_sibling_override_uses_first_tier_interval():
+    # Custom cadence with first tier interval = 30min (1800s).
+    # Sibling override pins to that interval, not the hardcoded 3600s.
+    cfg = json.dumps({
+        "tiers": [
+            {"name": "A", "interval_minutes": 30, "count": 4},
+            {"name": "B", "interval_minutes": 300, "count": 5},
+        ]
+    })
+    gradle = make_gradle(ain="0.27.0")
+    try:
+        # Anchor 10h ago — would be in B by time-based phasing; AIN pending pins
+        # to phase A with interval 1800s. Last fire 31min ago > 0.9*1800=1620s → fires.
+        last = T0 + int(10 * 3600 - 31 * 60)
+        env = sibling_env(gradle, ain_releases=["0.28.0"])
+        env["AUTO_RELEASE_CADENCE"] = cfg
+        out = run(make_state(T0, last), T0 + 10 * 3600, extra_env=env)
+        expect(out, "true", "A", "sibling override uses first-tier 30min interval (fires)")
+
+        # Last fire 20min ago = 1200s < 0.9*1800=1620s → does NOT fire.
+        # Confirms override interval is the custom 30min, not the default 60min
+        # (under the default, 20min ago would also fail to fire, but the
+        # threshold would be 0.9*3600=3240s — too coarse to distinguish).
+        # The discriminating case is the previous assertion at 31min, which
+        # would also fire under default 60min interval. Together they bracket
+        # the threshold around the custom 30min value.
+        last = T0 + int(10 * 3600 - 20 * 60)
+        out = run(make_state(T0, last), T0 + 10 * 3600, extra_env=env)
+        expect(out, "false", "A", "sibling override uses first-tier 30min interval (gates)")
+    finally:
+        os.unlink(gradle)
+
+
 def main():
     tests = [
         test_uninitialized,
@@ -290,7 +429,7 @@ def main():
         test_phase_b_fires_after_5h,
         test_phase_c_too_soon_after_b,
         test_phase_c_fires_after_24h,
-        test_stopped_after_14d,
+        test_stopped_after_window,
         test_cascade_stopped_flag_short_circuits,
         test_cascade_stopped_false_is_ignored,
         test_sibling_pending_overrides_phase_b,
@@ -299,8 +438,13 @@ def main():
         test_sibling_pending_respects_threshold,
         test_mode_ain_ignores_ais_pending,
         test_mode_ais_ignores_ain_pending,
-        test_sibling_check_skipped_when_stopped_past_14d,
+        test_sibling_check_skipped_when_stopped_past_cap,
         test_network_error_falls_through,
+        test_cadence_default_when_unset,
+        test_cadence_custom_config,
+        test_cadence_malformed_json_falls_back,
+        test_cadence_invalid_schema_falls_back,
+        test_sibling_override_uses_first_tier_interval,
     ]
     failed = 0
     for t in tests:
