@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l2",
-      "label": "Corren - Letter 2 (what happened to Mira)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "Mira.\n\nThe soul-sand was cold.\n\nI do not remember the heat after.\n\nYou said something.\n\nI think you said my name.\n\nI think you said Run.\nI did not turn around.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 2"
-    },
-    {
       "id": "corren-l3-a",
       "label": "Corren - Letter 3 variant A (Bram's laugh)",
       "type": "add_variant",
@@ -1078,6 +1061,11 @@
     {
       "id": "corren-l1-b",
       "applied_at": "2026-05-28T01:08:59Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l2",
+      "applied_at": "2026-05-28T05:53:15Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
     }
   ]

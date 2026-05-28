@@ -18,8 +18,13 @@ import java.util.Set;
  *   <li>{@link #uniqueChests} — positions of distinct chest blocks the
  *       player has opened in the current streak. Drives the
  *       "open 100 chests without opening the same one twice" advancement.</li>
- *   <li>{@link #cartsSinceDeath} — net forward carriages the player has
- *       traversed since their last death. Drives the carts-in-run tiers.</li>
+ *   <li>{@link #cartsSinceDeath} — total <em>absolute</em> carriages the
+ *       player has traversed since their last death (forward + backward
+ *       both count). Drives the carts-in-run tiers.</li>
+ *   <li>{@link #cartsBackwardSinceDeath} — subset of {@link #cartsSinceDeath}
+ *       accumulated from backward (negative-delta) leader movement. The
+ *       forward subtotal is derived as {@code cartsSinceDeath - cartsBackwardSinceDeath}.
+ *       Drives the "The Long Way Back" achievement.</li>
  * </ul>
  *
  * <p>Persisted via {@link #CODEC} so the streak survives logout / world
@@ -33,20 +38,24 @@ public final class PlayerRunState {
 
     public static final Codec<PlayerRunState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         BlockPos.CODEC.listOf().optionalFieldOf("uniqueChests", List.of()).forGetter(PlayerRunState::uniqueChestsList),
-        Codec.INT.optionalFieldOf("cartsSinceDeath", 0).forGetter(PlayerRunState::cartsSinceDeath)
+        Codec.INT.optionalFieldOf("cartsSinceDeath", 0).forGetter(PlayerRunState::cartsSinceDeath),
+        Codec.INT.optionalFieldOf("cartsBackwardSinceDeath", 0).forGetter(PlayerRunState::cartsBackwardSinceDeath)
     ).apply(instance, PlayerRunState::new));
 
     private final Set<BlockPos> uniqueChests;
     private int cartsSinceDeath;
+    private int cartsBackwardSinceDeath;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
         this.cartsSinceDeath = 0;
+        this.cartsBackwardSinceDeath = 0;
     }
 
-    public PlayerRunState(List<BlockPos> uniqueChests, int cartsSinceDeath) {
+    public PlayerRunState(List<BlockPos> uniqueChests, int cartsSinceDeath, int cartsBackwardSinceDeath) {
         this.uniqueChests = new HashSet<>(uniqueChests);
         this.cartsSinceDeath = cartsSinceDeath;
+        this.cartsBackwardSinceDeath = cartsBackwardSinceDeath;
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -58,8 +67,19 @@ public final class PlayerRunState {
         return new ArrayList<>(uniqueChests);
     }
 
+    /** Total absolute carriages traversed since last death (forward + backward). */
     public int cartsSinceDeath() {
         return cartsSinceDeath;
+    }
+
+    /** Subtotal of {@link #cartsSinceDeath} accumulated from backward movement. */
+    public int cartsBackwardSinceDeath() {
+        return cartsBackwardSinceDeath;
+    }
+
+    /** Derived forward subtotal: {@code cartsSinceDeath - cartsBackwardSinceDeath}. */
+    public int cartsForwardSinceDeath() {
+        return cartsSinceDeath - cartsBackwardSinceDeath;
     }
 
     /**
@@ -84,20 +104,25 @@ public final class PlayerRunState {
     }
 
     /**
-     * Add positive carriage deltas only. Backward movement is ignored so
-     * a player can't game the achievement by walking back and forth.
+     * Record a leader-anchor carriage delta. Both forward (positive) and
+     * backward (negative) movement add {@code |signedDelta|} to the
+     * absolute {@link #cartsSinceDeath} counter; backward movement also
+     * advances {@link #cartsBackwardSinceDeath}.
      *
-     * @return the new {@link #cartsSinceDeath} after the increment.
+     * @return the new absolute {@link #cartsSinceDeath} after the update.
      */
-    public int incrementCarts(int delta) {
-        if (delta <= 0) return cartsSinceDeath;
-        cartsSinceDeath += delta;
+    public int recordCartMovement(int signedDelta) {
+        if (signedDelta == 0) return cartsSinceDeath;
+        int abs = Math.abs(signedDelta);
+        cartsSinceDeath += abs;
+        if (signedDelta < 0) cartsBackwardSinceDeath += abs;
         return cartsSinceDeath;
     }
 
-    /** Reset the cart counter (called on respawn). */
+    /** Reset both cart counters (called on respawn). */
     public void resetCarts() {
         cartsSinceDeath = 0;
+        cartsBackwardSinceDeath = 0;
     }
 
     /** Reset everything (called on respawn). */
