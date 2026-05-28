@@ -22,7 +22,11 @@ import java.util.Optional;
  *
  * <p>Page break strategy (in priority order):
  * <ol>
- *   <li>Paragraph boundary (double-newline in the source)</li>
+ *   <li>Hard page break (three or more consecutive newlines in the source —
+ *       always splits, regardless of content length)</li>
+ *   <li>Paragraph boundary (double-newline in the source — soft break;
+ *       paragraphs whose combined length fits the page char budget are
+ *       greedy-packed onto the same page)</li>
  *   <li>Sentence boundary inside an oversize paragraph</li>
  *   <li>Word boundary inside an oversize sentence</li>
  *   <li>Hard char split (never reached for normal English text — only kicks
@@ -247,9 +251,31 @@ public final class BookFactory {
 
     /**
      * Split {@code body} into pages of at most {@link #MAX_CHARS_PER_PAGE}
-     * characters each. Uses the priority described in the class javadoc.
+     * characters each. First splits on hard page breaks (three or more
+     * consecutive newlines) — each section then runs through the greedy
+     * paragraph packer ({@link #paginateGreedy}). Authors who want sparse,
+     * beat-per-page layout insert {@code \n\n\n} between beats; {@code \n\n}
+     * remains a soft paragraph break that may pack onto the same page.
      */
     static List<String> paginate(String body) {
+        List<String> pages = new ArrayList<>();
+        // Hard page break: three or more consecutive newlines. Each section
+        // between hard breaks then runs through the greedy paragraph packer.
+        String[] sections = body.split("\\n{3,}");
+        for (String section : sections) {
+            if (section.isEmpty()) continue;
+            pages.addAll(paginateGreedy(section));
+        }
+        return pages;
+    }
+
+    /**
+     * Greedy paragraph-packing — splits on soft paragraph breaks
+     * ({@code \n} + optional whitespace + {@code \n}) and packs as many
+     * paragraphs onto each page as the {@link #MAX_CHARS_PER_PAGE} budget
+     * allows. Oversize paragraphs spill via {@link #splitOversize}.
+     */
+    private static List<String> paginateGreedy(String body) {
         List<String> pages = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         // Split on one-or-more blank lines (paragraph break).

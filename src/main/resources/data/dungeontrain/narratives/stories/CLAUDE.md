@@ -46,18 +46,19 @@ Loader path: `StoryCodec.java` → `StoryFile` → `BookFactory.buildSignedBook`
 
 ## 2. Newline semantics
 
-Two characters do all the layout work. Get them right.
+Three sequences do all the layout work.
 
 | In JSON | Meaning | In rendered book |
 |---|---|---|
 | `\n` | Single line break | Forces a new line on the current page |
-| `\n\n` | Paragraph break | **Becomes a new page** (in the flow paginator) |
+| `\n\n` | Soft paragraph break | Paginator **may pack** multiple short paragraphs onto one page until 256 chars |
+| `\n\n\n` (3+) | Hard page break | **Forces a new page**, regardless of content length |
 
-The narrative paginator (`BookFactory.paginate`) splits the body on `\n\n` first. Each paragraph becomes its own page when it fits under 256 chars. If a paragraph overflows, it spills via sentence → word fallback into additional pages.
+The narrative paginator (`BookFactory.paginate`) first splits the body on **three or more consecutive newlines** (hard page breaks). Each resulting section then runs through a greedy packer that splits on `\n\n` (soft paragraph break) and packs as many paragraphs onto each page as the 256-char budget allows. Oversize paragraphs spill via sentence → word fallback into additional pages.
 
-> Practical consequence: **structure beats by paragraph.** Each `\n\n`-separated block in the JSON is one page. Don't write long paragraphs unless you want them packed onto one page (or, if oversize, split unpredictably).
+> Practical consequence: **use `\n\n\n` between beats you want on their own page** (single-word snaps like `Cute.`, sparse openers, sign-offs). Use `\n\n` for paragraphs that can share a page. Use `\n` for line breaks within a beat.
 
-For starting books (`StartingBookFactory.paginateExplicit`) `\n\n` is a **hard page break** — author-controlled. But this folder's narrative letters use the flow paginator, so the rule above is what matters.
+For starting books (`StartingBookFactory.paginateExplicit`) `\n\n` is a hard page break — a different paginator with author-controlled paging. The rule above is for this folder.
 
 ---
 
