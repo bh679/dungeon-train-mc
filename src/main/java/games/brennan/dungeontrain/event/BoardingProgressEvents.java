@@ -16,7 +16,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
@@ -74,10 +73,11 @@ public final class BoardingProgressEvents {
     private static final double HORIZONTAL_PADDING = 1.0;
 
     /**
-     * Last broadcast value of {@code travelledCarriageIndex} — guards against
-     * pushing the HUD packet every tick when nothing changed.
+     * Per-player last broadcast value of {@code travelledCarriageIndex} —
+     * guards against pushing the HUD packet to a player when their own value
+     * hasn't changed since the last scan. UUID → last-sent-travelled.
      */
-    private static int lastBroadcastTravelled = Integer.MIN_VALUE;
+    private static final Map<UUID, Integer> LAST_BROADCAST = new HashMap<>();
 
     /** Transient: consecutive scans the active leader has been off every AABB. */
     private static int leaderOffTrainScans = 0;
@@ -152,6 +152,12 @@ public final class BoardingProgressEvents {
             ServerPlayer leaderPlayer = level.getServer().getPlayerList().getPlayer(leader);
             if (leaderPlayer != null) {
                 AchievementEvents.notifyCartAdvance(leaderPlayer, delta);
+                // Per-player travelled-carriage-index drives mob difficulty
+                // (max across players, resets on respawn). Signed delta —
+                // backward movement reduces tier just like the global
+                // counter did before.
+                PlayerRunState leaderRun = leaderPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+                leaderRun.advanceTravelled(delta);
             }
             leaderOffTrainScans = 0;
         } else if (leader != null) {
@@ -180,7 +186,7 @@ public final class BoardingProgressEvents {
             }
         }
 
-        broadcastIfChanged(data);
+        broadcastPerPlayer(level);
     }
 
     /**
@@ -198,20 +204,25 @@ public final class BoardingProgressEvents {
 
     /**
      * Initial sync — give the joining player's HUD a value to show before
-     * the next tick-driven broadcast fires.
+     * the next tick-driven broadcast fires. Reads the player's own
+     * {@link PlayerRunState#travelledCarriageIndex} so the HUD reflects
+     * their per-life progress, not the world-global value.
      */
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        BoardingProgressData data = BoardingProgressData.get(player.serverLevel());
-        DungeonTrainNet.sendTo(player, packetFor(data));
+        sendPlayerHudPacket(player);
     }
 
-    private static void broadcastIfChanged(BoardingProgressData data) {
-        int travelled = data.travelledCarriageIndex();
-        if (travelled == lastBroadcastTravelled) return;
-        lastBroadcastTravelled = travelled;
-        PacketDistributor.sendToAllPlayers(packetFor(data));
+    /**
+     * Drop a player's last-sent cache entry when they log out so a future
+     * relogin gets a fresh send. Without this, {@link #LAST_BROADCAST}
+     * accumulates stale UUID keys.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        LAST_BROADCAST.remove(player.getUUID());
     }
 
     /**
@@ -233,8 +244,29 @@ public final class BoardingProgressEvents {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
     }
 
-    private static BoardingProgressPacket packetFor(BoardingProgressData data) {
-        int travelled = data.travelledCarriageIndex();
+    /**
+     * For each online player, send a {@link BoardingProgressPacket} carrying
+     * THEIR OWN {@code travelledCarriageIndex} and the tier it maps to.
+     * Per-player {@link #LAST_BROADCAST} guards against duplicate sends.
+     */
+    private static void broadcastPerPlayer(ServerLevel level) {
+        for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+            Integer last = LAST_BROADCAST.get(player.getUUID());
+            if (last != null && last == travelled) continue;
+            LAST_BROADCAST.put(player.getUUID(), travelled);
+            DungeonTrainNet.sendTo(player, packetFor(travelled));
+        }
+    }
+
+    /** Send a player a snapshot packet for their current travelled value. */
+    public static void sendPlayerHudPacket(ServerPlayer player) {
+        int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+        LAST_BROADCAST.put(player.getUUID(), travelled);
+        DungeonTrainNet.sendTo(player, packetFor(travelled));
+    }
+
+    private static BoardingProgressPacket packetFor(int travelled) {
         int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
         int tier = Math.abs(travelled) / carriagesPerTier;
         return new BoardingProgressPacket(travelled, tier);

@@ -22,15 +22,22 @@ import java.util.Set;
  *
  * <p>Counters split into two groups:</p>
  *
- * <p><b>Achievement-driving (pre-existing):</b></p>
+ * <p><b>Achievement / difficulty-driving:</b></p>
  * <ul>
  *   <li>{@link #uniqueChests} — distinct chest/barrel block positions
  *       opened in the current streak; drives the
  *       "open 100 chests without opening the same one twice" advancement.</li>
- *   <li>{@link #cartsSinceDeath} — absolute carriages traversed since last
- *       death; drives the carts-in-run tiers.</li>
+ *   <li>{@link #cartsSinceDeath} — total <em>absolute</em> carriages traversed
+ *       since last death (forward + backward both count); drives the
+ *       carts-in-run tiers.</li>
  *   <li>{@link #cartsBackwardSinceDeath} — backward-only subtotal of
  *       {@link #cartsSinceDeath}; drives "The Long Way Back".</li>
+ *   <li>{@link #travelledCarriageIndex} — signed net carriages traversed by
+ *       the player as leader this life (forward positive, backward negative).
+ *       Drives mob difficulty: the spawn-time tier is computed from
+ *       {@code max(this counter)} across all online players, so a single death
+ *       resets the player's own contribution to 0 and the next mob spawn falls
+ *       back to whatever any other player still has.</li>
  * </ul>
  *
  * <p><b>Death-screen stats (this run only, reset on respawn):</b></p>
@@ -43,6 +50,8 @@ import java.util.Set;
  *       decorated-pot breaks. (Pre-debounce — counts distinct interactions,
  *       not unique positions like {@link #uniqueChests}.)</li>
  *   <li>{@link #booksReadCount} — written-book right-click count.</li>
+ *   <li>{@link #weaponKills} — per-item kill tally used to resolve the
+ *       most-used weapon at death.</li>
  * </ul>
  *
  * <p>Persisted via {@link #CODEC} so the streak survives logout / world
@@ -58,6 +67,7 @@ public final class PlayerRunState {
         BlockPos.CODEC.listOf().optionalFieldOf("uniqueChests", List.of()).forGetter(PlayerRunState::uniqueChestsList),
         Codec.INT.optionalFieldOf("cartsSinceDeath", 0).forGetter(PlayerRunState::cartsSinceDeath),
         Codec.INT.optionalFieldOf("cartsBackwardSinceDeath", 0).forGetter(PlayerRunState::cartsBackwardSinceDeath),
+        Codec.INT.optionalFieldOf("travelledCarriageIndex", 0).forGetter(PlayerRunState::travelledCarriageIndex),
         Codec.INT.optionalFieldOf("mobKills", 0).forGetter(PlayerRunState::mobKills),
         Codec.DOUBLE.optionalFieldOf("distanceBlocks", 0.0).forGetter(PlayerRunState::distanceBlocks),
         Codec.LONG.optionalFieldOf("runTicks", 0L).forGetter(PlayerRunState::runTicks),
@@ -70,6 +80,7 @@ public final class PlayerRunState {
     private final Set<BlockPos> uniqueChests;
     private int cartsSinceDeath;
     private int cartsBackwardSinceDeath;
+    private int travelledCarriageIndex;
     private int mobKills;
     private double distanceBlocks;
     private long runTicks;
@@ -82,6 +93,7 @@ public final class PlayerRunState {
         this.uniqueChests = new HashSet<>();
         this.cartsSinceDeath = 0;
         this.cartsBackwardSinceDeath = 0;
+        this.travelledCarriageIndex = 0;
         this.mobKills = 0;
         this.distanceBlocks = 0.0;
         this.runTicks = 0L;
@@ -93,6 +105,7 @@ public final class PlayerRunState {
     public PlayerRunState(List<BlockPos> uniqueChests,
                           int cartsSinceDeath,
                           int cartsBackwardSinceDeath,
+                          int travelledCarriageIndex,
                           int mobKills,
                           double distanceBlocks,
                           long runTicks,
@@ -102,6 +115,7 @@ public final class PlayerRunState {
         this.uniqueChests = new HashSet<>(uniqueChests);
         this.cartsSinceDeath = cartsSinceDeath;
         this.cartsBackwardSinceDeath = cartsBackwardSinceDeath;
+        this.travelledCarriageIndex = travelledCarriageIndex;
         this.mobKills = mobKills;
         this.distanceBlocks = distanceBlocks;
         this.runTicks = runTicks;
@@ -191,6 +205,23 @@ public final class PlayerRunState {
         return cartsSinceDeath;
     }
 
+    /** Signed net carriages traversed by this player as leader since their last death. */
+    public int travelledCarriageIndex() {
+        return travelledCarriageIndex;
+    }
+
+    /**
+     * Add a signed leader-anchor delta to {@link #travelledCarriageIndex}.
+     * Mirrors {@link #recordCartMovement} but preserves sign — mob difficulty
+     * uses {@code abs(travelledCarriageIndex) / carriagesPerTier} to compute
+     * tier, so backward movement reduces tier (matches the prior behavior of
+     * the now-deprecated global counter).
+     */
+    public void advanceTravelled(int signedDelta) {
+        if (signedDelta == 0) return;
+        travelledCarriageIndex += signedDelta;
+    }
+
     public int incrementMobKills() {
         return ++mobKills;
     }
@@ -259,10 +290,11 @@ public final class PlayerRunState {
         return ++booksReadCount;
     }
 
-    /** Reset both cart counters (called on respawn). */
+    /** Reset cart counters and travelled-carriage-index (called on respawn). */
     public void resetCarts() {
         cartsSinceDeath = 0;
         cartsBackwardSinceDeath = 0;
+        travelledCarriageIndex = 0;
     }
 
     /** Reset the death-screen stat counters. */
