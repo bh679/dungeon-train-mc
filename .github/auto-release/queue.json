@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l6-b",
-      "label": "Halen - Sighting 92 variant B (marginal collapse, brackets)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Sighting Ninety-Two"
-      },
-      "variant": "Sighting Ninety-Two.\n\nWitness: H. Pent.\n\n[The interviewer is also the witness. This invalidates the entry.]\n\nTwo carriages back. Through the door glass. A figure. Eyes white. Five seconds.\n\n[The entry is recorded anyway.]\n\nI cannot trust my own observation. I cannot dismiss it either.\n\nI have spent the night in the corridor.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 6 variant B"
-    },
-    {
       "id": "halen-l7-a",
       "label": "Halen - Sighting 140 variant A (methodical archive search)",
       "type": "add_variant",
@@ -1909,6 +1892,11 @@
     {
       "id": "halen-l6-a",
       "applied_at": "2026-05-29T18:57:25Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l6-b",
+      "applied_at": "2026-05-29T22:01:21Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
