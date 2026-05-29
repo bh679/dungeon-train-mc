@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l6-a",
-      "label": "Edda - Letter 6 variant A (lifted the latch, for whoever finds the seat next)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Letter Six"
-      },
-      "variant": "I have stopped walking.\n\nI am in a small carriage near the back. Or near the front. The light is the same in both directions.\n\nThere is a window. There is a latch on the window. I have been looking at the latch for a long while.\n\nThe three heads are here. They are not at the glass now. They are a little way out from it, in the dark. Waiting.\n\nI have decided I am not going to walk again. I have decided I am going to lift the latch.\n\nI have lifted the latch.\n\nThe window is open. The night is very cold. The cedar smells stronger when the air moves through it.\n\nI am going to leave this here. I am going to leave the window open too. For whoever finds the seat next.",
-      "commit_message": "content(narrative): Edda Letter 6 variant A"
-    },
-    {
       "id": "edda-l6-b",
       "label": "Edda - Letter 6 variant B (leaving the window open too)",
       "type": "add_variant",
@@ -2065,6 +2048,11 @@
     {
       "id": "edda-l5-b",
       "applied_at": "2026-05-29T02:25:20Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l6-a",
+      "applied_at": "2026-05-29T03:23:22Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
