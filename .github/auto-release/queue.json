@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l4-a",
-      "label": "Halen - Sighting 61 variant A (clocking the witness)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Sighting Sixty-One"
-      },
-      "variant": "Sighting Sixty-One.\n\nI entered Carriage 47. A woman was eating.\n\nI knew before she looked up.\n\nThe way she held the spoon. The way her eyes did not move toward the door glass when the train flickered.\n\nI sat down. I said: when did you see him.\n\nShe said: yesterday.\n\nThe interview took two minutes.\n\nI am very good at this.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 4 variant A"
-    },
-    {
       "id": "halen-l4-b",
       "label": "Halen - Sighting 61 variant B (catalogue of signs)",
       "type": "add_variant",
@@ -1969,6 +1952,11 @@
     {
       "id": "halen-l3-b",
       "applied_at": "2026-05-29T12:51:26Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l4-a",
+      "applied_at": "2026-05-29T13:48:09Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
