@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l2-a",
-      "label": "Halen - Sighting 43 variant A (stubborn witness Pell Cordoba)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Sighting Forty-Three"
-      },
-      "variant": "Sighting Forty-Three.\n\nWitness: Pell Cordoba. Insists.\n\nI offered her: lamp afterimage. Carriage flicker. Eye fatigue from the tunnels.\n\nShe said: I have lived underground. I know lamps.\n\nI offered her: a man wearing eye protection. Some mining cults do.\n\nShe said: he had no shadow. The lanterns made shadows. He did not.\n\nI closed the entry without an explanation.\n\nThis is unusual for me.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 2 variant A"
-    },
-    {
       "id": "halen-l2-b",
       "label": "Halen - Sighting 43 variant B (four witnesses, same sentence)",
       "type": "add_variant",
@@ -2017,6 +2000,11 @@
     {
       "id": "halen-l1-b",
       "applied_at": "2026-05-29T08:03:45Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l2-a",
+      "applied_at": "2026-05-29T08:58:41Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
