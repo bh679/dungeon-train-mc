@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l3-b",
-      "label": "Halen - Sighting 48 variant B (folie a deux at scale)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Sighting Forty-Eight"
-      },
-      "variant": "Sighting Forty-Eight.\n\nWorking hypothesis.\n\nSustained tunnel-flicker. Disrupted circadian rhythm. Shared narrative exposure between strangers.\n\nThese conditions produce a folie a deux at scale. The white-eyed man is the train's local hallucination. Every long-haul population invents one.\n\nThe trauma is real. The figure is shared because the conditions are shared.\n\nThis is the entry I have been waiting to write for eleven years.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 3 variant B"
-    },
-    {
       "id": "halen-l4-a",
       "label": "Halen - Sighting 61 variant A (clocking the witness)",
       "type": "add_variant",
@@ -1981,6 +1964,11 @@
     {
       "id": "halen-l3-a",
       "applied_at": "2026-05-29T10:59:42Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l3-b",
+      "applied_at": "2026-05-29T12:51:26Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
