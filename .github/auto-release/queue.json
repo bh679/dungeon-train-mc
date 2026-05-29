@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l1-b",
-      "label": "Halen - Sighting 41 variant B (the laugh)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Sighting Forty-One"
-      },
-      "variant": "Sighting Forty-One.\n\nA man across from me asked what I was writing.\n\nI said: field notes.\n\nHe said: about what.\n\nI said: the white-eyed man.\n\nHe laughed.\n\nIt was the laugh of a person who has never seen him. I have catalogued the laugh.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 1 variant B"
-    },
-    {
       "id": "halen-l2-a",
       "label": "Halen - Sighting 43 variant A (stubborn witness Pell Cordoba)",
       "type": "add_variant",
@@ -2029,6 +2012,11 @@
     {
       "id": "halen-l1-a",
       "applied_at": "2026-05-29T07:08:11Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l1-b",
+      "applied_at": "2026-05-29T08:03:45Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
