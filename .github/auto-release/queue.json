@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l5-b",
-      "label": "Halen - Sighting 78 variant B (the quiet, no verb fits)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Sighting Seventy-Eight"
-      },
-      "variant": "Sighting Seventy-Eight.\n\nSome of them are trying to hide it now.\n\nThey mention the name without meaning to. They look at door glass and then look away too fast.\n\nOne man said the word \"shadow\" three times in five minutes. Unprompted.\n\nI do not press. I write the entry afterward.\n\nI used to think I was studying them.\n\nI am no longer sure what the verb should be.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 5 variant B"
-    },
-    {
       "id": "halen-l6-a",
       "label": "Halen - Sighting 92 variant A (unrecordable, Witness: myself)",
       "type": "add_variant",
@@ -1933,6 +1916,11 @@
     {
       "id": "halen-l5-a",
       "applied_at": "2026-05-29T16:11:43Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l5-b",
+      "applied_at": "2026-05-29T17:15:32Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
