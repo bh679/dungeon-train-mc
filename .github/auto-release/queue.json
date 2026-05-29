@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l4-b",
-      "label": "Halen - Sighting 61 variant B (catalogue of signs)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Sighting Sixty-One"
-      },
-      "variant": "Sighting Sixty-One.\n\nThe signs I now recognise:\n\nThe flinch at carriage flicker. The half-second of held breath at a door opening. The avoidance of door glass.\n\nThe way they hold their cup with two hands.\n\nI enter a carriage and read the room.\n\nThree witnesses today. None disagreed with my opening question.\n\nEleven years. This is the year it has all paid off.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 4 variant B"
-    },
-    {
       "id": "halen-l5-a",
       "label": "Halen - Sighting 78 variant A (Sora Penn, letting the lie stand)",
       "type": "add_variant",
@@ -1957,6 +1940,11 @@
     {
       "id": "halen-l4-a",
       "applied_at": "2026-05-29T13:48:09Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l4-b",
+      "applied_at": "2026-05-29T15:12:40Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
