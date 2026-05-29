@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "edda-l5-b",
-      "label": "Edda - Letter 5 variant B (not following, mine)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Letter Five"
-      },
-      "variant": "Observation car. Long windows. Several. A few other passengers.\n\nI watched the windows. Not out of them. At them. For hours.\n\nThe train moves at a steady pace. The view does not. A tree stays too long. A river runs the wrong way and then runs ours.\n\nNext carriage: a different valley. The one after: a field I knew when I was twelve.\n\nTwo seats down a man is watching a kitchen. I think it is his mother's. He has been crying very quietly.\n\nThe windows show what we carry.\n\nI have been carrying Hollin. And what came up out of his digging.\n\nIt has always been mine. Not following. Mine.\n\nI am steady.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 5 variant B"
-    },
-    {
       "id": "edda-l6-a",
       "label": "Edda - Letter 6 variant A (lifted the latch, for whoever finds the seat next)",
       "type": "add_variant",
@@ -2077,6 +2060,11 @@
     {
       "id": "edda-l5-a",
       "applied_at": "2026-05-29T00:58:10Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l5-b",
+      "applied_at": "2026-05-29T02:25:20Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
     }
   ]
