@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l5-a",
-      "label": "Halen - Sighting 78 variant A (Sora Penn, letting the lie stand)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Sighting Seventy-Eight"
-      },
-      "variant": "Sighting Seventy-Eight.\n\nWitness: Sora Penn. Carriage 488.\n\nClaims she has seen nothing.\n\nShe has the spoon-hold. The door-glass avoidance. The half-second of held breath.\n\nShe has every sign in my notebook.\n\nI thanked her for her time. I did not contradict her.\n\nShe wanted to be left thinking she was fine.\n\nI left her thinking that.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 5 variant A"
-    },
-    {
       "id": "halen-l5-b",
       "label": "Halen - Sighting 78 variant B (the quiet, no verb fits)",
       "type": "add_variant",
@@ -1945,6 +1928,11 @@
     {
       "id": "halen-l4-b",
       "applied_at": "2026-05-29T15:12:40Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l5-a",
+      "applied_at": "2026-05-29T16:11:43Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
