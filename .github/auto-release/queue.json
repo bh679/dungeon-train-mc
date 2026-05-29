@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l6-a",
-      "label": "Halen - Sighting 92 variant A (unrecordable, Witness: myself)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Sighting Ninety-Two"
-      },
-      "variant": "Sighting Ninety-Two.\n\nWitness: myself.\n\nCarriage 612. Door glass. Late.\n\nSomething stood. Or did not.\n\nThe carriage flickered. The figure flickered with it. Then neither.\n\nThis is the kind of entry I have closed in retraction forty times.\n\nI cannot record eye colour. I cannot record duration. I cannot record absence of shadow.\n\nI can record that I stopped walking.\n\nI record the witness response. This is one.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 6 variant A"
-    },
-    {
       "id": "halen-l6-b",
       "label": "Halen - Sighting 92 variant B (marginal collapse, brackets)",
       "type": "add_variant",
@@ -1921,6 +1904,11 @@
     {
       "id": "halen-l5-b",
       "applied_at": "2026-05-29T17:15:32Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l6-a",
+      "applied_at": "2026-05-29T18:57:25Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
