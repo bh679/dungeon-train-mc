@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l3-a",
-      "label": "Halen - Sighting 48 variant A (Joren Vask, hypnagogic theory)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Sighting Forty-Eight"
-      },
-      "variant": "Sighting Forty-Eight.\n\nWitness: Joren Vask. Carriage 519.\n\nCould not finish the interview. Twice put down the pen and stared at the floor.\n\nThree witnesses today have done this. Same posture. Same delay.\n\nHypothesis: prolonged tunnel exposure produces a recurring hypnagogic figure. The white eyes are the afterimage of carriage lamps on the cone cells.\n\nThe trauma is real. The figure is not.\n\nThis is the most coherent theory I have constructed in years.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 3 variant A"
-    },
-    {
       "id": "halen-l3-b",
       "label": "Halen - Sighting 48 variant B (folie a deux at scale)",
       "type": "add_variant",
@@ -1993,6 +1976,11 @@
     {
       "id": "halen-l2-b",
       "applied_at": "2026-05-29T10:03:49Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l3-a",
+      "applied_at": "2026-05-29T10:59:42Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
