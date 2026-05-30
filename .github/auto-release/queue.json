@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l9-a",
-      "label": "Halen - Sighting 240 variant A (interview reversed, dining carriage)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Sighting Two Hundred & Forty"
-      },
-      "variant": "Sighting Two Hundred & Forty.\n\nA woman sat across from me in the dining carriage.\n\nShe asked: have you seen him.\n\nShe looked at me the way I have looked at four hundred people.\n\nI said: I do not know what you mean.\n\nIt was Sora Penn's line. I wrote it down four weeks ago. I am hearing it in my own voice.\n\nI did not finish the meal. I returned to my cabin. I have not opened the door since.\n\nThe notebook is open.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 9 variant A"
-    },
-    {
       "id": "halen-l9-b",
       "label": "Halen - Sighting 240 variant B (catalogued, paranoia)",
       "type": "add_variant",
@@ -1849,6 +1832,11 @@
     {
       "id": "halen-l8-b",
       "applied_at": "2026-05-30T11:33:04Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l9-a",
+      "applied_at": "2026-05-30T14:35:48Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
