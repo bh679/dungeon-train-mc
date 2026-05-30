@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l9-b",
-      "label": "Halen - Sighting 240 variant B (catalogued, paranoia)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Sighting Two Hundred & Forty"
-      },
-      "variant": "Sighting Two Hundred & Forty.\n\nI have been catalogued.\n\nThey look at me the way I taught myself to look at them.\n\nThe way they hold their cups. The small slow turns toward door glass.\n\nIn the corridor today, a man stepped back from me. He had the recognition.\n\nHe did not ask. He knew.\n\nI will not write what he knew.\n\nI will not write what I saw.\n\nI am writing about the notes.\n\n- H.",
-      "commit_message": "content(narrative): Halen Letter 9 variant B"
-    },
-    {
       "id": "halen-l10-a",
       "label": "Halen - Sighting \u2014 variant A (composed acceptance, finale)",
       "type": "add_variant",
@@ -1837,6 +1820,11 @@
     {
       "id": "halen-l9-a",
       "applied_at": "2026-05-30T14:35:48Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l9-b",
+      "applied_at": "2026-05-30T18:52:23Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
