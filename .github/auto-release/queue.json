@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l8-a",
-      "label": "Halen - Sighting 211 variant A (the dates are wrong)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Sighting Two Hundred & Eleven"
-      },
-      "variant": "Sighting Two Hundred & Eleven.\n\nThe dates are wrong.\n\nSighting 22 is dated three months before I was hired.\n\nSighting 31 describes the train. I did not know the train existed.\n\nSighting 41 describes Edda Maer. I met Edda four weeks ago.\n\nI have not slept. The number above this entry is a guess.\n\nThe notebook is not what I thought it was.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 8 variant A"
-    },
-    {
       "id": "halen-l8-b",
       "label": "Halen - Sighting 211 variant B (notebook contains my future)",
       "type": "add_variant",
@@ -1873,6 +1856,11 @@
     {
       "id": "halen-l7-b",
       "applied_at": "2026-05-30T05:08:31Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l8-a",
+      "applied_at": "2026-05-30T08:24:07Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
