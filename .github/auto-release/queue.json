@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l7-a",
-      "label": "Halen - Sighting 140 variant A (methodical archive search)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Sighting One Hundred & Forty"
-      },
-      "variant": "Sighting One Hundred & Forty.\n\nReturned to cabin. Opened archive crate.\n\nI am looking for my own sighting in someone else's entry. A precedent.\n\nCross-ref: Sighting 17. Sighting 22. Sighting 41.\n\nSighting 17 \u2014 witness could not record duration. Could not record eye colour. The match is exact.\n\nIt should be a relief.\n\nIt is not. The date line is in different ink. I do not remember changing pens.\n\nProbably nothing.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 7 variant A"
-    },
-    {
       "id": "halen-l7-b",
       "label": "Halen - Sighting 140 variant B (Sighting 17 quoted excerpt)",
       "type": "add_variant",
@@ -1897,6 +1880,11 @@
     {
       "id": "halen-l6-b",
       "applied_at": "2026-05-29T22:01:21Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l7-a",
+      "applied_at": "2026-05-30T01:13:46Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
