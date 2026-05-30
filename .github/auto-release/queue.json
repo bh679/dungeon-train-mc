@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l7-b",
-      "label": "Halen - Sighting 140 variant B (Sighting 17 quoted excerpt)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Sighting One Hundred & Forty"
-      },
-      "variant": "Sighting One Hundred & Forty.\n\nWhat I saw last week \u2014 if I saw anything \u2014 should be in here somewhere. A precedent. Some other witness with the same gaps.\n\nI found Sighting 17.\n\n\"Witness reports figure in mine shaft. Eyes white. Six seconds. Subject cannot account for the time after.\"\n\nI do not remember interviewing this person.\n\nThe phrasing is mine. The handwriting is mine.\n\nThe dates do not line up with my field trips that year.\n\nProbably nothing.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 7 variant B"
-    },
-    {
       "id": "halen-l8-a",
       "label": "Halen - Sighting 211 variant A (the dates are wrong)",
       "type": "add_variant",
@@ -1885,6 +1868,11 @@
     {
       "id": "halen-l7-a",
       "applied_at": "2026-05-30T01:13:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l7-b",
+      "applied_at": "2026-05-30T05:08:31Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
