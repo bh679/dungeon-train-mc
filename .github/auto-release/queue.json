@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l8-b",
-      "label": "Halen - Sighting 211 variant B (notebook contains my future)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Sighting Two Hundred & Eleven"
-      },
-      "variant": "Sighting Two Hundred & Eleven.\n\nI am holding a notebook that contains my future.\n\nSighting 41, dated nine years ago, reads:\n\n\"Witness: Edda Maer. Carriage 114. Long aboard.\"\n\nI wrote that sentence last week.\n\n[The page has aged.]\n[The binding is original.]\n[The ink is mine.]\n\nI have stopped knowing how to date these entries.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 8 variant B"
-    },
-    {
       "id": "halen-l9-a",
       "label": "Halen - Sighting 240 variant A (interview reversed, dining carriage)",
       "type": "add_variant",
@@ -1861,6 +1844,11 @@
     {
       "id": "halen-l8-a",
       "applied_at": "2026-05-30T08:24:07Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l8-b",
+      "applied_at": "2026-05-30T11:33:04Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
