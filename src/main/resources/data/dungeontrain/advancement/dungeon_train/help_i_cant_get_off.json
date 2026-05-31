@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/i_live_here_now",
+  "display": {
+    "icon": { "id": "minecraft:iron_bars" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.help_i_cant_get_off.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.help_i_cant_get_off.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:train_time",
+      "conditions": { "thresholdTicks": 5184000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

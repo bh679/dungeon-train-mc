@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.event.AchievementEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -78,6 +80,49 @@ public final class NarrativeBookEvents {
         Optional<NarrativeBookTag.NarrativeIdentity> id = NarrativeBookTag.read(stack);
         if (id.isEmpty()) return;
         recordRead(player, id.get());
+    }
+
+    /**
+     * Increments the player's cumulative random-book read counter on every
+     * held-right-click of a random-book item. Re-reads count — the counter
+     * is event-driven, not deduped against the per-world seen set. Drives
+     * the "Taking Notes" milestone via
+     * {@link AchievementEvents#notifyRandomBooksRead}.
+     *
+     * <p>Only held-item right-clicks fire this; lectern right-clicks are
+     * intentionally excluded because the lectern event fires on every
+     * page-turn and would inflate the count.</p>
+     */
+    @SubscribeEvent
+    public static void onRightClickRandomBookItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getLevel().isClientSide) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty()) return;
+        if (RandomBookTag.read(stack).isEmpty()) return;
+        long newTotal = GlobalPlayerStats.addRandomBooksRead(player.getUUID(), 1L);
+        AchievementEvents.notifyRandomBooksRead(player, newTotal);
+    }
+
+    /**
+     * Increments the player's cumulative starting-book read counter on every
+     * held-right-click of a starting-book item. Re-reads count. Drives the
+     * "The Same But Different" milestone via
+     * {@link AchievementEvents#notifyStartingBooksRead}.
+     *
+     * <p>Filter is {@link StartingBookTag#isStartingBook}; no overlap with
+     * {@link #onRightClickRandomBookItem} because
+     * {@link StartingBookFactory} never stamps {@link RandomBookTag}.</p>
+     */
+    @SubscribeEvent
+    public static void onRightClickStartingBookItem(PlayerInteractEvent.RightClickItem event) {
+        if (event.getLevel().isClientSide) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ItemStack stack = event.getItemStack();
+        if (stack.isEmpty()) return;
+        if (!StartingBookTag.isStartingBook(stack)) return;
+        long newTotal = GlobalPlayerStats.addStartingBooksRead(player.getUUID(), 1L);
+        AchievementEvents.notifyStartingBooksRead(player, newTotal);
     }
 
     private static void recordRead(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {
