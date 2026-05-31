@@ -121,6 +121,8 @@
   "advancements.dungeontrain.dungeon_train.read_all_nether_starting_books.description": "Read every Nether starting book — every variant, every context. Nothing left down here to come back for.",
   "advancements.dungeontrain.dungeon_train.read_all_end_starting_books.title": "End of the Line",
   "advancements.dungeontrain.dungeon_train.read_all_end_starting_books.description": "Read every End starting book — every variant, every context.",
+  "advancements.dungeontrain.dungeon_train.multiplayer.title": "Come Along With Me",
+  "advancements.dungeontrain.dungeon_train.multiplayer.description": "Join a multiplayer world, or have someone join yours.",
 
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Build the train you ride.",
