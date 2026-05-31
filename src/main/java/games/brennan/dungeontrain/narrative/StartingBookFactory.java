@@ -310,9 +310,11 @@ public final class StartingBookFactory {
 
         ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
-        // Stamp the marker so the close-detection flow (client ScreenEvent.Closing
-        // → server burn handler) can identify this stack. See StartingBookTag.
-        StartingBookTag.stamp(stack);
+        // Stamp the marker + identity so (a) the close-detection flow (client
+        // ScreenEvent.Closing → server burn handler) can identify this stack and
+        // (b) the read handler can credit this exact (book, variant) toward the
+        // all_starting_books advancement. See StartingBookTag.
+        StartingBookTag.stamp(stack, book.basename(), variantIndex);
         return stack;
     }
 
