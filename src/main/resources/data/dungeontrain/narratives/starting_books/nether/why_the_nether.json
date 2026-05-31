@@ -1,10 +1,12 @@
 {
   "id": "why_the_nether",
-  "title": "Why the Nether?",
+  "title": "The Nether?",
   "author": "Brennan Hatton",
   "generation": 0,
   "weight": 1,
   "variants": [
+    "This cant be right?\n Is this right?\n\nMaybe its a bug?\nThis isnt the world I know.\n\nWell... good luck!",
+    "An endless train, jumping between dimensions, worlds, and realities.",
     "Welcome to the Dungeon Train\nWhat is the train?\nWhy are you here?\nWhat are you meant to do?\nThese are all good questions\n\nAlthough...\n\nWhy are you here, in the Nether, specifically?\n\nYou started in hell.\n\nOn purpose?\n\n...Bold.\n\nTheres a train ahead. Get on it.\nQuickly, before something notices you."
   ]
 }
