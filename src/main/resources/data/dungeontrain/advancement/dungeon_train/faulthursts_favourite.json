@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/i_must_know",
+  "display": {
+    "icon": { "id": "minecraft:enchanted_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.faulthursts_favourite.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.faulthursts_favourite.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "dungeontrain:story_set_completed",
+      "conditions": { "setId": "faulthurst" }
+    }
+  },
+  "requirements": [["completed"]]
+}

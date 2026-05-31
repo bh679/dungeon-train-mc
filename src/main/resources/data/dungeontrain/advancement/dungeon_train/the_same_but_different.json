@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:chorus_fruit" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_same_but_different.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_same_but_different.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:starting_books_read",
+      "conditions": { "thresholdReads": 10 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

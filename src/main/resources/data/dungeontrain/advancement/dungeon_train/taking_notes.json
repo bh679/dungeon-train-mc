@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:writable_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.taking_notes.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.taking_notes.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:random_books_read",
+      "conditions": { "thresholdReads": 10 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

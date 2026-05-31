@@ -179,6 +179,26 @@ public final class AchievementEvents {
         ModAdvancementTriggers.TRAIN_TIME.get().trigger(player, totalTicks);
     }
 
+    /**
+     * Called from {@link games.brennan.dungeontrain.narrative.NarrativeBookEvents}
+     * after every random-book held-right-click. {@code totalReads} is the
+     * player's cumulative {@link GlobalPlayerStats#randomBooksRead} across
+     * all worlds and sessions. Re-reads count.
+     */
+    public static void notifyRandomBooksRead(ServerPlayer player, long totalReads) {
+        ModAdvancementTriggers.RANDOM_BOOKS_READ.get().trigger(player, totalReads);
+    }
+
+    /**
+     * Called from {@link games.brennan.dungeontrain.narrative.NarrativeBookEvents}
+     * after every starting-book held-right-click. {@code totalReads} is the
+     * player's cumulative {@link GlobalPlayerStats#startingBooksRead} across
+     * all worlds and sessions. Re-reads count.
+     */
+    public static void notifyStartingBooksRead(ServerPlayer player, long totalReads) {
+        ModAdvancementTriggers.STARTING_BOOKS_READ.get().trigger(player, totalReads);
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**
@@ -197,6 +217,9 @@ public final class AchievementEvents {
         if (anyStoryRead(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "any_story");
         }
+        if (allFaulthurstTitlesSeen(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst_all_titles");
+        }
         if (allFaulthurstSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
         }
@@ -205,6 +228,9 @@ public final class AchievementEvents {
         }
         if (allStoryVariantsSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_story_variants");
+        }
+        if (allStartingBookTitlesSeen(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "starting_books_all_titles");
         }
         // Starting-book sets are folder-driven. The grand-slam all_starting_books
         // set spans every context; each context that declares an
@@ -249,6 +275,28 @@ public final class AchievementEvents {
                     if (!seen.contains(v)) return false;
                 }
             }
+        }
+        return true;
+    }
+
+    /**
+     * True when every starting book has at least one variant marked seen.
+     * Drives the {@code starting_books_all_titles} milestone ("Welcome Back")
+     * — weaker than {@link #allStartingBooksSeen}; requires every title to
+     * have been encountered at least once, not every variant.
+     */
+    private static boolean allStartingBookTitlesSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
+        java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames();
+        if (all.isEmpty()) return false;
+        java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
+            data.startingBookSeenSnapshot();
+        for (String basename : all) {
+            var bookOpt = games.brennan.dungeontrain.narrative.StartingBookRegistry.getByBasename(basename);
+            if (bookOpt.isEmpty()) return false;
+            if (bookOpt.get().variants().isEmpty()) continue;
+            games.brennan.dungeontrain.narrative.NarrativeProgress p =
+                snapshot.getOrDefault(basename, new games.brennan.dungeontrain.narrative.NarrativeProgress());
+            if (p.readLetters().isEmpty()) return false;
         }
         return true;
     }
@@ -347,7 +395,8 @@ public final class AchievementEvents {
 
     /**
      * True when every random-book file whose basename contains
-     * {@code "faulthurst"} has every variant marked seen.
+     * {@code "faulthurst"} has every variant marked seen. Drives the
+     * {@code faulthurst_all_variants} milestone ("Faulthurst's Favourite").
      */
     private static boolean allFaulthurstSeen(NarrativeProgressData data) {
         boolean anyFaulthurst = false;
@@ -363,6 +412,25 @@ public final class AchievementEvents {
             for (int i = 0; i < total; i++) {
                 if (!seen.contains(i)) return false;
             }
+        }
+        return anyFaulthurst;
+    }
+
+    /**
+     * True when every Faulthurst random-book has at least one variant
+     * marked seen. Drives the {@code faulthurst_all_titles} milestone
+     * ("I Must Know"). Weaker than {@link #allFaulthurstSeen} — requires
+     * the player to have encountered every title, not every variant.
+     */
+    private static boolean allFaulthurstTitlesSeen(NarrativeProgressData data) {
+        boolean anyFaulthurst = false;
+        for (String basename : RandomBookRegistry.basenames()) {
+            if (!basename.toLowerCase().contains("faulthurst")) continue;
+            anyFaulthurst = true;
+            Set<Integer> seen = data.randomBookSnapshot()
+                .getOrDefault(basename, new NarrativeProgress())
+                .readLetters();
+            if (seen.isEmpty()) return false;
         }
         return anyFaulthurst;
     }
