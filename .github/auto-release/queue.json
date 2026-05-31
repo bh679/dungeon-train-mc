@@ -1,40 +1,6 @@
 {
   "pending": [
     {
-      "id": "soll-l1-a",
-      "label": "Soll Letter 1 variant A (loadout, S. Marra)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
-      "story_meta": {
-        "id": "soll_marra_the_borrowed_champion",
-        "character": "Soll Marra",
-        "story": "The Borrowed Champion"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Day One. Loadout.\n\nIron sword, x2 (one back-up per the notebook).\nBow, 64 arrows.\nEnchanted leather, full set, Protection I.\nEnder pearls, x16.\nBed, x1.\nRaw potatoes, x32.\n\nThe notebook calls for gold apples. The town had none. I will source them en route.\n\nThe rat is real. I have logged him.\n\nDay One.\n\n- S. Marra",
-      "commit_message": "content(narrative): Soll Letter 1 variant A"
-    },
-    {
-      "id": "soll-l1-b",
-      "label": "Soll Letter 1 variant B (loadout, snuck out)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
-      "story_meta": {
-        "id": "soll_marra_the_borrowed_champion",
-        "character": "Soll Marra",
-        "story": "The Borrowed Champion"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Day One. Loadout.\n\nIron sword, x2.\nBow, 64 arrows.\nEnchanted leather, Prot I.\nEnder pearls, x16.\nBed.\nPotatoes, x32.\n\nThe notebook says gold apples are non-negotiable. The town had none. I left before anyone noticed I was gone.\n\nA rat in a vest gave me this paper. He looked sad. I do not know what to log him as.\n\nI am ready.\n\n- Soll Marra",
-      "commit_message": "content(narrative): Soll Letter 1 variant B"
-    },
-    {
       "id": "soll-l2-a",
       "label": "Soll Letter 2 variant A (notebook, bringing it)",
       "type": "add_variant",
@@ -1802,6 +1768,16 @@
       "id": "halen-l10-b",
       "applied_at": "2026-05-31T01:22:51Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "soll-l1-a",
+      "applied_at": "2026-05-31T05:21:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json"
+    },
+    {
+      "id": "soll-l1-b",
+      "applied_at": "2026-05-31T05:50:21Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json"
     }
   ]
 }
