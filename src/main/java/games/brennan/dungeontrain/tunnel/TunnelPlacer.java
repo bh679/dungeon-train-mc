@@ -126,6 +126,7 @@ public final class TunnelPlacer {
         String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex);
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.SECTION, name);
         if (stored.isEmpty()) return false;
+        eraseInteriorAirspaceWorldgen(level, origin);
         stampTemplateWorldgen(level, origin, stored.get(), false);
         applyTunnelSidecarWorldgen(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
         return true;
@@ -144,6 +145,7 @@ public final class TunnelPlacer {
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.PORTAL, name);
         if (stored.isEmpty()) return false;
         BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
+        eraseInteriorAirspaceWorldgen(level, origin);
         stampTemplateWorldgen(level, stampOrigin, stored.get(), mirrorX);
         applyTunnelSidecarWorldgen(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
         return true;
@@ -158,6 +160,58 @@ public final class TunnelPlacer {
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
         anchorAboveFootprintWorldgen(level, origin);
+    }
+
+    /**
+     * Force-clear the walkable airspace volume inside the {@link #LENGTH}×{@link #HEIGHT}×{@link #WIDTH}
+     * tunnel footprint before stamping the NBT template. Defends against
+     * vanilla nether features (basalt pillars, deltas) that occasionally
+     * leave blocks inside the corridor airspace because of decoration-order
+     * races at the worldgen 3×3 chunk window — once a basalt block lands at
+     * an AIR-cell position, the template's air cell stamps the same air on
+     * top, but if some path through {@link StructureTemplate#placeInWorld}
+     * silently skips the write the basalt persists. Same pattern as
+     * {@link games.brennan.dungeontrain.train.CarriagePartPlacer}'s pre-erase.
+     *
+     * <p>Volume cleared: {@code floorY+1..ceilingY} (9 rows, walking
+     * airspace only) × {@code airMinZ..airMaxZ} (11 cols, open interior) ×
+     * 10 cols (full {@link #LENGTH}). Skips rail cells at
+     * {@code (railY, railZMin|railZMax)} — they're already placed by
+     * {@code TrackGenerator} and the template will re-stamp them anyway.</p>
+     *
+     * <p>Crucially does NOT touch:
+     * <ul>
+     *   <li>The floor row at {@code floorY} — template re-stamps stone-brick floor.</li>
+     *   <li>The arched roof tiers above {@code ceilingY} — template paints walls + stair smoothers + apex cap.</li>
+     *   <li>The corner wedges (at apex Y, z OUTSIDE {@code airMinZ..airMaxZ}) — those are intentional STRUCTURE_VOID cells in the saved template so overworld terrain blends naturally with the arch corners. Pre-erasing them would create visible voids in overworld tunnels.</li>
+     * </ul></p>
+     *
+     * <p>Uses {@code origin} (canonical, unshifted) — the airspace geometry
+     * is invariant under mirror, so callers don't need to pass mirror state.
+     * Skips the {@link Shipyards} guard (no ships at chunkgen).</p>
+     */
+    private static void eraseInteriorAirspaceWorldgen(WorldGenLevel level, BlockPos origin) {
+        TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
+        int floorY = tg.floorY();
+        int ceilingY = tg.ceilingY();
+        int airMinZ = tg.airMinZ();
+        int airMaxZ = tg.airMaxZ();
+        int railY = tg.railY();
+        int railZMin = tg.railZMin();
+        int railZMax = tg.railZMax();
+        int originX = origin.getX();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dx = 0; dx < LENGTH; dx++) {
+            int worldX = originX + dx;
+            for (int y = floorY + 1; y <= ceilingY; y++) {
+                for (int z = airMinZ; z <= airMaxZ; z++) {
+                    if (y == railY && (z == railZMin || z == railZMax)) continue;
+                    pos.set(worldX, y, z);
+                    if (level.getBlockState(pos).isAir()) continue;
+                    level.setBlock(pos, AIR, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
     }
 
     /**
