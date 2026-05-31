@@ -33,6 +33,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.LevelSettings;
@@ -350,7 +351,8 @@ public final class DeathScreenLayoutHandler {
         LevelSettings cur = worldData.getLevelSettings();
         WorldOptions curOpts = worldData.worldGenOptions();
 
-        StartingDimension startingDim = StartingDimension.OVERWORLD;
+        StartingDimension startingDim = rollRespawnDimension(RandomSource.create().nextDouble());
+        LOGGER.info("DeathScreenLayout: respawn rolled startingDimension={}", startingDim);
         ServerLevel overworld = server.overworld();
         if (overworld != null) {
             try {
@@ -362,7 +364,6 @@ public final class DeathScreenLayoutHandler {
                             dt.dims(),
                             DungeonTrainConfig.getGenerationMode(),
                             DungeonTrainConfig.getGroupSize());
-                    startingDim = dt.startingDimension();
                 }
             } catch (Exception e) {
                 LOGGER.warn("DeathScreenLayout: failed to read DungeonTrainWorldData; new world will use mod defaults.", e);
@@ -531,6 +532,23 @@ public final class DeathScreenLayoutHandler {
             }
         }
         return null;
+    }
+
+    /**
+     * Roll the starting dimension for a fresh world spawned from the death
+     * screen. Caller passes a uniform draw on {@code [0, 1)}: {@code r < 0.01}
+     * → End (1%), {@code r < 0.06} → Nether (5%), else Overworld (94%). The
+     * current world's starting dimension is ignored — every death rolls
+     * independently, so a player already in the Nether still has a 94%
+     * chance of waking up in the Overworld.
+     *
+     * <p>Pure function over {@code r} so the unit test can pin boundaries
+     * exactly without stubbing the full {@link RandomSource} interface.</p>
+     */
+    static StartingDimension rollRespawnDimension(double r) {
+        if (r < 0.01) return StartingDimension.END;
+        if (r < 0.06) return StartingDimension.NETHER;
+        return StartingDimension.OVERWORLD;
     }
 
     private static ResourceKey<WorldPreset> presetFor(StartingDimension dim) {
