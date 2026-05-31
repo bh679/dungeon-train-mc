@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "halen-l10-b",
-      "label": "Halen - Sighting \u2014 variant B (fragmented confession, finale)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 10,
-        "label": "Sighting \u2014"
-      },
-      "variant": "Sighting \u2014\n\n[I have stopped numbering.]\n\nThe earliest entry. Sighting 1.\n\nThe date. Thirty-seven years ago.\n\nI am thirty-seven.\n\n[The handwriting is mine.]\n\n[I do not remember being six.]\n[I do not remember being twelve.]\n[I do not remember being twenty.]\n\nThe first thing I remember is the field. I was already a folklorist. I had already been writing in this notebook.\n\nInside the back cover, written in a hand I do not know:\n\n\"I gave you the notebook.\"\n\nI have been answering it my whole life.\n\n-",
-      "commit_message": "content(narrative): Halen Letter 10 variant B (finale)"
-    },
-    {
       "id": "soll-l1-a",
       "label": "Soll Letter 1 variant A (loadout, S. Marra)",
       "type": "add_variant",
@@ -1813,6 +1796,11 @@
     {
       "id": "halen-l10-a",
       "applied_at": "2026-05-30T22:03:23Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l10-b",
+      "applied_at": "2026-05-31T01:22:51Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
     }
   ]
