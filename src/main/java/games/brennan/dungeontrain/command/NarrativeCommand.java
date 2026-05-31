@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.narrative.RandomBookFile;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
+import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
@@ -373,9 +374,12 @@ public final class NarrativeCommand {
         // respawn rolls fresh — testers rely on this to re-exercise the
         // cycle without restarting the server.
         data.resetStartingBookVariantsSeen();
+        // And clear the per-installation Nether/End dimension playlist so the
+        // dimension-welcome cycle starts over on the next Nether/End run.
+        PlayerPlayedMarker.clearDimensionVariantsSeen(player.getUUID());
         ctx.getSource().sendSuccess(() -> Component.literal(
             "Starting-book state reset for " + player.getName().getString()
-                + " — first-login flag cleared, respawn cycle reset"
+                + " — first-login flag cleared, respawn + Nether/End cycles reset"
         ).withStyle(ChatFormatting.GREEN), true);
         return 1;
     }

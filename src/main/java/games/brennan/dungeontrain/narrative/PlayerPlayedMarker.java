@@ -10,7 +10,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -22,6 +24,11 @@ import java.util.UUID;
  *       (counter — drives the every-second-world alternation).</li>
  *   <li>How many JOINED_WORLD scenarios this player has been through
  *       (counter — drives the alternating-from-first joined cadence).</li>
+ *   <li>Which Nether/End welcome-book {@code (book, variant)} tuples this
+ *       player has already been shown — a one-each "playlist" set that drives
+ *       the dimension-welcome cycle in {@code StartingBookEvents}; once a
+ *       dimension's whole pool is in this set, new runs in that dimension
+ *       fall through to the lifecycle welcome.</li>
  * </ol>
  *
  * <p>Backed by a tiny {@link Properties} file at
@@ -48,6 +55,8 @@ public final class PlayerPlayedMarker {
 
     private static final String KEY_NEW_WORLD = "new_world_count";
     private static final String KEY_JOINED_WORLD = "joined_world_count";
+    /** Comma-joined set of seen dimension-welcome keys (see {@code StartingBookFactory.dimKey}). */
+    private static final String KEY_SEEN_DIMENSION = "seen_dimension_variants";
 
     private PlayerPlayedMarker() {}
 
@@ -101,6 +110,42 @@ public final class PlayerPlayedMarker {
         write(uuid, state);
     }
 
+    /**
+     * Snapshot of the dimension-welcome {@code (book, variant)} keys this
+     * player has already been shown (empty when never marked). Keys are
+     * produced by {@code StartingBookFactory.dimKey}. Returns a defensive
+     * copy callers may use as a fast {@code contains} set.
+     */
+    public static Set<String> seenDimensionVariants(UUID uuid) {
+        return new LinkedHashSet<>(read(uuid).seenDimensionVariants);
+    }
+
+    /**
+     * Record that {@code key} (a {@code StartingBookFactory.dimKey}) has been
+     * shown to this player. Idempotent — only rewrites the file when the key
+     * was not already present; creates the marker file if missing.
+     */
+    public static void markDimensionVariantSeen(UUID uuid, String key) {
+        if (key == null || key.isEmpty()) return;
+        State state = read(uuid);
+        if (state.seenDimensionVariants.add(key)) {
+            write(uuid, state);
+        }
+    }
+
+    /**
+     * Clear this player's seen dimension-welcome set so the Nether/End cycle
+     * starts over (used by {@code /narrative startingbook reset}). No write
+     * when the set is already empty.
+     */
+    public static void clearDimensionVariantsSeen(UUID uuid) {
+        State state = read(uuid);
+        if (!state.seenDimensionVariants.isEmpty()) {
+            state.seenDimensionVariants.clear();
+            write(uuid, state);
+        }
+    }
+
     /** Visible for tests. */
     public static Path propsPath(UUID uuid) {
         return FMLPaths.GAMEDIR.get()
@@ -120,6 +165,7 @@ public final class PlayerPlayedMarker {
     private static final class State {
         int newWorldCount;
         int joinedWorldCount;
+        Set<String> seenDimensionVariants = new LinkedHashSet<>();
     }
 
     private static State read(UUID uuid) {
@@ -135,6 +181,7 @@ public final class PlayerPlayedMarker {
         }
         state.newWorldCount = parseIntOrZero(props.getProperty(KEY_NEW_WORLD));
         state.joinedWorldCount = parseIntOrZero(props.getProperty(KEY_JOINED_WORLD));
+        state.seenDimensionVariants = parseKeySet(props.getProperty(KEY_SEEN_DIMENSION));
         return state;
     }
 
@@ -143,6 +190,7 @@ public final class PlayerPlayedMarker {
         Properties props = new Properties();
         props.setProperty(KEY_NEW_WORLD, Integer.toString(state.newWorldCount));
         props.setProperty(KEY_JOINED_WORLD, Integer.toString(state.joinedWorldCount));
+        props.setProperty(KEY_SEEN_DIMENSION, String.join(",", state.seenDimensionVariants));
         try {
             Files.createDirectories(path.getParent());
             try (OutputStream out = Files.newOutputStream(path)) {
@@ -161,5 +209,16 @@ public final class PlayerPlayedMarker {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    /** Parse a comma-joined key list into an insertion-ordered set (empties skipped). */
+    private static Set<String> parseKeySet(String raw) {
+        Set<String> out = new LinkedHashSet<>();
+        if (raw == null || raw.isEmpty()) return out;
+        for (String part : raw.split(",")) {
+            String k = part.trim();
+            if (!k.isEmpty()) out.add(k);
+        }
+        return out;
     }
 }
