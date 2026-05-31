@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:end_stone" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.board_in_end.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.board_in_end.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "boarded_end": {
+      "trigger": "dungeontrain:editor_action",
+      "conditions": {
+        "actionId": "boarded",
+        "player": [
+          {
+            "condition": "minecraft:entity_properties",
+            "entity": "this",
+            "predicate": {
+              "location": {
+                "dimension": "minecraft:the_end"
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [["boarded_end"]]
+}
