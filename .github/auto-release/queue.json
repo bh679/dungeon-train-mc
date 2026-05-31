@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "soll-l2-b",
-      "label": "Soll Letter 2 variant B (notebook, bringing him)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
-      "story_meta": {
-        "id": "soll_marra_the_borrowed_champion",
-        "character": "Soll Marra",
-        "story": "The Borrowed Champion"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "The notebook is Halric's. He started writing it the year before I was born. Twenty-six years of specs and no dragon at the end.\n\nPillar heights. Crystal cages. Cage break order. Bed-blast yields. Pearl trajectories. The whole fight, on paper.\n\nHe died in spring. The notebook calls it \"cessation, non-combat.\" I think it was his lungs. He coughed a lot. He never said the word.\n\nThe dragon never met Halric.\n\nI am bringing him to her.\n\n- Soll",
-      "commit_message": "content(narrative): Soll Letter 2 variant B"
-    },
-    {
       "id": "soll-l3-a",
       "label": "Soll Letter 3 variant A (drill one, what ready feels like)",
       "type": "add_variant",
@@ -1765,6 +1748,11 @@
     {
       "id": "soll-l2-a",
       "applied_at": "2026-05-31T07:09:19Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json"
+    },
+    {
+      "id": "soll-l2-b",
+      "applied_at": "2026-05-31T07:36:29Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json"
     }
   ]
