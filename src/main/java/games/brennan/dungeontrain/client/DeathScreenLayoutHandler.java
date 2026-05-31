@@ -47,19 +47,32 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
- * Rewrites the vanilla DeathScreen into three rows on singleplayer Dungeon
- * Train worlds:
+ * Rewrites the vanilla DeathScreen into a uniform four-button column with a
+ * single-column run-stats panel and a centred equipment row above it:
  *
  * <pre>
- *   [        New World        ]   full width
- *   [ Respawn ][  Same World  ]   half width each
- *   [      Title Screen       ]   shifted down one row
+ *   ┌──────────────────────┐
+ *   │ Mobs killed       0  │
+ *   │ Time            0:00 │
+ *   │ Carts travelled   0  │
+ *   │ Loot containers   0  │
+ *   │ Distance        0 m  │
+ *   │ Books read        0  │
+ *   │                      │
+ *   │   [🪖][⛓][👖][🥾] [⚔] │
+ *   └──────────────────────┘
+ *   [      New World      ]
+ *   [      Same World     ]
+ *   [      Respawn        ]
+ *   [      Title Screen   ]
  * </pre>
  *
  * <p>The Respawn button is wrapped in a {@link ConfirmScreen} warning the
@@ -72,6 +85,11 @@ import java.util.function.Function;
  * settings (game mode, difficulty, hardcore, data packs) and Dungeon Train
  * options (trainY, startsWithTrain, carriage dims, generation mode, group
  * size, starting dimension) via {@link PendingWorldChoices}.</p>
+ *
+ * <p>The vanilla "Score: 0" line and the subtitle ("X was killed by Y") are
+ * relocated by {@code DeathScreenMoveTextMixin} — subtitle drops to y=78 so
+ * it sits cleanly below the 2× scaled "You Died!" title, and score moves
+ * off-screen since Dungeon Train doesn't track XP-based score.</p>
  *
  * <p>Hardcore and LAN/multiplayer death screens are left untouched: vanilla
  * has no respawn button in hardcore, and we can't recreate a world we don't
@@ -95,17 +113,20 @@ public final class DeathScreenLayoutHandler {
     private static final int GAP = 4;
 
     /**
-     * Compact 2-column stats panel that sits above the (vanilla-positioned)
-     * button row, NOT pushing the buttons down. Three rows of stats
-     * (6 stats in 2 columns) + one row of item icons (weapon + 4 armor
-     * pieces). Total height plus padding stays under ~60 px so the panel
-     * doesn't bump into the subtitle / death message on standard-height
-     * windows.
+     * Single-column stats panel that sits above the (vanilla-positioned)
+     * button row, NOT pushing the buttons down. Six rows of stats (one
+     * stat per row, label left + value right) followed by a centred row of
+     * equipment icons (helmet, chest, legs, boots, weapon). Empty
+     * equipment slots are skipped at render time — the remaining icons
+     * reflow tightly toward the centre so a player who died with only a
+     * sword doesn't see four ghost squares.
      */
     private static final int STATS_LINE_HEIGHT = 11;
     private static final int STATS_ICON_SIZE = 16;
-    private static final int STATS_INNER_PAD = 4;
-    private static final int STATS_STAT_ROWS = 3;
+    private static final int STATS_ICON_GAP = 2;
+    private static final int STATS_ARMOR_WEAPON_SEPARATOR = 8;
+    private static final int STATS_INNER_PAD = 6;
+    private static final int STATS_STAT_ROWS = 6;
     private static final int STATS_PANEL_HEIGHT =
             STATS_INNER_PAD
             + STATS_STAT_ROWS * STATS_LINE_HEIGHT
@@ -113,7 +134,13 @@ public final class DeathScreenLayoutHandler {
             + STATS_ICON_SIZE
             + STATS_INNER_PAD;
 
-    /** Opaque background so vanilla subtitle/score text behind the panel is fully masked. */
+    /**
+     * Vertical clearance reserved above the panel so it doesn't collide
+     * with the 2× scaled "You Died!" title, which spans roughly y=30–70.
+     */
+    private static final int TITLE_CLEARANCE = 12;
+
+    /** Opaque background so anything vanilla draws behind the panel is fully masked. */
     private static final int STATS_PANEL_BG = 0xF0101010;
 
     private static final Component STATS_MOBS = Component.translatable("gui.dungeontrain.death.stats.mobs");
@@ -122,8 +149,6 @@ public final class DeathScreenLayoutHandler {
     private static final Component STATS_TIME = Component.translatable("gui.dungeontrain.death.stats.time");
     private static final Component STATS_CONTAINERS = Component.translatable("gui.dungeontrain.death.stats.containers");
     private static final Component STATS_BOOKS = Component.translatable("gui.dungeontrain.death.stats.books");
-    private static final Component STATS_WEAPON_LABEL = Component.translatable("gui.dungeontrain.death.stats.weapon");
-    private static final Component STATS_ARMOR_LABEL = Component.translatable("gui.dungeontrain.death.stats.armor");
 
     /**
      * Set by {@link #onScreenInitPost} so the {@link #onScreenRenderPost}
@@ -154,64 +179,55 @@ public final class DeathScreenLayoutHandler {
         int slotY = respawn.getY();
         int slotW = respawn.getWidth();
         int slotH = respawn.getHeight();
-        int halfW = (slotW - GAP) / 2;
         int rowSpacing = slotH + GAP;
 
-        // Stat panel: centered horizontally, wider than the button column
-        // so the 2-column layout breathes. Positioned strictly above the
-        // (vanilla-positioned) button row — never overlapping. The panel
-        // overlaps the vanilla "You Died!" subtitle (y=85) and "Score:"
-        // line (y=100); an opaque background fill in onScreenRenderPost
-        // masks them.
-        //
-        // On tiny windows / very high GUI scales the panel may climb up
-        // into the title area or off the top of the screen — if there
-        // isn't at least 60 px of headroom above the buttons we just skip
-        // the panel rather than overlap controls.
+        // Stat panel: narrower than the previous 2-col layout, single
+        // column reads cleanly without needing 360 px. Anchored above the
+        // button column with TITLE_CLEARANCE breathing room from the
+        // scaled-2× "You Died!" title (which spans ~y=30–70). On tiny
+        // windows / very high GUI scales there may not be enough headroom
+        // — if the panel would land at y < 80 we skip it entirely rather
+        // than collide with the title.
         int screenW = deathScreen.width;
-        statsPanelW = Math.min(360, screenW - 40);
+        statsPanelW = Math.min(280, screenW - 40);
         statsPanelX = (screenW - statsPanelW) / 2;
-        statsPanelY = slotY - GAP - STATS_PANEL_HEIGHT;
-        statsPanelActive = statsPanelY >= 60;
+        statsPanelY = slotY - GAP - STATS_PANEL_HEIGHT - TITLE_CLEARANCE;
+        statsPanelActive = statsPanelY >= 80;
 
         // Replace the vanilla Title Screen button with one that exits
         // directly — vanilla wraps it in a "Are you sure you want to give
         // up?" ConfirmScreen which is redundant for this mod (the
         // Respawn button is the only one that needs a confirm).
-        int titleX = title.getX();
-        int titleY = title.getY() + rowSpacing;
-        int titleW = title.getWidth();
-        int titleH = title.getHeight();
         event.removeListener(respawn);
         event.removeListener(title);
-
-        Button wrappedRespawn = Button.builder(RESPAWN_KEY, b -> showRespawnConfirm(deathScreen))
-                .bounds(slotX, slotY + rowSpacing, halfW, slotH)
-                .build();
-        event.addListener(wrappedRespawn);
-
-        Button sameWorld = Button.builder(SAME_WORLD_LABEL, b -> launchWorld(deathScreen, true))
-                .bounds(slotX + halfW + GAP, slotY + rowSpacing, halfW, slotH)
-                .build();
-        event.addListener(sameWorld);
 
         Button newWorld = Button.builder(NEW_WORLD_LABEL, b -> launchWorld(deathScreen, false))
                 .bounds(slotX, slotY, slotW, slotH)
                 .build();
         event.addListener(newWorld);
 
+        Button sameWorld = Button.builder(SAME_WORLD_LABEL, b -> launchWorld(deathScreen, true))
+                .bounds(slotX, slotY + rowSpacing, slotW, slotH)
+                .build();
+        event.addListener(sameWorld);
+
+        Button wrappedRespawn = Button.builder(RESPAWN_KEY, b -> showRespawnConfirm(deathScreen))
+                .bounds(slotX, slotY + 2 * rowSpacing, slotW, slotH)
+                .build();
+        event.addListener(wrappedRespawn);
+
         Button newTitle = Button.builder(TITLE_SCREEN_KEY, b -> goToTitleScreen())
-                .bounds(titleX, titleY, titleW, titleH)
+                .bounds(slotX, slotY + 3 * rowSpacing, slotW, slotH)
                 .build();
         event.addListener(newTitle);
     }
 
     /**
-     * Draw the compact 2-column stats panel + item row just above the
-     * (vanilla-positioned) buttons. Only runs after {@link #onScreenInitPost}
-     * set the {@code statsPanelActive} flag, and only when a
-     * {@link DeathStatsPacket} has been received for the current death.
-     * Without a packet we render nothing.
+     * Draw the single-column stats panel + centred equipment row just
+     * above the (vanilla-positioned) buttons. Only runs after
+     * {@link #onScreenInitPost} set the {@code statsPanelActive} flag,
+     * and only when a {@link DeathStatsPacket} has been received for the
+     * current death. Without a packet we render nothing.
      */
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
@@ -225,56 +241,74 @@ public final class DeathScreenLayoutHandler {
         int mouseX = event.getMouseX();
         int mouseY = event.getMouseY();
 
-        // Opaque background panel to fully mask the vanilla subtitle /
-        // "Score:" line that may sit underneath at small screen heights.
-        // Drawn after vanilla, so it covers cleanly.
+        // Opaque background panel — purely decorative now that the
+        // vanilla subtitle/score have been moved out of the panel area
+        // by DeathScreenMoveTextMixin. Gives the stats block visual
+        // weight against the world-render backdrop.
         graphics.fill(statsPanelX, statsPanelY,
                 statsPanelX + statsPanelW, statsPanelY + STATS_PANEL_HEIGHT,
                 STATS_PANEL_BG);
 
         int labelColor = 0xBBBBBB;
         int valueColor = 0xFFFFFF;
-        int colWidth = (statsPanelW - GAP) / 2;
-        int leftX = statsPanelX;
-        int rightX = statsPanelX + colWidth + GAP;
+        int innerLeft = statsPanelX + STATS_INNER_PAD;
+        int innerRight = statsPanelX + statsPanelW - STATS_INNER_PAD;
+        int innerWidth = innerRight - innerLeft;
         int rowY = statsPanelY + STATS_INNER_PAD;
 
-        // Layout: 3 rows × 2 cols of stats.
-        drawStatCell(graphics, font, STATS_MOBS, String.valueOf(stats.mobKills()),
-                leftX, rowY, colWidth, labelColor, valueColor);
-        drawStatCell(graphics, font, STATS_TIME, formatTime(stats.runTicks()),
-                rightX, rowY, colWidth, labelColor, valueColor);
+        // Six stats stacked one per row, label left-aligned and value
+        // right-aligned to the panel's inner right edge so values line up
+        // in a single column regardless of label length.
+        drawStatRow(graphics, font, STATS_MOBS, String.valueOf(stats.mobKills()),
+                innerLeft, rowY, innerWidth, labelColor, valueColor);
         rowY += STATS_LINE_HEIGHT;
-        drawStatCell(graphics, font, STATS_CARTS, String.valueOf(stats.cartsTravelled()),
-                leftX, rowY, colWidth, labelColor, valueColor);
-        drawStatCell(graphics, font, STATS_CONTAINERS, String.valueOf(stats.containersOpened()),
-                rightX, rowY, colWidth, labelColor, valueColor);
+        drawStatRow(graphics, font, STATS_TIME, formatTime(stats.runTicks()),
+                innerLeft, rowY, innerWidth, labelColor, valueColor);
         rowY += STATS_LINE_HEIGHT;
-        drawStatCell(graphics, font, STATS_DISTANCE, formatDistance(stats.distanceBlocks()),
-                leftX, rowY, colWidth, labelColor, valueColor);
-        drawStatCell(graphics, font, STATS_BOOKS, String.valueOf(stats.booksRead()),
-                rightX, rowY, colWidth, labelColor, valueColor);
+        drawStatRow(graphics, font, STATS_CARTS, String.valueOf(stats.cartsTravelled()),
+                innerLeft, rowY, innerWidth, labelColor, valueColor);
+        rowY += STATS_LINE_HEIGHT;
+        drawStatRow(graphics, font, STATS_CONTAINERS, String.valueOf(stats.containersOpened()),
+                innerLeft, rowY, innerWidth, labelColor, valueColor);
+        rowY += STATS_LINE_HEIGHT;
+        drawStatRow(graphics, font, STATS_DISTANCE, formatDistance(stats.distanceBlocks()),
+                innerLeft, rowY, innerWidth, labelColor, valueColor);
+        rowY += STATS_LINE_HEIGHT;
+        drawStatRow(graphics, font, STATS_BOOKS, String.valueOf(stats.booksRead()),
+                innerLeft, rowY, innerWidth, labelColor, valueColor);
         rowY += STATS_LINE_HEIGHT + STATS_INNER_PAD;
 
-        // Item row: weapon (labeled) on the left, four armor pieces on
-        // the right (also labeled). Each slot is rendered with renderItem;
-        // hover detection uses mouse coordinates so tooltips appear per
-        // icon individually.
-        int textBaseline = rowY + (STATS_ICON_SIZE - font.lineHeight) / 2 + 1;
-        int weaponLabelW = font.width(STATS_WEAPON_LABEL);
-        graphics.drawString(font, STATS_WEAPON_LABEL, leftX, textBaseline, labelColor, false);
-        int weaponX = leftX + weaponLabelW + GAP;
-        renderItemSlot(graphics, stats.mostUsedWeapon(), weaponX, rowY, mouseX, mouseY);
+        // Equipment row: armor pieces (helmet/chest/legs/feet) followed
+        // by a small gap and then the most-used weapon. Empty slots are
+        // skipped entirely — the remaining icons reflow tightly so a
+        // player with only a sword sees one centred icon rather than
+        // four ghost squares + the sword pinned to one side.
+        List<ItemStack> armorRow = new ArrayList<>(4);
+        if (!stats.armorHead().isEmpty())  armorRow.add(stats.armorHead());
+        if (!stats.armorChest().isEmpty()) armorRow.add(stats.armorChest());
+        if (!stats.armorLegs().isEmpty())  armorRow.add(stats.armorLegs());
+        if (!stats.armorFeet().isEmpty())  armorRow.add(stats.armorFeet());
+        ItemStack weapon = stats.mostUsedWeapon();
+        boolean hasWeapon = !weapon.isEmpty();
 
-        int armorRightEdge = statsPanelX + statsPanelW;
-        int armorRow = 4 * STATS_ICON_SIZE + 3 * 2;
-        int armorBaseX = armorRightEdge - armorRow;
-        int armorLabelW = font.width(STATS_ARMOR_LABEL);
-        graphics.drawString(font, STATS_ARMOR_LABEL, armorBaseX - GAP - armorLabelW, textBaseline, labelColor, false);
-        ItemStack[] armorStacks = { stats.armorHead(), stats.armorChest(), stats.armorLegs(), stats.armorFeet() };
-        for (int i = 0; i < 4; i++) {
-            int slotX = armorBaseX + i * (STATS_ICON_SIZE + 2);
-            renderItemSlot(graphics, armorStacks[i], slotX, rowY, mouseX, mouseY);
+        if (!armorRow.isEmpty() || hasWeapon) {
+            int rowWidth = armorRow.size() * STATS_ICON_SIZE
+                    + Math.max(0, armorRow.size() - 1) * STATS_ICON_GAP
+                    + (hasWeapon ? STATS_ICON_SIZE : 0)
+                    + (hasWeapon && !armorRow.isEmpty() ? STATS_ARMOR_WEAPON_SEPARATOR : 0);
+            int cursor = statsPanelX + (statsPanelW - rowWidth) / 2;
+            for (ItemStack piece : armorRow) {
+                renderItemSlot(graphics, piece, cursor, rowY, mouseX, mouseY);
+                cursor += STATS_ICON_SIZE + STATS_ICON_GAP;
+            }
+            if (hasWeapon) {
+                if (!armorRow.isEmpty()) {
+                    // The trailing ICON_GAP in the loop is overwritten by
+                    // the separator gap, so subtract it back out.
+                    cursor += STATS_ARMOR_WEAPON_SEPARATOR - STATS_ICON_GAP;
+                }
+                renderItemSlot(graphics, weapon, cursor, rowY, mouseX, mouseY);
+            }
         }
     }
 
@@ -286,33 +320,27 @@ public final class DeathScreenLayoutHandler {
     }
 
     /**
-     * Draw one stat cell as {@code label .... value} inside a column of
-     * {@code width} pixels. Label left-aligned, value right-aligned. Skips
-     * the row if the stat is zero/empty would be nicer, but we always show
-     * all six for layout stability.
+     * Draw one stat row as {@code label …… value} across {@code width}
+     * pixels. Label left-aligned, value right-aligned to the row's right
+     * edge so values stack into a clean vertical column.
      */
-    private static void drawStatCell(GuiGraphics graphics, Font font,
-                                     Component label, String value,
-                                     int x, int y, int width,
-                                     int labelColor, int valueColor) {
+    private static void drawStatRow(GuiGraphics graphics, Font font,
+                                    Component label, String value,
+                                    int x, int y, int width,
+                                    int labelColor, int valueColor) {
         graphics.drawString(font, label, x, y, labelColor, false);
         int valueWidth = font.width(value);
         graphics.drawString(font, value, x + width - valueWidth, y, valueColor, false);
     }
 
     /**
-     * Render a single item slot + tooltip on hover. Empty stacks render as
-     * a faint placeholder box so the layout doesn't shift when a slot is
-     * missing.
+     * Render a single item slot + tooltip on hover. Empty stacks are an
+     * early-return — callers are expected to filter empties out of the
+     * equipment row so empty slots leave no visual artefact.
      */
     private static void renderItemSlot(GuiGraphics graphics, ItemStack stack,
                                        int x, int y, int mouseX, int mouseY) {
-        if (stack.isEmpty()) {
-            // Faint dashed-outline box for empty slots — communicates "no
-            // gear" without going noisy on the screen.
-            graphics.fill(x, y, x + STATS_ICON_SIZE, y + STATS_ICON_SIZE, 0x40FFFFFF);
-            return;
-        }
+        if (stack.isEmpty()) return;
         graphics.renderItem(stack, x, y);
         graphics.renderItemDecorations(Minecraft.getInstance().font, stack, x, y);
         if (mouseX >= x && mouseX < x + STATS_ICON_SIZE
