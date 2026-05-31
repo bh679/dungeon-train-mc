@@ -51,6 +51,11 @@ public final class DungeonTrainConfig {
     public static final int DEFAULT_CARRIAGES_PER_TIER = 20;
     public static final boolean DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS = false;
 
+    /** 1-in-N chance that a book dropped by breaking a bookshelf becomes a narrative Random Book. 0 disables. */
+    public static final int MIN_RANDOM_BOOK_ONE_IN = 0;
+    public static final int MAX_RANDOM_BOOK_ONE_IN = 1_000_000;
+    public static final int DEFAULT_RANDOM_BOOK_ONE_IN = 100;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
@@ -62,6 +67,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_ENABLED;
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
+    public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -77,6 +83,7 @@ public final class DungeonTrainConfig {
         DIFFICULTY_ENABLED = pair.getLeft().difficultyEnabled;
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
+        RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
     }
 
     private DungeonTrainConfig() {}
@@ -118,8 +125,13 @@ public final class DungeonTrainConfig {
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
                 .define("difficultyAffectsBabyMobs", DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS);
         b.pop();
+        b.push("narrative");
+        ModConfigSpec.IntValue randomBookFromBookshelfOneIn = b
+                .comment("1-in-N chance that each book dropped by breaking a vanilla bookshelf is replaced with a narrative Random Book (from data/dungeontrain/narratives/random_books). Total drop count is unchanged. Default 100 (~1%). Set to 0 to disable.")
+                .defineInRange("randomBookFromBookshelfOneIn", DEFAULT_RANDOM_BOOK_ONE_IN, MIN_RANDOM_BOOK_ONE_IN, MAX_RANDOM_BOOK_ONE_IN);
+        b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs);
+                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn);
     }
 
     /**
@@ -169,6 +181,11 @@ public final class DungeonTrainConfig {
 
     public static boolean getDifficultyAffectsBabyMobs() {
         return isLoaded() ? DIFFICULTY_AFFECTS_BABY_MOBS.get() : DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS;
+    }
+
+    /** 1-in-N chance a book dropped by breaking a bookshelf becomes a narrative Random Book; 0 disables. */
+    public static int getRandomBookFromBookshelfOneIn() {
+        return isLoaded() ? RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN.get() : DEFAULT_RANDOM_BOOK_ONE_IN;
     }
 
     public static void setNumCarriages(int value) {
@@ -247,6 +264,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue groupSize,
             ModConfigSpec.BooleanValue difficultyEnabled,
             ModConfigSpec.IntValue carriagesPerTier,
-            ModConfigSpec.BooleanValue difficultyAffectsBabyMobs
+            ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
+            ModConfigSpec.IntValue randomBookFromBookshelfOneIn
     ) {}
 }
