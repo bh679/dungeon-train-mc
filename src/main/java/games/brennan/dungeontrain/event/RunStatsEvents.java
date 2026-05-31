@@ -6,8 +6,11 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.entity.projectile.ThrownTrident;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.WrittenBookItem;
 import net.minecraft.world.level.block.DecoratedPotBlock;
@@ -57,11 +60,28 @@ public final class RunStatsEvents {
         if (victim == killer) return;
         PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.incrementMobKills();
-        // Snapshot the main-hand stack so the "most used weapon" tally
-        // reflects what the player was actually holding at the moment of
-        // the kill. Bare-hand kills count as minecraft:air and are filtered
-        // out of the final pick by PlayerRunState#mostUsedWeapon.
-        run.recordWeaponKill(killer.getMainHandItem().copy());
+        // Attribute the kill to the weapon that actually dealt it. Arrows
+        // (from bows/crossbows) and thrown tridents carry the firing weapon
+        // on the projectile itself — that's the correct credit even if the
+        // player swapped mainhand mid-flight. For other damage sources
+        // (melee, fall damage proxies, non-firing projectiles like snowballs,
+        // modded projectiles that don't expose their weapon), fall back to
+        // the killer's current mainhand. Bare-hand kills become
+        // {@code minecraft:air} and are filtered out of the final pick by
+        // {@link PlayerRunState#mostUsedWeapon()}.
+        Entity direct = event.getSource().getDirectEntity();
+        ItemStack weaponStack = null;
+        if (direct instanceof AbstractArrow arrow) {
+            ItemStack w = arrow.getWeaponItem();
+            if (w != null && !w.isEmpty()) weaponStack = w.copy();
+        } else if (direct instanceof ThrownTrident trident) {
+            ItemStack w = trident.getWeaponItem();
+            if (w != null && !w.isEmpty()) weaponStack = w.copy();
+        }
+        if (weaponStack == null) {
+            weaponStack = killer.getMainHandItem().copy();
+        }
+        run.recordWeaponKill(weaponStack);
     }
 
     /**
