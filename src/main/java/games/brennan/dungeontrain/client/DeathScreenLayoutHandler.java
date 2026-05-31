@@ -18,7 +18,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -63,16 +62,19 @@ import java.util.function.Function;
  *   [      Title Screen       ]   shifted down one row
  * </pre>
  *
- * <p>The Respawn button is wrapped in a {@link ConfirmScreen} warning the
- * player that respawn is currently buggy. "Continue anyway" performs the
- * vanilla respawn; "Okay" opens {@link ChooseWorldScreen} so the player can
- * pick between New World and Same World on a dedicated screen.</p>
+ * <p>Respawn fires {@code mc.player.respawn()} directly — server-side
+ * {@code RespawnDimensionEvents} then rolls a starting dimension (1% End /
+ * 5% Nether / 94% Overworld) and teleports the player into that dim with a
+ * train. New World and Same World both run {@link #launchWorld} which rolls
+ * the same dimension distribution at world-creation time via
+ * {@link StartingDimension#rollRespawnDimension}.</p>
  *
  * <p>New World creates a fresh save with a random seed; Same World reuses
  * the current world's seed. Both carry forward the current world's vanilla
  * settings (game mode, difficulty, hardcore, data packs) and Dungeon Train
  * options (trainY, startsWithTrain, carriage dims, generation mode, group
- * size, starting dimension) via {@link PendingWorldChoices}.</p>
+ * size) via {@link PendingWorldChoices}; starting dimension is the rolled
+ * value, not the previous world's.</p>
  *
  * <p>Hardcore and LAN/multiplayer death screens are left untouched: vanilla
  * has no respawn button in hardcore, and we can't recreate a world we don't
@@ -177,8 +179,8 @@ public final class DeathScreenLayoutHandler {
 
         // Replace the vanilla Title Screen button with one that exits
         // directly — vanilla wraps it in a "Are you sure you want to give
-        // up?" ConfirmScreen which is redundant for this mod (the
-        // Respawn button is the only one that needs a confirm).
+        // up?" confirm dialog which is redundant for this mod (the
+        // death screen already shows four distinct exit paths).
         int titleX = title.getX();
         int titleY = title.getY() + rowSpacing;
         int titleW = title.getWidth();
@@ -186,7 +188,16 @@ public final class DeathScreenLayoutHandler {
         event.removeListener(respawn);
         event.removeListener(title);
 
-        Button wrappedRespawn = Button.builder(RESPAWN_KEY, b -> showRespawnConfirm(deathScreen))
+        // Respawn now routes through RespawnDimensionEvents server-side: 94%
+        // overworld (vanilla flow), 5% Nether, 1% End — each with a train.
+        // No confirm screen any more; the prior "respawn is buggy" warning
+        // was a no-op placeholder for a behaviour the random-dim handler now
+        // actually defines.
+        Button wrappedRespawn = Button.builder(RESPAWN_KEY, b -> {
+                    Minecraft mc = Minecraft.getInstance();
+                    if (mc.player != null) mc.player.respawn();
+                    mc.setScreen(null);
+                })
                 .bounds(slotX, slotY + rowSpacing, halfW, slotH)
                 .build();
         event.addListener(wrappedRespawn);
@@ -351,7 +362,8 @@ public final class DeathScreenLayoutHandler {
         LevelSettings cur = worldData.getLevelSettings();
         WorldOptions curOpts = worldData.worldGenOptions();
 
-        StartingDimension startingDim = rollRespawnDimension(RandomSource.create().nextDouble());
+        StartingDimension startingDim = StartingDimension.rollRespawnDimension(
+                RandomSource.create().nextDouble());
         LOGGER.info("DeathScreenLayout: respawn rolled startingDimension={}", startingDim);
         ServerLevel overworld = server.overworld();
         if (overworld != null) {
@@ -508,23 +520,6 @@ public final class DeathScreenLayoutHandler {
         mc.setScreen(new TitleScreen());
     }
 
-    private static void showRespawnConfirm(Screen deathScreen) {
-        Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new ConfirmScreen(
-                proceed -> {
-                    if (proceed) {
-                        if (mc.player != null) mc.player.respawn();
-                        mc.setScreen(null);
-                    } else {
-                        mc.setScreen(new ChooseWorldScreen(deathScreen));
-                    }
-                },
-                Component.translatable("gui.dungeontrain.death.confirm_title"),
-                Component.translatable("gui.dungeontrain.death.confirm_message"),
-                Component.translatable("gui.dungeontrain.death.confirm_yes"),
-                Component.translatable("gui.dungeontrain.death.confirm_no")));
-    }
-
     private static Button findButton(ScreenEvent.Init.Post event, Component message) {
         for (GuiEventListener listener : event.getListenersList()) {
             if (listener instanceof Button button && message.equals(button.getMessage())) {
@@ -532,23 +527,6 @@ public final class DeathScreenLayoutHandler {
             }
         }
         return null;
-    }
-
-    /**
-     * Roll the starting dimension for a fresh world spawned from the death
-     * screen. Caller passes a uniform draw on {@code [0, 1)}: {@code r < 0.01}
-     * → End (1%), {@code r < 0.06} → Nether (5%), else Overworld (94%). The
-     * current world's starting dimension is ignored — every death rolls
-     * independently, so a player already in the Nether still has a 94%
-     * chance of waking up in the Overworld.
-     *
-     * <p>Pure function over {@code r} so the unit test can pin boundaries
-     * exactly without stubbing the full {@link RandomSource} interface.</p>
-     */
-    static StartingDimension rollRespawnDimension(double r) {
-        if (r < 0.01) return StartingDimension.END;
-        if (r < 0.06) return StartingDimension.NETHER;
-        return StartingDimension.OVERWORLD;
     }
 
     private static ResourceKey<WorldPreset> presetFor(StartingDimension dim) {

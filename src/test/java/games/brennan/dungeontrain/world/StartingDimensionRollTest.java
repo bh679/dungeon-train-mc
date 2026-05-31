@@ -1,6 +1,5 @@
-package games.brennan.dungeontrain.client;
+package games.brennan.dungeontrain.world;
 
-import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.util.RandomSource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,12 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Locks down {@link DeathScreenLayoutHandler#rollRespawnDimension(double)} —
- * the random-dimension draw applied when the player clicks "New World" or
- * "Same World" on the death screen. The function is a pure mapping from a
- * uniform {@code [0, 1)} value to a {@link StartingDimension}, so the tests
- * pin both the boundary conditions and a large-sample distribution sanity
- * check.
+ * Locks down {@link StartingDimension#rollRespawnDimension(double)} — the
+ * random-dimension draw applied at every respawn, whether the player clicks
+ * "New World" / "Same World" (consumed by
+ * {@code DeathScreenLayoutHandler.launchWorld}) or the vanilla "Respawn"
+ * button (consumed by {@code RespawnDimensionEvents}). The function is a
+ * pure mapping from a uniform {@code [0, 1)} value to a
+ * {@link StartingDimension}, so the tests pin both the boundary conditions
+ * and a large-sample distribution sanity check.
  *
  * <p>The boundaries matter more than the percentages — a future edit that
  * accidentally flips a {@code <} to {@code <=} (or shifts the End bucket
@@ -22,48 +23,48 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * boundary tests catch that; the distribution test catches an arithmetic
  * regression like swapping the bucket order.</p>
  */
-final class DeathScreenLayoutHandlerTest {
+final class StartingDimensionRollTest {
 
     @Test
     @DisplayName("r = 0.0 → END")
     void rollAtZeroIsEnd() {
         assertEquals(StartingDimension.END,
-                DeathScreenLayoutHandler.rollRespawnDimension(0.0));
+                StartingDimension.rollRespawnDimension(0.0));
     }
 
     @Test
     @DisplayName("r = 0.005 → END (well inside End bucket)")
     void rollInsideEndBucketIsEnd() {
         assertEquals(StartingDimension.END,
-                DeathScreenLayoutHandler.rollRespawnDimension(0.005));
+                StartingDimension.rollRespawnDimension(0.005));
     }
 
     @Test
     @DisplayName("r = 0.01 → NETHER (End upper bound is exclusive)")
     void rollAtEndUpperBoundIsNether() {
         assertEquals(StartingDimension.NETHER,
-                DeathScreenLayoutHandler.rollRespawnDimension(0.01));
+                StartingDimension.rollRespawnDimension(0.01));
     }
 
     @Test
     @DisplayName("r = 0.05 → NETHER (well inside Nether bucket)")
     void rollInsideNetherBucketIsNether() {
         assertEquals(StartingDimension.NETHER,
-                DeathScreenLayoutHandler.rollRespawnDimension(0.05));
+                StartingDimension.rollRespawnDimension(0.05));
     }
 
     @Test
     @DisplayName("r = 0.06 → OVERWORLD (Nether upper bound is exclusive)")
     void rollAtNetherUpperBoundIsOverworld() {
         assertEquals(StartingDimension.OVERWORLD,
-                DeathScreenLayoutHandler.rollRespawnDimension(0.06));
+                StartingDimension.rollRespawnDimension(0.06));
     }
 
     @Test
     @DisplayName("r = 0.5 → OVERWORLD (well inside Overworld bucket)")
     void rollInsideOverworldBucketIsOverworld() {
         assertEquals(StartingDimension.OVERWORLD,
-                DeathScreenLayoutHandler.rollRespawnDimension(0.5));
+                StartingDimension.rollRespawnDimension(0.5));
     }
 
     @Test
@@ -79,7 +80,7 @@ final class DeathScreenLayoutHandlerTest {
         int netherCount = 0;
         int overworldCount = 0;
         for (int i = 0; i < draws; i++) {
-            StartingDimension d = DeathScreenLayoutHandler.rollRespawnDimension(rand.nextDouble());
+            StartingDimension d = StartingDimension.rollRespawnDimension(rand.nextDouble());
             switch (d) {
                 case END -> endCount++;
                 case NETHER -> netherCount++;
