@@ -518,19 +518,20 @@ public final class PlayerJoinEvents {
     }
 
     /**
-     * Compute and cache the spawn placement that {@code TrainBootstrapEvents}
-     * will pin the level's default spawn point to. Uses {@code trainOrigin}
-     * (= {@code (0, trainY, trackCenterZ)}) as the trainCenter — the train is
-     * freshly spawned at this point and hasn't had a chance to move. The
-     * cached placement is reused at the player's first {@code tryPlace}
-     * attempt so the resulting teleport is a no-op for position.
+     * Compute a player spawn placement next to the train in {@code trainLevel}.
+     * Pure: does not touch {@link #bootstrapPlacement} or emit log lines.
+     * Uses {@code trainOrigin} (= {@code (0, trainY, trackCenterZ)}) as the
+     * trainCenter — the train is freshly spawned at this point and hasn't
+     * had a chance to move.
      *
-     * <p>Returns {@code null} if the placement falls back to the on-train
-     * last-resort branch — in that case there's no useful sharedSpawnPos
-     * to set (the player would spawn on the train roof, which the retry
-     * teleport at first login can handle just as well).</p>
+     * <p>Callers that need the placement for the world bootstrap (first
+     * login → mixin fudge) should call
+     * {@link #computeAndCacheBootstrapPlacement} instead, which delegates
+     * here and then sets the cache field. Respawn handlers reusing the same
+     * placement maths must call this pure version so they don't corrupt the
+     * cached value the mixin reads for first-time players.</p>
      */
-    public static SpawnPlacement computeAndCacheBootstrapPlacement(
+    public static SpawnPlacement computeBootstrapPlacement(
         ServerLevel trainLevel, CarriageDims dims, int trainY
     ) {
         TrackGeometry g = TrackGeometry.from(dims, trainY);
@@ -554,13 +555,28 @@ public final class PlayerJoinEvents {
         float pitch = (float) Math.toDegrees(-Math.atan2(dy, horizontal));
 
         BlockPos blockPos = new BlockPos(Mth.floor(pt.px), pt.py, Mth.floor(pt.pz));
-        SpawnPlacement placement = new SpawnPlacement(pt.px, pt.py, pt.pz, yaw, pitch, blockPos);
-        bootstrapPlacement = placement;
+        return new SpawnPlacement(pt.px, pt.py, pt.pz, yaw, pitch, blockPos);
+    }
 
-        LOGGER.info("[DungeonTrain] Bootstrap placement cached: pos=({}, {}, {}) yaw={} pitch={} bufferedX={} lookX={}",
-            String.format("%.1f", pt.px), pt.py, String.format("%.1f", pt.pz),
-            String.format("%.1f", yaw), String.format("%.1f", pitch),
-            haveBuffered ? bufferedX : "fallback", lookX);
+    /**
+     * Compute and cache the spawn placement that {@code TrainBootstrapEvents}
+     * will pin the level's default spawn point to. The cached placement is
+     * reused at the player's first {@code tryPlace} attempt so the resulting
+     * teleport is a no-op for position.
+     *
+     * <p>The cache is also read by {@link PlayerFudgeSpawnMixin} to override
+     * vanilla {@code adjustSpawnLocation} for first-time players. Respawn-time
+     * placement computation must use {@link #computeBootstrapPlacement}
+     * instead — it returns the same value without poisoning the cache.</p>
+     */
+    public static SpawnPlacement computeAndCacheBootstrapPlacement(
+        ServerLevel trainLevel, CarriageDims dims, int trainY
+    ) {
+        SpawnPlacement placement = computeBootstrapPlacement(trainLevel, dims, trainY);
+        bootstrapPlacement = placement;
+        LOGGER.info("[DungeonTrain] Bootstrap placement cached: pos=({}, {}, {}) yaw={} pitch={}",
+            String.format("%.1f", placement.x()), placement.y(), String.format("%.1f", placement.z()),
+            String.format("%.1f", placement.yaw()), String.format("%.1f", placement.pitch()));
         return placement;
     }
 

@@ -6,8 +6,6 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.world.StartingDimension;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.WorldGenLevel;
@@ -32,9 +30,13 @@ import org.slf4j.Logger;
  *
  * <p>Wired by datapack: {@code data/dungeontrain/worldgen/configured_feature/track_bed.json}
  * → {@code .../placed_feature/track_bed.json} → three {@code
- * neoforge/biome_modifier/} JSONs (overworld / nether / end). Only the
- * modifier matching the world's chosen starting dimension ever runs because
- * chunks only generate against their dimension's biome registry.</p>
+ * neoforge/biome_modifier/} JSONs (overworld / nether / end). All three
+ * modifiers run when their dim's chunks generate — gating to a single
+ * dimension would defeat respawn-into-Nether / respawn-into-End
+ * ({@code RespawnDimensionEvents}), which spawns a train in the rolled dim
+ * and expects the corridor to already be there at chunk generation. The
+ * only top-level guard is {@link DungeonTrainWorldData#startsWithTrain()}:
+ * worlds that opted out of the auto-train system get no track in any dim.</p>
  */
 public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -83,13 +85,12 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
 
-            // Defensive dimension guard — biome modifier targets exactly
-            // one dimension by tag, but a 3rd-party datapack could
-            // mis-attach our modifier.
-            StartingDimension expected = data.startingDimension();
-            if (!serverLevel.dimension().equals(expected.levelKey())) {
-                return false;
-            }
+            // Top-level opt-out: worlds with the auto-train system disabled
+            // get no track in any dim. Otherwise track gen runs in whichever
+            // of the three DT dims the chunk belongs to — RespawnDimensionEvents
+            // may spawn a train in any of them on a death roll, and the
+            // corridor has to exist there for the player to walk onto.
+            if (!data.startsWithTrain()) return false;
 
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());

@@ -108,34 +108,10 @@ public final class TrainBootstrapEvents {
         }
 
         int trainY = data.getTrainY();
-        BlockPos trainOrigin = new BlockPos(0, trainY, 0);
         CarriageDims dims = data.dims();
-        Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
 
-        // Pre-load all carriage body, parts, and half-flatbed templates into
-        // their in-memory caches BEFORE any spawn runs. Otherwise the first
-        // spawn touching each variant pays a synchronous NBT-load-from-disk
-        // on the server thread (observed: 5-2500 ms place= variance per
-        // spawnGroup during the bootstrap eager-fill). One up-front pass
-        // amortises the disk reads outside the per-spawn budget.
-        BootstrapProgress.setPhase("Loading carriage templates...");
-        CarriagePlacer.warmTemplateCaches(target, dims);
-
-        int configCount = DungeonTrainConfig.getNumCarriages();
-        // Bootstrap only places the seed group; the eager-fill pass below
-        // extends to the server-configured window. When config = 0 (auto),
-        // use a benign positive seed so the seed-anchor math in
-        // TrainAssembler.spawnTrain doesn't degenerate.
-        int seedCount = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
-        LOGGER.info("[DungeonTrain] Bootstrap auto-spawning seed for {} carriages at {} in {} dims={}x{}x{} (configCount={})",
-            seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
         BootstrapProgress.setPhase("Spawning seed train...");
-        ManagedShip seedShip = null;
-        try {
-            seedShip = TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
-        } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Bootstrap train auto-spawn failed", t);
-        }
+        ManagedShip seedShip = ensureTrainSpawned(target, data);
 
         BootstrapProgress.setPhase("Anchoring world spawn...");
         anchorWorldSpawnNearCorridor(target, dims, trainY);
@@ -201,5 +177,63 @@ public final class TrainBootstrapEvents {
             }
         }
         return null;
+    }
+
+    /**
+     * Idempotently ensure a Dungeon Train seed exists in {@code target}.
+     * Returns the existing train if {@link #findTrain} already finds one;
+     * otherwise warms the carriage template cache for this dimension and
+     * calls {@link TrainAssembler#spawnTrain} to lay down a fresh seed at
+     * the standard origin.
+     *
+     * <p>Used by:</p>
+     * <ul>
+     *   <li>{@link #doBootstrap} at world-start — followed by
+     *       {@link #anchorWorldSpawnNearCorridor} and
+     *       {@link TrainCarriageAppender#eagerFillForBootstrap} to fully
+     *       prepare the world's primary dimension before the player joins.</li>
+     *   <li>{@code RespawnDimensionEvents} when a respawn rolls a different
+     *       dimension than the world's starting one and that dimension
+     *       hasn't had a train spawned in it yet. Eager-fill is skipped on
+     *       that path — the per-tick appender extends the train at gameplay
+     *       speed instead.</li>
+     * </ul>
+     *
+     * <p>Returns {@code null} only if {@link TrainAssembler#spawnTrain}
+     * itself throws (logged at ERROR); the bootstrap path tolerates this
+     * and proceeds with degraded UI, and the respawn path skips its
+     * subsequent teleport.</p>
+     */
+    public static ManagedShip ensureTrainSpawned(ServerLevel target, DungeonTrainWorldData data) {
+        ManagedShip existing = findTrain(target);
+        if (existing != null) return existing;
+
+        int trainY = data.getTrainY();
+        BlockPos trainOrigin = new BlockPos(0, trainY, 0);
+        CarriageDims dims = data.dims();
+        Vector3dc spawnerPos = new Vector3d(trainOrigin.getX(), trainOrigin.getY(), trainOrigin.getZ());
+
+        // Pre-load all carriage body, parts, and half-flatbed templates into
+        // their in-memory caches BEFORE any spawn runs. Otherwise the first
+        // spawn touching each variant pays a synchronous NBT-load-from-disk
+        // on the server thread. One up-front pass amortises the disk reads
+        // outside the per-spawn budget. Idempotent — ConcurrentHashMap keyed
+        // on dims, so re-calling for additional dimensions is a no-op once
+        // the templates are loaded.
+        CarriagePlacer.warmTemplateCaches(target, dims);
+
+        int configCount = DungeonTrainConfig.getNumCarriages();
+        // Seed-only spawn; eager-fill / per-tick appender extends from here.
+        // When config = 0 (auto), use a benign positive seed so the
+        // seed-anchor math in TrainAssembler.spawnTrain doesn't degenerate.
+        int seedCount = configCount > 0 ? configCount : DungeonTrainConfig.DEFAULT_CARRIAGES_AUTO_SEED;
+        LOGGER.info("[DungeonTrain] Spawning seed of {} carriages at {} in {} dims={}x{}x{} (configCount={})",
+            seedCount, trainOrigin, target.dimension().location(), dims.length(), dims.width(), dims.height(), configCount);
+        try {
+            return TrainAssembler.spawnTrain(target, trainOrigin, TRAIN_VELOCITY, seedCount, spawnerPos, dims);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Train spawn failed in {}", target.dimension().location(), t);
+            return null;
+        }
     }
 }
