@@ -7,8 +7,12 @@ import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
+import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.RandomBookFile;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
+import games.brennan.dungeontrain.narrative.StartingBookContext;
+import games.brennan.dungeontrain.narrative.StartingBookFactory;
+import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -34,7 +38,9 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -199,8 +205,20 @@ public final class AchievementEvents {
         if (allStoryVariantsSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_story_variants");
         }
-        if (allStartingBooksSeen(data)) {
+        // Starting-book sets are folder-driven. The grand-slam all_starting_books
+        // set spans every context; each context that declares an
+        // achievementSetId() also fires as its own "read this folder" set. A new
+        // dimension book-set needs no change here — only a case in
+        // StartingBookContext.achievementSetId() plus its advancement JSON + lang.
+        Set<String> dimSeen = PlayerPlayedMarker.seenDimensionVariants(player.getUUID());
+        if (allStartingBooksSeen(data, dimSeen)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_starting_books");
+        }
+        for (StartingBookContext ctx : StartingBookContext.values()) {
+            Optional<String> setId = ctx.achievementSetId();
+            if (setId.isPresent() && dimensionSetComplete(ctx, dimSeen)) {
+                ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, setId.get());
+            }
         }
     }
 
@@ -235,32 +253,63 @@ public final class AchievementEvents {
     }
 
     /**
-     * True when every variant of every starting book registered in
-     * {@link games.brennan.dungeontrain.narrative.StartingBookRegistry}
-     * has been marked seen. Drives the {@code inter_dimensional_passenger}
-     * milestone — the player has received every possible starting book
-     * across enough respawn / login strikes.
+     * True when every variant of every starting book — across <em>every</em>
+     * {@link StartingBookContext} folder — has been seen by this player. Backs
+     * the grand-slam {@code all_starting_books} set (Inter-Reality Passenger):
+     * the ultimate "every book, every variant, every context", Nether and End
+     * included.
+     *
+     * <p>Folder-driven, so it auto-expands as book content grows — add a book,
+     * a variant, or a whole folder and it is required here with no code change.
+     * The seen-store is chosen per folder by its delivery model: dimension-
+     * routed folders (those with a {@link StartingBookContext#achievementSetId()})
+     * cycle per-installation and live in {@code dimSeen}
+     * ({@link PlayerPlayedMarker#seenDimensionVariants}); every other folder is
+     * world-scoped in {@link NarrativeProgressData#startingBookSeenSnapshot()}.</p>
      */
-    private static boolean allStartingBooksSeen(games.brennan.dungeontrain.narrative.NarrativeProgressData data) {
-        java.util.List<String> all = games.brennan.dungeontrain.narrative.StartingBookRegistry.basenames();
-        if (all.isEmpty()) return false;
-        java.util.Map<String, games.brennan.dungeontrain.narrative.NarrativeProgress> snapshot =
-            data.startingBookSeenSnapshot();
-        for (String basename : all) {
-            var bookOpt = games.brennan.dungeontrain.narrative.StartingBookRegistry.getByBasename(basename);
-            if (bookOpt.isEmpty()) return false;
-            int total = bookOpt.get().variants().size();
-            if (total == 0) continue;
-            games.brennan.dungeontrain.narrative.NarrativeProgress p =
-                snapshot.getOrDefault(basename, new games.brennan.dungeontrain.narrative.NarrativeProgress());
-            // Variant indices are 0-based and the NarrativeProgress.markRead
-            // variant-0 fix landed in PR #290, so the full 0..total-1 range
-            // must be in the seen-set for completion.
-            for (int i = 0; i < total; i++) {
-                if (!p.readLetters().contains(i)) return false;
+    private static boolean allStartingBooksSeen(NarrativeProgressData data, Set<String> dimSeen) {
+        Map<String, NarrativeProgress> snapshot = data.startingBookSeenSnapshot();
+        boolean anyBook = false;
+        for (StartingBookContext ctx : StartingBookContext.values()) {
+            List<RandomBookFile> books = StartingBookRegistry.booksIn(ctx);
+            if (books.isEmpty()) continue;
+            anyBook = true;
+            if (ctx.achievementSetId().isPresent()) {
+                // Dimension-routed folder — defer to the per-folder check, which
+                // reads the per-installation delivery store.
+                if (!dimensionSetComplete(ctx, dimSeen)) return false;
+                continue;
+            }
+            // Lifecycle folder — world-scoped seen snapshot, per variant.
+            // Variant indices are 0-based (the NarrativeProgress.markRead
+            // variant-0 fix landed in PR #290), so the full 0..total-1 range
+            // must be present for completion.
+            for (RandomBookFile book : books) {
+                int total = book.variants().size();
+                if (total == 0) continue;
+                NarrativeProgress p = snapshot.getOrDefault(book.basename(), new NarrativeProgress());
+                for (int i = 0; i < total; i++) {
+                    if (!p.readLetters().contains(i)) return false;
+                }
             }
         }
-        return true;
+        return anyBook;
+    }
+
+    /**
+     * True when a dimension-routed folder ({@code ctx}) has had every one of
+     * its {@code (book, variant)} tuples delivered to this player. Backs the
+     * per-folder sets declared by {@link StartingBookContext#achievementSetId()}
+     * — Nether Return Again, End of the Line — and is the per-folder subset of
+     * {@link #allStartingBooksSeen}. Reuses
+     * {@link StartingBookFactory#hasUnseenDimensionTuples} so set membership
+     * stays identical to the welcome-cycle's own notion of "exhausted"; auto-
+     * expands when books or variants are added to the folder. An empty pool is
+     * never complete.
+     */
+    private static boolean dimensionSetComplete(StartingBookContext ctx, Set<String> dimSeen) {
+        return StartingBookRegistry.countFor(ctx) > 0
+            && !StartingBookFactory.hasUnseenDimensionTuples(ctx, dimSeen);
     }
 
     /**

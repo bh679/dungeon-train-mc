@@ -98,4 +98,39 @@ public enum StartingBookContext {
             default -> Optional.empty();
         };
     }
+
+    /**
+     * The {@code story_set_completed} set id this folder contributes as a
+     * stand-alone "read every book in this folder" advancement, or
+     * {@link Optional#empty()} for folders that are delivery-timing buckets
+     * rather than a collectible goal.
+     *
+     * <p><b>The single place a starting-book folder is declared an achievement
+     * set.</b> {@code AchievementEvents} loops every context and fires whatever
+     * id this returns, so adding a new dimension book-set needs only one
+     * {@code case} here — beside the folder + routing that must already exist
+     * for the books to be deliverable — plus its advancement JSON and lang.
+     * No change to the achievement engine.</p>
+     *
+     * <ul>
+     *   <li>{@link #NETHER} &rarr; {@code "nether_starting_books"} (Nether Return Again)</li>
+     *   <li>{@link #END} &rarr; {@code "end_starting_books"} (End of the Line)</li>
+     *   <li>Lifecycle folders (DEFAULT / NEW_WORLD / JOINED_WORLD / RESPAWN)
+     *       &rarr; empty: their books still roll into the grand-slam
+     *       {@code all_starting_books} set, but aren't a "collect this folder"
+     *       goal on their own.</li>
+     * </ul>
+     *
+     * <p>A non-empty id also marks the folder as dimension-routed
+     * (per-installation delivery cycling tracked in {@code PlayerPlayedMarker});
+     * the grand-slam check keys off this to pick the right seen-store per
+     * folder.</p>
+     */
+    public Optional<String> achievementSetId() {
+        return switch (this) {
+            case NETHER -> Optional.of("nether_starting_books");
+            case END -> Optional.of("end_starting_books");
+            default -> Optional.empty();
+        };
+    }
 }
