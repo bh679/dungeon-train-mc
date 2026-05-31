@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
+import games.brennan.dungeontrain.narrative.StartingBookTag;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -44,8 +46,10 @@ import org.slf4j.Logger;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Spawns each player a welcome book via a colored lightning strike on the
@@ -219,7 +223,7 @@ public final class StartingBookEvents {
                 ps.ticksRemaining--;
                 if (ps.ticksRemaining <= 0) {
                     StartingBookContext ctx = ps.context != null ? ps.context : resolveLoginContext(player);
-                    fireLightningAndDropBook(player, ctx);
+                    fireLightningAndDropBook(player, ctx, /*markSeen*/ true);
                     it.remove();
                 }
             }
@@ -407,6 +411,23 @@ public final class StartingBookEvents {
             // Silent no-op; the close already happened.
             return;
         }
+
+        // Read-tracking: the player just opened (and closed) this book. If it is
+        // an identity-stamped starting book, credit the exact (book, variant) in
+        // the world-scoped seen-store so the "Read every starting book"
+        // (all_starting_books / Inter-Reality Passenger) advancement can complete.
+        // Random books and legacy boolean-only stamps return empty → safe no-op.
+        StartingBookTag.read(stack).ifPresent(id -> {
+            ServerLevel overworld = overworldOf(player);
+            if (overworld == null) return;
+            NarrativeProgressData data = NarrativeProgressData.get(overworld);
+            if (data.markStartingBookVariantSeen(id.basename(), id.variantIndex())) {
+                LOGGER.info("[DungeonTrain] StartingBook: world marked {} variant {} seen on read (by {})",
+                    id.basename(), id.variantIndex(), player.getName().getString());
+            }
+            games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
+        });
+
         ItemEntity dropped = player.drop(stack, /*dropAround*/ false, /*includeThrowerName*/ false);
         if (dropped == null) {
             // Player.drop returned null (e.g. dropped in creative with
@@ -517,8 +538,14 @@ public final class StartingBookEvents {
      * {@link PlayerPlayedMarker#markPlayed} (per-installation, switches the
      * next-world context from DEFAULT to NEW_WORLD). Both calls are
      * idempotent so respawn-path re-fires are safe.</p>
+     *
+     * <p>Roll source by context: RESPAWN cycles the per-world respawn pool;
+     * NETHER/END cycle the per-installation dimension pool, marking the picked
+     * variant seen when {@code markSeen} is true — the real login/respawn
+     * caller passes true, while {@link #forceFireForTest} passes false for a
+     * non-consuming preview; every other context does a plain weighted roll.</p>
      */
-    private static void fireLightningAndDropBook(ServerPlayer player, StartingBookContext context) {
+    private static void fireLightningAndDropBook(ServerPlayer player, StartingBookContext context, boolean markSeen) {
         if (StartingBookRegistry.count() == 0) {
             LOGGER.warn("[DungeonTrain] StartingBook: pool is empty — skipping strike for {}",
                 player.getName().getString());
@@ -539,6 +566,16 @@ public final class StartingBookEvents {
             } else {
                 bookOpt = StartingBookFactory.rollFromPool(seed, context);
             }
+        } else if (context == StartingBookContext.NETHER || context == StartingBookContext.END) {
+            // Per-installation dimension cycling: pick an unseen Nether/End
+            // welcome and (on the real path) mark it seen. forceFireForTest
+            // passes markSeen=false so the preview command doesn't consume.
+            UUID uuid = player.getUUID();
+            Set<String> seen = PlayerPlayedMarker.seenDimensionVariants(uuid);
+            Consumer<String> mark = markSeen
+                ? key -> PlayerPlayedMarker.markDimensionVariantSeen(uuid, key)
+                : key -> { };
+            bookOpt = StartingBookFactory.rollForDimension(seed, context, seen, mark);
         } else {
             bookOpt = StartingBookFactory.rollFromPool(seed, context);
         }
@@ -578,7 +615,20 @@ public final class StartingBookEvents {
      * Resolve the welcome-strike context for a player on the login path,
      * read at strike-fire time so the world state is current.
      *
-     * <p>Two-step decision:</p>
+     * <p><b>Dimension routing (highest priority):</b> if the run started in
+     * the Nether or the End (per {@link DungeonTrainWorldData#startingDimension()})
+     * <em>and</em> this installation still has an unseen book in that
+     * dimension's pool (per {@link PlayerPlayedMarker#seenDimensionVariants}),
+     * return {@link StartingBookContext#NETHER} / {@link StartingBookContext#END}.
+     * The dimension a run begins in is a stronger welcome signal than the
+     * multiplayer/new-world lifecycle parity below — but it applies only as a
+     * one-each playlist: once the player has been shown every variant in that
+     * dimension's pool (or the pool is empty), this branch falls through to
+     * the lifecycle logic, so a new world still yields NEW_WORLD/DEFAULT.
+     * Overworld runs (and legacy worlds → OVERWORLD default) fall through too.
+     * The parity counters are intentionally left untouched on this branch.</p>
+     *
+     * <p>Two-step decision (Overworld runs):</p>
      * <ol>
      *   <li><b>Scenario detection</b> — read the world's
      *       {@code startingBookReceived} set (others welcomed?) and the
@@ -602,6 +652,25 @@ public final class StartingBookEvents {
     public static StartingBookContext resolveLoginContext(ServerPlayer player) {
         UUID uuid = player.getUUID();
         ServerLevel overworld = overworldOf(player);
+
+        // Dimension routing wins for the welcome strike — see method javadoc.
+        // A run that starts in the Nether/End gets a dimension-specific
+        // welcome book ahead of the lifecycle parity below; OVERWORLD (and
+        // unknown/legacy → OVERWORLD) returns empty and falls through.
+        if (overworld != null) {
+            String dimId = DungeonTrainWorldData.get(overworld).startingDimension().nbtId();
+            Optional<StartingBookContext> dimensionContext = StartingBookContext.forDimensionNbtId(dimId);
+            // Route to the dimension pool only while this installation still
+            // has an unseen (book, variant) in it. Once the player has been
+            // shown the whole Nether/End playlist (or it's empty), fall through
+            // to the lifecycle resolution below (NEW_WORLD / DEFAULT / JOINED_WORLD).
+            if (dimensionContext.isPresent()
+                && StartingBookFactory.hasUnseenDimensionTuples(
+                       dimensionContext.get(), PlayerPlayedMarker.seenDimensionVariants(uuid))) {
+                return dimensionContext.get();
+            }
+        }
+
         boolean othersHere = false;
         if (overworld != null) {
             othersHere = NarrativeProgressData.get(overworld).anyOtherPlayerReceivedStartingBook(uuid);
@@ -625,10 +694,12 @@ public final class StartingBookEvents {
      * explicit context, bypassing the deferral queue and the per-player
      * gate. Used by the {@code /narrative startingbook fire <context>}
      * command. NOT subject to {@link NarrativeProgressData#hasReceivedStartingBook}
-     * — testers want to fire as often as they like.
+     * — testers want to fire as often as they like. For NETHER/END this is a
+     * non-consuming preview: it shows the next unseen book but does NOT mark
+     * the per-installation seen-set, so it won't disturb the real cycle.
      */
     public static void forceFireForTest(ServerPlayer player, StartingBookContext context) {
-        fireLightningAndDropBook(player, context);
+        fireLightningAndDropBook(player, context, /*markSeen*/ false);
     }
 
     /**

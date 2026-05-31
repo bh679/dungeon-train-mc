@@ -9,8 +9,8 @@ Priority order each tick (modulated by AUTO_RELEASE_MODE):
      build failure the workflow reverts and re-runs this script with the
      failing sibling's SKIP_<NAME>=1 so the tick falls through to a different
      sibling or the queue.
-  2. Queue item: pop pending[0] from queue.json and apply by type (new_file or
-     add_variant).
+  2. Queue item: pop pending[0] from queue.json and apply by type (new_file,
+     add_variant, or add_random_book_variant).
   3. Mode fallback:
        - always:       nudge auto_balancing.json weight (existing behaviour).
        - with-content: mark cascade stopped (no commit, no release).
@@ -180,12 +180,54 @@ def apply_add_variant(item):
     write_json(target, story)
 
 
+def apply_add_random_book_variant(item):
+    """Append one variant to a random_book file. Creates the file if missing.
+
+    Random books use a flat top-level variants[] array (no letters), unlike
+    multi-letter story files. When the target file exists, random_book_meta
+    fields (id, title, author) must match existing data — mismatch -> hard fail.
+    """
+    target = item.get("target", "")
+    _validate_target(target)
+
+    book_meta = item.get("random_book_meta") or {}
+    variant = item.get("variant")
+
+    for field in ("id", "title", "author"):
+        if not book_meta.get(field):
+            fail(f"add_random_book_variant: random_book_meta.{field} required")
+    if not isinstance(variant, str) or not variant:
+        fail("add_random_book_variant: variant must be a non-empty string")
+
+    if Path(target).exists():
+        with open(target) as f:
+            book = json.load(f)
+        for key in ("id", "title", "author"):
+            if book.get(key) != book_meta[key]:
+                fail(f"{target}: existing {key}={book.get(key)!r} != queue {book_meta[key]!r}")
+    else:
+        book = {
+            "id": book_meta["id"],
+            "title": book_meta["title"],
+            "author": book_meta["author"],
+            "generation": book_meta.get("generation", 0),
+            "weight": book_meta.get("weight", 1),
+            "variants": [],
+        }
+        Path(target).parent.mkdir(parents=True, exist_ok=True)
+
+    book.setdefault("variants", []).append(variant)
+    write_json(target, book)
+
+
 def apply_queue_item(item):
     item_type = item.get("type", "new_file")
     if item_type == "new_file":
         apply_new_file(item)
     elif item_type == "add_variant":
         apply_add_variant(item)
+    elif item_type == "add_random_book_variant":
+        apply_add_random_book_variant(item)
     else:
         fail(f"unsupported queue item type: {item_type!r}")
 

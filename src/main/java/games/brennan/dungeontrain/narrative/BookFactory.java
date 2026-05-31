@@ -22,7 +22,11 @@ import java.util.Optional;
  *
  * <p>Page break strategy (in priority order):
  * <ol>
- *   <li>Paragraph boundary (double-newline in the source)</li>
+ *   <li>Hard page break (three or more consecutive newlines in the source —
+ *       always splits, regardless of content length)</li>
+ *   <li>Paragraph boundary (double-newline in the source — soft break;
+ *       paragraphs whose combined length fits the page char budget are
+ *       greedy-packed onto the same page)</li>
  *   <li>Sentence boundary inside an oversize paragraph</li>
  *   <li>Word boundary inside an oversize sentence</li>
  *   <li>Hard char split (never reached for normal English text — only kicks
@@ -62,8 +66,9 @@ public final class BookFactory {
      * carriage placements are reproducible per world seed + carriage index.
      */
     public static ItemStack buildSignedBook(StoryFile parent, Letter letter, long seed) {
-        String body = letter.pickVariant(seed);
-        return buildFromBody(parent, letter, body);
+        int variantIndex = letter.pickVariantIndex(seed);
+        String body = letter.variants().get(variantIndex);
+        return buildFromBody(parent, letter, body, variantIndex);
     }
 
     /**
@@ -158,8 +163,22 @@ public final class BookFactory {
     /**
      * Build a signed book from an explicit body string — useful for tests and
      * for callers that want a specific variant rather than a seeded pick.
+     *
+     * <p>Variant-unaware overload — stamps {@link NarrativeBookTag#VARIANT_UNKNOWN}
+     * so the read-event handler can't credit a variant. Prefer the four-arg
+     * form when the caller knows which variant index produced {@code body}.</p>
      */
     public static ItemStack buildFromBody(StoryFile parent, Letter letter, String body) {
+        return buildFromBody(parent, letter, body, NarrativeBookTag.VARIANT_UNKNOWN);
+    }
+
+    /**
+     * Build a signed book from an explicit body string with a known
+     * {@code variantIndex} stamped on the resulting stack. The variant index
+     * is what {@link NarrativeBookEvents} uses to credit per-variant progress
+     * toward the {@code read_all_story_variants} achievement.
+     */
+    public static ItemStack buildFromBody(StoryFile parent, Letter letter, String body, int variantIndex) {
         String title = preferredTitle(parent, letter);
         String author = parent.character() == null || parent.character().isEmpty()
             ? "Anonymous"
@@ -193,7 +212,7 @@ public final class BookFactory {
 
         ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
-        NarrativeBookTag.stamp(stack, basenameOf(parent), letter.index());
+        NarrativeBookTag.stamp(stack, basenameOf(parent), letter.index(), variantIndex);
         return stack;
     }
 
@@ -232,9 +251,31 @@ public final class BookFactory {
 
     /**
      * Split {@code body} into pages of at most {@link #MAX_CHARS_PER_PAGE}
-     * characters each. Uses the priority described in the class javadoc.
+     * characters each. First splits on hard page breaks (three or more
+     * consecutive newlines) — each section then runs through the greedy
+     * paragraph packer ({@link #paginateGreedy}). Authors who want sparse,
+     * beat-per-page layout insert {@code \n\n\n} between beats; {@code \n\n}
+     * remains a soft paragraph break that may pack onto the same page.
      */
     static List<String> paginate(String body) {
+        List<String> pages = new ArrayList<>();
+        // Hard page break: three or more consecutive newlines. Each section
+        // between hard breaks then runs through the greedy paragraph packer.
+        String[] sections = body.split("\\n{3,}");
+        for (String section : sections) {
+            if (section.isEmpty()) continue;
+            pages.addAll(paginateGreedy(section));
+        }
+        return pages;
+    }
+
+    /**
+     * Greedy paragraph-packing — splits on soft paragraph breaks
+     * ({@code \n} + optional whitespace + {@code \n}) and packs as many
+     * paragraphs onto each page as the {@link #MAX_CHARS_PER_PAGE} budget
+     * allows. Oversize paragraphs spill via {@link #splitOversize}.
+     */
+    private static List<String> paginateGreedy(String body) {
         List<String> pages = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         // Split on one-or-more blank lines (paragraph break).

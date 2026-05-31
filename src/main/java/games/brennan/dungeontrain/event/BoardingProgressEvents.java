@@ -6,17 +6,20 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,13 +73,30 @@ public final class BoardingProgressEvents {
     private static final double HORIZONTAL_PADDING = 1.0;
 
     /**
-     * Last broadcast value of {@code travelledCarriageIndex} — guards against
-     * pushing the HUD packet every tick when nothing changed.
+     * Per-player last broadcast value of {@code travelledCarriageIndex} —
+     * guards against pushing the HUD packet to a player when their own value
+     * hasn't changed since the last scan. UUID → last-sent-travelled.
      */
-    private static int lastBroadcastTravelled = Integer.MIN_VALUE;
+    private static final Map<UUID, Integer> LAST_BROADCAST = new HashMap<>();
 
     /** Transient: consecutive scans the active leader has been off every AABB. */
     private static int leaderOffTrainScans = 0;
+
+    /**
+     * Per-player last-known boarded position. Used to compute world-space
+     * movement deltas for {@link PlayerRunState#distanceBlocks}. Entries
+     * for players who disembark are dropped each scan so a re-boarding
+     * player doesn't book a teleport-sized jump.
+     */
+    private static final Map<UUID, Vec3> LAST_BOARDED_POS = new HashMap<>();
+
+    /**
+     * Sanity cap on a single-scan distance delta. Above this is assumed to
+     * be a teleport / dimension change rather than real movement, and we
+     * skip the accumulation. SCAN_PERIOD_TICKS = 10 ticks = 0.5 s; even
+     * sprint-jumping is well under 20 blocks in that window.
+     */
+    private static final double MAX_DELTA_PER_SCAN = 100.0;
 
     private BoardingProgressEvents() {}
 
@@ -108,9 +128,14 @@ public final class BoardingProgressEvents {
                     AchievementEvents.notifyTrainTime(p, newTotal);
                     games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
                         .trigger(p, "boarded");
+                    accumulateBoardedDistance(p);
                 }
             }
         }
+        // Drop tracking for players who disembarked since last scan, so the
+        // first sample after they re-board starts a fresh delta baseline
+        // rather than booking a teleport-sized jump.
+        LAST_BOARDED_POS.keySet().retainAll(boarded.keySet());
 
         BoardingProgressData data = BoardingProgressData.get(level);
         UUID leader = data.activeLeaderUUID();
@@ -127,6 +152,12 @@ public final class BoardingProgressEvents {
             ServerPlayer leaderPlayer = level.getServer().getPlayerList().getPlayer(leader);
             if (leaderPlayer != null) {
                 AchievementEvents.notifyCartAdvance(leaderPlayer, delta);
+                // Per-player travelled-carriage-index drives mob difficulty
+                // (max across players, resets on respawn). Signed delta —
+                // backward movement reduces tier just like the global
+                // counter did before.
+                PlayerRunState leaderRun = leaderPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+                leaderRun.advanceTravelled(delta);
             }
             leaderOffTrainScans = 0;
         } else if (leader != null) {
@@ -155,7 +186,7 @@ public final class BoardingProgressEvents {
             }
         }
 
-        broadcastIfChanged(data);
+        broadcastPerPlayer(level);
     }
 
     /**
@@ -173,24 +204,69 @@ public final class BoardingProgressEvents {
 
     /**
      * Initial sync — give the joining player's HUD a value to show before
-     * the next tick-driven broadcast fires.
+     * the next tick-driven broadcast fires. Reads the player's own
+     * {@link PlayerRunState#travelledCarriageIndex} so the HUD reflects
+     * their per-life progress, not the world-global value.
      */
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        BoardingProgressData data = BoardingProgressData.get(player.serverLevel());
-        DungeonTrainNet.sendTo(player, packetFor(data));
+        sendPlayerHudPacket(player);
     }
 
-    private static void broadcastIfChanged(BoardingProgressData data) {
-        int travelled = data.travelledCarriageIndex();
-        if (travelled == lastBroadcastTravelled) return;
-        lastBroadcastTravelled = travelled;
-        PacketDistributor.sendToAllPlayers(packetFor(data));
+    /**
+     * Drop a player's last-sent cache entry when they log out so a future
+     * relogin gets a fresh send. Without this, {@link #LAST_BROADCAST}
+     * accumulates stale UUID keys.
+     */
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        LAST_BROADCAST.remove(player.getUUID());
     }
 
-    private static BoardingProgressPacket packetFor(BoardingProgressData data) {
-        int travelled = data.travelledCarriageIndex();
+    /**
+     * Sample the player's current world position and, if they were boarded
+     * in the previous scan, add the magnitude of the delta to their
+     * {@link PlayerRunState#distanceBlocks} counter. Naturally combines
+     * train-carried movement and on-train walking — both move the player's
+     * world position.
+     */
+    private static void accumulateBoardedDistance(ServerPlayer player) {
+        Vec3 current = new Vec3(player.getX(), player.getY(), player.getZ());
+        Vec3 last = LAST_BOARDED_POS.put(player.getUUID(), current);
+        if (last == null) return;
+        double dx = current.x - last.x;
+        double dy = current.y - last.y;
+        double dz = current.z - last.z;
+        double delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (delta <= 0.0 || delta >= MAX_DELTA_PER_SCAN || !Double.isFinite(delta)) return;
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
+    }
+
+    /**
+     * For each online player, send a {@link BoardingProgressPacket} carrying
+     * THEIR OWN {@code travelledCarriageIndex} and the tier it maps to.
+     * Per-player {@link #LAST_BROADCAST} guards against duplicate sends.
+     */
+    private static void broadcastPerPlayer(ServerLevel level) {
+        for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+            int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+            Integer last = LAST_BROADCAST.get(player.getUUID());
+            if (last != null && last == travelled) continue;
+            LAST_BROADCAST.put(player.getUUID(), travelled);
+            DungeonTrainNet.sendTo(player, packetFor(travelled));
+        }
+    }
+
+    /** Send a player a snapshot packet for their current travelled value. */
+    public static void sendPlayerHudPacket(ServerPlayer player) {
+        int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
+        LAST_BROADCAST.put(player.getUUID(), travelled);
+        DungeonTrainNet.sendTo(player, packetFor(travelled));
+    }
+
+    private static BoardingProgressPacket packetFor(int travelled) {
         int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
         int tier = Math.abs(travelled) / carriagesPerTier;
         return new BoardingProgressPacket(travelled, tier);

@@ -19,6 +19,13 @@ import java.util.Optional;
  *   <li>{@link #JOINED_WORLD} — first login on a world where at least one
  *       other player has already been welcomed (multiplayer feel).</li>
  *   <li>{@link #RESPAWN} — every (non-End-conquered) respawn.</li>
+ *   <li>{@link #NETHER} — first login of a run that <em>starts</em> in the
+ *       Nether ({@code dungeon_train_nether} world type). Dimension-routed,
+ *       so it takes precedence over the lifecycle contexts above for the
+ *       welcome strike — see {@code StartingBookEvents.resolveLoginContext}.</li>
+ *   <li>{@link #END} — first login of a run that <em>starts</em> in the End
+ *       ({@code dungeon_train_end} world type). Same dimension-routed
+ *       precedence as {@link #NETHER}.</li>
  * </ul>
  */
 public enum StartingBookContext {
@@ -28,7 +35,13 @@ public enum StartingBookContext {
 
     NEW_WORLD("new_world"),
     JOINED_WORLD("joined_world"),
-    RESPAWN("respawn");
+    RESPAWN("respawn"),
+
+    /** Dimension-routed welcome pool for runs that start in the Nether. */
+    NETHER("nether"),
+
+    /** Dimension-routed welcome pool for runs that start in the End. */
+    END("end");
 
     /** Folder name relative to {@code .../starting_books/}. Empty for DEFAULT. */
     private final String folderName;
@@ -60,5 +73,64 @@ public enum StartingBookContext {
             if (ctx.name().toLowerCase().equals(norm)) return Optional.of(ctx);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Map a {@code StartingDimension} nbt id (the value returned by
+     * {@code StartingDimension.nbtId()}) to the dimension-routed welcome
+     * context that should fire on first login for a run started in that
+     * dimension: {@code "the_nether"} → {@link #NETHER}, {@code "the_end"} →
+     * {@link #END}. Everything else — including {@code "overworld"}, an
+     * unknown id, or {@code null} — returns {@link Optional#empty()},
+     * signalling "no dimension override; use the lifecycle context".
+     *
+     * <p>Keyed on the raw nbt-id string rather than the
+     * {@code StartingDimension} enum so this class keeps its single
+     * {@code java.util.Optional} import and stays unit-testable without
+     * bootstrapping any Minecraft class. The two literals here mirror
+     * {@code StartingDimension.NETHER.nbtId()} / {@code END.nbtId()}.</p>
+     */
+    public static Optional<StartingBookContext> forDimensionNbtId(String nbtId) {
+        if (nbtId == null) return Optional.empty();
+        return switch (nbtId) {
+            case "the_nether" -> Optional.of(NETHER);
+            case "the_end" -> Optional.of(END);
+            default -> Optional.empty();
+        };
+    }
+
+    /**
+     * The {@code story_set_completed} set id this folder contributes as a
+     * stand-alone "read every book in this folder" advancement, or
+     * {@link Optional#empty()} for folders that are delivery-timing buckets
+     * rather than a collectible goal.
+     *
+     * <p><b>The single place a starting-book folder is declared an achievement
+     * set.</b> {@code AchievementEvents} loops every context and fires whatever
+     * id this returns, so adding a new dimension book-set needs only one
+     * {@code case} here — beside the folder + routing that must already exist
+     * for the books to be deliverable — plus its advancement JSON and lang.
+     * No change to the achievement engine.</p>
+     *
+     * <ul>
+     *   <li>{@link #NETHER} &rarr; {@code "nether_starting_books"} (Nether Return Again)</li>
+     *   <li>{@link #END} &rarr; {@code "end_starting_books"} (End of the Line)</li>
+     *   <li>Lifecycle folders (DEFAULT / NEW_WORLD / JOINED_WORLD / RESPAWN)
+     *       &rarr; empty: their books still roll into the grand-slam
+     *       {@code all_starting_books} set, but aren't a "collect this folder"
+     *       goal on their own.</li>
+     * </ul>
+     *
+     * <p>A non-empty id also marks the folder as dimension-routed
+     * (per-installation delivery cycling tracked in {@code PlayerPlayedMarker});
+     * the grand-slam check keys off this to pick the right seen-store per
+     * folder.</p>
+     */
+    public Optional<String> achievementSetId() {
+        return switch (this) {
+            case NETHER -> Optional.of("nether_starting_books");
+            case END -> Optional.of("end_starting_books");
+            default -> Optional.empty();
+        };
     }
 }

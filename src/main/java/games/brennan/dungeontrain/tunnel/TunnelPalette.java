@@ -23,22 +23,44 @@ public final class TunnelPalette {
     private TunnelPalette() {}
 
     /**
-     * True when {@code s} is a natural overworld underground material —
-     * stone family (stone/granite/diorite/andesite + deepslate variants),
-     * tuff, dirt family (dirt/coarse dirt/rooted dirt/podzol/grass block's
-     * subsoil), gravel, sandstone/red-sandstone, any of the common ores
-     * that replace those, and the clay family (terracotta + colored
-     * variants, red sand, mud / packed mud).
+     * True when {@code s} is a natural underground / bulk-terrain block in
+     * any of the three vanilla dimensions:
+     *
+     * <ul>
+     *   <li><b>Overworld</b> — stone family (stone/granite/diorite/andesite
+     *       + deepslate variants), tuff, dirt family (dirt/coarse dirt/
+     *       rooted dirt/podzol/grass block's subsoil), gravel, sandstone /
+     *       red-sandstone, any of the common ores that replace those, and
+     *       the clay family (terracotta + colored variants, red sand,
+     *       mud / packed mud).</li>
+     *   <li><b>Nether</b> — netherrack, basalt (incl. smooth),
+     *       blackstone, gilded blackstone, soul sand, soul soil, magma
+     *       block, glowstone, shroomlight, nether-ore family
+     *       (nether_gold_ore, nether_quartz_ore, ancient_debris),
+     *       nylium (crimson + warped), wart blocks (nether + warped).</li>
+     *   <li><b>End</b> — end_stone. {@code end_stone_bricks} is excluded
+     *       on purpose: it's a player-crafted variant and only appears
+     *       naturally in end-city structures, well above the corridor.</li>
+     * </ul>
      *
      * <p>Leaves, wood, logs, plants, water, lava, and air all return
      * false — encountering any of those above the would-be tunnel ceiling
      * disqualifies a column because it means daylight or biome-surface
-     * features are within the "2 blocks overhead" margin.</p>
+     * features are within the "2 blocks overhead" margin. Lava is rejected
+     * via the {@link net.minecraft.world.level.material.FluidState} guard,
+     * so nether lava lakes correctly disqualify too.</p>
+     *
+     * <p>The predicate takes no dimension parameter: it's safe to share
+     * the same logic across dimensions because each {@code WorldGenLevel}
+     * caller is inherently dimension-scoped (the chunk only contains
+     * blocks from its own dimension) and the three block sets don't
+     * naturally overlap.</p>
      */
     public static boolean isUndergroundMaterial(BlockState s) {
         if (s.isAir()) return false;
         if (!s.getFluidState().isEmpty()) return false;
 
+        // Overworld.
         if (s.is(BlockTags.BASE_STONE_OVERWORLD)) return true;
         if (s.is(BlockTags.DEEPSLATE_ORE_REPLACEABLES)) return true;
         if (s.is(BlockTags.STONE_ORE_REPLACEABLES)) return true;
@@ -59,6 +81,25 @@ public final class TunnelPalette {
         if (s.is(BlockTags.LAPIS_ORES)) return true;
         if (s.is(BlockTags.DIAMOND_ORES)) return true;
         if (s.is(BlockTags.EMERALD_ORES)) return true;
+
+        // Nether.
+        if (s.is(BlockTags.BASE_STONE_NETHER)) return true;  // netherrack, basalt, blackstone
+        if (s.is(BlockTags.NYLIUM)) return true;             // crimson_nylium, warped_nylium
+        if (s.is(BlockTags.WART_BLOCKS)) return true;        // nether + warped wart blocks
+
+        if (s.is(Blocks.SMOOTH_BASALT)) return true;
+        if (s.is(Blocks.SOUL_SAND)) return true;
+        if (s.is(Blocks.SOUL_SOIL)) return true;
+        if (s.is(Blocks.MAGMA_BLOCK)) return true;
+        if (s.is(Blocks.GLOWSTONE)) return true;
+        if (s.is(Blocks.SHROOMLIGHT)) return true;
+        if (s.is(Blocks.GILDED_BLACKSTONE)) return true;
+        if (s.is(Blocks.NETHER_GOLD_ORE)) return true;
+        if (s.is(Blocks.NETHER_QUARTZ_ORE)) return true;
+        if (s.is(Blocks.ANCIENT_DEBRIS)) return true;
+
+        // End.
+        if (s.is(Blocks.END_STONE)) return true;
 
         return false;
     }

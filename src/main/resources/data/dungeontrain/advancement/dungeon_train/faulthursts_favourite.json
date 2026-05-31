@@ -12,7 +12,7 @@
   "criteria": {
     "completed": {
       "trigger": "dungeontrain:story_set_completed",
-      "conditions": { "setId": "faulthurst_all_variants" }
+      "conditions": { "setId": "faulthurst" }
     }
   },
   "requirements": [["completed"]]

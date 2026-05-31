@@ -213,6 +213,7 @@ gateable changes — they are scheduled, not requested.
 |---|---|
 | Add a new content drop to the cascade | Open a normal PR adding an object to `.github/auto-release/queue.json` `pending[]` |
 | Switch cascade mode | `gh variable set AUTO_RELEASE_ENABLED --body <always\|with-content\|ain>`. `always` is the current default; `with-content` only releases when there is AIN/queue content; `ain` only releases for AIN catch-up. |
+| Tune cadence (frequency / count per tier) | `gh variable set AUTO_RELEASE_CADENCE --body '{"tiers":[...]}'`. JSON shape and defaults in [.github/auto-release/README.md#customising-cadence](.github/auto-release/README.md). Unset / malformed → defaults. |
 | Pause the cascade (hard kill — blocks scheduled + force dispatches) | `gh variable set AUTO_RELEASE_ENABLED --body false` (or set via Settings → Variables). Resume with `gh variable delete AUTO_RELEASE_ENABLED` or pick a mode. |
 | Force-fire a tick manually | `gh workflow run auto-release.yml -f force=true` (still respects the kill switch) |
 | Preview without releasing | `gh workflow run auto-release.yml -f dry_run=true` |

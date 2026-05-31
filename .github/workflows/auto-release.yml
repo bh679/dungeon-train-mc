@@ -9,14 +9,20 @@ name: Auto-Release Cascade
 
 on:
   schedule:
-    # Three redundant fires per hour. GitHub Actions schedule events are
-    # best-effort and frequently drop or delay individual ticks; spreading
-    # the trigger across :07, :27, :47 means an entire hour is only missed
-    # if all three are dropped. should-fire.py + the concurrency block
-    # below ensure duplicates within the threshold window self-skip.
-    - cron: "7 * * * *"
-    - cron: "27 * * * *"
-    - cron: "47 * * * *"
+    # Six redundant fires per hour at 10-min intervals. GitHub Actions
+    # schedule events are best-effort and frequently drop or delay
+    # individual ticks — observed in May 2026 with 3+ consecutive drops
+    # in a single hour. Spreading the trigger across :02/:12/:22/:32/:42/:52
+    # means an entire hour is only missed if all six are dropped, which is
+    # rare. should-fire.py + the concurrency block below ensure duplicates
+    # within the threshold window self-skip (extra fires become idempotent
+    # rejects against the phase's 90%-of-interval threshold).
+    - cron: "2 * * * *"
+    - cron: "12 * * * *"
+    - cron: "22 * * * *"
+    - cron: "32 * * * *"
+    - cron: "42 * * * *"
+    - cron: "52 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -65,6 +71,7 @@ jobs:
         env:
           STATE_FILE: .github/auto-release/state.json
           AUTO_RELEASE_MODE: ${{ vars.AUTO_RELEASE_ENABLED }}
+          AUTO_RELEASE_CADENCE: ${{ vars.AUTO_RELEASE_CADENCE }}
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/auto-release/should-fire.py
 

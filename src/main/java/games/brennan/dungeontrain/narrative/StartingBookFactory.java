@@ -10,8 +10,11 @@ import net.minecraft.world.item.component.WrittenBookContent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Pool-aware builder for {@code Items.WRITTEN_BOOK} stacks rolled from
@@ -39,6 +42,8 @@ public final class StartingBookFactory {
     private static final long SALT_VARIANT_PICK = 0x57A47E8B0AF1ED01L;
     /** Splittable-mix salt for the respawn-cycling tuple pick. */
     private static final long SALT_RESPAWN_PICK = 0x57A47E8B0CFCEDA7L;
+    /** Splittable-mix salt for the dimension-cycling tuple pick. */
+    private static final long SALT_DIMENSION_PICK = 0x57A47E8B0D13E5A1L;
 
     private StartingBookFactory() {}
 
@@ -187,6 +192,80 @@ public final class StartingBookFactory {
         return tuples.get(tuples.size() - 1);
     }
 
+    // ---------------- Dimension-welcome cycling (NETHER / END) ----------------
+
+    /**
+     * Stable per-installation key for one dimension-welcome
+     * {@code (book, variant)} tuple — e.g. {@code "nether/why_the_nether#0"}.
+     * Namespaced by the context folder so the Nether and End "playlists"
+     * never collide. Pure; this is the exact form persisted by
+     * {@link PlayerPlayedMarker#markDimensionVariantSeen}.
+     */
+    public static String dimKey(String folderName, String basename, int variantIndex) {
+        return folderName + "/" + basename + "#" + variantIndex;
+    }
+
+    /**
+     * True when every key in {@code allKeys} is already present in
+     * {@code seen}. An empty {@code allKeys} (no books authored) counts as
+     * exhausted — callers then fall through to the lifecycle welcome.
+     */
+    public static boolean isExhausted(Collection<String> allKeys, Set<String> seen) {
+        return seen.containsAll(allKeys);
+    }
+
+    /**
+     * True when {@code context}'s pool still has at least one
+     * {@code (book, variant)} tuple unseen by {@code seen}. Drives the route
+     * decision in {@code StartingBookEvents.resolveLoginContext}: route to the
+     * dimension pool while unseen tuples remain, otherwise fall through to the
+     * lifecycle welcome. An empty pool returns {@code false}.
+     */
+    public static boolean hasUnseenDimensionTuples(StartingBookContext context, Set<String> seen) {
+        return !isExhausted(dimensionKeys(context), seen);
+    }
+
+    /** Every dimension key currently loaded for {@code context}, in pool order. */
+    private static List<String> dimensionKeys(StartingBookContext context) {
+        List<Tuple> tuples = enumerateTuples(context, false);
+        List<String> keys = new ArrayList<>(tuples.size());
+        for (Tuple t : tuples) {
+            keys.add(dimKey(context.folderName(), t.book().basename(), t.variantIndex()));
+        }
+        return keys;
+    }
+
+    /**
+     * Dimension-welcome roll with per-installation cycling.
+     *
+     * <p>While {@code context}'s pool has tuples unseen by {@code seen}, the
+     * roll is restricted to those unseen tuples — so every new run in that
+     * dimension delivers a fresh welcome — and the picked tuple's key is
+     * reported to {@code markSeen}. When every tuple has been seen (or the
+     * pool is empty), defers to {@link #rollFromPool(long, StartingBookContext)}
+     * (weighted, non-marking) so test / preview callers still receive a book.
+     * The real login path is guarded by {@link #hasUnseenDimensionTuples}, so
+     * it never reaches that fall-through branch.</p>
+     */
+    public static Optional<ItemStack> rollForDimension(long rollSeed, StartingBookContext context,
+                                                       Set<String> seen, Consumer<String> markSeen) {
+        List<Tuple> tuples = enumerateTuples(context, false);
+        List<Tuple> unseen = new ArrayList<>(tuples.size());
+        for (Tuple t : tuples) {
+            String key = dimKey(context.folderName(), t.book().basename(), t.variantIndex());
+            if (!seen.contains(key)) unseen.add(t);
+        }
+        if (unseen.isEmpty()) {
+            // Exhausted (or empty pool) — weighted fall-through, no marking.
+            return rollFromPool(rollSeed, context);
+        }
+        long pickSeed = mix(rollSeed, SALT_DIMENSION_PICK);
+        Tuple pick = pickTupleWeighted(unseen, pickSeed);
+        markSeen.accept(dimKey(context.folderName(), pick.book().basename(), pick.variantIndex()));
+        String body = pick.book().variants().get(pick.variantIndex());
+        return Optional.of(buildUnstampedBook(pick.book(), body, pick.variantIndex()));
+    }
+
     /**
      * Build a vanilla written book from an explicit body and variant index.
      * Used by the {@code /narrative startingbook give <basename>} command for
@@ -231,9 +310,11 @@ public final class StartingBookFactory {
 
         ItemStack stack = new ItemStack(Items.WRITTEN_BOOK);
         stack.set(DataComponents.WRITTEN_BOOK_CONTENT, content);
-        // Stamp the marker so the close-detection flow (client ScreenEvent.Closing
-        // → server burn handler) can identify this stack. See StartingBookTag.
-        StartingBookTag.stamp(stack);
+        // Stamp the marker + identity so (a) the close-detection flow (client
+        // ScreenEvent.Closing → server burn handler) can identify this stack and
+        // (b) the read handler can credit this exact (book, variant) toward the
+        // all_starting_books advancement. See StartingBookTag.
+        StartingBookTag.stamp(stack, book.basename(), variantIndex);
         return stack;
     }
 

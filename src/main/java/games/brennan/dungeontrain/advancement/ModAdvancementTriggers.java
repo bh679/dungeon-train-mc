@@ -28,6 +28,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<CartsInRunTrigger> CARTS_IN_RUN =
         TRIGGERS.register("carts_in_run", CartsInRunTrigger::new);
 
+    public static final Supplier<CartsBothDirectionsTrigger> CARTS_BOTH_DIRECTIONS =
+        TRIGGERS.register("carts_both_directions", CartsBothDirectionsTrigger::new);
+
     public static final Supplier<StorySetCompletedTrigger> STORY_SET_COMPLETED =
         TRIGGERS.register("story_set_completed", StorySetCompletedTrigger::new);
 

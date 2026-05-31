@@ -17,7 +17,7 @@
     },
     "type": {
       "type": "string",
-      "enum": ["new_file", "add_variant"]
+      "enum": ["new_file", "add_variant", "add_random_book_variant"]
     },
     "target": {
       "type": "string",
@@ -68,6 +68,30 @@
         }
       },
       "required": ["story_meta", "letter", "variant"]
+    },
+    {
+      "title": "add_random_book_variant — append one variant to a random_book file. Creates the file if missing.",
+      "properties": {
+        "type": {"const": "add_random_book_variant"},
+        "random_book_meta": {
+          "type": "object",
+          "required": ["id", "title", "author"],
+          "properties": {
+            "id": {"type": "string"},
+            "title": {"type": "string"},
+            "author": {"type": "string"},
+            "generation": {"type": "integer", "minimum": 0, "maximum": 3, "default": 0},
+            "weight": {"type": "integer", "minimum": 0, "default": 1}
+          },
+          "description": "Book-level metadata. id, title, author must match existing file when appending."
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The variant text to append to the top-level variants[] array."
+        }
+      },
+      "required": ["random_book_meta", "variant"]
     }
   ]
 }

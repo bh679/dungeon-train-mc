@@ -19,21 +19,56 @@ permissions:
 jobs:
   reset:
     runs-on: ubuntu-latest
-    # Only reset on successful manual releases. Skip auto-release runs and failures.
+    # Only reset on successful manual releases. Cascade-dispatched releases are
+    # filtered inside the job because `workflow_run` webhook payloads don't
+    # carry the triggering dispatch's `inputs.*` — see "Detect cascade dispatch"
+    # step below for the head_sha-based replacement.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'workflow_dispatch' &&
-      github.event.workflow_run.inputs.auto != 'true'
+      github.event.workflow_run.event == 'workflow_dispatch'
     steps:
+      - name: Detect cascade dispatch + derive tag
+        id: trig
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # `workflow_run` webhook payloads omit the triggering dispatch's
+          # `inputs.*`, and the REST runs endpoint doesn't expose them either,
+          # so `github.event.workflow_run.inputs.auto`/`.tag` are always empty.
+          # Detect cascade dispatches by inspecting the commit release.yml ran
+          # against: the cascade always commits `chore(auto): ...` immediately
+          # before dispatching, while manual releases dispatch off a normal
+          # Gate 3 / merge commit.
+          msg=$(gh api "/repos/$REPO/commits/$HEAD_SHA" --jq '.commit.message' | head -1)
+          echo "Head commit message: $msg"
+          if echo "$msg" | grep -qE '^chore\(auto\):'; then
+            echo "auto=true" >> "$GITHUB_OUTPUT"
+            echo "Cascade dispatch detected — reset will be skipped."
+          else
+            echo "auto=false" >> "$GITHUB_OUTPUT"
+          fi
+          # release.yml enforces tag == v<mod_version> on its checkout of main,
+          # so reading gradle.properties at the same head_sha gives the tag the
+          # release published under.
+          encoded=$(gh api "/repos/$REPO/contents/gradle.properties?ref=$HEAD_SHA" --jq '.content')
+          version=$(echo "$encoded" | base64 -d | grep '^mod_version=' | cut -d= -f2 | tr -d '[:space:]')
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "Derived release tag: v$version"
+
       - uses: actions/checkout@v4
+        if: steps.trig.outputs.auto != 'true'
         with:
           ref: main
           fetch-depth: 0
 
       - name: Rewrite state.json
+        if: steps.trig.outputs.auto != 'true'
         env:
           ANCHOR: ${{ github.event.workflow_run.updated_at }}
-          TAG: ${{ github.event.workflow_run.inputs.tag }}
+          TAG: ${{ steps.trig.outputs.tag }}
         run: |
           set -euo pipefail
           python3 - <<'PY'
@@ -60,8 +95,9 @@ jobs:
           PY
 
       - name: Commit and push
+        if: steps.trig.outputs.auto != 'true'
         env:
-          TAG: ${{ github.event.workflow_run.inputs.tag }}
+          TAG: ${{ steps.trig.outputs.tag }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"

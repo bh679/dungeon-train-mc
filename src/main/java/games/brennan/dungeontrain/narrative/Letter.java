@@ -25,10 +25,14 @@ public record Letter(
         }
     }
 
+    /** Pick a variant index deterministically from the given seed. 0-based. */
+    public int pickVariantIndex(long seed) {
+        return Math.floorMod(seed, variants.size());
+    }
+
     /** Pick a variant deterministically from the given seed. */
     public String pickVariant(long seed) {
-        int idx = Math.floorMod(seed, variants.size());
-        return variants.get(idx);
+        return variants.get(pickVariantIndex(seed));
     }
 
     /** Pick a variant with an external RNG (for /command flows that don't carry a seed). */

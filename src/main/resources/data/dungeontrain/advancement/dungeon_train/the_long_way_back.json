@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:recovery_compass" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_long_way_back.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_long_way_back.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:carts_both_directions",
+      "conditions": { "threshold": 100 }
+    }
+  },
+  "requirements": [["milestone"]]
+}
