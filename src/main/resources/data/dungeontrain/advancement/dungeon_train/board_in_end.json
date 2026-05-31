@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/board_in_nether",
   "display": {
     "icon": { "id": "minecraft:end_stone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.board_in_end.title" },

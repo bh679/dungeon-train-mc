@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/read_all_nether_starting_books",
   "display": {
     "icon": { "id": "minecraft:enchanted_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.read_all_end_starting_books.title" },

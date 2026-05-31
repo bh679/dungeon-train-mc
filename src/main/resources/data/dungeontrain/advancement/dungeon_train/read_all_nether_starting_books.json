@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/board_in_end",
   "display": {
     "icon": { "id": "minecraft:knowledge_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.read_all_nether_starting_books.title" },
