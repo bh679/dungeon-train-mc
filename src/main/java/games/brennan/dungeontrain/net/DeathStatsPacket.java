@@ -1,0 +1,86 @@
+package games.brennan.dungeontrain.net;
+
+import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.DeathStatsCache;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+
+/**
+ * Server → client: snapshot of the player's {@code PlayerRunState} stats at
+ * the moment of death plus visual context (most-used weapon, worn armor) so
+ * the death screen can render an icon row with hover tooltips.
+ *
+ * <p>Sent from {@code RunStatsEvents.onLivingDeath} (LOW priority) before
+ * the respawn hook clears the attachment. Cached client-side by
+ * {@link DeathStatsCache} until the next death.</p>
+ *
+ * <p>Armor stacks are sent in head → chest → legs → feet order, each via
+ * {@link ItemStack#OPTIONAL_STREAM_CODEC} so empty slots round-trip
+ * correctly.</p>
+ */
+public record DeathStatsPacket(
+        int mobKills,
+        int cartsTravelled,
+        double distanceBlocks,
+        long runTicks,
+        int containersOpened,
+        int booksRead,
+        ItemStack mostUsedWeapon,
+        ItemStack armorHead,
+        ItemStack armorChest,
+        ItemStack armorLegs,
+        ItemStack armorFeet
+) implements CustomPacketPayload {
+
+    public static final Type<DeathStatsPacket> TYPE =
+        new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "death_stats"));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, DeathStatsPacket> STREAM_CODEC =
+        StreamCodec.of(
+            (buf, packet) -> packet.encode(buf),
+            DeathStatsPacket::decode
+        );
+
+    public void encode(RegistryFriendlyByteBuf buf) {
+        buf.writeVarInt(mobKills);
+        buf.writeVarInt(cartsTravelled);
+        buf.writeDouble(distanceBlocks);
+        buf.writeVarLong(runTicks);
+        buf.writeVarInt(containersOpened);
+        buf.writeVarInt(booksRead);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, mostUsedWeapon);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorHead);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorChest);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorLegs);
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorFeet);
+    }
+
+    public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
+        int mobKills = buf.readVarInt();
+        int cartsTravelled = buf.readVarInt();
+        double distanceBlocks = buf.readDouble();
+        long runTicks = buf.readVarLong();
+        int containersOpened = buf.readVarInt();
+        int booksRead = buf.readVarInt();
+        ItemStack weapon = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack head = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack chest = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack legs = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        ItemStack feet = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
+                containersOpened, booksRead, weapon, head, chest, legs, feet);
+    }
+
+    @Override
+    public Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public static void handle(DeathStatsPacket packet, IPayloadContext ctx) {
+        ctx.enqueueWork(() -> DeathStatsCache.set(packet));
+    }
+}
