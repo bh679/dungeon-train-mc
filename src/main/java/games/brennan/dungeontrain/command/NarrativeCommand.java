@@ -81,7 +81,7 @@ public final class NarrativeCommand {
     private static final SuggestionProvider<CommandSourceStack> STARTING_BOOK_SUGGESTIONS =
         (ctx, builder) -> SharedSuggestionProvider.suggest(StartingBookRegistry.basenames(), builder);
 
-    /** Tab-completion source: the four starting-book context names (folder form). */
+    /** Tab-completion source: every starting-book context name (folder form). */
     private static final SuggestionProvider<CommandSourceStack> STARTING_BOOK_CONTEXT_SUGGESTIONS =
         (ctx, builder) -> {
             java.util.List<String> names = new java.util.ArrayList<>();

@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -578,7 +579,18 @@ public final class StartingBookEvents {
      * Resolve the welcome-strike context for a player on the login path,
      * read at strike-fire time so the world state is current.
      *
-     * <p>Two-step decision:</p>
+     * <p><b>Dimension routing (highest priority):</b> if the run started in
+     * the Nether or the End (per {@link DungeonTrainWorldData#startingDimension()}),
+     * return {@link StartingBookContext#NETHER} / {@link StartingBookContext#END}
+     * immediately. The dimension a run begins in is a stronger welcome signal
+     * than the multiplayer/new-world lifecycle parity below, and an empty
+     * NETHER/END pool falls back to DEFAULT inside the registry — so this
+     * degrades gracefully before any dimension content is authored. Overworld
+     * runs (and legacy worlds with no world-data yet → OVERWORLD default)
+     * fall through to the lifecycle logic. The parity counters are
+     * intentionally left untouched on this dimension branch.</p>
+     *
+     * <p>Two-step decision (Overworld runs):</p>
      * <ol>
      *   <li><b>Scenario detection</b> — read the world's
      *       {@code startingBookReceived} set (others welcomed?) and the
@@ -602,6 +614,17 @@ public final class StartingBookEvents {
     public static StartingBookContext resolveLoginContext(ServerPlayer player) {
         UUID uuid = player.getUUID();
         ServerLevel overworld = overworldOf(player);
+
+        // Dimension routing wins for the welcome strike — see method javadoc.
+        // A run that starts in the Nether/End gets a dimension-specific
+        // welcome book ahead of the lifecycle parity below; OVERWORLD (and
+        // unknown/legacy → OVERWORLD) returns empty and falls through.
+        if (overworld != null) {
+            String dimId = DungeonTrainWorldData.get(overworld).startingDimension().nbtId();
+            Optional<StartingBookContext> dimensionContext = StartingBookContext.forDimensionNbtId(dimId);
+            if (dimensionContext.isPresent()) return dimensionContext.get();
+        }
+
         boolean othersHere = false;
         if (overworld != null) {
             othersHere = NarrativeProgressData.get(overworld).anyOtherPlayerReceivedStartingBook(uuid);
