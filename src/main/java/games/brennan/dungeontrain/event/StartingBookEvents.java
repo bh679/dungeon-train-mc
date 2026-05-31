@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
 import games.brennan.dungeontrain.narrative.StartingBookContext;
 import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
+import games.brennan.dungeontrain.narrative.StartingBookTag;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -410,6 +411,23 @@ public final class StartingBookEvents {
             // Silent no-op; the close already happened.
             return;
         }
+
+        // Read-tracking: the player just opened (and closed) this book. If it is
+        // an identity-stamped starting book, credit the exact (book, variant) in
+        // the world-scoped seen-store so the "Read every starting book"
+        // (all_starting_books / Inter-Reality Passenger) advancement can complete.
+        // Random books and legacy boolean-only stamps return empty → safe no-op.
+        StartingBookTag.read(stack).ifPresent(id -> {
+            ServerLevel overworld = overworldOf(player);
+            if (overworld == null) return;
+            NarrativeProgressData data = NarrativeProgressData.get(overworld);
+            if (data.markStartingBookVariantSeen(id.basename(), id.variantIndex())) {
+                LOGGER.info("[DungeonTrain] StartingBook: world marked {} variant {} seen on read (by {})",
+                    id.basename(), id.variantIndex(), player.getName().getString());
+            }
+            games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
+        });
+
         ItemEntity dropped = player.drop(stack, /*dropAround*/ false, /*includeThrowerName*/ false);
         if (dropped == null) {
             // Player.drop returned null (e.g. dropped in creative with
