@@ -1,686 +1,6 @@
 {
   "pending": [
     {
-      "id": "corren-l7-a",
-      "label": "Corren - Letter 7 variant A (The Train)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Letter Seven"
-      },
-      "variant": "I do not know how I got out.\n\nThe portal was broken. I remember that.\n\nI do not remember walking through.\n\nI came up in a field. Tall grass. The train was already there.\n\nIt was moving.\n\nIt had always been moving. I know that now.\n\nI ran beside it. I jumped for the nearest door.\n\nI do not know how I caught it.\n\nI thought I had made it.\n\nI have been making it for weeks now.\n\nThe train does not stop.\n\nThere is no off.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 7 variant A"
-    },
-    {
-      "id": "corren-l7-b",
-      "label": "Corren - Letter 7 variant B (related facts)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Letter Seven"
-      },
-      "variant": "the heat behind me. the cold ahead.\n\ni did not know which way was up.\n\ni remember falling onto grass.\n\nthe grass was not on fire.\n\nthat seemed important.\n\nthen a building.\n\ni did not know the building.\n\ni know all the buildings in this region.\n\ni mapped this region.\n\na train was at the building.\n\nthe doors were open.\n\ni was alive and the doors were open.\n\nthese felt like related facts.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 7 variant B"
-    },
-    {
-      "id": "corren-l8-a",
-      "label": "Corren - Letter 8 variant A (the screech and the blasts)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Letter Eight"
-      },
-      "variant": "I have heard it for weeks now.\n\nA screech. Three voices, almost layered.\n\nSometimes one comes alone. Sometimes all three.\n\nAnd the blasts.\n\nI feel them in the floor before I hear them.\n\nThey never break anything I can see.\n\nI do not know where they land.\n\nI walk forward.\n\nThe screech comes again. Two carriages back.\n\nAlways from there.\n\nNever further.\n\nI am sure.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 8 variant A"
-    },
-    {
-      "id": "corren-l8-b",
-      "label": "Corren - Letter 8 variant B (what the wheels do not carry)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Letter Eight"
-      },
-      "variant": "there is a sound.\n\ni have heard it for weeks.\n\nit is not the wheels.\n\nthe wheels carry music. three notes.\n\nthis one carries something else.\n\nit screams.\n\nthree voices. almost in time. never quite.\n\nand there are blasts.\n\ni feel them in the floor. they do not break anything.\n\ni have asked the others on the train.\n\nnone of them hear it.\n\nonly i hear it.\n\nit is for me.\n\nit has time.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 8 variant B"
-    },
-    {
-      "id": "corren-l9-a",
-      "label": "Corren - Letter 9 variant A (the fourth voice)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Letter Nine"
-      },
-      "variant": "Oh.. oh no.\n\nMira.\n\nYou would have noticed it before I did.\n\nThe screech is in front of me now.\n\nThere is not supposed to be a front.\n\nBram would have stood in front.\n\nHe would have laughed at it.\n\nHe always laughed at things that were too big to fight.\n\nEsa would have brewed something.\n\nFire resistance. Swiftness. The right thing.\n\nShe always brewed the right thing.\n\nI walked forward for weeks.\n\nI was walking toward it.\n\nThe train has no front.\n\nEvery step forward was a step closer.\n\nI can see it now.\n\nThree heads. Three voices.\n\nThe fourth voice will be mine.\n\nI think it has been mine for weeks.\n\n- Corren",
-      "commit_message": "content(narrative): Corren Letter 9 variant A"
-    },
-    {
-      "id": "corren-l9-b",
-      "label": "Corren - Letter 9 variant B (three of you)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json",
-      "story_meta": {
-        "id": "corren_vale_three_heads",
-        "character": "Corren Vale",
-        "story": "Three Heads"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Letter Nine"
-      },
-      "variant": "its here.\n\nmira.\n\nit was not behind me.\n\nit was in front.\n\nit was always in front.\n\nyou would have seen this. you saw everything first.\n\nbram would have stood in front of me.\n\nhe would have laughed.\n\nhe laughed at things too big to fight.\n\nit would have worked. for a moment.\n\nesa would have put her hand on my back.\n\ncold.\n\nshe would have pushed.\n\ni would have gone.\n\ni walked toward it.\n\ni thought i was walking away.\n\nthe train has no front. you would have laughed at me for forgetting that.\n\ni can see it.\n\nthree heads. three of you.\n\nbram. esa. you.\n\ni am the fourth.\n\ni have been the fourth all along.\n\n- corren",
-      "commit_message": "content(narrative): Corren Letter 9 variant B"
-    },
-    {
-      "id": "edda-l1-a",
-      "label": "Edda - Letter 1 variant A (a seat that is not mine)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "My name is Edda Marsh.\n\nI am writing this from a seat that is not mine.\n\nMy seat was three carriages behind. I left it quickly. Not in fear. Closer to the way you leave a room when the kettle has been on too long.\n\nI will explain when I have walked further. For now: I have moved. I have begun moving.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 1 variant A"
-    },
-    {
-      "id": "edda-l1-b",
-      "label": "Edda - Letter 1 variant B (the unfolded shawl)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Edda Marsh.\n\nThis seat is warm. Not from me.\n\nMy seat is back the way I came. Three carriages, perhaps four. I did not count.\n\nMy shawl is still on it. Folded. Folding was the last thing I did not do.\n\nMore when I have walked further.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 1 variant B"
-    },
-    {
-      "id": "edda-l2-a",
-      "label": "Edda - Letter 2 variant A (three heads at the old window)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "I am in a sleeping car. The bed has been made. Not by me.\n\nLast night something was at my old window.\n\nThree heads. Bone the colour of wet ash. The middle larger than the others.\n\nThey moved one at a time. The middle would still and the two beside it would turn. All three looked in.\n\nI did not look away. There seemed no reason to. After a while they were gone.\n\nI waited an hour. Then I got up. Then I walked.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 2 variant A"
-    },
-    {
-      "id": "edda-l2-b",
-      "label": "Edda - Letter 2 variant B (I have looked at worse)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "A sleeping car. The bed is made. Not by me.\n\nThree heads at the old window last night.\n\nBone-grey. Middle one larger. The two beside it turned when it did not.\n\nThey all looked in.\n\nI have looked at worse things in my life. I looked back.\n\nAfter a while they were gone. I waited. I walked.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 2 variant B"
-    },
-    {
-      "id": "edda-l3-a",
-      "label": "Edda - Letter 3 variant A (the library car experiment)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "I walked forward four carriages. I am writing from a reading nook in what may be a library car. Some of the books are real. Some are spine-only and glued to the wall.\n\nIt is here too. At my window. Not the one I left. This new one.\n\nThe same three heads. The middle one tilted slightly off centre, as if listening.\n\nI walked to the other side of the car. That window was dark. I came back. It was at mine again.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 3 variant A"
-    },
-    {
-      "id": "edda-l3-b",
-      "label": "Edda - Letter 3 variant B (bright with bone)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "Four carriages forward. A library car. Some of the books are real. Some are spines glued to the wall.\n\nIt is here too. At this window. Not the one I left.\n\nSame three heads. Middle one tilted, as if listening.\n\nI crossed the car. The other window was dark. I came back. Mine was bright with bone again.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 3 variant B"
-    },
-    {
-      "id": "edda-l4-a",
-      "label": "Edda - Letter 4 variant A (Hollin, soul sand, what came up)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "I am in a goods car. The crates are nailed shut. The light is the only thing not boxed.\n\nI should tell you about Hollin.\n\nHe was my husband. He dug soul sand. He sold most of it. He kept a little for himself.\n\nHe dug too deep, in the end. Something came up out of the place he was digging.\n\nThree heads. A middle one larger than the others. A tilt to the middle one. As if listening.\n\nHollin did not come up.\n\nI have been waiting a long time to see that face again. Now I have.\n\nIt is at every window I sit by.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 4 variant A"
-    },
-    {
-      "id": "edda-l4-b",
-      "label": "Edda - Letter 4 variant B (Hollin stayed)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Letter Four"
-      },
-      "variant": "A goods car. Crates nailed shut. The light is the only thing not boxed.\n\nHollin.\n\nHe was my husband. He dug soul sand. Sold most. Kept a little.\n\nHe dug too deep. Something came up.\n\nThree heads. Middle one larger. Tilted. As if listening.\n\nHollin stayed.\n\nI waited a long time to see that face again.\n\nNow I have.\n\nEdda",
-      "commit_message": "content(narrative): Edda Letter 4 variant B"
-    },
-    {
-      "id": "edda-l5-a",
-      "label": "Edda - Letter 5 variant A (the windows show what we carry)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Letter Five"
-      },
-      "variant": "I am in an observation car. Long windows. Many of them. A few other passengers.\n\nI sat here for hours. I watched the windows. Not out of them. At them.\n\nThe train moves at a steady pace. The view does not. A tree stays beside us for too long. A river runs the wrong way and then runs ours.\n\nThe next carriage had its own view. A different valley. The carriage after that had a field I knew when I was twelve.\n\nThere is a man two seats down who is watching a kitchen. I think it is his mother's kitchen. He has been crying very quietly for an hour.\n\nThe windows do not show outside. They show what the watcher carries.\n\nI have been carrying Hollin. I have been carrying what came up out of his digging.\n\nIt is not following me. It has always been mine.\n\nI am steady. I want you to know I am steady.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 5 variant A"
-    },
-    {
-      "id": "edda-l5-b",
-      "label": "Edda - Letter 5 variant B (not following, mine)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Letter Five"
-      },
-      "variant": "Observation car. Long windows. Several. A few other passengers.\n\nI watched the windows. Not out of them. At them. For hours.\n\nThe train moves at a steady pace. The view does not. A tree stays too long. A river runs the wrong way and then runs ours.\n\nNext carriage: a different valley. The one after: a field I knew when I was twelve.\n\nTwo seats down a man is watching a kitchen. I think it is his mother's. He has been crying very quietly.\n\nThe windows show what we carry.\n\nI have been carrying Hollin. And what came up out of his digging.\n\nIt has always been mine. Not following. Mine.\n\nI am steady.\n\nEdda Marsh",
-      "commit_message": "content(narrative): Edda Letter 5 variant B"
-    },
-    {
-      "id": "edda-l6-a",
-      "label": "Edda - Letter 6 variant A (lifted the latch, for whoever finds the seat next)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Letter Six"
-      },
-      "variant": "I have stopped walking.\n\nI am in a small carriage near the back. Or near the front. The light is the same in both directions.\n\nThere is a window. There is a latch on the window. I have been looking at the latch for a long while.\n\nThe three heads are here. They are not at the glass now. They are a little way out from it, in the dark. Waiting.\n\nI have decided I am not going to walk again. I have decided I am going to lift the latch.\n\nI have lifted the latch.\n\nThe window is open. The night is very cold. The cedar smells stronger when the air moves through it.\n\nI am going to leave this here. I am going to leave the window open too. For whoever finds the seat next.",
-      "commit_message": "content(narrative): Edda Letter 6 variant A"
-    },
-    {
-      "id": "edda-l6-b",
-      "label": "Edda - Letter 6 variant B (leaving the window open too)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json",
-      "story_meta": {
-        "id": "edda_marsh_the_wither_at_the_window",
-        "character": "Edda Marsh",
-        "story": "The Wither at the Window"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Letter Six"
-      },
-      "variant": "I have stopped.\n\nA small carriage. Near the back. Or the front. The light is the same in both directions.\n\nA window. A latch. I have been looking at it a long while.\n\nThe three heads are here. Not at the glass now. A little way out. Waiting.\n\nI am not going to walk again. I am going to lift the latch.\n\nI have lifted it.\n\nThe window is open. The night is cold. The cedar smells stronger when the air moves.\n\nLeaving this here.\n\nLeaving the window open too.",
-      "commit_message": "content(narrative): Edda Letter 6 variant B"
-    },
-    {
-      "id": "halen-l1-a",
-      "label": "Halen - Sighting 41 variant A (Edda Maer interview)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Sighting Forty-One"
-      },
-      "variant": "Sighting Forty-One.\n\nWitness: Edda Maer. Carriage 114. Long aboard.\n\nReports: figure in the doorway. Eyes white. Train at full motion. Five seconds. Gone.\n\nCross-questioned three times. Story did not move. Detail held.\n\nThe witness will not retract. Forty entries did. This may be the forty-first.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 1 variant A"
-    },
-    {
-      "id": "halen-l1-b",
-      "label": "Halen - Sighting 41 variant B (the laugh)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Sighting Forty-One"
-      },
-      "variant": "Sighting Forty-One.\n\nA man across from me asked what I was writing.\n\nI said: field notes.\n\nHe said: about what.\n\nI said: the white-eyed man.\n\nHe laughed.\n\nIt was the laugh of a person who has never seen him. I have catalogued the laugh.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 1 variant B"
-    },
-    {
-      "id": "halen-l2-a",
-      "label": "Halen - Sighting 43 variant A (stubborn witness Pell Cordoba)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Sighting Forty-Three"
-      },
-      "variant": "Sighting Forty-Three.\n\nWitness: Pell Cordoba. Insists.\n\nI offered her: lamp afterimage. Carriage flicker. Eye fatigue from the tunnels.\n\nShe said: I have lived underground. I know lamps.\n\nI offered her: a man wearing eye protection. Some mining cults do.\n\nShe said: he had no shadow. The lanterns made shadows. He did not.\n\nI closed the entry without an explanation.\n\nThis is unusual for me.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 2 variant A"
-    },
-    {
-      "id": "halen-l2-b",
-      "label": "Halen - Sighting 43 variant B (four witnesses, same sentence)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Sighting Forty-Three"
-      },
-      "variant": "Sighting Forty-Three.\n\nToday I have interviewed four. Independent. No cross-contamination.\n\nCarriage 87: white eyes through the door glass.\n\nCarriage 154: white eyes through the door glass.\n\nCarriage 226: white eyes through the door glass.\n\nCarriage 401: white eyes through the door glass.\n\nI have written the same sentence four times.\n\nFour different witnesses wrote it before me.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 2 variant B"
-    },
-    {
-      "id": "halen-l3-a",
-      "label": "Halen - Sighting 48 variant A (Joren Vask, hypnagogic theory)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Sighting Forty-Eight"
-      },
-      "variant": "Sighting Forty-Eight.\n\nWitness: Joren Vask. Carriage 519.\n\nCould not finish the interview. Twice put down the pen and stared at the floor.\n\nThree witnesses today have done this. Same posture. Same delay.\n\nHypothesis: prolonged tunnel exposure produces a recurring hypnagogic figure. The white eyes are the afterimage of carriage lamps on the cone cells.\n\nThe trauma is real. The figure is not.\n\nThis is the most coherent theory I have constructed in years.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 3 variant A"
-    },
-    {
-      "id": "halen-l3-b",
-      "label": "Halen - Sighting 48 variant B (folie a deux at scale)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Sighting Forty-Eight"
-      },
-      "variant": "Sighting Forty-Eight.\n\nWorking hypothesis.\n\nSustained tunnel-flicker. Disrupted circadian rhythm. Shared narrative exposure between strangers.\n\nThese conditions produce a folie a deux at scale. The white-eyed man is the train's local hallucination. Every long-haul population invents one.\n\nThe trauma is real. The figure is shared because the conditions are shared.\n\nThis is the entry I have been waiting to write for eleven years.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 3 variant B"
-    },
-    {
-      "id": "halen-l4-a",
-      "label": "Halen - Sighting 61 variant A (clocking the witness)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Sighting Sixty-One"
-      },
-      "variant": "Sighting Sixty-One.\n\nI entered Carriage 47. A woman was eating.\n\nI knew before she looked up.\n\nThe way she held the spoon. The way her eyes did not move toward the door glass when the train flickered.\n\nI sat down. I said: when did you see him.\n\nShe said: yesterday.\n\nThe interview took two minutes.\n\nI am very good at this.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 4 variant A"
-    },
-    {
-      "id": "halen-l4-b",
-      "label": "Halen - Sighting 61 variant B (catalogue of signs)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 4,
-        "label": "Sighting Sixty-One"
-      },
-      "variant": "Sighting Sixty-One.\n\nThe signs I now recognise:\n\nThe flinch at carriage flicker. The half-second of held breath at a door opening. The avoidance of door glass.\n\nThe way they hold their cup with two hands.\n\nI enter a carriage and read the room.\n\nThree witnesses today. None disagreed with my opening question.\n\nEleven years. This is the year it has all paid off.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 4 variant B"
-    },
-    {
-      "id": "halen-l5-a",
-      "label": "Halen - Sighting 78 variant A (Sora Penn, letting the lie stand)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Sighting Seventy-Eight"
-      },
-      "variant": "Sighting Seventy-Eight.\n\nWitness: Sora Penn. Carriage 488.\n\nClaims she has seen nothing.\n\nShe has the spoon-hold. The door-glass avoidance. The half-second of held breath.\n\nShe has every sign in my notebook.\n\nI thanked her for her time. I did not contradict her.\n\nShe wanted to be left thinking she was fine.\n\nI left her thinking that.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 5 variant A"
-    },
-    {
-      "id": "halen-l5-b",
-      "label": "Halen - Sighting 78 variant B (the quiet, no verb fits)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 5,
-        "label": "Sighting Seventy-Eight"
-      },
-      "variant": "Sighting Seventy-Eight.\n\nSome of them are trying to hide it now.\n\nThey mention the name without meaning to. They look at door glass and then look away too fast.\n\nOne man said the word \"shadow\" three times in five minutes. Unprompted.\n\nI do not press. I write the entry afterward.\n\nI used to think I was studying them.\n\nI am no longer sure what the verb should be.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 5 variant B"
-    },
-    {
-      "id": "halen-l6-a",
-      "label": "Halen - Sighting 92 variant A (unrecordable, Witness: myself)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Sighting Ninety-Two"
-      },
-      "variant": "Sighting Ninety-Two.\n\nWitness: myself.\n\nCarriage 612. Door glass. Late.\n\nSomething stood. Or did not.\n\nThe carriage flickered. The figure flickered with it. Then neither.\n\nThis is the kind of entry I have closed in retraction forty times.\n\nI cannot record eye colour. I cannot record duration. I cannot record absence of shadow.\n\nI can record that I stopped walking.\n\nI record the witness response. This is one.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 6 variant A"
-    },
-    {
-      "id": "halen-l6-b",
-      "label": "Halen - Sighting 92 variant B (marginal collapse, brackets)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 6,
-        "label": "Sighting Ninety-Two"
-      },
-      "variant": "Sighting Ninety-Two.\n\nWitness: H. Pent.\n\n[The interviewer is also the witness. This invalidates the entry.]\n\nTwo carriages back. Through the door glass. A figure. Eyes white. Five seconds.\n\n[The entry is recorded anyway.]\n\nI cannot trust my own observation. I cannot dismiss it either.\n\nI have spent the night in the corridor.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 6 variant B"
-    },
-    {
-      "id": "halen-l7-a",
-      "label": "Halen - Sighting 140 variant A (methodical archive search)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Sighting One Hundred & Forty"
-      },
-      "variant": "Sighting One Hundred & Forty.\n\nReturned to cabin. Opened archive crate.\n\nI am looking for my own sighting in someone else's entry. A precedent.\n\nCross-ref: Sighting 17. Sighting 22. Sighting 41.\n\nSighting 17 \u2014 witness could not record duration. Could not record eye colour. The match is exact.\n\nIt should be a relief.\n\nIt is not. The date line is in different ink. I do not remember changing pens.\n\nProbably nothing.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 7 variant A"
-    },
-    {
-      "id": "halen-l7-b",
-      "label": "Halen - Sighting 140 variant B (Sighting 17 quoted excerpt)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 7,
-        "label": "Sighting One Hundred & Forty"
-      },
-      "variant": "Sighting One Hundred & Forty.\n\nWhat I saw last week \u2014 if I saw anything \u2014 should be in here somewhere. A precedent. Some other witness with the same gaps.\n\nI found Sighting 17.\n\n\"Witness reports figure in mine shaft. Eyes white. Six seconds. Subject cannot account for the time after.\"\n\nI do not remember interviewing this person.\n\nThe phrasing is mine. The handwriting is mine.\n\nThe dates do not line up with my field trips that year.\n\nProbably nothing.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 7 variant B"
-    },
-    {
-      "id": "halen-l8-a",
-      "label": "Halen - Sighting 211 variant A (the dates are wrong)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Sighting Two Hundred & Eleven"
-      },
-      "variant": "Sighting Two Hundred & Eleven.\n\nThe dates are wrong.\n\nSighting 22 is dated three months before I was hired.\n\nSighting 31 describes the train. I did not know the train existed.\n\nSighting 41 describes Edda Maer. I met Edda four weeks ago.\n\nI have not slept. The number above this entry is a guess.\n\nThe notebook is not what I thought it was.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 8 variant A"
-    },
-    {
-      "id": "halen-l8-b",
-      "label": "Halen - Sighting 211 variant B (notebook contains my future)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 8,
-        "label": "Sighting Two Hundred & Eleven"
-      },
-      "variant": "Sighting Two Hundred & Eleven.\n\nI am holding a notebook that contains my future.\n\nSighting 41, dated nine years ago, reads:\n\n\"Witness: Edda Maer. Carriage 114. Long aboard.\"\n\nI wrote that sentence last week.\n\n[The page has aged.]\n[The binding is original.]\n[The ink is mine.]\n\nI have stopped knowing how to date these entries.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 8 variant B"
-    },
-    {
-      "id": "halen-l9-a",
-      "label": "Halen - Sighting 240 variant A (interview reversed, dining carriage)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Sighting Two Hundred & Forty"
-      },
-      "variant": "Sighting Two Hundred & Forty.\n\nA woman sat across from me in the dining carriage.\n\nShe asked: have you seen him.\n\nShe looked at me the way I have looked at four hundred people.\n\nI said: I do not know what you mean.\n\nIt was Sora Penn's line. I wrote it down four weeks ago. I am hearing it in my own voice.\n\nI did not finish the meal. I returned to my cabin. I have not opened the door since.\n\nThe notebook is open.\n\n- H.P.",
-      "commit_message": "content(narrative): Halen Letter 9 variant A"
-    },
-    {
-      "id": "halen-l9-b",
-      "label": "Halen - Sighting 240 variant B (catalogued, paranoia)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 9,
-        "label": "Sighting Two Hundred & Forty"
-      },
-      "variant": "Sighting Two Hundred & Forty.\n\nI have been catalogued.\n\nThey look at me the way I taught myself to look at them.\n\nThe way they hold their cups. The small slow turns toward door glass.\n\nIn the corridor today, a man stepped back from me. He had the recognition.\n\nHe did not ask. He knew.\n\nI will not write what he knew.\n\nI will not write what I saw.\n\nI am writing about the notes.\n\n- H.",
-      "commit_message": "content(narrative): Halen Letter 9 variant B"
-    },
-    {
-      "id": "halen-l10-a",
-      "label": "Halen - Sighting \u2014 variant A (composed acceptance, finale)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 10,
-        "label": "Sighting \u2014"
-      },
-      "variant": "Sighting \u2014\n\nI have stopped numbering.\n\nI went back to the earliest entries.\n\nSighting 1 is dated thirty-seven years ago.\n\nI am thirty-seven.\n\nSighting 1 is in my handwriting. The same loop on the y. The same comma habit.\n\nI do not remember being six.\n\nI do not remember being eight, ten, twelve. I remember adult things. I remember nothing before the field.\n\nOn the inside of the back cover, in a hand I have never seen, are five words:\n\n\"I gave you the notebook.\"\n\nI have been reading and writing this notebook all of my life. I did not write this line.\n\nI do not know who did.\n\n- H. Pent",
-      "commit_message": "content(narrative): Halen Letter 10 variant A (finale)"
-    },
-    {
-      "id": "halen-l10-b",
-      "label": "Halen - Sighting \u2014 variant B (fragmented confession, finale)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json",
-      "story_meta": {
-        "id": "halen_pent_white_eyed_man",
-        "character": "Halen Pent",
-        "story": "The White-Eyed Man"
-      },
-      "letter": {
-        "index": 10,
-        "label": "Sighting \u2014"
-      },
-      "variant": "Sighting \u2014\n\n[I have stopped numbering.]\n\nThe earliest entry. Sighting 1.\n\nThe date. Thirty-seven years ago.\n\nI am thirty-seven.\n\n[The handwriting is mine.]\n\n[I do not remember being six.]\n[I do not remember being twelve.]\n[I do not remember being twenty.]\n\nThe first thing I remember is the field. I was already a folklorist. I had already been writing in this notebook.\n\nInside the back cover, written in a hand I do not know:\n\n\"I gave you the notebook.\"\n\nI have been answering it my whole life.\n\n-",
-      "commit_message": "content(narrative): Halen Letter 10 variant B (finale)"
-    },
-    {
-      "id": "soll-l1-a",
-      "label": "Soll Letter 1 variant A (loadout, S. Marra)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
-      "story_meta": {
-        "id": "soll_marra_the_borrowed_champion",
-        "character": "Soll Marra",
-        "story": "The Borrowed Champion"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Day One. Loadout.\n\nIron sword, x2 (one back-up per the notebook).\nBow, 64 arrows.\nEnchanted leather, full set, Protection I.\nEnder pearls, x16.\nBed, x1.\nRaw potatoes, x32.\n\nThe notebook calls for gold apples. The town had none. I will source them en route.\n\nThe rat is real. I have logged him.\n\nDay One.\n\n- S. Marra",
-      "commit_message": "content(narrative): Soll Letter 1 variant A"
-    },
-    {
-      "id": "soll-l1-b",
-      "label": "Soll Letter 1 variant B (loadout, snuck out)",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json",
-      "story_meta": {
-        "id": "soll_marra_the_borrowed_champion",
-        "character": "Soll Marra",
-        "story": "The Borrowed Champion"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Day One. Loadout.\n\nIron sword, x2.\nBow, 64 arrows.\nEnchanted leather, Prot I.\nEnder pearls, x16.\nBed.\nPotatoes, x32.\n\nThe notebook says gold apples are non-negotiable. The town had none. I left before anyone noticed I was gone.\n\nA rat in a vest gave me this paper. He looked sad. I do not know what to log him as.\n\nI am ready.\n\n- Soll Marra",
-      "commit_message": "content(narrative): Soll Letter 1 variant B"
-    },
-    {
       "id": "soll-l2-a",
       "label": "Soll Letter 2 variant A (notebook, bringing it)",
       "type": "add_variant",
@@ -2016,6 +1336,126 @@
       },
       "variant": "A QUESTIONEER:\n-\nA passenger who has\nstopped finding answers\nand started finding\nquestions everywhere.\n\n\nThe chair, a question.\nThe lantern, the same.\nYou become a question\nthey ask without\nopening their mouth.",
       "commit_message": "content(narrative): glossary entry A QUESTIONEER"
+    },
+    {
+      "id": "bestiary-fragments-a",
+      "label": "Bestiary Fragments - variant a (Zombie common)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "The zombie walks. It does not breathe. It does not warm. The body is here. The body is not what is making it walk.\n\nMedicine asks how a body fails. The zombie offers nothing for medicine to take hold of \u2014 there is no failure. There is only persistence.\n\nThe question is not medical. It is structural. What is this thing? How does it hold together? Those are questions for someone who is not a naturalist.",
+      "commit_message": "content(narrative): bestiary fragments variant a (zombie)"
+    },
+    {
+      "id": "bestiary-fragments-b",
+      "label": "Bestiary Fragments - variant b (Zombie with a shovel)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "The zombie carries a shovel. The grip is not random. The fingers are arranged as fingers are arranged when there is something to dig.\n\nThree theories present themselves. The shovel was buried with this specimen. The shovel was found by this specimen. Or it is not, in any meaningful sense, a shovel.\n\nNone of the theories satisfy. The shovel is not used. It is held. The holding is the thing.",
+      "commit_message": "content(narrative): bestiary fragments variant b (zombie with shovel)"
+    },
+    {
+      "id": "bestiary-fragments-c",
+      "label": "Bestiary Fragments - variant c (Zombie Villager)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "The zombie villager wears its profession. This one wears the apron of a butcher. Whatever this one was, it was that.\n\nThe clothes have not been chosen. They are simply still there. A wardrobe outlasting the person who chose it.\n\nI do not know if the villager remains. I do not know if any of them remains. I know the clothes do.",
+      "commit_message": "content(narrative): bestiary fragments variant c (zombie villager)"
+    },
+    {
+      "id": "bestiary-fragments-d",
+      "label": "Bestiary Fragments - variant d (Baby Zombie)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "There are smaller zombies. The mass is roughly half. The speed is greater. This is not the usual arrangement.\n\nThe sound is also wrong. The larger ones groan low. These are higher. Closer to something one should not have to hear.\n\nThey do not shamble. They run. They run faster than a person can run, and they do not stop. I have learned this on foot.\n\nThere is a word for a smaller form of a creature. I will not use it. The implication is not one I am prepared to follow.",
+      "commit_message": "content(narrative): bestiary fragments variant d (baby zombie)"
+    },
+    {
+      "id": "bestiary-fragments-e",
+      "label": "Bestiary Fragments - variant e (Skeleton)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "The skeleton is bone alone. No skin, no muscle, no organ. The structure that supports a body \u2014 and no body.\n\nIt holds a bow. The bow is drawn. There is no muscle to draw it. There is nothing in the chest to brace against. The bow is drawn.\n\nThe literature does not account for this. A skeleton is what remains when the body is gone \u2014 the end of inquiry. But this skeleton walks. There is nothing here to dissect. The dissection has already been done.\n\nNot by me.",
+      "commit_message": "content(narrative): bestiary fragments variant e (skeleton)"
+    },
+    {
+      "id": "bestiary-fragments-f",
+      "label": "Bestiary Fragments - variant f (on the question of pain)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "I would like to believe these specimens do not feel. The literature, such as it is, provides nothing.\n\nThe zombies persist regardless of injury. The skeletons do not flinch. This may mean they do not feel. Or it may mean they feel and continue regardless.\n\nI have considered both. I have decided nothing. The deciding costs more than I have to give.",
+      "commit_message": "content(narrative): bestiary fragments variant f (pain)"
+    },
+    {
+      "id": "bestiary-fragments-g",
+      "label": "Bestiary Fragments - variant g (marginal observation, train-unawareness)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "The fauna do not appear to know they are on a train. The carriage shifts. They do not brace. The window shows passing country. They do not look.\n\nThey behave as if they were anywhere. The train is not a context they recognise. It is, to them, a room.\n\nThey have been here as long as I have. They have not, in that time, noticed where here is.",
+      "commit_message": "content(narrative): bestiary fragments variant g (marginal)"
+    },
+    {
+      "id": "bestiary-fragments-h",
+      "label": "Bestiary Fragments - variant h (to whoever finds this)",
+      "type": "add_random_book_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/random_books/bestiary_fragments.json",
+      "random_book_meta": {
+        "id": "bestiary_fragments",
+        "title": "Bestiary Fragments",
+        "author": "Anonymous",
+        "generation": 0,
+        "weight": 1
+      },
+      "variant": "If you are reading this notebook, I am not. Or I have set it down and not returned.\n\nIf you came to the train to study the fauna \u2014 do not. The methods of natural history do not apply. The specimens are not specimens. They are something the methods do not have a name for \u2014 and the methods cost more than they pay.\n\nI am sorry, whoever you are. I did not know I was writing for someone to warn.",
+      "commit_message": "content(narrative): bestiary fragments variant h (warning)"
     }
   ],
   "applied": [
@@ -2138,6 +1578,206 @@
       "id": "corren-l6-b",
       "applied_at": "2026-05-28T12:51:46Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l7-a",
+      "applied_at": "2026-05-28T13:22:42Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l7-b",
+      "applied_at": "2026-05-28T13:35:02Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l8-a",
+      "applied_at": "2026-05-28T14:50:18Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l8-b",
+      "applied_at": "2026-05-28T15:22:39Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l9-a",
+      "applied_at": "2026-05-28T15:49:55Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "corren-l9-b",
+      "applied_at": "2026-05-28T17:01:17Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/corren_vale_three_heads.json"
+    },
+    {
+      "id": "edda-l1-a",
+      "applied_at": "2026-05-28T17:34:25Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l1-b",
+      "applied_at": "2026-05-28T18:34:43Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l2-a",
+      "applied_at": "2026-05-28T19:07:11Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l2-b",
+      "applied_at": "2026-05-28T20:09:39Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l3-a",
+      "applied_at": "2026-05-28T21:05:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l3-b",
+      "applied_at": "2026-05-28T22:02:30Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l4-a",
+      "applied_at": "2026-05-28T23:00:12Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l4-b",
+      "applied_at": "2026-05-28T23:55:11Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l5-a",
+      "applied_at": "2026-05-29T00:58:10Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l5-b",
+      "applied_at": "2026-05-29T02:25:20Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l6-a",
+      "applied_at": "2026-05-29T03:23:22Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "edda-l6-b",
+      "applied_at": "2026-05-29T05:20:03Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/edda_marsh_the_wither_at_the_window.json"
+    },
+    {
+      "id": "halen-l1-a",
+      "applied_at": "2026-05-29T07:08:11Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l1-b",
+      "applied_at": "2026-05-29T08:03:45Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l2-a",
+      "applied_at": "2026-05-29T08:58:41Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l2-b",
+      "applied_at": "2026-05-29T10:03:49Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l3-a",
+      "applied_at": "2026-05-29T10:59:42Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l3-b",
+      "applied_at": "2026-05-29T12:51:26Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l4-a",
+      "applied_at": "2026-05-29T13:48:09Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l4-b",
+      "applied_at": "2026-05-29T15:12:40Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l5-a",
+      "applied_at": "2026-05-29T16:11:43Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l5-b",
+      "applied_at": "2026-05-29T17:15:32Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l6-a",
+      "applied_at": "2026-05-29T18:57:25Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l6-b",
+      "applied_at": "2026-05-29T22:01:21Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l7-a",
+      "applied_at": "2026-05-30T01:13:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l7-b",
+      "applied_at": "2026-05-30T05:08:31Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l8-a",
+      "applied_at": "2026-05-30T08:24:07Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l8-b",
+      "applied_at": "2026-05-30T11:33:04Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l9-a",
+      "applied_at": "2026-05-30T14:35:48Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l9-b",
+      "applied_at": "2026-05-30T18:52:23Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l10-a",
+      "applied_at": "2026-05-30T22:03:23Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "halen-l10-b",
+      "applied_at": "2026-05-31T01:22:51Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/halen_pent_white_eyed_man.json"
+    },
+    {
+      "id": "soll-l1-a",
+      "applied_at": "2026-05-31T05:21:46Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json"
+    },
+    {
+      "id": "soll-l1-b",
+      "applied_at": "2026-05-31T05:50:21Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/soll_marra_the_borrowed_champion.json"
     }
   ]
 }

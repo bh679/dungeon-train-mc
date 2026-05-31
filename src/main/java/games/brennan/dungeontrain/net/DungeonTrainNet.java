@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "22";
+    public static final String PROTOCOL_VERSION = "23";
 
     private DungeonTrainNet() {}
 
@@ -73,6 +73,9 @@ public final class DungeonTrainNet {
 
         // Starting-book close-detection: client ScreenEvent.Closing → server burn flow.
         registrar.playToServer(StartingBookClosedPacket.TYPE, StartingBookClosedPacket.STREAM_CODEC, StartingBookClosedPacket::handle);
+
+        // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
+        registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

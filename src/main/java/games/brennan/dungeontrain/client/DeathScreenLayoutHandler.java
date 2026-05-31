@@ -5,6 +5,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
@@ -13,9 +14,10 @@ import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -30,6 +32,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.levelgen.WorldDimensions;
@@ -49,25 +53,30 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
- * Rewrites the vanilla DeathScreen into three rows on singleplayer Dungeon
- * Train worlds:
+ * Rewrites the vanilla DeathScreen into a compact "death recap" layout on
+ * singleplayer Dungeon Train worlds:
  *
  * <pre>
- *   [        New World        ]   full width
- *   [ Respawn ][  Same World  ]   half width each
- *   [      Title Screen       ]   shifted down one row
+ *                       You Died!
+ *                      Killed by &lt;mob&gt;
+ *
+ *   [ DIST  TIME  CARTS  MOBS  LOOT  BOOKS ]   stats strip
+ *   [ Weapon [I]                Armor [I][I][I][I] ]   loadout strip
+ *
+ *   [    New World    ][   Title Screen    ]   side-by-side buttons
  * </pre>
  *
- * <p>The Respawn button is wrapped in a {@link ConfirmScreen} warning the
- * player that respawn is currently buggy. "Continue anyway" performs the
- * vanilla respawn; "Okay" opens {@link ChooseWorldScreen} so the player can
- * pick between New World and Same World on a dedicated screen.</p>
+ * <p>The "Respawn" and "Same World" buttons are intentionally absent — in
+ * Dungeon Train, dying ends the run; the only continuations are starting a
+ * new world or exiting to the title screen. Same-seed re-runs are still
+ * accessible from the title-screen world picker.</p>
  *
- * <p>New World creates a fresh save with a random seed; Same World reuses
- * the current world's seed. Both carry forward the current world's vanilla
- * settings (game mode, difficulty, hardcore, data packs) and Dungeon Train
- * options (trainY, startsWithTrain, carriage dims, generation mode, group
- * size, starting dimension) via {@link PendingWorldChoices}.</p>
+ * <p>New World creates a fresh save with a random seed. It carries forward
+ * the current world's vanilla settings (game mode, difficulty, hardcore,
+ * data packs) and Dungeon Train options (trainY, startsWithTrain, carriage
+ * dims, generation mode, group size) via {@link PendingWorldChoices};
+ * starting dimension is rolled fresh by
+ * {@link StartingDimension#rollRespawnDimension} per the 94/5/1 distribution.</p>
  *
  * <p>Hardcore and LAN/multiplayer death screens are left untouched: vanilla
  * has no respawn button in hardcore, and we can't recreate a world we don't
@@ -82,13 +91,62 @@ public final class DeathScreenLayoutHandler {
     private static final Component TITLE_SCREEN_KEY = Component.translatable("deathScreen.titleScreen");
 
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.death.new_world");
-    private static final Component SAME_WORLD_LABEL = Component.translatable("gui.dungeontrain.death.same_world");
 
     private static final ResourceKey<WorldPreset> DT_OVERWORLD = preset("dungeon_train");
     private static final ResourceKey<WorldPreset> DT_NETHER = preset("dungeon_train_nether");
     private static final ResourceKey<WorldPreset> DT_END = preset("dungeon_train_end");
 
     private static final int GAP = 4;
+    private static final int PANEL_GAP = 4;
+    private static final int FONT_LINE = 9;
+    private static final int ICON_SIZE = 16;
+
+    private static final int STATS_PAD_H = 12;
+    private static final int STATS_PAD_V = 6;
+    private static final int STATS_LABEL_VALUE_GAP = 2;
+    private static final int STATS_PANEL_H =
+            STATS_PAD_V + FONT_LINE + STATS_LABEL_VALUE_GAP + FONT_LINE + STATS_PAD_V;
+
+    private static final int LOADOUT_PAD_H = 12;
+    private static final int LOADOUT_PAD_V = 6;
+    private static final int LOADOUT_PANEL_H = LOADOUT_PAD_V + ICON_SIZE + LOADOUT_PAD_V;
+    private static final int ARMOR_ICON_GAP = 2;
+
+    private static final int PANEL_BG = 0xB8101010;
+    private static final int PANEL_BORDER = 0x66FF5555;
+    private static final int PANEL_BORDER_H = 1;
+    private static final int LABEL_COLOR = 0xBBBBBB;
+    private static final int VALUE_COLOR = 0xFFFFFF;
+    private static final int EMPTY_SLOT_COLOR = 0x40FFFFFF;
+
+    /**
+     * Headroom above the stats panel top, leaving room for the scaled
+     * {@code You Died!} title (renders at scaled y=60–78) and the mixin-
+     * relocated subtitle (renders at y=82–91). Below this threshold the
+     * panels are skipped and the screen falls back to vanilla layout.
+     */
+    private static final int MIN_STATS_TOP_Y = 95;
+
+    private static final Component STATS_WEAPON_LABEL = Component.translatable("gui.dungeontrain.death.stats.weapon");
+    private static final Component STATS_ARMOR_LABEL = Component.translatable("gui.dungeontrain.death.stats.armor");
+
+    private static final Component STATS_SHORT_DISTANCE = Component.translatable("gui.dungeontrain.death.stats.short.distance");
+    private static final Component STATS_SHORT_TIME = Component.translatable("gui.dungeontrain.death.stats.short.time");
+    private static final Component STATS_SHORT_CARTS = Component.translatable("gui.dungeontrain.death.stats.short.carts");
+    private static final Component STATS_SHORT_MOBS = Component.translatable("gui.dungeontrain.death.stats.short.mobs");
+    private static final Component STATS_SHORT_LOOT = Component.translatable("gui.dungeontrain.death.stats.short.loot");
+    private static final Component STATS_SHORT_BOOKS = Component.translatable("gui.dungeontrain.death.stats.short.books");
+
+    /**
+     * Set by {@link #onScreenInitPost} so {@link #onScreenRenderPost} knows
+     * where to draw the panels for THIS DeathScreen instance. Cleared on
+     * close to avoid stale values leaking to a non-death screen.
+     */
+    private static int panelX = 0;
+    private static int panelW = 0;
+    private static int statsY = 0;
+    private static int loadoutY = 0;
+    private static boolean statsPanelActive = false;
 
     private DeathScreenLayoutHandler() {}
 
@@ -111,23 +169,164 @@ public final class DeathScreenLayoutHandler {
         int halfW = (slotW - GAP) / 2;
         int rowSpacing = slotH + GAP;
 
+        // Buttons are anchored two rows below vanilla's Respawn slot (i.e.
+        // roughly where the THIRD vanilla button row would be in the prior
+        // three-row layout). Pushing them down frees the middle of the
+        // screen for the stats + loadout panel stack.
+        int buttonsY = slotY + rowSpacing * 2;
+
+        int screenW = deathScreen.width;
+        panelW = Math.min(380, screenW - 80);
+        panelX = (screenW - panelW) / 2;
+        loadoutY = buttonsY - GAP - LOADOUT_PANEL_H;
+        statsY = loadoutY - PANEL_GAP - STATS_PANEL_H;
+        statsPanelActive = statsY >= MIN_STATS_TOP_Y;
+
+        // Drop vanilla's Respawn and Title buttons. In Option D the death
+        // screen has exactly two actions: start a new world, or exit to the
+        // title screen. Respawn-in-current-world is gone by design — death
+        // ends the run.
         event.removeListener(respawn);
-        title.setY(title.getY() + rowSpacing);
-
-        Button wrappedRespawn = Button.builder(RESPAWN_KEY, b -> showRespawnConfirm(deathScreen))
-                .bounds(slotX, slotY + rowSpacing, halfW, slotH)
-                .build();
-        event.addListener(wrappedRespawn);
-
-        Button sameWorld = Button.builder(SAME_WORLD_LABEL, b -> launchWorld(deathScreen, true))
-                .bounds(slotX + halfW + GAP, slotY + rowSpacing, halfW, slotH)
-                .build();
-        event.addListener(sameWorld);
+        event.removeListener(title);
 
         Button newWorld = Button.builder(NEW_WORLD_LABEL, b -> launchWorld(deathScreen, false))
-                .bounds(slotX, slotY, slotW, slotH)
+                .bounds(slotX, buttonsY, halfW, slotH)
                 .build();
         event.addListener(newWorld);
+
+        // Title goes through the project's direct path (no vanilla
+        // "Are you sure?" confirm screen), and uses the same Sable pre-drain
+        // dance as launchWorld so the integrated server tears down cleanly.
+        Button newTitle = Button.builder(TITLE_SCREEN_KEY, b -> goToTitleScreen())
+                .bounds(slotX + halfW + GAP, buttonsY, halfW, slotH)
+                .build();
+        event.addListener(newTitle);
+    }
+
+    /**
+     * Draw the stats strip + loadout strip above the button row. Skipped
+     * when {@link #onScreenInitPost} flagged the layout as too cramped, or
+     * when no {@link DeathStatsPacket} has been received yet for this death.
+     */
+    @SubscribeEvent
+    public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
+        if (!statsPanelActive) return;
+        if (!(event.getScreen() instanceof DeathScreen)) return;
+        DeathStatsPacket stats = DeathStatsCache.get();
+        if (stats == null) return;
+
+        GuiGraphics graphics = event.getGuiGraphics();
+        Font font = Minecraft.getInstance().font;
+        int mouseX = event.getMouseX();
+        int mouseY = event.getMouseY();
+
+        // Stats strip: 6 evenly-distributed cells, small uppercase label
+        // above value. Cell centers are spaced cellWidth apart.
+        fillPanel(graphics, panelX, statsY, panelW, STATS_PANEL_H);
+        int cellW = (panelW - STATS_PAD_H * 2) / 6;
+        int labelLineY = statsY + STATS_PAD_V;
+        int valueLineY = labelLineY + FONT_LINE + STATS_LABEL_VALUE_GAP;
+        int firstCellCenter = panelX + STATS_PAD_H + cellW / 2;
+
+        drawStatCell(graphics, font, STATS_SHORT_DISTANCE, formatDistance(stats.distanceBlocks()),
+                firstCellCenter, labelLineY, valueLineY);
+        drawStatCell(graphics, font, STATS_SHORT_TIME, formatTime(stats.runTicks()),
+                firstCellCenter + cellW, labelLineY, valueLineY);
+        drawStatCell(graphics, font, STATS_SHORT_CARTS, String.valueOf(stats.cartsTravelled()),
+                firstCellCenter + cellW * 2, labelLineY, valueLineY);
+        drawStatCell(graphics, font, STATS_SHORT_MOBS, String.valueOf(stats.mobKills()),
+                firstCellCenter + cellW * 3, labelLineY, valueLineY);
+        drawStatCell(graphics, font, STATS_SHORT_LOOT, String.valueOf(stats.containersOpened()),
+                firstCellCenter + cellW * 4, labelLineY, valueLineY);
+        drawStatCell(graphics, font, STATS_SHORT_BOOKS, String.valueOf(stats.booksRead()),
+                firstCellCenter + cellW * 5, labelLineY, valueLineY);
+
+        // Loadout strip: Weapon (label + 1 slot) left-anchored, Armor
+        // (label + 4 slots) right-anchored. Same panel width as stats.
+        fillPanel(graphics, panelX, loadoutY, panelW, LOADOUT_PANEL_H);
+        int iconRowY = loadoutY + LOADOUT_PAD_V;
+        int labelBaseline = iconRowY + (ICON_SIZE - font.lineHeight) / 2 + 1;
+
+        int weaponLabelX = panelX + LOADOUT_PAD_H;
+        graphics.drawString(font, STATS_WEAPON_LABEL, weaponLabelX, labelBaseline, LABEL_COLOR, false);
+        int weaponSlotX = weaponLabelX + font.width(STATS_WEAPON_LABEL) + GAP;
+        renderItemSlot(graphics, stats.mostUsedWeapon(), weaponSlotX, iconRowY, mouseX, mouseY);
+
+        int armorRowW = 4 * ICON_SIZE + 3 * ARMOR_ICON_GAP;
+        int armorRowX = panelX + panelW - LOADOUT_PAD_H - armorRowW;
+        graphics.drawString(font, STATS_ARMOR_LABEL,
+                armorRowX - GAP - font.width(STATS_ARMOR_LABEL),
+                labelBaseline, LABEL_COLOR, false);
+        ItemStack[] armorStacks = { stats.armorHead(), stats.armorChest(), stats.armorLegs(), stats.armorFeet() };
+        for (int i = 0; i < 4; i++) {
+            int slotX = armorRowX + i * (ICON_SIZE + ARMOR_ICON_GAP);
+            renderItemSlot(graphics, armorStacks[i], slotX, iconRowY, mouseX, mouseY);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onScreenClosing(ScreenEvent.Closing event) {
+        if (event.getScreen() instanceof DeathScreen) {
+            statsPanelActive = false;
+        }
+    }
+
+    /**
+     * Translucent panel fill with a thin red top-edge accent. Reused for
+     * both the stats strip and the loadout strip so the two read as a pair.
+     */
+    private static void fillPanel(GuiGraphics graphics, int x, int y, int w, int h) {
+        graphics.fill(x, y, x + w, y + h, PANEL_BG);
+        graphics.fill(x, y, x + w, y + PANEL_BORDER_H, PANEL_BORDER);
+    }
+
+    /**
+     * Draw one stat cell: small uppercase label centered above a larger
+     * white value, both anchored to {@code centerX}.
+     */
+    private static void drawStatCell(GuiGraphics graphics, Font font,
+                                     Component label, String value,
+                                     int centerX, int labelY, int valueY) {
+        int labelW = font.width(label);
+        graphics.drawString(font, label, centerX - labelW / 2, labelY, LABEL_COLOR, false);
+        int valueW = font.width(value);
+        graphics.drawString(font, value, centerX - valueW / 2, valueY, VALUE_COLOR, false);
+    }
+
+    /**
+     * Render a single item slot + tooltip on hover. Empty stacks render as
+     * a faint placeholder box so the layout doesn't shift when a slot is
+     * missing.
+     */
+    private static void renderItemSlot(GuiGraphics graphics, ItemStack stack,
+                                       int x, int y, int mouseX, int mouseY) {
+        if (stack.isEmpty()) {
+            graphics.fill(x, y, x + ICON_SIZE, y + ICON_SIZE, EMPTY_SLOT_COLOR);
+            return;
+        }
+        graphics.renderItem(stack, x, y);
+        graphics.renderItemDecorations(Minecraft.getInstance().font, stack, x, y);
+        if (mouseX >= x && mouseX < x + ICON_SIZE
+                && mouseY >= y && mouseY < y + ICON_SIZE) {
+            graphics.renderTooltip(Minecraft.getInstance().font,
+                    Screen.getTooltipFromItem(Minecraft.getInstance(), stack),
+                    stack.getTooltipImage(), mouseX, mouseY);
+        }
+    }
+
+    private static String formatDistance(double blocks) {
+        return String.format("%,.0f m", blocks);
+    }
+
+    private static String formatTime(long ticks) {
+        long totalSeconds = ticks / 20L;
+        long hours = totalSeconds / 3600L;
+        long minutes = (totalSeconds % 3600L) / 60L;
+        long seconds = totalSeconds % 60L;
+        if (hours > 0L) {
+            return String.format("%d:%02d:%02d", hours, minutes, seconds);
+        }
+        return String.format("%d:%02d", minutes, seconds);
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed) {
@@ -142,7 +341,9 @@ public final class DeathScreenLayoutHandler {
         LevelSettings cur = worldData.getLevelSettings();
         WorldOptions curOpts = worldData.worldGenOptions();
 
-        StartingDimension startingDim = StartingDimension.OVERWORLD;
+        StartingDimension startingDim = StartingDimension.rollRespawnDimension(
+                RandomSource.create().nextDouble());
+        LOGGER.info("DeathScreenLayout: respawn rolled startingDimension={}", startingDim);
         ServerLevel overworld = server.overworld();
         if (overworld != null) {
             try {
@@ -154,7 +355,6 @@ public final class DeathScreenLayoutHandler {
                             dt.dims(),
                             DungeonTrainConfig.getGenerationMode(),
                             DungeonTrainConfig.getGroupSize());
-                    startingDim = dt.startingDimension();
                 }
             } catch (Exception e) {
                 LOGGER.warn("DeathScreenLayout: failed to read DungeonTrainWorldData; new world will use mod defaults.", e);
@@ -278,21 +478,25 @@ public final class DeathScreenLayoutHandler {
         }
     }
 
-    private static void showRespawnConfirm(Screen deathScreen) {
+    /**
+     * Exit to the title screen directly, without vanilla's "Are you sure
+     * you want to give up?" ConfirmScreen. In singleplayer this still has
+     * to tear down the integrated server with the Sable sub-level
+     * pre-drain — otherwise the chunk map's stopServer wait loop spins
+     * forever (see {@link #preDrainTrainSubLevels} and the save-and-quit
+     * hang memory in this project).
+     */
+    public static void goToTitleScreen() {
         Minecraft mc = Minecraft.getInstance();
-        mc.setScreen(new ConfirmScreen(
-                proceed -> {
-                    if (proceed) {
-                        if (mc.player != null) mc.player.respawn();
-                        mc.setScreen(null);
-                    } else {
-                        mc.setScreen(new ChooseWorldScreen(deathScreen));
-                    }
-                },
-                Component.translatable("gui.dungeontrain.death.confirm_title"),
-                Component.translatable("gui.dungeontrain.death.confirm_message"),
-                Component.translatable("gui.dungeontrain.death.confirm_yes"),
-                Component.translatable("gui.dungeontrain.death.confirm_no")));
+        MinecraftServer server = mc.getSingleplayerServer();
+        if (server != null) {
+            preDrainTrainSubLevels(server);
+        }
+        if (mc.level != null) {
+            mc.level.disconnect();
+        }
+        mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        mc.setScreen(new TitleScreen());
     }
 
     private static Button findButton(ScreenEvent.Init.Post event, Component message) {

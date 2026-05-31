@@ -54,4 +54,25 @@ public enum StartingDimension {
         if ("dungeon_train_end".equals(path)) return END;
         return OVERWORLD;
     }
+
+    /**
+     * Roll the starting dimension for a respawn — either when the player
+     * clicks "New World" / "Same World" on the death screen (consumed by
+     * {@code DeathScreenLayoutHandler.launchWorld}) or when they click the
+     * vanilla "Respawn" button (consumed by {@code RespawnDimensionEvents}).
+     * Caller passes a uniform draw on {@code [0, 1)}: {@code r < 0.01} → End
+     * (1%), {@code r < 0.06} → Nether (5%), else Overworld (94%). The world's
+     * current starting dimension is ignored — every death rolls independently,
+     * so a player already in the Nether still has a 94% chance of waking up in
+     * the Overworld.
+     *
+     * <p>Pure function over {@code r} so unit tests can pin boundaries
+     * exactly without stubbing a {@code RandomSource}. Lives on this enum
+     * (not on a client-only class) so server code can call it too.</p>
+     */
+    public static StartingDimension rollRespawnDimension(double r) {
+        if (r < 0.01) return END;
+        if (r < 0.06) return NETHER;
+        return OVERWORLD;
+    }
 }

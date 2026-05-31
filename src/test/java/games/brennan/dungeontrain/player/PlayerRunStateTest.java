@@ -9,6 +9,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -119,7 +120,10 @@ final class PlayerRunStateTest {
             new BlockPos(10, 64, 20),
             new BlockPos(-5, 70, 15)
         );
-        PlayerRunState original = new PlayerRunState(chests, 11, 4, 17);
+        // Constructor signature: chests, cartsSinceDeath, cartsBackwardSinceDeath,
+        // travelledCarriageIndex, mobKills, distanceBlocks, runTicks,
+        // containersOpened, booksReadCount, weaponKills.
+        PlayerRunState original = new PlayerRunState(chests, 11, 4, 17, 0, 0.0, 0L, 0, 0, Map.of());
 
         DataResult<Tag> encoded = PlayerRunState.CODEC.encodeStart(NbtOps.INSTANCE, original);
         Tag tag = encoded.result().orElseThrow(

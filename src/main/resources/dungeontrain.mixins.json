@@ -21,7 +21,8 @@
     "client.MainMenuLogoMixin",
     "client.LevelLoadingScreenProgressMixin",
     "client.AdvancementsScreenAccessor",
-    "client.AdvancementWidgetHideDescMixin"
+    "client.AdvancementWidgetHideDescMixin",
+    "client.DeathScreenMoveTextMixin"
   ],
   "server": [],
   "injectors": {
