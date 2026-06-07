@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/multiplayer",
+  "display": {
+    "icon": { "id": "minecraft:name_tag" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_denamed.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_denamed.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "named": {
+      "trigger": "dungeontrain:named_playermob"
+    }
+  },
+  "requirements": [["named"]]
+}

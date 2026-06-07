@@ -49,6 +49,23 @@ public final class ModAdvancementTriggers {
     public static final Supplier<StartingBooksReadTrigger> STARTING_BOOKS_READ =
         TRIGGERS.register("starting_books_read", StartingBooksReadTrigger::new);
 
+    // --- PlayerMob & PvP advancements ---
+
+    public static final Supplier<GavePlayerMobUnrequitedTrigger> GAVE_PLAYERMOB_UNREQUITED =
+        TRIGGERS.register("gave_playermob_unrequited", GavePlayerMobUnrequitedTrigger::new);
+
+    public static final Supplier<BefriendedPlayerMobTrigger> BEFRIENDED_PLAYERMOB =
+        TRIGGERS.register("befriended_playermob", BefriendedPlayerMobTrigger::new);
+
+    public static final Supplier<NamedPlayerMobTrigger> NAMED_PLAYERMOB =
+        TRIGGERS.register("named_playermob", NamedPlayerMobTrigger::new);
+
+    public static final Supplier<PushedPlayerMobOffTrainTrigger> PUSHED_PLAYERMOB_OFF_TRAIN =
+        TRIGGERS.register("pushed_playermob_off_train", PushedPlayerMobOffTrainTrigger::new);
+
+    public static final Supplier<DefendedPlayerMobTrigger> DEFENDED_PLAYERMOB =
+        TRIGGERS.register("defended_playermob", DefendedPlayerMobTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {
