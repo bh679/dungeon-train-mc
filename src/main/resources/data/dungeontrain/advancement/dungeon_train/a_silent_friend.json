@@ -10,9 +10,9 @@
     "hidden": false
   },
   "criteria": {
-    "received_gift": {
-      "trigger": "dungeontrain:received_playermob_gift"
+    "gave_unrequited": {
+      "trigger": "dungeontrain:gave_playermob_unrequited"
     }
   },
-  "requirements": [["received_gift"]]
+  "requirements": [["gave_unrequited"]]
 }

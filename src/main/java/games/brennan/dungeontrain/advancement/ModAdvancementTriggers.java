@@ -51,8 +51,8 @@ public final class ModAdvancementTriggers {
 
     // --- PlayerMob & PvP advancements ---
 
-    public static final Supplier<ReceivedPlayerMobGiftTrigger> RECEIVED_PLAYERMOB_GIFT =
-        TRIGGERS.register("received_playermob_gift", ReceivedPlayerMobGiftTrigger::new);
+    public static final Supplier<GavePlayerMobUnrequitedTrigger> GAVE_PLAYERMOB_UNREQUITED =
+        TRIGGERS.register("gave_playermob_unrequited", GavePlayerMobUnrequitedTrigger::new);
 
     public static final Supplier<BefriendedPlayerMobTrigger> BEFRIENDED_PLAYERMOB =
         TRIGGERS.register("befriended_playermob", BefriendedPlayerMobTrigger::new);

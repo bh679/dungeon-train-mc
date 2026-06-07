@@ -9,30 +9,32 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Server-side, in-memory tracker for two-way item exchanges between a player
- * and individual PlayerMobs. Backs the <em>A Silent Friend</em> and
- * <em>Friends</em> advancements.
+ * Server-side, in-memory tracker for item exchanges between a player and
+ * individual PlayerMobs. Backs the <em>Simon's Desperation</em> and
+ * <em>Come On, Grab Your Friends</em> advancements.
  *
  * <p>Two halves are recorded per (player, mob) pair, in either order:</p>
  * <ul>
- *   <li><b>received</b> — a PlayerMob gifted the player an item
- *       ({@code PlayerMobEntity.giveItemTo}, captured by
- *       {@code mixin.PlayerMobGiveItemMixin}). Each such gift also unlocks
- *       <em>A Silent Friend</em>.</li>
  *   <li><b>gave</b> — a PlayerMob picked up an item the player dropped
- *       ({@code PlayerMobEntity.tryPickUpFloorItem} with the item's thrower
- *       resolving to the player, captured by
- *       {@code mixin.PlayerMobPickupMixin}).</li>
+ *       ({@code tryPickUpFloorItem} with the item's thrower resolving to the
+ *       player, via {@code mixin.PlayerMobPickupMixin}).</li>
+ *   <li><b>received</b> — a PlayerMob gifted the player an item
+ *       ({@code giveItemTo}, via {@code mixin.PlayerMobGiveItemMixin}).</li>
  * </ul>
  *
- * <p>When both halves exist for the same pair, <em>Friends</em> fires. State
- * is intentionally transient (cleared on logout via {@link #forget} and on
- * server restart) — the advancements themselves persist through the existing
- * {@code GlobalAchievementStore} sidecar once granted, so the pairing state
- * only needs to live long enough to observe both halves within a session.</p>
+ * <p>Outcomes:</p>
+ * <ul>
+ *   <li>You give a mob an item and it has given you nothing back →
+ *       <em>Simon's Desperation</em> (unrequited giving).</li>
+ *   <li>Both halves exist for the same pair (either order) →
+ *       <em>Come On, Grab Your Friends</em> (mutual exchange).</li>
+ * </ul>
  *
- * <p>All mutations run on the server thread (mob AI / pickup / interaction
- * ticks); {@code synchronized} is a cheap belt-and-braces guard.</p>
+ * <p>State is transient (cleared on logout via {@link #forget} and on server
+ * restart); granted advancements persist through the existing
+ * {@code GlobalAchievementStore} sidecar, so the pairing state only needs to
+ * live long enough to observe both halves within a session. All mutations run
+ * on the server thread; {@code synchronized} is a cheap guard.</p>
  */
 public final class PlayerMobSocialTracker {
 
@@ -45,14 +47,15 @@ public final class PlayerMobSocialTracker {
     private PlayerMobSocialTracker() {}
 
     /**
-     * A PlayerMob gifted {@code player} an item. Always unlocks
-     * <em>A Silent Friend</em>; unlocks <em>Friends</em> if the player has
-     * already given this same mob an item.
+     * A PlayerMob gifted {@code player} an item. Unlocks <em>Come On, Grab
+     * Your Friends</em> if the player has already given this same mob an item
+     * (mutual exchange). A mob-initiated gift on its own grants nothing —
+     * Simon's Desperation is specifically the <em>unrequited</em> case where
+     * the player gives and gets nothing back.
      */
     public static synchronized void recordMobGift(ServerPlayer player, UUID mobUuid) {
         UUID playerUuid = player.getUUID();
         RECEIVED_FROM.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(mobUuid);
-        ModAdvancementTriggers.RECEIVED_PLAYERMOB_GIFT.get().trigger(player);
         if (GAVE_TO.getOrDefault(playerUuid, Set.of()).contains(mobUuid)) {
             ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
         }
@@ -60,14 +63,17 @@ public final class PlayerMobSocialTracker {
 
     /**
      * {@code player} gave a PlayerMob an item (it picked up the player's
-     * drop). Unlocks <em>Friends</em> if the mob has already gifted the
-     * player.
+     * drop). If the mob has already gifted the player, the exchange is mutual
+     * → <em>Come On, Grab Your Friends</em>. Otherwise the gift is unanswered
+     * → <em>Simon's Desperation</em>.
      */
     public static synchronized void recordPlayerGift(ServerPlayer player, UUID mobUuid) {
         UUID playerUuid = player.getUUID();
         GAVE_TO.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(mobUuid);
         if (RECEIVED_FROM.getOrDefault(playerUuid, Set.of()).contains(mobUuid)) {
             ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
+        } else {
+            ModAdvancementTriggers.GAVE_PLAYERMOB_UNREQUITED.get().trigger(player);
         }
     }
 

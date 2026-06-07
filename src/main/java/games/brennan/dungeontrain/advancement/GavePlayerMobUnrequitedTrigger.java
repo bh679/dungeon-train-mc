@@ -10,23 +10,24 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Optional;
 
 /**
- * Fires the first time a PlayerMob gifts the player an item — the "wordless
- * greeting" of a FRIENDLY passenger (the bundled playermob mod's
- * {@code FriendlyGreetGoal} → {@code giveItemTo}). Backs the
- * <em>A Silent Friend</em> advancement.
+ * Fires when the player gives a PlayerMob an item and that mob has given the
+ * player nothing in return — one-sided, unrequited giving. Backs the
+ * <em>Simon's Desperation</em> advancement. (If the mob has already gifted
+ * the player, the exchange is mutual and {@link BefriendedPlayerMobTrigger}
+ * fires instead.)
  *
  * <p>Marker trigger: carries only the standard optional {@code player}
  * predicate. Fired from
  * {@link games.brennan.dungeontrain.advancement.PlayerMobSocialTracker}
- * (driven by {@code mixin.PlayerMobGiveItemMixin}); vanilla advancement
- * dedupe keeps it to a single grant per player.</p>
+ * (driven by {@code mixin.PlayerMobPickupMixin}); vanilla advancement dedupe
+ * keeps it to a single grant per player.</p>
  *
  * <p>JSON shape:
  * <pre>{@code
- * { "trigger": "dungeontrain:received_playermob_gift" }
+ * { "trigger": "dungeontrain:gave_playermob_unrequited" }
  * }</pre>
  */
-public final class ReceivedPlayerMobGiftTrigger extends SimpleCriterionTrigger<ReceivedPlayerMobGiftTrigger.Instance> {
+public final class GavePlayerMobUnrequitedTrigger extends SimpleCriterionTrigger<GavePlayerMobUnrequitedTrigger.Instance> {
 
     @Override
     public Codec<Instance> codec() {
