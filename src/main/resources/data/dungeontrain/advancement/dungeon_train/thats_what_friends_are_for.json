@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/friends",
+  "display": {
+    "icon": { "id": "minecraft:shield" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.thats_what_friends_are_for.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.thats_what_friends_are_for.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "defended": {
+      "trigger": "dungeontrain:defended_playermob"
+    }
+  },
+  "requirements": [["defended"]]
+}

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/multiplayer",
   "display": {
     "icon": { "id": "minecraft:iron_sword" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.murderous_intent.title" },

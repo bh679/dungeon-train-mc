@@ -9,9 +9,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -123,6 +126,26 @@ public final class PlayerMobAdvancementEvents {
                 }
                 RECENT_HITS.remove(mobUuid);
             }
+        }
+    }
+
+    // ---------------- That's What Friends Are For ----------------
+
+    /**
+     * Fires when the player kills a hostile mob that is currently targeting a
+     * PlayerMob — coming to a passenger's defence. A mob keeps its target
+     * through death, so checking {@code getTarget()} in the death event
+     * reliably catches the "kill the thing attacking a passenger" case.
+     * Mirrors the kill-credit shape of {@code RunStatsEvents.onMobKilled}.
+     */
+    @SubscribeEvent
+    public static void onMobKilled(LivingDeathEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (victim.level().isClientSide) return;
+        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (!(victim instanceof Mob mob)) return;
+        if (isPlayerMob(mob.getTarget())) {
+            ModAdvancementTriggers.DEFENDED_PLAYERMOB.get().trigger(player);
         }
     }
 

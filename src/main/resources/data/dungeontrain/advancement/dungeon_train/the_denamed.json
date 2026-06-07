@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/multiplayer",
   "display": {
     "icon": { "id": "minecraft:name_tag" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.the_denamed.title" },

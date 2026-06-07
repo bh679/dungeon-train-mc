@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/multiplayer",
   "display": {
     "icon": { "id": "minecraft:poppy" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.a_silent_friend.title" },

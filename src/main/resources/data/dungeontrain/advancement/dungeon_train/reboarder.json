@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/murderous_intent",
+  "parent": "dungeontrain:dungeon_train/multiplayer",
   "display": {
     "icon": { "id": "minecraft:rail" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reboarder.title" },

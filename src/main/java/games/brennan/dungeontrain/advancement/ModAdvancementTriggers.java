@@ -63,6 +63,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<PushedPlayerMobOffTrainTrigger> PUSHED_PLAYERMOB_OFF_TRAIN =
         TRIGGERS.register("pushed_playermob_off_train", PushedPlayerMobOffTrainTrigger::new);
 
+    public static final Supplier<DefendedPlayerMobTrigger> DEFENDED_PLAYERMOB =
+        TRIGGERS.register("defended_playermob", DefendedPlayerMobTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {
