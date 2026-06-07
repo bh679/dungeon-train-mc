@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.train.TrainMembership;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -63,7 +64,7 @@ public final class MobDifficultyEvents {
         Entity entity = event.getEntity();
         if (!(entity instanceof Mob mob)) return;
         if (!(mob instanceof Enemy)) return;
-        if (!isOnTrain(mob)) return;
+        if (!TrainMembership.isOnTrain(mob)) return;
         if (!DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) return;
 
         CompoundTag persistent = mob.getPersistentData();
@@ -96,12 +97,5 @@ public final class MobDifficultyEvents {
             }
         }
         return max;
-    }
-
-    private static boolean isOnTrain(Entity entity) {
-        for (String tag : entity.getTags()) {
-            if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
-        }
-        return false;
     }
 }

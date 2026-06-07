@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.train.TrainMembership;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -78,7 +79,7 @@ public final class VillagerTrainSpawnEvents {
 
         Entity entity = event.getEntity();
         if (!(entity instanceof Villager villager)) return;
-        if (!isOnTrain(villager)) return;
+        if (!TrainMembership.isOnTrain(villager)) return;
 
         // Train villagers are spawned via CarriageContentsPlacer's NBT path
         // (EntityType.create(nbt, level) + level.addFreshEntity), which never
@@ -120,13 +121,6 @@ public final class VillagerTrainSpawnEvents {
             if (roll < cumulative) return i + 1;
         }
         return MAX_LEVEL;
-    }
-
-    private static boolean isOnTrain(Entity entity) {
-        for (String tag : entity.getTags()) {
-            if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
-        }
-        return false;
     }
 
     private static MerchantOffers generateOffersFor(Villager villager,
