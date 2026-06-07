@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -10,6 +11,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
+import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -89,5 +91,13 @@ public class DungeonTrain {
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         LOGGER.info("Dungeon Train common setup");
+
+        // Restrict Adventure Item Names' ambient mob naming (villagers + passive
+        // animals) to entities on the train: off-train / vanilla-world mobs are
+        // no longer auto-named while DT is installed. PlayerMob naming is left
+        // untouched (it bypasses the gate inside AIN). AIN is always bundled via
+        // jarJar, so NamingConfig is always present — no ModList.isLoaded guard
+        // needed. The gate is a cheap tag-prefix scan (TrainMembership).
+        NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
     }
 }
