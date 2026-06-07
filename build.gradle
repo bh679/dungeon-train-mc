@@ -191,6 +191,12 @@ dependencies {
     implementation "bh679:adventureitemstats:${adventureitemstats_version}"
     jarJar(group: 'bh679', name: 'adventureitemstats', version: adventureitemstats_version)
 
+    // PlayerMob (Interactive Player Mobs) — same bundling contract as AIN/AIS
+    // above (sibling mod, same author, same Ivy repo via the bh679 group). See
+    // gradle.properties for the version + Modrinth/CurseForge status comment.
+    implementation "bh679:playermob:${playermob_version}"
+    jarJar(group: 'bh679', name: 'playermob', version: playermob_version)
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -257,6 +263,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         git_branch                 : gitBranch,
         adventureitemnames_version : adventureitemnames_version,
         adventureitemstats_version : adventureitemstats_version,
+        playermob_version          : playermob_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

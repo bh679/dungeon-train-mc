@@ -3,19 +3,22 @@
 After every real release of Dungeon Train, a tapering cascade of ~22 micro-releases
 fires over the following 14 days. Each tick prefers, in order:
 
-1. **AIN dependency catch-up** — if `adventureitemnames_version` in `gradle.properties`
-   is behind the latest [Adventure Item Names](https://github.com/bh679/adventureitemnames-mc/releases)
-   release, bump it by **one** version step. The workflow runs `./gradlew build` to
-   verify; on build failure the bump is reverted and the cascade falls through.
+1. **Sibling-mod dependency catch-up** — for each sibling mod in declared order
+   (**AIN**, then **AIS**, then **PMOB** — see [Sibling-mod dependency catch-up](#sibling-mod-dependency-catch-up)),
+   if its `*_version` in `gradle.properties` is behind the sibling's latest GitHub
+   release, bump it by **one** version step. First sibling behind wins the tick. The
+   workflow runs `./gradlew build` to verify; on build failure the bump is reverted
+   and the cascade falls through to the next sibling.
 2. **Queue item** — pop `pending[0]` from `queue.json` and apply by type (`new_file` or
    `add_variant`).
 3. **Mode fallback** — depends on the cascade mode (see [Cascade modes](#cascade-modes)).
    In `always` mode this is the auto-balancing loot weight nudge
    (`src/main/resources/data/dungeontrain/loot_table/chests/auto_balancing.json`); in
-   `with-content` and `ain` modes the cascade stops until the next real release.
+   `with-content`, `ain`, and `ais` modes the cascade stops until the next real release.
 
 The cascade's purpose is to keep the mod fresh on Modrinth/CurseForge "recently updated"
-feeds, exercise the release pipeline regularly, and roll AIN updates out incrementally.
+feeds, exercise the release pipeline regularly, and roll sibling-mod updates out
+incrementally.
 
 ## Cadence
 
@@ -67,7 +70,7 @@ Two values are **derived** from the tier list rather than configured separately:
   tier's upper bound also serves as the cascade **stopped cap** (default
   ~14.2d).
 - **Sibling-pending override interval** — `tiers[0].interval_minutes × 60`
-  seconds. The first tier's interval is what AIN/AIS pending updates pin to.
+  seconds. The first tier's interval is what AIN/AIS/PMOB pending updates pin to.
 
 **Fallback to defaults:** unset, malformed JSON, or any schema violation
 (empty `tiers`, missing field, `count < 1`, non-integer `interval_minutes`)
@@ -80,13 +83,13 @@ gh variable delete AUTO_RELEASE_CADENCE
 
 ### Sibling-pending override
 
-While AIN or AIS has a GitHub release that DT is behind on, the cascade pins to
-**phase A (the first tier's interval — 1h by default)** regardless of elapsed
-time since the anchor — siblings ship updates fast, and we want them in the
-bundled jar without sitting in B/C cadence for hours. The override is filtered
+While AIN, AIS, or PMOB has a GitHub release that DT is behind on, the cascade
+pins to **phase A (the first tier's interval — 1h by default)** regardless of
+elapsed time since the anchor — siblings ship updates fast, and we want them in
+the bundled jar without sitting in B/C cadence for hours. The override is filtered
 by [cascade mode](#cascade-modes): in `mode=ain` only AIN-pending pins to the
-first tier, in `mode=ais` only AIS, in `always` and `with-content` either
-sibling triggers it.
+first tier, in `mode=ais` only AIS, in `always` and `with-content` any of the
+three siblings triggers it.
 
 The **stopped cap still wins** — past the cumulative window (default ~14.2d)
 the cascade stops even if siblings remain behind. The next real release
@@ -218,10 +221,10 @@ Or via the UI: **Settings → Secrets and variables → Actions → Variables ta
 | Value | Behaviour |
 |---|---|
 | `false` | **Hard kill.** The cascade job is skipped entirely (scheduled and dispatch). A `disabled-notice` job emits an annotation so the paused state is visible in the Actions UI. |
-| `always` | Fire every cadence tick. Priority: AIN bump → AIS bump → queue item → auto-balance loot nudge. |
-| `with-content` | Fire only when there is something to ship. Priority: AIN bump → AIS bump → queue item → **stop**. When the cascade has nothing to do it sets `state.cascade_stopped=true` and waits for the next real release. |
-| `ain` | Fire only when AIN can be bumped. Priority: AIN bump → **stop**. AIS and queue items are ignored. |
-| `ais` | Fire only when AIS can be bumped. Priority: AIS bump → **stop**. AIN and queue items are ignored. |
+| `always` | Fire every cadence tick. Priority: AIN bump → AIS bump → PMOB bump → queue item → auto-balance loot nudge. |
+| `with-content` | Fire only when there is something to ship. Priority: AIN bump → AIS bump → PMOB bump → queue item → **stop**. When the cascade has nothing to do it sets `state.cascade_stopped=true` and waits for the next real release. |
+| `ain` | Fire only when AIN can be bumped. Priority: AIN bump → **stop**. AIS, PMOB, and queue items are ignored. |
+| `ais` | Fire only when AIS can be bumped. Priority: AIS bump → **stop**. AIN, PMOB, and queue items are ignored. |
 | unset / `true` / anything else | Treated as `always` (back-compat default). |
 
 Parsing is case-insensitive; `false` is matched literally so the job-level guard still
@@ -250,15 +253,17 @@ schedule and clearing the flag), and the cascade resumes.
 
 ## Sibling-mod dependency catch-up
 
-DT bundles two sibling mods via NeoForge jarJar — their resolved versions come from
-`adventureitemnames_version` and `adventureitemstats_version` in `gradle.properties`:
+DT bundles three sibling mods via NeoForge jarJar — their resolved versions come from
+`adventureitemnames_version`, `adventureitemstats_version`, and `playermob_version`
+in `gradle.properties`:
 
 - **AIN** — [Adventure Item Names](https://github.com/bh679/adventureitemnames-mc)
 - **AIS** — [Adventure Item Stats](https://github.com/bh679/adventureitemstats-mc)
+- **PMOB** — [PlayerMob / Interactive Player Mobs](https://github.com/bh679/playermob-mc)
 
 Each sibling ships its own cascade and tends to outpace DT, so each DT auto-tick
-checks them **in order** (AIN first, then AIS). The first sibling with a newer
-GitHub release wins the tick; the rest are deferred to the next tick. If neither
+checks them **in order** (AIN first, then AIS, then PMOB). The first sibling with a
+newer GitHub release wins the tick; the rest are deferred to the next tick. If none
 is behind, the cascade falls through to a queue item or mode-dependent fallback.
 
 For the picked sibling:
@@ -270,21 +275,21 @@ For the picked sibling:
    compiles. The build cache from `gradle/actions/setup-gradle@v3` keeps this fast on
    repeat ticks.
 3. On build success, the cascade commits the bump alongside the PATCH bump and
-   dispatches `release.yml`. Commit message: `chore(auto): bump AIN <old> -> <new>`
-   or `chore(auto): bump AIS <old> -> <new>`.
+   dispatches `release.yml`. Commit message: `chore(auto): bump AIN <old> -> <new>`,
+   `chore(auto): bump AIS <old> -> <new>`, or `chore(auto): bump PMOB <old> -> <new>`.
 4. On build failure, the workflow runs `git checkout -- gradle.properties .github/auto-release/state.json`
    to revert and re-runs `apply-change.py` with the failing sibling's `SKIP_<NAME>=1`
-   (`SKIP_AIN=1` or `SKIP_AIS=1`) so the tick falls through to the next sibling, the
-   queue, or its mode-dependent fallback.
+   (`SKIP_AIN=1`, `SKIP_AIS=1`, or `SKIP_PMOB=1`) so the tick falls through to the next
+   sibling, the queue, or its mode-dependent fallback.
 
 Failures (network blips, sibling repo unreachable, malformed tag) are treated as
 "no bump available" — they are logged as warnings and the cascade falls through
 without erroring.
 
 To extend with another sibling mod in the future: add an entry to `SIBLING_MODS`
-in [apply-change.py](../../scripts/auto-release/apply-change.py), add parallel
+in [siblings.py](../../scripts/auto-release/siblings.py), add parallel
 verify+fallback steps to [auto-release.yml](../workflows/auto-release.yml), and add
-the version property + jarJar + mods.toml dep blocks (see how AIS was added).
+the version property + jarJar + mods.toml dep blocks (see how AIS/PMOB were added).
 
 ## Cancelling on real release
 

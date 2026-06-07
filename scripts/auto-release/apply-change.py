@@ -2,8 +2,8 @@
 """Apply one auto-release cascade tick.
 
 Priority order each tick (modulated by AUTO_RELEASE_MODE):
-  1. Sibling-mod catch-up bumps, in declared order (AIN, then AIS): for each
-     sibling, if its version in gradle.properties is behind the latest GitHub
+  1. Sibling-mod catch-up bumps, in declared order (AIN, then AIS, then PMOB):
+     for each sibling, if its version in gradle.properties is behind the latest GitHub
      release, bump it by ONE version step. First hit wins; the rest of the
      tick is skipped. The workflow verifies the build before committing; on
      build failure the workflow reverts and re-runs this script with the
@@ -27,7 +27,7 @@ the flag is set; auto-release-reset.yml clears it on the next real release.
 Writes step outputs to stdout AND $GITHUB_OUTPUT:
   commit_message, label, change_kind, applied_id
 Sibling bumps additionally emit <name_lower>_from / <name_lower>_to
-(e.g. ain_from / ain_to, ais_from / ais_to).
+(e.g. ain_from / ain_to, ais_from / ais_to, pmob_from / pmob_to).
 
 Env overrides (for testing):
   STATE_FILE              default: .github/auto-release/state.json
@@ -38,9 +38,11 @@ Env overrides (for testing):
   AUTO_RELEASE_MODE       default: always (case-insensitive: always|with-content|ain|ais)
   SKIP_AIN                default: unset; "1" disables AIN check
   SKIP_AIS                default: unset; "1" disables AIS check
+  SKIP_PMOB               default: unset; "1" disables PlayerMob check
                           (used by the workflow fallback after a failed gradle build)
   AIN_RELEASES_OVERRIDE   default: unset; JSON array of {tagName: "v..."}
   AIS_RELEASES_OVERRIDE   default: unset; same shape as AIN_RELEASES_OVERRIDE
+  PMOB_RELEASES_OVERRIDE  default: unset; same shape as AIN_RELEASES_OVERRIDE
                           bypasses the `gh release list` subprocess (tests use
                           this; CI relies on the real subprocess)
 """
