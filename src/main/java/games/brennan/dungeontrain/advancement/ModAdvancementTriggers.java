@@ -9,7 +9,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import java.util.function.Supplier;
 
 /**
- * Mod-side advancement-trigger registry. Registers the three custom
+ * Mod-side advancement-trigger registry. Registers the custom
  * {@link CriterionTrigger} implementations to vanilla's
  * {@code TRIGGER_TYPES} registry so advancement JSONs referencing
  * {@code dungeontrain:<id>} resolve correctly.
@@ -39,6 +39,9 @@ public final class ModAdvancementTriggers {
 
     public static final Supplier<TrainTimeTrigger> TRAIN_TIME =
         TRIGGERS.register("train_time", TrainTimeTrigger::new);
+
+    public static final Supplier<MultiplayerJoinTrigger> MULTIPLAYER_JOIN =
+        TRIGGERS.register("multiplayer_join", MultiplayerJoinTrigger::new);
 
     public static final Supplier<RandomBooksReadTrigger> RANDOM_BOOKS_READ =
         TRIGGERS.register("random_books_read", RandomBooksReadTrigger::new);

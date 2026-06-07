@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Wires the mod's three custom criterion triggers ({@link ModAdvancementTriggers})
+ * Wires the mod's custom criterion triggers ({@link ModAdvancementTriggers})
  * to gameplay signals, and bridges per-world vanilla advancement state to
  * the cross-world {@link GlobalAchievementStore} sidecar.
  *
@@ -56,7 +56,8 @@ import java.util.UUID;
  *       {@link ModAdvancementTriggers#UNIQUE_CHESTS_OPENED}.</li>
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} → reset
  *       {@link PlayerRunState} (both streak set and cart counter).</li>
- *   <li>{@link PlayerEvent.PlayerLoggedInEvent} → read sidecar, replay any
+ *   <li>{@link PlayerEvent.PlayerLoggedInEvent} → grant the multiplayer-join
+ *       advancement when applicable, then read the sidecar and replay any
  *       previously-earned advancements onto this world's
  *       {@code PlayerAdvancements}.</li>
  *   <li>{@link AdvancementEvent.AdvancementEarnEvent} → append granted
@@ -449,11 +450,44 @@ public final class AchievementEvents {
         LOGGER.debug("[DungeonTrain] Respawn: reset PlayerRunState for {}", player.getName().getString());
     }
 
+    // ---------------- Multiplayer join ----------------
+
+    /**
+     * Grant {@code dungeontrain:multiplayer_join} when the world this player
+     * just joined is a multiplayer one. A dedicated server (or any host this
+     * player doesn't own) is multiplayer on its own; an integrated LAN host
+     * becomes multiplayer the moment a second player is connected.
+     *
+     * <p>When detected, every currently-connected player is awarded — so the
+     * LAN host who was already online earns "someone joined yours" alongside
+     * the guest who earns "joined a multiplayer world". Opening a single-player
+     * world to LAN does not re-login the host, so awarding all online players
+     * when the guest connects is what retroactively grants the host. Vanilla
+     * advancement dedupe makes the repeated firing idempotent (a no-op once the
+     * advancement is already complete).</p>
+     */
+    private static void awardMultiplayerJoinIfApplicable(ServerPlayer joined) {
+        MinecraftServer server = joined.getServer();
+        if (server == null) return;
+        // Dedicated → isSingleplayerOwner is always false → multiplayer.
+        // Integrated LAN → the joining guest is never the singleplayer owner.
+        boolean multiplayer = !server.isSingleplayerOwner(joined.getGameProfile())
+            || server.getPlayerCount() >= 2;
+        if (!multiplayer) return;
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            ModAdvancementTriggers.MULTIPLAYER_JOIN.get().trigger(online);
+        }
+    }
+
     // ---------------- Global sidecar ↔ vanilla mirror ----------------
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // Multiplayer-join grant runs first, independent of the sidecar replay
+        // below — a first-time joiner has an empty sidecar and would otherwise
+        // be skipped by the early-return on the next line.
+        awardMultiplayerJoinIfApplicable(player);
         UUID uuid = player.getUUID();
         Set<ResourceLocation> granted = GlobalAchievementStore.read(uuid);
         if (granted.isEmpty()) return;

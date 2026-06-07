@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:player_head" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.multiplayer.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.multiplayer.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "played_multiplayer": {
+      "trigger": "dungeontrain:multiplayer_join"
+    }
+  },
+  "requirements": [["played_multiplayer"]]
+}
