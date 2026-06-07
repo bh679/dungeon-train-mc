@@ -23,6 +23,11 @@ on:
         required: false
         type: boolean
         default: true
+      changelog:
+        description: "Custom release notes (Markdown). When non-empty, overrides the auto-generated commit notes for the GitHub Release body + Modrinth/CurseForge changelog. Use for operator-curated, player-facing release notes."
+        required: false
+        type: string
+        default: ""
 
 jobs:
   release:
@@ -84,15 +89,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           TAG: ${{ env.RELEASE_TAG }}
+          CHANGELOG_INPUT: ${{ inputs.changelog }}
         run: |
-          gh api -X POST \
-            -H "Accept: application/vnd.github+json" \
-            "repos/$REPO/releases/generate-notes" \
-            -f tag_name="$TAG" \
-            -f target_commitish=main \
-            --jq .body > release-notes.md
-          if [ ! -s release-notes.md ]; then
-            echo "Initial release — no prior tag to diff against." > release-notes.md
+          if [ -n "$CHANGELOG_INPUT" ]; then
+            printf '%s\n' "$CHANGELOG_INPUT" > release-notes.md
+            echo "Using operator-provided changelog input ($(wc -c < release-notes.md) bytes)."
+          else
+            gh api -X POST \
+              -H "Accept: application/vnd.github+json" \
+              "repos/$REPO/releases/generate-notes" \
+              -f tag_name="$TAG" \
+              -f target_commitish=main \
+              --jq .body > release-notes.md
+            if [ ! -s release-notes.md ]; then
+              echo "Initial release — no prior tag to diff against." > release-notes.md
+            fi
           fi
           echo "::group::Generated release notes"
           cat release-notes.md
