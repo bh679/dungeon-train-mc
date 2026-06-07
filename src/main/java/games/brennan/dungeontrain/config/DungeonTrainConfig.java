@@ -59,9 +59,9 @@ public final class DungeonTrainConfig {
     /** 1-in-N chance that a settled carriage group spawns a PlayerMob. 0 disables. */
     public static final int MIN_PLAYER_MOB_SPAWN_ONE_IN = 0;
     public static final int MAX_PLAYER_MOB_SPAWN_ONE_IN = 10_000;
-    // ~1-in-20 carriage groups spawn a PlayerMob. Set the config to 1 for a
+    // ~1-in-40 carriage groups spawn a PlayerMob. Set the config to 1 for a
     // PlayerMob on every group (testing), or 0 to disable.
-    public static final int DEFAULT_PLAYER_MOB_SPAWN_ONE_IN = 20;
+    public static final int DEFAULT_PLAYER_MOB_SPAWN_ONE_IN = 40;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
@@ -141,7 +141,7 @@ public final class DungeonTrainConfig {
         b.pop();
         b.push("spawning");
         ModConfigSpec.IntValue playerMobSpawnOneIn = b
-                .comment("1-in-N chance that each settled carriage group spawns a PlayerMob (Interactive Player Mobs). Default 20 (~1-in-20); set to 1 for a PlayerMob on every group (testing); 0 disables.")
+                .comment("1-in-N chance that each settled carriage group spawns a PlayerMob (Interactive Player Mobs). Default 40 (~1-in-40); set to 1 for a PlayerMob on every group (testing); 0 disables.")
                 .defineInRange("playerMobSpawnOneIn", DEFAULT_PLAYER_MOB_SPAWN_ONE_IN, MIN_PLAYER_MOB_SPAWN_ONE_IN, MAX_PLAYER_MOB_SPAWN_ONE_IN);
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
