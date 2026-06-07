@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/a_silent_friend",
+  "display": {
+    "icon": { "id": "minecraft:emerald" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.friends.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.friends.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "befriended": {
+      "trigger": "dungeontrain:befriended_playermob"
+    }
+  },
+  "requirements": [["befriended"]]
+}

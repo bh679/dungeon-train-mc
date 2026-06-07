@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/murderous_intent",
+  "display": {
+    "icon": { "id": "minecraft:rail" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reboarder.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reboarder.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "pushed_off": {
+      "trigger": "dungeontrain:pushed_playermob_off_train"
+    }
+  },
+  "requirements": [["pushed_off"]]
+}
