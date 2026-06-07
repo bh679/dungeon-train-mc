@@ -675,6 +675,11 @@ public final class TrainCarriageAppender {
         }
         LOGGER.info("[DungeonTrain] Placement tracker: fired deferred contents-entity spawn for group anchorPIdx={} ({} of {} slots had pending entities)",
             provider.getPIdx(), fired, pending.length);
+
+        // Fires once per group at the same settle point (the pending array has
+        // already been atomically taken, so this can't double-spawn). Gated by
+        // a 1-in-N config roll inside the spawner.
+        PlayerMobGroupSpawner.maybeSpawnForGroup(level, provider, pending);
     }
 
     /**

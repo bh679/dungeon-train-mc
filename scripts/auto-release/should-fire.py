@@ -20,10 +20,10 @@ the cadence is rebuilt from those tiers. Phase upper bounds are the running
 cumulative sum of (count * interval_minutes / 60). Malformed JSON or schema
 violations emit a ::warning:: annotation and fall back to defaults.
 
-Sibling-pending override: when AIN or AIS (filtered by AUTO_RELEASE_MODE)
-has a GitHub release that DT is behind on, the cascade pins to the first
-tier's interval regardless of elapsed time. The stopped boundary (last
-tier's upper bound) still wins.
+Sibling-pending override: when a sibling mod (AIN, AIS, or PMOB; filtered by
+AUTO_RELEASE_MODE) has a GitHub release that DT is behind on, the cascade pins
+to the first tier's interval regardless of elapsed time. The stopped boundary
+(last tier's upper bound) still wins.
 
 Writes outputs in GitHub Actions step output format (key=value) to stdout
 AND to $GITHUB_OUTPUT if set.
@@ -35,6 +35,7 @@ Env overrides (for testing):
   AUTO_RELEASE_CADENCE    default: unset; JSON cadence config (see above)
   AIN_RELEASES_OVERRIDE   default: unset; JSON array of {tagName: "v..."}
   AIS_RELEASES_OVERRIDE   default: unset; same shape
+  PMOB_RELEASES_OVERRIDE  default: unset; same shape
   NOW_EPOCH               default: current UTC epoch
 """
 import json

@@ -6,7 +6,7 @@ need to know which sibling mods are behind their upstream GitHub releases.
 This module is the single source of truth for that comparison.
 
 Public surface:
-  SIBLING_MODS — declared order of siblings (AIN first, then AIS).
+  SIBLING_MODS — declared order of siblings (AIN first, then AIS, then PMOB).
   parse_semver(s) — strict X.Y.Z parse, returns (int,int,int) or None.
   read_sibling_version(key) — read X.Y.Z from gradle.properties or None.
   write_sibling_version(key, v) — rewrite the X.Y.Z line in-place.
@@ -21,6 +21,7 @@ Env overrides:
   GRADLE_PROPERTIES_FILE  default: gradle.properties
   AIN_RELEASES_OVERRIDE   default: unset; JSON array of {tagName: "v..."}
   AIS_RELEASES_OVERRIDE   default: unset; same shape
+  PMOB_RELEASES_OVERRIDE  default: unset; same shape
   AUTO_RELEASE_MODE       default: always (case-insensitive)
 """
 import json
@@ -35,6 +36,8 @@ SIBLING_MODS = (
      "AIN_RELEASES_OVERRIDE", "SKIP_AIN"),
     ("AIS", "adventureitemstats_version", "bh679/adventureitemstats-mc",
      "AIS_RELEASES_OVERRIDE", "SKIP_AIS"),
+    ("PMOB", "playermob_version", "bh679/playermob-mc",
+     "PMOB_RELEASES_OVERRIDE", "SKIP_PMOB"),
 )
 
 MODE_ALWAYS = "always"
@@ -132,7 +135,7 @@ def pending_sibling_update(mode):
     Mode gating mirrors apply-change.py:
       mode=ain — only AIN considered
       mode=ais — only AIS considered
-      mode=always or with-content — both considered, in declared order
+      mode=always or with-content — all siblings considered, in declared order
 
     Failures (missing gradle.properties, malformed version, network error,
     parse error) fall through to None so a transient issue never falsely

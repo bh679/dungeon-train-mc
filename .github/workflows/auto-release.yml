@@ -1,9 +1,10 @@
 name: Auto-Release Cascade
 
 # Hourly tapering cascade of micro-releases anchored on the last real release.
-# Each fire prefers (in order): one-step AIN dependency bump, then a queue
-# item, then a mode-dependent fallback (auto-balance loot nudge in 'always'
-# mode, or stop the cascade in 'with-content' / 'ain' modes).
+# Each fire prefers (in order): a one-step sibling-mod dependency bump (AIN,
+# then AIS, then PMOB), then a queue item, then a mode-dependent fallback
+# (auto-balance loot nudge in 'always' mode, or stop the cascade in
+# 'with-content' / 'ain' / 'ais' modes).
 #
 # See .github/auto-release/README.md for the cadence and mode semantics.
 
@@ -128,6 +129,26 @@ jobs:
           git checkout -- gradle.properties .github/auto-release/state.json
           python3 scripts/auto-release/apply-change.py
 
+      - name: Verify PMOB bump builds
+        if: steps.apply.outputs.change_kind == 'pmob_bump'
+        id: pmob_build
+        continue-on-error: true
+        run: ./gradlew build
+
+      - name: Fallback after PMOB build failure
+        if: steps.apply.outputs.change_kind == 'pmob_bump' && steps.pmob_build.outcome == 'failure'
+        id: apply_fallback_pmob
+        env:
+          AUTO_RELEASE_MODE: ${{ vars.AUTO_RELEASE_ENABLED }}
+          SKIP_PMOB: "1"
+          PMOB_FROM: ${{ steps.apply.outputs.pmob_from }}
+          PMOB_TO: ${{ steps.apply.outputs.pmob_to }}
+        run: |
+          set -euo pipefail
+          echo "::warning::PMOB bump $PMOB_FROM -> $PMOB_TO failed gradle build — reverting and falling through."
+          git checkout -- gradle.properties .github/auto-release/state.json
+          python3 scripts/auto-release/apply-change.py
+
       - name: Compose final outputs
         if: steps.decide.outputs.fire == 'true' || inputs.force == true
         id: final
@@ -137,12 +158,16 @@ jobs:
           PRIMARY_ID: ${{ steps.apply.outputs.applied_id }}
           AIN_BUILD_OUTCOME: ${{ steps.ain_build.outcome }}
           AIS_BUILD_OUTCOME: ${{ steps.ais_build.outcome }}
+          PMOB_BUILD_OUTCOME: ${{ steps.pmob_build.outcome }}
           AIN_FALLBACK_KIND: ${{ steps.apply_fallback_ain.outputs.change_kind }}
           AIN_FALLBACK_MSG: ${{ steps.apply_fallback_ain.outputs.commit_message }}
           AIN_FALLBACK_ID: ${{ steps.apply_fallback_ain.outputs.applied_id }}
           AIS_FALLBACK_KIND: ${{ steps.apply_fallback_ais.outputs.change_kind }}
           AIS_FALLBACK_MSG: ${{ steps.apply_fallback_ais.outputs.commit_message }}
           AIS_FALLBACK_ID: ${{ steps.apply_fallback_ais.outputs.applied_id }}
+          PMOB_FALLBACK_KIND: ${{ steps.apply_fallback_pmob.outputs.change_kind }}
+          PMOB_FALLBACK_MSG: ${{ steps.apply_fallback_pmob.outputs.commit_message }}
+          PMOB_FALLBACK_ID: ${{ steps.apply_fallback_pmob.outputs.applied_id }}
         run: |
           set -euo pipefail
           if [ "$PRIMARY_KIND" = "ain_bump" ] && [ "$AIN_BUILD_OUTCOME" = "failure" ]; then
@@ -153,6 +178,10 @@ jobs:
             KIND="$AIS_FALLBACK_KIND"
             MSG="$AIS_FALLBACK_MSG"
             ID="$AIS_FALLBACK_ID"
+          elif [ "$PRIMARY_KIND" = "pmob_bump" ] && [ "$PMOB_BUILD_OUTCOME" = "failure" ]; then
+            KIND="$PMOB_FALLBACK_KIND"
+            MSG="$PMOB_FALLBACK_MSG"
+            ID="$PMOB_FALLBACK_ID"
           else
             KIND="$PRIMARY_KIND"
             MSG="$PRIMARY_MSG"

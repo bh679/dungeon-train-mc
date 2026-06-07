@@ -5,13 +5,11 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
-import games.brennan.dungeontrain.player.PlayerRunState;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
@@ -70,32 +68,12 @@ public final class MobDifficultyEvents {
         CompoundTag persistent = mob.getPersistentData();
         if (!persistent.contains(CarriageContentsPlacer.NBT_SPAWN_CARRIAGE_PIDX)) return;
 
-        int travelled = maxTravelledAcrossPlayers(serverLevel);
+        int travelled = DifficultyProgression.maxTravelledCarriageIndex(serverLevel);
 
         boolean applied = DifficultyApplier.apply(mob, travelled, mob.getRandom());
         if (applied && DebugFlags.logLootRolls()) {
             LOGGER.info("[DungeonTrain] Difficulty applied: uuid={} type={} maxTravelledCarriageIndex={}",
                     mob.getUUID(), mob.getType().getDescriptionId(), travelled);
         }
-    }
-
-    /**
-     * Highest signed {@code travelledCarriageIndex} across all currently
-     * online players. Tier downstream uses {@code abs(...)}, so "max signed"
-     * gives the furthest-progressed leader's contribution. Returns 0 when no
-     * players are online — mobs spawned during world load default to tier 0
-     * (vanilla baseline).
-     */
-    private static int maxTravelledAcrossPlayers(ServerLevel serverLevel) {
-        int max = 0;
-        boolean any = false;
-        for (ServerPlayer player : serverLevel.getServer().getPlayerList().getPlayers()) {
-            int t = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
-            if (!any || Math.abs(t) > Math.abs(max)) {
-                max = t;
-                any = true;
-            }
-        }
-        return max;
     }
 }
