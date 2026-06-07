@@ -39,6 +39,7 @@ def run(ws, now_epoch, **extra_env):
     # auth). Tests that need sibling-mod behaviour override these explicitly.
     env.setdefault("AIN_RELEASES_OVERRIDE", "[]")
     env.setdefault("AIS_RELEASES_OVERRIDE", "[]")
+    env.setdefault("PMOB_RELEASES_OVERRIDE", "[]")
     for k, v in extra_env.items():
         if v is None:
             env.pop(k, None)
@@ -48,7 +49,8 @@ def run(ws, now_epoch, **extra_env):
                           capture_output=True, text=True)
 
 
-def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0", ais_version="0.1.0"):
+def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0", ais_version="0.1.0",
+                   pmob_version="0.14.0"):
     write_json(os.path.join(ws, ".github/auto-release/state.json"),
                {"schedule_anchor": "2026-05-18T12:00:00Z", "last_auto_release_at": None,
                 "last_anchor_source": "test"})
@@ -61,6 +63,7 @@ def seed_workspace(ws, queue, loot_weight=10, ain_version="0.25.0", ais_version=
             f"mod_version=0.219.0\n"
             f"adventureitemnames_version={ain_version}\n"
             f"adventureitemstats_version={ais_version}\n"
+            f"playermob_version={pmob_version}\n"
             f"sable_version=1.2.1+mc1.21.1\n"
         )
 
@@ -70,6 +73,10 @@ def ain_releases_json(*versions):
 
 
 def ais_releases_json(*versions):
+    return json.dumps([{"tagName": f"v{v}"} for v in versions])
+
+
+def pmob_releases_json(*versions):
     return json.dumps([{"tagName": f"v{v}"} for v in versions])
 
 
@@ -810,6 +817,142 @@ def test_rerun_after_reset_redoes_same_ain_bump():
         shutil.rmtree(ws)
 
 
+# ---------------------------------------------------------------------------
+# PlayerMob (PMOB) — third sibling, declared after AIN and AIS.
+# ---------------------------------------------------------------------------
+
+
+def read_pmob_version(ws):
+    with open(os.path.join(ws, "gradle.properties")) as f:
+        for line in f:
+            if line.startswith("playermob_version="):
+                return line.split("=", 1)[1].strip()
+    return None
+
+
+def test_pmob_bump_when_ain_and_ais_at_latest():
+    """AIN + AIS current, PMOB behind → PMOB bump applies (PMOB is reached
+    only after the first two siblings are up to date)."""
+    ws, _ = make_workspace()
+    try:
+        queue = {"pending": [{"id": "should-not-run", "label": "x", "type": "new_file",
+                              "target": "src/main/resources/data/dungeontrain/narratives/random_books/x.json",
+                              "content": {"x": 1}, "commit_message": "test: x"}], "applied": []}
+        seed_workspace(ws, queue, ain_version="0.25.0", ais_version="0.1.0",
+                       pmob_version="0.14.0")
+        r = run(ws, 1_700_000_000,
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.0"),
+                PMOB_RELEASES_OVERRIDE=pmob_releases_json("0.14.0", "0.15.0", "0.16.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=pmob_bump" in r.stdout, r.stdout
+        assert "commit_message=chore(auto): bump PMOB 0.14.0 -> 0.15.0" in r.stdout, r.stdout
+        assert "pmob_from=0.14.0" in r.stdout
+        assert "pmob_to=0.15.0" in r.stdout
+        assert read_pmob_version(ws) == "0.15.0"
+        # Queue must be untouched — sibling-mod ticks don't consume queue items.
+        with open(os.path.join(ws, ".github/auto-release/queue.json")) as f:
+            q = json.load(f)
+        assert len(q["pending"]) == 1 and q["pending"][0]["id"] == "should-not-run"
+        print("OK  test_pmob_bump_when_ain_and_ais_at_latest")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_ais_takes_priority_over_pmob():
+    """When AIS and PMOB are both behind (AIN current), AIS wins this tick —
+    PMOB is declared last, so it must not move."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.25.0", ais_version="0.1.0", pmob_version="0.14.0")
+        r = run(ws, 1_700_000_000,
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.0", "0.1.1", "0.1.2"),
+                PMOB_RELEASES_OVERRIDE=pmob_releases_json("0.15.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=ais_bump" in r.stdout, r.stdout
+        assert read_ais_version(ws) == "0.1.1", "AIS should have moved one step"
+        assert read_pmob_version(ws) == "0.14.0", "PMOB must NOT move when AIS bumps"
+        print("OK  test_ais_takes_priority_over_pmob")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ain_ignores_pmob_update():
+    """mode=ain: PMOB update available but must not bump (AIN at latest → stop)."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.25.0", pmob_version="0.14.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ain",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                PMOB_RELEASES_OVERRIDE=pmob_releases_json("0.15.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        assert read_pmob_version(ws) == "0.14.0", "PMOB must not move under mode=ain"
+        print("OK  test_mode_ain_ignores_pmob_update")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_ais_ignores_pmob_update():
+    """mode=ais: PMOB update available but must not bump (AIS at latest → stop)."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ais_version="0.1.2", pmob_version="0.14.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="ais",
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.2"),
+                PMOB_RELEASES_OVERRIDE=pmob_releases_json("0.15.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=stopped" in r.stdout, r.stdout
+        assert read_pmob_version(ws) == "0.14.0", "PMOB must not move under mode=ais"
+        print("OK  test_mode_ais_ignores_pmob_update")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_mode_with_content_bumps_pmob():
+    """mode=with-content: PMOB participates like AIN/AIS — a pending PMOB
+    update bumps even though only AIN was historically the 'with-content' driver."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.25.0", ais_version="0.1.0", pmob_version="0.14.0")
+        r = run(ws, 1_700_000_000, AUTO_RELEASE_MODE="with-content",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.0"),
+                PMOB_RELEASES_OVERRIDE=pmob_releases_json("0.15.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=pmob_bump" in r.stdout, r.stdout
+        assert read_pmob_version(ws) == "0.15.0"
+        print("OK  test_mode_with_content_bumps_pmob")
+    finally:
+        shutil.rmtree(ws)
+
+
+def test_skip_pmob_bypasses_pmob_check():
+    """SKIP_PMOB=1 prevents the PMOB bump even when one is available — used by
+    the workflow's revert-after-build-failure path. With AIN/AIS at latest and
+    no queue, the tick falls through to auto_balance."""
+    ws, _ = make_workspace()
+    try:
+        seed_workspace(ws, {"pending": [], "applied": []},
+                       ain_version="0.25.0", ais_version="0.1.0", pmob_version="0.14.0")
+        r = run(ws, 1_700_000_000, SKIP_PMOB="1",
+                AIN_RELEASES_OVERRIDE=ain_releases_json("0.25.0"),
+                AIS_RELEASES_OVERRIDE=ais_releases_json("0.1.0"),
+                PMOB_RELEASES_OVERRIDE=pmob_releases_json("0.15.0"))
+        assert r.returncode == 0, f"failed: {r.stderr}"
+        assert "change_kind=pmob_bump" not in r.stdout, r.stdout
+        assert "change_kind=auto_balance" in r.stdout, r.stdout
+        assert read_pmob_version(ws) == "0.14.0", "PMOB should not have moved"
+        print("OK  test_skip_pmob_bypasses_pmob_check")
+    finally:
+        shutil.rmtree(ws)
+
+
 def main():
     tests = [
         test_queue_pop_two_items_then_auto_balance,
@@ -844,6 +987,12 @@ def main():
         test_skip_ais_bypasses_ais_check,
         test_rerun_after_reset_pops_same_queue_item,
         test_rerun_after_reset_redoes_same_ain_bump,
+        test_pmob_bump_when_ain_and_ais_at_latest,
+        test_ais_takes_priority_over_pmob,
+        test_mode_ain_ignores_pmob_update,
+        test_mode_ais_ignores_pmob_update,
+        test_mode_with_content_bumps_pmob,
+        test_skip_pmob_bypasses_pmob_check,
     ]
     failed = 0
     for t in tests:

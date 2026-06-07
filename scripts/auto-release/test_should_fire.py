@@ -44,6 +44,7 @@ def run(state, now_epoch, extra_env=None):
             "GRADLE_PROPERTIES_FILE": "/nonexistent/gradle.properties",
             "AIN_RELEASES_OVERRIDE": "[]",
             "AIS_RELEASES_OVERRIDE": "[]",
+            "PMOB_RELEASES_OVERRIDE": "[]",
         }
         env.pop("GITHUB_OUTPUT", None)
         env.pop("AUTO_RELEASE_MODE", None)
@@ -81,6 +82,7 @@ def run_with_stderr(state, now_epoch, extra_env=None):
             "GRADLE_PROPERTIES_FILE": "/nonexistent/gradle.properties",
             "AIN_RELEASES_OVERRIDE": "[]",
             "AIS_RELEASES_OVERRIDE": "[]",
+            "PMOB_RELEASES_OVERRIDE": "[]",
         }
         env.pop("GITHUB_OUTPUT", None)
         env.pop("AUTO_RELEASE_MODE", None)
@@ -174,17 +176,20 @@ def test_cascade_stopped_false_is_ignored():
 # ---------------------------------------------------------------------------
 
 
-def make_gradle(ain="0.27.0", ais="0.10.0"):
+def make_gradle(ain="0.27.0", ais="0.10.0", pmob="0.14.0"):
     """Write a minimal gradle.properties to a temp file and return its path."""
     with tempfile.NamedTemporaryFile("w", suffix=".properties", delete=False) as f:
         if ain is not None:
             f.write(f"adventureitemnames_version={ain}\n")
         if ais is not None:
             f.write(f"adventureitemstats_version={ais}\n")
+        if pmob is not None:
+            f.write(f"playermob_version={pmob}\n")
         return f.name
 
 
-def sibling_env(gradle_path, ain_releases=None, ais_releases=None, mode=None):
+def sibling_env(gradle_path, ain_releases=None, ais_releases=None,
+                pmob_releases=None, mode=None):
     env = {"GRADLE_PROPERTIES_FILE": gradle_path}
     if ain_releases is not None:
         env["AIN_RELEASES_OVERRIDE"] = json.dumps(
@@ -193,6 +198,10 @@ def sibling_env(gradle_path, ain_releases=None, ais_releases=None, mode=None):
     if ais_releases is not None:
         env["AIS_RELEASES_OVERRIDE"] = json.dumps(
             [{"tagName": f"v{v}"} for v in ais_releases]
+        )
+    if pmob_releases is not None:
+        env["PMOB_RELEASES_OVERRIDE"] = json.dumps(
+            [{"tagName": f"v{v}"} for v in pmob_releases]
         )
     if mode is not None:
         env["AUTO_RELEASE_MODE"] = mode
@@ -278,6 +287,34 @@ def test_mode_ais_ignores_ain_pending():
                                         ais_releases=["0.11.0"],
                                         mode="ais"))
         expect(out, "false", "B", "mode=ais ignores AIN pending")
+    finally:
+        os.unlink(gradle)
+
+
+def test_pmob_pending_overrides_phase_c():
+    # Anchor 5d ago — time-based phase would be C. PMOB (third sibling) has a
+    # pending update → pins to phase A like AIN/AIS do.
+    gradle = make_gradle(pmob="0.14.0")
+    try:
+        last = T0 + int(4.95 * 86400)
+        out = run(make_state(T0, last), T0 + int(5 * 86400),
+                  extra_env=sibling_env(gradle, pmob_releases=["0.15.0"]))
+        expect(out, "true", "A", "PMOB pending overrides C")
+    finally:
+        os.unlink(gradle)
+
+
+def test_mode_ais_ignores_pmob_pending():
+    # In mode=ais, a PMOB-only update must NOT trigger the override.
+    gradle = make_gradle(ais="0.11.0", pmob="0.14.0")
+    try:
+        last = T0 + int(9 * 3600)
+        out = run(make_state(T0, last), T0 + int(10 * 3600),
+                  extra_env=sibling_env(gradle,
+                                        ais_releases=["0.11.0"],
+                                        pmob_releases=["0.15.0"],
+                                        mode="ais"))
+        expect(out, "false", "B", "mode=ais ignores PMOB pending")
     finally:
         os.unlink(gradle)
 
@@ -438,6 +475,8 @@ def main():
         test_sibling_pending_respects_threshold,
         test_mode_ain_ignores_ais_pending,
         test_mode_ais_ignores_ain_pending,
+        test_pmob_pending_overrides_phase_c,
+        test_mode_ais_ignores_pmob_pending,
         test_sibling_check_skipped_when_stopped_past_cap,
         test_network_error_falls_through,
         test_cadence_default_when_unset,
