@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyApplier;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -165,6 +167,17 @@ public final class PlayerMobGroupSpawner {
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] PlayerMob spawn: finalizeSpawn threw at {} pIdx={}: {}",
                 floorPos, carriagePIdx, t.toString());
+        }
+
+        // Difficulty-scaled equipment (armor + weapon, AIN-named / AIS-statted),
+        // NO potion effects — same progression scale as carriage mobs. We apply
+        // it directly (effects off) rather than via MobDifficultyEvents; combined
+        // with never writing NBT_SPAWN_CARRIAGE_PIDX, the event can never add
+        // effects to a PlayerMob. Honours the same difficulty toggles as mobs.
+        if (DungeonTrainConfig.getDifficultyEnabled()
+                && DifficultyApplier.isEligible(mob, DungeonTrainConfig.getDifficultyAffectsBabyMobs())) {
+            int progression = DifficultyProgression.maxTravelledCarriageIndex(level);
+            DifficultyApplier.apply(mob, progression, rng, false);
         }
 
         // REQUIRED: marks the mob as carriage contents so the train kill-ahead

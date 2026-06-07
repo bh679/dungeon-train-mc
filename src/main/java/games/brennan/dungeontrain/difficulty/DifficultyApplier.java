@@ -75,12 +75,26 @@ public final class DifficultyApplier {
 
     /**
      * Roll and apply the difficulty tier for {@code carriageIndex} onto
-     * {@code mob}. Tags the mob with {@link #APPLIED_TAG} on completion.
+     * {@code mob}, including potion effects. Tags the mob with
+     * {@link #APPLIED_TAG} on completion.
      *
      * @return true if any modification was made, false if no-op (registry empty,
      *         tier returned null, etc.)
      */
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng) {
+        return apply(mob, carriageIndex, rng, true);
+    }
+
+    /**
+     * As {@link #apply(Mob, int, RandomSource)}, but {@code applyEffects} gates
+     * the potion-effect pass — pass {@code false} to roll only equipment
+     * (armor + weapon + enchants). PlayerMobs use this so they get
+     * difficulty-scaled gear without buffs (see {@code PlayerMobGroupSpawner}).
+     *
+     * @return true if any modification was made, false if no-op (registry empty,
+     *         tier returned null, etc.)
+     */
+    public static boolean apply(Mob mob, int carriageIndex, RandomSource rng, boolean applyEffects) {
         int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
         int tierIndex = Math.abs(carriageIndex) / carriagesPerTier;
         // Tier 0 = vanilla baseline; no equipment, effects, or enchantments.
@@ -101,16 +115,18 @@ public final class DifficultyApplier {
             applyArmorSlot(mob, EquipmentSlot.MAINHAND, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng);
         }
 
-        for (DifficultyTier.EffectSpec spec : tier.effects()) {
-            if (rng.nextDouble() >= spec.chance()) continue;
-            Holder<MobEffect> holder = lookupEffect(spec.id());
-            if (holder == null) {
-                LOGGER.warn("[DungeonTrain] Difficulty: unknown mob effect '{}' in tier '{}' — skipping",
-                        spec.id(), tier.name());
-                continue;
+        if (applyEffects) {
+            for (DifficultyTier.EffectSpec spec : tier.effects()) {
+                if (rng.nextDouble() >= spec.chance()) continue;
+                Holder<MobEffect> holder = lookupEffect(spec.id());
+                if (holder == null) {
+                    LOGGER.warn("[DungeonTrain] Difficulty: unknown mob effect '{}' in tier '{}' — skipping",
+                            spec.id(), tier.name());
+                    continue;
+                }
+                int duration = spec.durationTicks() < 0 ? Integer.MAX_VALUE : spec.durationTicks();
+                mob.addEffect(new MobEffectInstance(holder, duration, Math.max(0, spec.amplifier()), false, true));
             }
-            int duration = spec.durationTicks() < 0 ? Integer.MAX_VALUE : spec.durationTicks();
-            mob.addEffect(new MobEffectInstance(holder, duration, Math.max(0, spec.amplifier()), false, true));
         }
 
         mob.addTag(APPLIED_TAG);
