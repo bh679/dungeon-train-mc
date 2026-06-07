@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.Trains;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -53,6 +56,19 @@ public final class TrainTickEvents {
      * block/tick gives ~80 ticks (4 s) of advance notice to evict mobs.
      */
     private static final int LOOKAHEAD_BLOCKS = 8;
+
+    /**
+     * Entity-type namespaces whose entities ride the train and must survive
+     * the kill-ahead runway sweep. PlayerMobs ({@code playermob:*}) fall off
+     * carriages by design and run recovery AI to bridge back on (PlayerMob
+     * issue #35, behavior #2); discarding them on contact deletes them before
+     * recovery can run. String-keyed so DT needs no compile/runtime dependency
+     * on the PlayerMob mod — if PlayerMob isn't installed, no
+     * {@code playermob:*} entity types exist and {@link #isTrainPassenger} is
+     * simply never true.
+     */
+    private static final Set<String> TRAIN_PASSENGER_NAMESPACES = Set.of("playermob");
+
     /** Phase + period for the periodic track-fill drain. */
     private static final int TRACK_FILL_PERIOD_TICKS = 10;
     private static final int TRACK_FILL_PHASE_OFFSET = 5;
@@ -195,6 +211,10 @@ public final class TrainTickEvents {
             e -> !(e instanceof Player) && e.isAlive()
                 && !train_aabb.contains(e.getX(), e.getY(), e.getZ())
                 && !isCarriageContentsEntity(e)
+                // Spare train passengers (e.g. PlayerMob): they fall off
+                // carriages by design and recover, so kill-ahead must not
+                // discard them on contact. See isTrainPassenger.
+                && !isTrainPassenger(e)
         );
         for (Entity e : victims) {
             e.discard();
@@ -213,5 +233,25 @@ public final class TrainTickEvents {
             if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
         }
         return false;
+    }
+
+    /**
+     * Returns {@code true} if {@code e}'s entity-type id is in a train-passenger
+     * namespace (see {@link #TRAIN_PASSENGER_NAMESPACES}), e.g. PlayerMob. Such
+     * entities are spared by {@link #killEntitiesAhead} so their fall-off
+     * recovery AI can run instead of being discarded on contact.
+     */
+    private static boolean isTrainPassenger(Entity e) {
+        return isTrainPassengerId(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()));
+    }
+
+    /**
+     * Pure, registry-free core of {@link #isTrainPassenger}: {@code true} iff
+     * {@code id}'s namespace is a train-passenger namespace. Package-private and
+     * {@code static} so it is unit-testable without a live {@link Entity} or a
+     * bootstrapped registry.
+     */
+    static boolean isTrainPassengerId(ResourceLocation id) {
+        return id != null && TRAIN_PASSENGER_NAMESPACES.contains(id.getNamespace());
     }
 }
