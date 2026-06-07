@@ -29,8 +29,8 @@ import java.util.UUID;
  *
  * <p>Invoked once per group from
  * {@link TrainCarriageAppender#firePendingContentsEntitySpawns}, gated by a
- * 1-in-N roll ({@link DungeonTrainConfig#getPlayerMobSpawnOneIn}, default 40,
- * about one in forty; set the config to 1 for a PlayerMob on every group). The mob is placed
+ * 1-in-N roll ({@link DungeonTrainConfig#getPlayerMobSpawnOneIn}, default 10,
+ * about one in ten; set the config to 1 for a PlayerMob on every group). The mob is placed
  * at the interior floor-centre of a random enclosed carriage in the group, in
  * shipyard coordinates — Sable binds it to the moving carriage at
  * {@code addFreshEntity} time, exactly like editor-placed carriage contents.</p>
