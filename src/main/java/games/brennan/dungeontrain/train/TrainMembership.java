@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.train;
 
 import net.minecraft.world.entity.Entity;
 
+import java.util.Collection;
+
 /**
  * Single source of truth for "is this entity on the train?".
  *
@@ -23,9 +25,20 @@ public final class TrainMembership {
      *         mob group. False for {@code null} and for ordinary world entities.
      */
     public static boolean isOnTrain(Entity entity) {
-        if (entity == null) return false;
-        for (String tag : entity.getTags()) {
-            if (tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
+        return entity != null && hasContentsTag(entity.getTags());
+    }
+
+    /**
+     * Pure tag-matching core, separated from the {@link Entity} adapter so it
+     * can be unit-tested without a live entity. Package-private.
+     *
+     * @return true when any tag starts with
+     *         {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX}.
+     */
+    static boolean hasContentsTag(Collection<String> tags) {
+        if (tags == null) return false;
+        for (String tag : tags) {
+            if (tag != null && tag.startsWith(CarriageContentsPlacer.DT_CONTENTS_TAG_PREFIX)) return true;
         }
         return false;
     }
