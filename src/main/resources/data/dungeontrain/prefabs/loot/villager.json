@@ -3,10 +3,10 @@
   "block": "minecraft:chest",
   "category": "loot",
   "fillMin": 1,
-  "fillMax": 14,
+  "fillMax": 6,
   "entries": [
     { "id": "minecraft:emerald_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:emerald", "count": 3, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:emerald", "count": 2, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:paper", "count": 5, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:carrot", "count": 3, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:potato", "count": 3, "weight": 51, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
