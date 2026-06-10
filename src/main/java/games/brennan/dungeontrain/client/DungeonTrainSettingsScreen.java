@@ -39,6 +39,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private EditBox speedField;
     private EditBox trainYField;
     private CycleButton<CarriageGenerationMode> modeButton;
+    private EditBox playerMobSpawnField;
     private EditBox groupSizeField;
 
     public DungeonTrainSettingsScreen(Screen parent) {
@@ -81,7 +82,13 @@ public final class DungeonTrainSettingsScreen extends Screen {
                 );
         addRenderableWidget(modeButton);
 
-        groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 4, FIELD_WIDTH, FIELD_HEIGHT,
+        playerMobSpawnField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 4, FIELD_WIDTH, FIELD_HEIGHT,
+                Component.literal("PlayerMob 1-in-N"));
+        playerMobSpawnField.setValue(Integer.toString(DungeonTrainConfig.getPlayerMobSpawnOneIn()));
+        playerMobSpawnField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
+        addRenderableWidget(playerMobSpawnField);
+
+        groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 5, FIELD_WIDTH, FIELD_HEIGHT,
                 Component.literal("Group size"));
         groupSizeField.setValue(Integer.toString(DungeonTrainConfig.getGroupSize()));
         groupSizeField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
@@ -89,11 +96,11 @@ public final class DungeonTrainSettingsScreen extends Screen {
         refreshGroupSizeVisibility();
 
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveAndClose())
-                .bounds(centerX - 105, topY + ROW_GAP * 5 + 20, 100, 20)
+                .bounds(centerX - 105, topY + ROW_GAP * 6 + 20, 100, 20)
                 .build());
 
         addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
-                .bounds(centerX + 5, topY + ROW_GAP * 5 + 20, 100, 20)
+                .bounds(centerX + 5, topY + ROW_GAP * 6 + 20, 100, 20)
                 .build());
     }
 
@@ -115,24 +122,30 @@ public final class DungeonTrainSettingsScreen extends Screen {
         graphics.drawString(this.font, "Speed (m/s):", centerX - LABEL_OFFSET, topY + ROW_GAP + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "Train Y:", centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "Mode:", centerX - LABEL_OFFSET, topY + ROW_GAP * 3 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, "PlayerMob 1-in-N:", centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
         if (modeButton != null && modeButton.getValue() == CarriageGenerationMode.RANDOM_GROUPED) {
-            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
+            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
         }
 
         String rangeHint = "Carriages " + DungeonTrainConfig.MIN_CARRIAGES + "-" + DungeonTrainConfig.MAX_CARRIAGES
                 + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED
                 + ", Train Y " + DungeonTrainConfig.MIN_TRAIN_Y + "-" + DungeonTrainConfig.MAX_TRAIN_Y
-                + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE;
-        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 5 - 4, 0xFFAAAAAA);
+                + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE
+                + ", PlayerMob " + DungeonTrainConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN + "-" + DungeonTrainConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN;
+        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 6 - 4, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 "Train Y applies to next spawn only. Mode affects new carriage placements.",
-                centerX, topY + ROW_GAP * 5 + 50, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 6 + 50, 0xFFAAAAAA);
+
+        graphics.drawCenteredString(this.font,
+                "PlayerMob 1-in-N: 0 disables, 1 = a PlayerMob on every carriage group.",
+                centerX, topY + ROW_GAP * 6 + 64, 0xFFAAAAAA);
 
         if (Minecraft.getInstance().getSingleplayerServer() == null) {
             graphics.drawCenteredString(this.font,
                     "Note: live train updates require an active world.",
-                    centerX, topY + ROW_GAP * 5 + 64, 0xFFFFAA55);
+                    centerX, topY + ROW_GAP * 6 + 78, 0xFFFFAA55);
         }
     }
 
@@ -141,10 +154,12 @@ public final class DungeonTrainSettingsScreen extends Screen {
         Double speed = parseDoubleOrNull(speedField.getValue());
         Integer trainY = parseIntOrNull(trainYField.getValue());
         Integer groupSize = parseIntOrNull(groupSizeField.getValue());
+        Integer playerMobSpawn = parseIntOrNull(playerMobSpawnField.getValue());
 
-        if (carriages == null || speed == null || trainY == null || groupSize == null) {
-            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={} groupSize={}",
-                    carriagesField.getValue(), speedField.getValue(), trainYField.getValue(), groupSizeField.getValue());
+        if (carriages == null || speed == null || trainY == null || groupSize == null || playerMobSpawn == null) {
+            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={} groupSize={} playerMobSpawn={}",
+                    carriagesField.getValue(), speedField.getValue(), trainYField.getValue(),
+                    groupSizeField.getValue(), playerMobSpawnField.getValue());
             return;
         }
 
@@ -153,16 +168,18 @@ public final class DungeonTrainSettingsScreen extends Screen {
         DungeonTrainConfig.setTrainY(trainY);
         DungeonTrainConfig.setGenerationMode(modeButton.getValue());
         DungeonTrainConfig.setGroupSize(groupSize);
+        DungeonTrainConfig.setPlayerMobSpawnOneIn(playerMobSpawn);
 
         int effectiveCarriages = DungeonTrainConfig.getNumCarriages();
         double effectiveSpeed = DungeonTrainConfig.getSpeed();
         int effectiveTrainY = DungeonTrainConfig.getTrainY();
         CarriageGenerationMode effectiveMode = DungeonTrainConfig.getGenerationMode();
         int effectiveGroupSize = DungeonTrainConfig.getGroupSize();
+        int effectivePlayerMobSpawn = DungeonTrainConfig.getPlayerMobSpawnOneIn();
 
         applyToLiveTrains(effectiveCarriages, effectiveSpeed);
-        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={} mode={} groupSize={}",
-                effectiveCarriages, effectiveSpeed, effectiveTrainY, effectiveMode, effectiveGroupSize);
+        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={} mode={} groupSize={} playerMobSpawnOneIn={}",
+                effectiveCarriages, effectiveSpeed, effectiveTrainY, effectiveMode, effectiveGroupSize, effectivePlayerMobSpawn);
 
         onClose();
     }

@@ -274,6 +274,20 @@ public final class DungeonTrainConfig {
         DIFFICULTY_AFFECTS_BABY_MOBS.save();
     }
 
+    /**
+     * 1-in-N chance a settled carriage group spawns a PlayerMob; clamped to
+     * [{@link #MIN_PLAYER_MOB_SPAWN_ONE_IN}, {@link #MAX_PLAYER_MOB_SPAWN_ONE_IN}].
+     * 0 disables, 1 = every group. Read live by
+     * {@link games.brennan.dungeontrain.train.PlayerMobGroupSpawner}, so the new
+     * value applies to subsequent group spawns without a restart.
+     */
+    public static void setPlayerMobSpawnOneIn(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_PLAYER_MOB_SPAWN_ONE_IN, Math.min(MAX_PLAYER_MOB_SPAWN_ONE_IN, value));
+        PLAYER_MOB_SPAWN_ONE_IN.set(clamped);
+        PLAYER_MOB_SPAWN_ONE_IN.save();
+    }
+
     private record Holder(
             ModConfigSpec.IntValue numCarriages,
             ModConfigSpec.DoubleValue speed,
