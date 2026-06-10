@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -22,9 +24,13 @@ import java.util.List;
 
 /**
  * Mods-menu config screen for Dungeon Train — edit rolling-window carriage
- * count, train speed, spawn Y, and the carriage generation mode / group size.
- * Persists to {@code serverconfig/dungeontrain-server.toml} and applies live
- * to any spawned train on the integrated server.
+ * count, train speed, spawn Y, the carriage generation mode / group size, and
+ * the PlayerMob spawn rate. Most fields persist to the server config and apply
+ * live to any spawned train on the integrated server. The PlayerMob 1-in-N
+ * field is two-tier: in a world it sets that world's per-world override
+ * ({@link games.brennan.dungeontrain.world.DungeonTrainWorldData}); on the
+ * title screen it sets the global default for new worlds
+ * ({@link games.brennan.dungeontrain.config.DungeonTrainCommonConfig}).
  */
 public final class DungeonTrainSettingsScreen extends Screen {
 
@@ -39,6 +45,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private EditBox speedField;
     private EditBox trainYField;
     private CycleButton<CarriageGenerationMode> modeButton;
+    private EditBox playerMobSpawnField;
     private EditBox groupSizeField;
 
     public DungeonTrainSettingsScreen(Screen parent) {
@@ -81,7 +88,15 @@ public final class DungeonTrainSettingsScreen extends Screen {
                 );
         addRenderableWidget(modeButton);
 
-        groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 4, FIELD_WIDTH, FIELD_HEIGHT,
+        playerMobSpawnField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 4, FIELD_WIDTH, FIELD_HEIGHT,
+                Component.literal("PlayerMob 1-in-N"));
+        // Two-tier: in a world the field shows THIS world's effective rate;
+        // on the title screen it shows the global default for new worlds.
+        playerMobSpawnField.setValue(Integer.toString(currentPlayerMobSpawnOneIn()));
+        playerMobSpawnField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
+        addRenderableWidget(playerMobSpawnField);
+
+        groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 5, FIELD_WIDTH, FIELD_HEIGHT,
                 Component.literal("Group size"));
         groupSizeField.setValue(Integer.toString(DungeonTrainConfig.getGroupSize()));
         groupSizeField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
@@ -89,11 +104,11 @@ public final class DungeonTrainSettingsScreen extends Screen {
         refreshGroupSizeVisibility();
 
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveAndClose())
-                .bounds(centerX - 105, topY + ROW_GAP * 5 + 20, 100, 20)
+                .bounds(centerX - 105, topY + ROW_GAP * 6 + 20, 100, 20)
                 .build());
 
         addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
-                .bounds(centerX + 5, topY + ROW_GAP * 5 + 20, 100, 20)
+                .bounds(centerX + 5, topY + ROW_GAP * 6 + 20, 100, 20)
                 .build());
     }
 
@@ -115,24 +130,32 @@ public final class DungeonTrainSettingsScreen extends Screen {
         graphics.drawString(this.font, "Speed (m/s):", centerX - LABEL_OFFSET, topY + ROW_GAP + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "Train Y:", centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "Mode:", centerX - LABEL_OFFSET, topY + ROW_GAP * 3 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, "PlayerMob 1-in-N:", centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
         if (modeButton != null && modeButton.getValue() == CarriageGenerationMode.RANDOM_GROUPED) {
-            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
+            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
         }
 
         String rangeHint = "Carriages " + DungeonTrainConfig.MIN_CARRIAGES + "-" + DungeonTrainConfig.MAX_CARRIAGES
                 + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED
                 + ", Train Y " + DungeonTrainConfig.MIN_TRAIN_Y + "-" + DungeonTrainConfig.MAX_TRAIN_Y
-                + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE;
-        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 5 - 4, 0xFFAAAAAA);
+                + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE
+                + ", PlayerMob " + DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN + "-" + DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN;
+        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 6 - 4, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 "Train Y applies to next spawn only. Mode affects new carriage placements.",
-                centerX, topY + ROW_GAP * 5 + 50, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 6 + 50, 0xFFAAAAAA);
 
-        if (Minecraft.getInstance().getSingleplayerServer() == null) {
+        boolean inWorld = Minecraft.getInstance().getSingleplayerServer() != null;
+        String playerMobScope = inWorld
+                ? "PlayerMob 1-in-N applies to THIS world (0 disables, 1 = every group)."
+                : "PlayerMob 1-in-N sets the DEFAULT for new worlds (0 disables, 1 = every group).";
+        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 6 + 64, 0xFFAAAAAA);
+
+        if (!inWorld) {
             graphics.drawCenteredString(this.font,
-                    "Note: live train updates require an active world.",
-                    centerX, topY + ROW_GAP * 5 + 64, 0xFFFFAA55);
+                    "Note: other settings require an active world; only PlayerMob default saves here.",
+                    centerX, topY + ROW_GAP * 6 + 78, 0xFFFFAA55);
         }
     }
 
@@ -141,10 +164,12 @@ public final class DungeonTrainSettingsScreen extends Screen {
         Double speed = parseDoubleOrNull(speedField.getValue());
         Integer trainY = parseIntOrNull(trainYField.getValue());
         Integer groupSize = parseIntOrNull(groupSizeField.getValue());
+        Integer playerMobSpawn = parseIntOrNull(playerMobSpawnField.getValue());
 
-        if (carriages == null || speed == null || trainY == null || groupSize == null) {
-            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={} groupSize={}",
-                    carriagesField.getValue(), speedField.getValue(), trainYField.getValue(), groupSizeField.getValue());
+        if (carriages == null || speed == null || trainY == null || groupSize == null || playerMobSpawn == null) {
+            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={} groupSize={} playerMobSpawn={}",
+                    carriagesField.getValue(), speedField.getValue(), trainYField.getValue(),
+                    groupSizeField.getValue(), playerMobSpawnField.getValue());
             return;
         }
 
@@ -154,6 +179,20 @@ public final class DungeonTrainSettingsScreen extends Screen {
         DungeonTrainConfig.setGenerationMode(modeButton.getValue());
         DungeonTrainConfig.setGroupSize(groupSize);
 
+        // Two-tier spawn rate: in a world → set THIS world's per-world override
+        // on the integrated-server thread; on the title screen → set the global
+        // default for new worlds. Read live by PlayerMobGroupSpawner.
+        MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
+        String playerMobScope;
+        if (server != null) {
+            final int rate = playerMobSpawn;
+            server.execute(() -> DungeonTrainWorldData.get(server.overworld()).setPlayerMobSpawnOneInOverride(rate));
+            playerMobScope = "world-override";
+        } else {
+            DungeonTrainCommonConfig.setDefaultPlayerMobSpawnOneIn(playerMobSpawn);
+            playerMobScope = "global-default";
+        }
+
         int effectiveCarriages = DungeonTrainConfig.getNumCarriages();
         double effectiveSpeed = DungeonTrainConfig.getSpeed();
         int effectiveTrainY = DungeonTrainConfig.getTrainY();
@@ -161,10 +200,22 @@ public final class DungeonTrainSettingsScreen extends Screen {
         int effectiveGroupSize = DungeonTrainConfig.getGroupSize();
 
         applyToLiveTrains(effectiveCarriages, effectiveSpeed);
-        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={} mode={} groupSize={}",
-                effectiveCarriages, effectiveSpeed, effectiveTrainY, effectiveMode, effectiveGroupSize);
+        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={} mode={} groupSize={} playerMobSpawnOneIn={} ({})",
+                effectiveCarriages, effectiveSpeed, effectiveTrainY, effectiveMode, effectiveGroupSize, playerMobSpawn, playerMobScope);
 
         onClose();
+    }
+
+    /**
+     * Context-aware read for the PlayerMob field: in a world → THIS world's
+     * effective rate (per-world override or the inherited global default); on
+     * the title screen → the global default for new worlds.
+     */
+    private static int currentPlayerMobSpawnOneIn() {
+        MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
+        return server != null
+                ? DungeonTrainWorldData.get(server.overworld()).getEffectivePlayerMobSpawnOneIn()
+                : DungeonTrainCommonConfig.getDefaultPlayerMobSpawnOneIn();
     }
 
     private static Component modeLabel(CarriageGenerationMode mode) {

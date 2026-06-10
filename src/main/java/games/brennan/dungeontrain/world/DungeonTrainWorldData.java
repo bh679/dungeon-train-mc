@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.world;
 
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
@@ -7,6 +8,8 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+
+import java.util.Objects;
 
 /**
  * Per-world persistence for world-creation choices originally exposed by
@@ -39,12 +42,15 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
     private static final String TAG_GENERATION_SEED = "generationSeed";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
+    private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
 
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
     private long generationSeed;
     private StartingDimension startingDimension;
+    /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
+    private Integer playerMobSpawnOneInOverride;
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -104,7 +110,12 @@ public final class DungeonTrainWorldData extends SavedData {
         StartingDimension sd = tag.contains(TAG_STARTING_DIMENSION)
                 ? StartingDimension.fromNbt(tag.getString(TAG_STARTING_DIMENSION))
                 : StartingDimension.OVERWORLD;
-        return new DungeonTrainWorldData(y, s, d, seed, sd);
+        DungeonTrainWorldData data = new DungeonTrainWorldData(y, s, d, seed, sd);
+        // Optional per-world override; absent on legacy / un-overridden worlds → null → global default.
+        if (tag.contains(TAG_PLAYER_MOB_SPAWN_OVERRIDE)) {
+            data.playerMobSpawnOneInOverride = tag.getInt(TAG_PLAYER_MOB_SPAWN_OVERRIDE);
+        }
+        return data;
     }
 
     @Override
@@ -116,6 +127,10 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
         tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
+        // Only persist the override when set, so "unset" stays distinguishable from "0 (disabled)".
+        if (playerMobSpawnOneInOverride != null) {
+            tag.putInt(TAG_PLAYER_MOB_SPAWN_OVERRIDE, playerMobSpawnOneInOverride);
+        }
         return tag;
     }
 
@@ -142,6 +157,36 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setStartingDimension(StartingDimension d) {
         if (d == null || this.startingDimension == d) return;
         this.startingDimension = d;
+        setDirty();
+    }
+
+    /** This world's PlayerMob 1-in-N override, or null when the world follows the global default. */
+    public Integer getPlayerMobSpawnOneInOverride() {
+        return playerMobSpawnOneInOverride;
+    }
+
+    /**
+     * Effective 1-in-N PlayerMob spawn rate for this world: the per-world
+     * override if one has been set in-game, otherwise the global default from
+     * {@link DungeonTrainCommonConfig}. Read live by
+     * {@link games.brennan.dungeontrain.train.PlayerMobGroupSpawner}.
+     */
+    public int getEffectivePlayerMobSpawnOneIn() {
+        return playerMobSpawnOneInOverride != null
+                ? playerMobSpawnOneInOverride
+                : DungeonTrainCommonConfig.getDefaultPlayerMobSpawnOneIn();
+    }
+
+    /**
+     * Set (non-null) or clear (null) this world's PlayerMob spawn-rate override.
+     * A non-null value is clamped to the COMMON config's legal range.
+     */
+    public void setPlayerMobSpawnOneInOverride(Integer value) {
+        Integer next = value == null ? null : Math.max(
+                DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN,
+                Math.min(DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN, value));
+        if (Objects.equals(next, playerMobSpawnOneInOverride)) return;
+        playerMobSpawnOneInOverride = next;
         setDirty();
     }
 

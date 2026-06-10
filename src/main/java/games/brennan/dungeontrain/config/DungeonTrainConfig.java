@@ -56,13 +56,6 @@ public final class DungeonTrainConfig {
     public static final int MAX_RANDOM_BOOK_ONE_IN = 1_000_000;
     public static final int DEFAULT_RANDOM_BOOK_ONE_IN = 100;
 
-    /** 1-in-N chance that a settled carriage group spawns a PlayerMob. 0 disables. */
-    public static final int MIN_PLAYER_MOB_SPAWN_ONE_IN = 0;
-    public static final int MAX_PLAYER_MOB_SPAWN_ONE_IN = 10_000;
-    // ~1-in-10 carriage groups spawn a PlayerMob. Set the config to 1 for a
-    // PlayerMob on every group (testing), or 0 to disable.
-    public static final int DEFAULT_PLAYER_MOB_SPAWN_ONE_IN = 10;
-
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
@@ -75,7 +68,6 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
-    public static final ModConfigSpec.IntValue PLAYER_MOB_SPAWN_ONE_IN;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -92,7 +84,6 @@ public final class DungeonTrainConfig {
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
-        PLAYER_MOB_SPAWN_ONE_IN = pair.getLeft().playerMobSpawnOneIn;
     }
 
     private DungeonTrainConfig() {}
@@ -139,14 +130,8 @@ public final class DungeonTrainConfig {
                 .comment("1-in-N chance that each book dropped by breaking a vanilla bookshelf is replaced with a narrative Random Book (from data/dungeontrain/narratives/random_books). Total drop count is unchanged. Default 100 (~1%). Set to 0 to disable.")
                 .defineInRange("randomBookFromBookshelfOneIn", DEFAULT_RANDOM_BOOK_ONE_IN, MIN_RANDOM_BOOK_ONE_IN, MAX_RANDOM_BOOK_ONE_IN);
         b.pop();
-        b.push("spawning");
-        ModConfigSpec.IntValue playerMobSpawnOneIn = b
-                .comment("1-in-N chance that each settled carriage group spawns a PlayerMob (Interactive Player Mobs). Default 10 (~1-in-10); set to 1 for a PlayerMob on every group (testing); 0 disables.")
-                .defineInRange("playerMobSpawnOneIn", DEFAULT_PLAYER_MOB_SPAWN_ONE_IN, MIN_PLAYER_MOB_SPAWN_ONE_IN, MAX_PLAYER_MOB_SPAWN_ONE_IN);
-        b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn,
-                playerMobSpawnOneIn);
+                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn);
     }
 
     /**
@@ -201,11 +186,6 @@ public final class DungeonTrainConfig {
     /** 1-in-N chance a book dropped by breaking a bookshelf becomes a narrative Random Book; 0 disables. */
     public static int getRandomBookFromBookshelfOneIn() {
         return isLoaded() ? RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN.get() : DEFAULT_RANDOM_BOOK_ONE_IN;
-    }
-
-    /** 1-in-N chance a settled carriage group spawns a PlayerMob; 0 disables. */
-    public static int getPlayerMobSpawnOneIn() {
-        return isLoaded() ? PLAYER_MOB_SPAWN_ONE_IN.get() : DEFAULT_PLAYER_MOB_SPAWN_ONE_IN;
     }
 
     public static void setNumCarriages(int value) {
@@ -285,7 +265,6 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyEnabled,
             ModConfigSpec.IntValue carriagesPerTier,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
-            ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
-            ModConfigSpec.IntValue playerMobSpawnOneIn
+            ModConfigSpec.IntValue randomBookFromBookshelfOneIn
     ) {}
 }
