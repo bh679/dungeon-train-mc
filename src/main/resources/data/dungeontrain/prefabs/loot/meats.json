@@ -1,17 +1,18 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 4,
   "block": "minecraft:barrel",
+  "category": "loot",
   "fillMin": 1,
-  "fillMax": 8,
+  "fillMax": 6,
   "entries": [
-    { "id": "minecraft:beef", "count": 5, "weight": 3 },
-    { "id": "minecraft:porkchop", "count": 5, "weight": 3 },
-    { "id": "minecraft:chicken", "count": 5, "weight": 3 },
-    { "id": "minecraft:rabbit", "count": 5, "weight": 3 },
-    { "id": "minecraft:cooked_beef", "count": 3, "weight": 3 },
-    { "id": "minecraft:porkchop", "count": 3, "weight": 1 },
-    { "id": "minecraft:cooked_mutton", "count": 3, "weight": 1 },
-    { "id": "minecraft:cooked_chicken", "count": 3, "weight": 1 },
-    { "id": "minecraft:cooked_rabbit", "count": 3, "weight": 1 }
+    { "id": "minecraft:beef", "count": 3, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:porkchop", "count": 3, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:chicken", "count": 3, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:rabbit", "count": 3, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cooked_beef", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:porkchop", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cooked_mutton", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cooked_chicken", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:cooked_rabbit", "count": 2, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
   ]
 }
