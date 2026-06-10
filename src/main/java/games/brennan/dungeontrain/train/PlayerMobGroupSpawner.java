@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -29,8 +30,11 @@ import java.util.UUID;
  *
  * <p>Invoked once per group from
  * {@link TrainCarriageAppender#firePendingContentsEntitySpawns}, gated by a
- * 1-in-N roll ({@link DungeonTrainConfig#getPlayerMobSpawnOneIn}, default 10,
- * about one in ten; set the config to 1 for a PlayerMob on every group). The mob is placed
+ * 1-in-N roll. The rate is this world's override
+ * ({@link games.brennan.dungeontrain.world.DungeonTrainWorldData#getEffectivePlayerMobSpawnOneIn})
+ * if set in-game, else the global default
+ * ({@link games.brennan.dungeontrain.config.DungeonTrainCommonConfig}, default 10 — about one
+ * in ten; set to 1 for a PlayerMob on every group). The mob is placed
  * at the interior floor-centre of a random enclosed carriage in the group, in
  * shipyard coordinates — Sable binds it to the moving carriage at
  * {@code addFreshEntity} time, exactly like editor-placed carriage contents.</p>
@@ -71,7 +75,7 @@ public final class PlayerMobGroupSpawner {
     public static void maybeSpawnForGroup(ServerLevel level,
                                           TrainTransformProvider provider,
                                           PendingContentsEntitySpawn[] pending) {
-        int oneIn = DungeonTrainConfig.getPlayerMobSpawnOneIn();
+        int oneIn = DungeonTrainWorldData.get(level.getServer().overworld()).getEffectivePlayerMobSpawnOneIn();
         if (oneIn <= 0) return;                       // disabled
         if (pending == null || pending.length == 0) return;
 

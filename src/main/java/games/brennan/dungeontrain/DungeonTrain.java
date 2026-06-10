@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
@@ -64,6 +65,14 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 ClientDisplayConfig.SPEC,
                 "dungeontrain-client.toml");
+
+        // Common gameplay defaults readable on the title screen (no world) and
+        // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;
+        // per-world overrides live in DungeonTrainWorldData (SavedData).
+        modContainer.registerConfig(
+                ModConfig.Type.COMMON,
+                DungeonTrainCommonConfig.SPEC,
+                "dungeontrain-common.toml");
 
         // No NeoForge.EVENT_BUS.register(this) — every game-bus listener in
         // this mod lives in its own @EventBusSubscriber class (event/*.java,
