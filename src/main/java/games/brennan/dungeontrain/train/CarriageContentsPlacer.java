@@ -23,6 +23,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
@@ -753,6 +754,19 @@ public final class CarriageContentsPlacer {
         persistent.putLong(NBT_SPAWN_GAME_TICK, level.getGameTime());
         persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
 
+        // Slimes/magma cubes: the variant path skips Mob#finalizeSpawn (where
+        // vanilla rolls slime size), so without this every variant slime spawns
+        // at the default size 1. Roll a uniform random size 1–4 unless the
+        // variant author baked an explicit Size into the egg NBT (anvil-renamed
+        // / EntityTag egg) — then respect it.
+        if (entity instanceof Slime slime) {
+            CompoundTag mobNbt = picked.blockEntityNbt();
+            boolean authoredSize = mobNbt != null && mobNbt.contains("Size");
+            if (!authoredSize) {
+                int size = 1 + level.getRandom().nextInt(4); // 1, 2, 3, or 4
+                slime.setSize(size, true); // resizes bbox + resets health/damage
+            }
+        }
         if (entity instanceof Mob mob) {
             mob.setPersistenceRequired();
         }
