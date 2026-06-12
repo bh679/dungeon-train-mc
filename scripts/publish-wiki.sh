@@ -25,10 +25,12 @@ set -euo pipefail
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
-# Fetch all releases (newest first by default). Filter out drafts and prereleases.
+# Fetch all releases (newest first by default). Filter out drafts only — Dungeon
+# Train ships pre-1.0 betas, so every release has prerelease==true; filtering those
+# out matched nothing and skipped the wiki update on every release.
 RELEASES_JSON="$WORKDIR/releases.json"
 gh api "repos/$REPO/releases?per_page=100" \
-  --jq '[.[] | select(.draft==false and .prerelease==false)]' \
+  --jq '[.[] | select(.draft==false)]' \
   > "$RELEASES_JSON"
 
 NUM_RELEASES=$(jq 'length' "$RELEASES_JSON")
