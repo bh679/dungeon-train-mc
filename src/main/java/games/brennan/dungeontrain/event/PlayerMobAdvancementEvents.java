@@ -45,8 +45,9 @@ import java.util.UUID;
  *       state.</li>
  * </ul>
  *
- * <p>Item give/receive (A Silent Friend / Friends) is captured separately by
- * {@code mixin.PlayerMobGiveItemMixin} / {@code mixin.PlayerMobPickupMixin}.</p>
+ * <p>Item give/receive (A Silent Friend / Friends) is captured separately via
+ * PlayerMob's {@code PlayerMobSocialHooks} gift seam, forwarded by
+ * {@code compat.PlayerMobSocialBridge}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerMobAdvancementEvents {

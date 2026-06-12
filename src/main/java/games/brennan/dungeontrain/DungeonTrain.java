@@ -3,6 +3,7 @@ package games.brennan.dungeontrain;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -16,6 +17,7 @@ import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -108,5 +110,22 @@ public class DungeonTrain {
         // jarJar, so NamingConfig is always present — no ModList.isLoaded guard
         // needed. The gate is a cheap tag-prefix scan (TrainMembership).
         NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
+
+        // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
+        // item gifts. PlayerMob's feeling-tiered gift rewrite removed the
+        // giveItemTo method the old mixins hooked, so subscribe to its
+        // PlayerMobSocialHooks seam instead (mob->player via tossGift,
+        // player->mob via creditGift). Guarded: only when playermob is loaded,
+        // and tolerant of a playermob build that predates the seam (e.g. the
+        // bundled published version) — then the install no-ops and these
+        // advancements simply won't fire, rather than crashing mod load.
+        if (ModList.get().isLoaded("playermob")) {
+            try {
+                PlayerMobSocialBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("PlayerMob present but social-gift seam unavailable ({}); "
+                        + "befriend advancements disabled.", t.toString());
+            }
+        }
     }
 }

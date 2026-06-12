@@ -16,10 +16,11 @@ import java.util.UUID;
  * <p>Two halves are recorded per (player, mob) pair, in either order:</p>
  * <ul>
  *   <li><b>gave</b> — a PlayerMob picked up an item the player dropped
- *       ({@code tryPickUpFloorItem} with the item's thrower resolving to the
- *       player, via {@code mixin.PlayerMobPickupMixin}).</li>
+ *       ({@code creditGift}, surfaced via {@code PlayerMobSocialHooks.onPlayerGift}
+ *       and forwarded by {@code compat.PlayerMobSocialBridge}).</li>
  *   <li><b>received</b> — a PlayerMob gifted the player an item
- *       ({@code giveItemTo}, via {@code mixin.PlayerMobGiveItemMixin}).</li>
+ *       ({@code tossGift}, surfaced via {@code PlayerMobSocialHooks.onMobGift}
+ *       and forwarded by {@code compat.PlayerMobSocialBridge}).</li>
  * </ul>
  *
  * <p>Outcomes:</p>
