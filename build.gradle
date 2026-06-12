@@ -196,6 +196,9 @@ dependencies {
     // gradle.properties for the version + Modrinth/CurseForge status comment.
     implementation "bh679:playermob:${playermob_version}"
     jarJar(group: 'bh679', name: 'playermob', version: playermob_version)
+    // playermob 0.33.0+ ships games.brennan.playermob.compat.PlayerMobSocialHooks
+    // (the gift seam). The implementation dep above puts it on the compile classpath,
+    // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is

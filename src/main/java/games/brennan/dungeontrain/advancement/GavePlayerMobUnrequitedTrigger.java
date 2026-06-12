@@ -19,7 +19,8 @@ import java.util.Optional;
  * <p>Marker trigger: carries only the standard optional {@code player}
  * predicate. Fired from
  * {@link games.brennan.dungeontrain.advancement.PlayerMobSocialTracker}
- * (driven by {@code mixin.PlayerMobPickupMixin}); vanilla advancement dedupe
+ * (driven by PlayerMob's {@code PlayerMobSocialHooks} gift seam via
+ * {@code compat.PlayerMobSocialBridge}); vanilla advancement dedupe
  * keeps it to a single grant per player.</p>
  *
  * <p>JSON shape:
