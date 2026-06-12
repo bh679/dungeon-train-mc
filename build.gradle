@@ -196,19 +196,9 @@ dependencies {
     // gradle.properties for the version + Modrinth/CurseForge status comment.
     implementation "bh679:playermob:${playermob_version}"
     jarJar(group: 'bh679', name: 'playermob', version: playermob_version)
-
-    // PlayerMob's gift seam (games.brennan.playermob.compat.PlayerMobSocialHooks)
-    // — compile-only. The published playermob bundled above (0.23.0) predates the
-    // seam, so reference the locally-built frosty jar that contains it (the
-    // PlayerMob reincarnation worktree). compileOnly because the seam is provided
-    // at runtime by whichever playermob is actually loaded — the dev frosty build
-    // in the PlayerMob test, or a future published playermob once frosty ships.
-    // compat.PlayerMobSocialBridge isolates the only reference, and
-    // DungeonTrain.commonSetup guards the install (ModList + catch Throwable), so
-    // a seam-less playermob at runtime degrades gracefully.
-    // TODO(real PR): once frosty is published, drop this file dep and bump
-    // playermob_version to the first seam-bearing release.
-    compileOnly files('/Users/brennanhatton/Projects/PlayerMob/.claude/worktrees/friendly-morse-bae24b/neoforge/build/libs/playermob-neoforge-0.32.2.jar')
+    // playermob 0.33.0+ ships games.brennan.playermob.compat.PlayerMobSocialHooks
+    // (the gift seam). The implementation dep above puts it on the compile classpath,
+    // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
