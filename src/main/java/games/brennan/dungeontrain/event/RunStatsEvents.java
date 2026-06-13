@@ -1,7 +1,12 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
+import games.brennan.discordpresence.discord.DeathField;
+import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -9,6 +14,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -29,6 +35,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import org.slf4j.Logger;
 
 import java.util.List;
 
@@ -56,6 +63,7 @@ import java.util.List;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RunStatsEvents {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
     /** Entity-id namespace of the bundled playermob mod (mirrors {@link PlayerMobAdvancementEvents}). */
     private static final String PLAYERMOB_NAMESPACE = "playermob";
     /** Encounter proximity-scan cadence (ticks). Matches the boarding / advancement scans. */
@@ -144,6 +152,37 @@ public final class RunStatsEvents {
                 run.damageTaken()
         );
         DungeonTrainNet.sendTo(player, packet);
+
+        // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
+        // Best-effort: a Discord hiccup must never disrupt the death handling above.
+        if (DungeonTrainConfig.isDeathReportToDiscord()) {
+            try {
+                postRunSummary(player, event.getSource(), packet);
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] death report to Discord failed: {}", t.toString());
+            }
+        }
+    }
+
+    /**
+     * Forward the run summary to Discord Presence's public death-report API: the death cause,
+     * the same stats the death screen shows, and the most-used weapon + worn armor as the
+     * composed item image. Discord Presence handles the embed, image, and posting off-thread.
+     */
+    private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet) {
+        String cause = source.getLocalizedDeathMessage(player).getString();
+        List<DeathField> fields = List.of(
+                new DeathField("Distance", DeathReportFormat.distance(packet.distanceBlocks())),
+                new DeathField("Time", DeathReportFormat.time(packet.runTicks())),
+                new DeathField("Carts travelled", Integer.toString(packet.cartsTravelled())),
+                new DeathField("Mobs killed", Integer.toString(packet.mobKills())),
+                new DeathField("Loot containers", Integer.toString(packet.containersOpened())),
+                new DeathField("Books read", Integer.toString(packet.booksRead())));
+        List<ItemStack> icons = List.of(
+                packet.mostUsedWeapon(),
+                packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
+        DiscordService.get().postDeathReport(player,
+                "💀 " + player.getGameProfile().getName() + " — Run Ended", cause, fields, icons);
     }
 
     @SubscribeEvent

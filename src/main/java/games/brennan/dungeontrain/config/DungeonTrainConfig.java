@@ -56,6 +56,8 @@ public final class DungeonTrainConfig {
     public static final int MAX_RANDOM_BOOK_ONE_IN = 1_000_000;
     public static final int DEFAULT_RANDOM_BOOK_ONE_IN = 100;
 
+    public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
@@ -68,6 +70,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
+    public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -84,6 +87,7 @@ public final class DungeonTrainConfig {
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
+        DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
     }
 
     private DungeonTrainConfig() {}
@@ -130,8 +134,18 @@ public final class DungeonTrainConfig {
                 .comment("1-in-N chance that each book dropped by breaking a vanilla bookshelf is replaced with a narrative Random Book (from data/dungeontrain/narratives/random_books). Total drop count is unchanged. Default 100 (~1%). Set to 0 to disable.")
                 .defineInRange("randomBookFromBookshelfOneIn", DEFAULT_RANDOM_BOOK_ONE_IN, MIN_RANDOM_BOOK_ONE_IN, MAX_RANDOM_BOOK_ONE_IN);
         b.pop();
+        b.push("discord");
+        ModConfigSpec.BooleanValue deathReportToDiscord = b
+                .comment("Post a run-summary embed to Discord when a player dies — distance, time, carts, mobs,",
+                        "loot, books, plus an image of the most-used weapon and worn armor — mirroring the in-game",
+                        "death screen. Requires the bundled Discord Presence mod with a webhookUrl configured in",
+                        "config/discordpresence-server.toml. To avoid a duplicate post, also set autoDeathReport=false",
+                        "there (this richer report replaces Discord Presence's basic vanilla one).")
+                .define("deathReportToDiscord", DEFAULT_DEATH_REPORT_TO_DISCORD);
+        b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn);
+                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn,
+                deathReportToDiscord);
     }
 
     /**
@@ -186,6 +200,11 @@ public final class DungeonTrainConfig {
     /** 1-in-N chance a book dropped by breaking a bookshelf becomes a narrative Random Book; 0 disables. */
     public static int getRandomBookFromBookshelfOneIn() {
         return isLoaded() ? RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN.get() : DEFAULT_RANDOM_BOOK_ONE_IN;
+    }
+
+    /** Whether to post the death-screen run summary to Discord (via the bundled Discord Presence mod). */
+    public static boolean isDeathReportToDiscord() {
+        return isLoaded() ? DEATH_REPORT_TO_DISCORD.get() : DEFAULT_DEATH_REPORT_TO_DISCORD;
     }
 
     public static void setNumCarriages(int value) {
@@ -265,6 +284,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyEnabled,
             ModConfigSpec.IntValue carriagesPerTier,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
-            ModConfigSpec.IntValue randomBookFromBookshelfOneIn
+            ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
+            ModConfigSpec.BooleanValue deathReportToDiscord
     ) {}
 }
