@@ -35,6 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@code startingBooksRead} — total right-clicks on starting-book
  *       items. Re-reads count. Drives the "The Same But Different"
  *       milestone.</li>
+ *   <li>{@code playersEncountered} — total distinct PlayerMobs the player
+ *       has come near across all runs. Drives the "Strangers on a Train"
+ *       milestone.</li>
  * </ul>
  * All counters accrue across worlds and sessions; switching worlds does
  * not reset them.</p>
@@ -50,14 +53,15 @@ public final class GlobalPlayerStats {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String DIR_NAME = "dungeontrain-stats";
 
-    public record Data(long trainTicks, long randomBooksRead, long startingBooksRead) {
+    public record Data(long trainTicks, long randomBooksRead, long startingBooksRead, long playersEncountered) {
         public static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
             Codec.LONG.optionalFieldOf("trainTicks", 0L).forGetter(Data::trainTicks),
             Codec.LONG.optionalFieldOf("randomBooksRead", 0L).forGetter(Data::randomBooksRead),
-            Codec.LONG.optionalFieldOf("startingBooksRead", 0L).forGetter(Data::startingBooksRead)
+            Codec.LONG.optionalFieldOf("startingBooksRead", 0L).forGetter(Data::startingBooksRead),
+            Codec.LONG.optionalFieldOf("playersEncountered", 0L).forGetter(Data::playersEncountered)
         ).apply(in, Data::new));
 
-        public static final Data EMPTY = new Data(0L, 0L, 0L);
+        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L);
     }
 
     /** In-memory cache. Holds the full {@link Data} record per UUID. */
@@ -84,6 +88,11 @@ public final class GlobalPlayerStats {
         return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).startingBooksRead();
     }
 
+    /** Current accumulated distinct-player encounter count for {@code uuid}. Reads disk on first access. */
+    public static long playersEncountered(UUID uuid) {
+        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).playersEncountered();
+    }
+
     /**
      * Add {@code delta} ticks to the player's cumulative train-time counter
      * and return the new total. Delta must be non-negative; negatives are
@@ -94,7 +103,7 @@ public final class GlobalPlayerStats {
         if (delta <= 0) return trainTicks(uuid);
         Data updated = CACHE.compute(uuid, (k, existing) -> {
             Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks() + delta, base.randomBooksRead(), base.startingBooksRead());
+            return new Data(base.trainTicks() + delta, base.randomBooksRead(), base.startingBooksRead(), base.playersEncountered());
         });
         return updated.trainTicks();
     }
@@ -107,7 +116,7 @@ public final class GlobalPlayerStats {
         if (delta <= 0) return randomBooksRead(uuid);
         Data updated = CACHE.compute(uuid, (k, existing) -> {
             Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead() + delta, base.startingBooksRead());
+            return new Data(base.trainTicks(), base.randomBooksRead() + delta, base.startingBooksRead(), base.playersEncountered());
         });
         return updated.randomBooksRead();
     }
@@ -120,9 +129,22 @@ public final class GlobalPlayerStats {
         if (delta <= 0) return startingBooksRead(uuid);
         Data updated = CACHE.compute(uuid, (k, existing) -> {
             Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead() + delta);
+            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead() + delta, base.playersEncountered());
         });
         return updated.startingBooksRead();
+    }
+
+    /**
+     * Add {@code delta} to the player's cumulative distinct-player encounter
+     * counter and return the new total. Monotone-increasing.
+     */
+    public static long addPlayersEncountered(UUID uuid, long delta) {
+        if (delta <= 0) return playersEncountered(uuid);
+        Data updated = CACHE.compute(uuid, (k, existing) -> {
+            Data base = existing != null ? existing : loadFromDisk(k);
+            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead(), base.playersEncountered() + delta);
+        });
+        return updated.playersEncountered();
     }
 
     /** Flush a single player's cached stats to disk. No-op if not in cache. */

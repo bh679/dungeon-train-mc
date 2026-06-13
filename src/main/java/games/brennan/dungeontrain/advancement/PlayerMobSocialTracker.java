@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
@@ -59,6 +60,8 @@ public final class PlayerMobSocialTracker {
         RECEIVED_FROM.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(mobUuid);
         if (GAVE_TO.getOrDefault(playerUuid, Set.of()).contains(mobUuid)) {
             ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
+            // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
         }
     }
 
@@ -73,6 +76,8 @@ public final class PlayerMobSocialTracker {
         GAVE_TO.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(mobUuid);
         if (RECEIVED_FROM.getOrDefault(playerUuid, Set.of()).contains(mobUuid)) {
             ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
+            // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
         } else {
             ModAdvancementTriggers.GAVE_PLAYERMOB_UNREQUITED.get().trigger(player);
         }

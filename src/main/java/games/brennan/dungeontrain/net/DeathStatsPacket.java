@@ -33,7 +33,12 @@ public record DeathStatsPacket(
         ItemStack armorHead,
         ItemStack armorChest,
         ItemStack armorLegs,
-        ItemStack armorFeet
+        ItemStack armorFeet,
+        int playersEncountered,
+        int playersKilled,
+        int playersBefriended,
+        double damageDealt,
+        double damageTaken
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -57,6 +62,11 @@ public record DeathStatsPacket(
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorChest);
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorLegs);
         ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, armorFeet);
+        buf.writeVarInt(playersEncountered);
+        buf.writeVarInt(playersKilled);
+        buf.writeVarInt(playersBefriended);
+        buf.writeDouble(damageDealt);
+        buf.writeDouble(damageTaken);
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -71,8 +81,14 @@ public record DeathStatsPacket(
         ItemStack chest = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
         ItemStack legs = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
         ItemStack feet = ItemStack.OPTIONAL_STREAM_CODEC.decode(buf);
+        int playersEncountered = buf.readVarInt();
+        int playersKilled = buf.readVarInt();
+        int playersBefriended = buf.readVarInt();
+        double damageDealt = buf.readDouble();
+        double damageTaken = buf.readDouble();
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
-                containersOpened, booksRead, weapon, head, chest, legs, feet);
+                containersOpened, booksRead, weapon, head, chest, legs, feet,
+                playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken);
     }
 
     @Override
