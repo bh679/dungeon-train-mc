@@ -1,6 +1,6 @@
 {
-  "schedule_anchor": "2026-06-12T23:40:52Z",
+  "schedule_anchor": "2026-06-13T03:28:37Z",
   "last_auto_release_at": null,
-  "last_anchor_source": "real_release_v0.282.0",
-  "cascade_stopped": true
+  "last_anchor_source": "real_release_v0.283.0",
+  "cascade_stopped": false
 }
