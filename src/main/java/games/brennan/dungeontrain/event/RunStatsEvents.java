@@ -1,12 +1,16 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.AbstractArrow;
@@ -15,13 +19,18 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.WrittenBookItem;
 import net.minecraft.world.level.block.DecoratedPotBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+
+import java.util.List;
 
 /**
  * Per-run stat tracking for the death-screen summary. All increments live
@@ -47,6 +56,20 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class RunStatsEvents {
 
+    /** Entity-id namespace of the bundled playermob mod (mirrors {@link PlayerMobAdvancementEvents}). */
+    private static final String PLAYERMOB_NAMESPACE = "playermob";
+    /** Encounter proximity-scan cadence (ticks). Matches the boarding / advancement scans. */
+    private static final int ENCOUNTER_SCAN_PERIOD_TICKS = 10;
+    /** Radius (blocks) within which a PlayerMob counts as "encountered". */
+    private static final double ENCOUNTER_RADIUS = 16.0;
+    /**
+     * Upper bound on a single tracked damage event. Command / instakill sources
+     * (e.g. {@code /kill} deals {@link Float#MAX_VALUE}) are already excluded by
+     * the bypasses-invulnerability check; this is a defensive catch-all for any
+     * other absurd magnitude so the damage stat can't blow out to ~3.4e38.
+     */
+    private static final float MAX_TRACKED_DAMAGE = 1_000_000.0f;
+
     private RunStatsEvents() {}
 
     @SubscribeEvent
@@ -60,6 +83,10 @@ public final class RunStatsEvents {
         if (victim == killer) return;
         PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.incrementMobKills();
+        // PlayerMob kills are also tallied separately (the "players killed"
+        // death-screen cell). mobKills still counts everything, so the two
+        // overlap by design — a killed PlayerMob bumps both.
+        if (isPlayerMob(victim)) run.incrementPlayerKills();
         // Attribute the kill to the weapon that actually dealt it. Arrows
         // (from bows/crossbows) and thrown tridents carry the firing weapon
         // on the projectile itself — that's the correct credit even if the
@@ -109,7 +136,12 @@ public final class RunStatsEvents {
                 player.getItemBySlot(EquipmentSlot.HEAD).copy(),
                 player.getItemBySlot(EquipmentSlot.CHEST).copy(),
                 player.getItemBySlot(EquipmentSlot.LEGS).copy(),
-                player.getItemBySlot(EquipmentSlot.FEET).copy()
+                player.getItemBySlot(EquipmentSlot.FEET).copy(),
+                run.encounteredCount(),
+                run.playerKills(),
+                run.befriendedCount(),
+                run.damageDealt(),
+                run.damageTaken()
         );
         DungeonTrainNet.sendTo(player, packet);
     }
@@ -138,5 +170,60 @@ public final class RunStatsEvents {
         if (stack.isEmpty()) return;
         if (!(stack.getItem() instanceof WrittenBookItem)) return;
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksRead();
+    }
+
+    /**
+     * Accumulate per-run damage totals. {@link LivingDamageEvent.Post}
+     * reports {@code getNewDamage()} — the post-mitigation damage actually
+     * applied. One event credits both directions: damage the hurt entity
+     * took (when it is a player) and damage a player dealt (when the source
+     * entity is a player other than the victim).
+     */
+    @SubscribeEvent
+    public static void onLivingDamage(LivingDamageEvent.Post event) {
+        LivingEntity victim = event.getEntity();
+        if (victim.level().isClientSide) return;
+        // Exclude command / environment instakills: /kill deals Float.MAX_VALUE
+        // and void death bypasses invulnerability — neither is meaningful combat,
+        // and recording them blows the stat out to ~3.4e38 (overflowing the UI).
+        if (event.getSource().is(DamageTypeTags.BYPASSES_INVULNERABILITY)) return;
+        float amount = event.getNewDamage();
+        if (!Float.isFinite(amount) || amount <= 0.0f || amount > MAX_TRACKED_DAMAGE) return;
+        if (victim instanceof ServerPlayer hurt) {
+            hurt.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageTaken(amount);
+        }
+        if (event.getSource().getEntity() instanceof ServerPlayer dealer && dealer != victim) {
+            dealer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDamageDealt(amount);
+        }
+    }
+
+    /**
+     * Periodic proximity scan: each player accumulates the set of distinct
+     * PlayerMobs that have come within {@link #ENCOUNTER_RADIUS} blocks this
+     * run (the death-screen "encountered" stat). The first time a given mob
+     * is seen this run, the all-time {@link GlobalPlayerStats#addPlayersEncountered}
+     * counter ticks and the "Strangers on a Train" milestone is checked.
+     */
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (level.getGameTime() % ENCOUNTER_SCAN_PERIOD_TICKS != 0L) return;
+        List<ServerPlayer> players = level.players();
+        if (players.isEmpty()) return;
+        for (ServerPlayer player : players) {
+            PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+            AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
+            for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {
+                if (run.recordEncounter(mob.getUUID())) {
+                    long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
+                    AchievementEvents.notifyEncounter(player, total);
+                }
+            }
+        }
+    }
+
+    private static boolean isPlayerMob(Entity entity) {
+        return entity != null
+            && PLAYERMOB_NAMESPACE.equals(EntityType.getKey(entity.getType()).getNamespace());
     }
 }

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/thats_what_friends_are_for",
+  "display": {
+    "icon": { "id": "minecraft:player_head" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.encountered_1000_players.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.encountered_1000_players.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:encountered_players",
+      "conditions": { "threshold": 1000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

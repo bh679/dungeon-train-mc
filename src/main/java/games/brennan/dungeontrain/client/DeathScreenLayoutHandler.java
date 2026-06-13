@@ -60,7 +60,8 @@ import java.util.function.Function;
  *                       You Died!
  *                      Killed by &lt;mob&gt;
  *
- *   [ DIST  TIME  CARTS  MOBS  LOOT  BOOKS ]   stats strip
+ *   [ DIST  TIME  CARTS  LOOT  BOOKS ]              stats strip
+ *   [ MET  KILLED  FRIENDS  MOBS  DEALT  TAKEN ]    combat strip
  *   [ Weapon [I]                Armor [I][I][I][I] ]   loadout strip
  *
  *   [    New World    ][   Title Screen    ]   side-by-side buttons
@@ -136,6 +137,11 @@ public final class DeathScreenLayoutHandler {
     private static final Component STATS_SHORT_MOBS = Component.translatable("gui.dungeontrain.death.stats.short.mobs");
     private static final Component STATS_SHORT_LOOT = Component.translatable("gui.dungeontrain.death.stats.short.loot");
     private static final Component STATS_SHORT_BOOKS = Component.translatable("gui.dungeontrain.death.stats.short.books");
+    private static final Component STATS_SHORT_ENCOUNTERED = Component.translatable("gui.dungeontrain.death.stats.short.encountered");
+    private static final Component STATS_SHORT_PLAYERS_KILLED = Component.translatable("gui.dungeontrain.death.stats.short.players_killed");
+    private static final Component STATS_SHORT_BEFRIENDED = Component.translatable("gui.dungeontrain.death.stats.short.befriended");
+    private static final Component STATS_SHORT_DAMAGE_DEALT = Component.translatable("gui.dungeontrain.death.stats.short.damage_dealt");
+    private static final Component STATS_SHORT_DAMAGE_TAKEN = Component.translatable("gui.dungeontrain.death.stats.short.damage_taken");
 
     /**
      * Set by {@link #onScreenInitPost} so {@link #onScreenRenderPost} knows
@@ -145,6 +151,7 @@ public final class DeathScreenLayoutHandler {
     private static int panelX = 0;
     private static int panelW = 0;
     private static int statsY = 0;
+    private static int combatY = 0;
     private static int loadoutY = 0;
     private static boolean statsPanelActive = false;
 
@@ -169,18 +176,24 @@ public final class DeathScreenLayoutHandler {
         int halfW = (slotW - GAP) / 2;
         int rowSpacing = slotH + GAP;
 
-        // Buttons are anchored two rows below vanilla's Respawn slot (i.e.
-        // roughly where the THIRD vanilla button row would be in the prior
-        // three-row layout). Pushing them down frees the middle of the
-        // screen for the stats + loadout panel stack.
-        int buttonsY = slotY + rowSpacing * 2;
-
         int screenW = deathScreen.width;
         panelW = Math.min(380, screenW - 80);
         panelX = (screenW - panelW) / 2;
+
+        // The recap is a 3-panel stack (stats, combat, loadout) sitting ABOVE
+        // the two action buttons. Anchor the buttons two rows below vanilla's
+        // Respawn slot — but never so high that the stack would collide with
+        // the "You Died!" title: push them down as far as it takes for the
+        // top (stats) panel to clear MIN_STATS_TOP_Y. Without this, adding the
+        // combat row lifted statsY past the guard and suppressed the whole recap.
+        int stackAboveButtons = GAP + LOADOUT_PANEL_H + 2 * (PANEL_GAP + STATS_PANEL_H);
+        int buttonsY = Math.max(slotY + rowSpacing * 2, MIN_STATS_TOP_Y + stackAboveButtons);
         loadoutY = buttonsY - GAP - LOADOUT_PANEL_H;
-        statsY = loadoutY - PANEL_GAP - STATS_PANEL_H;
-        statsPanelActive = statsY >= MIN_STATS_TOP_Y;
+        combatY = loadoutY - PANEL_GAP - STATS_PANEL_H;
+        statsY = combatY - PANEL_GAP - STATS_PANEL_H;
+        // Show the recap unless the relocated buttons would overflow the bottom
+        // of the screen (tiny window / very large GUI scale) — then fall back to vanilla.
+        statsPanelActive = buttonsY + slotH <= deathScreen.height - GAP;
 
         // Drop vanilla's Respawn and Title buttons. In Option D the death
         // screen has exactly two actions: start a new world, or exit to the
@@ -220,26 +233,46 @@ public final class DeathScreenLayoutHandler {
         int mouseX = event.getMouseX();
         int mouseY = event.getMouseY();
 
-        // Stats strip: 6 evenly-distributed cells, small uppercase label
+        // Top stats strip: 5 evenly-distributed cells, small uppercase label
         // above value. Cell centers are spaced cellWidth apart.
         fillPanel(graphics, panelX, statsY, panelW, STATS_PANEL_H);
-        int cellW = (panelW - STATS_PAD_H * 2) / 6;
-        int labelLineY = statsY + STATS_PAD_V;
-        int valueLineY = labelLineY + FONT_LINE + STATS_LABEL_VALUE_GAP;
-        int firstCellCenter = panelX + STATS_PAD_H + cellW / 2;
+        int topCellW = (panelW - STATS_PAD_H * 2) / 5;
+        int topLabelY = statsY + STATS_PAD_V;
+        int topValueY = topLabelY + FONT_LINE + STATS_LABEL_VALUE_GAP;
+        int topFirstCenter = panelX + STATS_PAD_H + topCellW / 2;
 
         drawStatCell(graphics, font, STATS_SHORT_DISTANCE, formatDistance(stats.distanceBlocks()),
-                firstCellCenter, labelLineY, valueLineY);
+                topFirstCenter, topLabelY, topValueY);
         drawStatCell(graphics, font, STATS_SHORT_TIME, formatTime(stats.runTicks()),
-                firstCellCenter + cellW, labelLineY, valueLineY);
+                topFirstCenter + topCellW, topLabelY, topValueY);
         drawStatCell(graphics, font, STATS_SHORT_CARTS, String.valueOf(stats.cartsTravelled()),
-                firstCellCenter + cellW * 2, labelLineY, valueLineY);
-        drawStatCell(graphics, font, STATS_SHORT_MOBS, String.valueOf(stats.mobKills()),
-                firstCellCenter + cellW * 3, labelLineY, valueLineY);
+                topFirstCenter + topCellW * 2, topLabelY, topValueY);
         drawStatCell(graphics, font, STATS_SHORT_LOOT, String.valueOf(stats.containersOpened()),
-                firstCellCenter + cellW * 4, labelLineY, valueLineY);
+                topFirstCenter + topCellW * 3, topLabelY, topValueY);
         drawStatCell(graphics, font, STATS_SHORT_BOOKS, String.valueOf(stats.booksRead()),
-                firstCellCenter + cellW * 5, labelLineY, valueLineY);
+                topFirstCenter + topCellW * 4, topLabelY, topValueY);
+
+        // Combat strip: 6 cells — players encountered / killed / befriended,
+        // total mob kills (counts everything, incl. PlayerMobs), and damage
+        // dealt / taken (post-mitigation health points).
+        fillPanel(graphics, panelX, combatY, panelW, STATS_PANEL_H);
+        int combatCellW = (panelW - STATS_PAD_H * 2) / 6;
+        int combatLabelY = combatY + STATS_PAD_V;
+        int combatValueY = combatLabelY + FONT_LINE + STATS_LABEL_VALUE_GAP;
+        int combatFirstCenter = panelX + STATS_PAD_H + combatCellW / 2;
+
+        drawStatCell(graphics, font, STATS_SHORT_ENCOUNTERED, String.valueOf(stats.playersEncountered()),
+                combatFirstCenter, combatLabelY, combatValueY);
+        drawStatCell(graphics, font, STATS_SHORT_PLAYERS_KILLED, String.valueOf(stats.playersKilled()),
+                combatFirstCenter + combatCellW, combatLabelY, combatValueY);
+        drawStatCell(graphics, font, STATS_SHORT_BEFRIENDED, String.valueOf(stats.playersBefriended()),
+                combatFirstCenter + combatCellW * 2, combatLabelY, combatValueY);
+        drawStatCell(graphics, font, STATS_SHORT_MOBS, String.valueOf(stats.mobKills()),
+                combatFirstCenter + combatCellW * 3, combatLabelY, combatValueY);
+        drawStatCell(graphics, font, STATS_SHORT_DAMAGE_DEALT, formatDamage(stats.damageDealt()),
+                combatFirstCenter + combatCellW * 4, combatLabelY, combatValueY);
+        drawStatCell(graphics, font, STATS_SHORT_DAMAGE_TAKEN, formatDamage(stats.damageTaken()),
+                combatFirstCenter + combatCellW * 5, combatLabelY, combatValueY);
 
         // Loadout strip: Weapon (label + 1 slot) left-anchored, Armor
         // (label + 4 slots) right-anchored. Same panel width as stats.
@@ -327,6 +360,16 @@ public final class DeathScreenLayoutHandler {
             return String.format("%d:%02d:%02d", hours, minutes, seconds);
         }
         return String.format("%d:%02d", minutes, seconds);
+    }
+
+    /**
+     * Damage rendered as rounded health points (half-hearts), abbreviated for
+     * large totals so a long run's damage can't overflow the narrow stat cell.
+     */
+    private static String formatDamage(double healthPoints) {
+        if (healthPoints >= 1_000_000.0) return String.format("%.1fM", healthPoints / 1_000_000.0);
+        if (healthPoints >= 10_000.0) return String.format("%.1fk", healthPoints / 1_000.0);
+        return String.format("%,.0f", healthPoints);
     }
 
     public static void launchWorld(Screen lastScreen, boolean sameSeed) {

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.player;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -14,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Per-player "current run" state, attached to {@link net.minecraft.world.entity.player.Player}
@@ -74,7 +76,12 @@ public final class PlayerRunState {
         Codec.INT.optionalFieldOf("containersOpened", 0).forGetter(PlayerRunState::containersOpened),
         Codec.INT.optionalFieldOf("booksReadCount", 0).forGetter(PlayerRunState::booksReadCount),
         Codec.unboundedMap(Codec.STRING, Codec.INT)
-            .optionalFieldOf("weaponKills", Map.of()).forGetter(PlayerRunState::weaponKillsSnapshot)
+            .optionalFieldOf("weaponKills", Map.of()).forGetter(PlayerRunState::weaponKillsSnapshot),
+        Codec.INT.optionalFieldOf("playerKills", 0).forGetter(PlayerRunState::playerKills),
+        Codec.DOUBLE.optionalFieldOf("damageDealt", 0.0).forGetter(PlayerRunState::damageDealt),
+        Codec.DOUBLE.optionalFieldOf("damageTaken", 0.0).forGetter(PlayerRunState::damageTaken),
+        UUIDUtil.CODEC.listOf().optionalFieldOf("encounteredMobs", List.of()).forGetter(PlayerRunState::encounteredMobsList),
+        UUIDUtil.CODEC.listOf().optionalFieldOf("befriendedMobs", List.of()).forGetter(PlayerRunState::befriendedMobsList)
     ).apply(instance, PlayerRunState::new));
 
     private final Set<BlockPos> uniqueChests;
@@ -88,6 +95,16 @@ public final class PlayerRunState {
     private int booksReadCount;
     /** Item-id (e.g. {@code minecraft:iron_sword}) → number of mob kills credited to that weapon this run. */
     private final Map<String, Integer> weaponKills;
+    /** PlayerMob kills this run — subset of {@link #mobKills} (which counts all entities). */
+    private int playerKills;
+    /** Total damage this player dealt to other entities this run (health points). */
+    private double damageDealt;
+    /** Total damage this player took this run (health points). */
+    private double damageTaken;
+    /** Distinct PlayerMobs come near this run (drives the death-screen "encountered" stat). */
+    private final Set<UUID> encounteredMobs;
+    /** Distinct PlayerMobs befriended (mutual gift exchange) this run. */
+    private final Set<UUID> befriendedMobs;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -100,6 +117,11 @@ public final class PlayerRunState {
         this.containersOpened = 0;
         this.booksReadCount = 0;
         this.weaponKills = new HashMap<>();
+        this.playerKills = 0;
+        this.damageDealt = 0.0;
+        this.damageTaken = 0.0;
+        this.encounteredMobs = new HashSet<>();
+        this.befriendedMobs = new HashSet<>();
     }
 
     public PlayerRunState(List<BlockPos> uniqueChests,
@@ -111,7 +133,12 @@ public final class PlayerRunState {
                           long runTicks,
                           int containersOpened,
                           int booksReadCount,
-                          Map<String, Integer> weaponKills) {
+                          Map<String, Integer> weaponKills,
+                          int playerKills,
+                          double damageDealt,
+                          double damageTaken,
+                          List<UUID> encounteredMobs,
+                          List<UUID> befriendedMobs) {
         this.uniqueChests = new HashSet<>(uniqueChests);
         this.cartsSinceDeath = cartsSinceDeath;
         this.cartsBackwardSinceDeath = cartsBackwardSinceDeath;
@@ -122,6 +149,11 @@ public final class PlayerRunState {
         this.containersOpened = containersOpened;
         this.booksReadCount = booksReadCount;
         this.weaponKills = new HashMap<>(weaponKills);
+        this.playerKills = playerKills;
+        this.damageDealt = damageDealt;
+        this.damageTaken = damageTaken;
+        this.encounteredMobs = new HashSet<>(encounteredMobs);
+        this.befriendedMobs = new HashSet<>(befriendedMobs);
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -290,6 +322,77 @@ public final class PlayerRunState {
         return ++booksReadCount;
     }
 
+    /** PlayerMob kills this run (subset of {@link #mobKills}). */
+    public int playerKills() {
+        return playerKills;
+    }
+
+    public int incrementPlayerKills() {
+        return ++playerKills;
+    }
+
+    public double damageDealt() {
+        return damageDealt;
+    }
+
+    public double damageTaken() {
+        return damageTaken;
+    }
+
+    /** Add {@code amount} to the per-run damage-dealt counter. Non-finite / ≤0 ignored. */
+    public double addDamageDealt(double amount) {
+        if (amount <= 0.0 || !Double.isFinite(amount)) return damageDealt;
+        damageDealt += amount;
+        return damageDealt;
+    }
+
+    /** Add {@code amount} to the per-run damage-taken counter. Non-finite / ≤0 ignored. */
+    public double addDamageTaken(double amount) {
+        if (amount <= 0.0 || !Double.isFinite(amount)) return damageTaken;
+        damageTaken += amount;
+        return damageTaken;
+    }
+
+    /** Codec-friendly view (List, not Set). */
+    public List<UUID> encounteredMobsList() {
+        return new ArrayList<>(encounteredMobs);
+    }
+
+    /**
+     * Record a PlayerMob this player has come near this run.
+     *
+     * @return {@code true} if newly encountered this run, {@code false} if
+     *         already counted (caller uses this to drive the all-time
+     *         encounter counter exactly once per distinct mob per run).
+     */
+    public boolean recordEncounter(UUID mobUuid) {
+        return encounteredMobs.add(mobUuid);
+    }
+
+    /** Number of distinct PlayerMobs encountered this run. */
+    public int encounteredCount() {
+        return encounteredMobs.size();
+    }
+
+    /** Codec-friendly view (List, not Set). */
+    public List<UUID> befriendedMobsList() {
+        return new ArrayList<>(befriendedMobs);
+    }
+
+    /**
+     * Record a PlayerMob befriended (mutual gift exchange) this run.
+     *
+     * @return {@code true} if newly befriended this run, {@code false} if already counted.
+     */
+    public boolean recordBefriended(UUID mobUuid) {
+        return befriendedMobs.add(mobUuid);
+    }
+
+    /** Number of distinct PlayerMobs befriended this run. */
+    public int befriendedCount() {
+        return befriendedMobs.size();
+    }
+
     /** Reset cart counters and travelled-carriage-index (called on respawn). */
     public void resetCarts() {
         cartsSinceDeath = 0;
@@ -305,6 +408,11 @@ public final class PlayerRunState {
         containersOpened = 0;
         booksReadCount = 0;
         weaponKills.clear();
+        playerKills = 0;
+        damageDealt = 0.0;
+        damageTaken = 0.0;
+        encounteredMobs.clear();
+        befriendedMobs.clear();
     }
 
     /** Reset everything (called on respawn). */

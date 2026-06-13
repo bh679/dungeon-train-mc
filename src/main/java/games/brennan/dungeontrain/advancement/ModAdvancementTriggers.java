@@ -69,6 +69,9 @@ public final class ModAdvancementTriggers {
     public static final Supplier<DefendedPlayerMobTrigger> DEFENDED_PLAYERMOB =
         TRIGGERS.register("defended_playermob", DefendedPlayerMobTrigger::new);
 
+    public static final Supplier<EncounteredPlayersTrigger> ENCOUNTERED_PLAYERS =
+        TRIGGERS.register("encountered_players", EncounteredPlayersTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {
