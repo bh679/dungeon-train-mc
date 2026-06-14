@@ -64,28 +64,42 @@ public record BlockVariantSyncPacket(
      * {@link games.brennan.dungeontrain.editor.VariantHalf.Mode#ordinal()}.
      * Out-of-range values on read are treated as RANDOM (the
      * {@code VariantHalf.NONE} default).</p>
+     *
+     * <p>{@code minDiff} / {@code maxDiff} mirror the v8
+     * {@link games.brennan.dungeontrain.editor.VariantDifficulty} band for mob
+     * rows: the inclusive difficulty-tier range the egg may spawn in.
+     * {@code maxDiff == -1} is the "all" sentinel (no upper bound). Both
+     * default to {@code 0} / {@code -1} on non-mob rows and are only rendered
+     * for mob rows.</p>
      */
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
-                        @Nullable String entityId, byte halfMode) {
+                        @Nullable String entityId, byte halfMode, int minDiff, int maxDiff) {
 
         /** Backward-compat constructor for call sites that don't carry a loot link. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
                      byte rotMode, byte rotDirMask) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, null, null, (byte) 1);
+            this(stateString, beNbt, weight, rotMode, rotDirMask, null, null, (byte) 1, 0, -1);
         }
 
         /** Backward-compat constructor for call sites that don't carry an entity id. */
         public Entry(String stateString, @Nullable String beNbt, int weight,
                      byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, null, (byte) 1);
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, null, (byte) 1, 0, -1);
         }
 
         /** Backward-compat constructor for call sites that don't carry a halfMode (defaults to RANDOM = 1). */
         public Entry(String stateString, @Nullable String beNbt, int weight,
                      byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                      @Nullable String entityId) {
-            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId, (byte) 1);
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId, (byte) 1, 0, -1);
+        }
+
+        /** Backward-compat constructor for call sites that carry a halfMode but no difficulty band (defaults 0 / all). */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId, halfMode, 0, -1);
         }
 
         /** True for v7 mob entries — the C-menu renders the spawn-egg icon for these rows. */
@@ -139,6 +153,8 @@ public record BlockVariantSyncPacket(
             buf.writeBoolean(hasEid);
             if (hasEid) buf.writeUtf(e.entityId(), 128);
             buf.writeByte(e.halfMode());
+            buf.writeVarInt(e.minDiff());
+            buf.writeVarInt(e.maxDiff());
         }
     }
 
@@ -169,8 +185,10 @@ public record BlockVariantSyncPacket(
             boolean hasEid = buf.readBoolean();
             String entityId = hasEid ? buf.readUtf(128) : null;
             byte halfMode = buf.readByte();
+            int minDiff = buf.readVarInt();
+            int maxDiff = buf.readVarInt();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up);
     }

@@ -166,6 +166,18 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.BUMP_WEIGHT, variantId, local, hit.index(), "", delta));
             }
+            case ENTRY_DIFF_MIN -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                int delta = shift ? -1 : 1;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.BUMP_DIFF_MIN, variantId, local, hit.index(), "", delta));
+            }
+            case ENTRY_DIFF_MAX -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                int delta = shift ? -1 : 1;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.BUMP_DIFF_MAX, variantId, local, hit.index(), "", delta));
+            }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(

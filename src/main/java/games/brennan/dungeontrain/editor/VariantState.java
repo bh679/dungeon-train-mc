@@ -52,11 +52,17 @@ import org.jetbrains.annotations.Nullable;
  *       entity pass creates the mob (subject to the existing 48-block
  *       player-distance gate). v6 files load with {@code entityId == null}
  *       and re-save diff-clean.</li>
+ *   <li>v8 — adds an optional per-entry {@link VariantDifficulty} band
+ *       ({@code min} / {@code max} difficulty tier) consulted only for mob
+ *       entries: at spawn the cell drops out-of-band eggs from its candidate
+ *       pool before the weighted pick. The default band {@code (0, ALL)} is
+ *       omitted from JSON, so v7 files load and re-save diff-clean.</li>
  * </ul></p>
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
                            VariantRotation rotation, @Nullable String linkedLootPrefabId,
-                           @Nullable ResourceLocation entityId, VariantHalf half) {
+                           @Nullable ResourceLocation entityId, VariantHalf half,
+                           VariantDifficulty difficulty) {
 
     public VariantState {
         if (entityId != null) {
@@ -78,6 +84,14 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
             linkedLootPrefabId = null;
         }
         if (half == null) half = VariantHalf.NONE;
+        if (difficulty == null) difficulty = VariantDifficulty.NONE;
+    }
+
+    /** Seven-arg overload defaulting {@code difficulty} to {@link VariantDifficulty#NONE}. */
+    public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
+                        VariantRotation rotation, @Nullable String linkedLootPrefabId,
+                        @Nullable ResourceLocation entityId, VariantHalf half) {
+        this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, VariantDifficulty.NONE);
     }
 
     /** Six-arg overload defaulting {@code half} to {@link VariantHalf#NONE}. */
@@ -156,26 +170,32 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     /** True when the entry has no extras over v1 — drives bare-string vs object-form JSON serialisation. */
     public boolean isPlainBareString() {
         return blockEntityNbt == null && weight == 1 && rotation.isDefault()
-            && linkedLootPrefabId == null && entityId == null && half.isDefault();
+            && linkedLootPrefabId == null && entityId == null && half.isDefault()
+            && difficulty.isDefault();
     }
 
     /** Return a copy with {@code weight} replaced (clamped ≥ 1 by the canonical constructor). */
     public VariantState withWeight(int newWeight) {
-        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half);
+        return new VariantState(state, blockEntityNbt, newWeight, rotation, linkedLootPrefabId, entityId, half, difficulty);
     }
 
     /** Return a copy with {@code rotation} replaced. */
     public VariantState withRotation(VariantRotation newRotation) {
-        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half);
+        return new VariantState(state, blockEntityNbt, weight, newRotation, linkedLootPrefabId, entityId, half, difficulty);
     }
 
     /** Return a copy with {@code linkedLootPrefabId} replaced ({@code null} clears the link). */
     public VariantState withLinkedLootPrefabId(@Nullable String newLinkedLootPrefabId) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half);
+        return new VariantState(state, blockEntityNbt, weight, rotation, newLinkedLootPrefabId, entityId, half, difficulty);
     }
 
     /** Return a copy with {@code half} replaced. */
     public VariantState withHalf(VariantHalf newHalf) {
-        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf);
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty);
+    }
+
+    /** Return a copy with {@code difficulty} replaced (only meaningful for mob entries). */
+    public VariantState withDifficulty(VariantDifficulty newDifficulty) {
+        return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty);
     }
 }
