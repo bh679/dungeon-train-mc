@@ -16,6 +16,22 @@
       "released": true,
       "released_in": "v0.294.0",
       "released_at": "2026-06-14T06:37:16Z"
+    },
+    {
+      "id": "curseforge-modpack-autodeploy",
+      "version": "0.294.0",
+      "type": "ci",
+      "title": "Auto-publish CurseForge modpack after each release",
+      "summary": "Dungeon Train now ships as a CurseForge modpack that updates automatically about 15 minutes after every mod release, bundling the matching mod build plus the tested Sable dependency.",
+      "highlights": [
+        "CurseForge modpack auto-follows every release",
+        "Bundles the tested Sable version and declares Dungeon Train's dependencies"
+      ],
+      "pr": 368,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
