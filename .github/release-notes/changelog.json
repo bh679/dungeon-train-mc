@@ -2,7 +2,7 @@
   "entries": [
     {
       "id": "cinematic-spawn-on-train",
-      "version": "0.293.0",
+      "version": "0.294.0",
       "type": "feat",
       "title": "Cinematic spawn-on-train intro",
       "summary": "You now begin each new world aboard the train. On your first arrival, a short cinematic sweeps up from the ground to reveal your train before handing you the controls \u2014 press Space at any time to skip it.",
