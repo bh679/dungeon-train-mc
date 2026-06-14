@@ -49,6 +49,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "gamemode-advancement-gate",
+      "version": "0.296.0",
+      "type": "fix",
+      "title": "Advancements only earnable in survival or adventure",
+      "summary": "Dungeon Train advancements can no longer be earned in creative or spectator mode \u2014 play in survival or adventure to unlock them. The in-game editor's advancements still unlock in creative, and vanilla Minecraft advancements are unaffected.",
+      "highlights": [
+        "DT gameplay advancements can't be earned in creative or spectator",
+        "Editor advancements still unlock in creative",
+        "Vanilla and other-mod advancements unchanged"
+      ],
+      "pr": 371,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
