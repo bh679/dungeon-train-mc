@@ -28,4 +28,16 @@ class DeathReportFormatTest {
         assertEquals("1:00:00", DeathReportFormat.time(3600L * 20L));
         assertEquals("2:03:04", DeathReportFormat.time((2L * 3600L + 3L * 60L + 4L) * 20L));
     }
+
+    @Test
+    void damageRoundsAndAbbreviatesLargeTotals() {
+        assertEquals("0", DeathReportFormat.damage(0.0));
+        assertEquals("342", DeathReportFormat.damage(342.4));
+        assertEquals("343", DeathReportFormat.damage(342.6));
+        assertEquals("9,999", DeathReportFormat.damage(9_999.0)); // grouping separator
+        assertEquals("10.0k", DeathReportFormat.damage(10_000.0)); // k threshold
+        assertEquals("12.3k", DeathReportFormat.damage(12_345.0));
+        assertEquals("1.0M", DeathReportFormat.damage(1_000_000.0)); // M threshold
+        assertEquals("0", DeathReportFormat.damage(-5.0)); // clamps to zero
+    }
 }
