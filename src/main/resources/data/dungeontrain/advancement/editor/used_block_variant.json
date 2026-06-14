@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:editor/root",
   "display": {
-    "icon": { "id": "dungeontrain:variant_clipboard" },
+    "icon": { "id": "minecraft:command_block" },
     "title": { "translate": "advancements.dungeontrain.editor.used_block_variant.title" },
     "description": { "translate": "advancements.dungeontrain.editor.used_block_variant.description" },
     "frame": "task",
