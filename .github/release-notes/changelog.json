@@ -207,6 +207,22 @@
       "released_at": null
     },
     {
+      "id": "armor-stand-variants",
+      "version": "0.301.0",
+      "type": "feat",
+      "title": "Armor stands as randomized carriage contents",
+      "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty \u2014 more variety in what you find aboard the train.",
+      "highlights": [
+        "Armor stands can now appear as random carriage contents, sometimes wearing a full set of gear",
+        "Each stand's loadout is rolled per spawn, so no two carriages are guaranteed alike"
+      ],
+      "pr": 383,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "keep-inventory-carry-next-world",
       "version": "0.301.0",
       "type": "feat",

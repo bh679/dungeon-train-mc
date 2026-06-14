@@ -120,6 +120,39 @@ final class BlockVariantSyncPacketTest {
     }
 
     @Test
+    @DisplayName("round-trip preserves an armor-stand entry carrying BOTH entityId and a loot link")
+    void roundTrip_armorStandEntityWithLootLink() {
+        // Armor-stand variants are the one entry shape that sets entityId AND
+        // linkedLootPrefabId together (the stand plus its equipment loadout).
+        // Earlier cases only exercise one or the other, so guard the combined
+        // shape — it's what the editor reads to render "armor_stand: <prefab>".
+        BlockVariantSyncPacket.Entry stand = new BlockVariantSyncPacket.Entry(
+            "minecraft:command_block", null, 1, (byte) 1, (byte) 0,
+            "goldset", "minecraft:armor_stand", (byte) 1, 0, -1);
+        // A bare stand (entityId set, no loadout link) must also round-trip.
+        BlockVariantSyncPacket.Entry bareStand = new BlockVariantSyncPacket.Entry(
+            "minecraft:command_block", null, 1, (byte) 1, (byte) 0,
+            null, "minecraft:armor_stand", (byte) 1, 0, -1);
+        BlockVariantSyncPacket original = new BlockVariantSyncPacket(
+            "contents:dining", new BlockPos(2, 1, 3),
+            List.of(stand, bareStand), 0,
+            Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
+
+        BlockVariantSyncPacket decoded = roundTrip(original);
+
+        BlockVariantSyncPacket.Entry standOut = decoded.entries().get(0);
+        assertEquals("minecraft:armor_stand", standOut.entityId(),
+            "armor-stand entityId must survive alongside the loot link");
+        assertEquals("goldset", standOut.linkedLootPrefabId(),
+            "equipment loadout link must survive alongside the entityId");
+
+        BlockVariantSyncPacket.Entry bareOut = decoded.entries().get(1);
+        assertEquals("minecraft:armor_stand", bareOut.entityId());
+        assertNull(bareOut.linkedLootPrefabId(),
+            "a bare stand round-trips with no loadout link");
+    }
+
+    @Test
     @DisplayName("halfMode backward-compat constructor defaults difficulty band to 0 / all")
     void backCompatConstructor_defaultBand() {
         // The 8-arg (…, halfMode) constructor predates the v8 band, so it must

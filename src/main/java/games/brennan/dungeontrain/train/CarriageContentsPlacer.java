@@ -248,12 +248,17 @@ public final class CarriageContentsPlacer {
                 // armor stand in the editor without saving the template still
                 // get the stand at runtime: the link in ContainerContentsStore
                 // drives the entity spawn directly.
-                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed);
+                spawnLinkedEntities(level, origin, contents, carriagePIdx, seed, size);
                 // Mob-variant entity spawn — re-rolls the variant sidecar
                 // and spawns mobs at cells whose pick has entityId != null.
                 // Block pass already AIRed those cells via the existing
                 // empty-placeholder branch.
-                spawnVariantMobsForContents(level, origin, contents, dims, seed, carriagePIdx);
+                // Pass carriageOrigin (NOT the interior `origin`): this method
+                // applies interiorOrigin() itself, mirroring applyVariantBlocks
+                // (line 156). Passing the already-interior origin would
+                // double-offset every spawn by +1,+1,+1, landing entities a
+                // block off their authored cell (into the shell for edge cells).
+                spawnVariantMobsForContents(level, carriageOrigin, contents, dims, seed, carriagePIdx);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
@@ -496,6 +501,12 @@ public final class CarriageContentsPlacer {
         // for this contents id — the applicator no-ops on null/empty.
         CarriageContentsVariantBlocks variantSidecar =
             CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
+        // Cells whose variant entry includes an entity candidate are owned by
+        // the variant roll — skip the always-on template-baked entity there so
+        // an author can override a baked armor stand with a randomised variant.
+        // A block-only variant cell keeps its baked entity (the variant link can
+        // still equip it via applyTo below).
+        java.util.Set<BlockPos> entityOwned = entityVariantCells(variantSidecar);
         // Cell-level link / authored pool — populated when the player edits
         // an armor stand or item frame via the C menu (the menu writes to
         // this store, keyed by interior-local block pos). Mirrors the block-
@@ -511,6 +522,8 @@ public final class CarriageContentsPlacer {
             double localX = posList.getDouble(0);
             double localY = posList.getDouble(1);
             double localZ = posList.getDouble(2);
+            // Variant roll owns this cell's entity slot — skip the baked entity.
+            if (entityOwned.contains(BlockPos.containing(localX, localY, localZ))) continue;
             double worldX = origin.getX() + localX;
             double worldY = origin.getY() + localY;
             double worldZ = origin.getZ() + localZ;
@@ -644,6 +657,27 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * Interior-local cells whose variant entry includes at least one entity
+     * (mob / armor-stand) candidate. At such a cell the variant roll owns the
+     * entity slot, so the always-on entity passes ({@link #spawnEntitiesFromTemplate}
+     * and {@link #spawnLinkedEntities}) skip it and let
+     * {@link #spawnVariantMobsForContents} decide (spawn the stand, place a
+     * block, or leave it empty). Block-only variant cells are excluded so a
+     * baked / linked stand at such a cell still spawns and can be equipped via
+     * the variant link.
+     */
+    private static java.util.Set<BlockPos> entityVariantCells(CarriageContentsVariantBlocks sidecar) {
+        if (sidecar == null || sidecar.isEmpty()) return java.util.Collections.emptySet();
+        java.util.Set<BlockPos> out = new java.util.HashSet<>();
+        for (var e : sidecar.entries()) {
+            for (VariantState s : e.states()) {
+                if (s.isMob()) { out.add(e.localPos()); break; }
+            }
+        }
+        return out;
+    }
+
+    /**
      * Cell-link entity spawn pass — mirror of
      * {@link #applyContentPools} for entities. Iterates every cell in the
      * carriage's {@link ContainerContentsStore}; for each link whose prefab
@@ -663,10 +697,22 @@ public final class CarriageContentsPlacer {
      */
     private static void spawnLinkedEntities(ServerLevel level, BlockPos interiorOrigin,
                                              CarriageContents contents,
-                                             int carriagePIdx, long seed) {
+                                             int carriagePIdx, long seed, Vec3i size) {
         ContainerContentsStore store = ContainerContentsStore.loadFor("contents:" + contents.id());
         java.util.Set<BlockPos> allPositions = store.allPositions();
         if (allPositions.isEmpty()) return;
+
+        // A cell whose variant entry includes an entity candidate is owned by
+        // the variant roll (which may roll the stand, a block, or nothing).
+        // Skip the always-on cell link there so the two systems don't both
+        // control the entity slot — otherwise the link forces a stand every
+        // spawn and the variant's randomisation can never win. Cells with only
+        // block variants (or none) keep the link, preserving the equip-a-baked-
+        // stand-via-link behaviour.
+        java.util.Set<BlockPos> entityOwned = java.util.Collections.emptySet();
+        if (size.getX() > 0 && size.getY() > 0 && size.getZ() > 0) {
+            entityOwned = entityVariantCells(CarriageContentsVariantBlocks.loadFor(contents, size));
+        }
 
         net.minecraft.core.HolderLookup.Provider registries = level.registryAccess();
         String tag = contentsTagFor(carriagePIdx);
@@ -674,6 +720,7 @@ public final class CarriageContentsPlacer {
         int spawned = 0;
 
         for (BlockPos localPos : allPositions) {
+            if (entityOwned.contains(localPos)) continue; // variant roll owns the entity here
             String linkId = store.linkAt(localPos);
             if (linkId == null) continue;
             Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(linkId);
@@ -836,7 +883,7 @@ public final class CarriageContentsPlacer {
             VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
             if (picked == null || !picked.isMob()) continue;
             BlockPos world = origin.offset(entry.localPos());
-            if (spawnVariantMob(level, world, picked, carriagePIdx)) spawned++;
+            if (spawnVariantMob(level, world, picked, carriagePIdx, seed)) spawned++;
         }
         if (spawned > 0) {
             LOGGER.info("[DungeonTrain] Mob-variant: spawned {} mobs for contents={} pIdx={} seed={}",
@@ -862,6 +909,20 @@ public final class CarriageContentsPlacer {
      */
     public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
                                            VariantState picked, int carriagePIdx) {
+        // Shell / part placers don't thread a contents seed; derive the
+        // armor-stand equipment-roll seed from the level so loadouts stay
+        // deterministic across reloads.
+        return spawnVariantMob(level, worldPos, picked, carriagePIdx, level.getSeed());
+    }
+
+    /**
+     * Seed-aware overload of {@link #spawnVariantMob}. {@code seed} drives the
+     * deterministic armor-stand equipment roll (matching the cell-linked stand
+     * path in {@link #spawnLinkedEntities}); pass the same seed the variant
+     * picker used so the rolled loadout is stable across reloads.
+     */
+    public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
+                                           VariantState picked, int carriagePIdx, long seed) {
         if (picked == null || !picked.isMob()) return false;
         Optional<EntityType<?>> typeOpt = EntityType.byString(picked.entityId().toString());
         if (typeOpt.isEmpty()) {
@@ -955,6 +1016,23 @@ public final class CarriageContentsPlacer {
             LOGGER.warn("[DungeonTrain] Mob-variant: addFreshEntity rejected {} at {} pIdx={}",
                 picked.entityId(), worldPos, carriagePIdx);
             return false;
+        }
+        // Armor-stand entries carry an equipment loadout via a linked
+        // CATEGORY_ARMOR_STAND loot prefab. Roll + apply it onto the live stand
+        // exactly like the cell-linked path (spawnLinkedEntities) —
+        // deterministic on (seed, carriagePIdx, pos).
+        if (entity instanceof ArmorStand stand && picked.hasLootPrefabLink()) {
+            Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(picked.linkedLootPrefabId());
+            if (loaded.isPresent()) {
+                ContainerContentsPool pool = loaded.get().pool();
+                if (pool != null && !pool.isEmpty()) {
+                    EntityVariantApplicator.applyPoolToLiveEntity(
+                        stand, pool, seed, carriagePIdx, level.registryAccess());
+                }
+            } else {
+                LOGGER.warn("[DungeonTrain] Mob-variant: armor-stand loot prefab '{}' not found at {} pIdx={}",
+                    picked.linkedLootPrefabId(), worldPos, carriagePIdx);
+            }
         }
         return true;
     }
