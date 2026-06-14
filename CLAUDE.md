@@ -196,6 +196,25 @@ Tags are created exclusively by `release.yml`. **Never run `git tag` or
 corresponding GitHub release) are ignored — they exist for historical reasons
 and won't trigger anything.
 
+### CurseForge modpack (auto-follows every release)
+
+Separate from the mod, there is a CurseForge **modpack** (project `1556213`, var
+`CURSEFORGE_MODPACK_PROJECT_ID`). It is published automatically — **you never deploy it by
+hand**. After every successful CurseForge mod upload (real releases AND the ~22 auto-release
+cascade ticks), `release.yml` dispatches `release-modpack.yml`, which waits ~15 min (so
+CurseForge can approve the new DT file), then builds + uploads a matching modpack version
+bundling that release's DT file + the pinned Sable dependency. The modpack is just two
+entries — **Dungeon Train + Sable** — because DT jarJars AIN/AIS/PMOB/DiscordPresence.
+
+- Source + config live in `modpack/` (see `modpack/README.md`); upload uses the same
+  `CURSEFORGE_TOKEN` via `scripts/modpack/publish-curseforge.sh`.
+- **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
+  `modpack/modpack.config.json` → `sable.file_id` (the modpack pins Sable to the tested
+  version). This is flagged in `gradle.properties`.
+- Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
+  -f dt_file_id=<id> -f dry_run=true`.
+- **Modrinth modpack** is planned later (not yet implemented).
+
 ---
 
 ## Auto-Release Cascade

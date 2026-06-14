@@ -1,0 +1,104 @@
+name: Release Modpack
+
+# Publishes the Dungeon Train CurseForge MODPACK (project = vars.CURSEFORGE_MODPACK_PROJECT_ID),
+# distinct from the mod itself. Dispatched by release.yml right after a successful CurseForge
+# mod upload — for EVERY release, including the auto-release cascade ticks. It waits
+# `delay_minutes` (so CurseForge can approve the freshly uploaded DT file before the modpack
+# manifest references it), then builds + uploads a matching modpack version that bundles that
+# release's DT file plus the pinned Sable dependency.
+#
+# Not tag-triggered: release.yml is the only production caller. Can also be dispatched manually
+# (e.g. with dry_run=true) for testing — see modpack/README.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag the modpack should mirror (e.g. v0.293.0)."
+        required: true
+        type: string
+      dt_file_id:
+        description: "CurseForge file ID of the Dungeon Train jar uploaded by this release."
+        required: true
+        type: string
+      auto:
+        description: "True when dispatched by the auto-release cascade (informational only)."
+        required: false
+        type: boolean
+        default: false
+      delay_minutes:
+        description: "Minutes to wait before publishing (lets CurseForge approve the DT file first)."
+        required: false
+        type: string
+        default: "15"
+      dry_run:
+        description: "Build + validate the pack but skip the CurseForge upload."
+        required: false
+        type: boolean
+        default: false
+
+# Dedupe re-dispatches of the SAME tag (a re-run supersedes the in-flight one), but let
+# different releases publish independently — every release gets its own modpack version.
+concurrency:
+  group: modpack-release-${{ inputs.tag }}
+  cancel-in-progress: true
+
+jobs:
+  publish-modpack:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # No explicit ref: checks out the dispatch ref — main in production (release.yml
+      # dispatches without --ref), or the feature branch when testing via `gh workflow run
+      # --ref <branch>`. This is why the build scripts are reachable during branch testing.
+      - uses: actions/checkout@v4
+
+      - name: Validate inputs
+        env:
+          DT_FILE_ID: ${{ inputs.dt_file_id }}
+          DELAY_MINUTES: ${{ inputs.delay_minutes }}
+        run: |
+          if ! [[ "$DT_FILE_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::dt_file_id must be numeric, got '$DT_FILE_ID'"; exit 1
+          fi
+          if ! [[ "$DELAY_MINUTES" =~ ^[0-9]+$ ]]; then
+            echo "::error::delay_minutes must be numeric, got '$DELAY_MINUTES'"; exit 1
+          fi
+
+      - name: Wait for CurseForge to approve the mod file
+        env:
+          DELAY_MINUTES: ${{ inputs.delay_minutes }}
+        run: |
+          echo "Waiting ${DELAY_MINUTES}m before publishing the modpack (lets CurseForge approve the DT file)…"
+          sleep $(( DELAY_MINUTES * 60 ))
+
+      - name: Render modpack manifest
+        env:
+          TAG: ${{ inputs.tag }}
+          DT_FILE_ID: ${{ inputs.dt_file_id }}
+        run: |
+          python3 scripts/modpack/build-manifest.py \
+            --dt-file-id "$DT_FILE_ID" \
+            --version "$TAG" \
+            --output manifest.json
+          echo "::group::Rendered manifest.json"
+          cat manifest.json
+          echo "::endgroup::"
+
+      - name: Publish modpack to CurseForge
+        env:
+          CURSEFORGE_TOKEN: ${{ secrets.CURSEFORGE_TOKEN }}
+          CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [ -z "${CURSEFORGE_MODPACK_PROJECT_ID:-}" ]; then
+            echo "::error::CURSEFORGE_MODPACK_PROJECT_ID variable is not set — cannot publish the modpack."
+            exit 1
+          fi
+          if [ -z "${CURSEFORGE_TOKEN:-}" ] && [ "${DRY_RUN:-}" != "1" ]; then
+            echo "::error::CURSEFORGE_TOKEN secret is not set — cannot publish the modpack."
+            exit 1
+          fi
+          bash scripts/modpack/publish-curseforge.sh --manifest manifest.json --tag "$TAG"
