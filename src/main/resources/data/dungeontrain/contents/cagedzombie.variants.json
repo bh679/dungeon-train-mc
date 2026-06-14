@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "variants": {
     "2,0,0": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "0,0,0": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}],
@@ -9,6 +9,6 @@
     "2,0,4": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "4,0,4": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
     "4,0,0": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
-    "3,0,2": [{"entity": "minecraft:zombie"}, {"entity": "minecraft:zombie_villager"}, {"entity": "minecraft:husk"}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 27, "rotation": {"mode": "lock", "dirs": ["north"]}}]
+    "3,0,2": [{"entity": "minecraft:zombie", "difficulty": {"min": 1, "max": "all"}}, {"entity": "minecraft:zombie_villager", "difficulty": {"min": 1, "max": "all"}}, {"entity": "minecraft:husk", "difficulty": {"min": 2, "max": "all"}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 27, "rotation": {"mode": "lock", "dirs": ["north"]}}, {"entity": "minecraft:slime", "weight": 5, "difficulty": {"min": 0, "max": 1}}]
   }
 }

@@ -29,7 +29,9 @@
     "2,2,3": { "lockId": 5, "states": [{"state": "minecraft:spruce_log[axis=y]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
     "1,2,2": { "lockId": 2, "states": [{"state": "minecraft:spruce_log[axis=y]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
     "2,2,1": { "lockId": 4, "states": [{"state": "minecraft:spruce_log[axis=y]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["up"]}}, {"state": "minecraft:command_block[conditional=false,facing=up]", "rotation": {"mode": "lock", "dirs": ["up"]}}] },
-    "4,1,2": [{"entity": "minecraft:vindicator", "difficulty": {"min": 5, "max": "all"}}, {"entity": "minecraft:pillager", "difficulty": {"min": 0, "max": 4}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
-    "4,0,2": [{"entity": "minecraft:vindicator", "difficulty": {"min": 5, "max": "all"}}, {"entity": "minecraft:pillager", "difficulty": {"min": 0, "max": 4}}]
+    "4,1,2": [{"entity": "minecraft:vindicator", "difficulty": {"min": 5, "max": "all"}}, {"entity": "minecraft:pillager", "difficulty": {"min": 0, "max": 4}}],
+    "4,2,2": [{"entity": "minecraft:vindicator", "difficulty": {"min": 5, "max": "all"}}, {"entity": "minecraft:pillager", "difficulty": {"min": 0, "max": 4}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,1,4": [{"entity": "minecraft:vindicator", "weight": 10, "difficulty": {"min": 7, "max": "all"}}, {"entity": "minecraft:pillager", "difficulty": {"min": 2, "max": 4}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}],
+    "3,1,0": [{"entity": "minecraft:vindicator", "weight": 10, "difficulty": {"min": 10, "max": "all"}}, {"entity": "minecraft:pillager", "difficulty": {"min": 2, "max": 4}}, {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 10, "rotation": {"mode": "lock", "dirs": ["north"]}}]
   }
 }
