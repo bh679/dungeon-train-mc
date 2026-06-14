@@ -153,6 +153,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "out-of-band-mob-cells-air",
+      "version": "0.301.0",
+      "type": "fix",
+      "title": "Empty enemy spots no longer leave a stray block behind",
+      "summary": "A carriage spot that can only hold enemies \u2014 and whose enemies are all the wrong level for your current depth \u2014 now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
+      "highlights": [
+        "Mob-only carriage spots with no depth-appropriate enemy now clear to air",
+        "No more leftover placeholder block where a not-yet-eligible mob would stand"
+      ],
+      "pr": 379,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
