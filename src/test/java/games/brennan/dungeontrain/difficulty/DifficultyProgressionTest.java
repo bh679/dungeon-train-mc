@@ -130,43 +130,54 @@ final class DifficultyProgressionTest {
     }
 
     @Test
-    @DisplayName("firstBandSubstitute: piglin-family outside the Nether spawns as authored (NONE)")
-    void firstBandSubstitute_piglinOutsideNether_none() {
-        // Piglins are in both the piglin tag and the magma tag; the piglin exemption wins outside the Nether.
+    @DisplayName("firstBandSubstitute: never-substitute mobs (zombified piglin) spawn as authored in every dimension")
+    void firstBandSubstitute_neverSubstitute_noneAnywhere() {
+        // zombified piglin: neverSubstitute, and removed from the magma tag (magmaMob=false).
         assertEquals(FirstBandSubstitute.NONE,
-                DifficultyProgression.firstBandSubstitute(true, true, false));
+                DifficultyProgression.firstBandSubstitute(true, false, false, false)); // overworld
+        assertEquals(FirstBandSubstitute.NONE,
+                DifficultyProgression.firstBandSubstitute(true, false, false, true));  // Nether
     }
 
     @Test
-    @DisplayName("firstBandSubstitute: piglin-family in the Nether still becomes a magma cube")
-    void firstBandSubstitute_piglinInNether_magma() {
-        assertEquals(FirstBandSubstitute.MAGMA_CUBE,
-                DifficultyProgression.firstBandSubstitute(true, true, true));
+    @DisplayName("firstBandSubstitute: nether-only mobs (piglin/brute) spawn as authored outside the Nether")
+    void firstBandSubstitute_netherOnly_outsideNether_none() {
+        assertEquals(FirstBandSubstitute.NONE,
+                DifficultyProgression.firstBandSubstitute(false, true, true, false));
     }
 
     @Test
-    @DisplayName("firstBandSubstitute: non-piglin magma mobs become magma cubes in any dimension")
-    void firstBandSubstitute_magmaNonPiglin_magmaAnywhere() {
+    @DisplayName("firstBandSubstitute: nether-only mobs (piglin/brute) become magma cubes in the Nether")
+    void firstBandSubstitute_netherOnly_inNether_magma() {
         assertEquals(FirstBandSubstitute.MAGMA_CUBE,
-                DifficultyProgression.firstBandSubstitute(false, true, false));
+                DifficultyProgression.firstBandSubstitute(false, true, true, true));
+    }
+
+    @Test
+    @DisplayName("firstBandSubstitute: plain magma mobs (blaze, raiders, ...) become magma cubes in any dimension")
+    void firstBandSubstitute_magmaOnly_magmaAnywhere() {
         assertEquals(FirstBandSubstitute.MAGMA_CUBE,
-                DifficultyProgression.firstBandSubstitute(false, true, true));
+                DifficultyProgression.firstBandSubstitute(false, false, true, false));
+        assertEquals(FirstBandSubstitute.MAGMA_CUBE,
+                DifficultyProgression.firstBandSubstitute(false, false, true, true));
     }
 
     @Test
     @DisplayName("firstBandSubstitute: plain hostiles (untagged) become slimes in any dimension")
     void firstBandSubstitute_plainHostile_slimeAnywhere() {
         assertEquals(FirstBandSubstitute.SLIME,
-                DifficultyProgression.firstBandSubstitute(false, false, false));
+                DifficultyProgression.firstBandSubstitute(false, false, false, false));
         assertEquals(FirstBandSubstitute.SLIME,
-                DifficultyProgression.firstBandSubstitute(false, false, true));
+                DifficultyProgression.firstBandSubstitute(false, false, false, true));
     }
 
     @Test
-    @DisplayName("firstBandSubstitute: a piglin-tagged mob not in the magma tag falls back to slime in the Nether")
-    void firstBandSubstitute_piglinNotMagmaTagged_slimeInNether() {
-        // Defensive: documents the contract if a piglin type were ever dropped from the magma tag.
-        assertEquals(FirstBandSubstitute.SLIME,
-                DifficultyProgression.firstBandSubstitute(true, false, true));
+    @DisplayName("firstBandSubstitute: never-substitute takes precedence over the magma / nether-only tags")
+    void firstBandSubstitute_neverSubstitute_precedence() {
+        // Defensive: even if a mob were also magma- and nether-only-tagged, never-substitute wins.
+        assertEquals(FirstBandSubstitute.NONE,
+                DifficultyProgression.firstBandSubstitute(true, true, true, true));
+        assertEquals(FirstBandSubstitute.NONE,
+                DifficultyProgression.firstBandSubstitute(true, true, true, false));
     }
 }

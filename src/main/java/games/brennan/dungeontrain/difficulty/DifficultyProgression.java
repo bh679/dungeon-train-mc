@@ -144,15 +144,23 @@ public final class DifficultyProgression {
     public enum FirstBandSubstitute { NONE, SLIME, MAGMA_CUBE }
 
     /**
-     * Pure first-band substitution decision. Piglin-family mobs only substitute (to a magma cube)
-     * inside the Nether; outside the Nether they spawn as authored ({@link FirstBandSubstitute#NONE}),
-     * because a magma cube is a Nether creature and a real piglin would zombify in the overworld.
-     * Every other hostile becomes a {@link FirstBandSubstitute#MAGMA_CUBE} when magma-tagged,
-     * otherwise a {@link FirstBandSubstitute#SLIME}. Pure over its three booleans (tag membership +
-     * dimension, resolved by the caller) so it is unit-testable without a level/config bootstrap.
+     * Pure first-band substitution decision, in precedence order:
+     * <ol>
+     *   <li>{@code neverSubstitute} mobs (e.g. zombified piglin) always spawn as authored
+     *       ({@link FirstBandSubstitute#NONE}) — they're never downgraded, in any dimension.</li>
+     *   <li>{@code magmaInNetherOnly} mobs (e.g. piglin / piglin brute) become a magma cube inside
+     *       the Nether but spawn as authored ({@link FirstBandSubstitute#NONE}) anywhere else.</li>
+     *   <li>Everything else becomes a {@link FirstBandSubstitute#MAGMA_CUBE} when {@code magmaMob},
+     *       otherwise a small {@link FirstBandSubstitute#SLIME}.</li>
+     * </ol>
+     * Pure over its four booleans (tag membership + dimension, resolved by the caller) so it is
+     * unit-testable without a level/config bootstrap.
      */
-    public static FirstBandSubstitute firstBandSubstitute(boolean piglinFamily, boolean magmaMob, boolean nether) {
-        if (piglinFamily && !nether) return FirstBandSubstitute.NONE;
+    public static FirstBandSubstitute firstBandSubstitute(boolean neverSubstitute,
+                                                          boolean magmaInNetherOnly,
+                                                          boolean magmaMob, boolean nether) {
+        if (neverSubstitute) return FirstBandSubstitute.NONE;
+        if (magmaInNetherOnly && !nether) return FirstBandSubstitute.NONE;
         return magmaMob ? FirstBandSubstitute.MAGMA_CUBE : FirstBandSubstitute.SLIME;
     }
 }
