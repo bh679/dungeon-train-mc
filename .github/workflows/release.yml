@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write   # dispatch release-modpack.yml after a successful mod upload
     env:
       RELEASE_TAG: ${{ inputs.tag }}
     steps:
@@ -191,6 +192,28 @@ jobs:
           retry-attempts: 2
           retry-delay: 10000
           fail-mode: warn
+
+      # Mirror every mod release into the CurseForge modpack. Dispatches
+      # release-modpack.yml (which waits ~15 min for CurseForge to approve the DT
+      # file, then publishes a matching modpack version bundling that file + pinned
+      # Sable). Fires for EVERY release — real and auto-release cascade alike — but
+      # only when the CurseForge mod upload actually produced a file id: mc-publish
+      # uses fail-mode: warn, so a CurseForge hiccup leaves curseforge-version empty
+      # and we skip the modpack rather than reference a file that never uploaded.
+      # Requires actions: write (added to this job's permissions) to dispatch.
+      - name: Dispatch modpack release
+        if: ${{ success() && steps.publish_check.outputs.curseforge == 'true' && steps.mcpublish.outputs.curseforge-version != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          DT_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
+          IS_AUTO: ${{ inputs.auto }}
+        run: |
+          echo "Dispatching modpack release for $RELEASE_TAG (DT CurseForge file $DT_FILE_ID, auto=$IS_AUTO)…"
+          gh workflow run release-modpack.yml \
+            -f tag="$RELEASE_TAG" \
+            -f dt_file_id="$DT_FILE_ID" \
+            -f auto="$IS_AUTO"
 
       # After a successful real release (auto=false), mark the shipped changelog
       # entries released so the next release's "unreleased" set starts clean.
