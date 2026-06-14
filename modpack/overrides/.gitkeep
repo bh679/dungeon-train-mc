@@ -1,0 +1,4 @@
+# The CurseForge modpack ships an `overrides/` folder whose contents are copied
+# into the player's instance on install. It is intentionally empty for now —
+# the pack is just the two mods (Dungeon Train + Sable). Drop config files,
+# default options, or a starter world here to ship them with the pack.
