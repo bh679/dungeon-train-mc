@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:stone_brick_slab" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.roof_runner.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.roof_runner.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "roof_run": {
+      "trigger": "dungeontrain:roof_run_groups",
+      "conditions": { "threshold": 3 }
+    }
+  },
+  "requirements": [["roof_run"]]
+}

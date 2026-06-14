@@ -200,6 +200,19 @@ public final class AchievementEvents {
         ModAdvancementTriggers.STARTING_BOOKS_READ.get().trigger(player, totalReads);
     }
 
+    // ---------------- Player encounters ----------------
+
+    /**
+     * Called from {@link games.brennan.dungeontrain.event.RunStatsEvents}'s
+     * proximity scan when a player comes near a PlayerMob it has not yet seen
+     * this run. {@code total} is the player's cumulative
+     * {@link GlobalPlayerStats#playersEncountered} across all worlds and
+     * sessions. Drives the "Strangers on a Train" milestone.
+     */
+    public static void notifyEncounter(ServerPlayer player, long total) {
+        ModAdvancementTriggers.ENCOUNTERED_PLAYERS.get().trigger(player, total);
+    }
+
     // ---------------- Narrative progress ----------------
 
     /**

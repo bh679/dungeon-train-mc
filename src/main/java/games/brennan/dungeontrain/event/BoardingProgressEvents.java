@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -267,8 +267,7 @@ public final class BoardingProgressEvents {
     }
 
     private static BoardingProgressPacket packetFor(int travelled) {
-        int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
-        int tier = Math.abs(travelled) / carriagesPerTier;
+        int tier = DifficultyProgression.tierForTravelled(travelled);
         return new BoardingProgressPacket(travelled, tier);
     }
 

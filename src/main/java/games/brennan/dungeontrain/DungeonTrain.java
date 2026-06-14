@@ -2,6 +2,8 @@ package games.brennan.dungeontrain;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NamingConfig;
+import games.brennan.discordpresence.config.DiscordCredentials;
+import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -110,6 +112,18 @@ public class DungeonTrain {
         // jarJar, so NamingConfig is always present — no ModList.isLoaded guard
         // needed. The gate is a cheap tag-prefix scan (TrainMembership).
         NamingConfig.registerMobNameGate(TrainMembership::isOnTrain);
+
+        // Point the bundled Discord Presence at Dungeon Train's central relay feed: every DT install
+        // reports joins / deaths / advancements / chat to one community Discord via the relay at
+        // brennan.games, carrying only this revocable relay URL — no Discord webhook/token ships in the
+        // jar (DP relay-mode, v0.9.0+). PROVIDER_WINS, so this overrides any local discordpresence config.
+        DiscordCredentials.register(new DiscordCredentialsProvider() {
+            @Override public String webhookUrl() { return ""; } // unused in relay-mode
+            @Override public String relayBaseUrl() {
+                return "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
+            }
+            @Override public boolean suppressAutoDeathReport() { return true; } // DT posts its own "Run Ended"
+        });
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
         // item gifts. PlayerMob's feeling-tiered gift rewrite removed the
