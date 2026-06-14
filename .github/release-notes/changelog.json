@@ -134,9 +134,9 @@
       ],
       "pr": 377,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
     },
     {
       "id": "fix-spawn-under-train",
@@ -150,9 +150,9 @@
       ],
       "pr": 378,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
     },
     {
       "id": "out-of-band-mob-cells-air",
@@ -166,9 +166,9 @@
       ],
       "pr": 379,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
     }
   ]
 }
