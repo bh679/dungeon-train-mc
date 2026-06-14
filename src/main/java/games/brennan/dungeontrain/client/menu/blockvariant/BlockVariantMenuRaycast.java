@@ -166,6 +166,13 @@ public final class BlockVariantMenuRaycast {
         double rotModeCellL = rotatable ? rotModeCellR - BlockVariantMenuRenderer.ROT_MODE_CELL_WIDTH : rotModeCellR;
         double halfModeCellR = rotModeCellL;
         double halfModeCellL = halfable ? halfModeCellR - BlockVariantMenuRenderer.HALF_MODE_CELL_WIDTH : halfModeCellR;
+        // Difficulty cells (mob rows only) — mirror the renderer geometry: they
+        // occupy the space the rotation/half cells leave free on a mob row.
+        boolean showDiff = entry.isMob();
+        double diffMaxCellR = halfModeCellL;
+        double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
+        double diffMinCellR = diffMaxCellL;
+        double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
 
         if (removeMode && hitX >= colXR - BlockVariantMenuRenderer.X_CELL_WIDTH) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_REMOVE_X, idx);
@@ -181,6 +188,12 @@ public final class BlockVariantMenuRaycast {
         }
         if (halfable && hitX >= halfModeCellL && hitX <= halfModeCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_HALF_MODE, idx);
+        }
+        if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);
+        }
+        if (showDiff && hitX >= diffMaxCellL && hitX <= diffMaxCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MAX, idx);
         }
         return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_NAME, idx);
     }

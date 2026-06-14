@@ -78,6 +78,8 @@ public final class BlockVariantMenuRenderer {
     static final double MIN_PANEL_WIDTH = 3.2;
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
+    /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
+    static final double DIFF_CELL_WIDTH = 0.40;
     /** ~20% of {@link #COLUMN_WIDTH} so the L/R/O pill segments are comfortable click targets. */
     static final double ROT_MODE_CELL_WIDTH = 0.34;
     static final double ROT_DIRS_CELL_WIDTH = 0.32;
@@ -271,8 +273,17 @@ public final class BlockVariantMenuRenderer {
             double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
             double halfModeCellR = rotModeCellL;
             double halfModeCellL = halfable ? halfModeCellR - HALF_MODE_CELL_WIDTH : halfModeCellR;
+            // Difficulty min/max cells (mob rows only) sit between the name and
+            // weight, reusing the space the rotation/half cells leave free on a
+            // mob row. They collapse to zero width on block rows, so nameCellR
+            // is unchanged there.
+            boolean showDiff = entry.isMob();
+            double diffMaxCellR = halfModeCellL;
+            double diffMaxCellL = showDiff ? diffMaxCellR - DIFF_CELL_WIDTH : diffMaxCellR;
+            double diffMinCellR = diffMaxCellL;
+            double diffMinCellL = showDiff ? diffMinCellR - DIFF_CELL_WIDTH : diffMinCellR;
             double nameCellL = colXL;
-            double nameCellR = halfModeCellL;
+            double nameCellR = diffMinCellL;
 
             // Name highlight + icon + label
             boolean nameHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_NAME && hovered.index() == i;
@@ -324,6 +335,13 @@ public final class BlockVariantMenuRenderer {
             if (halfable) {
                 drawHalfModeCell(ps, buffer, font, i, entry,
                     halfModeCellL, halfModeCellR, rowBottom, rowTop, rowCY, hovered);
+            }
+
+            // Difficulty band cells (mob rows only)
+            if (showDiff) {
+                drawDifficultyCells(ps, buffer, font, i, entry,
+                    diffMinCellL, diffMinCellR, diffMaxCellL, diffMaxCellR,
+                    rowBottom, rowTop, rowCY, hovered);
             }
 
             // Weight cell
@@ -525,6 +543,32 @@ public final class BlockVariantMenuRenderer {
                 (sL + sR) / 2.0, rowCY,
                 active ? 0xFFFFFFFF : 0xFF888888);
         }
+    }
+
+    /**
+     * Draw a mob row's difficulty band: two cells {@code [min][max]} giving the
+     * inclusive difficulty-tier range the egg may spawn in. {@code max} renders
+     * {@code "all"} for the unbounded sentinel ({@code maxDiff < 0}). Purple
+     * tint marks them as the difficulty control, distinct from the white weight
+     * cell to their right. Click bumps up; shift-click bumps down (max wraps
+     * {@code 0 → all}).
+     */
+    private static void drawDifficultyCells(PoseStack ps, MultiBufferSource buffer, Font font,
+                                            int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                            double minL, double minR, double maxL, double maxR,
+                                            double rowBottom, double rowTop, double rowCY,
+                                            BlockVariantMenu.Hit hovered) {
+        boolean minHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_DIFF_MIN && hovered.index() == rowIndex;
+        boolean maxHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_DIFF_MAX && hovered.index() == rowIndex;
+        drawQuad(ps, buffer, minL + 0.005, rowBottom + 0.005, minR - 0.005, rowTop - 0.005,
+            minHover ? 0xC0B266FF : 0x40663399);
+        drawCenteredText(ps, buffer, font, Integer.toString(entry.minDiff()),
+            (minL + minR) / 2.0, rowCY, minHover ? 0xFF000000 : 0xFFE39DFF);
+        String maxLabel = entry.maxDiff() < 0 ? "all" : Integer.toString(entry.maxDiff());
+        drawQuad(ps, buffer, maxL + 0.005, rowBottom + 0.005, maxR - 0.005, rowTop - 0.005,
+            maxHover ? 0xC0B266FF : 0x40663399);
+        drawCenteredText(ps, buffer, font, maxLabel,
+            (maxL + maxR) / 2.0, rowCY, maxHover ? 0xFF000000 : 0xFFE39DFF);
     }
 
     /** Decode wire byte → mode enum, defaulting to RANDOM on out-of-range. */
