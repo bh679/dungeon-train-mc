@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.world.StairsLocationData;
 import games.brennan.dungeontrain.world.StairsRegistryData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -1066,6 +1067,14 @@ public final class TrackGenerator {
         LOGGER.info("[stairs] PLACED centerX={} deepestGroundY={} flipped={} side={}",
             centerX, deepestGroundY, flipped, flipped ? "-Z" : "+Z");
 
+        // Index the placed footprint so the used_pillar_stairs advancement can
+        // detect a player climbing these steps (StairsUsageEvents). Metadata
+        // only — placement of the blocks above/below is unchanged.
+        StairsLocationData.get(serverLevel).record(new StairsLocationData.Box(
+            originX, deepestGroundY, originZ,
+            originX + STAIRS_X - 1, topInclusive, originZ + STAIRS_Z - 1,
+            StairsLocationData.Kind.PILLAR_STAIRS));
+
         stampStairsDescendingWorldgen(
             level, template, stairsSidecar,
             originX, originZ, topInclusive, deepestGroundY,
@@ -1417,6 +1426,25 @@ public final class TrackGenerator {
         // Y=surfaceY-1) is preserved while the entrance frame above gets
         // its own clean stamp.
         stampDownStairsEntranceWorldgen(level, serverLevel, originX, originZ, surfaceY, flipped, worldSeed, centerX);
+
+        // Index both the descending shaft and the surface entrance pavilion as
+        // TUNNEL_STAIRS so used_tunnel_stairs fires whether the player enters
+        // from the top or climbs up from the tunnel (StairsUsageEvents).
+        // Metadata only — the stamped blocks are unchanged.
+        StairsLocationData index = StairsLocationData.get(serverLevel);
+        index.record(new StairsLocationData.Box(
+            originX, floorY, originZ,
+            originX + STAIRS_X - 1, topInclusive, originZ + STAIRS_Z - 1,
+            StairsLocationData.Kind.TUNNEL_STAIRS));
+        int entranceMinX = originX - 1;
+        int entranceMinZ = originZ - 1;
+        int entranceBaseY = surfaceY - ENTRANCE_OVERLAP_Y;
+        index.record(new StairsLocationData.Box(
+            entranceMinX, entranceBaseY, entranceMinZ,
+            entranceMinX + PillarAdjunct.STAIRS_ENTRANCE.xSize() - 1,
+            entranceBaseY + PillarAdjunct.STAIRS_ENTRANCE.ySize() - 1,
+            entranceMinZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1,
+            StairsLocationData.Kind.TUNNEL_STAIRS));
     }
 
     /**

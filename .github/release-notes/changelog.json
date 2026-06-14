@@ -186,6 +186,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-traversal-advancements",
+      "version": "0.301.0",
+      "type": "feat",
+      "title": "Five train-traversal advancements",
+      "summary": "Five new advancements reward exploring the world the train rides through \u2014 hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
+      "highlights": [
+        "Track Record \u2014 set foot on the rails below the train",
+        "Off the Rails \u2014 leave the train and tracks behind for the open world",
+        "Back on Track \u2014 climb aboard again after getting off",
+        "Taking the Stairs \u2014 use a bridge-pillar staircase",
+        "Beneath the Candy Kingdom \u2014 enter a tunnel stairwell"
+      ],
+      "pr": 382,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
