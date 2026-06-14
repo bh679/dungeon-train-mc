@@ -221,6 +221,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "keep-inventory-carry-next-world",
+      "version": "0.301.0",
+      "type": "feat",
+      "title": "Keep Inventory now carries your gear to the next world",
+      "summary": "With Keep Inventory turned on, dying and starting a New World now brings your whole inventory and experience along \u2014 and the new world keeps the rule on, so your gear and XP carry through run after run. With Keep Inventory off, nothing changes.",
+      "highlights": [
+        "Inventory (including armor and offhand) and XP carry into the next world when Keep Inventory is on",
+        "The next world keeps the Keep Inventory rule enabled automatically, so it chains across every run",
+        "No change when Keep Inventory is off \u2014 the next world still starts empty"
+      ],
+      "pr": 385,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
