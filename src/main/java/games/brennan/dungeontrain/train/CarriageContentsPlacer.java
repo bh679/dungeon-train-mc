@@ -826,7 +826,7 @@ public final class CarriageContentsPlacer {
             VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
             if (picked == null || !picked.isMob()) continue;
             BlockPos world = origin.offset(entry.localPos());
-            if (spawnVariantMob(level, world, picked, carriagePIdx)) spawned++;
+            if (spawnVariantMob(level, world, picked, carriagePIdx, seed)) spawned++;
         }
         if (spawned > 0) {
             LOGGER.info("[DungeonTrain] Mob-variant: spawned {} mobs for contents={} pIdx={} seed={}",
@@ -852,6 +852,20 @@ public final class CarriageContentsPlacer {
      */
     public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
                                            VariantState picked, int carriagePIdx) {
+        // Shell / part placers don't thread a contents seed; derive the
+        // armor-stand equipment-roll seed from the level so loadouts stay
+        // deterministic across reloads.
+        return spawnVariantMob(level, worldPos, picked, carriagePIdx, level.getSeed());
+    }
+
+    /**
+     * Seed-aware overload of {@link #spawnVariantMob}. {@code seed} drives the
+     * deterministic armor-stand equipment roll (matching the cell-linked stand
+     * path in {@link #spawnLinkedEntities}); pass the same seed the variant
+     * picker used so the rolled loadout is stable across reloads.
+     */
+    public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
+                                           VariantState picked, int carriagePIdx, long seed) {
         if (picked == null || !picked.isMob()) return false;
         Optional<EntityType<?>> typeOpt = EntityType.byString(picked.entityId().toString());
         if (typeOpt.isEmpty()) {
@@ -945,6 +959,23 @@ public final class CarriageContentsPlacer {
             LOGGER.warn("[DungeonTrain] Mob-variant: addFreshEntity rejected {} at {} pIdx={}",
                 picked.entityId(), worldPos, carriagePIdx);
             return false;
+        }
+        // Armor-stand entries carry an equipment loadout via a linked
+        // CATEGORY_ARMOR_STAND loot prefab. Roll + apply it onto the live stand
+        // exactly like the cell-linked path (spawnLinkedEntities) —
+        // deterministic on (seed, carriagePIdx, pos).
+        if (entity instanceof ArmorStand stand && picked.hasLootPrefabLink()) {
+            Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(picked.linkedLootPrefabId());
+            if (loaded.isPresent()) {
+                ContainerContentsPool pool = loaded.get().pool();
+                if (pool != null && !pool.isEmpty()) {
+                    EntityVariantApplicator.applyPoolToLiveEntity(
+                        stand, pool, seed, carriagePIdx, level.registryAccess());
+                }
+            } else {
+                LOGGER.warn("[DungeonTrain] Mob-variant: armor-stand loot prefab '{}' not found at {} pIdx={}",
+                    picked.linkedLootPrefabId(), worldPos, carriagePIdx);
+            }
         }
         return true;
     }

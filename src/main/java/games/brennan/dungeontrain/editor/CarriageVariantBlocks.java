@@ -384,8 +384,17 @@ public final class CarriageVariantBlocks {
                 VariantHalf mobHalf = parseHalf(obj.get("half"), contextId, contextPos);
                 if (mobHalf == null) mobHalf = VariantHalf.NONE;
                 VariantDifficulty mobDiff = parseDifficulty(obj.get("difficulty"), contextId, contextPos);
+                // Optional equipment-loadout link for entity entries (armor
+                // stands point at a CATEGORY_ARMOR_STAND loot prefab). Parsed
+                // the same way as the block branch below so it round-trips.
+                String mobLootPrefab = null;
+                if (obj.has("lootPrefab") && obj.get("lootPrefab").isJsonPrimitive()
+                    && obj.get("lootPrefab").getAsJsonPrimitive().isString()) {
+                    String rawPrefab = obj.get("lootPrefab").getAsString().trim();
+                    if (!rawPrefab.isEmpty()) mobLootPrefab = rawPrefab;
+                }
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
-                return mob.withHalf(mobHalf).withDifficulty(mobDiff);
+                return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab);
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -944,6 +953,12 @@ public final class CarriageVariantBlocks {
             if (!s.rotation().isDefault()) {
                 sb.append(", \"rotation\": ");
                 appendRotationJson(sb, s.rotation());
+            }
+            // Armor-stand / entity entries can carry an equipment loadout link
+            // (e.g. minecraft:armor_stand + lootPrefab); emit it so the link
+            // survives the round-trip. Mirrors the block branch below.
+            if (s.linkedLootPrefabId() != null) {
+                sb.append(", \"lootPrefab\": \"").append(escapeJson(s.linkedLootPrefabId())).append("\"");
             }
             if (!s.half().isDefault()) {
                 sb.append(", \"half\": \"").append(halfModeName(s.half().mode())).append("\"");
