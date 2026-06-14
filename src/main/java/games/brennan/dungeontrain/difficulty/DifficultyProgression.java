@@ -138,4 +138,21 @@ public final class DifficultyProgression {
         return downgradeLootId(lootPrefabId,
                 DungeonTrainConfig.getFirstLevelStarterLoot() && inFirstBand(serverLevel));
     }
+
+    /** Outcome of the first-band hostile substitution decision: spawn the authored mob unchanged
+     *  ({@link #NONE}), or replace it with a small {@link #SLIME} or {@link #MAGMA_CUBE}. */
+    public enum FirstBandSubstitute { NONE, SLIME, MAGMA_CUBE }
+
+    /**
+     * Pure first-band substitution decision. Piglin-family mobs only substitute (to a magma cube)
+     * inside the Nether; outside the Nether they spawn as authored ({@link FirstBandSubstitute#NONE}),
+     * because a magma cube is a Nether creature and a real piglin would zombify in the overworld.
+     * Every other hostile becomes a {@link FirstBandSubstitute#MAGMA_CUBE} when magma-tagged,
+     * otherwise a {@link FirstBandSubstitute#SLIME}. Pure over its three booleans (tag membership +
+     * dimension, resolved by the caller) so it is unit-testable without a level/config bootstrap.
+     */
+    public static FirstBandSubstitute firstBandSubstitute(boolean piglinFamily, boolean magmaMob, boolean nether) {
+        if (piglinFamily && !nether) return FirstBandSubstitute.NONE;
+        return magmaMob ? FirstBandSubstitute.MAGMA_CUBE : FirstBandSubstitute.SLIME;
+    }
 }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.difficulty;
 
+import games.brennan.dungeontrain.difficulty.DifficultyProgression.FirstBandSubstitute;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -126,5 +127,46 @@ final class DifficultyProgressionTest {
     void downgradeLootId_nullSafe() {
         assertNull(DifficultyProgression.downgradeLootId(null, true));
         assertNull(DifficultyProgression.downgradeLootId(null, false));
+    }
+
+    @Test
+    @DisplayName("firstBandSubstitute: piglin-family outside the Nether spawns as authored (NONE)")
+    void firstBandSubstitute_piglinOutsideNether_none() {
+        // Piglins are in both the piglin tag and the magma tag; the piglin exemption wins outside the Nether.
+        assertEquals(FirstBandSubstitute.NONE,
+                DifficultyProgression.firstBandSubstitute(true, true, false));
+    }
+
+    @Test
+    @DisplayName("firstBandSubstitute: piglin-family in the Nether still becomes a magma cube")
+    void firstBandSubstitute_piglinInNether_magma() {
+        assertEquals(FirstBandSubstitute.MAGMA_CUBE,
+                DifficultyProgression.firstBandSubstitute(true, true, true));
+    }
+
+    @Test
+    @DisplayName("firstBandSubstitute: non-piglin magma mobs become magma cubes in any dimension")
+    void firstBandSubstitute_magmaNonPiglin_magmaAnywhere() {
+        assertEquals(FirstBandSubstitute.MAGMA_CUBE,
+                DifficultyProgression.firstBandSubstitute(false, true, false));
+        assertEquals(FirstBandSubstitute.MAGMA_CUBE,
+                DifficultyProgression.firstBandSubstitute(false, true, true));
+    }
+
+    @Test
+    @DisplayName("firstBandSubstitute: plain hostiles (untagged) become slimes in any dimension")
+    void firstBandSubstitute_plainHostile_slimeAnywhere() {
+        assertEquals(FirstBandSubstitute.SLIME,
+                DifficultyProgression.firstBandSubstitute(false, false, false));
+        assertEquals(FirstBandSubstitute.SLIME,
+                DifficultyProgression.firstBandSubstitute(false, false, true));
+    }
+
+    @Test
+    @DisplayName("firstBandSubstitute: a piglin-tagged mob not in the magma tag falls back to slime in the Nether")
+    void firstBandSubstitute_piglinNotMagmaTagged_slimeInNether() {
+        // Defensive: documents the contract if a piglin type were ever dropped from the magma tag.
+        assertEquals(FirstBandSubstitute.SLIME,
+                DifficultyProgression.firstBandSubstitute(true, false, true));
     }
 }
