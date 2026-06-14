@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import net.minecraft.util.RandomSource;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -71,6 +72,103 @@ final class VillagerTrainSpawnLevelTest {
                 VillagerTrainSpawnEvents.pickLevel(a),
                 VillagerTrainSpawnEvents.pickLevel(b),
                 "pickLevel diverged at iteration " + i + " for same seed");
+        }
+    }
+
+    @Test
+    @DisplayName("maxLevelForTier pairs the villager cap to the mob weapon stage")
+    void maxLevelForTier_pairsToWeaponStage() {
+        assertEquals(1, VillagerTrainSpawnEvents.maxLevelForTier(0));   // none → 1
+        assertEquals(2, VillagerTrainSpawnEvents.maxLevelForTier(1));   // wood → 2
+        assertEquals(2, VillagerTrainSpawnEvents.maxLevelForTier(7));
+        assertEquals(3, VillagerTrainSpawnEvents.maxLevelForTier(8));   // stone → 3
+        assertEquals(3, VillagerTrainSpawnEvents.maxLevelForTier(17));
+        assertEquals(4, VillagerTrainSpawnEvents.maxLevelForTier(18));  // iron → 4
+        assertEquals(4, VillagerTrainSpawnEvents.maxLevelForTier(31));
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(32));  // diamond → 5
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(49));
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(50));  // netherite clamps at 5
+        assertEquals(5, VillagerTrainSpawnEvents.maxLevelForTier(100));
+    }
+
+    @Test
+    @DisplayName("maxLevelForTier always equals min(5, weaponStage + 1)")
+    void maxLevelForTier_matchesWeaponStageFormula() {
+        // Robust to curve retuning: the contract is the pairing, not the tier edges.
+        for (int tier = 0; tier <= 60; tier++) {
+            int expected = Math.min(5, ProceduralTiers.dominantWeaponStage(tier) + 1);
+            assertEquals(expected, VillagerTrainSpawnEvents.maxLevelForTier(tier),
+                "maxLevelForTier diverged from weapon stage at tier " + tier);
+        }
+    }
+
+    @Test
+    @DisplayName("cappedLevel stays in [1, 5] and never exceeds the tier cap")
+    void cappedLevel_inRangeAndCapped() {
+        for (int tier : new int[]{0, 1, 8, 18, 32, 100}) {
+            int cap = VillagerTrainSpawnEvents.maxLevelForTier(tier);
+            RandomSource rng = RandomSource.create(0xBADF00DL + tier);
+            for (int i = 0; i < 5_000; i++) {
+                int lv = VillagerTrainSpawnEvents.cappedLevel(rng, tier);
+                assertTrue(lv >= 1 && lv <= 5, "cappedLevel out of [1,5]: " + lv + " (tier " + tier + ")");
+                assertTrue(lv <= cap, "cappedLevel " + lv + " exceeded cap " + cap + " (tier " + tier + ")");
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("cappedLevel forces level 1 at tier 0 (no weapons → Novice only)")
+    void cappedLevel_tierZeroAlwaysOne() {
+        RandomSource rng = RandomSource.create(0x5EEDL);
+        for (int i = 0; i < 5_000; i++) {
+            assertEquals(1, VillagerTrainSpawnEvents.cappedLevel(rng, 0));
+        }
+    }
+
+    @Test
+    @DisplayName("cappedLevel is uncapped at diamond tier (matches pickLevel distribution)")
+    void cappedLevel_uncappedAtHighTier() {
+        // At tier 32 the cap is 5, so cappedLevel == pickLevel — same distribution.
+        final int samples = 100_000;
+        int[] counts = new int[6];
+        RandomSource rng = RandomSource.create(0xC0FFEEL);
+        for (int i = 0; i < samples; i++) {
+            counts[VillagerTrainSpawnEvents.cappedLevel(rng, 32)]++;
+        }
+        for (int lv = 1; lv <= 5; lv++) {
+            double expectedPct = EXPECTED_WEIGHTS[lv - 1];
+            double observedPct = 100.0 * counts[lv] / samples;
+            assertTrue(Math.abs(observedPct - expectedPct) < 2.0,
+                String.format("L%d: expected ~%.1f%%, observed %.2f%% (count=%d)",
+                    lv, expectedPct, observedPct, counts[lv]));
+        }
+    }
+
+    @Test
+    @DisplayName("cappedLevel equals min(pickLevel, cap) for the same seed")
+    void cappedLevel_matchesMinOfPickLevelAndCap() {
+        for (int tier : new int[]{0, 1, 5, 8, 12, 18, 32}) {
+            RandomSource a = RandomSource.create(99L);
+            RandomSource b = RandomSource.create(99L);
+            int cap = VillagerTrainSpawnEvents.maxLevelForTier(tier);
+            for (int i = 0; i < 200; i++) {
+                int capped = VillagerTrainSpawnEvents.cappedLevel(a, tier);
+                int expected = Math.min(VillagerTrainSpawnEvents.pickLevel(b), cap);
+                assertEquals(expected, capped, "mismatch at tier " + tier + " iteration " + i);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("cappedLevel is deterministic for a given seed and tier")
+    void cappedLevel_deterministicForSameSeed() {
+        RandomSource a = RandomSource.create(7L);
+        RandomSource b = RandomSource.create(7L);
+        for (int i = 0; i < 100; i++) {
+            assertEquals(
+                VillagerTrainSpawnEvents.cappedLevel(a, 12),
+                VillagerTrainSpawnEvents.cappedLevel(b, 12),
+                "cappedLevel diverged at iteration " + i);
         }
     }
 }

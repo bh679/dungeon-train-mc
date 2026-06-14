@@ -129,6 +129,38 @@ public final class ProceduralTiers {
         );
     }
 
+    /**
+     * Dominant mob weapon material at {@code level}, as a stage rank:
+     * 0 = none ({@code level <= 0}), 1 = wood, 2 = stone, 3 = iron, 4 = diamond,
+     * 5 = netherite. "Dominant" = the highest-weight material in the weapon pool at
+     * that level — the band shown in the difficulty chart. Ties resolve to the lower
+     * material (diamond over netherite at their shared cap), which is irrelevant to
+     * callers that clamp at diamond.
+     *
+     * <p>Used by {@code VillagerTrainSpawnEvents} to pair the villager trade-level
+     * cap to the mob weapon stage, so the two progressions stay in lockstep even if
+     * the material curves below are retuned.</p>
+     */
+    public static int dominantWeaponStage(int level) {
+        if (level <= 0) return 0;
+        int[] weights = {
+            WOOD_W.weight(level),
+            STONE_W.weight(level),
+            IRON_W.weight(level),
+            DIAMOND_W.weight(level),
+            NETHERITE_W.weight(level),
+        };
+        int rank = 1;
+        int best = weights[0];
+        for (int i = 1; i < weights.length; i++) {
+            if (weights[i] > best) {
+                best = weights[i];
+                rank = i + 1;
+            }
+        }
+        return rank;
+    }
+
     private static DifficultyTier.ArmorSet armorSet(int level) {
         double slotChance = Math.min(1.0, level / 12.5);
         return new DifficultyTier.ArmorSet(

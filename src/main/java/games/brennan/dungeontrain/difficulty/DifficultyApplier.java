@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.difficulty;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
@@ -95,8 +94,7 @@ public final class DifficultyApplier {
      *         tier returned null, etc.)
      */
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng, boolean applyEffects) {
-        int carriagesPerTier = Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
-        int tierIndex = Math.abs(carriageIndex) / carriagesPerTier;
+        int tierIndex = DifficultyProgression.tierForTravelled(carriageIndex);
         // Tier 0 = vanilla baseline; no equipment, effects, or enchantments.
         // Real progression starts at tier 1 once the player has actually
         // travelled `carriagesPerTier` carriages while boarded.

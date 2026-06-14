@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.difficulty;
 
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerLevel;
@@ -33,5 +34,23 @@ public final class DifficultyProgression {
             }
         }
         return max;
+    }
+
+    /**
+     * Difficulty tier for a raw signed travelled-carriage value:
+     * {@code abs(travelled) / max(1, carriagesPerTier)}. This is the boarding-HUD
+     * tier and the value {@link DifficultyApplier} and {@code BoardingProgressEvents}
+     * derive — centralized here so every consumer shares one formula.
+     */
+    public static int tierForTravelled(int travelled) {
+        return Math.abs(travelled) / Math.max(1, DungeonTrainConfig.getCarriagesPerTier());
+    }
+
+    /**
+     * Current difficulty tier: {@link #maxTravelledCarriageIndex} mapped through
+     * {@link #tierForTravelled}. Returns 0 when no players are online.
+     */
+    public static int currentTier(ServerLevel serverLevel) {
+        return tierForTravelled(maxTravelledCarriageIndex(serverLevel));
     }
 }
