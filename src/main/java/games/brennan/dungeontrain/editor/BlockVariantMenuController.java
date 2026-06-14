@@ -299,6 +299,52 @@ public final class BlockVariantMenuController {
                     dirty = true;
                     break;
                 }
+                // Armor-stand branch: add an entity variant entry for an armor
+                // stand carrying an equipment loadout. A held armor-stand loot-
+                // prefab item (from the PREFAB_LOOT_ENTITY creative tab) links
+                // the loadout via NBT_LOOT_PREFAB_ID; a plain vanilla armor
+                // stand adds a bare stand. Like the spawn-egg branch the cell
+                // rolls AIR vs the stand, and a deferred entity pass spawns +
+                // equips it (CarriageContentsPlacer.spawnVariantMob applies the
+                // linked pool via EntityVariantApplicator).
+                if (held.getItem() == net.minecraft.world.item.Items.ARMOR_STAND) {
+                    net.minecraft.resources.ResourceLocation standId =
+                        net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(
+                            net.minecraft.world.entity.EntityType.ARMOR_STAND);
+                    String standPrefabId = null;
+                    net.minecraft.world.item.component.CustomData standCustom =
+                        held.get(net.minecraft.core.component.DataComponents.CUSTOM_DATA);
+                    if (standCustom != null) {
+                        CompoundTag customTag = standCustom.copyTag();
+                        if (customTag.contains(PrefabUseHandler.NBT_LOOT_PREFAB_ID, net.minecraft.nbt.Tag.TAG_STRING)) {
+                            String id = customTag.getString(PrefabUseHandler.NBT_LOOT_PREFAB_ID);
+                            if (!id.isEmpty()) standPrefabId = id;
+                        }
+                    }
+                    if (wasEmpty) {
+                        // Seed the empty-placeholder sentinel so the picker can
+                        // still roll "stay air" vs "spawn stand".
+                        mutated.add(VariantState.of(
+                            net.minecraft.world.level.block.Blocks.COMMAND_BLOCK.defaultBlockState()));
+                    }
+                    VariantState standVariant = VariantState.ofMob(
+                            standId, null, 1, games.brennan.dungeontrain.editor.VariantRotation.NONE)
+                        .withLinkedLootPrefabId(standPrefabId);
+                    if (mutated.size() >= MAX_ENTRIES) {
+                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        return;
+                    }
+                    for (VariantState existing : mutated) {
+                        if (existing.isMob() && standId.equals(existing.entityId())
+                            && Objects.equals(existing.linkedLootPrefabId(), standPrefabId)) {
+                            actionBar(player, "Armor stand variant already in this cell", ChatFormatting.YELLOW);
+                            return;
+                        }
+                    }
+                    mutated.add(standVariant);
+                    dirty = true;
+                    break;
+                }
                 BlockState capturedState;
                 CompoundTag itemBeNbt;
                 String linkedPrefabId = null;
@@ -334,11 +380,22 @@ public final class BlockVariantMenuController {
                     BlockPos worldPos = plot.origin().offset(localPos);
                     BlockState baseState = level.getBlockState(worldPos);
                     if (baseState.isAir()) {
-                        actionBar(player, "Place a base block first (target is air)", ChatFormatting.YELLOW);
-                        return;
+                        // Air cell — but an armor stand may float here as an
+                        // entity (the stand isn't a block). Capture it, with its
+                        // current gear, as the base candidate so "add a block to
+                        // a placed armor stand" yields a stand-or-block variant.
+                        // Truly-empty air (no stand) still needs a base.
+                        VariantState standBase = captureArmorStandBaseVariant(level, worldPos);
+                        if (standBase == null) {
+                            actionBar(player, "Place a base block or armor stand first (target is air)",
+                                ChatFormatting.YELLOW);
+                            return;
+                        }
+                        mutated.add(standBase);
+                    } else {
+                        VariantState baseVariant = captureBaseVariant(level, worldPos, baseState);
+                        mutated.add(baseVariant);
                     }
-                    VariantState baseVariant = captureBaseVariant(level, worldPos, baseState);
-                    mutated.add(baseVariant);
                 }
                 // Orient newVariant against the (now-final) predecessor list:
                 // lock to the most recent existing entry whose state has a
@@ -714,6 +771,36 @@ public final class BlockVariantMenuController {
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
         return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+    }
+
+    /**
+     * Capture an armor stand floating at {@code worldPos} (an air cell) as a
+     * base variant candidate, snapshotting its current equipment / pose into
+     * entity NBT so it respawns identically through the entity-NBT path in
+     * {@link games.brennan.dungeontrain.train.CarriageContentsPlacer#spawnVariantMob}.
+     * Lets an author start a stand-or-block variant from a placed armor stand
+     * (whose cell has an air block). Returns {@code null} when no armor stand
+     * occupies the cell, so truly-empty air still falls through to the
+     * base-block requirement.
+     */
+    private static @Nullable VariantState captureArmorStandBaseVariant(ServerLevel level, BlockPos worldPos) {
+        java.util.List<net.minecraft.world.entity.decoration.ArmorStand> stands =
+            level.getEntitiesOfClass(net.minecraft.world.entity.decoration.ArmorStand.class,
+                new net.minecraft.world.phys.AABB(worldPos));
+        if (stands.isEmpty()) return null;
+        CompoundTag snapshot = new CompoundTag();
+        stands.get(0).saveWithoutId(snapshot);
+        // Drop transient / identity / position fields: spawnVariantMob assigns a
+        // fresh UUID and moves the entity to the cell, so keeping these would
+        // only pin the captured world position or cause initial drift.
+        for (String key : new String[]{"Pos", "Motion", "Rotation", "UUID",
+                "FallDistance", "OnGround", "Air", "Fire", "PortalCooldown"}) {
+            snapshot.remove(key);
+        }
+        net.minecraft.resources.ResourceLocation standId =
+            net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(
+                net.minecraft.world.entity.EntityType.ARMOR_STAND);
+        return VariantState.ofMob(standId, snapshot, 1, VariantRotation.NONE);
     }
 
     private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {

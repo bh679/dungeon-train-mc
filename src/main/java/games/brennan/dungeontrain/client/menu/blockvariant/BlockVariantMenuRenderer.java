@@ -307,8 +307,24 @@ public final class BlockVariantMenuRenderer {
             String label;
             int labelColour;
             if (entry.isMob()) {
-                label = mobLabel(entry.entityId());
-                labelColour = nameHover ? 0xFF000000 : 0xFFE39DFF;
+                // Decorative entities (armor stands) read oddly as "(mob)", so
+                // use the bare path; living mobs keep the "(mob)" suffix.
+                boolean decorative = games.brennan.dungeontrain.editor.EntityVariantApplicator
+                    .ID_ARMOR_STAND.equals(entry.entityId());
+                String base = decorative ? entityPathLabel(entry.entityId()) : mobLabel(entry.entityId());
+                if (linkedId != null) {
+                    // Equipped entity (armor stand + loadout) — show
+                    // "<entity>: <prefab>" so two loadouts read distinctly. A
+                    // dangling link (prefab gone) renders red like block rows.
+                    label = base + ": " + linkedId;
+                    boolean dangling = !PrefabTabState.findLootItems(linkedId).isPresent();
+                    labelColour = dangling
+                        ? (nameHover ? 0xFF660000 : 0xFFFF5555)
+                        : (nameHover ? 0xFF000000 : 0xFFE39DFF);
+                } else {
+                    label = base;
+                    labelColour = nameHover ? 0xFF000000 : 0xFFE39DFF;
+                }
             } else if (linkedId != null) {
                 label = linkedId;
                 boolean dangling = !PrefabTabState.findLootItems(linkedId).isPresent();
@@ -777,8 +793,12 @@ public final class BlockVariantMenuRenderer {
             net.minecraft.resources.ResourceLocation.fromNamespaceAndPath(
                 eid.getNamespace(), eid.getPath() + "_spawn_egg");
         Item eggItem = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(eggId);
-        if (eggItem == null || eggItem == Items.AIR) return new ItemStack(Items.BARRIER);
-        return new ItemStack(eggItem);
+        if (eggItem != null && eggItem != Items.AIR) return new ItemStack(eggItem);
+        // No spawn egg (e.g. armor_stand, item_frame) — try the entity's own
+        // item id so decorative entities show a sensible icon, not a barrier.
+        Item selfItem = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(eid);
+        if (selfItem != null && selfItem != Items.AIR) return new ItemStack(selfItem);
+        return new ItemStack(Items.BARRIER);
     }
 
     /**
@@ -791,6 +811,16 @@ public final class BlockVariantMenuRenderer {
         int colon = entityId.indexOf(':');
         String path = colon >= 0 ? entityId.substring(colon + 1) : entityId;
         return path + " (mob)";
+    }
+
+    /**
+     * Entity id path without the namespace and without the "(mob)" suffix — for
+     * decorative entities (armor stands, item frames) that read oddly as a mob.
+     */
+    static String entityPathLabel(String entityId) {
+        if (entityId == null || entityId.isEmpty()) return "";
+        int colon = entityId.indexOf(':');
+        return colon >= 0 ? entityId.substring(colon + 1) : entityId;
     }
 
     static void drawCenteredText(PoseStack ps, MultiBufferSource buffer, Font font,
