@@ -183,9 +183,9 @@
       ],
       "pr": 381,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.302.0",
+      "released_at": "2026-06-14T15:04:05Z"
     },
     {
       "id": "train-traversal-advancements",
@@ -202,9 +202,9 @@
       ],
       "pr": 382,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.302.0",
+      "released_at": "2026-06-14T15:04:05Z"
     },
     {
       "id": "armor-stand-variants",
@@ -218,9 +218,9 @@
       ],
       "pr": 383,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.302.0",
+      "released_at": "2026-06-14T15:04:05Z"
     },
     {
       "id": "keep-inventory-carry-next-world",
