@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/landed_on_tracks",
+  "parent": "dungeontrain:dungeon_train/left_train",
   "display": {
     "icon": { "id": "minecraft:stone_brick_stairs" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.used_pillar_stairs.title" },

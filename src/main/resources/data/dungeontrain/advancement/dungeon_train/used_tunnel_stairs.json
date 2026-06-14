@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/landed_on_tracks",
+  "parent": "dungeontrain:dungeon_train/left_train",
   "display": {
     "icon": { "id": "minecraft:cobblestone_stairs" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.used_tunnel_stairs.title" },

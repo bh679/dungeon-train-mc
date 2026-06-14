@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/left_train",
+  "parent": "dungeontrain:dungeon_train/used_pillar_stairs",
   "display": {
     "icon": { "id": "minecraft:minecart" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.returned_to_train.title" },

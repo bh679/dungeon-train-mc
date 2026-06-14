@@ -33,12 +33,14 @@ import java.util.UUID;
  * The corridor is static world geometry — the train only moves +X, so
  * {@link TrackGeometry}'s {@code bedY} / Z-range never change. We read it from
  * any live carriage's {@link games.brennan.dungeontrain.train.TrainTransformProvider}.
- * "On a carriage" reuses the same padded {@code worldAABB()} containment
- * {@link BoardingProgressEvents} uses; the {@code HORIZONTAL_PADDING} bridges
- * coupling seams and the {@code +1} Y pad keeps roof-walkers "aboard", so only a
- * genuine drop to the bed (below the carriage floor) or off the side reads as
- * "off". A short off-grace before counting a departure further guards the
- * return marker against seam flicker.
+ * "On a carriage" tests the carriage {@code worldAABB()} with <em>strict</em>
+ * horizontal bounds (no outward pad) so a player standing or towering up
+ * <em>beside</em> the train never reads as aboard, plus {@code +1} Y slack so
+ * standing on the roof still counts. Only a genuine drop to the bed (below the
+ * carriage floor) or off the side reads as "off"; the brief seam flicker
+ * between adjacent carriage groups is absorbed by the off-grace before a
+ * departure counts, so the return marker doesn't need the outward padding
+ * {@link BoardingProgressEvents} uses for its (false-positive-tolerant) counter.
  *
  * <p>All three are one-shot markers — vanilla advancement dedupe means firing
  * the same id every qualifying scan is harmless, so the only persistent state
@@ -56,13 +58,14 @@ public final class TrackPresenceEvents {
     private static final int SCAN_PERIOD_TICKS = 10;
 
     /**
-     * Horizontal pad applied to each carriage's {@code worldAABB} before the
-     * containment check, in blocks — identical to
-     * {@link BoardingProgressEvents#HORIZONTAL_PADDING}. Bridges the tiny joints
-     * between adjacent carriage groups so crossing a coupling doesn't flicker
-     * "off the train".
+     * Vertical slack (blocks) above a carriage's {@code worldAABB} top that
+     * still counts as aboard — covers standing on / jumping on the roof.
+     * Horizontal bounds are intentionally strict (no outward pad) so a player
+     * beside or towering up next to the train never reads as aboard; the brief
+     * seam flicker between groups that the pad would otherwise hide is instead
+     * absorbed by {@link #OFF_GRACE_SCANS}.
      */
-    private static final double HORIZONTAL_PADDING = 1.0;
+    private static final double ROOF_STAND_SLACK = 1.0;
 
     /**
      * How far above the rail bed (in blocks of feet-Y) still counts as "on the
@@ -162,16 +165,19 @@ public final class TrackPresenceEvents {
     }
 
     /**
-     * True if the player's feet are inside any carriage's {@code worldAABB},
-     * padded exactly like {@link BoardingProgressEvents#findPlayerCarriagePIdx}
-     * (horizontal slack for seams, {@code +1} Y for standing on a roof).
+     * True if the player is within a carriage's {@code worldAABB}: strict
+     * horizontal bounds (no outward pad — so standing or towering up beside the
+     * train does NOT count as aboard) with {@code ROOF_STAND_SLACK} Y headroom
+     * so standing on the roof still counts. A momentary seam flicker between
+     * adjacent groups is fine — {@link #OFF_GRACE_SCANS} keeps it from counting
+     * as a departure.
      */
     private static boolean isOnAnyCarriage(List<Trains.Carriage> carriages, double px, double py, double pz) {
         for (Trains.Carriage c : carriages) {
             AABBdc bb = c.ship().worldAABB();
-            if (px < bb.minX() - HORIZONTAL_PADDING || px > bb.maxX() + HORIZONTAL_PADDING) continue;
-            if (py < bb.minY() || py > bb.maxY() + 1.0) continue;
-            if (pz < bb.minZ() - HORIZONTAL_PADDING || pz > bb.maxZ() + HORIZONTAL_PADDING) continue;
+            if (px < bb.minX() || px > bb.maxX()) continue;
+            if (py < bb.minY() || py > bb.maxY() + ROOF_STAND_SLACK) continue;
+            if (pz < bb.minZ() || pz > bb.maxZ()) continue;
             return true;
         }
         return false;
