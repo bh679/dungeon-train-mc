@@ -51,8 +51,11 @@ from `curseforge_relations` in `modpack.config.json`:
 | `adventure-item-names` | `embeddedLibrary` | jarJar'd inside DT. |
 | `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
 | `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
+| `distant-horizons` | `optionalDependency` | Opt-in add-on (also an `optional_mods` file). |
+| `tectonic` | `optionalDependency` | Opt-in add-on (also an `optional_mods` file). |
+| `lithostitched` | `optionalDependency` | Tectonic's dep; opt-in add-on (also an `optional_mods` file). |
 
-Keep this list in sync with `release.yml`'s `curseforge-dependencies` if the mod's deps change.
+Keep this list in sync with the `optional_mods` files above and the mod's own `curseforge-dependencies` in `release.yml` — which declares `distant-horizons(optional)` + `tectonic(optional)` (not `lithostitched`, which is Tectonic's dependency, not DT's).
 
 ## How it deploys (15 min after every mod release)
 
