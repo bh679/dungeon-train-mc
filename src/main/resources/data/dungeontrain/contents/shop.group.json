@@ -25,6 +25,10 @@
     {
       "id": "toolsmith",
       "weight": 1
+    },
+    {
+      "id": "leatherworker",
+      "weight": 3
     }
   ]
 }
