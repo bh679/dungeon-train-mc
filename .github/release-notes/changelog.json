@@ -123,7 +123,7 @@
     },
     {
       "id": "leatherworker-shop-carriage",
-      "version": "0.299.0",
+      "version": "0.300.0",
       "type": "feat",
       "title": "Leatherworker shop carriage",
       "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery \u2014 handy for patching together armour or recolouring your kit mid-run.",
