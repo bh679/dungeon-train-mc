@@ -62,8 +62,12 @@ public final class DungeonTrainConfig {
     public static final int DEFAULT_RANDOM_BOOK_ONE_IN = 100;
 
     public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
-    /** Blank by default: the developer first-new-world-after-death ping ships dormant. */
-    public static final String DEFAULT_DEVELOPER_PING_RELAY_TOKEN = "";
+    /**
+     * Ships as the developer's Discord mention so the first-new-world-after-death ping notifies them
+     * across installs (Discord Presence allows this one trusted mention to ping via
+     * allowed_mentions.users). Set blank to disable the dev-ping; the version line is unaffected.
+     */
+    public static final String DEFAULT_DEVELOPER_PING_RELAY_TOKEN = "<@342110421114945537>";
 
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_ENABLED = true;
@@ -177,11 +181,12 @@ public final class DungeonTrainConfig {
                         "there (this richer report replaces Discord Presence's basic vanilla one).")
                 .define("deathReportToDiscord", DEFAULT_DEATH_REPORT_TO_DISCORD);
         ModConfigSpec.ConfigValue<String> developerPingRelayToken = b
-                .comment("Sentinel token appended to a player's Discord join message the first time they start a",
-                        "NEW world after their first-ever death (once per player, ever). The brennan.games relay",
-                        "swaps this token for the developer's <@mention> and enables the ping; the developer's",
-                        "Discord id never ships in the jar. BLANK (default) = feature dormant: nothing is appended",
-                        "and players stay eligible until a token is set. Requires the bundled Discord Presence mod.")
+                .comment("Text appended to a player's Discord join message the first time they start a NEW world",
+                        "after their first-ever death (once per player, ever). Ships as the developer's Discord",
+                        "mention so that milestone pings them; Discord Presence lets this exact mention notify",
+                        "(allowed_mentions.users) while player names / chat never can. BLANK = dev-ping disabled",
+                        "(the version line still posts). Set to a relay sentinel instead if you route the mention",
+                        "through a relay. Requires the bundled Discord Presence mod.")
                 .define("developerPingRelayToken", DEFAULT_DEVELOPER_PING_RELAY_TOKEN);
         b.pop();
         b.push("intro");
@@ -276,9 +281,8 @@ public final class DungeonTrainConfig {
     }
 
     /**
-     * Relay sentinel token for the developer "first new world after first death" join ping, or
-     * {@code ""} (dormant) when unset / outside a loaded world. The brennan.games relay swaps a
-     * non-blank token for the developer's {@code <@mention>}.
+     * Text appended to the developer "first new world after first death" join ping — the developer's
+     * Discord mention by default, or {@code ""} (disabled) when blanked / outside a loaded world.
      */
     public static String getDeveloperPingRelayToken() {
         return isLoaded() ? DEVELOPER_PING_RELAY_TOKEN.get() : DEFAULT_DEVELOPER_PING_RELAY_TOKEN;
