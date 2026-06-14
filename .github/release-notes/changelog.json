@@ -29,9 +29,9 @@
       ],
       "pr": 368,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "enemy-difficulty-bands",
@@ -49,9 +49,9 @@
       ],
       "pr": 369,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "gamemode-advancement-gate",
@@ -66,9 +66,9 @@
       ],
       "pr": 371,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "variant-mob-default-equipment",
@@ -83,9 +83,9 @@
       ],
       "pr": 370,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "piglin-first-band-magma-fix",
@@ -100,26 +100,9 @@
       ],
       "pr": 373,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "compatible-terrain-dh-tectonic",
-      "version": "0.298.0",
-      "type": "feat",
-      "title": "Compatible Terrain mode + optional Distant Horizons & Tectonic support",
-      "summary": "A new Compatible Terrain option lets Dungeon Train generate vanilla-style overworlds, so terrain mods like Tectonic and Terralith \u2014 and Distant Horizons' long-range views \u2014 work with the train. It's off by default (classic Dungeon Train terrain stays the default); switch it on in Dungeon Train settings before creating a world. The modpack now offers Distant Horizons and Tectonic as optional add-ons you can enable at install (use Distant Horizons 2.x).",
-      "highlights": [
-        "New Compatible Terrain option \u2014 run the train across Tectonic / Terralith terrain",
-        "Distant Horizons + Tectonic offered as opt-in modpack add-ons (never forced)",
-        "Classic terrain unchanged by default; existing worlds unaffected"
-      ],
-      "pr": 375,
-      "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     }
   ]
 }
