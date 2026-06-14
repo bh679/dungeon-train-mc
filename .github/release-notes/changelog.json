@@ -86,6 +86,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "piglin-first-band-magma-fix",
+      "version": "0.297.0",
+      "type": "fix",
+      "title": "Piglins no longer wrongly become magma cubes outside the Nether",
+      "summary": "On a train's easy opening stretch, tough mobs get swapped for friendly slimes (and Nether creatures for magma cubes). Piglins were being turned into magma cubes even on Overworld trains. Now zombified piglins are never swapped, and piglins and piglin brutes only turn into magma cubes inside the Nether \u2014 on other trains they spawn exactly as placed.",
+      "highlights": [
+        "Zombified piglins are never replaced \u2014 they always spawn as placed",
+        "Piglins & piglin brutes only become magma cubes on Nether trains",
+        "Overworld trains no longer spawn out-of-place magma cubes from piglins"
+      ],
+      "pr": 373,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
