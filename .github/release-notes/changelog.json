@@ -134,9 +134,41 @@
       ],
       "pr": 377,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
+    },
+    {
+      "id": "fix-spawn-under-train",
+      "version": "0.300.0",
+      "type": "fix",
+      "title": "Reliable spawn on the train's front deck",
+      "summary": "Joining or respawning onto the moving train now reliably lands you standing on the front flatbed deck. Before, if the train hadn't fully settled or had already grown past its first carriage, you could occasionally drop through to the tracks under the train or get stuck inside the deck floor.",
+      "highlights": [
+        "Always spawn cleanly on the train's front deck",
+        "No more falling under the train or clipping into the flatbed slab on join or respawn"
+      ],
+      "pr": 378,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
+    },
+    {
+      "id": "out-of-band-mob-cells-air",
+      "version": "0.301.0",
+      "type": "fix",
+      "title": "Empty enemy spots no longer leave a stray block behind",
+      "summary": "A carriage spot that can only hold enemies \u2014 and whose enemies are all the wrong level for your current depth \u2014 now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
+      "highlights": [
+        "Mob-only carriage spots with no depth-appropriate enemy now clear to air",
+        "No more leftover placeholder block where a not-yet-eligible mob would stand"
+      ],
+      "pr": 379,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
     }
   ]
 }
