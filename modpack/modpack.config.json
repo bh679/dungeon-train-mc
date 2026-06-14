@@ -16,6 +16,9 @@
     { "slug": "sable", "type": "requiredDependency" },
     { "slug": "adventure-item-names", "type": "embeddedLibrary" },
     { "slug": "adventure-item-stats", "type": "embeddedLibrary" },
-    { "slug": "interactive-player-mobs", "type": "embeddedLibrary" }
+    { "slug": "interactive-player-mobs", "type": "embeddedLibrary" },
+    { "slug": "distant-horizons", "type": "optionalDependency" },
+    { "slug": "tectonic", "type": "optionalDependency" },
+    { "slug": "lithostitched", "type": "optionalDependency" }
   ]
 }

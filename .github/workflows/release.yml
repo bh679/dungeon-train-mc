@@ -188,6 +188,8 @@ jobs:
             adventure-item-names(embedded)
             adventure-item-stats(embedded)
             interactive-player-mobs(embedded)
+            distant-horizons(optional)
+            tectonic(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
