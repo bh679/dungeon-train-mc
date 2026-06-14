@@ -172,7 +172,7 @@
     },
     {
       "id": "advancements-keybind-hint",
-      "version": "0.301.0",
+      "version": "0.302.0",
       "type": "feat",
       "title": "Advancements keybind reminder in chat",
       "summary": "Earn a Dungeon Train advancement before you've ever opened the advancements screen and a short, train-flavoured message now points you at the key that opens it. It shows your actual (rebindable) keybind, picks at random from a dozen conductor-style lines, and quietly stops for good once you open the advancements screen.",
@@ -189,7 +189,7 @@
     },
     {
       "id": "train-traversal-advancements",
-      "version": "0.301.0",
+      "version": "0.302.0",
       "type": "feat",
       "title": "Five train-traversal advancements",
       "summary": "Five new advancements reward exploring the world the train rides through \u2014 hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
@@ -208,7 +208,7 @@
     },
     {
       "id": "armor-stand-variants",
-      "version": "0.301.0",
+      "version": "0.302.0",
       "type": "feat",
       "title": "Armor stands as randomized carriage contents",
       "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty \u2014 more variety in what you find aboard the train.",
