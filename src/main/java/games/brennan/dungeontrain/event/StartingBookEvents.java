@@ -222,9 +222,16 @@ public final class StartingBookEvents {
                 PendingStrike ps = entry.getValue();
                 ps.ticksRemaining--;
                 if (ps.ticksRemaining <= 0) {
-                    StartingBookContext ctx = ps.context != null ? ps.context : resolveLoginContext(player);
-                    fireLightningAndDropBook(player, ctx, /*markSeen*/ true);
-                    it.remove();
+                    // Hold the welcome strike until the spawn intro cinematic
+                    // finishes, so the lightning lands once the player has
+                    // control on the train rather than mid-cinematic.
+                    if (CinematicIntroService.isCinematicActive(player.getUUID())) {
+                        ps.ticksRemaining = 0; // stay pending; re-check next tick
+                    } else {
+                        StartingBookContext ctx = ps.context != null ? ps.context : resolveLoginContext(player);
+                        fireLightningAndDropBook(player, ctx, /*markSeen*/ true);
+                        it.remove();
+                    }
                 }
             }
         }

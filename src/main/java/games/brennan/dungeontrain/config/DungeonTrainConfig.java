@@ -58,6 +58,12 @@ public final class DungeonTrainConfig {
 
     public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
 
+    /** Play the fly-up spawn cinematic the first time each player enters a world. */
+    public static final boolean DEFAULT_INTRO_CINEMATIC_ENABLED = true;
+    public static final int MIN_INTRO_DURATION_TICKS = 20;
+    public static final int MAX_INTRO_DURATION_TICKS = 600;
+    public static final int DEFAULT_INTRO_DURATION_TICKS = 120;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue NUM_CARRIAGES;
     public static final ModConfigSpec.DoubleValue SPEED;
@@ -71,6 +77,8 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
+    public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -88,6 +96,8 @@ public final class DungeonTrainConfig {
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
+        INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
+        INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
     }
 
     private DungeonTrainConfig() {}
@@ -143,9 +153,20 @@ public final class DungeonTrainConfig {
                         "there (this richer report replaces Discord Presence's basic vanilla one).")
                 .define("deathReportToDiscord", DEFAULT_DEATH_REPORT_TO_DISCORD);
         b.pop();
+        b.push("intro");
+        ModConfigSpec.BooleanValue introCinematicEnabled = b
+                .comment("Play a fly-up camera cinematic the first time each player spawns into a world. The player spawns",
+                        "standing on a flatbed deck of the moving train; the camera starts at the old ground spawn position,",
+                        "rises and eases back while tracking the player. Press Space in-game to skip.")
+                .define("introCinematicEnabled", DEFAULT_INTRO_CINEMATIC_ENABLED);
+        ModConfigSpec.IntValue introCinematicDurationTicks = b
+                .comment("Intro cinematic duration in ticks (20 ticks = 1 second).")
+                .defineInRange("introCinematicDurationTicks", DEFAULT_INTRO_DURATION_TICKS,
+                        MIN_INTRO_DURATION_TICKS, MAX_INTRO_DURATION_TICKS);
+        b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn,
-                deathReportToDiscord);
+                deathReportToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -205,6 +226,16 @@ public final class DungeonTrainConfig {
     /** Whether to post the death-screen run summary to Discord (via the bundled Discord Presence mod). */
     public static boolean isDeathReportToDiscord() {
         return isLoaded() ? DEATH_REPORT_TO_DISCORD.get() : DEFAULT_DEATH_REPORT_TO_DISCORD;
+    }
+
+    /** Whether the fly-up spawn cinematic plays the first time a player enters a world. */
+    public static boolean isIntroCinematicEnabled() {
+        return isLoaded() ? INTRO_CINEMATIC_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_ENABLED;
+    }
+
+    /** Intro cinematic length in ticks (20 = 1s). */
+    public static int getIntroCinematicDurationTicks() {
+        return isLoaded() ? INTRO_CINEMATIC_DURATION_TICKS.get() : DEFAULT_INTRO_DURATION_TICKS;
     }
 
     public static void setNumCarriages(int value) {
@@ -285,6 +316,8 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue carriagesPerTier,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
-            ModConfigSpec.BooleanValue deathReportToDiscord
+            ModConfigSpec.BooleanValue deathReportToDiscord,
+            ModConfigSpec.BooleanValue introCinematicEnabled,
+            ModConfigSpec.IntValue introCinematicDurationTicks
     ) {}
 }
