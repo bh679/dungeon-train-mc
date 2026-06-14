@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
+import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
@@ -214,7 +215,7 @@ public final class AchievementEvents {
         ServerLevel overworld = server.overworld();
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
-        if (anyStoryRead(data)) {
+        if (anyStoryRead()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "any_story");
         }
         if (allFaulthurstTitlesSeen(data)) {
@@ -223,10 +224,10 @@ public final class AchievementEvents {
         if (allFaulthurstSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
         }
-        if (allStoriesRead(data)) {
+        if (allStoriesRead()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
         }
-        if (allStoryVariantsSeen(data)) {
+        if (allStoryVariantsSeen()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_story_variants");
         }
         if (allStartingBookTitlesSeen(data)) {
@@ -250,16 +251,37 @@ public final class AchievementEvents {
     }
 
     /**
+     * Merge this world's per-world story reads (byStory + story-variant seen)
+     * into the cross-world {@link GlobalNarrativeProgress}. Idempotent
+     * (set-union). Called on login so progress predating the global store — or
+     * earned in another world — counts toward the cross-world story
+     * advancements. Lectern selection still reads the per-world data, untouched.
+     */
+    private static void absorbWorldStoryProgressIntoGlobal(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        NarrativeProgressData data = NarrativeProgressData.get(server.overworld());
+        // Both snapshots are already in the shape GlobalNarrativeProgress wants
+        // (byStory: basename -> letters; variants: "basename#letter" -> variants),
+        // so hand them straight to the single-write bulk merge.
+        Map<String, Set<Integer>> letters = new HashMap<>();
+        data.snapshotStories().forEach((basename, p) -> letters.put(basename, p.readLetters()));
+        Map<String, Set<Integer>> variants = new HashMap<>();
+        data.storyVariantsSnapshot().forEach((key, p) -> variants.put(key, p.readLetters()));
+        GlobalNarrativeProgress.absorbAll(letters, variants);
+    }
+
+    /**
      * True when every variant of every letter of every story currently
-     * loaded by {@link StoryRegistry} has been marked seen in
-     * {@code data.storyVariantsSnapshot()}. Drives the
+     * loaded by {@link StoryRegistry} has been marked seen in the cross-world
+     * {@link GlobalNarrativeProgress}. Drives the
      * {@code read_all_story_variants} ("Every Reality, Every Word")
      * achievement. Empty registry → false.
      */
-    private static boolean allStoryVariantsSeen(NarrativeProgressData data) {
+    private static boolean allStoryVariantsSeen() {
         java.util.List<String> all = StoryRegistry.basenames();
         if (all.isEmpty()) return false;
-        Map<String, NarrativeProgress> snapshot = data.storyVariantsSnapshot();
+        Map<String, NarrativeProgress> snapshot = GlobalNarrativeProgress.storyVariantsSnapshot();
         for (String basename : all) {
             StoryFile file = StoryRegistry.getByBasename(basename).orElse(null);
             if (file == null) return false;
@@ -362,15 +384,15 @@ public final class AchievementEvents {
     }
 
     /**
-     * True when at least one story is fully read (every letter marked).
-     * Drives the {@code collecting_stories} milestone — the player's first
-     * complete story.
+     * True when at least one story is fully read (every letter marked) in the
+     * cross-world {@link GlobalNarrativeProgress}. Drives the
+     * {@code collecting_stories} milestone — the player's first complete story.
      */
-    private static boolean anyStoryRead(NarrativeProgressData data) {
+    private static boolean anyStoryRead() {
         for (String basename : StoryRegistry.basenames()) {
             StoryFile file = StoryRegistry.getByBasename(basename).orElse(null);
             if (file == null) continue;
-            NarrativeProgress p = data.progressFor(basename);
+            NarrativeProgress p = GlobalNarrativeProgress.progressFor(basename);
             if (p.isComplete(file.letters().size())) return true;
         }
         return false;
@@ -378,16 +400,17 @@ public final class AchievementEvents {
 
     /**
      * True when every story currently loaded by {@link StoryRegistry} has
-     * all letters marked read in {@code data}. Mirrors the 1-based letter
-     * indexing used by {@link NarrativeProgress#isComplete}.
+     * all letters marked read in the cross-world {@link GlobalNarrativeProgress}.
+     * Mirrors the 1-based letter indexing used by
+     * {@link NarrativeProgress#isComplete}.
      */
-    private static boolean allStoriesRead(NarrativeProgressData data) {
+    private static boolean allStoriesRead() {
         java.util.List<String> all = StoryRegistry.basenames();
         if (all.isEmpty()) return false;
         for (String basename : all) {
             StoryFile file = StoryRegistry.getByBasename(basename).orElse(null);
             if (file == null) return false;
-            NarrativeProgress p = data.progressFor(basename);
+            NarrativeProgress p = GlobalNarrativeProgress.progressFor(basename);
             if (!p.isComplete(file.letters().size())) return false;
         }
         return true;
@@ -488,6 +511,12 @@ public final class AchievementEvents {
         // below — a first-time joiner has an empty sidecar and would otherwise
         // be skipped by the early-return on the next line.
         awardMultiplayerJoinIfApplicable(player);
+        // Absorb this world's story reads into the cross-world global record,
+        // then re-evaluate the story advancements (which read the global store)
+        // so progress earned in other worlds — or before this store existed —
+        // can complete them here. Runs before the sidecar early-return below.
+        absorbWorldStoryProgressIntoGlobal(player);
+        notifyStoryProgress(player);
         UUID uuid = player.getUUID();
         Set<ResourceLocation> granted = GlobalAchievementStore.read(uuid);
         if (granted.isEmpty()) return;

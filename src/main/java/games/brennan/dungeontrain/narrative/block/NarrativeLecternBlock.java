@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.narrative.block;
 
+import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
+import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
@@ -109,10 +111,25 @@ public class NarrativeLecternBlock extends LecternBlock {
         // counts as reading the letter we just resolved. Without this,
         // the read-marking only fires on the NEXT right-click via the
         // RightClickBlock subscriber (which sees the previous BE state),
-        // meaning a one-and-done viewer never advances.
-        NarrativeBookTag.read(book).ifPresent(id ->
-            NarrativeProgressData.get(overworld)
-                .markRead(id.storyBasename(), id.letterIndex()));
+        // meaning a one-and-done viewer never advances. For the same reason
+        // we also record into the cross-world GlobalNarrativeProgress and
+        // re-check the story advancements here, so a first-and-only read
+        // still counts toward them.
+        NarrativeBookTag.read(book).ifPresent(id -> {
+            NarrativeProgressData data = NarrativeProgressData.get(overworld);
+            data.markRead(id.storyBasename(), id.letterIndex());
+            GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+            if (id.variantIndex() >= 0) {
+                // Mark the variant on BOTH stores, matching recordRead: keeps
+                // the per-world data complete (it is the login absorption
+                // source) and the global store correct for a one-and-done
+                // lectern reader who never re-opens the book.
+                data.markStoryVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
+                GlobalNarrativeProgress.markVariantSeen(
+                    id.storyBasename(), id.letterIndex(), id.variantIndex());
+            }
+            AchievementEvents.notifyStoryProgress(sp);
+        });
 
         // Now let vanilla open the lectern menu — it reads the BE's book
         // we just swapped in.
