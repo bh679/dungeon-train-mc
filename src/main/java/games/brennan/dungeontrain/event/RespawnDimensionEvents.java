@@ -81,9 +81,23 @@ public final class RespawnDimensionEvents {
         }
 
         TrainBootstrapEvents.ensureTrainSpawned(target, data);
+
+        // Prefer landing the player ON the train (flatbed deck) so a cross-dim
+        // respawn matches the spawn-on-train behavior. Yaw -90 faces +X (travel
+        // direction). Falls back to the ground spawn pose beside the train if
+        // the train hasn't bound yet.
+        PlayerJoinEvents.FlatbedTarget flat = PlayerJoinEvents.findFlatbedTarget(target, data);
+        if (flat != null) {
+            LOGGER.info("[DungeonTrain] Respawn placing {} on train in {} at ({}, {}, {})",
+                    player.getName().getString(), rolled,
+                    String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()));
+            player.teleportTo(target, flat.x(), flat.y(), flat.z(), -90.0f, 0.0f);
+            return;
+        }
+
         PlayerJoinEvents.SpawnPlacement sp = PlayerJoinEvents.computeBootstrapPlacement(
                 target, data.dims(), data.getTrainY());
-        LOGGER.info("[DungeonTrain] Respawn teleporting {} to {} at pos=({}, {}, {}) yaw={} pitch={}",
+        LOGGER.info("[DungeonTrain] Respawn teleporting {} to {} (ground fallback) at pos=({}, {}, {}) yaw={} pitch={}",
                 player.getName().getString(), rolled,
                 String.format("%.1f", sp.x()), sp.y(), String.format("%.1f", sp.z()),
                 String.format("%.1f", sp.yaw()), String.format("%.1f", sp.pitch()));

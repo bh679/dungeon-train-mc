@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "23";
+    public static final String PROTOCOL_VERSION = "24";
 
     private DungeonTrainNet() {}
 
@@ -76,6 +76,10 @@ public final class DungeonTrainNet {
 
         // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
+
+        // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
+        registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
+        registrar.playToServer(CinematicDonePacket.TYPE, CinematicDonePacket.STREAM_CODEC, CinematicDonePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

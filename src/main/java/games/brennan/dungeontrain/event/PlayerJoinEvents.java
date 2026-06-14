@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriagePlacer;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
@@ -130,6 +131,12 @@ public final class PlayerJoinEvents {
     /** Standing eye height (blocks above feet) — used for pitch math. */
     private static final double EYE_HEIGHT = 1.62;
 
+    /** MC yaw facing +X (the train's travel direction) — used for on-train spawns. */
+    private static final float FORWARD_YAW = -90.0f;
+
+    /** Player feet sit this far above the flatbed floor block top on spawn. */
+    private static final double FLATBED_FEET_EPSILON = 0.05;
+
     /**
      * Max ticks to keep retrying the train lookup after login. 20 TPS,
      * so 100 ≈ 5 s — generous; in practice the race resolves in 1–2 ticks.
@@ -181,6 +188,7 @@ public final class PlayerJoinEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             PENDING.remove(player.getUUID());
+            CinematicIntroService.forget(player.getUUID());
         }
     }
 
@@ -192,11 +200,15 @@ public final class PlayerJoinEvents {
      */
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
-        if (PENDING.isEmpty()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (level.dimension() != Level.OVERWORLD) return;
 
         MinecraftServer server = level.getServer();
+        // Expire spawn-cinematic invulnerability windows — must run even when
+        // no players are queued for placement.
+        CinematicIntroService.tick(server);
+
+        if (PENDING.isEmpty()) return;
         Iterator<Map.Entry<UUID, Integer>> it = PENDING.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, Integer> entry = it.next();
@@ -238,30 +250,12 @@ public final class PlayerJoinEvents {
             return true;
         }
 
-        // First-time login: PlayerFudgeSpawnMixin already moved the player
-        // to the cached placement before the JOIN packet was sent. If the
-        // player is still at (or very near) that placement, fire a no-op
-        // teleport (same pos + yaw + pitch) to sync server-side state with
-        // the client. teleportTo to the same position is a no-op for
-        // position — only rotation updates — so there's no visual jump.
-        //
-        // The train was fully eager-filled at
-        // TrainBootstrapEvents.onServerStarted, so we don't need to wait
-        // for Sable to bind anything here.
-        SpawnPlacement boot = bootstrapPlacement;
-        if (boot != null && trainLevel == player.level()) {
-            double cdx = player.getX() - boot.x();
-            double cdz = player.getZ() - boot.z();
-            if (cdx * cdx + cdz * cdz < 4.0) {
-                player.teleportTo(trainLevel, boot.x(), boot.y(), boot.z(), boot.yaw(), boot.pitch());
-                LOGGER.info("[DungeonTrain] Login spawn (cached bootstrap placement) for {}: pos=({}, {}, {}) yaw={} pitch={}",
-                    player.getName().getString(),
-                    String.format("%.1f", boot.x()), boot.y(), String.format("%.1f", boot.z()),
-                    String.format("%.1f", boot.yaw()), String.format("%.1f", boot.pitch()));
-                return true;
-            }
-        }
-
+        // We now place the body ON the live train (a flatbed deck), not at the
+        // ground bootstrap pose. The first-time PlayerFudgeSpawnMixin still puts
+        // the client at the ground pose pre-JOIN (no origin flash); the body's
+        // teleport onto the moving train then happens under the detached
+        // cinematic camera and is invisible. So no cached no-op fast path — we
+        // always wait for the live train and recompute from it.
         ManagedShip trainShip = findTrain(trainLevel);
         if (trainShip == null) return false; // retry next tick
 
@@ -284,7 +278,8 @@ public final class PlayerJoinEvents {
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
         int anchorX = haveBuffered ? bufferedX : lookX;
 
-        PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter);
+        // Camera start may sit over water (it's just a camera viewpoint).
+        PlayerTarget target = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter, /*allowWater*/ true);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
 
         // Compute yaw/pitch explicitly from (target → referencePoint) and
@@ -297,15 +292,30 @@ public final class PlayerJoinEvents {
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         float pitch = (float) Math.toDegrees(-Math.atan2(dy, horizontal));
 
-        LOGGER.info("[DungeonTrain] Login spawn for {}: pos=({}, {}, {}) lookAt=({}, {}, {}) yaw={} pitch={} trainCenter=({}, {}, {}) anchorX={} lookX={} buffered={}",
+        // (target, yaw, pitch) is the OLD ground spawn pose — reused as the
+        // cinematic CAMERA START, not the body position. The body spawns on a
+        // flatbed deck of the live train; the detached camera hides the move.
+        SpawnPlacement groundPose = new SpawnPlacement(
+            target.px, target.py, target.pz, yaw, pitch,
+            new BlockPos(Mth.floor(target.px), target.py, Mth.floor(target.pz)));
+        FlatbedTarget flat = computeFlatbedTarget(provider, data, trainCenter);
+
+        // Face along travel (+X) — this is the view restored when the cinematic
+        // releases control.
+        player.teleportTo(trainLevel, flat.x(), flat.y(), flat.z(), FORWARD_YAW, 0.0f);
+
+        boolean cinematic = CinematicIntroService.shouldPlay(player);
+        LOGGER.info("[DungeonTrain] Login spawn for {}: onTrain=({}, {}, {}) camStart=({}, {}, {}) yaw={} pitch={} cinematic={} trainCenter=({}, {}, {}) anchorX={} lookX={} buffered={}",
             player.getName().getString(),
+            String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()),
             String.format("%.1f", target.px), target.py, String.format("%.1f", target.pz),
-            String.format("%.1f", referencePoint.x), String.format("%.1f", referencePoint.y), String.format("%.1f", referencePoint.z),
-            String.format("%.1f", yaw), String.format("%.1f", pitch),
+            String.format("%.1f", yaw), String.format("%.1f", pitch), cinematic,
             String.format("%.1f", trainCenter.x), String.format("%.1f", trainCenter.y), String.format("%.1f", trainCenter.z),
             anchorX, lookX, haveBuffered);
 
-        player.teleportTo(trainLevel, target.px, target.py, target.pz, yaw, pitch);
+        if (cinematic) {
+            CinematicIntroService.play(player, groundPose);
+        }
         return true;
     }
 
@@ -408,6 +418,49 @@ public final class PlayerJoinEvents {
         return null;
     }
 
+    /** A world-space spot to stand the player on the train (flatbed deck top). */
+    public record FlatbedTarget(double x, double y, double z) {}
+
+    /**
+     * Compute a flatbed-deck spawn spot from a resolved train group.
+     *
+     * <p>Each carriage group's sub-level is laid out
+     * {@code [BACK pad | groupSize × carriage | FRONT pad]} spanning
+     * {@code groupSize·length + 2·halfPadLen} blocks along X, centred on the
+     * sub-level AABB centre ({@code center}, i.e. the driver's canonical
+     * position). The FRONT (+X) {@code halfPadLen} blocks are an open flatbed
+     * deck; its centre X is {@code center.x + stride/2 − halfPad/2}. The deck
+     * floor sits at {@code trainY} (carriage floor), so feet go just above it
+     * at {@code trainY + 1}. Z is the track centre — the corridor middle.</p>
+     */
+    private static FlatbedTarget computeFlatbedTarget(
+        TrainTransformProvider provider, DungeonTrainWorldData data, Vector3d center
+    ) {
+        CarriageDims dims = data.dims();
+        int trainY = data.getTrainY();
+        int halfPad = CarriagePlacer.halfPadLen(dims);
+        int stride = provider.getGroupSize() * dims.length() + 2 * halfPad;
+        double frontPadCenterX = center.x + stride / 2.0 - halfPad / 2.0;
+        TrackGeometry g = TrackGeometry.from(dims, trainY);
+        return new FlatbedTarget(
+            frontPadCenterX,
+            trainY + 1 + FLATBED_FEET_EPSILON,
+            g.trackCenterZ() + 0.5);
+    }
+
+    /**
+     * Resolve the train in {@code trainLevel} and compute a flatbed-deck spawn
+     * spot, or {@code null} if no train has bound yet. Shared with
+     * {@link RespawnDimensionEvents} so respawns also land on the train.
+     */
+    public static FlatbedTarget findFlatbedTarget(ServerLevel trainLevel, DungeonTrainWorldData data) {
+        ManagedShip ship = findTrain(trainLevel);
+        if (ship == null) return null;
+        TrainTransformProvider provider = (TrainTransformProvider) ship.getKinematicDriver();
+        Vector3d center = resolveTrainCenter(provider, data);
+        return computeFlatbedTarget(provider, data, center);
+    }
+
     /**
      * Pick a spawn position with a verified line of sight to the train.
      *
@@ -428,7 +481,7 @@ public final class PlayerJoinEvents {
      */
     private static PlayerTarget pickPlayerTarget(
         ServerLevel level, int anchorX, TrackGeometry g, TunnelGeometry tg,
-        Vector3d trainCenter
+        Vector3d trainCenter, boolean allowWater
     ) {
         RandomSource rand = level.getRandom();
         // Aim point sits in the open air ABOVE the train, well clear of:
@@ -441,7 +494,7 @@ public final class PlayerJoinEvents {
         Vec3 trainAim = new Vec3(trainCenter.x, trainCenter.y + 8.0, trainCenter.z);
 
         // Phase A — original anchor.
-        PlayerTarget r = tryFindLOSClearSpawn(level, anchorX, g, trainAim, rand);
+        PlayerTarget r = tryFindLOSClearSpawn(level, anchorX, g, trainAim, rand, allowWater);
         if (r != null) return r;
 
         // Phase B — slide the anchor along the track in both directions.
@@ -452,7 +505,7 @@ public final class PlayerJoinEvents {
                 int newAnchor = anchorX + dir * step;
                 level.getChunk(newAnchor >> 4, tg.centerZ() >> 4, ChunkStatus.FULL, true);
                 if (TunnelGenerator.isColumnUnderground(level, newAnchor, tg)) continue;
-                r = tryFindLOSClearSpawn(level, newAnchor, g, trainAim, rand);
+                r = tryFindLOSClearSpawn(level, newAnchor, g, trainAim, rand, allowWater);
                 if (r != null) {
                     LOGGER.info("[DungeonTrain] X-slide found LOS-clear anchor at X={} (slid {} from original X={})",
                         newAnchor, dir * step, anchorX);
@@ -480,7 +533,7 @@ public final class PlayerJoinEvents {
      */
     private static PlayerTarget tryFindLOSClearSpawn(
         ServerLevel level, int anchorX, TrackGeometry g,
-        Vec3 trainAim, RandomSource rand
+        Vec3 trainAim, RandomSource rand, boolean allowWater
     ) {
         double centerZ = g.trackCenterZ() + 0.5;
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -493,9 +546,9 @@ public final class PlayerJoinEvents {
             int bz = Mth.floor(centerZ + zOffset);
             level.getChunk(bx >> 4, bz >> 4, ChunkStatus.FULL, true);
 
-            int groundY = findGroundY(level, bx, bz);
+            int groundY = findGroundY(level, bx, bz, allowWater);
             int playerY = groundY + 1;
-            if (!isSafePlayerPos(level, bx, playerY, bz)) continue;
+            if (!isSafePlayerPos(level, bx, playerY, bz, allowWater)) continue;
             if (!hasLineOfSight(level, bx + 0.5, playerY + EYE_HEIGHT, bz + 0.5,
                                 trainAim.x, trainAim.y, trainAim.z)) continue;
             return new PlayerTarget(bx + 0.5, playerY, bz + 0.5);
@@ -505,9 +558,9 @@ public final class PlayerJoinEvents {
             for (int sign : new int[] {+1, -1}) {
                 int bz = Mth.floor(centerZ + sign * perpDist);
                 level.getChunk(anchorX >> 4, bz >> 4, ChunkStatus.FULL, true);
-                int gy = findGroundY(level, anchorX, bz);
+                int gy = findGroundY(level, anchorX, bz, allowWater);
                 int py = gy + 1;
-                if (!isSafePlayerPos(level, anchorX, py, bz)) continue;
+                if (!isSafePlayerPos(level, anchorX, py, bz, allowWater)) continue;
                 if (!hasLineOfSight(level, anchorX + 0.5, py + EYE_HEIGHT, bz + 0.5,
                                     trainAim.x, trainAim.y, trainAim.z)) continue;
                 return new PlayerTarget(anchorX + 0.5, py, bz + 0.5);
@@ -544,7 +597,8 @@ public final class PlayerJoinEvents {
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
         int anchorX = haveBuffered ? bufferedX : lookX;
 
-        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter);
+        // Real body placement (world default spawn / fudge / respawn): never water.
+        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter, /*allowWater*/ false);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
 
         double dx = referencePoint.x - pt.px;
@@ -587,13 +641,18 @@ public final class PlayerJoinEvents {
      * {@code level.getMinBuildHeight() - 1} (sentinel: no ground found) if
      * every scanned block is passable.
      */
-    private static int findGroundY(ServerLevel level, int x, int z) {
+    private static int findGroundY(ServerLevel level, int x, int z, boolean allowWater) {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int minY = level.getMinBuildHeight();
         int startY = level.getMaxBuildHeight() - 1;
         for (int y = startY; y >= minY; y--) {
             pos.set(x, y, z);
             BlockState state = level.getBlockState(pos);
+            // Camera-only allowWater: the water surface counts as ground so the
+            // camera starts just above it rather than descending to the seabed.
+            if (allowWater && !state.getFluidState().isEmpty()) {
+                return y;
+            }
             if (!isPassable(state)) {
                 return y;
             }
@@ -626,19 +685,19 @@ public final class PlayerJoinEvents {
      * true seabed under frozen oceans — without this guard, the analogue for
      * ice spikes lands the player at snow-Y but inside a tall ice column).
      */
-    private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z) {
+    private static boolean isSafePlayerPos(ServerLevel level, int x, int y, int z, boolean allowWater) {
         if (y < level.getMinBuildHeight() + VOID_CLEARANCE) return false;
         if (y > level.getMaxBuildHeight() - CEILING_CLEARANCE) return false;
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         pos.set(x, y, z);
         BlockState body = level.getBlockState(pos);
-        if (!body.getFluidState().isEmpty()) return false;
+        if (!allowWater && !body.getFluidState().isEmpty()) return false;
         if (body.is(BlockTags.LEAVES)) return false;
         if (body.is(BlockTags.ICE)) return false;
         pos.set(x, y + 1, z);
         BlockState head = level.getBlockState(pos);
-        if (!head.getFluidState().isEmpty()) return false;
+        if (!allowWater && !head.getFluidState().isEmpty()) return false;
         if (head.is(BlockTags.LEAVES)) return false;
         if (head.is(BlockTags.ICE)) return false;
         return true;
