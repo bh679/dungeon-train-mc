@@ -62,5 +62,24 @@ logoFile="logo.png"
     ordering="NONE"
     side="BOTH"
 
+# Optional, player-installed add-ons that Dungeon Train supports (NOT bundled).
+# distanthorizons: use the 2.x line — 3.0.x crashes on world entry (see wiki Compatibility).
+# Range is permissive so installing any version never blocks load; the recommendation lives in docs.
+[[dependencies.${mod_id}]]
+    modId="distanthorizons"
+    type="optional"
+    versionRange="[2.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# tectonic (terrain mod; pulls lithostitched). Generates only when the in-game
+# "Compatible Terrain" option is on (Dungeon Train then uses vanilla overworld noise).
+[[dependencies.${mod_id}]]
+    modId="tectonic"
+    type="optional"
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="BOTH"
+
 [[mixins]]
     config="${mod_id}.mixins.json"

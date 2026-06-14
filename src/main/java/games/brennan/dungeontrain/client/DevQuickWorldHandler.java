@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -73,6 +74,11 @@ public final class DevQuickWorldHandler {
     private static final ResourceKey<WorldPreset> DT_DEFAULT_PRESET = ResourceKey.create(
             Registries.WORLD_PRESET,
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train"));
+
+    /** Compatible-Terrain variant (vanilla overworld noise) selected when the COMMON toggle is on. */
+    private static final ResourceKey<WorldPreset> DT_COMPAT_PRESET = ResourceKey.create(
+            Registries.WORLD_PRESET,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train_compat"));
 
     private static WeakReference<Button> singleplayerRef = new WeakReference<>(null);
     private static WeakReference<Button> creativeNewWorldRef = new WeakReference<>(null);
@@ -227,7 +233,9 @@ public final class DevQuickWorldHandler {
         return registryAccess -> {
             Registry<WorldPreset> presetRegistry =
                     registryAccess.registryOrThrow(Registries.WORLD_PRESET);
-            Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(DT_DEFAULT_PRESET);
+            ResourceKey<WorldPreset> key = DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                    ? DT_COMPAT_PRESET : DT_DEFAULT_PRESET;
+            Optional<Holder.Reference<WorldPreset>> dt = presetRegistry.getHolder(key);
             if (dt.isPresent()) {
                 return dt.get().value().createWorldDimensions();
             }
