@@ -340,8 +340,18 @@ public final class CarriageContentsPlacer {
             VariantState picked = filterByDifficulty
                 ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
                 : sidecar.resolve(entry.localPos(), seed, carriageIndex);
-            if (picked == null) continue;
             BlockPos world = origin.offset(entry.localPos());
+            if (picked == null) {
+                // Difficulty-filtered to nothing: the cell's only candidates were mob
+                // (spawn-egg) entries, all out of band for this carriage's tier. The mob
+                // would have occupied an air cell, so clear to air rather than leaving the
+                // stamped interior block. (Only reachable on the difficulty-filtered path;
+                // the 3-arg editor-preview path never returns null for a populated cell.)
+                if (filterByDifficulty) {
+                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                }
+                continue;
+            }
             if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())) {
                 SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
             } else {

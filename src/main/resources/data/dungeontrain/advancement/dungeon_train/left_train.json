@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/landed_on_tracks",
+  "display": {
+    "icon": { "id": "minecraft:dirt_path" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.left_train.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.left_train.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "left_train" }
+    }
+  },
+  "requirements": [["action"]]
+}
