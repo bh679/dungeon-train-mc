@@ -294,6 +294,43 @@ public final class CarriageContentsVariantBlocks {
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
+        return pickFrom(localPos, worldSeed, carriageIndex, states);
+    }
+
+    /**
+     * Difficulty-aware pick. Mob (spawn-egg) entries whose {@link VariantState#difficulty}
+     * band excludes {@code tier} are dropped from the candidate pool <b>before</b>
+     * the weighted roll, so the cell re-rolls among the in-range candidates
+     * (another egg or a block). Block entries are always eligible. Returns
+     * {@code null} when the cell has no candidate, or when every candidate is
+     * out of band (the caller then leaves the cell as the stamped interior).
+     *
+     * <p>With the default band on every entry the eligible list equals the
+     * full list, so the pick is bit-identical to
+     * {@link #resolve(BlockPos, long, int)} — pre-v8 sidecars are unaffected.
+     * The block pass and the deferred mob pass call this with the same
+     * {@code (localPos, seed, carriageIndex, tier)} — {@code tier} derived from
+     * the carriage's own index — so they always agree on the result regardless
+     * of when each pass runs.</p>
+     */
+    public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex, int tier) {
+        List<VariantState> states = entries.get(localPos);
+        if (states == null || states.isEmpty()) return null;
+        boolean anyGated = false;
+        for (VariantState s : states) {
+            if (s.isMob() && !s.difficulty().eligible(tier)) { anyGated = true; break; }
+        }
+        if (!anyGated) return pickFrom(localPos, worldSeed, carriageIndex, states);
+        List<VariantState> eligible = new ArrayList<>(states.size());
+        for (VariantState s : states) {
+            if (!s.isMob() || s.difficulty().eligible(tier)) eligible.add(s);
+        }
+        if (eligible.isEmpty()) return null;
+        return pickFrom(localPos, worldSeed, carriageIndex, eligible);
+    }
+
+    /** Shared weighted/locked pick over an explicit (already difficulty-filtered) candidate list. */
+    private VariantState pickFrom(BlockPos localPos, long worldSeed, int carriageIndex, List<VariantState> states) {
         int lockId = lockIdAt(localPos);
         int idx;
         if (lockId > 0) {
