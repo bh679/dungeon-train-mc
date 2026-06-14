@@ -121,8 +121,10 @@ public final class BookFactory {
      *   <li>If the world has any in-progress story (started, not complete) —
      *       the next-unread letter of that story.</li>
      *   <li>Otherwise — a random pick from the world's uncompleted stories,
-     *       seeded by {@code lecternSeed} so the same lectern shows the same
-     *       story across re-clicks until something actually advances.</li>
+     *       seeded by {@code lecternSeed} mixed with the world seed (so the
+     *       pick differs per world rather than being fixed by the lectern's
+     *       deterministic coordinate), stable across re-clicks until something
+     *       actually advances.</li>
      *   <li>If every story is complete → {@link Optional#empty()}.</li>
      * </ol>
      *
@@ -141,9 +143,18 @@ public final class BookFactory {
     ) {
         NarrativeProgressData data = NarrativeProgressData.get(overworld);
 
+        // Mix the world seed into the lectern-position seed. The train spawns
+        // at a deterministic origin, so the first lectern a player reaches sits
+        // at a near-constant coordinate — without this, floorMod(pos, n) lands
+        // on the same story every world (the "always pip" bug). The world seed
+        // is the per-world random constant chosen at world creation: stable
+        // across reloads, different per world. Drives both the random-pick
+        // fallback and the variant pick.
+        long seed = lecternSeed + overworld.getSeed();
+
         Optional<String> chosen = data.currentInProgressStory();
         if (chosen.isEmpty()) {
-            chosen = data.randomUncompletedStory(lecternSeed);
+            chosen = data.randomUncompletedStory(seed);
         }
         if (chosen.isEmpty()) return Optional.empty();
 
@@ -157,7 +168,7 @@ public final class BookFactory {
         Letter letter = story.letterByIndex(next).orElse(null);
         if (letter == null) return Optional.empty();
 
-        return Optional.of(buildSignedBook(story, letter, lecternSeed));
+        return Optional.of(buildSignedBook(story, letter, seed));
     }
 
     /**

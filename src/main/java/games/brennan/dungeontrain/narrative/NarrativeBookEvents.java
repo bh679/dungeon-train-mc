@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.narrative;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import net.minecraft.core.BlockPos;
@@ -137,6 +138,14 @@ public final class NarrativeBookEvents {
         boolean variantNewly = false;
         if (id.variantIndex() >= 0) {
             variantNewly = data.markStoryVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
+        }
+        // Global, cross-world shared read-record. Per-world `data` above still
+        // drives lectern selection; this store is what the story advancements
+        // read, so "read every story" accumulates across worlds instead of
+        // resetting each new world.
+        GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+        if (id.variantIndex() >= 0) {
+            GlobalNarrativeProgress.markVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
         }
         if (letterNewly) {
             LOGGER.info("[DungeonTrain] Narrative: world marked {} letter {} read (by {})",

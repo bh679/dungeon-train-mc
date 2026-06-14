@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
@@ -25,8 +26,10 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -222,6 +225,13 @@ public final class CarriageContentsPlacer {
             StructureTemplate template = stored.get();
             if (placeBlocks) {
                 stampTemplateBlocks(level, origin, template);
+                // Narrative lecterns must spawn EMPTY so they resolve their book
+                // lazily on first right-click (via BookFactory.buildOrRandomForLectern)
+                // instead of showing a book baked into the template. Some carriage
+                // templates (campire/fireside) were mis-authored with a resolved pip
+                // book in the lectern's block-entity; strip any such book so every
+                // narrative lectern starts virgin and the per-world picker runs.
+                clearBakedNarrativeLecternBooks(level, origin, size);
             }
             if (spawnEntities) {
                 spawnEntitiesFromTemplate(level, origin, template, carriagePIdx, contents, size, seed);
@@ -259,6 +269,33 @@ public final class CarriageContentsPlacer {
             LOGGER.warn("[DungeonTrain] No contents placed — contents={} origin={} reason=no-nbt-no-fallback. Check {} exists and matches interior size {}x{}x{}.",
                 contents.id(), origin, CarriageContentsStore.fileFor(contents),
                 size.getX(), size.getY(), size.getZ());
+        }
+    }
+
+    /**
+     * Force every {@code dungeontrain:narrative_lectern} in the just-placed
+     * interior to spawn with an EMPTY block-entity, so it resolves its book
+     * lazily on first right-click instead of showing a book baked into the
+     * template. Defends against carriage templates saved in the editor with a
+     * resolved lectern book (the "always pip" bug — campire/fireside shipped
+     * with a pip book baked into the lectern BE).
+     */
+    private static void clearBakedNarrativeLecternBooks(ServerLevel level, BlockPos origin, Vec3i size) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (int dx = 0; dx < size.getX(); dx++) {
+            for (int dy = 0; dy < size.getY(); dy++) {
+                for (int dz = 0; dz < size.getZ(); dz++) {
+                    cursor.set(origin.getX() + dx, origin.getY() + dy, origin.getZ() + dz);
+                    if (!(level.getBlockState(cursor).getBlock() instanceof NarrativeLecternBlock)) {
+                        continue;
+                    }
+                    if (level.getBlockEntity(cursor) instanceof LecternBlockEntity lectern
+                            && !lectern.getBook().isEmpty()) {
+                        lectern.setBook(ItemStack.EMPTY);
+                        lectern.setChanged();
+                    }
+                }
+            }
         }
     }
 
