@@ -35,6 +35,7 @@ import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -708,10 +709,36 @@ public final class CarriageContentsPlacer {
      * substituted in the first band — nether mobs and pillager/illager raiders. Backed by the
      * {@code dungeontrain:first_band_magma_mobs} data tag (which includes
      * {@code #minecraft:raiders}), so the roster is tunable without recompiling.
+     *
+     * <p>Members that are also in {@link #FIRST_BAND_NETHER_ONLY_MOBS} only magma-cube inside the
+     * Nether; outside the Nether they spawn as authored. {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS} are
+     * never substituted at all (see {@link #trySpawnFirstBandSubstitute}).</p>
      */
     private static final TagKey<EntityType<?>> FIRST_BAND_MAGMA_MOBS =
         TagKey.create(Registries.ENTITY_TYPE,
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_magma_mobs"));
+
+    /**
+     * Entity types that are <b>never</b> substituted during the first band — they always spawn as
+     * authored, in every dimension (e.g. {@code zombified_piglin}, which is Nether-native and
+     * shouldn't be downgraded to a magma cube even in the Nether). Highest precedence: overrides
+     * both {@link #FIRST_BAND_NETHER_ONLY_MOBS} and {@link #FIRST_BAND_MAGMA_MOBS}. Backed by the
+     * {@code dungeontrain:first_band_no_substitute_mobs} data tag, tunable without recompiling.
+     */
+    private static final TagKey<EntityType<?>> FIRST_BAND_NO_SUBSTITUTE_MOBS =
+        TagKey.create(Registries.ENTITY_TYPE,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_no_substitute_mobs"));
+
+    /**
+     * Entity types that are only substituted (to a magma cube) while the train is in the
+     * <b>Nether</b> ({@code piglin}, {@code piglin_brute}); outside the Nether they spawn as
+     * authored, since a magma cube is a Nether creature and a real piglin would zombify in the
+     * overworld. Members should also live in {@link #FIRST_BAND_MAGMA_MOBS} so they magma-cube in
+     * the Nether. Backed by the {@code dungeontrain:first_band_nether_only_mobs} data tag.
+     */
+    private static final TagKey<EntityType<?>> FIRST_BAND_NETHER_ONLY_MOBS =
+        TagKey.create(Registries.ENTITY_TYPE,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_nether_only_mobs"));
 
     /**
      * First-band mob substitution. When {@link DifficultyProgression#firstLevelEasyMobs} holds
@@ -720,7 +747,10 @@ public final class CarriageContentsPlacer {
      * {@link #FIRST_BAND_MAGMA_MOBS} — at {@code pos}, tagged + persisted exactly like a
      * carriage-contents mob, and returns {@code true} so the caller skips the original. Returns
      * {@code false} (caller spawns the original as authored) for editor previews (sentinel pIdx),
-     * non-hostile mobs, or when not in the easy-mobs band.
+     * non-hostile mobs, when not in the easy-mobs band, for {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS}
+     * (never substituted, e.g. zombified piglin), or for {@link #FIRST_BAND_NETHER_ONLY_MOBS}
+     * outside the Nether. The slime / magma / no-substitute decision is delegated to
+     * {@link DifficultyProgression#firstBandSubstitute}.
      */
     private static boolean trySpawnFirstBandSubstitute(ServerLevel level, Entity original,
                                                        Vec3 pos, int carriagePIdx) {
@@ -728,7 +758,14 @@ public final class CarriageContentsPlacer {
         if (!(original instanceof Enemy)) return false;
         if (!DifficultyProgression.firstLevelEasyMobs(level)) return false;
 
-        Slime sub = original.getType().builtInRegistryHolder().is(FIRST_BAND_MAGMA_MOBS)
+        var holder = original.getType().builtInRegistryHolder();
+        DifficultyProgression.FirstBandSubstitute kind = DifficultyProgression.firstBandSubstitute(
+            holder.is(FIRST_BAND_NO_SUBSTITUTE_MOBS),
+            holder.is(FIRST_BAND_NETHER_ONLY_MOBS),
+            holder.is(FIRST_BAND_MAGMA_MOBS),
+            level.dimension().equals(Level.NETHER));
+        if (kind == DifficultyProgression.FirstBandSubstitute.NONE) return false; // spawn as authored
+        Slime sub = kind == DifficultyProgression.FirstBandSubstitute.MAGMA_CUBE
             ? EntityType.MAGMA_CUBE.create(level)
             : EntityType.SLIME.create(level);
         if (sub == null) return true; // creation failed — still suppress the original hostile
