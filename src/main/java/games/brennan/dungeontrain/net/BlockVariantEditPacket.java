@@ -61,6 +61,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *       the container-contents menu anchored on the same face. Edits in
  *       that menu route to {@code LootPrefabStore.save} as usual for a
  *       linked cell, propagating to every linked container.</li>
+ *   <li>{@link Op#BUMP_DIFF_MIN} / {@link Op#BUMP_DIFF_MAX} — adjust a mob
+ *       entry's difficulty band ({@code entryIndex} = row, {@code delta}
+ *       signed). The server cycles the value the same way the
+ *       container-contents {@code fillMin} / {@code fillMax} cells do:
+ *       {@code max} runs {@code all → 0 → … → cap → all}; {@code min} wraps
+ *       {@code [0, ceiling]}. No-op on non-mob rows.</li>
  * </ul>
  *
  * <p>The server validates that the player is OP and is standing inside
@@ -72,7 +78,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
 
     public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_LOCK_ID, COPY,
                      PREVIEW_ENTRY, SET_ROTATION_MODE, SET_ROTATION_DIRS,
-                     OPEN_LINKED_CONTAINER, SET_HALF_MODE }
+                     OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

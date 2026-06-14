@@ -126,9 +126,14 @@ public final class CarriageVariantBlocks {
      *       {@code random}. The {@code "double"} half — used by full-height
      *       slabs — is not representable; capture a DOUBLE slab as a
      *       separate variant with the field omitted.</p></li>
+     *   <li>v8 — adds an optional per-entry {@code difficulty} object
+     *       ({@code {"min": N, "max": N|"all"}}) on mob entries. At spawn the
+     *       cell drops eggs whose band excludes the carriage's difficulty tier
+     *       before the weighted pick. Omitted when the band is the default
+     *       ({@code min 0 / max all}), so v7 entries round-trip diff-clean.</li>
      * </ul>
      */
-    public static final int CURRENT_SCHEMA_VERSION = 7;
+    public static final int CURRENT_SCHEMA_VERSION = 8;
 
     static final String SUBDIR = "templates";
     private static final String EXT = ".variants.json";
@@ -378,8 +383,9 @@ public final class CarriageVariantBlocks {
                 // fidelity in case future schema lets mobs carry it.
                 VariantHalf mobHalf = parseHalf(obj.get("half"), contextId, contextPos);
                 if (mobHalf == null) mobHalf = VariantHalf.NONE;
+                VariantDifficulty mobDiff = parseDifficulty(obj.get("difficulty"), contextId, contextPos);
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
-                return mob.withHalf(mobHalf);
+                return mob.withHalf(mobHalf).withDifficulty(mobDiff);
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -942,6 +948,9 @@ public final class CarriageVariantBlocks {
             if (!s.half().isDefault()) {
                 sb.append(", \"half\": \"").append(halfModeName(s.half().mode())).append("\"");
             }
+            if (!s.difficulty().isDefault()) {
+                appendDifficultyJson(sb, s.difficulty());
+            }
             sb.append("}");
             return;
         }
@@ -1030,6 +1039,48 @@ public final class CarriageVariantBlocks {
                 contextId, contextPos, raw);
             return VariantHalf.NONE;
         }
+    }
+
+    /**
+     * Parse an optional {@code "difficulty"} object ({@code {"min": N, "max": N|"all"}})
+     * for mob entries. Returns {@link VariantDifficulty#NONE} when the field is
+     * missing or malformed. {@code max} accepts a number or the string
+     * {@code "all"} ({@link VariantDifficulty#ALL} — no upper bound). The
+     * {@link VariantDifficulty} canonical constructor re-clamps the range.
+     */
+    private static VariantDifficulty parseDifficulty(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonObject()) return VariantDifficulty.NONE;
+        JsonObject obj = el.getAsJsonObject();
+        int min = 0;
+        if (obj.has("min") && obj.get("min").isJsonPrimitive()
+            && obj.get("min").getAsJsonPrimitive().isNumber()) {
+            min = obj.get("min").getAsInt();
+        }
+        int max = VariantDifficulty.ALL;
+        if (obj.has("max") && obj.get("max").isJsonPrimitive()) {
+            if (obj.get("max").getAsJsonPrimitive().isNumber()) {
+                max = obj.get("max").getAsInt();
+            } else if (obj.get("max").getAsJsonPrimitive().isString()) {
+                String raw = obj.get("max").getAsString().trim();
+                if (!raw.equalsIgnoreCase("all")) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown difficulty max '{}', treating as all.",
+                        contextId, contextPos, raw);
+                }
+                max = VariantDifficulty.ALL;
+            }
+        }
+        return new VariantDifficulty(min, max);
+    }
+
+    /** Emit a non-default {@code "difficulty"} object; {@code max} writes {@code "all"} for the sentinel. */
+    private static void appendDifficultyJson(StringBuilder sb, VariantDifficulty d) {
+        sb.append(", \"difficulty\": {\"min\": ").append(d.min()).append(", \"max\": ");
+        if (d.max() == VariantDifficulty.ALL) {
+            sb.append("\"all\"");
+        } else {
+            sb.append(d.max());
+        }
+        sb.append("}");
     }
 
     /**

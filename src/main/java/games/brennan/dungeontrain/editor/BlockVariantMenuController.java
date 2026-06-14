@@ -188,7 +188,8 @@ public final class BlockVariantMenuController {
                 stateStr, beNbt, s.weight(),
                 (byte) rot.mode().ordinal(), (byte) rot.dirMask(),
                 s.linkedLootPrefabId(), entityId,
-                (byte) s.half().mode().ordinal()));
+                (byte) s.half().mode().ordinal(),
+                s.difficulty().min(), s.difficulty().max()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up);
     }
@@ -436,6 +437,55 @@ public final class BlockVariantMenuController {
                 if (ord < 0 || ord >= modes.length) return;
                 VariantHalf next = new VariantHalf(modes[ord]);
                 mutated.set(idx, mutated.get(idx).withHalf(next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case BUMP_DIFF_MIN -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob()) return;
+                VariantDifficulty band = entry.difficulty();
+                // Wrap min in [0, upperBound] — upperBound is max (or MAX_TIER
+                // when the band is unbounded). Mirrors BUMP_FILL_MIN.
+                int cur = band.min();
+                int upperBound = band.max() == VariantDifficulty.ALL
+                    ? VariantDifficulty.MAX_TIER : band.max();
+                int next0;
+                if (packet.delta() < 0 && cur <= 0) {
+                    next0 = upperBound;
+                } else if (packet.delta() > 0 && cur >= upperBound) {
+                    next0 = 0;
+                } else {
+                    next0 = Math.max(0, Math.min(upperBound, cur + packet.delta()));
+                }
+                mutated.set(idx, entry.withDifficulty(band.withMin(next0)));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case BUMP_DIFF_MAX -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob()) return;
+                VariantDifficulty band = entry.difficulty();
+                // Cycle ALL → 0 → 1 … → MAX_TIER → ALL. Mirrors BUMP_FILL_MAX.
+                int cur = band.max();
+                int next0;
+                if (packet.delta() > 0) {
+                    next0 = cur == VariantDifficulty.ALL ? 0 : cur + 1;
+                    if (next0 > VariantDifficulty.MAX_TIER) next0 = VariantDifficulty.ALL;
+                } else {
+                    next0 = cur == VariantDifficulty.ALL
+                        ? VariantDifficulty.MAX_TIER
+                        : (cur == 0 ? VariantDifficulty.ALL : cur - 1);
+                }
+                // Bring min down if it would exceed the new finite ceiling.
+                int newMin = band.min();
+                if (next0 != VariantDifficulty.ALL && newMin > next0) newMin = next0;
+                mutated.set(idx, entry.withDifficulty(new VariantDifficulty(newMin, next0)));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

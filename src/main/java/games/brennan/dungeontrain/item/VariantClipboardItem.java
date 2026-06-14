@@ -93,6 +93,9 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_ENTITY_ID = "eid";
     /** Per-entry half-mode ordinal (slabs / stairs / trapdoors). Absent when default RANDOM. */
     private static final String NBT_HALF_MODE = "hm";
+    /** Per-entry difficulty band (v8 schema, mob entries). Absent when the default 0/all band. */
+    private static final String NBT_DIFF_MIN = "dmin";
+    private static final String NBT_DIFF_MAX = "dmax";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -267,6 +270,10 @@ public final class VariantClipboardItem extends Item {
             if (!s.half().isDefault()) {
                 entry.putByte(NBT_HALF_MODE, (byte) s.half().mode().ordinal());
             }
+            if (!s.difficulty().isDefault()) {
+                entry.putInt(NBT_DIFF_MIN, s.difficulty().min());
+                entry.putInt(NBT_DIFF_MAX, s.difficulty().max());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -367,6 +374,15 @@ public final class VariantClipboardItem extends Item {
                     half = new games.brennan.dungeontrain.editor.VariantHalf(modes[ord]);
                 }
             }
+            games.brennan.dungeontrain.editor.VariantDifficulty difficulty =
+                games.brennan.dungeontrain.editor.VariantDifficulty.NONE;
+            if (entry.contains(NBT_DIFF_MIN, Tag.TAG_INT) || entry.contains(NBT_DIFF_MAX, Tag.TAG_INT)) {
+                int dmin = entry.contains(NBT_DIFF_MIN, Tag.TAG_INT) ? entry.getInt(NBT_DIFF_MIN) : 0;
+                int dmax = entry.contains(NBT_DIFF_MAX, Tag.TAG_INT)
+                    ? entry.getInt(NBT_DIFF_MAX)
+                    : games.brennan.dungeontrain.editor.VariantDifficulty.ALL;
+                difficulty = new games.brennan.dungeontrain.editor.VariantDifficulty(dmin, dmax);
+            }
             // v7 mob entry: presence of NBT_ENTITY_ID drives the mob branch.
             if (entry.contains(NBT_ENTITY_ID, Tag.TAG_STRING)) {
                 String eidStr = entry.getString(NBT_ENTITY_ID);
@@ -375,7 +391,7 @@ public final class VariantClipboardItem extends Item {
                     LOGGER.warn("[DungeonTrain] VariantClipboard: skipping bad entity id '{}'", eidStr);
                     continue;
                 }
-                out.add(VariantState.ofMob(eid, beNbt, weight, rotation).withHalf(half));
+                out.add(VariantState.ofMob(eid, beNbt, weight, rotation).withHalf(half).withDifficulty(difficulty));
                 continue;
             }
             String stateStr = entry.getString(NBT_STATE);

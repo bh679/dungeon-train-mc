@@ -92,6 +92,44 @@ final class BlockVariantSyncPacketTest {
         assertNull(entry.linkedLootPrefabId());
     }
 
+    @Test
+    @DisplayName("round-trip preserves the v8 difficulty band (finite + all/unbounded)")
+    void roundTrip_difficultyBand() {
+        // Block row: default band 0 / all (-1).
+        BlockVariantSyncPacket.Entry blockEntry = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null, (byte) 1, 0, -1);
+        // Mob row: finite band 2..5.
+        BlockVariantSyncPacket.Entry mobBanded = new BlockVariantSyncPacket.Entry(
+            "minecraft:command_block", null, 1, (byte) 1, (byte) 0, null, "minecraft:zombie", (byte) 1, 2, 5);
+        // Mob row: min 3, unbounded ("all") max.
+        BlockVariantSyncPacket.Entry mobAll = new BlockVariantSyncPacket.Entry(
+            "minecraft:command_block", null, 1, (byte) 1, (byte) 0, null, "minecraft:husk", (byte) 1, 3, -1);
+        BlockVariantSyncPacket original = new BlockVariantSyncPacket(
+            "carriage:cage", new BlockPos(1, 0, 1),
+            List.of(blockEntry, mobBanded, mobAll), 0,
+            Vec3.ZERO, Vec3.ZERO, Vec3.ZERO);
+
+        BlockVariantSyncPacket decoded = roundTrip(original);
+
+        assertEquals(0, decoded.entries().get(0).minDiff());
+        assertEquals(-1, decoded.entries().get(0).maxDiff());
+        assertEquals(2, decoded.entries().get(1).minDiff());
+        assertEquals(5, decoded.entries().get(1).maxDiff());
+        assertEquals(3, decoded.entries().get(2).minDiff());
+        assertEquals(-1, decoded.entries().get(2).maxDiff());
+    }
+
+    @Test
+    @DisplayName("halfMode backward-compat constructor defaults difficulty band to 0 / all")
+    void backCompatConstructor_defaultBand() {
+        // The 8-arg (…, halfMode) constructor predates the v8 band, so it must
+        // default minDiff=0 / maxDiff=-1 (all).
+        BlockVariantSyncPacket.Entry entry = new BlockVariantSyncPacket.Entry(
+            "minecraft:command_block", null, 1, (byte) 1, (byte) 0, null, "minecraft:zombie", (byte) 1);
+        assertEquals(0, entry.minDiff());
+        assertEquals(-1, entry.maxDiff());
+    }
+
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);
