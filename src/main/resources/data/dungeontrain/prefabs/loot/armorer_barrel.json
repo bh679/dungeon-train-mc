@@ -3,7 +3,7 @@
   "block": "minecraft:barrel",
   "category": "loot",
   "fillMin": 1,
-  "fillMax": 6,
+  "fillMax": 4,
   "entries": [
     { "id": "minecraft:coal_block", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:coal", "count": 21, "weight": 43, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },

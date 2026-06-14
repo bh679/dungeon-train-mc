@@ -3,7 +3,7 @@
   "block": "minecraft:chest",
   "category": "loot",
   "fillMin": 1,
-  "fillMax": 10,
+  "fillMax": 4,
   "entries": [
     { "id": "minecraft:emerald_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:iron_block", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -12,7 +12,7 @@
     { "id": "minecraft:iron_leggings", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
     { "id": "minecraft:iron_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:iron_ingot", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:emerald", "count": 15, "weight": 46, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:emerald", "count": 4, "weight": 46, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:coal_block", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:coal", "count": 16, "weight": 51, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
     { "id": "minecraft:coal_ore", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
