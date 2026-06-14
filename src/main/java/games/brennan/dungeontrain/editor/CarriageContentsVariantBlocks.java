@@ -302,8 +302,10 @@ public final class CarriageContentsVariantBlocks {
      * band excludes {@code tier} are dropped from the candidate pool <b>before</b>
      * the weighted roll, so the cell re-rolls among the in-range candidates
      * (another egg or a block). Block entries are always eligible. Returns
-     * {@code null} when the cell has no candidate, or when every candidate is
-     * out of band (the caller then leaves the cell as the stamped interior).
+     * {@code null} when the cell has no candidate, or when every candidate is an
+     * out-of-band mob — in the latter case the block-placement pass
+     * ({@code CarriageContentsPlacer#applyVariantBlocks}) clears the cell to air
+     * (the mob would have occupied an air cell) and the mob pass spawns nothing.
      *
      * <p>With the default band on every entry the eligible list equals the
      * full list, so the pick is bit-identical to
