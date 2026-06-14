@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bh679/dungeon-train-mc/.github/release-notes/schema/changelog.schema.json",
+  "title": "Changelog Ledger",
+  "description": "Per-version changelog ledger. One curated entry per Gate-3 merge; entries are marked released by release.yml on a successful real release.",
+  "type": "object",
+  "required": ["entries"],
+  "additionalProperties": false,
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/entry"}
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "type", "title", "summary", "date", "released"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$",
+          "description": "Unique slug. Must not collide with any existing entry."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "mod_version this merge ships as (computed at Gate 3). Descriptive only; release inclusion is governed by 'released'."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["feat", "fix", "content", "perf", "refactor", "chore", "docs", "ci", "test"]
+        },
+        "title": {"type": "string", "minLength": 1},
+        "summary": {"type": "string", "minLength": 1},
+        "highlights": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "description": "Optional player-facing bullet points."
+        },
+        "pr": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optional PR number."
+        },
+        "date": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "UTC merge date (YYYY-MM-DD)."
+        },
+        "released": {
+          "type": "boolean",
+          "description": "False until shipped. Flipped true by release.yml on a successful real release."
+        },
+        "released_in": {
+          "type": ["string", "null"],
+          "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "Release tag the entry shipped in, e.g. v0.292.0. Null while unreleased."
+        },
+        "released_at": {
+          "type": ["string", "null"],
+          "description": "UTC timestamp the entry was marked released. Null while unreleased."
+        }
+      }
+    }
+  }
+}
