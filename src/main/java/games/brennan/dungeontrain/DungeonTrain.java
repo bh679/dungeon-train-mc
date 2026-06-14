@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DevPingService;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -26,6 +27,8 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
+
+import java.util.UUID;
 
 /**
  * Dungeon Train — Minecraft port of the itch.io game.
@@ -123,6 +126,15 @@ public class DungeonTrain {
                 return "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
             }
             @Override public boolean suppressAutoDeathReport() { return true; } // DT posts its own "Run Ended"
+            @Override public String joinMessageSuffix(UUID playerId, String playerName) {
+                // Always tag the build version on the Discord join message; additionally append the
+                // relay dev-ping marker the first time a player starts a NEW world after their
+                // first-ever death (once per player; dormant unless developerPingRelayToken is set).
+                String version = "DungeonTrain " + ModList.get().getModContainerById(MOD_ID)
+                        .map(c -> c.getModInfo().getVersion().toString()).orElse("");
+                String marker = DevPingService.relayMarkerIfQualifies(playerId);
+                return marker.isBlank() ? version : version + "\n" + marker;
+            }
         });
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob

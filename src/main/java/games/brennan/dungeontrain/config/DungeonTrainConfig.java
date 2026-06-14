@@ -62,6 +62,8 @@ public final class DungeonTrainConfig {
     public static final int DEFAULT_RANDOM_BOOK_ONE_IN = 100;
 
     public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
+    /** Blank by default: the developer first-new-world-after-death ping ships dormant. */
+    public static final String DEFAULT_DEVELOPER_PING_RELAY_TOKEN = "";
 
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_ENABLED = true;
@@ -85,6 +87,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
+    public static final ModConfigSpec.ConfigValue<String> DEVELOPER_PING_RELAY_TOKEN;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
 
@@ -107,6 +110,7 @@ public final class DungeonTrainConfig {
         FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
+        DEVELOPER_PING_RELAY_TOKEN = pair.getLeft().developerPingRelayToken;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
     }
@@ -172,6 +176,13 @@ public final class DungeonTrainConfig {
                         "config/discordpresence-server.toml. To avoid a duplicate post, also set autoDeathReport=false",
                         "there (this richer report replaces Discord Presence's basic vanilla one).")
                 .define("deathReportToDiscord", DEFAULT_DEATH_REPORT_TO_DISCORD);
+        ModConfigSpec.ConfigValue<String> developerPingRelayToken = b
+                .comment("Sentinel token appended to a player's Discord join message the first time they start a",
+                        "NEW world after their first-ever death (once per player, ever). The brennan.games relay",
+                        "swaps this token for the developer's <@mention> and enables the ping; the developer's",
+                        "Discord id never ships in the jar. BLANK (default) = feature dormant: nothing is appended",
+                        "and players stay eligible until a token is set. Requires the bundled Discord Presence mod.")
+                .define("developerPingRelayToken", DEFAULT_DEVELOPER_PING_RELAY_TOKEN);
         b.pop();
         b.push("intro");
         ModConfigSpec.BooleanValue introCinematicEnabled = b
@@ -186,7 +197,7 @@ public final class DungeonTrainConfig {
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
                 difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay, firstLevelEasyMobs,
-                firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
+                firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord, developerPingRelayToken,
                 introCinematicEnabled, introCinematicDurationTicks);
     }
 
@@ -262,6 +273,15 @@ public final class DungeonTrainConfig {
     /** Whether to post the death-screen run summary to Discord (via the bundled Discord Presence mod). */
     public static boolean isDeathReportToDiscord() {
         return isLoaded() ? DEATH_REPORT_TO_DISCORD.get() : DEFAULT_DEATH_REPORT_TO_DISCORD;
+    }
+
+    /**
+     * Relay sentinel token for the developer "first new world after first death" join ping, or
+     * {@code ""} (dormant) when unset / outside a loaded world. The brennan.games relay swaps a
+     * non-blank token for the developer's {@code <@mention>}.
+     */
+    public static String getDeveloperPingRelayToken() {
+        return isLoaded() ? DEVELOPER_PING_RELAY_TOKEN.get() : DEFAULT_DEVELOPER_PING_RELAY_TOKEN;
     }
 
     /** Whether the fly-up spawn cinematic plays the first time a player enters a world. */
@@ -356,6 +376,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue firstLevelStarterLoot,
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
             ModConfigSpec.BooleanValue deathReportToDiscord,
+            ModConfigSpec.ConfigValue<String> developerPingRelayToken,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks
     ) {}

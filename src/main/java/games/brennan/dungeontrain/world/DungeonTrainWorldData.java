@@ -43,6 +43,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_GENERATION_SEED = "generationSeed";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
+    private static final String TAG_WORLD_CREATED_AT = "worldCreatedAtMillis";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -51,6 +52,12 @@ public final class DungeonTrainWorldData extends SavedData {
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
     private Integer playerMobSpawnOneInOverride;
+    /**
+     * Wall-clock millis when this world was first created (stamped once in {@link #createDefault()};
+     * 0 for worlds created before this field existed). Gates the developer first-new-world ping —
+     * which only fires for a world created after a player's first death (see {@code DevPingService}).
+     */
+    private long worldCreatedAtMillis;
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -80,13 +87,17 @@ public final class DungeonTrainWorldData extends SavedData {
     }
 
     private static DungeonTrainWorldData createDefault() {
-        return new DungeonTrainWorldData(
+        DungeonTrainWorldData data = new DungeonTrainWorldData(
                 DungeonTrainConfig.getTrainY(),
                 true,
                 CarriageDims.DEFAULT,
                 0L,
                 StartingDimension.OVERWORLD
         );
+        // Stamp the world's birth time once, at first creation (no .dat yet). It persists via the
+        // seed re-seed setDirty() in get(); used to detect a "new world" for the developer ping.
+        data.worldCreatedAtMillis = System.currentTimeMillis();
+        return data;
     }
 
     private static DungeonTrainWorldData load(CompoundTag tag) {
@@ -111,6 +122,9 @@ public final class DungeonTrainWorldData extends SavedData {
                 ? StartingDimension.fromNbt(tag.getString(TAG_STARTING_DIMENSION))
                 : StartingDimension.OVERWORLD;
         DungeonTrainWorldData data = new DungeonTrainWorldData(y, s, d, seed, sd);
+        // World creation time; absent (0) on worlds created before this field existed, so those
+        // worlds never qualify as a "new world after death" (the developer ping is forward-looking).
+        data.worldCreatedAtMillis = tag.contains(TAG_WORLD_CREATED_AT) ? tag.getLong(TAG_WORLD_CREATED_AT) : 0L;
         // Optional per-world override; absent on legacy / un-overridden worlds → null → global default.
         if (tag.contains(TAG_PLAYER_MOB_SPAWN_OVERRIDE)) {
             data.playerMobSpawnOneInOverride = tag.getInt(TAG_PLAYER_MOB_SPAWN_OVERRIDE);
@@ -127,6 +141,7 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putInt(TAG_CARRIAGE_HEIGHT, dims.height());
         tag.putLong(TAG_GENERATION_SEED, generationSeed);
         tag.putString(TAG_STARTING_DIMENSION, startingDimension.nbtId());
+        tag.putLong(TAG_WORLD_CREATED_AT, worldCreatedAtMillis);
         // Only persist the override when set, so "unset" stays distinguishable from "0 (disabled)".
         if (playerMobSpawnOneInOverride != null) {
             tag.putInt(TAG_PLAYER_MOB_SPAWN_OVERRIDE, playerMobSpawnOneInOverride);
@@ -148,6 +163,11 @@ public final class DungeonTrainWorldData extends SavedData {
 
     public long getGenerationSeed() {
         return generationSeed;
+    }
+
+    /** Wall-clock millis this world was first created, or 0 for worlds created before this field. */
+    public long getWorldCreatedAtMillis() {
+        return worldCreatedAtMillis;
     }
 
     public StartingDimension startingDimension() {

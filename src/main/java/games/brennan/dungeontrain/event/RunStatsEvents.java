@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
+import games.brennan.dungeontrain.discord.GlobalDeathPingStore;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerRunState;
@@ -129,6 +130,10 @@ public final class RunStatsEvents {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        // Record the player's first-ever death (cross-world, stamped once) so the developer
+        // "first new world after first death" Discord ping can fire on a later world. Independent
+        // of the death-report-to-Discord config below; later deaths are no-ops.
+        GlobalDeathPingStore.recordFirstDeathIfUnset(player.getUUID(), System.currentTimeMillis());
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         // Snapshot armor at death — the keep-inventory gamerule and respawn
         // both run AFTER LivingDeathEvent, so the equipment slots still

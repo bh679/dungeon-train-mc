@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.bootstrap.BootstrapProgress;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DevPingService;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -70,6 +71,11 @@ public final class TrainBootstrapEvents {
         // per-world DT choices.
         ServerLevel overworld = event.getServer().overworld();
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+
+        // Cache this world's creation time for the developer first-new-world-after-death Discord
+        // ping (read on the server thread from the join handler — see DevPingService). Set before
+        // the startsWithTrain early-return so the new world's value is always refreshed.
+        DevPingService.setCurrentWorldCreatedAt(data.getWorldCreatedAtMillis());
 
         if (!data.startsWithTrain()) {
             LOGGER.info("[DungeonTrain] startsWithTrain=false — skipping bootstrap auto-spawn");
