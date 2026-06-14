@@ -192,6 +192,45 @@ jobs:
           retry-delay: 10000
           fail-mode: warn
 
+      # After a successful real release (auto=false), mark the shipped changelog
+      # entries released so the next release's "unreleased" set starts clean.
+      # The ~22 cascade micro-releases pass auto=true and skip this, so
+      # "unreleased" means "since the last real release". success() gates on the
+      # GitHub Release having been created (mc-publish uses fail-mode: warn so a
+      # Modrinth/CurseForge hiccup won't block this). Commits to main with
+      # [skip ci] so it triggers neither version-bump.yml nor build.yml.
+      - name: Mark changelog entries released
+        if: ${{ success() && inputs.auto == false }}
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          python3 scripts/release-notes/mark-released.py --released-in "$RELEASE_TAG"
+          if git diff --quiet -- .github/release-notes/changelog.json; then
+            echo "No changelog entries to mark — nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/release-notes/changelog.json
+          git commit -m "chore(release-notes): mark $RELEASE_TAG released [skip ci]"
+          # The release built from main HEAD; a scheduled cascade tick could have
+          # pushed in the meantime. Rebase our one-line flag flip on top and retry
+          # the push once before failing.
+          for attempt in 1 2; do
+            if git push origin HEAD:main; then
+              echo "Pushed changelog update on attempt $attempt."
+              exit 0
+            fi
+            if [ "$attempt" = "2" ]; then
+              echo "::error::Failed to push changelog update after rebase retry."
+              exit 1
+            fi
+            echo "Push rejected — fetching and rebasing before retry."
+            git fetch origin main
+            git rebase origin/main
+          done
+
       - name: Check Discord webhook prerequisites
         id: discord_check
         env:
