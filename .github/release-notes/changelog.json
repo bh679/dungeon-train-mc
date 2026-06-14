@@ -169,6 +169,23 @@
       "released": true,
       "released_in": "v0.301.0",
       "released_at": "2026-06-14T12:44:44Z"
+    },
+    {
+      "id": "advancements-keybind-hint",
+      "version": "0.301.0",
+      "type": "feat",
+      "title": "Advancements keybind reminder in chat",
+      "summary": "Earn a Dungeon Train advancement before you've ever opened the advancements screen and a short, train-flavoured message now points you at the key that opens it. It shows your actual (rebindable) keybind, picks at random from a dozen conductor-style lines, and quietly stops for good once you open the advancements screen.",
+      "highlights": [
+        "Chat reminder of the key that opens your advancements",
+        "Shows your real, rebindable keybind (not a hardcoded key)",
+        "Random from 12 train-flavoured lines; stops once you open the screen"
+      ],
+      "pr": 381,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

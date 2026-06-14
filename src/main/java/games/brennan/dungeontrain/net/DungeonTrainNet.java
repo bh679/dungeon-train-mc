@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "24";
+    public static final String PROTOCOL_VERSION = "25";
 
     private DungeonTrainNet() {}
 
@@ -80,6 +80,11 @@ public final class DungeonTrainNet {
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
         registrar.playToServer(CinematicDonePacket.TYPE, CinematicDonePacket.STREAM_CODEC, CinematicDonePacket::handle);
+
+        // Advancements keybind hint: server → the earning player on a gameplay
+        // advancement. The client decides whether to show it (gated on its local
+        // "opened advancements" flag) and renders it with the live keybind.
+        registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

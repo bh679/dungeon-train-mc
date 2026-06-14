@@ -48,6 +48,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue HUD_CHANNEL;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue OPENED_ADVANCEMENTS_BEFORE;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -58,6 +59,7 @@ public final class ClientDisplayConfig {
         HUD_CHANNEL = pair.getLeft().hudChannel;
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
+        OPENED_ADVANCEMENTS_BEFORE = pair.getLeft().openedAdvancementsBefore;
     }
 
     private ClientDisplayConfig() {}
@@ -84,7 +86,13 @@ public final class ClientDisplayConfig {
                 .define("optedOut", false);
         b.pop();
 
-        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut);
+        b.push("advancementsHint");
+        ModConfigSpec.BooleanValue openedAdvancementsBefore = b
+                .comment("Whether the player has ever opened the advancements screen on this install. While false, earning a Dungeon Train gameplay advancement shows a one-line chat hint reminding the player of the (rebindable) key that opens advancements. Flips to true the first time the advancements screen is closed, permanently silencing the hint. Reset this to false to see the hint again.")
+                .define("openedBefore", false);
+        b.pop();
+
+        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, openedAdvancementsBefore);
     }
 
     /**
@@ -186,11 +194,35 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_OPTED_OUT.save();
     }
 
+    // ----- Advancements keybind hint state -----
+
+    /**
+     * Has the player ever opened the advancements screen on this install? While
+     * {@code false}, earning a Dungeon Train gameplay advancement surfaces a
+     * one-line chat hint pointing at the (rebindable) advancements keybind.
+     */
+    public static boolean isOpenedAdvancementsBefore() {
+        return isLoaded() && OPENED_ADVANCEMENTS_BEFORE.get();
+    }
+
+    /**
+     * Persist the "opened advancements" flag. Idempotent: skips the
+     * {@code .save()} (a TOML write) when the value is unchanged, because this
+     * is called on every advancements-screen close, not just the first.
+     */
+    public static void setOpenedAdvancementsBefore(boolean value) {
+        if (!isLoaded()) return;
+        if (OPENED_ADVANCEMENTS_BEFORE.get() == value) return;
+        OPENED_ADVANCEMENTS_BEFORE.set(value);
+        OPENED_ADVANCEMENTS_BEFORE.save();
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
             ModConfigSpec.DoubleValue hudChannel,
             ModConfigSpec.BooleanValue developerPopupShownBefore,
-            ModConfigSpec.BooleanValue developerPopupOptedOut
+            ModConfigSpec.BooleanValue developerPopupOptedOut,
+            ModConfigSpec.BooleanValue openedAdvancementsBefore
     ) {}
 }
