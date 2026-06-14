@@ -42,7 +42,10 @@
       "highlights": [
         "Easy mobs (small slimes) are gated to the opening levels; tougher mobs appear only at higher difficulty",
         "Tuned difficulty windows across the skeleton, bogged, pillager, vindicator, zombie and slime carriages",
-        "Editors can set a per-egg min/max difficulty band in the block-variant menu (shift-click the max down to 'all')"
+        "Editors can set a per-egg min/max difficulty band in the block-variant menu (shift-click the max down to 'all')",
+        "Slimes are now an early-game threat: small slimes spawn first and taper off as difficulty climbs",
+        "Ranged skeletons, husks, bogged, pillager patrols and vindicators ramp in deeper, each on its own difficulty window",
+        "Added enemy variety and new spawn spots to the enemies and slime carriages, and re-tuned the caged-zombie spawns"
       ],
       "pr": 369,
       "date": "2026-06-14",
