@@ -122,8 +122,25 @@
       "released_at": "2026-06-14T11:49:57Z"
     },
     {
-      "id": "out-of-band-mob-cells-air",
+      "id": "leatherworker-shop-carriage",
       "version": "0.300.0",
+      "type": "feat",
+      "title": "Leatherworker shop carriage",
+      "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery \u2014 handy for patching together armour or recolouring your kit mid-run.",
+      "highlights": [
+        "New leatherworker shop carriage joins the train's rotating shops",
+        "Stocked with leather, the full leather-armour set and leather horse armour",
+        "A complete rainbow of dyes, plus emeralds, a cauldron, a potion and a water bucket"
+      ],
+      "pr": 377,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "out-of-band-mob-cells-air",
+      "version": "0.301.0",
       "type": "fix",
       "title": "Empty enemy spots no longer leave a stray block behind",
       "summary": "A carriage spot that can only hold enemies \u2014 and whose enemies are all the wrong level for your current depth \u2014 now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
