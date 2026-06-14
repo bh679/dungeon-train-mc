@@ -7,18 +7,12 @@
     "file_id": 8003927,
     "version": "1.2.1+mc1.21.1"
   },
-  "optional_mods": [
-    { "name": "Distant Horizons", "slug": "distant-horizons", "project_id": 508933, "file_id": 7375285, "version": "2.4.5-b-1.21.1" },
-    { "name": "Tectonic", "slug": "tectonic", "project_id": 686836, "file_id": 7903156, "version": "3.0.22-neoforge-21.1" },
-    { "name": "Lithostitched", "slug": "lithostitched", "project_id": 936015, "file_id": 8237649, "version": "1.7.10+beta3-neoforge-21.1" }
-  ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" },
     { "slug": "adventure-item-names", "type": "embeddedLibrary" },
     { "slug": "adventure-item-stats", "type": "embeddedLibrary" },
     { "slug": "interactive-player-mobs", "type": "embeddedLibrary" },
     { "slug": "distant-horizons", "type": "optionalDependency" },
-    { "slug": "tectonic", "type": "optionalDependency" },
-    { "slug": "lithostitched", "type": "optionalDependency" }
+    { "slug": "tectonic", "type": "optionalDependency" }
   ]
 }
