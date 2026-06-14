@@ -21,6 +21,22 @@ via NeoForge jarJar, so the pack only needs **two mod entries**:
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
 
+### Declared dependencies (CurseForge "Relations")
+
+The siblings are jarJar'd inside DT, so they must **not** be separate `files` entries (that
+would double-load them and break NeoForge). Instead the upload declares them as CurseForge
+**relations** — mirroring the mod's own `curseforge-dependencies` in `release.yml` — sourced
+from `curseforge_relations` in `modpack.config.json`:
+
+| Slug | Relation | Why |
+|---|---|---|
+| `sable` | `requiredDependency` | Un-bundled runtime dep (also a `files` entry). |
+| `adventure-item-names` | `embeddedLibrary` | jarJar'd inside DT. |
+| `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
+| `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
+
+Keep this list in sync with `release.yml`'s `curseforge-dependencies` if the mod's deps change.
+
 ## How it deploys (15 min after every mod release)
 
 ```

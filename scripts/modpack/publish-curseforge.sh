@@ -14,6 +14,8 @@
 #   --tag <vX.Y.Z>       Release tag — sets displayName, pack version + releaseType (required).
 #   --overrides <dir>    Folder copied into the pack as overrides/ (default: modpack/overrides).
 #   --changelog <text>   Markdown changelog for the upload (default: a templated one-liner).
+#   --config <path>      modpack.config.json — source of curseforge_relations declared on the
+#                        upload (default: modpack/modpack.config.json).
 #
 # Required env:
 #   CURSEFORGE_MODPACK_PROJECT_ID  CurseForge modpack project id (e.g. 1556213).
@@ -32,6 +34,7 @@ set -euo pipefail
 
 API="https://minecraft.curseforge.com/api"
 OVERRIDES_DIR="modpack/overrides"
+CONFIG="modpack/modpack.config.json"
 CHANGELOG=""
 MANIFEST=""
 TAG=""
@@ -42,6 +45,7 @@ while [ $# -gt 0 ]; do
     --tag)       TAG="$2";           shift 2 ;;
     --overrides) OVERRIDES_DIR="$2"; shift 2 ;;
     --changelog) CHANGELOG="$2";     shift 2 ;;
+    --config)    CONFIG="$2";        shift 2 ;;
     *) echo "::error::unknown argument: $1"; exit 2 ;;
   esac
 done
@@ -68,6 +72,17 @@ if [ -z "$CHANGELOG" ]; then
   CHANGELOG="Dungeon Train modpack $TAG — bundles the Dungeon Train mod and its required Sable dependency for NeoForge $MC_VERSION."
 fi
 
+# CurseForge "Relations" to declare on the uploaded modpack file — mirrors the mod's
+# own curseforge-dependencies (sable required; AIN/AIS/PMOB embedded). Sourced from
+# modpack.config.json so the list lives in one editable place. Missing/empty → none.
+RELATIONS_PROJECTS="[]"
+if [ -f "$CONFIG" ]; then
+  RELATIONS_PROJECTS=$(jq -c '.curseforge_relations // []' "$CONFIG")
+else
+  echo "::warning::modpack config not found at $CONFIG — uploading without CurseForge relations."
+fi
+REL_COUNT=$(printf '%s' "$RELATIONS_PROJECTS" | jq 'length')
+
 # --- Build the pack zip: manifest.json + overrides/ at the archive root ---
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -90,6 +105,7 @@ unzip -l "$ZIP_PATH"
 if [ "${DRY_RUN:-}" = "1" ]; then
   echo "DRY_RUN=1 — skipping CurseForge upload."
   echo "Would upload as: displayName='Dungeon Train $TAG', releaseType=$RELEASE_TYPE, Minecraft=$MC_VERSION, project=$CURSEFORGE_MODPACK_PROJECT_ID"
+  echo "Would declare $REL_COUNT CurseForge relation(s): $RELATIONS_PROJECTS"
   exit 0
 fi
 
@@ -119,7 +135,10 @@ METADATA=$(jq -nc \
   --arg displayName "Dungeon Train $TAG" \
   --argjson gameVersions "$GAME_VERSIONS" \
   --arg releaseType "$RELEASE_TYPE" \
-  '{changelog: $changelog, changelogType: "markdown", displayName: $displayName, gameVersions: $gameVersions, releaseType: $releaseType}')
+  --argjson relProjects "$RELATIONS_PROJECTS" \
+  '{changelog: $changelog, changelogType: "markdown", displayName: $displayName, gameVersions: $gameVersions, releaseType: $releaseType}
+   + (if ($relProjects | length) > 0 then {relations: {projects: $relProjects}} else {} end)')
+echo "Declaring $REL_COUNT CurseForge relation(s): $(printf '%s' "$RELATIONS_PROJECTS" | jq -c 'map(.slug + "(" + .type + ")")')"
 
 # --- Upload ---
 RESPONSE=$(curl -sS -w $'\n%{http_code}' \
