@@ -22,7 +22,8 @@
     "client.LevelLoadingScreenProgressMixin",
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
-    "client.DeathScreenMoveTextMixin"
+    "client.DeathScreenMoveTextMixin",
+    "client.CameraCinematicMixin"
   ],
   "server": [],
   "injectors": {

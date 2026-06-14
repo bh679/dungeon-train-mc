@@ -1,6 +1,6 @@
 {
   "display": {
-    "icon": { "id": "dungeontrain:variant_clipboard" },
+    "icon": { "id": "minecraft:command_block" },
     "title": { "translate": "advancements.dungeontrain.editor.root.title" },
     "description": { "translate": "advancements.dungeontrain.editor.root.description" },
     "frame": "task",
