@@ -87,10 +87,12 @@ After implementation is complete:
 
 Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 1. Push branch, open PR with conventional commit title
-2. Verify CI green
-3. Squash-merge after explicit user approval
-4. Delete feature branch
-5. Bump version in `gradle.properties` per the versioning rule
+2. **Log the changelog entry** on the feature branch with `scripts/release-notes/append-entry.py`
+   (curated player-facing notes) so it lands in the PR diff — see `.github/release-notes/README.md`
+3. Verify CI green
+4. Squash-merge after explicit user approval
+5. Delete feature branch
+6. Bump version in `gradle.properties` per the versioning rule
 
 ---
 
@@ -163,17 +165,26 @@ dev-only changes, minor cosmetic fixes. When in doubt, ask the user.
    ```bash
    grep '^mod_version=' gradle.properties | cut -d= -f2
    ```
-2. Show the user: "Release v<version>? This will publish to GitHub Releases +
-   Modrinth + CurseForge + Discord."
-3. On confirmation:
+2. Render the unreleased changelog notes (all changes since the last real release):
    ```bash
-   gh workflow run release.yml -f tag=v<version>
+   python3 scripts/release-notes/render-unreleased.py
    ```
-4. Watch the run:
+3. Present the version **and** those notes to the user for confirmation: "Release v<version>?
+   These are the notes (all changes since the last release): … Publishes to GitHub Releases +
+   Modrinth + CurseForge + Discord." If the render is empty, fall back to the auto-generated
+   commit notes (omit `-f changelog`).
+4. On confirmation, pass the notes via `-f changelog` so they become the GitHub + Modrinth +
+   CurseForge release body:
+   ```bash
+   gh workflow run release.yml -f tag=v<version> \
+     -f changelog="$(python3 scripts/release-notes/render-unreleased.py)"
+   ```
+5. Watch the run:
    ```bash
    gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')
    ```
-5. On success, share the release URL:
+6. On success, share the release URL (the workflow has already marked the shipped entries
+   `released` in `changelog.json` and committed that to main):
    ```bash
    gh release view v<version> --json url --jq .url
    ```
