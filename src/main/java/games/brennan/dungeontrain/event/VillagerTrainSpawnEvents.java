@@ -35,16 +35,25 @@ import java.util.Random;
  * progression is enabled the rolled level is capped to the current mob weapon
  * stage (none → 1, wood → 2, stone → 3, iron → 4, diamond → 5) via
  * {@link #maxLevelForTier}, so early-run villagers stay low-level and the full
- * range unlocks as mob weapons advance. Sticky: a
- * {@code dungeontrain_trades_rerolled} tag is added after the first roll so
- * chunk reloads don't re-roll.
+ * range unlocks as mob weapons advance. Sticky: established merchants carry a
+ * {@code dungeontrain_trades_rerolled} tag so reloads don't re-roll their
+ * offers — the one exception is a jobless villager that reloads next to a job
+ * block, which is repaired (claims the job + gets a fresh trade set).
  *
- * <p>Hooks {@link EntityJoinLevelEvent} on the server side, filters to entities
- * carrying the {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX} tag (set
- * by the carriage contents placer at spawn), and acts only on
- * {@link Villager}s whose profession is set to something with a vanilla trade
- * pool. Jobless ({@link VillagerProfession#NONE}) and nitwit villagers are
- * skipped — they have no trades.</p>
+ * <p>Hooks {@link EntityJoinLevelEvent} on the server side and filters to
+ * entities carrying the {@link CarriageContentsPlacer#DT_CONTENTS_TAG_PREFIX}
+ * tag (set by the carriage contents placer at spawn). A <strong>jobless</strong>
+ * ({@link VillagerProfession#NONE}) villager first claims the nearest vanilla
+ * job-site block within 5 blocks via {@link VillagerJobSiteAssigner} — vanilla's
+ * own POI acquisition can't do this on a Sable carriage — then is treated like
+ * any other professioned villager. Nitwits, and jobless villagers with no job
+ * block nearby, are left as-is.</p>
+ *
+ * <p>Every villager that ends up with a real profession is also made
+ * <strong>persistent</strong> against vanilla's {@code ResetProfession} brain
+ * rule (which would otherwise strip a level-1, never-traded villager that has no
+ * bound job-site POI — i.e. all of them, on a ship) by granting 1 trade-XP. See
+ * the inline note in {@link #onEntityJoin}.</p>
  *
  * <p>Trade regeneration bypasses {@code Villager#updateTrades()} (private in
  * vanilla, no AT in this project) and instead builds a fresh
@@ -83,7 +92,6 @@ public final class VillagerTrainSpawnEvents {
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         Level level = event.getLevel();
         if (!(level instanceof ServerLevel serverLevel)) return;
-        if (event.loadedFromDisk()) return;
 
         Entity entity = event.getEntity();
         if (!(entity instanceof Villager villager)) return;
@@ -91,18 +99,60 @@ public final class VillagerTrainSpawnEvents {
 
         // Train villagers are spawned via CarriageContentsPlacer's NBT path
         // (EntityType.create(nbt, level) + level.addFreshEntity), which never
-        // calls Mob#finalizeSpawn — so AIN's MobSpawnMixin never fires on
-        // them. Bridge that gap here. applyMobName is idempotent (no-ops if
-        // CustomName is already set), so chunk-reload re-fires of this event
-        // don't re-roll names; covers nitwit/jobless villagers too since
-        // we apply before the profession-based early returns below.
+        // calls Mob#finalizeSpawn — so AIN's MobSpawnMixin never fires on them.
+        // Bridge that gap here. applyMobName is idempotent (no-ops if CustomName
+        // is already set), so reload re-fires of this event don't re-roll names.
         NameComposer.applyMobName(villager, villager.getRandom());
-
-        if (villager.getTags().contains(REROLLED_TAG)) return;
 
         VillagerData data = villager.getVillagerData();
         VillagerProfession profession = data.getProfession();
+
+        // (1) Claim the nearest job block. A jobless (NONE) train villager within
+        // 5 blocks of a vanilla job-site block adopts that block's profession —
+        // vanilla's own POI acquisition can't do this on a Sable carriage (the
+        // blocks live in the ship's plot, not where AcquirePoi searches). This
+        // runs on BOTH fresh spawn AND reload — deliberately NOT gated by
+        // loadedFromDisk / REROLLED_TAG — so villagers that vanilla stripped to
+        // jobless before this fix existed, and were saved that way, get repaired
+        // the moment they reload next to a block. Self-limiting: once a villager
+        // has a profession this NONE-gated block no longer matches. Nitwits are
+        // never reassigned.
+        boolean justClaimed = false;
+        if (profession == VillagerProfession.NONE) {
+            VillagerProfession claimed =
+                VillagerJobSiteAssigner.assignNearestJobSite(villager, serverLevel);
+            if (claimed != VillagerProfession.NONE) {
+                data = data.setProfession(claimed);
+                villager.setVillagerData(data);
+                profession = claimed;
+                justClaimed = true;
+                LOGGER.info("[DungeonTrain] Train villager {} claimed nearest job block -> {}",
+                    villager.getUUID(), claimed);
+            }
+        }
+
+        // Jobless-with-no-block and nitwit villagers have no trades — leave them.
         if (profession == VillagerProfession.NONE || profession == VillagerProfession.NITWIT) return;
+
+        // (2) Persist the profession against vanilla's ResetProfession brain rule
+        // (an always-on CORE behaviour): it strips a villager whose JOB_SITE POI
+        // is absent — always true on a ship — while villagerXp == 0 AND
+        // level <= 1, which is exactly the "armorer next to a blast furnace with
+        // no job" symptom. Granting 1 trade-XP makes the xp == 0 clause false, so
+        // the rule skips it and the profession (authored OR block-assigned above)
+        // sticks for good. Applied on every join — fresh, reloaded, or just
+        // claimed — but only writes when xp is still 0, so it's idempotent.
+        if (villager.getVillagerXp() == 0) {
+            villager.setVillagerXp(1);
+        }
+
+        // (3) Trade reroll. Generate offers only the first time we process a
+        // villager as a merchant: a fresh spawn we haven't rerolled, or one that
+        // just claimed a job this tick. An established villager loaded from disk
+        // keeps its saved offers — we must not re-roll its trades on every chunk
+        // load. (Restocking never happens regardless — our offers are pre-baked,
+        // not workstation-driven.)
+        if (villager.getTags().contains(REROLLED_TAG) && !justClaimed) return;
 
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
         if (tradeMap == null) return;
