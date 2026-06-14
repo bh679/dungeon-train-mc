@@ -58,6 +58,14 @@ def load_config(path: Path) -> dict:
     sable_missing = [k for k in sable_required if k not in config["sable"]]
     if sable_missing:
         raise ValueError(f"{path} sable block is missing keys: {', '.join(sable_missing)}")
+    # optional_mods is optional; when present each entry must carry project_id + file_id
+    # (these become required=False CurseForge file entries — opt-in add-ons).
+    for i, opt in enumerate(config.get("optional_mods", [])):
+        opt_missing = [k for k in ("project_id", "file_id") if k not in opt]
+        if opt_missing:
+            raise ValueError(
+                f"{path} optional_mods[{i}] is missing keys: {', '.join(opt_missing)}"
+            )
     return config
 
 
@@ -80,6 +88,22 @@ def build_manifest(
         raise ValueError("version must be non-empty")
 
     sable = config["sable"]
+    files = [
+        {"projectID": int(config["dt_project_id"]), "fileID": dt_file_id, "required": True},
+        {"projectID": int(sable["project_id"]), "fileID": int(sable["file_id"]), "required": True},
+    ]
+    # Optional, player-installed add-ons (e.g. Distant Horizons, Tectonic, Lithostitched).
+    # required=False → the CurseForge launcher offers them as opt-in at install; they are
+    # present in the pack by default but never force-installed. Pins are maintained the same
+    # way as Sable (see modpack/README.md).
+    for opt in config.get("optional_mods", []):
+        files.append(
+            {
+                "projectID": int(opt["project_id"]),
+                "fileID": int(opt["file_id"]),
+                "required": False,
+            }
+        )
     return {
         "minecraft": {
             "version": mc_version,
@@ -90,14 +114,7 @@ def build_manifest(
         "name": config["name"],
         "version": pack_version,
         "author": config["author"],
-        "files": [
-            {"projectID": int(config["dt_project_id"]), "fileID": dt_file_id, "required": True},
-            {
-                "projectID": int(sable["project_id"]),
-                "fileID": int(sable["file_id"]),
-                "required": True,
-            },
-        ],
+        "files": files,
         "overrides": "overrides",
     }
 

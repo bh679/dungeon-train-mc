@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -94,6 +95,7 @@ public final class DeathScreenLayoutHandler {
     private static final Component NEW_WORLD_LABEL = Component.translatable("gui.dungeontrain.death.new_world");
 
     private static final ResourceKey<WorldPreset> DT_OVERWORLD = preset("dungeon_train");
+    private static final ResourceKey<WorldPreset> DT_OVERWORLD_COMPAT = preset("dungeon_train_compat");
     private static final ResourceKey<WorldPreset> DT_NETHER = preset("dungeon_train_nether");
     private static final ResourceKey<WorldPreset> DT_END = preset("dungeon_train_end");
 
@@ -555,7 +557,8 @@ public final class DeathScreenLayoutHandler {
         return switch (dim) {
             case NETHER -> DT_NETHER;
             case END -> DT_END;
-            case OVERWORLD -> DT_OVERWORLD;
+            case OVERWORLD -> DungeonTrainCommonConfig.getDefaultCompatibleTerrain()
+                    ? DT_OVERWORLD_COMPAT : DT_OVERWORLD;
         };
     }
 
