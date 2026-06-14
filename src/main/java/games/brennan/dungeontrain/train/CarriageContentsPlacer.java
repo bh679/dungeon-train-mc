@@ -28,6 +28,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Slime;
@@ -873,6 +874,22 @@ public final class CarriageContentsPlacer {
             }
         }
         if (entity instanceof Mob mob) {
+            // Default equipment + spawn-type rolls. The variant path bypasses the
+            // vanilla spawn-egg flow, so without this mobs come out bare — pillagers
+            // with no crossbow / banner, skeletons & bogged with no bow. Mirror a real
+            // spawn egg: finalizeSpawn(SPAWN_EGG) populates default equipment, rolls
+            // weapon enchants, and (for raiders) the ~6% patrol-leader ominous banner.
+            // Skipped for the NBT-baked path (author defined the entity explicitly —
+            // finalizeSpawn would clobber it) and Slimes (DT rolled their size above).
+            if (shouldPopulateDefaultEquipment(picked.blockEntityNbt() != null, entity instanceof Slime)) {
+                try {
+                    mob.finalizeSpawn(level, level.getCurrentDifficultyAt(worldPos),
+                        MobSpawnType.SPAWN_EGG, null);
+                } catch (Throwable t) {
+                    LOGGER.warn("[DungeonTrain] Mob-variant: finalizeSpawn threw for {} at {} pIdx={}: {}",
+                        picked.entityId(), worldPos, carriagePIdx, t.toString());
+                }
+            }
             mob.setPersistenceRequired();
         }
         if (!level.addFreshEntity(entity)) {
@@ -881,6 +898,25 @@ public final class CarriageContentsPlacer {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Whether {@link #spawnVariantMob} should run the vanilla default-equipment
+     * pass ({@code finalizeSpawn(SPAWN_EGG)}) on a freshly-created variant mob.
+     *
+     * <p>True only for a plain, non-Slime mob:</p>
+     * <ul>
+     *   <li>{@code hasAuthoredNbt} — the entry baked an explicit entity definition
+     *       (anvil-renamed / EntityTag egg). {@code populateDefaultEquipmentSlots}
+     *       inside finalizeSpawn would clobber it, so the baked NBT is respected
+     *       as-authored — same philosophy as the Slime {@code authoredSize} guard.</li>
+     *   <li>{@code isSlime} — Slimes / MagmaCubes get their size from DT's own
+     *       uniform 1–4 roll in {@link #spawnVariantMob}; finalizeSpawn would only
+     *       re-roll it with a different distribution.</li>
+     * </ul>
+     */
+    static boolean shouldPopulateDefaultEquipment(boolean hasAuthoredNbt, boolean isSlime) {
+        return !hasAuthoredNbt && !isSlime;
     }
 
     /**
