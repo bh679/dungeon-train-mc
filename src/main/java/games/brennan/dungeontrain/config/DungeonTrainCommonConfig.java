@@ -27,14 +27,19 @@ public final class DungeonTrainCommonConfig {
     public static final int MAX_PLAYER_MOB_SPAWN_ONE_IN = 10_000;
     public static final int DEFAULT_PLAYER_MOB_SPAWN_ONE_IN = 10;
 
+    /** Global DEFAULT Compatible Terrain mode for new worlds. false = classic Dungeon Train terrain. */
+    public static final boolean DEFAULT_COMPATIBLE_TERRAIN = false;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
+    public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
                 .configure(DungeonTrainCommonConfig::build);
         SPEC = pair.getRight();
         DEFAULT_PLAYER_MOB_SPAWN = pair.getLeft().defaultPlayerMobSpawnOneIn;
+        COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -48,7 +53,18 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("defaultPlayerMobSpawnOneIn", DEFAULT_PLAYER_MOB_SPAWN_ONE_IN,
                         MIN_PLAYER_MOB_SPAWN_ONE_IN, MAX_PLAYER_MOB_SPAWN_ONE_IN);
         b.pop();
-        return new Holder(defaultPlayerMobSpawnOneIn);
+
+        b.push("worldgen");
+        ModConfigSpec.BooleanValue compatibleTerrain = b
+                .comment("Compatible Terrain mode DEFAULT for new worlds. When true, the Dungeon Train overworld",
+                        "generates from vanilla minecraft:overworld noise + dimension type instead of Dungeon Train's",
+                        "custom raised-floor terrain, so terrain mods (Tectonic, Terralith) and Distant Horizons take effect.",
+                        "false = classic Dungeon Train terrain. Applies to NEW worlds only; existing worlds keep the terrain",
+                        "they were created with. The matching terrain mod must also be installed for any visible change.")
+                .define("defaultCompatibleTerrain", DEFAULT_COMPATIBLE_TERRAIN);
+        b.pop();
+
+        return new Holder(defaultPlayerMobSpawnOneIn, compatibleTerrain);
     }
 
     /**
@@ -73,5 +89,17 @@ public final class DungeonTrainCommonConfig {
         DEFAULT_PLAYER_MOB_SPAWN.save();
     }
 
-    private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn) {}
+    /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
+    public static boolean getDefaultCompatibleTerrain() {
+        return isLoaded() ? COMPATIBLE_TERRAIN.get() : DEFAULT_COMPATIBLE_TERRAIN;
+    }
+
+    public static void setDefaultCompatibleTerrain(boolean value) {
+        if (!isLoaded()) return;
+        COMPATIBLE_TERRAIN.set(value);
+        COMPATIBLE_TERRAIN.save();
+    }
+
+    private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
+                          ModConfigSpec.BooleanValue compatibleTerrain) {}
 }

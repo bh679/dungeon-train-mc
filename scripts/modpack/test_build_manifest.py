@@ -84,6 +84,32 @@ def test_missing_sable_key_rejected():
     assert "file_id" in proc.stderr
 
 
+def test_optional_mods_appended_as_not_required():
+    config = {
+        **CONFIG,
+        "optional_mods": [
+            {"name": "Distant Horizons", "project_id": 508933, "file_id": 7375285},
+            {"name": "Tectonic", "project_id": 686836, "file_id": 7903156},
+        ],
+    }
+    proc = run(["--dt-file-id", "8123456", "--version", "0.293.0"], config=config)
+    assert proc.returncode == 0, proc.stderr
+    files = json.loads(proc.stdout)["files"]
+    # DT + Sable are required; the two optional add-ons are appended as required=False.
+    assert files[0] == {"projectID": 1527512, "fileID": 8123456, "required": True}
+    assert files[1] == {"projectID": 1312371, "fileID": 8003927, "required": True}
+    assert {"projectID": 508933, "fileID": 7375285, "required": False} in files
+    assert {"projectID": 686836, "fileID": 7903156, "required": False} in files
+    assert len(files) == 4
+
+
+def test_malformed_optional_mod_rejected():
+    bad = {**CONFIG, "optional_mods": [{"name": "X", "project_id": 1}]}  # no file_id
+    proc = run(["--dt-file-id", "5", "--version", "0.1.0"], config=bad)
+    assert proc.returncode != 0
+    assert "file_id" in proc.stderr
+
+
 def _main():
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0

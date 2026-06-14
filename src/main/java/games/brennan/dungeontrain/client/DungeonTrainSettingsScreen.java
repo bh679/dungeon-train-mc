@@ -47,6 +47,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private CycleButton<CarriageGenerationMode> modeButton;
     private EditBox playerMobSpawnField;
     private EditBox groupSizeField;
+    private CycleButton<Boolean> compatibleTerrainButton;
 
     public DungeonTrainSettingsScreen(Screen parent) {
         super(Component.literal("Dungeon Train Settings"));
@@ -103,12 +104,21 @@ public final class DungeonTrainSettingsScreen extends Screen {
         addRenderableWidget(groupSizeField);
         refreshGroupSizeVisibility();
 
+        // Compatible Terrain: global default for NEW worlds. ON makes new DT worlds
+        // generate from vanilla overworld noise so terrain mods (Tectonic) + Distant
+        // Horizons take effect. Does not change the current world (terrain is baked at creation).
+        compatibleTerrainButton = CycleButton.onOffBuilder(DungeonTrainCommonConfig.getDefaultCompatibleTerrain())
+                .displayOnlyValue()
+                .create(centerX + 10, topY + ROW_GAP * 6, FIELD_WIDTH, FIELD_HEIGHT,
+                        Component.literal("Compatible Terrain"));
+        addRenderableWidget(compatibleTerrainButton);
+
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveAndClose())
-                .bounds(centerX - 105, topY + ROW_GAP * 6 + 20, 100, 20)
+                .bounds(centerX - 105, topY + ROW_GAP * 7 + 20, 100, 20)
                 .build());
 
         addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
-                .bounds(centerX + 5, topY + ROW_GAP * 6 + 20, 100, 20)
+                .bounds(centerX + 5, topY + ROW_GAP * 7 + 20, 100, 20)
                 .build());
     }
 
@@ -134,28 +144,33 @@ public final class DungeonTrainSettingsScreen extends Screen {
         if (modeButton != null && modeButton.getValue() == CarriageGenerationMode.RANDOM_GROUPED) {
             graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
         }
+        graphics.drawString(this.font, "Compat terrain:", centerX - LABEL_OFFSET, topY + ROW_GAP * 6 + 6, 0xFFFFFFFF);
 
         String rangeHint = "Carriages " + DungeonTrainConfig.MIN_CARRIAGES + "-" + DungeonTrainConfig.MAX_CARRIAGES
                 + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED
                 + ", Train Y " + DungeonTrainConfig.MIN_TRAIN_Y + "-" + DungeonTrainConfig.MAX_TRAIN_Y
                 + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE
                 + ", PlayerMob " + DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN + "-" + DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN;
-        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 6 - 4, 0xFFAAAAAA);
+        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 7 - 4, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 "Train Y applies to next spawn only. Mode affects new carriage placements.",
-                centerX, topY + ROW_GAP * 6 + 50, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 7 + 50, 0xFFAAAAAA);
 
         boolean inWorld = Minecraft.getInstance().getSingleplayerServer() != null;
         String playerMobScope = inWorld
                 ? "PlayerMob 1-in-N applies to THIS world (0 disables, 1 = every group)."
                 : "PlayerMob 1-in-N sets the DEFAULT for new worlds (0 disables, 1 = every group).";
-        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 6 + 64, 0xFFAAAAAA);
+        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 7 + 64, 0xFFAAAAAA);
+
+        graphics.drawCenteredString(this.font,
+                "Compat terrain = default for NEW worlds; lets terrain mods (Tectonic) + Distant Horizons generate.",
+                centerX, topY + ROW_GAP * 7 + 78, 0xFFAAAAAA);
 
         if (!inWorld) {
             graphics.drawCenteredString(this.font,
-                    "Note: other settings require an active world; only PlayerMob default saves here.",
-                    centerX, topY + ROW_GAP * 6 + 78, 0xFFFFAA55);
+                    "Note: other settings require an active world; PlayerMob + Compat terrain defaults save here.",
+                    centerX, topY + ROW_GAP * 7 + 92, 0xFFFFAA55);
         }
     }
 
@@ -178,6 +193,10 @@ public final class DungeonTrainSettingsScreen extends Screen {
         DungeonTrainConfig.setTrainY(trainY);
         DungeonTrainConfig.setGenerationMode(modeButton.getValue());
         DungeonTrainConfig.setGroupSize(groupSize);
+
+        // Global default for new worlds (no per-world override in v1). Setting this in a
+        // world changes the default for future worlds, not the current one (terrain is baked).
+        DungeonTrainCommonConfig.setDefaultCompatibleTerrain(compatibleTerrainButton.getValue());
 
         // Two-tier spawn rate: in a world → set THIS world's per-world override
         // on the integrated-server thread; on the title screen → set the global
