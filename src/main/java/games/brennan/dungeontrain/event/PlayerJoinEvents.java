@@ -134,8 +134,13 @@ public final class PlayerJoinEvents {
     /** MC yaw facing +X (the train's travel direction) — used for on-train spawns. */
     private static final float FORWARD_YAW = -90.0f;
 
-    /** Player feet sit this far above the flatbed floor block top on spawn. */
-    private static final double FLATBED_FEET_EPSILON = 0.05;
+    /**
+     * Player feet sit this far above the flatbed floor block top on spawn — a
+     * small drop so they settle cleanly onto the deck (the centre walkway is
+     * top slabs, surface at {@code trainY + 1}) rather than risk a one-tick
+     * embed against it.
+     */
+    private static final double FLATBED_FEET_EPSILON = 0.15;
 
     /**
      * Max ticks to keep retrying the train lookup after login. 20 TPS,
@@ -257,11 +262,12 @@ public final class PlayerJoinEvents {
         // cinematic camera and is invisible. So no cached no-op fast path — we
         // always wait for the live train and recompute from it.
         ManagedShip trainShip = findTrain(trainLevel);
-        if (trainShip == null) return false; // retry next tick
+        if (trainShip == null) return false; // no settled train group yet — retry next tick
 
         TrainTransformProvider provider =
             (TrainTransformProvider) trainShip.getKinematicDriver();
-        Vector3d trainCenter = resolveTrainCenter(provider, data);
+        Vector3d trainCenter = resolveTrainCenter(provider);
+        if (trainCenter == null) return false; // baseline not captured yet — retry next tick
 
         TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
         TunnelGeometry tg = TunnelGeometry.from(g);
@@ -320,21 +326,22 @@ public final class PlayerJoinEvents {
     }
 
     /**
-     * Resolve the train's world-space center from the kinematic driver's
-     * {@code canonicalPos}, falling back to the spawn anchor if the driver
-     * hasn't ticked yet.
+     * Resolve the train's world-space centre from the kinematic driver's
+     * {@code canonicalPos}. Returns {@code null} when the driver has not yet
+     * captured its spawn baseline (first physics tick pending).
+     *
+     * <p>There is no safe placeholder for the flatbed-deck maths: an assumed
+     * centre (e.g. world origin) lands the player tens of blocks off the real
+     * deck, into an open-air column or wedged in the slab. So callers must
+     * retry (login) or fall back to the ground pose (respawn) rather than place
+     * at a guessed centre. {@link #findTrain} already filters to settled
+     * groups, so in practice this only returns {@code null} defensively.</p>
      */
-    private static Vector3d resolveTrainCenter(
-        TrainTransformProvider provider, DungeonTrainWorldData data
-    ) {
-        if (provider != null) {
-            Vector3dc canonical = provider.getCanonicalPos();
-            if (canonical != null) {
-                return new Vector3d(canonical.x(), canonical.y(), canonical.z());
-            }
-        }
-        TrackGeometry g = TrackGeometry.from(data.dims(), data.getTrainY());
-        return new Vector3d(0.0, data.getTrainY(), g.trackCenterZ());
+    private static Vector3d resolveTrainCenter(TrainTransformProvider provider) {
+        if (provider == null) return null;
+        Vector3dc canonical = provider.getCanonicalPos();
+        if (canonical == null) return null;
+        return new Vector3d(canonical.x(), canonical.y(), canonical.z());
     }
 
     /**
@@ -409,13 +416,42 @@ public final class PlayerJoinEvents {
         return originX;
     }
 
+    /**
+     * Resolve the carriage group to spawn the player on: the FRONTMOST group
+     * (highest {@link TrainTransformProvider#getGroupHighestPIdx()}) whose
+     * kinematic baseline has been captured ({@code getCanonicalPos() != null}).
+     *
+     * <p>Two reasons to pick the frontmost <em>settled</em> group rather than
+     * whatever {@code Shipyards.findAll()} happens to yield first:</p>
+     * <ul>
+     *   <li><b>Frontmost</b> — the player lands on the very front deck of the
+     *       train, consistent with the {@code -90°} (+X travel) spawn yaw. A
+     *       hash-ordered {@code findAll()} would otherwise drop them on an
+     *       arbitrary mid-train seam.</li>
+     *   <li><b>Settled</b> — a group only has a real world-space centre once its
+     *       first physics tick captures {@code canonicalPos} (see
+     *       {@link TrainTransformProvider#nextTransform}). Skipping unsettled
+     *       groups guarantees {@link #resolveTrainCenter} returns a true centre
+     *       instead of {@code null}, which is what previously fell back to a
+     *       placeholder origin and dropped players under the train / into the
+     *       deck slab.</li>
+     * </ul>
+     *
+     * <p>Returns {@code null} when no group has settled yet — callers retry next
+     * tick (login) or fall back to the ground pose (respawn).</p>
+     */
     private static ManagedShip findTrain(ServerLevel level) {
+        ManagedShip lead = null;
+        int leadPIdx = Integer.MIN_VALUE;
         for (ManagedShip ship : Shipyards.of(level).findAll()) {
-            if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
-                return ship;
+            if (ship.getKinematicDriver() instanceof TrainTransformProvider provider
+                && provider.getCanonicalPos() != null
+                && provider.getGroupHighestPIdx() > leadPIdx) {
+                leadPIdx = provider.getGroupHighestPIdx();
+                lead = ship;
             }
         }
-        return null;
+        return lead;
     }
 
     /** A world-space spot to stand the player on the train (flatbed deck top). */
@@ -457,7 +493,8 @@ public final class PlayerJoinEvents {
         ManagedShip ship = findTrain(trainLevel);
         if (ship == null) return null;
         TrainTransformProvider provider = (TrainTransformProvider) ship.getKinematicDriver();
-        Vector3d center = resolveTrainCenter(provider, data);
+        Vector3d center = resolveTrainCenter(provider);
+        if (center == null) return null;
         return computeFlatbedTarget(provider, data, center);
     }
 
