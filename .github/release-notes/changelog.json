@@ -238,6 +238,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-join-version-and-dev-ping",
+      "version": "0.303.0",
+      "type": "feat",
+      "title": "Discord join messages show the mod version + dev milestone ping",
+      "summary": "Discord join and 'started the game' messages posted by the bundled Discord Presence integration now include the Dungeon Train version. The developer is also notified the first time a player starts a new run after their first death.",
+      "highlights": [
+        "Mod version on Discord join/start messages",
+        "Dev pinged on a player's first new run after first death"
+      ],
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
