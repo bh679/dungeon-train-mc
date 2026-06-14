@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
@@ -545,25 +546,34 @@ public final class AchievementEvents {
             server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS);
         boolean wasAnnouncing = announce.get();
         if (wasAnnouncing) announce.set(false, server);
-        int replayed = 0;
+        // Mirror that silence to the bundled Discord Presence channel. Its
+        // AdvancementEarnEvent listener is independent of the announce gamerule,
+        // so without this each replayed grant would re-post the advancement to
+        // Discord — double-announcing one the player already earned in a prior
+        // world. The gate is thread-local and scoped to just this replay loop:
+        // genuine first-time earns, and a server's global announce setting, are
+        // unaffected. (replayed is an int[] holder so the lambda can mutate it.)
+        int[] replayed = {0};
         try {
-            for (ResourceLocation id : granted) {
-                AdvancementHolder holder = mgr.get(id);
-                if (holder == null) {
-                    LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping",
-                        id);
-                    continue;
+            DiscordService.runWithAdvancementAnnounceSuppressed(() -> {
+                for (ResourceLocation id : granted) {
+                    AdvancementHolder holder = mgr.get(id);
+                    if (holder == null) {
+                        LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping",
+                            id);
+                        continue;
+                    }
+                    for (String key : holder.value().criteria().keySet()) {
+                        if (player.getAdvancements().award(holder, key)) replayed[0]++;
+                    }
                 }
-                for (String key : holder.value().criteria().keySet()) {
-                    if (player.getAdvancements().award(holder, key)) replayed++;
-                }
-            }
+            });
         } finally {
             if (wasAnnouncing) announce.set(true, server);
         }
-        if (replayed > 0) {
+        if (replayed[0] > 0) {
             LOGGER.info("[DungeonTrain] Replayed {} criteria from global store for {} (silent)",
-                replayed, player.getName().getString());
+                replayed[0], player.getName().getString());
         }
     }
 
