@@ -69,6 +69,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-mob-default-equipment",
+      "version": "0.296.0",
+      "type": "fix",
+      "title": "Carriage spawn-egg mobs arrive armed",
+      "summary": "Mobs you place in a carriage with spawn eggs now spawn with their normal gear. Pillagers carry a crossbow (and occasionally the raid-captain's ominous banner); skeletons and bogged carry a bow. As the train's difficulty climbs, ranged mobs keep their bow or crossbow and have it enchanted, instead of being handed a melee weapon that left them defenceless at range.",
+      "highlights": [
+        "Spawn-egg pillagers spawn with a crossbow, with a chance at the ominous banner",
+        "Spawn-egg skeletons and bogged spawn with a bow",
+        "Higher difficulty now enchants a ranged mob's bow/crossbow instead of replacing it"
+      ],
+      "pr": 370,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

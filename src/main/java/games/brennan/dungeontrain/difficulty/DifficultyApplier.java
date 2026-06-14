@@ -25,6 +25,7 @@ import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import org.slf4j.Logger;
@@ -110,7 +111,7 @@ public final class DifficultyApplier {
             applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng);
             applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng);
             applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng);
-            applyArmorSlot(mob, EquipmentSlot.MAINHAND, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng);
+            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng);
         }
 
         if (applyEffects) {
@@ -141,28 +142,95 @@ public final class DifficultyApplier {
         if (!mob.getItemBySlot(slot).isEmpty()) return;
         if (rng.nextDouble() >= slotChance) return;
 
-        DifficultyTier.WeightedItem picked = weightedPick(pool, rng);
-        if (picked == null) return;
-        Item item = BuiltInRegistries.ITEM.get(picked.item());
-        if (item == null) {
-            LOGGER.warn("[DungeonTrain] Difficulty: unknown item '{}' in equipment pool — skipping slot {}", picked.item(), slot);
-            return;
-        }
-        ItemStack stack = new ItemStack(item);
-        if (enchant != null && enchant.maxLevel() > 0
-                && enchant.chance() > 0.0 && rng.nextDouble() < enchant.chance()
-                && stack.isEnchantable() && registries != null) {
-            Optional<HolderSet.Named<Enchantment>> tag = registries
-                    .lookup(Registries.ENCHANTMENT)
-                    .flatMap(reg -> reg.get(EnchantmentTags.IN_ENCHANTING_TABLE));
-            if (tag.isPresent()) {
-                EnchantmentHelper.enchantItem(rng, stack, enchant.maxLevel(), tag.get().stream());
-            }
-        }
-        NameComposer.applyName(stack, rng);
-        StatsModifier.applyStats(stack, rng);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng);
+        if (stack == null) return;
         mob.setItemSlot(slot, stack);
         mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
+    }
+
+    /**
+     * Mainhand weapon roll, ranged-aware. Mirrors {@link #applyArmorSlot} for an
+     * <em>empty</em> mainhand (weighted-pick the tier weapon, enchant, name, drop
+     * chance). When the mob already holds a <em>ranged</em> weapon — a bow or
+     * crossbow from its vanilla default equipment ({@code finalizeSpawn}) — the
+     * weapon is kept and merely enchanted with the tier enchant, so higher tiers
+     * scale a skeleton's bow / pillager's crossbow instead of swapping it for a
+     * melee weapon (which would strip the mob of its ranged attack). Any other
+     * pre-existing mainhand (melee default, author-baked) is left untouched — the
+     * same "empty slots only" contract the armor slots honour.
+     */
+    private static void applyWeaponSlot(Mob mob,
+                                        List<DifficultyTier.WeightedItem> pool,
+                                        double chance,
+                                        DifficultyTier.EnchantSpec enchant,
+                                        HolderLookup.Provider registries,
+                                        RandomSource rng) {
+        ItemStack current = mob.getItemBySlot(EquipmentSlot.MAINHAND);
+        if (!current.isEmpty()) {
+            if (isRangedWeapon(current)) {
+                maybeEnchant(current, enchant, registries, rng);
+                mob.setItemSlot(EquipmentSlot.MAINHAND, current);
+            }
+            return;
+        }
+        if (pool.isEmpty() || chance <= 0.0) return;
+        if (rng.nextDouble() >= chance) return;
+
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng);
+        if (stack == null) return;
+        mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
+        mob.setDropChance(EquipmentSlot.MAINHAND, DIFFICULTY_DROP_CHANCE);
+    }
+
+    /**
+     * Roll one equipment piece from {@code pool}: weighted-pick → tier enchant →
+     * AIN name → AIS stats. Returns {@code null} when the pool is empty or the
+     * picked item id doesn't resolve. Does not touch the mob — the caller places
+     * the stack and sets its drop chance.
+     */
+    private static ItemStack rollEquipment(List<DifficultyTier.WeightedItem> pool,
+                                           DifficultyTier.EnchantSpec enchant,
+                                           HolderLookup.Provider registries,
+                                           RandomSource rng) {
+        DifficultyTier.WeightedItem picked = weightedPick(pool, rng);
+        if (picked == null) return null;
+        Item item = BuiltInRegistries.ITEM.get(picked.item());
+        if (item == null) {
+            LOGGER.warn("[DungeonTrain] Difficulty: unknown item '{}' in equipment pool — skipping", picked.item());
+            return null;
+        }
+        ItemStack stack = new ItemStack(item);
+        maybeEnchant(stack, enchant, registries, rng);
+        NameComposer.applyName(stack, rng);
+        StatsModifier.applyStats(stack, rng);
+        return stack;
+    }
+
+    /**
+     * Roll the tier enchant onto {@code stack} in place. No-op when the spec is
+     * empty / zero-chance, the chance roll fails, the item isn't enchantable, or
+     * registries are unavailable. Draws from the same enchanting-table pool vanilla
+     * uses, so only item-valid enchants apply (Power on a bow, Quick Charge on a
+     * crossbow, etc.).
+     */
+    private static void maybeEnchant(ItemStack stack,
+                                     DifficultyTier.EnchantSpec enchant,
+                                     HolderLookup.Provider registries,
+                                     RandomSource rng) {
+        if (enchant == null || enchant.maxLevel() <= 0 || enchant.chance() <= 0.0) return;
+        if (rng.nextDouble() >= enchant.chance()) return;
+        if (!stack.isEnchantable() || registries == null) return;
+        Optional<HolderSet.Named<Enchantment>> tag = registries
+                .lookup(Registries.ENCHANTMENT)
+                .flatMap(reg -> reg.get(EnchantmentTags.IN_ENCHANTING_TABLE));
+        if (tag.isPresent()) {
+            EnchantmentHelper.enchantItem(rng, stack, enchant.maxLevel(), tag.get().stream());
+        }
+    }
+
+    /** Bow or crossbow — the ranged weapons a mob's default equipment supplies. */
+    private static boolean isRangedWeapon(ItemStack stack) {
+        return stack.getItem() instanceof ProjectileWeaponItem;
     }
 
     private static DifficultyTier.WeightedItem weightedPick(List<DifficultyTier.WeightedItem> pool, RandomSource rng) {
