@@ -4,6 +4,7 @@ name: _modpack-smoketest (TEMPORARY — delete before PR)
 # existing CURSEFORGE_TOKEN secret (workflow_dispatch can't fire until the workflow is on
 # main). Push-triggered + path-scoped so only adding/editing THIS file triggers it — it
 # runs the real upload exactly once. Deleted before the PR; squash-merge erases it from main.
+# (trigger: 1)
 on:
   push:
     branches: [claude/cool-moser-0a404f]
