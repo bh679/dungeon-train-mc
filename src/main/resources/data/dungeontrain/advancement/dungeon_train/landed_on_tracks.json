@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:rail" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.landed_on_tracks.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.landed_on_tracks.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "landed_on_tracks" }
+    }
+  },
+  "requirements": [["action"]]
+}

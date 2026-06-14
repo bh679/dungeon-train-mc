@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/left_train",
+  "display": {
+    "icon": { "id": "minecraft:minecart" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.returned_to_train.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.returned_to_train.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "returned_to_train" }
+    }
+  },
+  "requirements": [["action"]]
+}

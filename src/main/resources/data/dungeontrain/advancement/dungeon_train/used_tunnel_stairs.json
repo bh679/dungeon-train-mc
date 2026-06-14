@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/landed_on_tracks",
+  "display": {
+    "icon": { "id": "minecraft:cobblestone_stairs" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.used_tunnel_stairs.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.used_tunnel_stairs.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "used_tunnel_stairs" }
+    }
+  },
+  "requirements": [["action"]]
+}
