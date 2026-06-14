@@ -1,21 +1,15 @@
 {
   "schemaVersion": 1,
   "excluded": [
-    "books",
     "chest",
     "cows",
     "craft",
     "default",
-    "dirt",
     "ender",
-    "enemies",
     "fire",
-    "maze",
-    "narrative",
     "nature",
     "pigs",
     "sheep",
-    "shop",
-    "vase"
+    "shop"
   ]
 }
