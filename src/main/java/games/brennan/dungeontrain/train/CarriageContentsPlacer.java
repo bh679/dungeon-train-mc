@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -15,15 +17,19 @@ import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.decoration.ArmorStand;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -328,10 +334,17 @@ public final class CarriageContentsPlacer {
                         picked.state(), picked.rotation(), picked.half(),
                         entry.localPos(), seed, carriageIndex,
                         sidecar.lockIdAt(entry.localPos()));
+                // First-band starter loot: swap rich loot/loot_irongold chests for the starter
+                // prefab while in the peaceful opening band. Skip the player scan for non-chest
+                // cells (null id) and never downgrade editor previews (sentinel pIdx).
+                String lootId = picked.linkedLootPrefabId();
+                if (lootId != null && carriageIndex != EDITOR_SENTINEL_PIDX) {
+                    lootId = DifficultyProgression.effectiveLootPrefabId(level, lootId);
+                }
                 games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                     level, world, rotated, picked.blockEntityNbt(),
                     "contents:" + contents.id(), entry.localPos(), seed, carriageIndex,
-                    picked.linkedLootPrefabId());
+                    lootId);
             }
         }
     }
@@ -535,6 +548,9 @@ public final class CarriageContentsPlacer {
                     continue;
                 }
                 Entity entity = created.get();
+                // First-band easy mobs: replace a (rare) baked hostile with a small slime/magma
+                // cube while in the opening raw-tier-0 band; otherwise spawn it as authored.
+                if (trySpawnFirstBandSubstitute(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx)) continue;
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
                 // Diagnostic spawn-coords + tick on the persistent-data
                 // subtree (the standard cross-mod-safe location for custom
@@ -678,6 +694,54 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * Entity types that become a small <b>magma cube</b> (instead of a small slime) when
+     * substituted in the first band — nether mobs and pillager/illager raiders. Backed by the
+     * {@code dungeontrain:first_band_magma_mobs} data tag (which includes
+     * {@code #minecraft:raiders}), so the roster is tunable without recompiling.
+     */
+    private static final TagKey<EntityType<?>> FIRST_BAND_MAGMA_MOBS =
+        TagKey.create(Registries.ENTITY_TYPE,
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_magma_mobs"));
+
+    /**
+     * First-band mob substitution. When {@link DifficultyProgression#firstLevelEasyMobs} holds
+     * (config on + the run still in raw tier 0) and {@code original} is hostile ({@link Enemy}),
+     * spawns a small Slime — or a small Magma Cube when {@code original}'s type is in
+     * {@link #FIRST_BAND_MAGMA_MOBS} — at {@code pos}, tagged + persisted exactly like a
+     * carriage-contents mob, and returns {@code true} so the caller skips the original. Returns
+     * {@code false} (caller spawns the original as authored) for editor previews (sentinel pIdx),
+     * non-hostile mobs, or when not in the easy-mobs band.
+     */
+    private static boolean trySpawnFirstBandSubstitute(ServerLevel level, Entity original,
+                                                       Vec3 pos, int carriagePIdx) {
+        if (carriagePIdx == EDITOR_SENTINEL_PIDX) return false;
+        if (!(original instanceof Enemy)) return false;
+        if (!DifficultyProgression.firstLevelEasyMobs(level)) return false;
+
+        Slime sub = original.getType().builtInRegistryHolder().is(FIRST_BAND_MAGMA_MOBS)
+            ? EntityType.MAGMA_CUBE.create(level)
+            : EntityType.SLIME.create(level);
+        if (sub == null) return true; // creation failed — still suppress the original hostile
+        // "small or next size up" — size 1 or 2.
+        sub.setSize(1 + level.getRandom().nextInt(2), true);
+        sub.setUUID(UUID.randomUUID());
+        sub.moveTo(pos.x, pos.y, pos.z, level.getRandom().nextFloat() * 360.0f, 0.0f);
+        sub.addTag(contentsTagFor(carriagePIdx));
+        CompoundTag persistent = sub.getPersistentData();
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);
+        persistent.putLong(NBT_SPAWN_GAME_TICK, level.getGameTime());
+        persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
+        sub.setPersistenceRequired();
+        if (!level.addFreshEntity(sub)) {
+            LOGGER.warn("[DungeonTrain] First-band substitute: addFreshEntity rejected {} at {} pIdx={}",
+                sub.getType().getDescriptionId(), pos, carriagePIdx);
+        }
+        return true;
+    }
+
+    /**
      * Mob-variant entity-pass for a carriage's interior. Re-rolls the
      * contents variant sidecar with the same {@code (seed, carriagePIdx)}
      * the block pass used and spawns a mob at every cell whose pick has
@@ -772,6 +836,10 @@ public final class CarriageContentsPlacer {
                 picked.entityId(), worldPos, carriagePIdx, t.toString());
             return false;
         }
+        // First-band easy mobs: replace an authored hostile with a small slime (magma cube for
+        // nether/raider mobs) while in the opening raw-tier-0 band; no-op otherwise. The
+        // substitute is spawned + tagged inside the helper, so we early-return here.
+        if (trySpawnFirstBandSubstitute(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx)) return true;
         // Fresh UUID so the same template at multiple carriages doesn't
         // collide on the UUID index (MC silently drops duplicate UUIDs).
         entity.setUUID(UUID.randomUUID());

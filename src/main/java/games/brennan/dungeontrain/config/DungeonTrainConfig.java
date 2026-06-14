@@ -50,6 +50,11 @@ public final class DungeonTrainConfig {
     public static final int MAX_CARRIAGES_PER_TIER = 1000;
     public static final int DEFAULT_CARRIAGES_PER_TIER = 20;
     public static final boolean DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS = false;
+    public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
+    public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
+    public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
+    public static final boolean DEFAULT_FIRST_LEVEL_EASY_MOBS = true;
+    public static final boolean DEFAULT_FIRST_LEVEL_STARTER_LOOT = true;
 
     /** 1-in-N chance that a book dropped by breaking a bookshelf becomes a narrative Random Book. 0 disables. */
     public static final int MIN_RANDOM_BOOK_ONE_IN = 0;
@@ -75,6 +80,9 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DIFFICULTY_ENABLED;
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
+    public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
+    public static final ModConfigSpec.BooleanValue FIRST_LEVEL_EASY_MOBS;
+    public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
@@ -94,6 +102,9 @@ public final class DungeonTrainConfig {
         DIFFICULTY_ENABLED = pair.getLeft().difficultyEnabled;
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
+        PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
+        FIRST_LEVEL_EASY_MOBS = pair.getLeft().firstLevelEasyMobs;
+        FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
@@ -138,6 +149,15 @@ public final class DungeonTrainConfig {
         ModConfigSpec.BooleanValue difficultyAffectsBabyMobs = b
                 .comment("When true, baby mobs (zombies, piglins, etc.) also receive difficulty gear and effects. Default false to avoid silly visuals (baby zombies in netherite).")
                 .define("difficultyAffectsBabyMobs", DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS);
+        ModConfigSpec.IntValue progressionLevelDelay = b
+                .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
+                .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
+        ModConfigSpec.BooleanValue firstLevelEasyMobs = b
+                .comment("When true, hostile (Enemy) mobs authored into carriage interiors are replaced with small slimes (or small magma cubes for nether/raider mobs, per the dungeontrain:first_band_magma_mobs entity-type tag) while the run is still in the first tier band (raw tier 0: the first carriagesPerTier carriages), giving an easy combat intro. Passive/neutral carriage mobs (villagers, animals, PlayerMobs) are unaffected. Like firstLevelStarterLoot this uses the raw, un-delayed tier (independent of progressionLevelDelay).")
+                .define("firstLevelEasyMobs", DEFAULT_FIRST_LEVEL_EASY_MOBS);
+        ModConfigSpec.BooleanValue firstLevelStarterLoot = b
+                .comment("When true, carriage-interior chests linked to the rich 'loot' or 'loot_irongold' loot prefabs instead roll the 'starter' prefab while the run is still in the first tier band (raw tier 0), so the peaceful intro hands out starter-tier loot. Other loot prefabs (wood, stone, mining, villager, etc.) are unaffected. Like firstLevelNoHostiles this uses the raw, un-delayed tier (independent of progressionLevelDelay).")
+                .define("firstLevelStarterLoot", DEFAULT_FIRST_LEVEL_STARTER_LOOT);
         b.pop();
         b.push("narrative");
         ModConfigSpec.IntValue randomBookFromBookshelfOneIn = b
@@ -165,8 +185,9 @@ public final class DungeonTrainConfig {
                         MIN_INTRO_DURATION_TICKS, MAX_INTRO_DURATION_TICKS);
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, randomBookFromBookshelfOneIn,
-                deathReportToDiscord, introCinematicEnabled, introCinematicDurationTicks);
+                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay, firstLevelEasyMobs,
+                firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
+                introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -216,6 +237,21 @@ public final class DungeonTrainConfig {
 
     public static boolean getDifficultyAffectsBabyMobs() {
         return isLoaded() ? DIFFICULTY_AFFECTS_BABY_MOBS.get() : DEFAULT_DIFFICULTY_AFFECTS_BABY_MOBS;
+    }
+
+    /** Difficulty levels (tiers) by which the whole progression curve is delayed; 0 = no delay. */
+    public static int getProgressionLevelDelay() {
+        return isLoaded() ? PROGRESSION_LEVEL_DELAY.get() : DEFAULT_PROGRESSION_LEVEL_DELAY;
+    }
+
+    /** When true, authored hostile carriage mobs are replaced with small slimes/magma cubes during the first raw tier band. */
+    public static boolean getFirstLevelEasyMobs() {
+        return isLoaded() ? FIRST_LEVEL_EASY_MOBS.get() : DEFAULT_FIRST_LEVEL_EASY_MOBS;
+    }
+
+    /** When true, rich loot/loot_irongold carriage chests roll the starter prefab during the first raw tier band. */
+    public static boolean getFirstLevelStarterLoot() {
+        return isLoaded() ? FIRST_LEVEL_STARTER_LOOT.get() : DEFAULT_FIRST_LEVEL_STARTER_LOOT;
     }
 
     /** 1-in-N chance a book dropped by breaking a bookshelf becomes a narrative Random Book; 0 disables. */
@@ -315,6 +351,9 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue difficultyEnabled,
             ModConfigSpec.IntValue carriagesPerTier,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
+            ModConfigSpec.IntValue progressionLevelDelay,
+            ModConfigSpec.BooleanValue firstLevelEasyMobs,
+            ModConfigSpec.BooleanValue firstLevelStarterLoot,
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
             ModConfigSpec.BooleanValue deathReportToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
