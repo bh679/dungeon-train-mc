@@ -6,16 +6,18 @@
 ## Agent Actions
 1. Ensure branch is up to date with `main` _(enforced by hook — will block `gh pr create` if behind)_
 2. Create a PR with a clear title and description
-3. **Log the changelog entry** — run `scripts/release-notes/append-entry.py` on the feature branch
-   with a curated, player-facing summary (plus `--highlight` bullets and `--pr <number>`), then
-   commit and push so the entry is part of the reviewed, squash-merged diff. The shipped version
-   is computed automatically. Skip only for changes with no player-facing effect (pure
-   CI/tooling/docs/refactors). See `.github/release-notes/README.md`.
-4. Enter plan mode and present:
+3. **Draft + log the changelog entry** — unless the change is purely non-player-facing
+   (CI/tooling/docs/refactors), draft a curated, player-facing summary and run
+   `scripts/release-notes/append-entry.py` on the feature branch (plus `--highlight` bullets and
+   `--pr <number>`), then commit and push so the entry is in the PR diff. The shipped version is
+   computed automatically. See `.github/release-notes/README.md`.
+4. Enter plan mode and present for approval:
+   - **The changelog entry — surface the curated, player-facing notes explicitly for the user to
+     confirm. The changelog must be confirmed before the merge, not merely left in the diff.**
    - File diff summary (which files changed, what changed)
    - PR link
    - Any breaking changes or migration steps
-5. Wait for approval
+5. Wait for approval (which includes sign-off on the changelog notes), then merge.
 
 **Gate requirement:** User clicks Approve, then agent merges the PR.
 

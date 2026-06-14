@@ -87,10 +87,12 @@ After implementation is complete:
 
 Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 1. Push branch, open PR with conventional commit title
-2. **Log the changelog entry** on the feature branch with `scripts/release-notes/append-entry.py`
-   (curated player-facing notes) so it lands in the PR diff — see `.github/release-notes/README.md`
+2. **Log + confirm the changelog entry** — append it on the feature branch with
+   `scripts/release-notes/append-entry.py` (curated player-facing notes) so it lands in the PR
+   diff, and present those notes to the user to confirm before merging — see
+   `.github/release-notes/README.md`
 3. Verify CI green
-4. Squash-merge after explicit user approval
+4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
 6. Bump version in `gradle.properties` per the versioning rule
 
