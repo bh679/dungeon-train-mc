@@ -3,9 +3,13 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.npc.Villager;
@@ -27,7 +31,11 @@ import java.util.Random;
 
 /**
  * Rerolls trade offers and weighted-randomizes the level (1-5; 1-2 most common,
- * 5 rare) of villagers spawned on the train with a profession. Sticky: a
+ * 5 rare) of villagers spawned on the train with a profession. When difficulty
+ * progression is enabled the rolled level is capped to the current mob weapon
+ * stage (none → 1, wood → 2, stone → 3, iron → 4, diamond → 5) via
+ * {@link #maxLevelForTier}, so early-run villagers stay low-level and the full
+ * range unlocks as mob weapons advance. Sticky: a
  * {@code dungeontrain_trades_rerolled} tag is added after the first roll so
  * chunk reloads don't re-roll.
  *
@@ -74,7 +82,7 @@ public final class VillagerTrainSpawnEvents {
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         Level level = event.getLevel();
-        if (level.isClientSide) return;
+        if (!(level instanceof ServerLevel serverLevel)) return;
         if (event.loadedFromDisk()) return;
 
         Entity entity = event.getEntity();
@@ -99,7 +107,12 @@ public final class VillagerTrainSpawnEvents {
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
         if (tradeMap == null) return;
 
-        int newLevel = pickLevel(villager.getRandom());
+        int newLevel;
+        if (DungeonTrainConfig.getDifficultyEnabled()) {
+            newLevel = cappedLevel(villager.getRandom(), DifficultyProgression.currentTier(serverLevel));
+        } else {
+            newLevel = pickLevel(villager.getRandom());
+        }
         villager.setVillagerData(data.setLevel(newLevel));
         villager.setOffers(generateOffersFor(villager, tradeMap, newLevel));
         villager.addTag(REROLLED_TAG);
@@ -121,6 +134,28 @@ public final class VillagerTrainSpawnEvents {
             if (roll < cumulative) return i + 1;
         }
         return MAX_LEVEL;
+    }
+
+    /**
+     * Maximum villager level allowed at {@code difficultyTier}, paired to the mob
+     * weapon stage: none → 1, wood → 2, stone → 3, iron → 4, diamond/netherite → 5
+     * (clamped at {@link #MAX_LEVEL}). Derived from
+     * {@link ProceduralTiers#dominantWeaponStage} so the cap tracks the actual mob
+     * weapon curve. Package-private for unit tests.
+     */
+    static int maxLevelForTier(int difficultyTier) {
+        return Math.min(MAX_LEVEL, ProceduralTiers.dominantWeaponStage(difficultyTier) + 1);
+    }
+
+    /**
+     * Roll a villager level on the same weighted scale as {@link #pickLevel}, then
+     * cap it at {@link #maxLevelForTier} for the current difficulty tier. The cap is
+     * a ceiling, not a rescale — rolls above it collapse to the cap. Always returns
+     * a value in {@code [1, MAX_LEVEL]} since the stage mapping floors at 1.
+     * Package-private for unit tests.
+     */
+    static int cappedLevel(RandomSource rng, int difficultyTier) {
+        return Math.min(pickLevel(rng), maxLevelForTier(difficultyTier));
     }
 
     private static MerchantOffers generateOffersFor(Villager villager,
