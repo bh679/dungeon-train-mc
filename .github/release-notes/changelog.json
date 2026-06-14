@@ -29,9 +29,9 @@
       ],
       "pr": 368,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "enemy-difficulty-bands",
@@ -49,9 +49,9 @@
       ],
       "pr": 369,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "gamemode-advancement-gate",
@@ -66,9 +66,9 @@
       ],
       "pr": 371,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "variant-mob-default-equipment",
@@ -83,9 +83,9 @@
       ],
       "pr": 370,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     },
     {
       "id": "piglin-first-band-magma-fix",
@@ -100,9 +100,9 @@
       ],
       "pr": 373,
       "date": "2026-06-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.298.0",
+      "released_at": "2026-06-14T10:24:46Z"
     }
   ]
 }
