@@ -32,6 +32,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enemy-difficulty-bands",
+      "version": "0.295.0",
+      "type": "feat",
+      "title": "Enemies scale with difficulty level",
+      "summary": "Train enemies now spawn based on the current difficulty. Each spawn egg has a difficulty range, so the early game stays gentle \u2014 small slimes and basic mobs \u2014 while tougher foes like husks, bogged and vindicators ramp in only as you travel deeper and the difficulty climbs. When an enemy is out of its range, that spot fills with an in-range enemy instead, so enemy carriages and cages are never left empty.",
+      "highlights": [
+        "Easy mobs (small slimes) are gated to the opening levels; tougher mobs appear only at higher difficulty",
+        "Tuned difficulty windows across the skeleton, bogged, pillager, vindicator, zombie and slime carriages",
+        "Editors can set a per-egg min/max difficulty band in the block-variant menu (shift-click the max down to 'all')"
+      ],
+      "pr": 369,
+      "date": "2026-06-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
