@@ -172,12 +172,19 @@ public final class RunStatsEvents {
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet) {
         String cause = source.getLocalizedDeathMessage(player).getString();
         List<DeathField> fields = List.of(
+                // Run-stats strip (top death-screen row).
                 new DeathField("Distance", DeathReportFormat.distance(packet.distanceBlocks())),
                 new DeathField("Time", DeathReportFormat.time(packet.runTicks())),
                 new DeathField("Carts travelled", Integer.toString(packet.cartsTravelled())),
-                new DeathField("Mobs killed", Integer.toString(packet.mobKills())),
                 new DeathField("Loot containers", Integer.toString(packet.containersOpened())),
-                new DeathField("Books read", Integer.toString(packet.booksRead())));
+                new DeathField("Books read", Integer.toString(packet.booksRead())),
+                // Combat strip (death-screen combat row): PlayerMob interactions + damage.
+                new DeathField("Players encountered", Integer.toString(packet.playersEncountered())),
+                new DeathField("Players killed", Integer.toString(packet.playersKilled())),
+                new DeathField("Players befriended", Integer.toString(packet.playersBefriended())),
+                new DeathField("Mobs killed", Integer.toString(packet.mobKills())),
+                new DeathField("Damage dealt", DeathReportFormat.damage(packet.damageDealt())),
+                new DeathField("Damage taken", DeathReportFormat.damage(packet.damageTaken())));
         List<ItemStack> icons = List.of(
                 packet.mostUsedWeapon(),
                 packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
