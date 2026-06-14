@@ -1,3 +1,21 @@
 {
-  "entries": []
+  "entries": [
+    {
+      "id": "cinematic-spawn-on-train",
+      "version": "0.294.0",
+      "type": "feat",
+      "title": "Cinematic spawn-on-train intro",
+      "summary": "You now begin each new world aboard the train. On your first arrival, a short cinematic sweeps up from the ground to reveal your train before handing you the controls \u2014 press Space at any time to skip it.",
+      "highlights": [
+        "Spawn standing on a flatbed of the train instead of on the ground beside it",
+        "A fly-up intro camera reveals the train the first time you enter a world",
+        "Press Space to skip the intro (any other key shows the hint)"
+      ],
+      "pr": 365,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.294.0",
+      "released_at": "2026-06-14T06:37:16Z"
+    }
+  ]
 }

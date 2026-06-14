@@ -1,0 +1,130 @@
+package games.brennan.dungeontrain.event;
+
+import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.net.CinematicIntroPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import org.slf4j.Logger;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Server-side glue for the spawn intro cinematic. Keeps the cinematic
+ * concerns (trigger gate, packet dispatch, temporary invulnerability) out of
+ * {@link PlayerJoinEvents}.
+ *
+ * <p>The camera itself is entirely client-side (see {@code CinematicCameraController});
+ * this service only decides <em>whether</em> to play, sends the start packet
+ * carrying the old ground spawn pose as the camera start, and shields the
+ * player from damage while they have no control.</p>
+ */
+public final class CinematicIntroService {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Standing eye height — the cinematic camera starts where the player's eyes were on the ground. */
+    private static final double EYE_HEIGHT = 1.62;
+
+    /** Blocks the camera climbs over the cinematic. */
+    private static final double RISE_HEIGHT = 22.0;
+    /** Blocks the camera eases back (away from the player) over the cinematic. */
+    private static final double PULL_BACK = 14.0;
+    /** Look target is the player's feet + this, so the camera aims at the upper body, not the deck. */
+    private static final double LOOK_Y_OFFSET = 1.2;
+
+    /** Extra ticks of invulnerability beyond the cinematic length — safety net for a dropped done-packet. */
+    private static final int INVULN_GRACE_TICKS = 40;
+
+    /** Player UUID → server-tick deadline at which spawn-invulnerability is force-cleared. */
+    private static final Map<UUID, Long> INVULN_UNTIL = new ConcurrentHashMap<>();
+
+    /**
+     * Players whose intro cinematic is currently running. Used to defer the
+     * starting-book lightning strike ({@link StartingBookEvents}) until the
+     * cinematic ends. Added in {@link #play}; removed on {@link #onClientDone}
+     * (precise end) or by the {@link #tick} fallback (missing done-packet).
+     */
+    private static final Set<UUID> ACTIVE = ConcurrentHashMap.newKeySet();
+
+    private CinematicIntroService() {}
+
+    /** True while {@code player}'s intro cinematic is playing (no control yet). */
+    public static boolean isCinematicActive(UUID playerId) {
+        return ACTIVE.contains(playerId);
+    }
+
+    /**
+     * Trigger gate. Single switch point for the "frequency" decision — today:
+     * config-enabled AND this player hasn't seen the intro in this world yet.
+     */
+    public static boolean shouldPlay(ServerPlayer player) {
+        if (!DungeonTrainConfig.isIntroCinematicEnabled()) return false;
+        return !player.getData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get());
+    }
+
+    /**
+     * Send the start packet (ground pose → camera start), mark the player as
+     * having seen the intro, and open the invulnerability window. Call only
+     * after the player's body has been teleported onto the train.
+     */
+    public static void play(ServerPlayer player, PlayerJoinEvents.SpawnPlacement groundPose) {
+        int duration = DungeonTrainConfig.getIntroCinematicDurationTicks();
+        CinematicIntroPacket pkt = new CinematicIntroPacket(
+            groundPose.x(), groundPose.y() + EYE_HEIGHT, groundPose.z(),
+            groundPose.yaw(), groundPose.pitch(),
+            RISE_HEIGHT, PULL_BACK, LOOK_Y_OFFSET,
+            duration);
+        DungeonTrainNet.sendTo(player, pkt);
+        player.setData(ModDataAttachments.SEEN_INTRO_CINEMATIC.get(), Boolean.TRUE);
+        ACTIVE.add(player.getUUID());
+        beginInvuln(player, duration);
+        LOGGER.info("[DungeonTrain] Intro cinematic for {}: camStart=({}, {}, {}) yaw={} pitch={} duration={}t",
+            player.getName().getString(),
+            String.format("%.1f", groundPose.x()), String.format("%.1f", groundPose.y() + EYE_HEIGHT),
+            String.format("%.1f", groundPose.z()),
+            String.format("%.1f", groundPose.yaw()), String.format("%.1f", groundPose.pitch()), duration);
+    }
+
+    private static void beginInvuln(ServerPlayer player, int duration) {
+        long deadline = player.serverLevel().getGameTime() + duration + INVULN_GRACE_TICKS;
+        INVULN_UNTIL.put(player.getUUID(), deadline);
+        player.setInvulnerable(true);
+    }
+
+    /** Client signalled the cinematic ended — clear the shield early and release the lightning. */
+    public static void onClientDone(ServerPlayer player) {
+        ACTIVE.remove(player.getUUID());
+        if (INVULN_UNTIL.remove(player.getUUID()) != null) {
+            player.setInvulnerable(false);
+        }
+    }
+
+    /**
+     * Per-tick safety net (hook from an overworld {@code LevelTickEvent.Post}).
+     * Clears invulnerability for any player whose window has elapsed even if
+     * the client never sent a done-packet.
+     */
+    public static void tick(MinecraftServer server) {
+        if (INVULN_UNTIL.isEmpty()) return;
+        long now = server.overworld().getGameTime();
+        INVULN_UNTIL.entrySet().removeIf(e -> {
+            if (now < e.getValue()) return false;
+            ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
+            if (p != null) p.setInvulnerable(false);
+            ACTIVE.remove(e.getKey());
+            return true;
+        });
+    }
+
+    /** Drop tracking on logout (do not touch the now-offline entity). */
+    public static void forget(UUID playerId) {
+        INVULN_UNTIL.remove(playerId);
+        ACTIVE.remove(playerId);
+    }
+}

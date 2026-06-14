@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.registry;
 
+import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import net.neoforged.bus.api.IEventBus;
@@ -31,6 +32,21 @@ public final class ModDataAttachments {
         TYPES.register("player_run_state",
             () -> AttachmentType.builder(PlayerRunState::new)
                 .serialize(PlayerRunState.CODEC)
+                .build()
+        );
+
+    /**
+     * Per-player flag: has this player already seen the fly-up spawn intro
+     * cinematic in this world? Set once on first login and serialized so it
+     * survives logout / world reload. {@code copyOnDeath} preserves it across
+     * the respawn clone so a death never re-triggers the intro (it only fires
+     * on login via {@code PlayerJoinEvents}).
+     */
+    public static final Supplier<AttachmentType<Boolean>> SEEN_INTRO_CINEMATIC =
+        TYPES.register("seen_intro_cinematic",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .copyOnDeath()
                 .build()
         );
 
