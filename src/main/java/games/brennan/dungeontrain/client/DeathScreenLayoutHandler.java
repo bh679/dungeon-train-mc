@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
+import games.brennan.dungeontrain.player.PendingInventory;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
@@ -33,6 +34,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameRules;
@@ -49,6 +51,7 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -413,14 +416,27 @@ public final class DeathScreenLayoutHandler {
         // back to the overworld on subsequent loads.
         PendingStartingDimension.set(startingDim);
 
+        // When the current world has keepInventory on, snapshot the player's
+        // inventory + XP (consumed on the next world's first login by
+        // KeepInventoryCarryEvents) and create the next world with keepInventory
+        // on too. Otherwise a fresh save resets the gamerule to its default
+        // (false), so carried items would just be lost on the next death.
+        boolean keepInventory = captureKeepInventory(server);
+
         String name = "Dungeon Train " + System.currentTimeMillis();
+        GameRules gameRules = new GameRules();
+        if (keepInventory) {
+            // Null server is safe here: the new world's server doesn't exist
+            // yet, and KEEP_INVENTORY has no change callback to fire.
+            gameRules.getRule(GameRules.RULE_KEEPINVENTORY).set(true, null);
+        }
         LevelSettings settings = new LevelSettings(
                 name,
                 cur.gameType(),
                 cur.hardcore(),
                 cur.difficulty(),
                 cur.allowCommands(),
-                new GameRules(),
+                gameRules,
                 worldData.getDataConfiguration());
 
         long seed = sameSeed ? curOpts.seed() : WorldOptions.randomSeed();
@@ -470,6 +486,52 @@ public final class DeathScreenLayoutHandler {
 
         WorldOpenFlows flows = mc.createWorldOpenFlows();
         flows.createFreshLevel(name, settings, options, dims, new TitleScreen());
+    }
+
+    /**
+     * Read the current world's {@code keepInventory} gamerule and, when on,
+     * snapshot the local player's inventory + experience into
+     * {@link PendingInventory} so {@link games.brennan.dungeontrain.event.KeepInventoryCarryEvents}
+     * can re-apply it on the next world's first login. Returns the gamerule
+     * value so the caller can mirror it onto the new world's {@link GameRules}.
+     *
+     * <p>The read + snapshot run on the server thread (where the gamerule and
+     * the player live) via the same {@code server.execute(...)} +
+     * {@link CompletableFuture} round-trip as {@link #preDrainTrainSubLevels}.
+     * Any stale snapshot is cleared whenever keepInventory is off, so a later
+     * transition can't restore a previous capture.</p>
+     */
+    private static boolean captureKeepInventory(MinecraftServer server) {
+        UUID localId = Minecraft.getInstance().player != null
+                ? Minecraft.getInstance().player.getUUID() : null;
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        server.execute(() -> {
+            try {
+                boolean keep = server.getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY);
+                if (keep && localId != null) {
+                    ServerPlayer player = server.getPlayerList().getPlayer(localId);
+                    if (player != null) {
+                        PendingInventory.capture(player);
+                    } else {
+                        LOGGER.warn("DeathScreenLayout: keepInventory on but server player {} not found; carrying nothing", localId);
+                        PendingInventory.clear();
+                    }
+                } else {
+                    PendingInventory.clear();
+                }
+                result.complete(keep);
+            } catch (Throwable t) {
+                LOGGER.warn("DeathScreenLayout: keepInventory capture failed; new world will not carry inventory", t);
+                PendingInventory.clear();
+                result.complete(false);
+            }
+        });
+        try {
+            return result.get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOGGER.warn("DeathScreenLayout: keepInventory capture wait timed out or errored", e);
+            return false;
+        }
     }
 
     private static void preDrainTrainSubLevels(MinecraftServer server) {
@@ -532,6 +594,10 @@ public final class DeathScreenLayoutHandler {
      * hang memory in this project).
      */
     public static void goToTitleScreen() {
+        // The title path is not a "next world" transition — drop any snapshot a
+        // prior (failed/abandoned) launchWorld may have left so it can't leak
+        // into the next world the player loads from the title screen.
+        PendingInventory.clear();
         Minecraft mc = Minecraft.getInstance();
         MinecraftServer server = mc.getSingleplayerServer();
         if (server != null) {

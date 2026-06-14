@@ -21,22 +21,17 @@ via NeoForge jarJar, so the pack only needs **two mod entries**:
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
 
-### Optional add-ons (opt-in at install)
+### Optional add-ons (declared, not bundled)
 
-Listed in the manifest as **optional** files (`required: false`), so the CurseForge launcher
-offers them at install — present in the pack by default, but the player chooses whether to
-enable them. They are **not** bundled and never force-installed. Sourced from `optional_mods`
-in `modpack.config.json` (pinned like Sable):
+Distant Horizons and Tectonic are **not** shipped in the pack — they're declared only as
+CurseForge **`optionalDependency` relations** (see the table below), so they appear under the
+pack's "Relations" and players install them themselves. Nothing is bundled or force-installed.
 
-| Mod | CF project | File | Notes |
-|---|---|---|---|
-| Distant Horizons | `508933` | `7375285` | LOD render distance. **Use 2.x** — 3.0.x crashes on world entry. |
-| Tectonic | `686836` | `7903156` | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect. |
-| Lithostitched | `936015` | `8237649` | Tectonic's required dependency — **enable together with Tectonic.** |
-
-> Tectonic only changes terrain when the in-game **Compatible Terrain** option is enabled
-> (Dungeon Train settings ⚙). Without it, DT uses its own raised-floor terrain and Tectonic
-> has no visible effect. Distant Horizons works regardless (render-layer).
+- **Distant Horizons** — LOD render distance. **Use 2.x** (3.0.x crashes on world entry).
+- **Tectonic** — terrain generator. Needs **Compatible Terrain** ON in DT settings to take
+  effect (without it DT uses its own raised-floor terrain; DH is render-layer and works
+  regardless). Installing Tectonic via CurseForge automatically pulls in its **Lithostitched**
+  dependency, so the pack doesn't list Lithostitched itself.
 
 ### Declared dependencies (CurseForge "Relations")
 
@@ -51,8 +46,10 @@ from `curseforge_relations` in `modpack.config.json`:
 | `adventure-item-names` | `embeddedLibrary` | jarJar'd inside DT. |
 | `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
 | `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
+| `distant-horizons` | `optionalDependency` | Opt-in add-on — relation only (not bundled). |
+| `tectonic` | `optionalDependency` | Opt-in add-on — relation only; pulls Lithostitched on install. |
 
-Keep this list in sync with `release.yml`'s `curseforge-dependencies` if the mod's deps change.
+Keep this list in sync with the mod's own `curseforge-dependencies` in `release.yml` — which declares `distant-horizons(optional)` + `tectonic(optional)`. (Lithostitched is Tectonic's dependency, not DT's, and CurseForge resolves it automatically — so it appears in neither.)
 
 ## How it deploys (15 min after every mod release)
 
@@ -83,16 +80,11 @@ tested against (`sable_version` in `gradle.properties`). When you bump `sable_ve
 
 If these drift, the pack ships an old Sable against a newer DT.
 
-The same pinning applies to every entry in `optional_mods` (Distant Horizons / Tectonic /
-Lithostitched): when bumping one, set its `file_id` in `modpack.config.json` to the matching
-NeoForge 1.21.1 CurseForge file (each mod's `/files/all` page). Keep Tectonic + Lithostitched
-versions in step.
-
 ## Files
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, and the pinned `optional_mods` add-ons (DH / Tectonic / Lithostitched). |
+| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, and `curseforge_relations` (incl. DH/Tectonic as optional deps). |
 | `overrides/` | Copied into the player's instance on install. Empty for now. |
 | `../scripts/modpack/build-manifest.py` | Renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/publish-curseforge.sh` | Zips + uploads to CurseForge using the same `CURSEFORGE_TOKEN`. |

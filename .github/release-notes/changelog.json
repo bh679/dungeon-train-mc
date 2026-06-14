@@ -106,7 +106,7 @@
     },
     {
       "id": "compatible-terrain-dh-tectonic",
-      "version": "0.298.0",
+      "version": "0.299.0",
       "type": "feat",
       "title": "Compatible Terrain mode + optional Distant Horizons & Tectonic support",
       "summary": "A new Compatible Terrain option lets Dungeon Train generate vanilla-style overworlds, so terrain mods like Tectonic and Terralith - and Distant Horizons' long-range views - work with the train. It is off by default (classic Dungeon Train terrain stays the default); switch it on in Dungeon Train settings before creating a world. The modpack now offers Distant Horizons and Tectonic as optional add-ons you can enable at install (use Distant Horizons 2.x).",
@@ -116,6 +116,124 @@
         "Classic terrain unchanged by default; existing worlds unaffected"
       ],
       "pr": 375,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.299.0",
+      "released_at": "2026-06-14T11:49:57Z"
+    },
+    {
+      "id": "leatherworker-shop-carriage",
+      "version": "0.300.0",
+      "type": "feat",
+      "title": "Leatherworker shop carriage",
+      "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery \u2014 handy for patching together armour or recolouring your kit mid-run.",
+      "highlights": [
+        "New leatherworker shop carriage joins the train's rotating shops",
+        "Stocked with leather, the full leather-armour set and leather horse armour",
+        "A complete rainbow of dyes, plus emeralds, a cauldron, a potion and a water bucket"
+      ],
+      "pr": 377,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
+    },
+    {
+      "id": "fix-spawn-under-train",
+      "version": "0.300.0",
+      "type": "fix",
+      "title": "Reliable spawn on the train's front deck",
+      "summary": "Joining or respawning onto the moving train now reliably lands you standing on the front flatbed deck. Before, if the train hadn't fully settled or had already grown past its first carriage, you could occasionally drop through to the tracks under the train or get stuck inside the deck floor.",
+      "highlights": [
+        "Always spawn cleanly on the train's front deck",
+        "No more falling under the train or clipping into the flatbed slab on join or respawn"
+      ],
+      "pr": 378,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
+    },
+    {
+      "id": "out-of-band-mob-cells-air",
+      "version": "0.301.0",
+      "type": "fix",
+      "title": "Empty enemy spots no longer leave a stray block behind",
+      "summary": "A carriage spot that can only hold enemies \u2014 and whose enemies are all the wrong level for your current depth \u2014 now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
+      "highlights": [
+        "Mob-only carriage spots with no depth-appropriate enemy now clear to air",
+        "No more leftover placeholder block where a not-yet-eligible mob would stand"
+      ],
+      "pr": 379,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.301.0",
+      "released_at": "2026-06-14T12:44:44Z"
+    },
+    {
+      "id": "advancements-keybind-hint",
+      "version": "0.302.0",
+      "type": "feat",
+      "title": "Advancements keybind reminder in chat",
+      "summary": "Earn a Dungeon Train advancement before you've ever opened the advancements screen and a short, train-flavoured message now points you at the key that opens it. It shows your actual (rebindable) keybind, picks at random from a dozen conductor-style lines, and quietly stops for good once you open the advancements screen.",
+      "highlights": [
+        "Chat reminder of the key that opens your advancements",
+        "Shows your real, rebindable keybind (not a hardcoded key)",
+        "Random from 12 train-flavoured lines; stops once you open the screen"
+      ],
+      "pr": 381,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.302.0",
+      "released_at": "2026-06-14T15:04:05Z"
+    },
+    {
+      "id": "train-traversal-advancements",
+      "version": "0.302.0",
+      "type": "feat",
+      "title": "Five train-traversal advancements",
+      "summary": "Five new advancements reward exploring the world the train rides through \u2014 hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
+      "highlights": [
+        "Track Record \u2014 set foot on the rails below the train",
+        "Off the Rails \u2014 leave the train and tracks behind for the open world",
+        "Back on Track \u2014 climb aboard again after getting off",
+        "Taking the Stairs \u2014 use a bridge-pillar staircase",
+        "Beneath the Candy Kingdom \u2014 enter a tunnel stairwell"
+      ],
+      "pr": 382,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.302.0",
+      "released_at": "2026-06-14T15:04:05Z"
+    },
+    {
+      "id": "armor-stand-variants",
+      "version": "0.302.0",
+      "type": "feat",
+      "title": "Armor stands as randomized carriage contents",
+      "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty \u2014 more variety in what you find aboard the train.",
+      "highlights": [
+        "Armor stands can now appear as random carriage contents, sometimes wearing a full set of gear",
+        "Each stand's loadout is rolled per spawn, so no two carriages are guaranteed alike"
+      ],
+      "pr": 383,
+      "date": "2026-06-14",
+      "released": true,
+      "released_in": "v0.302.0",
+      "released_at": "2026-06-14T15:04:05Z"
+    },
+    {
+      "id": "keep-inventory-carry-next-world",
+      "version": "0.301.0",
+      "type": "feat",
+      "title": "Keep Inventory now carries your gear to the next world",
+      "summary": "With Keep Inventory turned on, dying and starting a New World now brings your whole inventory and experience along \u2014 and the new world keeps the rule on, so your gear and XP carry through run after run. With Keep Inventory off, nothing changes.",
+      "highlights": [
+        "Inventory (including armor and offhand) and XP carry into the next world when Keep Inventory is on",
+        "The next world keeps the Keep Inventory rule enabled automatically, so it chains across every run",
+        "No change when Keep Inventory is off \u2014 the next world still starts empty"
+      ],
+      "pr": 385,
       "date": "2026-06-14",
       "released": false,
       "released_in": null,

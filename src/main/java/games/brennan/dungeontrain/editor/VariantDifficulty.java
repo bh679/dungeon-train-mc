@@ -10,8 +10,8 @@ package games.brennan.dungeontrain.editor;
  * <p>When a carriage's contents variant is rolled, mob entries whose band does
  * not contain the carriage's tier are dropped from the cell's candidate pool
  * <b>before</b> the weighted pick, so the cell re-rolls to an in-range
- * candidate (another egg or a block). Out-of-band eggs therefore never spawn
- * and never leave an empty cell unless every candidate is out of band.</p>
+ * candidate (another egg or a block). Out-of-band eggs therefore never spawn;
+ * a cell whose only candidates are out-of-band mobs is cleared to air.</p>
  *
  * <p>Mirrors the {@code fillMin}/{@code fillMax} convention used by
  * {@link ContainerContentsPool}: {@code min} is a plain tier (default 0,

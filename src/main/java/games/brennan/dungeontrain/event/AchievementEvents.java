@@ -17,6 +17,8 @@ import games.brennan.dungeontrain.narrative.StartingBookFactory;
 import games.brennan.dungeontrain.narrative.StartingBookRegistry;
 import games.brennan.dungeontrain.narrative.StoryFile;
 import games.brennan.dungeontrain.narrative.StoryRegistry;
+import games.brennan.dungeontrain.net.AdvancementsHintPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
@@ -92,6 +94,17 @@ public final class AchievementEvents {
     /** Per-player last-right-clicked chest pos + tick, for debouncing only. */
     private static final Map<UUID, BlockPos> LAST_CHEST_POS = new HashMap<>();
     private static final Map<UUID, Long> LAST_CHEST_TICK = new HashMap<>();
+
+    /**
+     * Set while {@link #onPlayerLoggedIn} replays the cross-world sidecar onto
+     * this world's advancements. That replay calls {@code award(...)}, which
+     * re-fires {@link AdvancementEvent.AdvancementEarnEvent} for every
+     * previously-earned advancement — without this guard the keybind hint would
+     * spam the joining player on every login. Server-thread scoped (login and
+     * award both run on the server thread), mirroring the gamerule / Discord
+     * announce suppression that wraps the same loop.
+     */
+    private static volatile boolean replaying = false;
 
     private AchievementEvents() {}
 
@@ -554,6 +567,7 @@ public final class AchievementEvents {
         // genuine first-time earns, and a server's global announce setting, are
         // unaffected. (replayed is an int[] holder so the lambda can mutate it.)
         int[] replayed = {0};
+        replaying = true;
         try {
             DiscordService.runWithAdvancementAnnounceSuppressed(() -> {
                 for (ResourceLocation id : granted) {
@@ -569,6 +583,7 @@ public final class AchievementEvents {
                 }
             });
         } finally {
+            replaying = false;
             if (wasAnnouncing) announce.set(true, server);
         }
         if (replayed[0] > 0) {
@@ -631,6 +646,15 @@ public final class AchievementEvents {
         if (GlobalAchievementStore.append(player.getUUID(), id)) {
             LOGGER.info("[DungeonTrain] Wrote global achievement {} for {}",
                 id, player.getName().getString());
+        }
+        // Nudge new players toward the advancements screen: on a genuine
+        // (non-replay) gameplay-advancement earn, ping the client to maybe show
+        // the keybind hint. editor/* advancements are excluded — they're a
+        // creative-mode dev tab and aren't gated by the game-mode mixin. The
+        // client decides whether to actually display it (gated on its local
+        // "opened advancements" flag) and renders it with the live keybind.
+        if (!replaying && !id.getPath().startsWith("editor/")) {
+            DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
         }
     }
 }
