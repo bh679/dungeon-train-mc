@@ -253,7 +253,12 @@ public final class CarriageContentsPlacer {
                 // and spawns mobs at cells whose pick has entityId != null.
                 // Block pass already AIRed those cells via the existing
                 // empty-placeholder branch.
-                spawnVariantMobsForContents(level, origin, contents, dims, seed, carriagePIdx);
+                // Pass carriageOrigin (NOT the interior `origin`): this method
+                // applies interiorOrigin() itself, mirroring applyVariantBlocks
+                // (line 156). Passing the already-interior origin would
+                // double-offset every spawn by +1,+1,+1, landing entities a
+                // block off their authored cell (into the shell for edge cells).
+                spawnVariantMobsForContents(level, carriageOrigin, contents, dims, seed, carriagePIdx);
             }
             if (placeBlocks) {
                 LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored pIdx={} mode={}{}",
