@@ -53,9 +53,9 @@ public final class DifficultyProgression {
      * Raw geometric difficulty tier for a signed travelled-carriage value, with
      * <strong>no</strong> progression delay applied:
      * {@code abs(travelled) / max(1, carriagesPerTier)}. Pure (params in) so it is
-     * unit-testable without a NeoForge config bootstrap. The first-level-peace gate
-     * ({@link #firstLevelPeaceful}) keys off this raw tier; difficulty scaling keys
-     * off {@link #effectiveTier} / {@link #tierForTravelled}.
+     * unit-testable without a NeoForge config bootstrap. Difficulty scaling keys off
+     * {@link #effectiveTier} / {@link #tierForTravelled}; the gentle-onboarding stages
+     * ({@link #onboardingStage}) key off raw travelled-carriage counts directly.
      */
     static int rawTier(int travelled, int carriagesPerTier) {
         return Math.abs(travelled) / Math.max(1, carriagesPerTier);
@@ -93,24 +93,53 @@ public final class DifficultyProgression {
     }
 
     /**
-     * Whether the furthest-progressed online player is still within the first <em>raw</em> tier
-     * band — the original first {@code carriagesPerTier} carriages. Uses the raw, un-delayed tier
-     * so the first-band features (peaceful spawns, starter loot) are independent of the
-     * progression delay. With no players online {@link #maxTravelledCarriageIndex} is 0 → raw
-     * tier 0 → in the first band.
+     * The three-stage gentle-onboarding ramp a carriage hostile falls into, by the lead player's
+     * raw travelled-carriage progress. {@link #NO_HOSTILES} (the opening stretch) suppresses
+     * authored hostiles entirely; {@link #EASY_MOBS} (the next stretch) replaces them with small
+     * slimes / magma cubes; {@link #NORMAL} spawns them as authored. Keys off raw travelled
+     * carriages, so it is independent of {@link DungeonTrainConfig#getProgressionLevelDelay()}.
      */
-    public static boolean inFirstBand(ServerLevel serverLevel) {
-        return rawTier(maxTravelledCarriageIndex(serverLevel),
-                       DungeonTrainConfig.getCarriagesPerTier()) == 0;
+    public enum OnboardingStage { NO_HOSTILES, EASY_MOBS, NORMAL }
+
+    /**
+     * Pure onboarding-stage decision over the lead player's signed {@code travelled} progress and
+     * the two stage lengths (in carriages). The no-hostiles stage occupies {@code [0, N)} and the
+     * easy-mobs (slimes) stage the {@code E} carriages after it, {@code [N, N+E)}; everything from
+     * {@code N+E} on is {@link OnboardingStage#NORMAL}. A disabled stage contributes zero length, so
+     * e.g. disabling no-hostiles makes slimes start at carriage 0. Uses {@code abs(travelled)} (so
+     * backward travel ramps identically) and clamps negative counts to 0. Pure (params in) so it is
+     * unit-testable without a config/level bootstrap.
+     */
+    static OnboardingStage onboardingStage(int travelled,
+                                           boolean noHostilesOn, int noHostilesCarriages,
+                                           boolean easyMobsOn, int easyMobsCarriages) {
+        int t = Math.abs(travelled);
+        int noHostilesEnd = noHostilesOn ? Math.max(0, noHostilesCarriages) : 0;
+        if (t < noHostilesEnd) return OnboardingStage.NO_HOSTILES;
+        int easyMobsEnd = noHostilesEnd + (easyMobsOn ? Math.max(0, easyMobsCarriages) : 0);
+        if (t < easyMobsEnd) return OnboardingStage.EASY_MOBS;
+        return OnboardingStage.NORMAL;
     }
 
     /**
-     * Whether authored hostile carriage mobs should currently be replaced with small
-     * slimes / magma cubes: true when {@link DungeonTrainConfig#getFirstLevelEasyMobs()}
-     * is enabled and the run is still {@link #inFirstBand}.
+     * Whether {@code travelled} is still inside the gentle opening window — the
+     * {@code noHostilesCarriages + easyMobsCarriages} carriages spanning both onboarding stages,
+     * regardless of the per-stage toggles. Drives the {@link #effectiveLootPrefabId starter-loot}
+     * downgrade so loot stays gentle for as long as the combat intro lasts. Pure (params in).
      */
-    public static boolean firstLevelEasyMobs(ServerLevel serverLevel) {
-        return DungeonTrainConfig.getFirstLevelEasyMobs() && inFirstBand(serverLevel);
+    static boolean inOnboardingWindow(int travelled, int noHostilesCarriages, int easyMobsCarriages) {
+        return Math.abs(travelled) < Math.max(0, noHostilesCarriages) + Math.max(0, easyMobsCarriages);
+    }
+
+    /**
+     * The {@link OnboardingStage} the run is currently in, reading the live config and the
+     * furthest-progressed online player. With no players online {@link #maxTravelledCarriageIndex}
+     * is 0, so a default-on config reports {@link OnboardingStage#NO_HOSTILES}.
+     */
+    public static OnboardingStage onboardingStageFor(ServerLevel serverLevel) {
+        return onboardingStage(maxTravelledCarriageIndex(serverLevel),
+                DungeonTrainConfig.getFirstLevelNoHostiles(), DungeonTrainConfig.getFirstLevelNoHostilesCarriages(),
+                DungeonTrainConfig.getFirstLevelEasyMobs(), DungeonTrainConfig.getFirstLevelEasyMobsCarriages());
     }
 
     /**
@@ -131,12 +160,16 @@ public final class DifficultyProgression {
     /**
      * The loot prefab id a carriage chest should actually roll: the rich treasure prefabs
      * ("loot", "loot_irongold") are swapped for the "starter" prefab when
-     * {@link DungeonTrainConfig#getFirstLevelStarterLoot()} is enabled and the run is still
-     * {@link #inFirstBand}; every other id (and null) passes through unchanged.
+     * {@link DungeonTrainConfig#getFirstLevelStarterLoot()} is enabled and the run is still inside
+     * the gentle opening window ({@link #inOnboardingWindow}); every other id (and null) passes
+     * through unchanged.
      */
     public static String effectiveLootPrefabId(ServerLevel serverLevel, String lootPrefabId) {
         return downgradeLootId(lootPrefabId,
-                DungeonTrainConfig.getFirstLevelStarterLoot() && inFirstBand(serverLevel));
+                DungeonTrainConfig.getFirstLevelStarterLoot()
+                        && inOnboardingWindow(maxTravelledCarriageIndex(serverLevel),
+                                DungeonTrainConfig.getFirstLevelNoHostilesCarriages(),
+                                DungeonTrainConfig.getFirstLevelEasyMobsCarriages()));
     }
 
     /** Outcome of the first-band hostile substitution decision: spawn the authored mob unchanged

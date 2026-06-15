@@ -582,9 +582,9 @@ public final class CarriageContentsPlacer {
                     continue;
                 }
                 Entity entity = created.get();
-                // First-band easy mobs: replace a (rare) baked hostile with a small slime/magma
-                // cube while in the opening raw-tier-0 band; otherwise spawn it as authored.
-                if (trySpawnFirstBandSubstitute(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx)) continue;
+                // Gentle onboarding: suppress a (rare) baked hostile in the no-hostiles stage, or
+                // replace it with a small slime/magma cube in the slimes stage; else spawn authored.
+                if (tryHandleOnboardingHostile(level, entity, new Vec3(worldX, worldY, worldZ), carriagePIdx)) continue;
                 entity.moveTo(worldX, worldY, worldZ, entity.getYRot(), entity.getXRot());
                 // Diagnostic spawn-coords + tick on the persistent-data
                 // subtree (the standard cross-mod-safe location for custom
@@ -769,7 +769,7 @@ public final class CarriageContentsPlacer {
      *
      * <p>Members that are also in {@link #FIRST_BAND_NETHER_ONLY_MOBS} only magma-cube inside the
      * Nether; outside the Nether they spawn as authored. {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS} are
-     * never substituted at all (see {@link #trySpawnFirstBandSubstitute}).</p>
+     * never substituted at all (see {@link #tryHandleOnboardingHostile}).</p>
      */
     private static final TagKey<EntityType<?>> FIRST_BAND_MAGMA_MOBS =
         TagKey.create(Registries.ENTITY_TYPE,
@@ -798,23 +798,35 @@ public final class CarriageContentsPlacer {
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "first_band_nether_only_mobs"));
 
     /**
-     * First-band mob substitution. When {@link DifficultyProgression#firstLevelEasyMobs} holds
-     * (config on + the run still in raw tier 0) and {@code original} is hostile ({@link Enemy}),
-     * spawns a small Slime — or a small Magma Cube when {@code original}'s type is in
-     * {@link #FIRST_BAND_MAGMA_MOBS} — at {@code pos}, tagged + persisted exactly like a
-     * carriage-contents mob, and returns {@code true} so the caller skips the original. Returns
-     * {@code false} (caller spawns the original as authored) for editor previews (sentinel pIdx),
-     * non-hostile mobs, when not in the easy-mobs band, for {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS}
-     * (never substituted, e.g. zombified piglin), or for {@link #FIRST_BAND_NETHER_ONLY_MOBS}
-     * outside the Nether. The slime / magma / no-substitute decision is delegated to
-     * {@link DifficultyProgression#firstBandSubstitute}.
+     * Gentle-onboarding hostile gate. For an authored hostile ({@link Enemy}) carriage mob, applies
+     * the current {@link DifficultyProgression.OnboardingStage}:
+     * <ul>
+     *   <li>{@link DifficultyProgression.OnboardingStage#NO_HOSTILES NO_HOSTILES} — suppresses the
+     *       mob entirely (returns {@code true} without spawning anything; the original is discarded
+     *       unadded, exactly like the slime path below);</li>
+     *   <li>{@link DifficultyProgression.OnboardingStage#EASY_MOBS EASY_MOBS} — spawns a small Slime
+     *       (or a small Magma Cube when {@code original}'s type is in {@link #FIRST_BAND_MAGMA_MOBS})
+     *       at {@code pos}, tagged + persisted exactly like a carriage-contents mob, and returns
+     *       {@code true} so the caller skips the original; the slime / magma / no-substitute decision
+     *       is delegated to {@link DifficultyProgression#firstBandSubstitute};</li>
+     *   <li>{@link DifficultyProgression.OnboardingStage#NORMAL NORMAL} — returns {@code false} so the
+     *       caller spawns the original as authored.</li>
+     * </ul>
+     * Also returns {@code false} (spawn as authored) for editor previews (sentinel pIdx) and
+     * non-hostile mobs, and — in the {@code EASY_MOBS} stage only — for
+     * {@link #FIRST_BAND_NO_SUBSTITUTE_MOBS} (never substituted, e.g. zombified piglin) or
+     * {@link #FIRST_BAND_NETHER_ONLY_MOBS} outside the Nether. In the {@code NO_HOSTILES} stage every
+     * hostile is suppressed regardless of those tags.
      */
-    private static boolean trySpawnFirstBandSubstitute(ServerLevel level, Entity original,
-                                                       Vec3 pos, int carriagePIdx) {
+    private static boolean tryHandleOnboardingHostile(ServerLevel level, Entity original,
+                                                      Vec3 pos, int carriagePIdx) {
         if (carriagePIdx == EDITOR_SENTINEL_PIDX) return false;
         if (!(original instanceof Enemy)) return false;
-        if (!DifficultyProgression.firstLevelEasyMobs(level)) return false;
+        DifficultyProgression.OnboardingStage stage = DifficultyProgression.onboardingStageFor(level);
+        if (stage == DifficultyProgression.OnboardingStage.NORMAL) return false;     // spawn as authored
+        if (stage == DifficultyProgression.OnboardingStage.NO_HOSTILES) return true; // suppress — add nothing
 
+        // EASY_MOBS stage: replace the authored hostile with a small slime / magma cube.
         var holder = original.getType().builtInRegistryHolder();
         DifficultyProgression.FirstBandSubstitute kind = DifficultyProgression.firstBandSubstitute(
             holder.is(FIRST_BAND_NO_SUBSTITUTE_MOBS),
@@ -957,10 +969,10 @@ public final class CarriageContentsPlacer {
                 picked.entityId(), worldPos, carriagePIdx, t.toString());
             return false;
         }
-        // First-band easy mobs: replace an authored hostile with a small slime (magma cube for
-        // nether/raider mobs) while in the opening raw-tier-0 band; no-op otherwise. The
-        // substitute is spawned + tagged inside the helper, so we early-return here.
-        if (trySpawnFirstBandSubstitute(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx)) return true;
+        // Gentle onboarding: in the no-hostiles stage suppress an authored hostile entirely; in the
+        // slimes stage replace it with a small slime (magma cube for nether/raider mobs); no-op
+        // otherwise. The substitute is spawned + tagged inside the helper, so we early-return here.
+        if (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx)) return true;
         // Fresh UUID so the same template at multiple carriages doesn't
         // collide on the UUID index (MC silently drops duplicate UUIDs).
         entity.setUUID(UUID.randomUUID());

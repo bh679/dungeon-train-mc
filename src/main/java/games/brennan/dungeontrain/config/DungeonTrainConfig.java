@@ -53,8 +53,14 @@ public final class DungeonTrainConfig {
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
+    public static final boolean DEFAULT_FIRST_LEVEL_NO_HOSTILES = true;
     public static final boolean DEFAULT_FIRST_LEVEL_EASY_MOBS = true;
     public static final boolean DEFAULT_FIRST_LEVEL_STARTER_LOOT = true;
+    // Onboarding stage lengths in carriages of player progress (independent of carriagesPerTier).
+    public static final int MIN_ONBOARDING_STAGE_CARRIAGES = 0;
+    public static final int MAX_ONBOARDING_STAGE_CARRIAGES = 1000;
+    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 10;
+    public static final int DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 15;
 
     /** 1-in-N chance that a book dropped by breaking a bookshelf becomes a narrative Random Book. 0 disables. */
     public static final int MIN_RANDOM_BOOK_ONE_IN = 0;
@@ -81,7 +87,10 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue CARRIAGES_PER_TIER;
     public static final ModConfigSpec.BooleanValue DIFFICULTY_AFFECTS_BABY_MOBS;
     public static final ModConfigSpec.IntValue PROGRESSION_LEVEL_DELAY;
+    public static final ModConfigSpec.BooleanValue FIRST_LEVEL_NO_HOSTILES;
+    public static final ModConfigSpec.IntValue FIRST_LEVEL_NO_HOSTILES_CARRIAGES;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_EASY_MOBS;
+    public static final ModConfigSpec.IntValue FIRST_LEVEL_EASY_MOBS_CARRIAGES;
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
@@ -103,7 +112,10 @@ public final class DungeonTrainConfig {
         CARRIAGES_PER_TIER = pair.getLeft().carriagesPerTier;
         DIFFICULTY_AFFECTS_BABY_MOBS = pair.getLeft().difficultyAffectsBabyMobs;
         PROGRESSION_LEVEL_DELAY = pair.getLeft().progressionLevelDelay;
+        FIRST_LEVEL_NO_HOSTILES = pair.getLeft().firstLevelNoHostiles;
+        FIRST_LEVEL_NO_HOSTILES_CARRIAGES = pair.getLeft().firstLevelNoHostilesCarriages;
         FIRST_LEVEL_EASY_MOBS = pair.getLeft().firstLevelEasyMobs;
+        FIRST_LEVEL_EASY_MOBS_CARRIAGES = pair.getLeft().firstLevelEasyMobsCarriages;
         FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
@@ -152,11 +164,20 @@ public final class DungeonTrainConfig {
         ModConfigSpec.IntValue progressionLevelDelay = b
                 .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
                 .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
+        ModConfigSpec.BooleanValue firstLevelNoHostiles = b
+                .comment("First onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors do not spawn at all while the lead player is within the first firstLevelNoHostilesCarriages carriages of progress, for a combat-free opening stretch. Passive/neutral carriage mobs (villagers, traders, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
+                .define("firstLevelNoHostiles", DEFAULT_FIRST_LEVEL_NO_HOSTILES);
+        ModConfigSpec.IntValue firstLevelNoHostilesCarriages = b
+                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 10. Independent of carriagesPerTier; 0 disables the stage.")
+                .defineInRange("firstLevelNoHostilesCarriages", DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelEasyMobs = b
-                .comment("When true, hostile (Enemy) mobs authored into carriage interiors are replaced with small slimes (or small magma cubes for nether/raider mobs, per the dungeontrain:first_band_magma_mobs entity-type tag; piglins/piglin brutes in dungeontrain:first_band_nether_only_mobs only become magma cubes in the Nether and otherwise spawn as authored; mobs in dungeontrain:first_band_no_substitute_mobs, e.g. zombified piglins, are never substituted) while the run is still in the first tier band (raw tier 0: the first carriagesPerTier carriages), giving an easy combat intro. Passive/neutral carriage mobs (villagers, animals, PlayerMobs) are unaffected. Like firstLevelStarterLoot this uses the raw, un-delayed tier (independent of progressionLevelDelay).")
+                .comment("Second onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors are replaced with small slimes (or small magma cubes for nether/raider mobs, per the dungeontrain:first_band_magma_mobs entity-type tag; piglins/piglin brutes in dungeontrain:first_band_nether_only_mobs only become magma cubes in the Nether and otherwise spawn as authored; mobs in dungeontrain:first_band_no_substitute_mobs, e.g. zombified piglins, are never substituted) while the lead player is within the slimes stage — the firstLevelEasyMobsCarriages carriages that follow the no-hostiles stage — giving an easy combat intro. Passive/neutral carriage mobs (villagers, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelEasyMobs", DEFAULT_FIRST_LEVEL_EASY_MOBS);
+        ModConfigSpec.IntValue firstLevelEasyMobsCarriages = b
+                .comment("Length, in carriages of player progress, of the slimes stage (see firstLevelEasyMobs), starting after the no-hostiles stage. Default 15. Independent of carriagesPerTier; 0 disables the stage.")
+                .defineInRange("firstLevelEasyMobsCarriages", DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelStarterLoot = b
-                .comment("When true, carriage-interior chests linked to the rich 'loot' or 'loot_irongold' loot prefabs instead roll the 'starter' prefab while the run is still in the first tier band (raw tier 0), so the peaceful intro hands out starter-tier loot. Other loot prefabs (wood, stone, mining, villager, etc.) are unaffected. Like firstLevelNoHostiles this uses the raw, un-delayed tier (independent of progressionLevelDelay).")
+                .comment("When true, carriage-interior chests linked to the rich 'loot' or 'loot_irongold' loot prefabs instead roll the 'starter' prefab while the lead player is still within the gentle opening window (the firstLevelNoHostilesCarriages + firstLevelEasyMobsCarriages carriages spanning both the no-hostiles and slimes stages), so the easy intro hands out starter-tier loot. Other loot prefabs (wood, stone, mining, villager, etc.) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelStarterLoot", DEFAULT_FIRST_LEVEL_STARTER_LOOT);
         b.pop();
         b.push("narrative");
@@ -185,7 +206,8 @@ public final class DungeonTrainConfig {
                         MIN_INTRO_DURATION_TICKS, MAX_INTRO_DURATION_TICKS);
         b.pop();
         return new Holder(numCarriages, speed, trainY, generateTracks, generateTunnels, generationMode, groupSize,
-                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay, firstLevelEasyMobs,
+                difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay,
+                firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 introCinematicEnabled, introCinematicDurationTicks);
     }
@@ -244,12 +266,27 @@ public final class DungeonTrainConfig {
         return isLoaded() ? PROGRESSION_LEVEL_DELAY.get() : DEFAULT_PROGRESSION_LEVEL_DELAY;
     }
 
-    /** When true, authored hostile carriage mobs are replaced with small slimes/magma cubes during the first raw tier band. */
+    /** When true, authored hostile carriage mobs do not spawn during the no-hostiles opening stage. */
+    public static boolean getFirstLevelNoHostiles() {
+        return isLoaded() ? FIRST_LEVEL_NO_HOSTILES.get() : DEFAULT_FIRST_LEVEL_NO_HOSTILES;
+    }
+
+    /** Length (carriages of player progress) of the no-hostiles opening stage. */
+    public static int getFirstLevelNoHostilesCarriages() {
+        return isLoaded() ? FIRST_LEVEL_NO_HOSTILES_CARRIAGES.get() : DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES;
+    }
+
+    /** When true, authored hostile carriage mobs are replaced with small slimes/magma cubes during the slimes stage. */
     public static boolean getFirstLevelEasyMobs() {
         return isLoaded() ? FIRST_LEVEL_EASY_MOBS.get() : DEFAULT_FIRST_LEVEL_EASY_MOBS;
     }
 
-    /** When true, rich loot/loot_irongold carriage chests roll the starter prefab during the first raw tier band. */
+    /** Length (carriages of player progress) of the slimes stage, following the no-hostiles stage. */
+    public static int getFirstLevelEasyMobsCarriages() {
+        return isLoaded() ? FIRST_LEVEL_EASY_MOBS_CARRIAGES.get() : DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES;
+    }
+
+    /** When true, rich loot/loot_irongold carriage chests roll the starter prefab during the gentle opening window. */
     public static boolean getFirstLevelStarterLoot() {
         return isLoaded() ? FIRST_LEVEL_STARTER_LOOT.get() : DEFAULT_FIRST_LEVEL_STARTER_LOOT;
     }
@@ -352,7 +389,10 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue carriagesPerTier,
             ModConfigSpec.BooleanValue difficultyAffectsBabyMobs,
             ModConfigSpec.IntValue progressionLevelDelay,
+            ModConfigSpec.BooleanValue firstLevelNoHostiles,
+            ModConfigSpec.IntValue firstLevelNoHostilesCarriages,
             ModConfigSpec.BooleanValue firstLevelEasyMobs,
+            ModConfigSpec.IntValue firstLevelEasyMobsCarriages,
             ModConfigSpec.BooleanValue firstLevelStarterLoot,
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
             ModConfigSpec.BooleanValue deathReportToDiscord,
