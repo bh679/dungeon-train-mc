@@ -321,6 +321,21 @@
       "released": true,
       "released_in": "v0.305.0",
       "released_at": "2026-06-15T03:23:10Z"
+    },
+    {
+      "id": "appleskin-optional-dependency",
+      "version": "0.306.0",
+      "type": "fix",
+      "title": "AppleSkin listed as an optional dependency",
+      "summary": "AppleSkin \u2014 the food and saturation overlay bundled on-by-default in the Dungeon Train modpack \u2014 is now also listed as an optional add-on on the mod's own CurseForge page, so it's discoverable straight from the mod.",
+      "highlights": [
+        "AppleSkin now shown as an optional dependency of the mod"
+      ],
+      "pr": 397,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
