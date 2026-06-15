@@ -353,6 +353,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pillar-arch-taper",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Archways fade between elevated track pillars",
+      "summary": "Where the train's track climbs onto tall support pillars \u2014 crossing ravines, rivers, and oceans \u2014 the pillars now fade toward each other with stepped archways instead of standing as bare posts. The arches are built from each pillar's own stone, so a viaduct made of fancy or themed pillars arches in its own material.",
+      "highlights": [
+        "Tall track pillars now fade into stepped archways toward their neighbours",
+        "Arches copy each pillar's own blocks, so themed pillars arch in-material"
+      ],
+      "pr": 399,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
