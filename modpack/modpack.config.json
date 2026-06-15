@@ -17,6 +17,7 @@
     { "slug": "interactive-player-mobs", "type": "embeddedLibrary" },
     { "slug": "distant-horizons", "type": "optionalDependency" },
     { "slug": "tectonic", "type": "optionalDependency" },
-    { "slug": "mouse-tweaks", "type": "optionalDependency" }
+    { "slug": "mouse-tweaks", "type": "optionalDependency" },
+    { "slug": "jade", "type": "optionalDependency" }
   ]
 }
