@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/echo_encounter",
+  "display": {
+    "icon": { "id": "minecraft:wither_skeleton_skull" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.echo_kill.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.echo_kill.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "killed_echo": {
+      "trigger": "dungeontrain:killed_echo"
+    }
+  },
+  "requirements": [["killed_echo"]]
+}
