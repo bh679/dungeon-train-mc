@@ -213,6 +213,10 @@ entries — **Dungeon Train + Sable** — because DT jarJars AIN/AIS/PMOB/Discor
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (the modpack pins Sable to the tested
   version). This is flagged in `gradle.properties`.
+- **Include ⇒ mod dependency:** when you add an `optional_mods` Include to
+  `modpack/modpack.config.json` (give the entry a `slug`), also add `<slug>(optional)` to
+  `release.yml` `curseforge-dependencies`. Enforced in CI by
+  `scripts/modpack/check-relations.py` (the `modpack-checks` job in `build.yml`).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
   -f dt_file_id=<id> -f dry_run=true`.
 - **Modrinth modpack** is planned later (not yet implemented).

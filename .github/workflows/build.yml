@@ -39,3 +39,23 @@ jobs:
           path: build/libs/dungeontrain-*.jar
           if-no-files-found: error
           retention-days: 14
+
+  # Stdlib-only Python guards for the CurseForge modpack config. No Java/Gradle —
+  # python3 is preinstalled on ubuntu-latest — so this runs fast, in parallel with
+  # `build`. check-relations.py enforces the invariant that every modpack Include
+  # (optional_mods) is also declared as an <slug>(optional) dependency of the mod in
+  # release.yml (the bug that shipped AppleSkin un-declared in PR #390).
+  modpack-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Modpack Include ↔ mod dependency consistency
+        run: python3 scripts/modpack/check-relations.py
+
+      - name: Modpack manifest + relation tests
+        run: |
+          python3 scripts/modpack/test_build_manifest.py
+          python3 scripts/modpack/test_check_relations.py

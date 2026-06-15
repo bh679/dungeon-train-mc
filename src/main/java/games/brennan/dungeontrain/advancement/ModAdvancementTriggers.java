@@ -75,6 +75,17 @@ public final class ModAdvancementTriggers {
     public static final Supplier<EncounteredPlayersTrigger> ENCOUNTERED_PLAYERS =
         TRIGGERS.register("encountered_players", EncounteredPlayersTrigger::new);
 
+    // --- Echo (reincarnation PlayerMob) advancements ---
+
+    public static final Supplier<EncounteredEchoTrigger> ENCOUNTERED_ECHO =
+        TRIGGERS.register("encountered_echo", EncounteredEchoTrigger::new);
+
+    public static final Supplier<BefriendedEchoTrigger> BEFRIENDED_ECHO =
+        TRIGGERS.register("befriended_echo", BefriendedEchoTrigger::new);
+
+    public static final Supplier<KilledEchoTrigger> KILLED_ECHO =
+        TRIGGERS.register("killed_echo", KilledEchoTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {
