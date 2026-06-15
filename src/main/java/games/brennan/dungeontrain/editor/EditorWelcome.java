@@ -24,9 +24,9 @@ import java.util.function.Supplier;
 
 /**
  * Sends a friendly onboarding message in chat after a player first enters the Dungeon Train editor
- * each play session. The first line lands ~2.2 seconds after entering; the remaining lines then
- * arrive one at a time, ~0.7 seconds apart, so the welcome reads like someone typing rather than a
- * wall of text.
+ * each play session. The first line lands ~2.2 seconds after entering; the next lines arrive one at a
+ * time ~0.7 seconds apart, and the trailing "Brennan's presence" line waits a further ~5 seconds — so
+ * the welcome reads like someone typing, with a beat before the personal sign-off.
  *
  * <p>"Entered the editor" reuses the three command paths that already fire the
  * {@code EDITOR_ACTION "entered_editor"} advancement trigger (category, carriage,
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * {@code EditorCommand.markEnteredEditor}, which calls {@link #showOnEnter}.</p>
  *
  * <p>Scheduling is tick-based like {@code CinematicIntroService}: each player's remaining lines are
- * parked in a queue with a "next line" overworld-game-tick deadline, drained one line per due tick by
+ * parked in a queue, each carrying the delay to wait before it shows, drained one line per due tick by
  * {@link #tick} (pumped once per server tick from {@code PlayerJoinEvents.onLevelTick}). "Once per
  * play session" is gated by an in-memory UUID set cleared on logout (via {@link #forget}), so a relog
  * re-shows the welcome.</p>
@@ -46,17 +46,23 @@ public final class EditorWelcome {
     /** Delay before the first line lands: 2.2 seconds at 20 ticks/second = 44 ticks. */
     private static final long WELCOME_DELAY_TICKS = 44L;
 
-    /** Gap between consecutive lines: 0.7 seconds at 20 ticks/second = 14 ticks. */
+    /** Gap between consecutive body lines: 0.7 seconds at 20 ticks/second = 14 ticks. */
     private static final long LINE_GAP_TICKS = 14L;
+
+    /** Extra beat before the trailing presence line: 5 seconds at 20 ticks/second = 100 ticks. */
+    private static final long PRESENCE_DELAY_TICKS = 100L;
 
     /** Players already welcomed (or currently scheduled) this session; gates "once per session". */
     private static final Set<UUID> WELCOMED = ConcurrentHashMap.newKeySet();
 
-    /** Player UUID → the remaining welcome lines to send (built lazily so the presence line is fresh). */
-    private static final Map<UUID, Deque<Supplier<Component>>> PENDING = new ConcurrentHashMap<>();
+    /** Player UUID → the remaining welcome lines to send (each with its own pre-delay). */
+    private static final Map<UUID, Deque<Line>> PENDING = new ConcurrentHashMap<>();
 
     /** Player UUID → overworld game-tick at which the next queued line should be sent. */
     private static final Map<UUID, Long> NEXT_SEND = new ConcurrentHashMap<>();
+
+    /** One queued welcome line: the ticks to wait before it shows, and a supplier built fresh at send time. */
+    private record Line(long delayTicks, Supplier<Component> supplier) {}
 
     /**
      * The first time {@code player} enters the editor this session, queue the welcome lines and
@@ -67,15 +73,15 @@ public final class EditorWelcome {
         if (!WELCOMED.add(player.getUUID())) return;
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        PENDING.put(player.getUUID(), new ArrayDeque<>(welcomeLines()));
-        NEXT_SEND.put(player.getUUID(), server.overworld().getGameTime() + WELCOME_DELAY_TICKS);
+        Deque<Line> lines = new ArrayDeque<>(welcomeLines());
+        PENDING.put(player.getUUID(), lines);
+        NEXT_SEND.put(player.getUUID(), server.overworld().getGameTime() + lines.peek().delayTicks());
     }
 
     /**
      * Per-tick pump (hook from the overworld {@code LevelTickEvent.Post}, next to
-     * {@code CinematicIntroService.tick}). Sends at most one queued line per player whose next-line
-     * deadline has elapsed, then re-arms the deadline {@link #LINE_GAP_TICKS} ticks out until the
-     * player's queue drains.
+     * {@code CinematicIntroService.tick}). Sends at most one queued line per player whose deadline has
+     * elapsed, then re-arms the deadline by the next line's own delay until the player's queue drains.
      */
     public static void tick(MinecraftServer server) {
         if (PENDING.isEmpty()) return;
@@ -83,18 +89,18 @@ public final class EditorWelcome {
         PENDING.entrySet().removeIf(e -> {
             UUID id = e.getKey();
             Long due = NEXT_SEND.get(id);
-            if (due == null || now < due) return false; // not this player's turn yet
+            if (due == null || now < due) return false; // not this line's turn yet
             ServerPlayer p = server.getPlayerList().getPlayer(id);
             if (p == null) { NEXT_SEND.remove(id); return true; } // logged off mid-welcome
-            Deque<Supplier<Component>> lines = e.getValue();
-            // Pull the next renderable line; a null (e.g. unknown presence) is skipped, not sent blank.
-            Component line = null;
-            while (line == null && !lines.isEmpty()) {
-                line = lines.poll().get();
+            Deque<Line> lines = e.getValue();
+            Line current = lines.poll(); // the line whose delay just elapsed
+            if (current != null) {
+                Component comp = current.supplier().get();
+                if (comp != null) p.sendSystemMessage(comp); // null (e.g. unknown presence) → skip, don't send blank
             }
-            if (line != null) p.sendSystemMessage(line);
-            if (lines.isEmpty()) { NEXT_SEND.remove(id); return true; } // all lines delivered
-            NEXT_SEND.put(id, now + LINE_GAP_TICKS);
+            Line following = lines.peek();
+            if (following == null) { NEXT_SEND.remove(id); return true; } // all lines delivered
+            NEXT_SEND.put(id, now + following.delayTicks());
             return false;
         });
     }
@@ -107,22 +113,23 @@ public final class EditorWelcome {
     }
 
     /**
-     * The welcome, one line per entry, each sent as its own chat message {@link #LINE_GAP_TICKS} ticks
-     * after the previous. Suppliers (not pre-built Components) so the trailing presence line is read
-     * fresh at send time — and {@link #buildPresenceLine() omitted} (returns {@code null}) when
+     * The welcome, one {@link Line} per entry — each carrying the delay before it shows and a supplier
+     * evaluated at send time. The first waits {@link #WELCOME_DELAY_TICKS}; body lines
+     * {@link #LINE_GAP_TICKS}; the trailing presence line {@link #PRESENCE_DELAY_TICKS} (a longer beat).
+     * The presence supplier is {@link #buildPresenceLine() omitted} (returns {@code null}) when
      * Brennan's Discord presence is unknown.
      */
-    private static List<Supplier<Component>> welcomeLines() {
+    private static List<Line> welcomeLines() {
         return List.of(
-            () -> Component.literal("Welcome to the Dungeon Train Editor!")
-                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD),
-            () -> Component.literal("This is a full editor for everything in the train."),
-            () -> Component.literal("From train carriage templates to custom loot tables editor."),
-            () -> Component.literal("If you have any questions - message Brennan in here with ")
-                .append(mentionTag()),
-            () -> Component.literal(
-                "He will be very enthusiastic that you're using the editor and do what he can to support you!"),
-            EditorWelcome::buildPresenceLine);
+            new Line(WELCOME_DELAY_TICKS, () -> Component.literal("Welcome to the Dungeon Train Editor!")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)),
+            new Line(LINE_GAP_TICKS, () -> Component.literal("This is a full editor for everything in the train.")),
+            new Line(LINE_GAP_TICKS, () -> Component.literal("From train carriage templates to custom loot tables editor.")),
+            new Line(LINE_GAP_TICKS, () -> Component.literal("If you have any questions - message Brennan in here with ")
+                .append(mentionTag())),
+            new Line(LINE_GAP_TICKS, () -> Component.literal(
+                "He will be very enthusiastic that you're using the editor and do what he can to support you!")),
+            new Line(PRESENCE_DELAY_TICKS, EditorWelcome::buildPresenceLine));
     }
 
     /**
