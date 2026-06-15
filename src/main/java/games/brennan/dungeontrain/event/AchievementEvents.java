@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
@@ -569,14 +570,38 @@ public final class AchievementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         // Multiplayer-join grant runs first, independent of the sidecar replay
         // below — a first-time joiner has an empty sidecar and would otherwise
-        // be skipped by the early-return on the next line.
+        // be skipped by the early-return inside replaySidecarAdvancements.
         awardMultiplayerJoinIfApplicable(player);
         // Absorb this world's story reads into the cross-world global record,
         // then re-evaluate the story advancements (which read the global store)
         // so progress earned in other worlds — or before this store existed —
-        // can complete them here. Runs before the sidecar early-return below.
+        // can complete them here.
         absorbWorldStoryProgressIntoGlobal(player);
         notifyStoryProgress(player);
+        // Replay the cross-world sidecar onto this world's advancements, then
+        // re-evaluate the "Everything Burrito" capstone. The capstone check runs
+        // last and unconditionally: a player who finished every other advancement
+        // on another world — or before this capstone existed — has no further
+        // earn to fire the live check in onAdvancementEarn, so login is the only
+        // place that backfill can happen. It reads this world's restored
+        // (post-replay) progress and grants normally (replaying is false here).
+        replaySidecarAdvancements(player);
+        CompletionistAdvancement.checkAndGrant(player);
+    }
+
+    /**
+     * Replay the cross-world {@link GlobalAchievementStore} sidecar onto this
+     * world's {@code PlayerAdvancements}, re-granting every advancement the
+     * player earned on this instance regardless of which world it happened in.
+     * No-op when the sidecar is empty.
+     *
+     * <p>The replay {@code award(...)} calls re-fire
+     * {@link AdvancementEvent.AdvancementEarnEvent}; {@link #replaying} guards
+     * the keybind-hint and capstone re-check side effects for the duration,
+     * while the announce gamerule + Discord suppression keep the replay silent
+     * so a rejoining player isn't spammed for advancements already earned.</p>
+     */
+    private static void replaySidecarAdvancements(ServerPlayer player) {
         UUID uuid = player.getUUID();
         Set<ResourceLocation> granted = GlobalAchievementStore.read(uuid);
         if (granted.isEmpty()) return;
@@ -688,6 +713,13 @@ public final class AchievementEvents {
         // "opened advancements" flag) and renders it with the live keybind.
         if (!replaying && !id.getPath().startsWith("editor/")) {
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
+            // Re-evaluate the "Everything Burrito" capstone (every non-editor
+            // advancement earned). Skip its own earn: the award inside
+            // checkAndGrant re-fires this event, and the id guard avoids the
+            // needless re-entry (the award is idempotent once done regardless).
+            if (!id.equals(CompletionistAdvancement.ID)) {
+                CompletionistAdvancement.checkAndGrant(player);
+            }
         }
     }
 }

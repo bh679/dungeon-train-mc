@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.advancement;
 
+import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,9 +61,7 @@ public final class PlayerMobSocialTracker {
         UUID playerUuid = player.getUUID();
         RECEIVED_FROM.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(mobUuid);
         if (GAVE_TO.getOrDefault(playerUuid, Set.of()).contains(mobUuid)) {
-            ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
-            // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
-            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
+            awardBefriend(player, mobUuid);
         }
     }
 
@@ -75,11 +75,27 @@ public final class PlayerMobSocialTracker {
         UUID playerUuid = player.getUUID();
         GAVE_TO.computeIfAbsent(playerUuid, k -> new HashSet<>()).add(mobUuid);
         if (RECEIVED_FROM.getOrDefault(playerUuid, Set.of()).contains(mobUuid)) {
-            ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
-            // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
-            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
+            awardBefriend(player, mobUuid);
         } else {
             ModAdvancementTriggers.GAVE_PLAYERMOB_UNREQUITED.get().trigger(player);
+        }
+    }
+
+    /**
+     * Grant the befriend advancements for a completed mutual exchange with
+     * {@code mobUuid}: the generic <em>Come On, Grab Your Friends</em> plus the
+     * per-run death-screen tally, and — when the mob is {@linkplain
+     * EchoIdentity#isOwnEcho this player's own echo} — the echo-specific
+     * <em>Old Friends, New Life</em>. Resolving the live entity is reliable
+     * here: the exchange just happened, so the mob is loaded near the player.
+     */
+    private static void awardBefriend(ServerPlayer player, UUID mobUuid) {
+        ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
+        // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
+        Entity mob = player.serverLevel().getEntity(mobUuid);
+        if (EchoIdentity.isOwnEcho(mob, player.getUUID())) {
+            ModAdvancementTriggers.BEFRIENDED_ECHO.get().trigger(player);
         }
     }
 

@@ -321,6 +321,102 @@
       "released": true,
       "released_in": "v0.305.0",
       "released_at": "2026-06-15T03:23:10Z"
+    },
+    {
+      "id": "own-echo-advancements",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Meet, befriend, or lay to rest your own echo",
+      "summary": "Three new advancements follow your reunions with your own echo \u2014 a passenger reincarnated from one of your past lives. Walk up to one, win it over with a two-way gift exchange, or put it to rest.",
+      "highlights": [
+        "New \"Hello, Old Soul\" \u2014 come within two blocks of your own echo",
+        "\"Old Friends, New Life\" \u2014 befriend your own echo",
+        "\"Lay to Rest\" \u2014 kill your own echo"
+      ],
+      "pr": 398,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "appleskin-optional-dependency",
+      "version": "0.305.0",
+      "type": "fix",
+      "title": "AppleSkin listed as an optional dependency",
+      "summary": "AppleSkin \u2014 the food and saturation overlay bundled on-by-default in the Dungeon Train modpack \u2014 is now also listed as an optional add-on on the mod's own CurseForge page, so it's discoverable straight from the mod.",
+      "highlights": [
+        "AppleSkin now shown as an optional dependency of the mod"
+      ],
+      "pr": 397,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pillar-arch-taper",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Archways fade between elevated track pillars",
+      "summary": "Where the train's track climbs onto tall support pillars \u2014 crossing ravines, rivers, and oceans \u2014 the pillars now fade toward each other with stepped archways instead of standing as bare posts. The arches are built from each pillar's own stone, so a viaduct made of fancy or themed pillars arches in its own material.",
+      "highlights": [
+        "Tall track pillars now fade into stepped archways toward their neighbours",
+        "Arches copy each pillar's own blocks, so themed pillars arch in-material"
+      ],
+      "pr": 399,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "everything-burrito-completionist",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Everything Burrito: earn every other advancement",
+      "summary": "A new challenge advancement, Everything Burrito, unlocks once you've earned every other Dungeon Train advancement \u2014 editor achievements aside. It hangs off 'Help I Can't Get Off' at the end of the line, and tracks the achievement list dynamically, so it always means '100%' even as new advancements arrive in future updates.",
+      "highlights": [
+        "New 'Everything Burrito' challenge advancement for 100% completion",
+        "Counts every non-editor advancement \u2014 and auto-includes any added in future updates"
+      ],
+      "pr": 401,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cinematic-pause-menu-usable",
+      "version": "0.305.0",
+      "type": "fix",
+      "title": "Pause menu works during the intro cutscene",
+      "summary": "Switching windows (or pressing Esc) during the spawn intro cutscene now opens a pause menu you can actually use \u2014 you can click its buttons and Esc closes it \u2014 and the cutscene picks up right where it left off when you come back. Previously the menu could open in a frozen, unclickable state.",
+      "highlights": [
+        "The pause menu is now clickable and closable during the intro cutscene",
+        "The intro now pauses and resumes around the menu instead of locking up"
+      ],
+      "pr": 402,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "features-carriages-broken-roof",
+      "version": "0.305.0",
+      "type": "content",
+      "title": "New decor carriages (house, tree, cherry blossom) + broken roof",
+      "summary": "A new 'features' content set rides the train \u2014 house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
+      "highlights": [
+        "New house, tree, and cherry-blossom carriage content (tree & cherry blossom carry loot chests)",
+        "New 'broken' roof variant for cracked carriages"
+      ],
+      "pr": 403,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
