@@ -1,0 +1,20 @@
+{
+  "parent": "dungeontrain:dungeon_train/help_i_cant_get_off",
+  "display": {
+    "icon": { "id": "minecraft:nether_star" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.completionist.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.completionist.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "everything": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    ["everything"]
+  ]
+}
