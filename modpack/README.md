@@ -43,6 +43,9 @@ under the pack's "Relations". Nothing here is force-installed.
   regardless). Installing Tectonic via CurseForge automatically pulls in its **Lithostitched**
   dependency, so the pack doesn't list Lithostitched itself.
 - **Mouse Tweaks** — inventory QoL (shift-drag / scroll-to-move). Relation only.
+- **Jade** — block & item tooltip HUD ("what am I looking at"). Relation only. **Known
+  limitation:** Jade's tooltip doesn't render for blocks **on the moving train** (a Sable
+  sub-level limitation); it works normally everywhere off-train.
 
 ### Declared dependencies (CurseForge "Relations")
 
@@ -60,8 +63,9 @@ from `curseforge_relations` in `modpack.config.json`:
 | `distant-horizons` | `optionalDependency` | Opt-in add-on — relation only (not bundled). |
 | `tectonic` | `optionalDependency` | Opt-in add-on — relation only; pulls Lithostitched on install. |
 | `mouse-tweaks` | `optionalDependency` | Opt-in add-on — relation only (not shipped). |
+| `jade` | `optionalDependency` | Opt-in add-on — relation only; tooltips don't render on moving-train blocks (Sable sub-level). |
 
-Keep this list in sync with the mod's own `curseforge-dependencies` in `release.yml` — which declares `distant-horizons(optional)` + `tectonic(optional)` + `mouse-tweaks(optional)`. (Lithostitched is Tectonic's dependency, not DT's, and CurseForge resolves it automatically — so it appears in neither. AppleSkin is a pack *file*, not a relation, so it is **not** in this list — CurseForge auto-creates its "Include" relation from the manifest.)
+Keep this list in sync with the mod's own `curseforge-dependencies` in `release.yml` — which declares `distant-horizons(optional)` + `tectonic(optional)` + `mouse-tweaks(optional)` + `jade(optional)`. (Lithostitched is Tectonic's dependency, not DT's, and CurseForge resolves it automatically — so it appears in neither. AppleSkin is a pack *file*, not a relation, so it is **not** in this list — CurseForge auto-creates its "Include" relation from the manifest.)
 
 ## How it deploys (15 min after every mod release)
 
