@@ -238,6 +238,22 @@
       "released": true,
       "released_in": "v0.303.0",
       "released_at": "2026-06-14T23:28:38Z"
+    },
+    {
+      "id": "modpack-qol-mods",
+      "version": "0.304.0",
+      "type": "feat",
+      "title": "Quality-of-life mods in the modpack: AppleSkin + Mouse Tweaks",
+      "summary": "The Dungeon Train modpack now includes AppleSkin \u2014 the food saturation and hunger-value overlay \u2014 enabled by default (you can untick it when installing). Mouse Tweaks, for faster inventory management (shift-drag and scroll-to-move items), is offered as an optional add-on you can opt into.",
+      "highlights": [
+        "AppleSkin food/saturation overlay now ships with the modpack (on by default)",
+        "Mouse Tweaks inventory quality-of-life available as an optional add-on"
+      ],
+      "pr": 390,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
