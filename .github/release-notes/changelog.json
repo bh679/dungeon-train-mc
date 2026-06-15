@@ -268,9 +268,9 @@
       ],
       "pr": 391,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.305.0",
+      "released_at": "2026-06-15T03:23:10Z"
     },
     {
       "id": "quiet-rules-dev-key-adventurer-tips",
@@ -285,9 +285,9 @@
       ],
       "pr": 392,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.305.0",
+      "released_at": "2026-06-15T03:23:10Z"
     },
     {
       "id": "modpack-jade-tooltips",
@@ -301,9 +301,9 @@
       ],
       "pr": 395,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.305.0",
+      "released_at": "2026-06-15T03:23:10Z"
     },
     {
       "id": "discordpresence-015-dev-chat-tag",
@@ -318,9 +318,9 @@
       ],
       "pr": 393,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.305.0",
+      "released_at": "2026-06-15T03:23:10Z"
     }
   ]
 }
