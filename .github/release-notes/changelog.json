@@ -256,6 +256,23 @@
       "released_at": "2026-06-15T01:57:28Z"
     },
     {
+      "id": "know-the-rules-advancement",
+      "version": "0.304.0",
+      "type": "feat",
+      "title": "Know The Rules advancement + clearer ride-time goals",
+      "summary": "A new \"Know The Rules\" advancement joins the Taking Notes branch \u2014 read every Quiet Rule of the train to earn it, and \"Respect The Rules\" now nests beneath it. Two ride-time advancements also spell out how long you need to stay aboard: \"Settling In\" (ten hours) and \"I Live Here Now\" (twenty-four hours).",
+      "highlights": [
+        "New \"Know The Rules\" advancement \u2014 read every Quiet Rule of the train",
+        "\"Respect The Rules\" now sits beneath it in the Taking Notes branch",
+        "\"Settling In\" and \"I Live Here Now\" descriptions now state the hours required"
+      ],
+      "pr": 391,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "quiet-rules-dev-key-adventurer-tips",
       "version": "0.304.0",
       "type": "content",

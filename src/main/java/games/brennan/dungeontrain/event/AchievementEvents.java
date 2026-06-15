@@ -251,6 +251,9 @@ public final class AchievementEvents {
         if (allFaulthurstSeen(data)) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "faulthurst");
         }
+        if (allQuietRulesSeen(data)) {
+            ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "quiet_rules");
+        }
         if (allStoriesRead()) {
             ModAdvancementTriggers.STORY_SET_COMPLETED.get().trigger(player, "all_stories");
         }
@@ -483,6 +486,36 @@ public final class AchievementEvents {
             if (seen.isEmpty()) return false;
         }
         return anyFaulthurst;
+    }
+
+    /**
+     * True when every variant of every random-book whose basename contains
+     * {@code "rules"} has been marked seen. Drives the {@code read_all_rules}
+     * ("Know The Rules") achievement — currently the single {@code quiet_rules}
+     * book ("Quiet Rules of the Train"), each variant a numbered Rule.
+     *
+     * <p>Fully registry-driven: the per-variant count comes from
+     * {@code file.variants().size()} and the membership from the
+     * {@code contains("rules")} matcher, so adding/removing Rules — or adding a
+     * whole new {@code *rules*} book — re-scales the requirement with no code
+     * change. An empty match set (no rules book loaded) → false.</p>
+     */
+    private static boolean allQuietRulesSeen(NarrativeProgressData data) {
+        boolean anyRules = false;
+        for (String basename : RandomBookRegistry.basenames()) {
+            if (!basename.toLowerCase().contains("rules")) continue;
+            anyRules = true;
+            RandomBookFile file = RandomBookRegistry.getByBasename(basename).orElse(null);
+            if (file == null) return false;
+            int total = file.variants().size();
+            Set<Integer> seen = data.randomBookSnapshot()
+                .getOrDefault(basename, new NarrativeProgress())
+                .readLetters();
+            for (int i = 0; i < total; i++) {
+                if (!seen.contains(i)) return false;
+            }
+        }
+        return anyRules;
     }
 
     // ---------------- Respawn reset ----------------
