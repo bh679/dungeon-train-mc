@@ -109,6 +109,8 @@
   "advancements.dungeontrain.hidden_description": "???",
   "advancements.dungeontrain.dungeon_train.root.title": "Dungeon Train",
   "advancements.dungeontrain.dungeon_train.root.description": "All aboard.",
+  "advancements.dungeontrain.dungeon_train.completionist.title": "Everything Burrito",
+  "advancements.dungeontrain.dungeon_train.completionist.description": "Earn every other Dungeon Train advancement. The whole train, all wrapped up.",
   "advancements.dungeontrain.dungeon_train.landed_on_tracks.title": "Track Record",
   "advancements.dungeontrain.dungeon_train.landed_on_tracks.description": "Drop off the train and stand on the rails it rides. The ground moves differently down here.",
   "advancements.dungeontrain.dungeon_train.left_train.title": "Off the Rails",
