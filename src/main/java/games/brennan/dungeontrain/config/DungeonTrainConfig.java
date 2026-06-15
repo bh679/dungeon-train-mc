@@ -59,7 +59,7 @@ public final class DungeonTrainConfig {
     // Onboarding stage lengths in carriages of player progress (independent of carriagesPerTier).
     public static final int MIN_ONBOARDING_STAGE_CARRIAGES = 0;
     public static final int MAX_ONBOARDING_STAGE_CARRIAGES = 1000;
-    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 15;
+    public static final int DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES = 10;
     public static final int DEFAULT_FIRST_LEVEL_EASY_MOBS_CARRIAGES = 15;
 
     /** 1-in-N chance that a book dropped by breaking a bookshelf becomes a narrative Random Book. 0 disables. */
@@ -168,7 +168,7 @@ public final class DungeonTrainConfig {
                 .comment("First onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors do not spawn at all while the lead player is within the first firstLevelNoHostilesCarriages carriages of progress, for a combat-free opening stretch. Passive/neutral carriage mobs (villagers, traders, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")
                 .define("firstLevelNoHostiles", DEFAULT_FIRST_LEVEL_NO_HOSTILES);
         ModConfigSpec.IntValue firstLevelNoHostilesCarriages = b
-                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 15. Independent of carriagesPerTier; 0 disables the stage.")
+                .comment("Length, in carriages of player progress, of the no-hostiles opening stage (see firstLevelNoHostiles). Default 10. Independent of carriagesPerTier; 0 disables the stage.")
                 .defineInRange("firstLevelNoHostilesCarriages", DEFAULT_FIRST_LEVEL_NO_HOSTILES_CARRIAGES, MIN_ONBOARDING_STAGE_CARRIAGES, MAX_ONBOARDING_STAGE_CARRIAGES);
         ModConfigSpec.BooleanValue firstLevelEasyMobs = b
                 .comment("Second onboarding stage. When true, hostile (Enemy) mobs authored into carriage interiors are replaced with small slimes (or small magma cubes for nether/raider mobs, per the dungeontrain:first_band_magma_mobs entity-type tag; piglins/piglin brutes in dungeontrain:first_band_nether_only_mobs only become magma cubes in the Nether and otherwise spawn as authored; mobs in dungeontrain:first_band_no_substitute_mobs, e.g. zombified piglins, are never substituted) while the lead player is within the slimes stage — the firstLevelEasyMobsCarriages carriages that follow the no-hostiles stage — giving an easy combat intro. Passive/neutral carriage mobs (villagers, animals, PlayerMobs) are unaffected. Keys off raw travelled carriages (independent of progressionLevelDelay).")

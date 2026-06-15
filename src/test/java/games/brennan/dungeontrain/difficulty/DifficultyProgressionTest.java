@@ -182,11 +182,13 @@ final class DifficultyProgressionTest {
                 DifficultyProgression.firstBandSubstitute(true, true, true, false));
     }
 
-    // --- onboardingStage: the three-stage gentle ramp (defaults N=15 no-hostiles, E=15 slimes) ---
+    // --- onboardingStage: the three-stage gentle ramp. Illustrative lengths N=15, E=15; the pure
+    //     function is config-agnostic, so these are NOT the shipped defaults (those live in
+    //     DungeonTrainConfig and are intentionally tunable). ---
 
-    /** Default no-hostiles stage length. */
+    /** Illustrative no-hostiles stage length (not the shipped config default). */
     private static final int N = 15;
-    /** Default slimes (easy-mobs) stage length. */
+    /** Illustrative slimes (easy-mobs) stage length (not the shipped config default). */
     private static final int E = 15;
 
     private static OnboardingStage stage(int travelled) {
