@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
+import games.brennan.dungeontrain.compat.EchoIdentity;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,6 +14,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
@@ -63,6 +66,12 @@ public final class PlayerMobAdvancementEvents {
 
     /** Horizontal pad on each carriage AABB — matches {@link BoardingProgressEvents}. */
     private static final double HORIZONTAL_PADDING = 1.0;
+
+    /** Echo-proximity scan cadence (ticks) for the {@code Echo Encounter} advancement. */
+    private static final int ECHO_SCAN_PERIOD_TICKS = 10;
+
+    /** "Within 2 blocks" range (centre-to-centre) for the {@code Echo Encounter} advancement. */
+    private static final double ECHO_NEAR_RADIUS = 2.0;
 
     /** mob UUID → most recent player strike. */
     private static final Map<UUID, ReboarderHit> RECENT_HITS = new HashMap<>();
@@ -147,6 +156,55 @@ public final class PlayerMobAdvancementEvents {
         if (!(victim instanceof Mob mob)) return;
         if (isPlayerMob(mob.getTarget())) {
             ModAdvancementTriggers.DEFENDED_PLAYERMOB.get().trigger(player);
+        }
+    }
+
+    // ---------------- Echo Encounter ----------------
+
+    /**
+     * Periodic scan: grant <em>Echo Encounter</em> when a player comes within
+     * {@link #ECHO_NEAR_RADIUS} blocks of {@linkplain EchoIdentity#isOwnEcho
+     * their own echo} — a PlayerMob reincarnated from one of <em>that</em>
+     * player's past lives. Cheap: one padded-AABB entity query per player on a
+     * {@link #ECHO_SCAN_PERIOD_TICKS} cadence, narrowed by a centre-to-centre
+     * distance check. Re-firing for an already-granted player is a vanilla no-op.
+     */
+    @SubscribeEvent
+    public static void onEchoProximityScan(LevelTickEvent.Post event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (level.getGameTime() % ECHO_SCAN_PERIOD_TICKS != 0) return;
+        List<ServerPlayer> players = level.players();
+        if (players.isEmpty()) return;
+
+        double maxDistSq = ECHO_NEAR_RADIUS * ECHO_NEAR_RADIUS;
+        for (ServerPlayer player : players) {
+            if (player.isSpectator()) continue;
+            AABB near = player.getBoundingBox().inflate(ECHO_NEAR_RADIUS);
+            for (PlayerMobEntity echo : level.getEntitiesOfClass(
+                    PlayerMobEntity.class, near, mob -> EchoIdentity.isOwnEcho(mob, player.getUUID()))) {
+                if (player.distanceToSqr(echo) <= maxDistSq) {
+                    ModAdvancementTriggers.ENCOUNTERED_ECHO.get().trigger(player);
+                    break;
+                }
+            }
+        }
+    }
+
+    // ---------------- Lay to Rest (kill your own echo) ----------------
+
+    /**
+     * Fires when a player kills {@linkplain EchoIdentity#isOwnEcho their own
+     * echo}. Distinct from <em>Murderous Intent</em> (any PlayerMob) — keyed on
+     * the victim being a reincarnation of this same player's past life, so it
+     * grants alongside the generic kill.
+     */
+    @SubscribeEvent
+    public static void onEchoKilled(LivingDeathEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (victim.level().isClientSide) return;
+        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (EchoIdentity.isOwnEcho(victim, player.getUUID())) {
+            ModAdvancementTriggers.KILLED_ECHO.get().trigger(player);
         }
     }
 
