@@ -417,6 +417,20 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "spawn-deck-hold",
+      "version": "0.306.0",
+      "type": "fix",
+      "title": "Fixed players spawning under the train",
+      "summary": "Spawning or respawning onto the train no longer occasionally drops you through the deck and leaves you stuck underneath. On busy world loads the client could free-fall off the deck before the train's collision finished loading; the game now holds you on the deck through that window so you always start standing on the train.",
+      "highlights": [
+        "No more falling under the train on login, respawn, or world reload"
+      ],
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
