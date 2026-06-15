@@ -294,7 +294,7 @@ public final class StartingBookFactory {
 
         List<Filterable<Component>> pages = new ArrayList<>(pageStrings.size());
         for (String page : pageStrings) {
-            pages.add(Filterable.passThrough(Component.literal(page)));
+            pages.add(Filterable.passThrough(BookText.toPage(page)));
         }
         if (pages.isEmpty()) {
             pages.add(Filterable.passThrough(Component.literal("")));

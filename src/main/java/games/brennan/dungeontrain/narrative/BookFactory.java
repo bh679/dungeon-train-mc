@@ -204,7 +204,7 @@ public final class BookFactory {
 
         List<Filterable<Component>> pages = new ArrayList<>(pageStrings.size());
         for (String page : pageStrings) {
-            pages.add(Filterable.passThrough(Component.literal(page)));
+            pages.add(Filterable.passThrough(BookText.toPage(page)));
         }
         if (pages.isEmpty()) {
             // Defensive: an empty body shouldn't happen (Letter constructor

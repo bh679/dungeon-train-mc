@@ -271,6 +271,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "quiet-rules-dev-key-adventurer-tips",
+      "version": "0.304.0",
+      "type": "content",
+      "title": "More Quiet Rules of the Train \u2014 the maker, the key, and fellow adventurers",
+      "summary": "The Quiet Rules of the Train book gains ten new entries. Some whisper of reaching the one who built the train; one points to the key that reveals what you came here to do \u2014 and shows your own bound advancements key inline; the rest are hard-won advice on the other adventurers you meet: when to bow, when to gift, when to defend, and how to win them over.",
+      "highlights": [
+        "A rule on reaching the train's maker via \"@Dev\"",
+        "A rule that reveals your own advancements key, inline in the page",
+        "Seven tips on befriending (or surviving) fellow adventurers"
+      ],
+      "pr": 392,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

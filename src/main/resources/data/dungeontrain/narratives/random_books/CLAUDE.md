@@ -54,6 +54,20 @@ The narrative paginator (`BookFactory.paginate`) first splits the body on **thre
 
 > Practical consequence: **use `\n\n\n` between beats you want on their own page**. Use `\n\n` for paragraphs that can share a page. Use `\n` for line breaks within a beat.
 
+### Dynamic keybinds — `{key.*}` tokens
+
+A page may embed a keybind token of the form `{key.<binding>}` (e.g. `{key.advancements}`). At render time it resolves to **each reader's own bound key** — `{key.advancements}` shows `L` by default, or whatever that player rebound it to. Use it when a rule or observation refers to a control:
+
+```
+Lost in your journey? Press {key.advancements}
+```
+
+Resolved by `BookText.toPage` (`src/main/java/games/brennan/dungeontrain/narrative/BookText.java`), applied by all three book factories. Notes:
+
+- The token has no spaces, so the paginator treats it as a single word and never splits it across a page boundary. Keep it on its own short line to be safe.
+- The token's literal length (~18 chars) is what the paginator counts, while the rendered key is ~1–3 chars — so a page with a token renders slightly shorter than budgeted. Harmless.
+- Any vanilla key id works (`key.inventory`, `key.drop`, …). Braces that are **not** a `key.*` token (e.g. `{note}`) are left untouched.
+
 ---
 
 ## 3. Hard limits (engine-enforced)
