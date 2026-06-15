@@ -385,6 +385,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cinematic-pause-menu-usable",
+      "version": "0.305.0",
+      "type": "fix",
+      "title": "Pause menu works during the intro cutscene",
+      "summary": "Switching windows (or pressing Esc) during the spawn intro cutscene now opens a pause menu you can actually use \u2014 you can click its buttons and Esc closes it \u2014 and the cutscene picks up right where it left off when you come back. Previously the menu could open in a frozen, unclickable state.",
+      "highlights": [
+        "The pause menu is now clickable and closable during the intro cutscene",
+        "The intro now pauses and resumes around the menu instead of locking up"
+      ],
+      "pr": 402,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
