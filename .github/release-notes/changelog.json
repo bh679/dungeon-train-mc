@@ -401,6 +401,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "features-carriages-broken-roof",
+      "version": "0.305.0",
+      "type": "content",
+      "title": "New decor carriages (house, tree, cherry blossom) + broken roof",
+      "summary": "A new 'features' content set rides the train \u2014 house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
+      "highlights": [
+        "New house, tree, and cherry-blossom carriage content (tree & cherry blossom carry loot chests)",
+        "New 'broken' roof variant for cracked carriages"
+      ],
+      "pr": 403,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
