@@ -462,9 +462,9 @@
       ],
       "pr": 408,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.308.0",
+      "released_at": "2026-06-15T09:17:19Z"
     },
     {
       "id": "tag-the-dev-ping",
@@ -477,13 +477,13 @@
       ],
       "pr": 409,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.308.0",
+      "released_at": "2026-06-15T09:17:19Z"
     },
     {
       "id": "death-screen-feedback-survey",
-      "version": "0.308.0",
+      "version": "0.309.0",
       "type": "feat",
       "title": "Death-screen feedback survey",
       "summary": "When you die, a Give Feedback button opens a short survey: rate your run 0-10 with an optional comment, then answer how the difficulty progression feels. Answers post to the community Discord. It walks the questions one at a time and never re-asks one you've already answered.",
