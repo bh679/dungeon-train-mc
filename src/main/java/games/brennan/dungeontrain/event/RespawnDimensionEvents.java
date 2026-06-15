@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.server.MinecraftServer;
@@ -92,6 +94,10 @@ public final class RespawnDimensionEvents {
                     player.getName().getString(), rolled,
                     String.format("%.1f", flat.x()), String.format("%.1f", flat.y()), String.format("%.1f", flat.z()));
             player.teleportTo(target, flat.x(), flat.y(), flat.z(), -90.0f, 0.0f);
+            // Client-side deck hold — same free-fall-during-spawn-stall race as
+            // login (the rolled dim may have just spawned a fresh train).
+            DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+                data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
             return;
         }
 

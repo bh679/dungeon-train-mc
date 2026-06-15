@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.difficulty;
 
 import games.brennan.dungeontrain.difficulty.DifficultyProgression.FirstBandSubstitute;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression.OnboardingStage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -179,5 +180,100 @@ final class DifficultyProgressionTest {
                 DifficultyProgression.firstBandSubstitute(true, true, true, true));
         assertEquals(FirstBandSubstitute.NONE,
                 DifficultyProgression.firstBandSubstitute(true, true, true, false));
+    }
+
+    // --- onboardingStage: the three-stage gentle ramp. Illustrative lengths N=15, E=15; the pure
+    //     function is config-agnostic, so these are NOT the shipped defaults (those live in
+    //     DungeonTrainConfig and are intentionally tunable). ---
+
+    /** Illustrative no-hostiles stage length (not the shipped config default). */
+    private static final int N = 15;
+    /** Illustrative slimes (easy-mobs) stage length (not the shipped config default). */
+    private static final int E = 15;
+
+    private static OnboardingStage stage(int travelled) {
+        return DifficultyProgression.onboardingStage(travelled, true, N, true, E);
+    }
+
+    @Test
+    @DisplayName("onboardingStage: both stages on → NO_HOSTILES [0,15), EASY_MOBS [15,30), NORMAL [30,∞)")
+    void onboardingStage_defaultBoundaries() {
+        assertEquals(OnboardingStage.NO_HOSTILES, stage(0));
+        assertEquals(OnboardingStage.NO_HOSTILES, stage(14));
+        assertEquals(OnboardingStage.EASY_MOBS, stage(15));
+        assertEquals(OnboardingStage.EASY_MOBS, stage(29));
+        assertEquals(OnboardingStage.NORMAL, stage(30));
+        assertEquals(OnboardingStage.NORMAL, stage(100));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: backward travel uses absolute value (ramps identically)")
+    void onboardingStage_usesAbs() {
+        assertEquals(OnboardingStage.NO_HOSTILES, stage(-14));
+        assertEquals(OnboardingStage.EASY_MOBS, stage(-15));
+        assertEquals(OnboardingStage.EASY_MOBS, stage(-29));
+        assertEquals(OnboardingStage.NORMAL, stage(-30));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: both toggles off → always NORMAL")
+    void onboardingStage_bothOff() {
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(0, false, N, false, E));
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(50, false, N, false, E));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: no-hostiles off → slimes start at carriage 0, run for E carriages")
+    void onboardingStage_noHostilesOff() {
+        assertEquals(OnboardingStage.EASY_MOBS, DifficultyProgression.onboardingStage(0, false, N, true, E));
+        assertEquals(OnboardingStage.EASY_MOBS, DifficultyProgression.onboardingStage(14, false, N, true, E));
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(15, false, N, true, E));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: easy-mobs off → no-hostiles [0,15) then straight to NORMAL")
+    void onboardingStage_easyMobsOff() {
+        assertEquals(OnboardingStage.NO_HOSTILES, DifficultyProgression.onboardingStage(0, true, N, false, E));
+        assertEquals(OnboardingStage.NO_HOSTILES, DifficultyProgression.onboardingStage(14, true, N, false, E));
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(15, true, N, false, E));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: zero stage lengths → always NORMAL even when toggled on")
+    void onboardingStage_zeroLengths() {
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(0, true, 0, true, 0));
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(5, true, 0, true, 0));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: asymmetric lengths (N=10, E=20) shift the boundaries accordingly")
+    void onboardingStage_asymmetric() {
+        assertEquals(OnboardingStage.NO_HOSTILES, DifficultyProgression.onboardingStage(9, true, 10, true, 20));
+        assertEquals(OnboardingStage.EASY_MOBS, DifficultyProgression.onboardingStage(10, true, 10, true, 20));
+        assertEquals(OnboardingStage.EASY_MOBS, DifficultyProgression.onboardingStage(29, true, 10, true, 20));
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(30, true, 10, true, 20));
+    }
+
+    @Test
+    @DisplayName("onboardingStage: negative stage lengths clamp to 0 (no negative-window crash)")
+    void onboardingStage_negativeLengthsClamp() {
+        assertEquals(OnboardingStage.NORMAL, DifficultyProgression.onboardingStage(0, true, -5, true, -5));
+    }
+
+    @Test
+    @DisplayName("inOnboardingWindow: true for the first N+E carriages, false past it")
+    void inOnboardingWindow_spansBothStages() {
+        assertEquals(true, DifficultyProgression.inOnboardingWindow(0, N, E));
+        assertEquals(true, DifficultyProgression.inOnboardingWindow(29, N, E));
+        assertEquals(false, DifficultyProgression.inOnboardingWindow(30, N, E));
+        assertEquals(false, DifficultyProgression.inOnboardingWindow(100, N, E));
+    }
+
+    @Test
+    @DisplayName("inOnboardingWindow: uses absolute value and is false for zero-length windows")
+    void inOnboardingWindow_absAndZero() {
+        assertEquals(true, DifficultyProgression.inOnboardingWindow(-29, N, E));
+        assertEquals(false, DifficultyProgression.inOnboardingWindow(-30, N, E));
+        assertEquals(false, DifficultyProgression.inOnboardingWindow(0, 0, 0));
     }
 }
