@@ -449,6 +449,21 @@
       "released": true,
       "released_in": "v0.307.0",
       "released_at": "2026-06-15T08:10:03Z"
+    },
+    {
+      "id": "tag-the-dev-ping",
+      "version": "0.307.0",
+      "type": "feat",
+      "title": "Tag the dev from in-game chat",
+      "summary": "Type @dev or @brennanhatton in chat and it now pings the developer in the community Discord \u2014 a message shouted into the dark can finally reach someone.",
+      "highlights": [
+        "@dev and @brennanhatton in chat now ping the developer in the community Discord feed"
+      ],
+      "pr": 409,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
