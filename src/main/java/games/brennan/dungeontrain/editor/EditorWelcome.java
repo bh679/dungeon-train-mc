@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 /**
  * Sends a friendly onboarding message in chat after a player first enters the Dungeon Train editor
  * each play session. The first line lands ~2.2 seconds after entering; the next lines arrive one at a
- * time ~0.7 seconds apart, and the trailing "Brennan's presence" line waits a further ~5 seconds — so
+ * time ~1.3 seconds apart, and the trailing "Brennan's presence" line waits a further ~5 seconds — so
  * the welcome reads like someone typing, with a beat before the personal sign-off.
  *
  * <p>"Entered the editor" reuses the three command paths that already fire the
@@ -46,8 +46,8 @@ public final class EditorWelcome {
     /** Delay before the first line lands: 2.2 seconds at 20 ticks/second = 44 ticks. */
     private static final long WELCOME_DELAY_TICKS = 44L;
 
-    /** Gap between consecutive body lines: 0.7 seconds at 20 ticks/second = 14 ticks. */
-    private static final long LINE_GAP_TICKS = 14L;
+    /** Gap between consecutive body lines: 1.3 seconds at 20 ticks/second = 26 ticks. */
+    private static final long LINE_GAP_TICKS = 26L;
 
     /** Extra beat before the trailing presence line: 5 seconds at 20 ticks/second = 100 ticks. */
     private static final long PRESENCE_DELAY_TICKS = 100L;
