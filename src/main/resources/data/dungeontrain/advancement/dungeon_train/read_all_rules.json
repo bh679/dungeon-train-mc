@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/taking_notes",
+  "display": {
+    "icon": { "id": "minecraft:book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.read_all_rules.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.read_all_rules.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "dungeontrain:story_set_completed",
+      "conditions": { "setId": "quiet_rules" }
+    }
+  },
+  "requirements": [["completed"]]
+}
