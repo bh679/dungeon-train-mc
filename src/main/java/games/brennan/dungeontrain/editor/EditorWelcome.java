@@ -6,73 +6,96 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
- * Sends a friendly onboarding message in chat 2.2 seconds after a player first
- * enters the Dungeon Train editor each play session.
+ * Sends a friendly onboarding message in chat after a player first enters the Dungeon Train editor
+ * each play session. The first line lands ~2.2 seconds after entering; the remaining lines then
+ * arrive one at a time, ~0.7 seconds apart, so the welcome reads like someone typing rather than a
+ * wall of text.
  *
  * <p>"Entered the editor" reuses the three command paths that already fire the
  * {@code EDITOR_ACTION "entered_editor"} advancement trigger (category, carriage,
  * and tunnel enters in {@code EditorCommand}); they all route through
  * {@code EditorCommand.markEnteredEditor}, which calls {@link #showOnEnter}.</p>
  *
- * <p>The 2.2s delay is scheduled like {@code CinematicIntroService}: an entry is
- * parked with an overworld game-tick deadline and sent by {@link #tick}, which is
- * pumped once per server tick from {@code PlayerJoinEvents.onLevelTick}.
- * "Once per play session" is gated by an in-memory UUID set cleared on logout
- * (via {@link #forget}), so a relog re-shows the welcome.</p>
+ * <p>Scheduling is tick-based like {@code CinematicIntroService}: each player's remaining lines are
+ * parked in a queue with a "next line" overworld-game-tick deadline, drained one line per due tick by
+ * {@link #tick} (pumped once per server tick from {@code PlayerJoinEvents.onLevelTick}). "Once per
+ * play session" is gated by an in-memory UUID set cleared on logout (via {@link #forget}), so a relog
+ * re-shows the welcome.</p>
  */
 public final class EditorWelcome {
 
     private EditorWelcome() {}
 
-    /** Delay before the welcome lands: 2.2 seconds at 20 ticks/second = 44 ticks. */
+    /** Delay before the first line lands: 2.2 seconds at 20 ticks/second = 44 ticks. */
     private static final long WELCOME_DELAY_TICKS = 44L;
+
+    /** Gap between consecutive lines: 0.7 seconds at 20 ticks/second = 14 ticks. */
+    private static final long LINE_GAP_TICKS = 14L;
 
     /** Players already welcomed (or currently scheduled) this session; gates "once per session". */
     private static final Set<UUID> WELCOMED = ConcurrentHashMap.newKeySet();
 
-    /** Player UUID → overworld game-tick deadline at which the scheduled welcome is sent. */
-    private static final Map<UUID, Long> PENDING = new ConcurrentHashMap<>();
+    /** Player UUID → the remaining welcome lines to send (built lazily so the presence line is fresh). */
+    private static final Map<UUID, Deque<Supplier<Component>>> PENDING = new ConcurrentHashMap<>();
+
+    /** Player UUID → overworld game-tick at which the next queued line should be sent. */
+    private static final Map<UUID, Long> NEXT_SEND = new ConcurrentHashMap<>();
 
     /**
-     * The first time {@code player} enters the editor this session, schedule the
-     * welcome to land {@link #WELCOME_DELAY_TICKS} ticks (≈2.2s) later; a no-op on
-     * every later entry until they log out and back in.
+     * The first time {@code player} enters the editor this session, queue the welcome lines and
+     * schedule the first to land {@link #WELCOME_DELAY_TICKS} ticks (≈2.2s) later; a no-op on every
+     * later entry until they log out and back in.
      */
     public static void showOnEnter(ServerPlayer player) {
         if (!WELCOMED.add(player.getUUID())) return;
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        long deadline = server.overworld().getGameTime() + WELCOME_DELAY_TICKS;
-        PENDING.put(player.getUUID(), deadline);
+        PENDING.put(player.getUUID(), new ArrayDeque<>(welcomeLines()));
+        NEXT_SEND.put(player.getUUID(), server.overworld().getGameTime() + WELCOME_DELAY_TICKS);
     }
 
     /**
      * Per-tick pump (hook from the overworld {@code LevelTickEvent.Post}, next to
-     * {@code CinematicIntroService.tick}). Sends each scheduled welcome once its
-     * 2.2s delay has elapsed.
+     * {@code CinematicIntroService.tick}). Sends at most one queued line per player whose next-line
+     * deadline has elapsed, then re-arms the deadline {@link #LINE_GAP_TICKS} ticks out until the
+     * player's queue drains.
      */
     public static void tick(MinecraftServer server) {
         if (PENDING.isEmpty()) return;
         long now = server.overworld().getGameTime();
         PENDING.entrySet().removeIf(e -> {
-            if (now < e.getValue()) return false;
-            ServerPlayer p = server.getPlayerList().getPlayer(e.getKey());
-            if (p != null) p.sendSystemMessage(buildWelcome());
-            return true;
+            UUID id = e.getKey();
+            Long due = NEXT_SEND.get(id);
+            if (due == null || now < due) return false; // not this player's turn yet
+            ServerPlayer p = server.getPlayerList().getPlayer(id);
+            if (p == null) { NEXT_SEND.remove(id); return true; } // logged off mid-welcome
+            Deque<Supplier<Component>> lines = e.getValue();
+            // Pull the next renderable line; a null (e.g. unknown presence) is skipped, not sent blank.
+            Component line = null;
+            while (line == null && !lines.isEmpty()) {
+                line = lines.poll().get();
+            }
+            if (line != null) p.sendSystemMessage(line);
+            if (lines.isEmpty()) { NEXT_SEND.remove(id); return true; } // all lines delivered
+            NEXT_SEND.put(id, now + LINE_GAP_TICKS);
+            return false;
         });
     }
 
@@ -80,18 +103,35 @@ public final class EditorWelcome {
     public static void forget(UUID playerId) {
         WELCOMED.remove(playerId);
         PENDING.remove(playerId);
+        NEXT_SEND.remove(playerId);
     }
 
     /**
-     * The multi-line welcome, sent as a single chat entry. "@brennanhatton" is a
-     * clickable mention that pre-fills the chat box (relayed to Brennan on Discord
-     * by the bundled Discord Presence mod) — styled like the clickable link in
-     * {@code ExportCommand.formatSuccess}. When the bundled Discord Presence mod knows
-     * Brennan's presence, a trailing {@link #buildPresenceLine() "last seen online"}
-     * line is appended.
+     * The welcome, one line per entry, each sent as its own chat message {@link #LINE_GAP_TICKS} ticks
+     * after the previous. Suppliers (not pre-built Components) so the trailing presence line is read
+     * fresh at send time — and {@link #buildPresenceLine() omitted} (returns {@code null}) when
+     * Brennan's Discord presence is unknown.
      */
-    private static Component buildWelcome() {
-        Component mention = Component.literal("@brennanhatton")
+    private static List<Supplier<Component>> welcomeLines() {
+        return List.of(
+            () -> Component.literal("Welcome to the Dungeon Train Editor!")
+                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD),
+            () -> Component.literal("This is a full editor for everything in the train."),
+            () -> Component.literal("From train carriage templates to custom loot tables editor."),
+            () -> Component.literal("If you have any questions - message Brennan in here with ")
+                .append(mentionTag()),
+            () -> Component.literal(
+                "He will be very enthusiastic that you're using the editor and do what he can to support you!"),
+            EditorWelcome::buildPresenceLine);
+    }
+
+    /**
+     * "@brennanhatton" — a clickable mention that pre-fills the chat box (relayed to Brennan on Discord
+     * by the bundled Discord Presence mod), styled like the clickable link in
+     * {@code ExportCommand.formatSuccess}.
+     */
+    private static Component mentionTag() {
+        return Component.literal("@brennanhatton")
             .withStyle(Style.EMPTY
                 .withColor(ChatFormatting.AQUA)
                 .withUnderlined(true)
@@ -99,22 +139,6 @@ public final class EditorWelcome {
                 .withHoverEvent(new HoverEvent(
                     HoverEvent.Action.SHOW_TEXT,
                     Component.literal("Click to message Brennan — your message reaches him on Discord"))));
-
-        MutableComponent welcome = Component.empty()
-            .append(Component.literal("Welcome to the Dungeon Train Editor!")
-                .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD))
-            .append(Component.literal("\nThis is a full editor for everything in the train."))
-            .append(Component.literal("\nFrom train carriage templates to custom loot tables editor."))
-            .append(Component.literal("\nIf you have any questions - message Brennan in here with "))
-            .append(mention)
-            .append(Component.literal(
-                "\nHe will be very enthusiastic that you're using the editor and do what he can to support you!"));
-
-        Component presence = buildPresenceLine();
-        if (presence != null) {
-            welcome.append(presence);
-        }
-        return welcome;
     }
 
     /**
@@ -122,21 +146,17 @@ public final class EditorWelcome {
      * seen online {@literal <}duration{@literal >} ago." — read from the bundled Discord Presence mod's
      * query seam ({@link DiscordService#isDiscordUserOnline}/{@link DiscordService#lastSeenOnline}), or
      * {@code null} when presence is unknown so the welcome omits the line entirely.
-     *
-     * <p>Both seam methods are absent-safe and return empty on DT's default relay-mode (DP holds no
-     * local gateway there) — only a direct-bot operator with the Presence intent populates them. So in
-     * the common case this returns {@code null} and the welcome reads exactly as it did before.</p>
      */
     private static Component buildPresenceLine() {
         DiscordService dp = DiscordService.get();
         if (dp.isDiscordUserOnline(DungeonTrain.BRENNAN_DISCORD_ID).orElse(false)) {
-            return Component.literal("\nBrennan is online on Discord right now!")
+            return Component.literal("Brennan is online on Discord right now!")
                 .withStyle(ChatFormatting.GREEN);
         }
         Optional<Instant> seen = dp.lastSeenOnline(DungeonTrain.BRENNAN_DISCORD_ID);
         if (seen.isPresent()) {
             String ago = humanizeAgo(Duration.between(seen.get(), Instant.now()));
-            return Component.literal("\nBrennan was last seen online " + ago + " ago.")
+            return Component.literal("Brennan was last seen online " + ago + " ago.")
                 .withStyle(ChatFormatting.GRAY);
         }
         return null; // presence unknown (relay-mode default) — omit the line
