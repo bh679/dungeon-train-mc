@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/multiplayer",
+  "display": {
+    "icon": { "id": "minecraft:echo_shard" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.echo_encounter.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.echo_encounter.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "encountered_echo": {
+      "trigger": "dungeontrain:encountered_echo"
+    }
+  },
+  "requirements": [["encountered_echo"]]
+}
