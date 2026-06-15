@@ -452,7 +452,7 @@
     },
     {
       "id": "editor-welcome-message",
-      "version": "0.307.0",
+      "version": "0.308.0",
       "type": "feat",
       "title": "Editor welcome message",
       "summary": "Opening the in-game editor now greets you with a short welcome that points out what the editor can do and how to reach Brennan for help.",
@@ -468,7 +468,7 @@
     },
     {
       "id": "tag-the-dev-ping",
-      "version": "0.307.0",
+      "version": "0.308.0",
       "type": "feat",
       "title": "Tag the dev from in-game chat",
       "summary": "Type @dev or @brennanhatton in chat and it now pings the developer in the community Discord \u2014 a message shouted into the dark can finally reach someone.",
