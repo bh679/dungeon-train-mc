@@ -1,0 +1,7 @@
+{
+  "prompt": "How would you rate the difficulty progression?",
+  "scale_min": 0,
+  "scale_max": 10,
+  "allow_comment": true,
+  "order": 100
+}
