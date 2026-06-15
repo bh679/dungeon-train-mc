@@ -321,6 +321,23 @@
       "released": true,
       "released_in": "v0.305.0",
       "released_at": "2026-06-15T03:23:10Z"
+    },
+    {
+      "id": "own-echo-advancements",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Meet, befriend, or lay to rest your own echo",
+      "summary": "Three new advancements follow your reunions with your own echo \u2014 a passenger reincarnated from one of your past lives. Walk up to one, win it over with a two-way gift exchange, or put it to rest.",
+      "highlights": [
+        "New \"Hello, Old Soul\" \u2014 come within two blocks of your own echo",
+        "\"Old Friends, New Life\" \u2014 befriend your own echo",
+        "\"Lay to Rest\" \u2014 kill your own echo"
+      ],
+      "pr": 398,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
