@@ -335,9 +335,9 @@
       ],
       "pr": 398,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.306.0",
+      "released_at": "2026-06-15T07:30:13Z"
     },
     {
       "id": "appleskin-optional-dependency",
@@ -350,9 +350,9 @@
       ],
       "pr": 397,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.306.0",
+      "released_at": "2026-06-15T07:30:13Z"
     },
     {
       "id": "pillar-arch-taper",
@@ -366,9 +366,9 @@
       ],
       "pr": 399,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.306.0",
+      "released_at": "2026-06-15T07:30:13Z"
     },
     {
       "id": "everything-burrito-completionist",
@@ -382,9 +382,9 @@
       ],
       "pr": 401,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.306.0",
+      "released_at": "2026-06-15T07:30:13Z"
     },
     {
       "id": "cinematic-pause-menu-usable",
@@ -398,9 +398,9 @@
       ],
       "pr": 402,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.306.0",
+      "released_at": "2026-06-15T07:30:13Z"
     },
     {
       "id": "features-carriages-broken-roof",
@@ -414,9 +414,9 @@
       ],
       "pr": 403,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.306.0",
+      "released_at": "2026-06-15T07:30:13Z"
     },
     {
       "id": "spawn-deck-hold",
