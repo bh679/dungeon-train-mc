@@ -288,6 +288,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modpack-jade-tooltips",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Jade tooltips available as an optional modpack add-on",
+      "summary": "Jade \u2014 the \"what am I looking at\" overlay that shows the name and details of whatever block or item you're aiming at \u2014 is now offered as an optional add-on for the Dungeon Train modpack that you can opt into. Heads-up: Jade's tooltip doesn't show for blocks on the moving train yet (a Sable limitation); it works everywhere else.",
+      "highlights": [
+        "Jade block & item tooltips offered as an optional modpack add-on",
+        "Known limitation: no tooltip for blocks on the moving train (works fine off-train)"
+      ],
+      "pr": 395,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
