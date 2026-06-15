@@ -68,8 +68,12 @@ import java.util.TreeMap;
  *   are further apart and thicker on X.</li>
  * </ul>
  *
- * <p>Arches between pillars are intentionally deferred — they'll come back
- * in a later iteration once spacing and thickness are visually dialled in.</p>
+ * <p>Tall pillars (height ≥ {@link #TALL_PILLAR_HEIGHT_THRESHOLD}) fade out
+ * toward their neighbours with a stepped corbel — the <em>arch taper</em> —
+ * that hangs from the pillar top and steps up into the gap, so a span between
+ * two pillars reads as a suggested archway rather than two bare posts. The
+ * per-column step profile comes from {@link #archProfile(int)}; placement is
+ * {@link #placeArchTaperWorldgen}.</p>
  *
  * <p>To keep any single tick from blowing the server tick budget on a
  * large spawn (e.g. 20 carriages × 21 chunks of render distance × ~80
@@ -86,6 +90,14 @@ public final class TrackGenerator {
 
     /** Heights at or above this threshold switch on height-scaled spacing + arches. */
     private static final int TALL_PILLAR_HEIGHT_THRESHOLD = 5;
+
+    /**
+     * Pillars at or above this height get the taller arch taper
+     * ({@code 5,3,2,1,1,1}) instead of the standard one ({@code 3,2,1,1}) —
+     * an extra column nearest the pillar plus an extra one reaching further
+     * into the gap. See {@link #archProfile(int)}.
+     */
+    private static final int TALL_ARCH_HEIGHT_THRESHOLD = 10;
 
     /**
      * Upper bound on computed pillar spacing. Must not exceed {@link #PILLAR_SCAN_MARGIN}
@@ -200,6 +212,30 @@ public final class TrackGenerator {
      */
     static int computeThickness(int spacing) {
         return Math.max(1, spacing / 6);
+    }
+
+    /**
+     * Arch-taper profile for a pillar of the given gating {@code height}: the
+     * per-column block counts stepping outward from each side of the pillar,
+     * each column hanging from the pillar top ({@code bedY - 1}) downward.
+     *
+     * <ul>
+     *   <li>{@code height < 5} → empty (short pillars get no arch).</li>
+     *   <li>{@code 5 ≤ height ≤ 9} → {@code {3, 2, 1, 1}}.</li>
+     *   <li>{@code height ≥ 10} → {@code {5, 3, 2, 1, 1, 1}} — an extra 5-tall
+     *       column nearest the pillar plus an extra 1-tall column reaching one
+     *       further into the gap.</li>
+     * </ul>
+     *
+     * <p>Index 0 is the column immediately beside the pillar's footprint edge;
+     * higher indices step further into the gap. The same profile is mirrored
+     * onto both X sides. Pure + package-private for unit testing, matching
+     * {@link #computeSpacing}/{@link #computeThickness}.</p>
+     */
+    static int[] archProfile(int height) {
+        if (height < TALL_PILLAR_HEIGHT_THRESHOLD) return new int[0];
+        if (height >= TALL_ARCH_HEIGHT_THRESHOLD) return new int[] {5, 3, 2, 1, 1, 1};
+        return new int[] {3, 2, 1, 1};
     }
 
     /**
@@ -824,6 +860,16 @@ public final class TrackGenerator {
                 placePillarSliceWorldgen(level, serverLevel, worldX + dx, g, dims, worldSeed, worldX);
             }
 
+            // Arch taper — fade the pillar out toward each neighbour with a
+            // stepped corbel hanging from the pillar top, built from the
+            // pillar's OWN blocks extruded along X (keyed by the same centre,
+            // so it picks the same variant). Placed AFTER the slab so the
+            // slab's cells win where they overlap; the taper's isPassable
+            // guard skips anything already solid. No-op for short pillars
+            // (empty profile). Worldgen-only, same as the slab.
+            placeArchTaperWorldgen(level, serverLevel, worldX + minDx, worldX + maxDx,
+                height, g, dims, worldSeed, worldX);
+
             // Stairs eligibility — three independent gates, all must pass:
             //   (1) Don't put stairs on a short pillar itself — they'd sit
             //       barely above ground and look pointless.
@@ -947,6 +993,132 @@ public final class TrackGenerator {
         state = paint.resolveSidecar(state, row, zIdx);
         if (state == null) return;
         level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+    }
+
+    /**
+     * Stamp the arch taper for one pillar: a stepped corbel on each X side that
+     * hangs from the pillar top ({@code bedY - 1}) and steps up into the gap,
+     * so adjacent pillars read as a suggested archway. Column block-counts come
+     * from {@link #archProfile(int)} — index 0 sits immediately beside the
+     * pillar footprint edge ({@code pillarMaxX + 1} / {@code pillarMinX - 1})
+     * and higher indices step outward. Spans the full track width on Z,
+     * matching the pillar slab. No-op for short pillars (empty profile).
+     *
+     * <p>The taper is built from the pillar's OWN blocks extruded along X: it
+     * loads the same {@link PillarSection#TOP}/{@link PillarSection#MIDDLE}
+     * paint the slab uses, keyed by {@code pillarCenterX} so it picks the same
+     * variant. Each column is a vertical copy of the pillar face (cap on top),
+     * truncated to the step height — so a themed/variant pillar fades out in
+     * its own material rather than plain brick.</p>
+     *
+     * <p>Worldgen-only, mirroring {@link #placePillarSliceWorldgen}: no ship
+     * checks (chunkgen precedes any ship). The taper overflows at most the
+     * profile length past the pillar footprint — bounded well within the 3×3
+     * decoration window, and a taper never reaches the adjacent pillar
+     * (spacing ≥ 8 &gt; reach), so each taper is stamped exactly once by its
+     * own pillar's chunk. Overlapping tapers and rising gap-terrain compose
+     * correctly because {@link #stampArchColumnWorldgen} only writes passable
+     * cells, yielding the per-column max height.</p>
+     */
+    private static void placeArchTaperWorldgen(
+        WorldGenLevel level,
+        ServerLevel serverLevel,
+        int pillarMinX,
+        int pillarMaxX,
+        int height,
+        TrackGeometry g,
+        CarriageDims dims,
+        long worldSeed,
+        int pillarCenterX
+    ) {
+        int[] profile = archProfile(height);
+        if (profile.length == 0) return;
+
+        // Source the taper blocks from the pillar's own face — same paint,
+        // same variant key — so the fade copies the pillar outward along X.
+        // MIDDLE is only reached by a profile step taller than TOP.height()
+        // (the leading 5 of the tall profile); shorter steps stay within TOP.
+        PillarPaint top = loadPillarPaint(serverLevel, PillarSection.TOP, dims, worldSeed, pillarCenterX);
+        PillarPaint mid = loadPillarPaint(serverLevel, PillarSection.MIDDLE, dims, worldSeed, pillarCenterX);
+
+        int topInclusive = g.bedY() - 1;
+        for (int step = 0; step < profile.length; step++) {
+            int count = profile[step];
+            // +X side steps right from the pillar's right edge; -X side steps
+            // left from the left edge — symmetric mirror.
+            stampArchColumnWorldgen(level, pillarMaxX + 1 + step, topInclusive, count, g, top, mid);
+            stampArchColumnWorldgen(level, pillarMinX - 1 - step, topInclusive, count, g, top, mid);
+        }
+    }
+
+    /**
+     * Stamp one arch-taper column: {@code count} blocks hanging from
+     * {@code topInclusive} downward across the full track Z width, each cell
+     * copied from the pillar face via {@link #taperBlockAt}. Skips non-passable
+     * cells so the taper embeds into any hill in the gap (and yields to an
+     * already-placed pillar slab) instead of carving it, and skips authored
+     * air cells so face cut-outs carry through. Worldgen write — no ship check.
+     */
+    private static void stampArchColumnWorldgen(
+        WorldGenLevel level,
+        int worldX,
+        int topInclusive,
+        int count,
+        TrackGeometry g,
+        PillarPaint top,
+        PillarPaint mid
+    ) {
+        int zMin = g.trackZMin();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int z = g.trackZMin(); z <= g.trackZMax(); z++) {
+            int zIdx = z - zMin;
+            for (int i = 0; i < count; i++) {
+                BlockState state = taperBlockAt(top, mid, i, zIdx);
+                if (state == null) continue; // authored air cell — keep the gap
+                pos.set(worldX, topInclusive - i, z);
+                if (!isPassable(level.getBlockState(pos))) continue;
+                level.setBlock(pos, state, Block.UPDATE_CLIENTS);
+            }
+        }
+    }
+
+    /**
+     * Resolve the block the pillar face carries at depth {@code i} below the
+     * top ({@code i = 0} is the cap row at {@code bedY - 1}) for track-width
+     * index {@code zIdx}, so the taper is a faithful top-anchored copy of the
+     * pillar. The top {@link PillarSection#TOP} rows come from the TOP paint
+     * (cap downward); anything deeper repeats the MIDDLE paint, matching the
+     * pillar's own {@code bottom→middles→top} stacking read from the top.
+     * Returns {@code null} for an authored air cell (a pillar-face cut-out) so
+     * the taper preserves the same gaps.
+     */
+    private static BlockState taperBlockAt(PillarPaint top, PillarPaint mid, int i, int zIdx) {
+        int topH = PillarSection.TOP.height();
+        if (i < topH) {
+            return columnCell(top, topH - 1 - i, zIdx);
+        }
+        return columnCell(mid, 0, zIdx);
+    }
+
+    /**
+     * Look up one cell of a pillar-section paint (template + sidecar),
+     * mirroring the resolution in {@link #stampSliceCellWorldgen}. Returns the
+     * fallback {@link TrackPalette#PILLAR} when no template is bound, or
+     * {@code null} when the authored cell (or its sidecar override) is air.
+     */
+    private static BlockState columnCell(PillarPaint paint, int row, int zIdx) {
+        Optional<BlockState[][]> column = paint.column();
+        BlockState state;
+        if (column.isPresent()
+            && row >= 0 && row < column.get().length
+            && zIdx >= 0 && zIdx < column.get()[row].length) {
+            BlockState fromTemplate = column.get()[row][zIdx];
+            if (fromTemplate == null) return null;
+            state = fromTemplate;
+        } else {
+            state = TrackPalette.PILLAR;
+        }
+        return paint.resolveSidecar(state, row, zIdx);
     }
 
     /**

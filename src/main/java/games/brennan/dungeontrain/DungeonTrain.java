@@ -123,6 +123,7 @@ public class DungeonTrain {
                 return "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
             }
             @Override public boolean suppressAutoDeathReport() { return true; } // DT posts its own "Run Ended"
+            @Override public boolean suppressAutoDisconnectReport() { return true; } // DT posts its own "left the game"
         });
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
