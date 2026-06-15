@@ -462,9 +462,9 @@
       ],
       "pr": 408,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.308.0",
+      "released_at": "2026-06-15T09:17:19Z"
     },
     {
       "id": "tag-the-dev-ping",
@@ -477,9 +477,9 @@
       ],
       "pr": 409,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.308.0",
+      "released_at": "2026-06-15T09:17:19Z"
     }
   ]
 }
