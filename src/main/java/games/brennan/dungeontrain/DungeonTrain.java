@@ -37,6 +37,13 @@ public class DungeonTrain {
     public static final String MOD_ID = "dungeontrain";
     private static final Logger LOGGER = LogUtils.getLogger();
 
+    /**
+     * Brennan's Discord user id. Single source of truth for both the chat-tag ping triggers
+     * ({@code gameRelayMentions}) and the editor-welcome presence line ({@code presenceTrackUserIds}
+     * + {@code EditorWelcome}).
+     */
+    public static final String BRENNAN_DISCORD_ID = "342110421114945537";
+
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
@@ -128,7 +135,16 @@ public class DungeonTrain {
             // Chat-tag ping triggers: typing @dev or @brennanhatton in relayed chat is rewritten to a real
             // <@id> mention so Brennan is pinged in the community feed (DP's trusted allowed_mentions path).
             @Override public List<String> gameRelayMentions() {
-                return List.of("@dev=<@342110421114945537>", "@brennanhatton=<@342110421114945537>");
+                return List.of("@dev=<@" + BRENNAN_DISCORD_ID + ">",
+                               "@brennanhatton=<@" + BRENNAN_DISCORD_ID + ">");
+            }
+            // Track Brennan's Discord presence so the editor welcome (EditorWelcome) can render a
+            // "last seen online …" / "online now" line. Unioned with the admin's presenceTrackUserIds
+            // config. This requests the privileged GUILD_PRESENCES intent only in DP's direct-bot mode;
+            // on DT's default relay-mode (no local gateway) it's a no-op until the relay serves presence,
+            // and the query seam stays absent-safe meanwhile, so the welcome line simply omits.
+            @Override public List<String> presenceTrackUserIds() {
+                return List.of(BRENNAN_DISCORD_ID);
             }
         });
 

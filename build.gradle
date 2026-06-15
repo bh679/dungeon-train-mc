@@ -201,9 +201,11 @@ dependencies {
     // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Discord Presence (Discord join/online/death notifications + reactions) —
-    // same bundling contract as AIN/AIS/PMOB above. Generic + event-driven; DT
-    // does NOT compile against it, so this is purely additive: jarJar embeds it
-    // and `implementation` makes it discoverable as a mod on dev/test runtimes.
+    // same bundling contract as AIN/AIS/PMOB above. DT compiles against its public
+    // API: DiscordCredentials/DiscordCredentialsProvider (relay-mode + chat-tag ping
+    // triggers + presence tracking) and DiscordService (death reports, and the
+    // editor-welcome "last seen online" presence query). `implementation` puts it on
+    // the compile classpath and jarJar embeds it into the shipped jar.
     // Configured at runtime in config/discordpresence-server.toml (off by default).
     implementation "bh679:discordpresence:${discordpresence_version}"
     jarJar(group: 'bh679', name: 'discordpresence', version: discordpresence_version)
