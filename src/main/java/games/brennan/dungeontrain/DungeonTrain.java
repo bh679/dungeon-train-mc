@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
+import java.util.List;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -124,6 +125,11 @@ public class DungeonTrain {
             }
             @Override public boolean suppressAutoDeathReport() { return true; } // DT posts its own "Run Ended"
             @Override public boolean suppressAutoDisconnectReport() { return true; } // DT posts its own "left the game"
+            // Chat-tag ping triggers: typing @dev or @brennanhatton in relayed chat is rewritten to a real
+            // <@id> mention so Brennan is pinged in the community feed (DP's trusted allowed_mentions path).
+            @Override public List<String> gameRelayMentions() {
+                return List.of("@dev=<@342110421114945537>", "@brennanhatton=<@342110421114945537>");
+            }
         });
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
