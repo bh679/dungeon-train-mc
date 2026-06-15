@@ -18,6 +18,9 @@ import java.util.Optional;
  *   <li>{@code faulthurst} — every variant of every random-book whose
  *       basename contains {@code "faulthurst"} is marked seen in
  *       {@link games.brennan.dungeontrain.narrative.NarrativeProgressData}.</li>
+ *   <li>{@code quiet_rules} — every variant of every random-book whose
+ *       basename contains {@code "rules"} is marked seen (the "Know The Rules"
+ *       achievement). Same per-world store as {@code faulthurst}.</li>
  *   <li>{@code all_stories} — every letter of every {@code StoryFile} in
  *       {@link games.brennan.dungeontrain.narrative.StoryRegistry} is
  *       marked read.</li>

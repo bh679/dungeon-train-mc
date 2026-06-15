@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/read_all_rules",
   "display": {
     "icon": { "id": "minecraft:chest" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.chests_100_unique.title" },
