@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -194,6 +195,7 @@ public final class PlayerJoinEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             PENDING.remove(player.getUUID());
             CinematicIntroService.forget(player.getUUID());
+            EditorWelcome.forget(player.getUUID());
         }
     }
 
@@ -212,6 +214,8 @@ public final class PlayerJoinEvents {
         // Expire spawn-cinematic invulnerability windows — must run even when
         // no players are queued for placement.
         CinematicIntroService.tick(server);
+        // Deliver any editor welcome whose 2.2s post-entry delay has elapsed.
+        EditorWelcome.tick(server);
 
         if (PENDING.isEmpty()) return;
         Iterator<Map.Entry<UUID, Integer>> it = PENDING.entrySet().iterator();
