@@ -190,6 +190,7 @@ jobs:
             interactive-player-mobs(embedded)
             distant-horizons(optional)
             tectonic(optional)
+            mouse-tweaks(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

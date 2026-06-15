@@ -110,6 +110,26 @@ def test_malformed_optional_mod_rejected():
     assert "file_id" in proc.stderr
 
 
+def test_real_config_includes_appleskin_as_optional():
+    """Guard: the shipped modpack.config.json keeps AppleSkin as an on-by-default Include.
+
+    Renders the *real* repo config (not the synthetic CONFIG above) so AppleSkin can't be
+    silently dropped from the pack. AppleSkin ships as an optional_mods entry -> required=False
+    manifest file, which CurseForge surfaces as an "Include" relation.
+    """
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    real_config = os.path.join(repo_root, "modpack", "modpack.config.json")
+    real_gradle = os.path.join(repo_root, "gradle.properties")
+    proc = subprocess.run(
+        [sys.executable, SCRIPT, "--config", real_config, "--gradle-properties", real_gradle,
+         "--dt-file-id", "8123456", "--version", "0.0.0"],
+        capture_output=True, text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
+    files = json.loads(proc.stdout)["files"]
+    assert {"projectID": 248787, "fileID": 7854442, "required": False} in files, files
+
+
 def _main():
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0
