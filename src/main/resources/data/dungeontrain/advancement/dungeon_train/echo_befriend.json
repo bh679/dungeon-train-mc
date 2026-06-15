@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/echo_encounter",
+  "display": {
+    "icon": { "id": "minecraft:totem_of_undying" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.echo_befriend.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.echo_befriend.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "befriended_echo": {
+      "trigger": "dungeontrain:befriended_echo"
+    }
+  },
+  "requirements": [["befriended_echo"]]
+}

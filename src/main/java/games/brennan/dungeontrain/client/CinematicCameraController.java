@@ -137,6 +137,12 @@ public final class CinematicCameraController {
             forceStop();
             return;
         }
+        // A screen owns input (e.g. the focus-loss pause menu). Suspend the cinematic —
+        // freeze the clock and let the screen work normally; resume when it closes. The
+        // frozen input is left in place, so movement stays locked across the pause.
+        if (Minecraft.getInstance().screen != null) {
+            return;
+        }
         // Keep movement frozen (defensive against re-assignment).
         if (player.input != FROZEN_INPUT) {
             player.input = FROZEN_INPUT;
