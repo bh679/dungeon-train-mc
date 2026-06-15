@@ -480,6 +480,23 @@
       "released": true,
       "released_in": "v0.308.0",
       "released_at": "2026-06-15T09:17:19Z"
+    },
+    {
+      "id": "death-screen-feedback-survey",
+      "version": "0.309.0",
+      "type": "feat",
+      "title": "Death-screen feedback survey",
+      "summary": "When you die, a Give Feedback button opens a short survey: rate your run 0-10 with an optional comment, then answer how the difficulty progression feels. Answers post to the community Discord. It walks the questions one at a time and never re-asks one you've already answered.",
+      "highlights": [
+        "Give Feedback button on the death screen",
+        "0-10 ratings with optional comments, sent to Discord",
+        "Asks how the difficulty progression is feeling"
+      ],
+      "pr": 411,
+      "date": "2026-06-15",
+      "released": true,
+      "released_in": "v0.309.0",
+      "released_at": "2026-06-15T10:31:09Z"
     }
   ]
 }
