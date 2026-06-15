@@ -403,18 +403,16 @@
       "released_at": null
     },
     {
-      "id": "gentle-onboarding-stages",
-      "version": "0.306.0",
-      "type": "feat",
-      "title": "Gentler opening: a mob-free start, then slimes, then normal",
-      "summary": "New runs now ease in over three stages. The first stretch of the train is completely free of hostile mobs, so you can find your feet, meet the villagers and grab starter loot in peace. After that, a stretch of harmless slimes gives you a gentle combat warm-up before the usual mobs and difficulty kick in. It's all on by default and fully tunable per world.",
+      "id": "features-carriages-broken-roof",
+      "version": "0.305.0",
+      "type": "content",
+      "title": "New decor carriages (house, tree, cherry blossom) + broken roof",
+      "summary": "A new 'features' content set rides the train \u2014 house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
       "highlights": [
-        "The first ~10 carriages spawn no hostile mobs \u2014 villagers, traders and friendly mobs still ride along",
-        "The next ~15 carriages spawn only slimes, for an easy combat warm-up",
-        "Normal mobs and the usual difficulty curve resume after the opening stretch",
-        "All three stages are on by default and tunable in dungeontrain-server.toml"
+        "New house, tree, and cherry-blossom carriage content (tree & cherry blossom carry loot chests)",
+        "New 'broken' roof variant for cracked carriages"
       ],
-      "pr": 405,
+      "pr": 403,
       "date": "2026-06-15",
       "released": false,
       "released_in": null,

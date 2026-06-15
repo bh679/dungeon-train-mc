@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "selfWeight": 1,
+  "variants": [
+    {
+      "id": "house",
+      "weight": 1
+    },
+    {
+      "id": "tree",
+      "weight": 20
+    },
+    {
+      "id": "cherryblossom",
+      "weight": 3
+    }
+  ]
+}
