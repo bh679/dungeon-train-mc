@@ -32,6 +32,8 @@ Two flavours:
   `required:false` manifest file, which CurseForge surfaces as an **"Include"**. It references
   AppleSkin's own CurseForge file (not embedded in DT's jar, not redistributed); the launcher
   installs it by default and players can untick it. **Pinned** file ID — see "AppleSkin pin" below.
+  Because the pack ships it, AppleSkin is **also** declared as an `appleskin(optional)` dependency
+  of the *mod* in `release.yml` — see ["Includes must be mod dependencies"](#includes-must-be-mod-dependencies) below.
 
 **Opt-in relations (declared only, not shipped — players install them themselves):**
 Declared as CurseForge **`optionalDependency` relations** (see the table below); they appear
@@ -65,7 +67,28 @@ from `curseforge_relations` in `modpack.config.json`:
 | `mouse-tweaks` | `optionalDependency` | Opt-in add-on — relation only (not shipped). |
 | `jade` | `optionalDependency` | Opt-in add-on — relation only; tooltips don't render on moving-train blocks (Sable sub-level). |
 
-Keep this list in sync with the mod's own `curseforge-dependencies` in `release.yml` — which declares `distant-horizons(optional)` + `tectonic(optional)` + `mouse-tweaks(optional)` + `jade(optional)`. (Lithostitched is Tectonic's dependency, not DT's, and CurseForge resolves it automatically — so it appears in neither. AppleSkin is a pack *file*, not a relation, so it is **not** in this list — CurseForge auto-creates its "Include" relation from the manifest.)
+Keep this list aligned with the mod's own `curseforge-dependencies` in `release.yml`, which
+declares `appleskin(optional)` + `distant-horizons(optional)` + `tectonic(optional)` +
+`mouse-tweaks(optional)` + `jade(optional)`. The two lists are identical **except for AppleSkin**:
+on the *mod* it is a normal `appleskin(optional)` relation, but in the *modpack* it ships as a
+bundled file, so CurseForge auto-creates its "Include" relation from the manifest — it must
+therefore **not** be repeated in `curseforge_relations`. (Lithostitched is Tectonic's dependency,
+not DT's, and CurseForge resolves it automatically — so it appears in neither.)
+
+### Includes must be mod dependencies
+
+**Invariant:** every mod the pack ships as an on-by-default **Include** (`modpack.config.json`
+→ `optional_mods`) must **also** be declared as an `<slug>(optional)` dependency of the *mod*
+in `release.yml` → `curseforge-dependencies`. The pack is "the mod plus its recommended
+companions", so anything it force-bundles should be advertised as an optional dependency on the
+mod's own page too. (The reverse does **not** hold — a mod optional dependency need not be a pack
+Include; e.g. `mouse-tweaks` / `jade` are declared relations the pack doesn't bundle.)
+
+This is enforced in CI by **`scripts/modpack/check-relations.py`** (run from the `modpack-checks`
+job in [`build.yml`](../.github/workflows/build.yml) on every PR). It cross-references each
+`optional_mods` entry's `slug` against the `curseforge-dependencies` block and fails the build if
+an Include is missing its `<slug>(optional)` relation — the gap that shipped AppleSkin undeclared
+in PR #390. So each `optional_mods` entry **must carry a `slug`** (its CurseForge URL slug).
 
 ## How it deploys (15 min after every mod release)
 
@@ -112,9 +135,10 @@ A stale pin just ships an older AppleSkin — harmless, but worth keeping curren
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (on-by-default Includes — AppleSkin), and `curseforge_relations` (opt-in relations — DH/Tectonic/Mouse Tweaks). |
+| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (on-by-default Includes — AppleSkin; each carries a `slug` for the consistency guard), and `curseforge_relations` (opt-in relations — DH/Tectonic/Mouse Tweaks/Jade). |
 | `overrides/` | Copied into the player's instance on install. Empty for now. |
 | `../scripts/modpack/build-manifest.py` | Renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
+| `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` Include must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
 | `../scripts/modpack/publish-curseforge.sh` | Zips + uploads to CurseForge using the same `CURSEFORGE_TOKEN`. |
 
 ## Local test (no upload)
