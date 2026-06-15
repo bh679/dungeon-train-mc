@@ -401,6 +401,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "gentle-onboarding-stages",
+      "version": "0.306.0",
+      "type": "feat",
+      "title": "Gentler opening: a mob-free start, then slimes, then normal",
+      "summary": "New runs now ease in over three stages. The first stretch of the train is completely free of hostile mobs, so you can find your feet, meet the villagers and grab starter loot in peace. After that, a stretch of harmless slimes gives you a gentle combat warm-up before the usual mobs and difficulty kick in. It's all on by default and fully tunable per world.",
+      "highlights": [
+        "The first ~10 carriages spawn no hostile mobs \u2014 villagers, traders and friendly mobs still ride along",
+        "The next ~15 carriages spawn only slimes, for an easy combat warm-up",
+        "Normal mobs and the usual difficulty curve resume after the opening stretch",
+        "All three stages are on by default and tunable in dungeontrain-server.toml"
+      ],
+      "pr": 405,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
