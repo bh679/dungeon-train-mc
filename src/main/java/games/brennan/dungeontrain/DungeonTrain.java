@@ -5,7 +5,6 @@ import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.discordpresence.config.DiscordCredentials;
 import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
-import games.brennan.dungeontrain.compat.DiscordSurveyBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -140,21 +139,6 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but social-gift seam unavailable ({}); "
                         + "befriend advancements disabled.", t.toString());
-            }
-        }
-
-        // Register Dungeon Train's death-screen feedback-survey questions with the bundled
-        // Discord Presence survey API (DP ships the built-in NPS question; DT adds its own,
-        // e.g. difficulty progression). Guarded like the PlayerMob seam: only when
-        // discordpresence is loaded, and tolerant of an older DP build without the survey
-        // API (pre-0.17.0) — then no DT questions are added rather than crashing mod load.
-        // DP is always bundled via jarJar, so this normally runs.
-        if (ModList.get().isLoaded("discordpresence")) {
-            try {
-                DiscordSurveyBridge.install();
-            } catch (Throwable t) {
-                LOGGER.warn("Discord Presence present but survey API unavailable ({}); "
-                        + "Dungeon Train survey questions disabled.", t.toString());
             }
         }
     }
