@@ -428,9 +428,9 @@
         "No more falling under the train on login, respawn, or world reload"
       ],
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.307.0",
+      "released_at": "2026-06-15T08:10:03Z"
     },
     {
       "id": "gentle-onboarding-stages",
@@ -446,9 +446,9 @@
       ],
       "pr": 405,
       "date": "2026-06-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.307.0",
+      "released_at": "2026-06-15T08:10:03Z"
     }
   ]
 }
