@@ -497,6 +497,22 @@
       "released": true,
       "released_in": "v0.309.0",
       "released_at": "2026-06-15T10:31:09Z"
+    },
+    {
+      "id": "editor-welcome-last-seen-online",
+      "version": "0.310.0",
+      "type": "feat",
+      "title": "Editor welcome shows Brennan's Discord \"last seen online\"",
+      "summary": "The Dungeon Train editor welcome can again end with whether Brennan is online on Discord right now, or how long ago he was last seen \u2014 so creators know if a quick reply is likely. Powered by Discord Presence's presence query over the community relay; gracefully hidden when his presence is unknown.",
+      "highlights": [
+        "Editor welcome shows \"Brennan is online on Discord right now!\" or \"last seen online X ago\"",
+        "Gracefully hidden when his Discord presence is unknown"
+      ],
+      "pr": 412,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
