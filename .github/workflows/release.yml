@@ -188,6 +188,7 @@ jobs:
             adventure-item-names(embedded)
             adventure-item-stats(embedded)
             interactive-player-mobs(embedded)
+            appleskin(optional)
             distant-horizons(optional)
             tectonic(optional)
             mouse-tweaks(optional)
