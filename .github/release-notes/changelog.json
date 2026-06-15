@@ -451,6 +451,22 @@
       "released_at": "2026-06-15T08:10:03Z"
     },
     {
+      "id": "editor-welcome-message",
+      "version": "0.307.0",
+      "type": "feat",
+      "title": "Editor welcome message",
+      "summary": "Opening the in-game editor now greets you with a short welcome that points out what the editor can do and how to reach Brennan for help.",
+      "highlights": [
+        "A friendly welcome appears in chat a couple of seconds after you first open the editor each session.",
+        "Click the @brennanhatton mention to message Brennan directly \u2014 your message reaches him on Discord."
+      ],
+      "pr": 408,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "tag-the-dev-ping",
       "version": "0.307.0",
       "type": "feat",

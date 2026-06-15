@@ -22,6 +22,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
+import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
@@ -1480,6 +1481,16 @@ public final class EditorCommand {
     }
 
     /**
+     * Fire the "entered editor" advancement trigger and, the first time per play
+     * session, show the editor welcome message in chat.
+     */
+    private static void markEnteredEditor(ServerPlayer player) {
+        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+            .trigger(player, "entered_editor");
+        EditorWelcome.showOnEnter(player);
+    }
+
+    /**
      * Category-level enter: stamp every plot in {@code category} so the player
      * can walk between all of them, then teleport them to the first model.
      * Architecture has no models yet and returns a "coming soon" message.
@@ -1487,8 +1498,7 @@ public final class EditorCommand {
     private static int runEnterCategory(CommandSourceStack source, EditorCategory category) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-            .trigger(player, "entered_editor");
+        markEnteredEditor(player);
 
         if (category == EditorCategory.ARCHITECTURE) {
             source.sendSuccess(() -> Component.literal(
@@ -1718,8 +1728,7 @@ public final class EditorCommand {
     private static int runEnterCarriage(CommandSourceStack source, CarriageVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-            .trigger(player, "entered_editor");
+        markEnteredEditor(player);
         try {
             CarriageEditor.enter(player, variant);
             CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
@@ -1740,8 +1749,7 @@ public final class EditorCommand {
     private static int runEnterTunnel(CommandSourceStack source, TunnelVariant variant) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
-        games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-            .trigger(player, "entered_editor");
+        markEnteredEditor(player);
         try {
             TunnelEditor.enter(player, variant);
             source.sendSuccess(() -> Component.literal(
