@@ -369,6 +369,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "everything-burrito-completionist",
+      "version": "0.305.0",
+      "type": "feat",
+      "title": "Everything Burrito: earn every other advancement",
+      "summary": "A new challenge advancement, Everything Burrito, unlocks once you've earned every other Dungeon Train advancement \u2014 editor achievements aside. It hangs off 'Help I Can't Get Off' at the end of the line, and tracks the achievement list dynamically, so it always means '100%' even as new advancements arrive in future updates.",
+      "highlights": [
+        "New 'Everything Burrito' challenge advancement for 100% completion",
+        "Counts every non-editor advancement \u2014 and auto-includes any added in future updates"
+      ],
+      "pr": 401,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
