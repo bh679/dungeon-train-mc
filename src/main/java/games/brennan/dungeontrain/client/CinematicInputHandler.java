@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.DungeonTrain;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -24,8 +26,11 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  *       keys do nothing except surface the hint.)</li>
  *   <li>Mouse buttons / scroll / interaction key-mappings → cancelled (swallow
  *       attack/use/zoom) and surface the hint.</li>
- *   <li>{@link ScreenEvent.Opening} → cancelled, so inventory / chat / pause
- *       can't open (also keeps the tick clock running).</li>
+ *   <li>{@link ScreenEvent.Opening} → inventory / chat are cancelled to protect the
+ *       cutscene, but the pause menu is allowed (window-focus-loss / Escape). While any
+ *       screen owns input the in-world blockers above stand down and
+ *       {@link CinematicCameraController#clientTick()} suspends the clock, so the menu is
+ *       fully usable and the cinematic resumes from where it paused on close.</li>
  *   <li>{@link ClientPlayerNetworkEvent.LoggingOut} → hard reset.</li>
  * </ul>
  */
@@ -42,6 +47,7 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onKey(InputEvent.Key event) {
         if (!CinematicCameraController.isActive()) return;
+        if (Minecraft.getInstance().screen != null) return;
         if (event.getAction() != InputConstants.PRESS) return;
         if (event.getKey() == InputConstants.KEY_SPACE) {
             CinematicCameraController.skip();
@@ -53,6 +59,7 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onMouseButton(InputEvent.MouseButton.Pre event) {
         if (!CinematicCameraController.isActive()) return;
+        if (Minecraft.getInstance().screen != null) return;
         event.setCanceled(true);
         if (event.getAction() == InputConstants.PRESS) {
             CinematicSkipHudOverlay.show();
@@ -62,6 +69,7 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
         if (!CinematicCameraController.isActive()) return;
+        if (Minecraft.getInstance().screen != null) return;
         event.setCanceled(true);
         CinematicSkipHudOverlay.show();
     }
@@ -69,15 +77,19 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onInteraction(InputEvent.InteractionKeyMappingTriggered event) {
         if (!CinematicCameraController.isActive()) return;
+        if (Minecraft.getInstance().screen != null) return;
         event.setCanceled(true);
         CinematicSkipHudOverlay.show();
     }
 
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
-        if (CinematicCameraController.isActive()) {
-            event.setCanceled(true);
-        }
+        if (!CinematicCameraController.isActive()) return;
+        // Allow the pause menu (window-focus-loss auto-pause / Escape) to open so the
+        // player can use it; the cinematic suspends and resumes when the menu closes.
+        if (event.getNewScreen() instanceof PauseScreen) return;
+        // Keep blocking inventory / chat / etc. to preserve the cutscene.
+        event.setCanceled(true);
     }
 
     @SubscribeEvent

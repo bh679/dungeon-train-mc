@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
+import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
@@ -194,6 +196,7 @@ public final class PlayerJoinEvents {
         if (event.getEntity() instanceof ServerPlayer player) {
             PENDING.remove(player.getUUID());
             CinematicIntroService.forget(player.getUUID());
+            EditorWelcome.forget(player.getUUID());
         }
     }
 
@@ -212,6 +215,8 @@ public final class PlayerJoinEvents {
         // Expire spawn-cinematic invulnerability windows — must run even when
         // no players are queued for placement.
         CinematicIntroService.tick(server);
+        // Deliver any editor welcome whose 2.2s post-entry delay has elapsed.
+        EditorWelcome.tick(server);
 
         if (PENDING.isEmpty()) return;
         Iterator<Map.Entry<UUID, Integer>> it = PENDING.entrySet().iterator();
@@ -309,6 +314,14 @@ public final class PlayerJoinEvents {
         // Face along travel (+X) — this is the view restored when the cinematic
         // releases control.
         player.teleportTo(trainLevel, flat.x(), flat.y(), flat.z(), FORWARD_YAW, 0.0f);
+
+        // Tell the client to hold the player on the deck for a window. The
+        // server can stall for seconds at spawn (eager-fill appender) while the
+        // client keeps ticking and free-falls the local player off the just-
+        // teleported deck onto the world bed under the train. The local player's
+        // movement is client-authoritative, so the hold must run client-side.
+        DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
+            data.getTrainY() + 1.0, SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
 
         boolean cinematic = CinematicIntroService.shouldPlay(player);
         LOGGER.info("[DungeonTrain] Login spawn for {}: onTrain=({}, {}, {}) camStart=({}, {}, {}) yaw={} pitch={} cinematic={} trainCenter=({}, {}, {}) anchorX={} lookX={} buffered={}",

@@ -22,6 +22,10 @@
     {
       "name": "cracked",
       "weight": 1
+    },
+    {
+      "name": "broken",
+      "weight": 1
     }
   ],
   "doors": [
