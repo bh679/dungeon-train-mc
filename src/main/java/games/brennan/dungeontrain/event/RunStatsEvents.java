@@ -31,6 +31,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -129,28 +130,9 @@ public final class RunStatsEvents {
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        // Snapshot armor at death — the keep-inventory gamerule and respawn
-        // both run AFTER LivingDeathEvent, so the equipment slots still
-        // reflect what the player was wearing when they died.
-        DeathStatsPacket packet = new DeathStatsPacket(
-                run.mobKills(),
-                run.cartsSinceDeath(),
-                run.distanceBlocks(),
-                run.runTicks(),
-                run.containersOpened(),
-                run.booksReadCount(),
-                run.mostUsedWeapon(),
-                player.getItemBySlot(EquipmentSlot.HEAD).copy(),
-                player.getItemBySlot(EquipmentSlot.CHEST).copy(),
-                player.getItemBySlot(EquipmentSlot.LEGS).copy(),
-                player.getItemBySlot(EquipmentSlot.FEET).copy(),
-                run.encounteredCount(),
-                run.playerKills(),
-                run.befriendedCount(),
-                run.damageDealt(),
-                run.damageTaken()
-        );
+        // Snapshot armor at death — the keep-inventory gamerule and respawn both run AFTER
+        // LivingDeathEvent, so the equipment slots still reflect what the player died wearing.
+        DeathStatsPacket packet = buildPacket(player);
         DungeonTrainNet.sendTo(player, packet);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
@@ -171,7 +153,63 @@ public final class RunStatsEvents {
      */
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet) {
         String cause = source.getLocalizedDeathMessage(player).getString();
-        List<DeathField> fields = List.of(
+        DiscordService.get().postDeathReport(player,
+                "💀 " + player.getGameProfile().getName() + " — Run Ended", cause,
+                runFields(packet), runIcons(packet));
+    }
+
+    /**
+     * Mirror the run summary to Discord when a player leaves the game ALIVE (e.g. quits to the main
+     * menu): the SAME stats + gear image as the death report, but via Discord Presence's grey "left
+     * the game" report instead of the red death one. A player who leaves DEAD is skipped — their
+     * death already posted the summary, and the run stats reset on respawn. Gated by the same
+     * {@code deathReportToDiscord} toggle. Best-effort; a Discord hiccup never blocks logout.
+     */
+    @SubscribeEvent
+    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (player.isDeadOrDying()) return;
+        if (!DungeonTrainConfig.isDeathReportToDiscord()) return;
+        try {
+            DeathStatsPacket packet = buildPacket(player);
+            DiscordService.get().postDisconnectReport(player,
+                    "👋 " + player.getGameProfile().getName() + " left the game", "",
+                    runFields(packet), runIcons(packet));
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] disconnect report to Discord failed: {}", t.toString());
+        }
+    }
+
+    /**
+     * Snapshot the player's current run stats + worn armor into a {@link DeathStatsPacket}, shared by
+     * the death summary and the alive-logout summary. The equipment slots reflect the player's gear
+     * right now (at death — before respawn/keep-inventory; at logout — their live gear).
+     */
+    private static DeathStatsPacket buildPacket(ServerPlayer player) {
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        return new DeathStatsPacket(
+                run.mobKills(),
+                run.cartsSinceDeath(),
+                run.distanceBlocks(),
+                run.runTicks(),
+                run.containersOpened(),
+                run.booksReadCount(),
+                run.mostUsedWeapon(),
+                player.getItemBySlot(EquipmentSlot.HEAD).copy(),
+                player.getItemBySlot(EquipmentSlot.CHEST).copy(),
+                player.getItemBySlot(EquipmentSlot.LEGS).copy(),
+                player.getItemBySlot(EquipmentSlot.FEET).copy(),
+                run.encounteredCount(),
+                run.playerKills(),
+                run.befriendedCount(),
+                run.damageDealt(),
+                run.damageTaken()
+        );
+    }
+
+    /** The death-screen run-summary fields, shared by the death report and the logout report. */
+    private static List<DeathField> runFields(DeathStatsPacket packet) {
+        return List.of(
                 // Run-stats strip (top death-screen row).
                 new DeathField("Distance", DeathReportFormat.distance(packet.distanceBlocks())),
                 new DeathField("Time", DeathReportFormat.time(packet.runTicks())),
@@ -185,11 +223,13 @@ public final class RunStatsEvents {
                 new DeathField("Mobs killed", Integer.toString(packet.mobKills())),
                 new DeathField("Damage dealt", DeathReportFormat.damage(packet.damageDealt())),
                 new DeathField("Damage taken", DeathReportFormat.damage(packet.damageTaken())));
-        List<ItemStack> icons = List.of(
+    }
+
+    /** Most-used weapon + worn armor, for the report's composed item image. */
+    private static List<ItemStack> runIcons(DeathStatsPacket packet) {
+        return List.of(
                 packet.mostUsedWeapon(),
                 packet.armorHead(), packet.armorChest(), packet.armorLegs(), packet.armorFeet());
-        DiscordService.get().postDeathReport(player,
-                "💀 " + player.getGameProfile().getName() + " — Run Ended", cause, fields, icons);
     }
 
     @SubscribeEvent
