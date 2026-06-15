@@ -288,6 +288,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discordpresence-015-dev-chat-tag",
+      "version": "0.304.0",
+      "type": "feat",
+      "title": "Type @Dev in chat: autocomplete + highlight",
+      "summary": "The bundled Discord Presence mod updates to 0.15.0. Typing @Dev (or @brennanhatton) in chat now autocompletes like a command and turns yellow as you type \u2014 so the new Quiet Rule about reaching the maker is something you can actually see and use. The deeper Discord wiring (real pings, engaged-only relay) ships too but stays off until a server owner turns it on.",
+      "highlights": [
+        "@Dev / @brennanhatton autocomplete in chat (Tab to complete) and highlight yellow as you type",
+        "Pairs with the new \u201creach the maker via @Dev\u201d Quiet Rule",
+        "Real Discord pings and relay gating are bundled but off by default"
+      ],
+      "pr": 393,
+      "date": "2026-06-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
