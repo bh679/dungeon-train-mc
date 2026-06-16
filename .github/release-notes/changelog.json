@@ -557,9 +557,9 @@
       ],
       "pr": 416,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
     },
     {
       "id": "reboarder-off-deck-detection",
@@ -573,9 +573,9 @@
       ],
       "pr": 417,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
     },
     {
       "id": "all-the-creator-asks",
@@ -589,9 +589,9 @@
       ],
       "pr": 419,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
     },
     {
       "id": "cinematic-replay-command",
@@ -605,9 +605,9 @@
       ],
       "pr": 418,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
     },
     {
       "id": "discord-advancement-carriage-difficulty",
@@ -620,9 +620,9 @@
       ],
       "pr": 420,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
     }
   ]
 }
