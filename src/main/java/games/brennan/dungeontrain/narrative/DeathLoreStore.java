@@ -30,18 +30,17 @@ import java.util.Locale;
 
 /**
  * Data-driven pool of death-screen narrative lines. Each entry targets one
- * narrative page ({@link #PAGE_FALL}, {@link #PAGE_DEEDS}, {@link #PAGE_LIVES},
- * {@link #PAGE_PLATFORM}) and carries optional match {@link Condition}s + a
- * weight. At death the server rolls one weighted entry per page, substitutes
- * placeholders, and ships the chosen text to the client inside
- * {@code DeathStatsPacket} (see {@link DeathNarrative}).
+ * narrative page ({@link #PAGE_FALL}, {@link #PAGE_DEEDS}, {@link #PAGE_GEAR},
+ * {@link #PAGE_LIVES}, {@link #PAGE_PLATFORM}) and carries optional match
+ * {@link Condition}s + a weight. At death the server rolls one weighted entry
+ * per page, substitutes placeholders, and ships the chosen text to the client
+ * inside {@code DeathStatsPacket} (see {@link DeathNarrative}).
  *
  * <p>Loading mirrors {@code LootPrefabStore}: bundled classpath files under
  * {@code /data/dungeontrain/death_lore/*.json} plus per-install overrides in
- * {@code config/dungeontrain/user/death_lore/*.json}. Unlike the loot store,
- * config files <em>add</em> entries to the pool rather than overriding by id —
- * dropping a file in only widens the variety. Reloaded on
- * {@link ServerStartingEvent}.</p>
+ * {@code config/dungeontrain/user/death_lore/*.json}. Config files <em>add</em>
+ * entries to the pool (they don't override by id) — dropping a file in only
+ * widens the variety. Reloaded on {@link ServerStartingEvent}.</p>
  *
  * <p>File format — a JSON array of entries, or {@code {"entries":[...]}}:</p>
  * <pre>
@@ -57,9 +56,10 @@ import java.util.Locale;
  *   }
  * ]
  * </pre>
- * Placeholders {@code {carriage} {friends} {books} {mobs} {deaths} {distance}}
- * are substituted server-side. All {@code conditions} fields are optional;
- * absent ones match anything.
+ * Placeholders {@code {carriage} {friends} {books} {mobs} {met} {slain}
+ * {hearts} {deaths}} are substituted as English <em>words</em> ("twenty-eight"),
+ * and {@code {distance}} as a numeric metre count. All {@code conditions}
+ * fields are optional; absent ones match anything.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathLoreStore {
@@ -72,6 +72,7 @@ public final class DeathLoreStore {
 
     public static final String PAGE_FALL = "fall";
     public static final String PAGE_DEEDS = "deeds";
+    public static final String PAGE_GEAR = "gear";
     public static final String PAGE_LIVES = "lives";
     public static final String PAGE_PLATFORM = "platform";
 
@@ -103,13 +104,13 @@ public final class DeathLoreStore {
      * Server-side death context — drives both {@link Condition} matching and
      * placeholder substitution. {@code cause} is the killer entity-type id, or
      * {@code null} for environmental deaths (fall, lava, void, …).
+     * {@code hearts} is damage taken expressed in hearts (points / 2).
      */
     public record Context(ResourceLocation cause, int carriage, int friends, int books,
-                          int mobs, double distance, long deaths) {}
+                          int mobs, int met, int slain, int hearts, double distance, long deaths) {}
 
     public static synchronized void reload() {
         POOL.clear();
-        // Bundled (classpath) tier.
         for (String name : BundledNbtScanner.scanBasenames(DeathLoreStore.class, BUNDLED_RESOURCE_PREFIX, LOGGER, EXT)) {
             String resource = BUNDLED_RESOURCE_PREFIX + name + EXT;
             try (InputStream in = DeathLoreStore.class.getResourceAsStream(resource)) {
@@ -121,7 +122,6 @@ public final class DeathLoreStore {
                 LOGGER.error("[DungeonTrain] death_lore: failed reading bundled '{}': {}", name, e.toString());
             }
         }
-        // Config tier — user/death_lore + any enabled imported package dirs. Additive.
         for (Path dir : UserContentPaths.searchDirs(SUBDIR)) {
             if (!Files.isDirectory(dir)) continue;
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*" + EXT)) {
@@ -224,34 +224,36 @@ public final class DeathLoreStore {
         return matches.get(matches.size() - 1);
     }
 
-    /** Build the full per-death narrative (all four pages), substituting placeholders. */
+    /** Build the full per-death narrative (all five pages), substituting placeholders. */
     public static DeathNarrative buildNarrative(Context ctx, RandomSource random) {
         DeathLoreEntry fall = roll(PAGE_FALL, ctx, random);
         DeathLoreEntry deeds = roll(PAGE_DEEDS, ctx, random);
+        DeathLoreEntry gear = roll(PAGE_GEAR, ctx, random);
         DeathLoreEntry lives = roll(PAGE_LIVES, ctx, random);
         DeathLoreEntry platform = roll(PAGE_PLATFORM, ctx, random);
         return new DeathNarrative(
-                sub(fall == null ? "" : fall.question(), ctx),
-                sub(fall == null ? "" : fall.narration(), ctx),
-                sub(deeds == null ? "" : deeds.question(), ctx),
-                sub(deeds == null ? "" : deeds.narration(), ctx),
-                sub(lives == null ? "" : lives.question(), ctx),
-                sub(lives == null ? "" : lives.subline(), ctx),
-                sub(lives == null ? "" : lives.narration(), ctx),
-                sub(platform == null ? "" : platform.question(), ctx),
-                sub(platform == null ? "" : platform.narration(), ctx),
-                sub(platform == null ? "" : platform.epitaph(), ctx));
+                sub(q(fall), ctx), sub(n(fall), ctx),
+                sub(q(deeds), ctx), sub(n(deeds), ctx),
+                sub(q(gear), ctx), sub(n(gear), ctx),
+                sub(q(lives), ctx), sub(lives == null ? "" : lives.subline(), ctx), sub(n(lives), ctx),
+                sub(q(platform), ctx), sub(n(platform), ctx), sub(platform == null ? "" : platform.epitaph(), ctx));
     }
+
+    private static String q(DeathLoreEntry e) { return e == null ? "" : e.question(); }
+    private static String n(DeathLoreEntry e) { return e == null ? "" : e.narration(); }
 
     private static String sub(String template, Context ctx) {
         if (template == null) return "";
         if (template.indexOf('{') < 0) return template;
         return template
-                .replace("{carriage}", Integer.toString(ctx.carriage()))
-                .replace("{friends}", Integer.toString(ctx.friends()))
-                .replace("{books}", Integer.toString(ctx.books()))
-                .replace("{mobs}", Integer.toString(ctx.mobs()))
-                .replace("{deaths}", Long.toString(ctx.deaths()))
+                .replace("{carriage}", words(ctx.carriage()))
+                .replace("{friends}", words(ctx.friends()))
+                .replace("{books}", words(ctx.books()))
+                .replace("{mobs}", words(ctx.mobs()))
+                .replace("{met}", words(ctx.met()))
+                .replace("{slain}", words(ctx.slain()))
+                .replace("{hearts}", words(ctx.hearts()))
+                .replace("{deaths}", words(ctx.deaths()))
                 .replace("{distance}", String.format(Locale.ROOT, "%,.0f", ctx.distance()));
     }
 
@@ -265,5 +267,35 @@ public final class DeathLoreStore {
         synchronized (DeathLoreStore.class) {
             POOL.clear();
         }
+    }
+
+    // ---- Number → English words (so narration reads "twenty-eight", not "28") ----
+
+    private static final String[] ONES = {
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+            "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+            "seventeen", "eighteen", "nineteen"
+    };
+    private static final String[] TENS = {
+            "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
+    };
+
+    static String words(long n) {
+        if (n < 0) return Long.toString(n);
+        if (n < 20) return ONES[(int) n];
+        if (n < 100) {
+            long t = n / 10, r = n % 10;
+            return r == 0 ? TENS[(int) t] : TENS[(int) t] + "-" + ONES[(int) r];
+        }
+        if (n < 1000) {
+            long h = n / 100, r = n % 100;
+            return r == 0 ? ONES[(int) h] + " hundred" : ONES[(int) h] + " hundred and " + words(r);
+        }
+        if (n < 1_000_000) {
+            long k = n / 1000, r = n % 1000;
+            return r == 0 ? words(k) + " thousand" : words(k) + " thousand " + words(r);
+        }
+        long m = n / 1_000_000, r = n % 1_000_000;
+        return r == 0 ? words(m) + " million" : words(m) + " million " + words(r);
     }
 }

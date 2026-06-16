@@ -44,7 +44,7 @@ import java.util.Set;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, LIVES, SURVEY, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -111,6 +111,7 @@ public final class NarrativeDeathScreen extends Screen {
         List<Page> list = new ArrayList<>();
         list.add(Page.of(Kind.FALL));
         list.add(Page.of(Kind.DEEDS));
+        list.add(Page.of(Kind.GEAR));
         list.add(Page.of(Kind.LIVES));
         for (SurveyQuestionPayload.Entry e : SurveyClientState.questions()) {
             list.add(Page.survey(e));
@@ -167,6 +168,7 @@ public final class NarrativeDeathScreen extends Screen {
         switch (page.kind()) {
             case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
             case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+            case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
             case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
             case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
             case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
@@ -180,7 +182,7 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         // Loadout hover tooltip last, above everything.
-        if (page.kind() == Kind.DEEDS && stats != null) {
+        if (page.kind() == Kind.GEAR && stats != null) {
             drawLoadoutTooltip(g, stats, left, contentW, mouseX, mouseY);
         }
     }
@@ -191,7 +193,7 @@ public final class NarrativeDeathScreen extends Screen {
                          int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
         y += 14;
-        drawTrain(g, left, w, y);
+        drawTrain(g, left, w, y, currentPage);
         y += 46;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);
         y = drawNarration(g, n.fallNarration(), cx, w, y);
@@ -211,7 +213,7 @@ public final class NarrativeDeathScreen extends Screen {
                           int left, int w, int cx, int y, int mouseX, int mouseY) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_deeds");
         y += 14;
-        drawTrain(g, left, w, y);
+        drawTrain(g, left, w, y, currentPage);
         y += 46;
         y = drawQuestion(g, n.deedsQuestion(), cx, w, y);
         y = drawNarration(g, n.deedsNarration(), cx, w, y);
@@ -228,6 +230,22 @@ public final class NarrativeDeathScreen extends Screen {
             drawCell(g, left + third + third / 2, y2, fmtDmg(s.damageDealt()), "gui.dungeontrain.death.narr.lbl_dealt");
             drawCell(g, left + 2 * third + third / 2, y2, fmtDmg(s.damageTaken()), "gui.dungeontrain.death.narr.lbl_taken");
             y = y2 + 30;
+        }
+        return y;
+    }
+
+    private int drawGear(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
+                         int left, int w, int cx, int y, int mouseX, int mouseY) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_gear");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        y = drawQuestion(g, n.gearQuestion(), cx, w, y);
+        y = drawNarration(g, n.gearNarration(), cx, w, y);
+        y += 8;
+        if (s != null) {
+            drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.carried");
+            y += 14;
             this.loadoutY = y;
             drawLoadout(g, s, left, w, y, mouseX, mouseY);
             y += SLOT + 8;
@@ -239,7 +257,7 @@ public final class NarrativeDeathScreen extends Screen {
                           int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_lives");
         y += 14;
-        drawTrain(g, left, w, y);
+        drawTrain(g, left, w, y, currentPage);
         y += 46;
         y = drawQuestion(g, n.livesQuestion(), cx, w, y);
         if (!n.livesSubline().isEmpty()) {
@@ -471,28 +489,33 @@ public final class NarrativeDeathScreen extends Screen {
         drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
     }
 
-    private void drawTrain(GuiGraphics g, int left, int w, int y) {
+    /**
+     * The infinite train, scrolled forward by {@code advance} screens — each
+     * page nudges the carriages further left so the line visibly keeps moving.
+     * Cars are drawn as a continuous row clamped to the rail; the ∞ sits at the
+     * far right as the destination that never arrives.
+     */
+    private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
         int railY = y + 30;
         g.fill(left + 2, railY, left + w - 2, railY + 2, RAIL);
-        int carW = 22, carH = 14, gap = 4;
-        int startX = left + 6;
-        for (int i = 0; i < 4; i++) {
-            int cxp = startX + i * (carW + gap);
-            g.fill(cxp, railY - carH, cxp + carW, railY, 0xFF33353E);
-            g.fill(cxp, railY - carH, cxp + carW, railY - carH + 2, RED);
-            g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, 0xFF14151A);
-            g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, 0xFF14151A);
+        int carW = 22, carH = 14, gap = 4, spacing = carW + gap;
+        int rightEdge = left + w - 14;            // leave room for the ∞
+        int offset = Math.max(0, advance) * 18;   // each screen advances the train forward
+        for (int k = offset / spacing - 2; ; k++) {
+            int cxp = left + 6 + k * spacing - offset;
+            if (cxp > rightEdge) break;
+            if (cxp + carW < left) continue;
+            int x0 = Math.max(cxp, left);
+            int x1 = Math.min(cxp + carW, rightEdge);
+            if (x1 <= x0) continue;
+            g.fill(x0, railY - carH, x1, railY, 0xFF33353E);
+            g.fill(x0, railY - carH, x1, railY - carH + 2, RED);
+            if (cxp >= left && cxp + carW <= rightEdge) {
+                g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, 0xFF14151A);
+                g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, 0xFF14151A);
+            }
         }
-        // Death marker above the last solid car.
-        int markX = startX + 3 * (carW + gap) + carW / 2;
-        drawCenteredStr(g, "▼", markX, railY - carH - 11, RED);
-        // Fading cars trailing into the dark.
-        int fadeX = startX + 4 * (carW + gap);
-        g.fill(fadeX, railY - 12, fadeX + 20, railY, 0x8033353E);
-        g.fill(fadeX + 24, railY - 10, fadeX + 40, railY, 0x4D2B2C33);
-        g.fill(fadeX + 44, railY - 8, fadeX + 56, railY, 0x2624252B);
         g.drawString(this.font, "∞", left + w - 12, railY - 8, INF, false);
-        drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.narr.line_caption"), left + w / 2, railY + 6, INF);
     }
 
     private void drawLoadout(GuiGraphics g, DeathStatsPacket s, int left, int w, int y, int mouseX, int mouseY) {

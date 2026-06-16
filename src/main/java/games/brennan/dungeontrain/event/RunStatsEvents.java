@@ -185,12 +185,16 @@ public final class RunStatsEvents {
                                                 PlayerRunState run, long lifeDeaths) {
         ResourceLocation cause = source.getEntity() != null
                 ? EntityType.getKey(source.getEntity().getType()) : null;
+        int hearts = (int) Math.round(run.damageTaken() / 2.0);
         DeathLoreStore.Context ctx = new DeathLoreStore.Context(
                 cause,
                 run.cartsSinceDeath(),
                 run.befriendedCount(),
                 run.booksReadCount(),
                 run.mobKills(),
+                run.encounteredCount(),
+                run.playerKills(),
+                hearts,
                 run.distanceBlocks(),
                 lifeDeaths);
         return DeathLoreStore.buildNarrative(ctx, player.serverLevel().getRandom());

@@ -22,8 +22,21 @@
   {
     "page": "deeds",
     "weight": 3,
-    "question": "When the carriage empties, which do you carry — the slain, or the befriended?",
-    "narration": "You felled {mobs} things in the dark, and bled for it. Of all the souls you met on the line, {friends} you called friend."
+    "question": "Why are you here?",
+    "narration": "You felled {mobs} things in the dark, and bled for it with {hearts} hearts.\nOf the {met} souls you met, {slain} you ended — and {friends} you called friend."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "What are you meant to do?",
+    "narration": "Iron and edge, gathered from the dark and carried this far. None of it was enough — perhaps that was never the point."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "What are you meant to do?",
+    "narration": "You read {books} of the line's books and still carried steel. Knowledge and a blade, and the dark took both."
   },
   {
     "page": "deeds",
@@ -42,7 +55,7 @@
   {
     "page": "lives",
     "weight": 3,
-    "question": "The train is eternal — Why are you here? What are you meant to do?",
+    "question": "Where is this all going?",
     "subline": "Perhaps it is mortality itself that lends the ride its meaning.",
     "narration": "These are not the marks of a single life. Across all {deaths} — every dark you have boarded, every time the line took you and still you returned — this is the whole of your journey."
   },

@@ -65,6 +65,8 @@
   "gui.dungeontrain.death.narr.kicker_lives": "all your lives",
   "gui.dungeontrain.death.narr.kicker_ledger": "the creator's ledger",
   "gui.dungeontrain.death.narr.kicker_platform": "the platform",
+  "gui.dungeontrain.death.narr.kicker_gear": "the cargo",
+  "gui.dungeontrain.death.narr.carried": "carried into the dark",
   "gui.dungeontrain.death.narr.this_life": "this life",
   "gui.dungeontrain.death.narr.all_lives": "all your lives",
   "gui.dungeontrain.death.narr.survey_intro": "Before the train carries you back into the dark, the line's creator keeps a ledger — not of carriages, but of the travellers who ride.",
