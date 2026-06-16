@@ -5,6 +5,7 @@ import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -13,6 +14,9 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 
@@ -56,7 +60,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     // ---- Palette (ARGB) ----
-    private static final int OVERLAY        = 0xE6090A0D;
+    private static final int OVERLAY        = 0xF2090A0D;
     private static final int TILE_BG        = 0x14FFFFFF;
     private static final int TILE_BORDER    = 0x33D6C496;
     private static final int VALUE          = 0xFFE6D6B0;
@@ -153,6 +157,8 @@ public final class NarrativeDeathScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, this.width, this.height, OVERLAY);
+        // The train recedes into silence as the player advances the pages.
+        TrainEngineSound.deathFade = Math.max(0.0f, 1.0f - currentPage * 0.28f);
 
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
@@ -197,9 +203,7 @@ public final class NarrativeDeathScreen extends Screen {
         y += 46;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);
         y = drawNarration(g, n.fallNarration(), cx, w, y);
-        y += 6;
-        drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.this_life");
-        y += 13;
+        y += 10;
         if (s != null) {
             int third = w / 3;
             drawCell(g, left + third / 2, y, Integer.toString(s.cartsTravelled()), "gui.dungeontrain.death.narr.lbl_carriage");
@@ -217,9 +221,7 @@ public final class NarrativeDeathScreen extends Screen {
         y += 46;
         y = drawQuestion(g, n.deedsQuestion(), cx, w, y);
         y = drawNarration(g, n.deedsNarration(), cx, w, y);
-        y += 6;
-        drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.this_life");
-        y += 13;
+        y += 10;
         if (s != null) {
             int third = w / 3;
             drawCell(g, left + third / 2, y, Integer.toString(s.mobKills()), "gui.dungeontrain.death.narr.lbl_mobs");
@@ -244,8 +246,6 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawNarration(g, n.gearNarration(), cx, w, y);
         y += 8;
         if (s != null) {
-            drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.carried");
-            y += 14;
             this.loadoutY = y;
             drawLoadout(g, s, left, w, y, mouseX, mouseY);
             y += SLOT + 8;
@@ -261,13 +261,11 @@ public final class NarrativeDeathScreen extends Screen {
         y += 46;
         y = drawQuestion(g, n.livesQuestion(), cx, w, y);
         if (!n.livesSubline().isEmpty()) {
-            y = drawCentered(g, Component.literal(n.livesSubline()), cx, w, y, SUBLINE);
+            y = drawCentered(g, styled(n.livesSubline()), cx, w, y, SUBLINE);
             y += 2;
         }
         y = drawNarration(g, n.livesNarration(), cx, w, y);
-        y += 6;
-        drawSecLabel(g, cx, y, "gui.dungeontrain.death.narr.all_lives");
-        y += 13;
+        y += 10;
         if (s != null) {
             int third = w / 3;
             drawCell(g, left + third / 2, y, fmtAboard(s.lifeTrainTicks()), "gui.dungeontrain.death.narr.lbl_total_aboard");
@@ -325,7 +323,7 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawNarration(g, n.platformNarration(), cx, w, y);
         if (!n.platformEpitaph().isEmpty()) {
             y += 6;
-            y = drawCentered(g, Component.literal(n.platformEpitaph()), cx, w, y, SUBLINE);
+            y = drawCentered(g, styled(n.platformEpitaph()), cx, w, y, SUBLINE);
         }
         return y;
     }
@@ -462,12 +460,50 @@ public final class NarrativeDeathScreen extends Screen {
 
     private int drawQuestion(GuiGraphics g, String text, int cx, int w, int y) {
         if (text == null || text.isEmpty()) return y;
-        return drawCentered(g, Component.literal(text), cx, w, y + 2, QUESTION) + 2;
+        return drawCentered(g, styled(text), cx, w, y + 2, QUESTION) + 2;
     }
 
     private int drawNarration(GuiGraphics g, String text, int cx, int w, int y) {
         if (text == null || text.isEmpty()) return y;
-        return drawCentered(g, Component.literal(text), cx, w, y + 4, NARR);
+        return drawCentered(g, styled(text), cx, w, y + 4, NARR);
+    }
+
+    private static final char NUM_START = '';
+    private static final char NUM_END = '';
+
+    /**
+     * Build a Component from a narration string, colouring the spans the server
+     * wrapped in number-sentinels white so the figures pop against the muted
+     * narration. Plain strings (no sentinels) pass straight through.
+     */
+    private Component styled(String raw) {
+        if (raw == null || raw.isEmpty()) return Component.empty();
+        if (raw.indexOf(NUM_START) < 0) return Component.literal(raw);
+        MutableComponent out = Component.empty();
+        StringBuilder buf = new StringBuilder();
+        boolean inNum = false;
+        for (int i = 0; i < raw.length(); i++) {
+            char c = raw.charAt(i);
+            if (c == NUM_START) {
+                flushPiece(out, buf, false);
+                inNum = true;
+            } else if (c == NUM_END) {
+                flushPiece(out, buf, true);
+                inNum = false;
+            } else {
+                buf.append(c);
+            }
+        }
+        flushPiece(out, buf, inNum);
+        return out;
+    }
+
+    private void flushPiece(MutableComponent out, StringBuilder buf, boolean white) {
+        if (buf.length() == 0) return;
+        MutableComponent piece = Component.literal(buf.toString());
+        if (white) piece.setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0xFFFFFF)));
+        out.append(piece);
+        buf.setLength(0);
     }
 
     private int drawCentered(GuiGraphics g, Component text, int cx, int w, int y, int color) {
@@ -490,30 +526,37 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * The infinite train, scrolled forward by {@code advance} screens — each
-     * page nudges the carriages further left so the line visibly keeps moving.
-     * Cars are drawn as a continuous row clamped to the rail; the ∞ sits at the
-     * far right as the destination that never arrives.
+     * The train fading into the dark — solid carriages on the left dissolving
+     * into fainter ones, then the ∞. As the player advances pages
+     * ({@code advance}), the solid run grows so the train reaches further along
+     * the screen each screen, fading out later — progressing toward a
+     * destination that never comes.
      */
     private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
         int railY = y + 30;
         g.fill(left + 2, railY, left + w - 2, railY + 2, RAIL);
         int carW = 22, carH = 14, gap = 4, spacing = carW + gap;
+        int startX = left + 6;
         int rightEdge = left + w - 14;            // leave room for the ∞
-        int offset = Math.max(0, advance) * 18;   // each screen advances the train forward
-        for (int k = offset / spacing - 2; ; k++) {
-            int cxp = left + 6 + k * spacing - offset;
-            if (cxp > rightEdge) break;
-            if (cxp + carW < left) continue;
-            int x0 = Math.max(cxp, left);
-            int x1 = Math.min(cxp + carW, rightEdge);
-            if (x1 <= x0) continue;
-            g.fill(x0, railY - carH, x1, railY, 0xFF33353E);
-            g.fill(x0, railY - carH, x1, railY - carH + 2, RED);
-            if (cxp >= left && cxp + carW <= rightEdge) {
-                g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, 0xFF14151A);
-                g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, 0xFF14151A);
-            }
+        int slots = Math.max(1, (rightEdge - startX) / spacing);
+        int solid = Math.min(2 + Math.max(0, advance), Math.max(1, slots - 3));
+        for (int i = 0; i < solid; i++) {
+            int cxp = startX + i * spacing;
+            if (cxp + carW > rightEdge) break;
+            g.fill(cxp, railY - carH, cxp + carW, railY, 0xFF33353E);
+            g.fill(cxp, railY - carH, cxp + carW, railY - carH + 2, RED);
+            g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, 0xFF14151A);
+            g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, 0xFF14151A);
+        }
+        int[] fade = { 0x8033353E, 0x4D2B2C33, 0x2624252B };
+        int fadeX = startX + solid * spacing;
+        for (int j = 0; j < fade.length; j++) {
+            int cxp = fadeX + j * spacing;
+            int fw = Math.min(cxp + carW, rightEdge);
+            if (fw <= cxp) break;
+            int fh = carH - 2 - j * 3;
+            if (fh < 5) fh = 5;
+            g.fill(cxp, railY - fh, fw, railY, fade[j]);
         }
         g.drawString(this.font, "∞", left + w - 12, railY - 8, INF, false);
     }
@@ -615,11 +658,21 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean isPauseScreen() {
-        return true;
+        // Like the vanilla death screen, do NOT pause — so the world keeps
+        // ticking and the train engine keeps sounding behind the screen (which
+        // we then fade out page by page).
+        return false;
     }
 
     @Override
     public boolean shouldCloseOnEsc() {
         return false;
+    }
+
+    @Override
+    public void removed() {
+        // Screen going away (Board anew / Leave / replaced) — let the train
+        // return to its normal world-driven volume.
+        TrainEngineSound.deathFade = 1.0f;
     }
 }

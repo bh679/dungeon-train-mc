@@ -9,14 +9,14 @@
     "page": "fall",
     "weight": 1,
     "conditions": { "min_carriage": 100 },
-    "question": "How deep can a soul go?",
+    "question": "What is the Dungeon Train?",
     "narration": "{carriage} carriages into the dark. Few ride so far before the line takes them. Fewer still board again."
   },
   {
     "page": "fall",
     "weight": 1,
     "conditions": { "max_carriage": 3 },
-    "question": "Is this all there is?",
+    "question": "What is the Dungeon Train?",
     "narration": "Carriage {carriage}. Barely aboard, and already the dark had you. The line is patient — it can afford to be."
   },
   {
@@ -56,7 +56,6 @@
     "page": "lives",
     "weight": 3,
     "question": "Where is this all going?",
-    "subline": "Perhaps it is mortality itself that lends the ride its meaning.",
     "narration": "These are not the marks of a single life. Across all {deaths} — every dark you have boarded, every time the line took you and still you returned — this is the whole of your journey."
   },
   {

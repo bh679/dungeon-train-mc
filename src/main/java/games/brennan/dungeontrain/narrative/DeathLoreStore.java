@@ -246,15 +246,15 @@ public final class DeathLoreStore {
         if (template == null) return "";
         if (template.indexOf('{') < 0) return template;
         return template
-                .replace("{carriage}", words(ctx.carriage()))
-                .replace("{friends}", words(ctx.friends()))
-                .replace("{books}", words(ctx.books()))
-                .replace("{mobs}", words(ctx.mobs()))
-                .replace("{met}", words(ctx.met()))
-                .replace("{slain}", words(ctx.slain()))
-                .replace("{hearts}", words(ctx.hearts()))
-                .replace("{deaths}", words(ctx.deaths()))
-                .replace("{distance}", String.format(Locale.ROOT, "%,.0f", ctx.distance()));
+                .replace("{carriage}", num(ctx.carriage()))
+                .replace("{friends}", num(ctx.friends()))
+                .replace("{books}", num(ctx.books()))
+                .replace("{mobs}", num(ctx.mobs()))
+                .replace("{met}", num(ctx.met()))
+                .replace("{slain}", num(ctx.slain()))
+                .replace("{hearts}", num(ctx.hearts()))
+                .replace("{deaths}", num(ctx.deaths()))
+                .replace("{distance}", "" + String.format(Locale.ROOT, "%,.0f", ctx.distance()) + "");
     }
 
     @SubscribeEvent
@@ -279,6 +279,15 @@ public final class DeathLoreStore {
     private static final String[] TENS = {
             "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"
     };
+
+    /**
+     * Wrap a number-word in the sentinels (U+0001 … U+0002) the death screen
+     * parses to colour the figure white, keeping the markers out of the
+     * narration templates themselves.
+     */
+    private static String num(long v) {
+        return "" + words(v) + "";
+    }
 
     static String words(long n) {
         if (n < 0) return Long.toString(n);
