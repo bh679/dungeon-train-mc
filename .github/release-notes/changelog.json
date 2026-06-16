@@ -592,6 +592,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cinematic-replay-command",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Replay the intro cinematic on demand",
+      "summary": "The opening cinematic is no longer a one-time thing \u2014 run /dungeontrain cinematic (or /dt cinematic) any time to watch it again. By default the camera lifts off from a spot on the ground beside the track, right where you are, and sweeps up and away as the train carries you onward \u2014 just like the intro. Prefer to start from exactly where you're looking? Use /dt cinematic current.",
+      "highlights": [
+        "New /dt cinematic command replays the opening cinematic on demand",
+        "Default shot rises from the ground beside you near the track; 'current' starts from your current view"
+      ],
+      "pr": 418,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

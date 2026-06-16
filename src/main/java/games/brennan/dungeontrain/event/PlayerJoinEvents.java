@@ -637,18 +637,36 @@ public final class PlayerJoinEvents {
     public static SpawnPlacement computeBootstrapPlacement(
         ServerLevel trainLevel, CarriageDims dims, int trainY
     ) {
+        // Bootstrap: the train is freshly spawned at origin and hasn't moved yet,
+        // so the trainCenter is (0, trainY, trackCenterZ). Real body placement
+        // (world default spawn / fudge / respawn): never water.
+        Vector3d trainCenter = new Vector3d(
+            0.0, trainY, TrackGeometry.from(dims, trainY).trackCenterZ() + 0.5);
+        return computeGroundPoseAt(trainLevel, dims, trainY, trainCenter, /*allowWater*/ false);
+    }
+
+    /**
+     * Random nearby ground pose facing the train at the given (already-resolved)
+     * {@code trainCenter}: scans for a line-of-sight-clear spawn column near the track
+     * (via {@link #pickPlayerTarget}) and aims it back at a reference point on the train.
+     * Shared by {@link #computeBootstrapPlacement} (origin trainCenter) and the on-demand
+     * cinematic replay ({@link #computeReplaySpawnPose}, live trainCenter).
+     *
+     * @param allowWater camera-only starts may sit over water; real body placements must not.
+     */
+    private static SpawnPlacement computeGroundPoseAt(
+        ServerLevel trainLevel, CarriageDims dims, int trainY, Vector3d trainCenter, boolean allowWater
+    ) {
         TrackGeometry g = TrackGeometry.from(dims, trainY);
         TunnelGeometry tg = TunnelGeometry.from(g);
-        Vector3d trainCenter = new Vector3d(0.0, trainY, g.trackCenterZ() + 0.5);
-        int trainX = 0;
+        int trainX = (int) Math.floor(trainCenter.x);
 
         int bufferedX = findBufferedReferenceX(trainLevel, trainX, tg);
         boolean haveBuffered = bufferedX != Integer.MIN_VALUE;
         int lookX = haveBuffered ? bufferedX : findAboveGroundReferenceX(trainLevel, trainX, tg);
         int anchorX = haveBuffered ? bufferedX : lookX;
 
-        // Real body placement (world default spawn / fudge / respawn): never water.
-        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter, /*allowWater*/ false);
+        PlayerTarget pt = pickPlayerTarget(trainLevel, anchorX, g, tg, trainCenter, allowWater);
         Vec3 referencePoint = new Vec3(lookX + 0.5, g.bedY() + 1.5, g.trackCenterZ() + 0.5);
 
         double dx = referencePoint.x - pt.px;
@@ -660,6 +678,34 @@ public final class PlayerJoinEvents {
 
         BlockPos blockPos = new BlockPos(Mth.floor(pt.px), pt.py, Mth.floor(pt.pz));
         return new SpawnPlacement(pt.px, pt.py, pt.pz, yaw, pitch, blockPos);
+    }
+
+    /**
+     * Spawn-style (random nearby ground) camera-start pose for an on-demand cinematic
+     * replay ({@code /dungeontrain cinematic spawn}): a ground spot just off the side of the
+     * track, <em>beside where the player currently is</em>, looking back at them. The search
+     * is anchored on the player's current X (not the train's geometric centre, which on a long
+     * moving train can be far away); Z/Y are deterministic from the track geometry (the train
+     * runs along {@code trackCenterZ} at {@code trainY}), so no live-train lookup is needed.
+     *
+     * <p>Returns {@code null} — the caller's signal to fall back to the player's current view —
+     * when the train dimension isn't loaded or the player isn't in it (the detached camera
+     * renders in the player's own level, so a cross-dimension pose would be wrong).</p>
+     */
+    public static SpawnPlacement computeReplaySpawnPose(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return null;
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+        ServerLevel trainLevel = server.getLevel(data.startingDimension().levelKey());
+        if (trainLevel == null || player.level() != trainLevel) return null;
+
+        // Anchor on the player's CURRENT X — the point on the track beside them. The
+        // perpendicular search in computeGroundPoseAt then lands the camera just off the
+        // side of the track near the player; allowWater since it's only a viewpoint.
+        int trainY = data.getTrainY();
+        TrackGeometry g = TrackGeometry.from(data.dims(), trainY);
+        Vector3d focus = new Vector3d(player.getX(), trainY, g.trackCenterZ() + 0.5);
+        return computeGroundPoseAt(trainLevel, data.dims(), trainY, focus, /*allowWater*/ true);
     }
 
     /**
