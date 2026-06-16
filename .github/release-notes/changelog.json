@@ -608,6 +608,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-advancement-carriage-difficulty",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Carriage # and difficulty on Discord advancement posts",
+      "summary": "Earn an advancement and the community Discord now shows which carriage you were riding and your difficulty level at that moment, posted on its own line right below the advancement.",
+      "highlights": [
+        "Reads e.g. \"Carriage +7 \u00b7 Difficulty Level 3\", matching the in-game HUD."
+      ],
+      "pr": 420,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
