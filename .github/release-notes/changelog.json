@@ -5,7 +5,7 @@
       "version": "0.294.0",
       "type": "feat",
       "title": "Cinematic spawn-on-train intro",
-      "summary": "You now begin each new world aboard the train. On your first arrival, a short cinematic sweeps up from the ground to reveal your train before handing you the controls \u2014 press Space at any time to skip it.",
+      "summary": "You now begin each new world aboard the train. On your first arrival, a short cinematic sweeps up from the ground to reveal your train before handing you the controls — press Space at any time to skip it.",
       "highlights": [
         "Spawn standing on a flatbed of the train instead of on the ground beside it",
         "A fly-up intro camera reveals the train the first time you enter a world",
@@ -38,7 +38,7 @@
       "version": "0.295.0",
       "type": "feat",
       "title": "Enemies scale with difficulty level",
-      "summary": "Train enemies now spawn based on the current difficulty. Each spawn egg has a difficulty range, so the early game stays gentle \u2014 small slimes and basic mobs \u2014 while tougher foes like husks, bogged and vindicators ramp in only as you travel deeper and the difficulty climbs. When an enemy is out of its range, that spot fills with an in-range enemy instead, so enemy carriages and cages are never left empty.",
+      "summary": "Train enemies now spawn based on the current difficulty. Each spawn egg has a difficulty range, so the early game stays gentle — small slimes and basic mobs — while tougher foes like husks, bogged and vindicators ramp in only as you travel deeper and the difficulty climbs. When an enemy is out of its range, that spot fills with an in-range enemy instead, so enemy carriages and cages are never left empty.",
       "highlights": [
         "Easy mobs (small slimes) are gated to the opening levels; tougher mobs appear only at higher difficulty",
         "Tuned difficulty windows across the skeleton, bogged, pillager, vindicator, zombie and slime carriages",
@@ -58,7 +58,7 @@
       "version": "0.296.0",
       "type": "fix",
       "title": "Advancements only earnable in survival or adventure",
-      "summary": "Dungeon Train advancements can no longer be earned in creative or spectator mode \u2014 play in survival or adventure to unlock them. The in-game editor's advancements still unlock in creative, and vanilla Minecraft advancements are unaffected.",
+      "summary": "Dungeon Train advancements can no longer be earned in creative or spectator mode — play in survival or adventure to unlock them. The in-game editor's advancements still unlock in creative, and vanilla Minecraft advancements are unaffected.",
       "highlights": [
         "DT gameplay advancements can't be earned in creative or spectator",
         "Editor advancements still unlock in creative",
@@ -92,9 +92,9 @@
       "version": "0.297.0",
       "type": "fix",
       "title": "Piglins no longer wrongly become magma cubes outside the Nether",
-      "summary": "On a train's easy opening stretch, tough mobs get swapped for friendly slimes (and Nether creatures for magma cubes). Piglins were being turned into magma cubes even on Overworld trains. Now zombified piglins are never swapped, and piglins and piglin brutes only turn into magma cubes inside the Nether \u2014 on other trains they spawn exactly as placed.",
+      "summary": "On a train's easy opening stretch, tough mobs get swapped for friendly slimes (and Nether creatures for magma cubes). Piglins were being turned into magma cubes even on Overworld trains. Now zombified piglins are never swapped, and piglins and piglin brutes only turn into magma cubes inside the Nether — on other trains they spawn exactly as placed.",
       "highlights": [
-        "Zombified piglins are never replaced \u2014 they always spawn as placed",
+        "Zombified piglins are never replaced — they always spawn as placed",
         "Piglins & piglin brutes only become magma cubes on Nether trains",
         "Overworld trains no longer spawn out-of-place magma cubes from piglins"
       ],
@@ -126,7 +126,7 @@
       "version": "0.300.0",
       "type": "feat",
       "title": "Leatherworker shop carriage",
-      "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery \u2014 handy for patching together armour or recolouring your kit mid-run.",
+      "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery — handy for patching together armour or recolouring your kit mid-run.",
       "highlights": [
         "New leatherworker shop carriage joins the train's rotating shops",
         "Stocked with leather, the full leather-armour set and leather horse armour",
@@ -159,7 +159,7 @@
       "version": "0.301.0",
       "type": "fix",
       "title": "Empty enemy spots no longer leave a stray block behind",
-      "summary": "A carriage spot that can only hold enemies \u2014 and whose enemies are all the wrong level for your current depth \u2014 now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
+      "summary": "A carriage spot that can only hold enemies — and whose enemies are all the wrong level for your current depth — now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
       "highlights": [
         "Mob-only carriage spots with no depth-appropriate enemy now clear to air",
         "No more leftover placeholder block where a not-yet-eligible mob would stand"
@@ -192,13 +192,13 @@
       "version": "0.302.0",
       "type": "feat",
       "title": "Five train-traversal advancements",
-      "summary": "Five new advancements reward exploring the world the train rides through \u2014 hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
+      "summary": "Five new advancements reward exploring the world the train rides through — hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
       "highlights": [
-        "Track Record \u2014 set foot on the rails below the train",
-        "Off the Rails \u2014 leave the train and tracks behind for the open world",
-        "Back on Track \u2014 climb aboard again after getting off",
-        "Taking the Stairs \u2014 use a bridge-pillar staircase",
-        "Beneath the Candy Kingdom \u2014 enter a tunnel stairwell"
+        "Track Record — set foot on the rails below the train",
+        "Off the Rails — leave the train and tracks behind for the open world",
+        "Back on Track — climb aboard again after getting off",
+        "Taking the Stairs — use a bridge-pillar staircase",
+        "Beneath the Candy Kingdom — enter a tunnel stairwell"
       ],
       "pr": 382,
       "date": "2026-06-14",
@@ -211,7 +211,7 @@
       "version": "0.302.0",
       "type": "feat",
       "title": "Armor stands as randomized carriage contents",
-      "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty \u2014 more variety in what you find aboard the train.",
+      "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty — more variety in what you find aboard the train.",
       "highlights": [
         "Armor stands can now appear as random carriage contents, sometimes wearing a full set of gear",
         "Each stand's loadout is rolled per spawn, so no two carriages are guaranteed alike"
@@ -227,11 +227,11 @@
       "version": "0.303.0",
       "type": "feat",
       "title": "Keep Inventory now carries your gear to the next world",
-      "summary": "With Keep Inventory turned on, dying and starting a New World now brings your whole inventory and experience along \u2014 and the new world keeps the rule on, so your gear and XP carry through run after run. With Keep Inventory off, nothing changes.",
+      "summary": "With Keep Inventory turned on, dying and starting a New World now brings your whole inventory and experience along — and the new world keeps the rule on, so your gear and XP carry through run after run. With Keep Inventory off, nothing changes.",
       "highlights": [
         "Inventory (including armor and offhand) and XP carry into the next world when Keep Inventory is on",
         "The next world keeps the Keep Inventory rule enabled automatically, so it chains across every run",
-        "No change when Keep Inventory is off \u2014 the next world still starts empty"
+        "No change when Keep Inventory is off — the next world still starts empty"
       ],
       "pr": 385,
       "date": "2026-06-14",
@@ -244,7 +244,7 @@
       "version": "0.304.0",
       "type": "feat",
       "title": "Quality-of-life mods in the modpack: AppleSkin + Mouse Tweaks",
-      "summary": "The Dungeon Train modpack now includes AppleSkin \u2014 the food saturation and hunger-value overlay \u2014 enabled by default (you can untick it when installing). Mouse Tweaks, for faster inventory management (shift-drag and scroll-to-move items), is offered as an optional add-on you can opt into.",
+      "summary": "The Dungeon Train modpack now includes AppleSkin — the food saturation and hunger-value overlay — enabled by default (you can untick it when installing). Mouse Tweaks, for faster inventory management (shift-drag and scroll-to-move items), is offered as an optional add-on you can opt into.",
       "highlights": [
         "AppleSkin food/saturation overlay now ships with the modpack (on by default)",
         "Mouse Tweaks inventory quality-of-life available as an optional add-on"
@@ -260,9 +260,9 @@
       "version": "0.304.0",
       "type": "feat",
       "title": "Know The Rules advancement + clearer ride-time goals",
-      "summary": "A new \"Know The Rules\" advancement joins the Taking Notes branch \u2014 read every Quiet Rule of the train to earn it, and \"Respect The Rules\" now nests beneath it. Two ride-time advancements also spell out how long you need to stay aboard: \"Settling In\" (ten hours) and \"I Live Here Now\" (twenty-four hours).",
+      "summary": "A new \"Know The Rules\" advancement joins the Taking Notes branch — read every Quiet Rule of the train to earn it, and \"Respect The Rules\" now nests beneath it. Two ride-time advancements also spell out how long you need to stay aboard: \"Settling In\" (ten hours) and \"I Live Here Now\" (twenty-four hours).",
       "highlights": [
-        "New \"Know The Rules\" advancement \u2014 read every Quiet Rule of the train",
+        "New \"Know The Rules\" advancement — read every Quiet Rule of the train",
         "\"Respect The Rules\" now sits beneath it in the Taking Notes branch",
         "\"Settling In\" and \"I Live Here Now\" descriptions now state the hours required"
       ],
@@ -276,8 +276,8 @@
       "id": "quiet-rules-dev-key-adventurer-tips",
       "version": "0.304.0",
       "type": "content",
-      "title": "More Quiet Rules of the Train \u2014 the maker, the key, and fellow adventurers",
-      "summary": "The Quiet Rules of the Train book gains ten new entries. Some whisper of reaching the one who built the train; one points to the key that reveals what you came here to do \u2014 and shows your own bound advancements key inline; the rest are hard-won advice on the other adventurers you meet: when to bow, when to gift, when to defend, and how to win them over.",
+      "title": "More Quiet Rules of the Train — the maker, the key, and fellow adventurers",
+      "summary": "The Quiet Rules of the Train book gains ten new entries. Some whisper of reaching the one who built the train; one points to the key that reveals what you came here to do — and shows your own bound advancements key inline; the rest are hard-won advice on the other adventurers you meet: when to bow, when to gift, when to defend, and how to win them over.",
       "highlights": [
         "A rule on reaching the train's maker via \"@Dev\"",
         "A rule that reveals your own advancements key, inline in the page",
@@ -294,7 +294,7 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Jade tooltips available as an optional modpack add-on",
-      "summary": "Jade \u2014 the \"what am I looking at\" overlay that shows the name and details of whatever block or item you're aiming at \u2014 is now offered as an optional add-on for the Dungeon Train modpack that you can opt into. Heads-up: Jade's tooltip doesn't show for blocks on the moving train yet (a Sable limitation); it works everywhere else.",
+      "summary": "Jade — the \"what am I looking at\" overlay that shows the name and details of whatever block or item you're aiming at — is now offered as an optional add-on for the Dungeon Train modpack that you can opt into. Heads-up: Jade's tooltip doesn't show for blocks on the moving train yet (a Sable limitation); it works everywhere else.",
       "highlights": [
         "Jade block & item tooltips offered as an optional modpack add-on",
         "Known limitation: no tooltip for blocks on the moving train (works fine off-train)"
@@ -310,10 +310,10 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Type @Dev in chat: autocomplete + highlight",
-      "summary": "The bundled Discord Presence mod updates to 0.15.0. Typing @Dev (or @brennanhatton) in chat now autocompletes like a command and turns yellow as you type \u2014 so the new Quiet Rule about reaching the maker is something you can actually see and use. The deeper Discord wiring (real pings, engaged-only relay) ships too but stays off until a server owner turns it on.",
+      "summary": "The bundled Discord Presence mod updates to 0.15.0. Typing @Dev (or @brennanhatton) in chat now autocompletes like a command and turns yellow as you type — so the new Quiet Rule about reaching the maker is something you can actually see and use. The deeper Discord wiring (real pings, engaged-only relay) ships too but stays off until a server owner turns it on.",
       "highlights": [
         "@Dev / @brennanhatton autocomplete in chat (Tab to complete) and highlight yellow as you type",
-        "Pairs with the new \u201creach the maker via @Dev\u201d Quiet Rule",
+        "Pairs with the new “reach the maker via @Dev” Quiet Rule",
         "Real Discord pings and relay gating are bundled but off by default"
       ],
       "pr": 393,
@@ -327,11 +327,11 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Meet, befriend, or lay to rest your own echo",
-      "summary": "Three new advancements follow your reunions with your own echo \u2014 a passenger reincarnated from one of your past lives. Walk up to one, win it over with a two-way gift exchange, or put it to rest.",
+      "summary": "Three new advancements follow your reunions with your own echo — a passenger reincarnated from one of your past lives. Walk up to one, win it over with a two-way gift exchange, or put it to rest.",
       "highlights": [
-        "New \"Hello, Old Soul\" \u2014 come within two blocks of your own echo",
-        "\"Old Friends, New Life\" \u2014 befriend your own echo",
-        "\"Lay to Rest\" \u2014 kill your own echo"
+        "New \"Hello, Old Soul\" — come within two blocks of your own echo",
+        "\"Old Friends, New Life\" — befriend your own echo",
+        "\"Lay to Rest\" — kill your own echo"
       ],
       "pr": 398,
       "date": "2026-06-15",
@@ -344,7 +344,7 @@
       "version": "0.305.0",
       "type": "fix",
       "title": "AppleSkin listed as an optional dependency",
-      "summary": "AppleSkin \u2014 the food and saturation overlay bundled on-by-default in the Dungeon Train modpack \u2014 is now also listed as an optional add-on on the mod's own CurseForge page, so it's discoverable straight from the mod.",
+      "summary": "AppleSkin — the food and saturation overlay bundled on-by-default in the Dungeon Train modpack — is now also listed as an optional add-on on the mod's own CurseForge page, so it's discoverable straight from the mod.",
       "highlights": [
         "AppleSkin now shown as an optional dependency of the mod"
       ],
@@ -359,7 +359,7 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Archways fade between elevated track pillars",
-      "summary": "Where the train's track climbs onto tall support pillars \u2014 crossing ravines, rivers, and oceans \u2014 the pillars now fade toward each other with stepped archways instead of standing as bare posts. The arches are built from each pillar's own stone, so a viaduct made of fancy or themed pillars arches in its own material.",
+      "summary": "Where the train's track climbs onto tall support pillars — crossing ravines, rivers, and oceans — the pillars now fade toward each other with stepped archways instead of standing as bare posts. The arches are built from each pillar's own stone, so a viaduct made of fancy or themed pillars arches in its own material.",
       "highlights": [
         "Tall track pillars now fade into stepped archways toward their neighbours",
         "Arches copy each pillar's own blocks, so themed pillars arch in-material"
@@ -375,10 +375,10 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Everything Burrito: earn every other advancement",
-      "summary": "A new challenge advancement, Everything Burrito, unlocks once you've earned every other Dungeon Train advancement \u2014 editor achievements aside. It hangs off 'Help I Can't Get Off' at the end of the line, and tracks the achievement list dynamically, so it always means '100%' even as new advancements arrive in future updates.",
+      "summary": "A new challenge advancement, Everything Burrito, unlocks once you've earned every other Dungeon Train advancement — editor achievements aside. It hangs off 'Help I Can't Get Off' at the end of the line, and tracks the achievement list dynamically, so it always means '100%' even as new advancements arrive in future updates.",
       "highlights": [
         "New 'Everything Burrito' challenge advancement for 100% completion",
-        "Counts every non-editor advancement \u2014 and auto-includes any added in future updates"
+        "Counts every non-editor advancement — and auto-includes any added in future updates"
       ],
       "pr": 401,
       "date": "2026-06-15",
@@ -391,7 +391,7 @@
       "version": "0.305.0",
       "type": "fix",
       "title": "Pause menu works during the intro cutscene",
-      "summary": "Switching windows (or pressing Esc) during the spawn intro cutscene now opens a pause menu you can actually use \u2014 you can click its buttons and Esc closes it \u2014 and the cutscene picks up right where it left off when you come back. Previously the menu could open in a frozen, unclickable state.",
+      "summary": "Switching windows (or pressing Esc) during the spawn intro cutscene now opens a pause menu you can actually use — you can click its buttons and Esc closes it — and the cutscene picks up right where it left off when you come back. Previously the menu could open in a frozen, unclickable state.",
       "highlights": [
         "The pause menu is now clickable and closable during the intro cutscene",
         "The intro now pauses and resumes around the menu instead of locking up"
@@ -407,7 +407,7 @@
       "version": "0.305.0",
       "type": "content",
       "title": "New decor carriages (house, tree, cherry blossom) + broken roof",
-      "summary": "A new 'features' content set rides the train \u2014 house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
+      "summary": "A new 'features' content set rides the train — house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
       "highlights": [
         "New house, tree, and cherry-blossom carriage content (tree & cherry blossom carry loot chests)",
         "New 'broken' roof variant for cracked carriages"
@@ -439,7 +439,7 @@
       "title": "Gentler opening: a mob-free start, then slimes, then normal",
       "summary": "New runs now ease in over three stages. The first stretch of the train is completely free of hostile mobs, so you can find your feet, meet the villagers and grab starter loot in peace. After that, a stretch of harmless slimes gives you a gentle combat warm-up before the usual mobs and difficulty kick in. It's all on by default and fully tunable per world.",
       "highlights": [
-        "The first ~10 carriages spawn no hostile mobs \u2014 villagers, traders and friendly mobs still ride along",
+        "The first ~10 carriages spawn no hostile mobs — villagers, traders and friendly mobs still ride along",
         "The next ~15 carriages spawn only slimes, for an easy combat warm-up",
         "Normal mobs and the usual difficulty curve resume after the opening stretch",
         "All three stages are on by default and tunable in dungeontrain-server.toml"
@@ -458,7 +458,7 @@
       "summary": "Opening the in-game editor now greets you with a short welcome that points out what the editor can do and how to reach Brennan for help.",
       "highlights": [
         "A friendly welcome appears in chat a couple of seconds after you first open the editor each session.",
-        "Click the @brennanhatton mention to message Brennan directly \u2014 your message reaches him on Discord."
+        "Click the @brennanhatton mention to message Brennan directly — your message reaches him on Discord."
       ],
       "pr": 408,
       "date": "2026-06-15",
@@ -471,7 +471,7 @@
       "version": "0.308.0",
       "type": "feat",
       "title": "Tag the dev from in-game chat",
-      "summary": "Type @dev or @brennanhatton in chat and it now pings the developer in the community Discord \u2014 a message shouted into the dark can finally reach someone.",
+      "summary": "Type @dev or @brennanhatton in chat and it now pings the developer in the community Discord — a message shouted into the dark can finally reach someone.",
       "highlights": [
         "@dev and @brennanhatton in chat now ping the developer in the community Discord feed"
       ],
@@ -503,7 +503,7 @@
       "version": "0.310.0",
       "type": "feat",
       "title": "Editor welcome shows Brennan's Discord \"last seen online\"",
-      "summary": "The Dungeon Train editor welcome can again end with whether Brennan is online on Discord right now, or how long ago he was last seen \u2014 so creators know if a quick reply is likely. Powered by Discord Presence's presence query over the community relay; gracefully hidden when his presence is unknown.",
+      "summary": "The Dungeon Train editor welcome can again end with whether Brennan is online on Discord right now, or how long ago he was last seen — so creators know if a quick reply is likely. Powered by Discord Presence's presence query over the community relay; gracefully hidden when his presence is unknown.",
       "highlights": [
         "Editor welcome shows \"Brennan is online on Discord right now!\" or \"last seen online X ago\"",
         "Gracefully hidden when his Discord presence is unknown"
@@ -516,7 +516,7 @@
     },
     {
       "id": "reduce-tree-feature-weight",
-      "version": "0.310.0",
+      "version": "0.311.0",
       "type": "content",
       "title": "Fewer trees in carriage contents",
       "summary": "Reduced the tree feature's spawn weight in carriage contents, so trees appear less frequently relative to other decorative features.",
@@ -529,10 +529,10 @@
     },
     {
       "id": "cross-world-advancement-persistence",
-      "version": "0.310.0",
+      "version": "0.311.0",
       "type": "feat",
       "title": "All advancements now persist across worlds",
-      "summary": "Every advancement you earn \u2014 vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods \u2014 now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
+      "summary": "Every advancement you earn — vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods — now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
       "highlights": [
         "Vanilla and other-mod advancements now carry across worlds, not just Dungeon Train's",
         "Earned advancements from existing worlds are absorbed automatically on next load",
