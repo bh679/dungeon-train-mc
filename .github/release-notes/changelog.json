@@ -594,15 +594,16 @@
       "released_at": null
     },
     {
-      "id": "discord-advancement-carriage-difficulty",
+      "id": "cinematic-replay-command",
       "version": "0.311.0",
       "type": "feat",
-      "title": "Carriage # and difficulty on Discord advancement posts",
-      "summary": "Earn an advancement and the community Discord now shows which carriage you were riding and your difficulty level at that moment, posted on its own line right below the advancement.",
+      "title": "Replay the intro cinematic on demand",
+      "summary": "The opening cinematic is no longer a one-time thing \u2014 run /dungeontrain cinematic (or /dt cinematic) any time to watch it again. By default the camera lifts off from a spot on the ground beside the track, right where you are, and sweeps up and away as the train carries you onward \u2014 just like the intro. Prefer to start from exactly where you're looking? Use /dt cinematic current.",
       "highlights": [
-        "Reads e.g. \"Carriage +7 \u00b7 Difficulty Level 3\", matching the in-game HUD."
+        "New /dt cinematic command replays the opening cinematic on demand",
+        "Default shot rises from the ground beside you near the track; 'current' starts from your current view"
       ],
-      "pr": 420,
+      "pr": 418,
       "date": "2026-06-16",
       "released": false,
       "released_in": null,
