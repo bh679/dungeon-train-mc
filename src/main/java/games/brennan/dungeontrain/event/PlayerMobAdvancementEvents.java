@@ -1,11 +1,17 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.compat.EchoIdentity;
+import games.brennan.dungeontrain.ship.ManagedShip;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +20,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -22,7 +30,9 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,14 +65,24 @@ import java.util.UUID;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PlayerMobAdvancementEvents {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /** Entity-id namespace of the bundled playermob mod (mirrors {@code TrainTickEvents}). */
     private static final String PLAYERMOB_NAMESPACE = "playermob";
 
     /** Off-train scan cadence — matches {@link BoardingProgressEvents}. */
     private static final int SCAN_PERIOD_TICKS = 10;
 
-    /** How long after a player's strike a mob leaving the train still counts as "pushed off". */
-    private static final long PUSH_WINDOW_TICKS = 100L;
+    /** How long after a player's strike a mob leaving the deck still counts as "pushed off". */
+    private static final long PUSH_WINDOW_TICKS = 200L;
+
+    /**
+     * Consecutive off-deck scans required before crediting a push. One scan of
+     * tolerance ({@code offScans > 2} ⇒ the 3rd off sample, ≈30 ticks) absorbs a
+     * mob's ordinary airborne frames (a hop on the deck) so only a real
+     * departure from the carriage counts.
+     */
+    private static final int OFF_DECK_GRACE_SCANS = 2;
 
     /** Horizontal pad on each carriage AABB — matches {@link BoardingProgressEvents}. */
     private static final double HORIZONTAL_PADDING = 1.0;
@@ -78,8 +98,25 @@ public final class PlayerMobAdvancementEvents {
 
     private PlayerMobAdvancementEvents() {}
 
-    /** A player strike on a PlayerMob: who, when, and whether the mob was on the train then. */
-    private record ReboarderHit(UUID playerUuid, long tick, boolean wasOnTrain) {}
+    /**
+     * A player strike on a PlayerMob plus the rolling state the off-deck scan
+     * carries between samples. Package-private (with {@link ReboarderDecision} /
+     * {@link ReboarderStep} / {@link #step}) so the pure decision logic is
+     * table-testable without a Minecraft bootstrap.
+     *
+     * @param wasOnTrain mob was within a carriage footprint at strike time
+     *                   (lenient AABB capture — see {@link #onAttackEntity})
+     * @param lastOnDeck most recent live scan saw it supported by a carriage block
+     * @param offScans   consecutive live scans observed off the deck (grace counter)
+     */
+    record ReboarderHit(UUID playerUuid, long tick, boolean wasOnTrain,
+                        boolean lastOnDeck, int offScans) {}
+
+    /** What one scan concludes about a tracked hit. */
+    enum ReboarderDecision { CREDIT, KEEP, DROP }
+
+    /** A decision plus the hit state to persist when the decision is {@code KEEP}. */
+    record ReboarderStep(ReboarderDecision decision, ReboarderHit next) {}
 
     // ---------------- The Denamed ----------------
 
@@ -104,9 +141,12 @@ public final class PlayerMobAdvancementEvents {
         Entity target = event.getTarget();
         if (!isPlayerMob(target)) return;
         if (!(target.level() instanceof ServerLevel level)) return;
+        // Lenient capture: the mob was on/around the train when struck. The
+        // precise "pushed off the deck" decision is made per-scan in onLevelTick
+        // via isOnCarriageDeck — see step().
         boolean onTrain = isOnTrainFootprint(Trains.allCarriages(level), target);
-        RECENT_HITS.put(target.getUUID(),
-            new ReboarderHit(player.getUUID(), level.getGameTime(), onTrain));
+        RECENT_HITS.put(target.getUUID(), new ReboarderHit(
+            player.getUUID(), level.getGameTime(), onTrain, true, 0));
     }
 
     @SubscribeEvent
@@ -117,26 +157,83 @@ public final class PlayerMobAdvancementEvents {
 
         long now = level.getGameTime();
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
-        // Snapshot so we can remove entries while iterating.
+        // Snapshot so we can mutate the map while iterating.
         for (Map.Entry<UUID, ReboarderHit> entry : new ArrayList<>(RECENT_HITS.entrySet())) {
             UUID mobUuid = entry.getKey();
             ReboarderHit hit = entry.getValue();
             Entity mob = level.getEntity(mobUuid);
 
-            // Gone, dead, or stale → stop tracking.
-            if (mob == null || !mob.isAlive() || now - hit.tick() > PUSH_WINDOW_TICKS) {
-                RECENT_HITS.remove(mobUuid);
-                continue;
+            boolean expired = now - hit.tick() > PUSH_WINDOW_TICKS;
+            boolean dead = mob != null && !mob.isAlive();
+            // null ⇒ unloaded or dead (no live position); otherwise its support.
+            Boolean onDeck = (mob != null && mob.isAlive())
+                ? isOnCarriageDeck(carriages, mob) : null;
+
+            ReboarderStep outcome = step(hit, onDeck, dead, expired);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("[DungeonTrain] Reboarder mob={} onDeck={} dead={} expired={} "
+                        + "wasOnTrain={} lastOnDeck={} offScans={} -> {}",
+                    mobUuid, onDeck, dead, expired, hit.wasOnTrain(),
+                    hit.lastOnDeck(), hit.offScans(), outcome.decision());
             }
-            // Was on the train when struck and has since left the footprint → pushed off.
-            if (hit.wasOnTrain() && !carriages.isEmpty() && !isOnTrainFootprint(carriages, mob)) {
-                ServerPlayer player = level.getServer().getPlayerList().getPlayer(hit.playerUuid());
-                if (player != null) {
-                    ModAdvancementTriggers.PUSHED_PLAYERMOB_OFF_TRAIN.get().trigger(player);
+            switch (outcome.decision()) {
+                case CREDIT -> {
+                    if (creditPush(level, hit.playerUuid()) || expired) {
+                        RECENT_HITS.remove(mobUuid);
+                    }
+                    // else: puncher briefly offline, window open → retry next scan.
                 }
-                RECENT_HITS.remove(mobUuid);
+                case DROP -> RECENT_HITS.remove(mobUuid);
+                case KEEP -> RECENT_HITS.put(mobUuid, outcome.next());
             }
         }
+    }
+
+    /**
+     * Pure decision for one off-deck scan of a tracked hit — side-effect-free so
+     * {@code PlayerMobReboarderTest} can table-test it.
+     *
+     * @param onDeck  mob's current carriage support, or {@code null} when it is
+     *                unloaded or dead (no live position to test)
+     * @param dead    the mob exists but is no longer alive
+     * @param expired the push window has elapsed since the strike
+     */
+    static ReboarderStep step(ReboarderHit hit, Boolean onDeck, boolean dead, boolean expired) {
+        if (onDeck != null) {                            // live: we can see where it is
+            if (hit.wasOnTrain() && !onDeck) {           // off the carriage deck right now
+                int off = hit.offScans() + 1;
+                if (off > OFF_DECK_GRACE_SCANS) {
+                    return new ReboarderStep(ReboarderDecision.CREDIT, hit);
+                }
+                return new ReboarderStep(ReboarderDecision.KEEP, new ReboarderHit(
+                    hit.playerUuid(), hit.tick(), hit.wasOnTrain(), false, off));
+            }
+            // On the deck (or never aboard): reset the off-streak; drop at window end.
+            if (expired) return new ReboarderStep(ReboarderDecision.DROP, hit);
+            return new ReboarderStep(ReboarderDecision.KEEP, new ReboarderHit(
+                hit.playerUuid(), hit.tick(), hit.wasOnTrain(), onDeck, 0));
+        }
+        // Unloaded or dead: decide from the last live observation.
+        if (hit.wasOnTrain() && !hit.lastOnDeck()) {     // fell off the deck, then died/unloaded
+            return new ReboarderStep(ReboarderDecision.CREDIT, hit);
+        }
+        if (expired || dead) {                           // killed on the deck, or unloaded aboard
+            return new ReboarderStep(ReboarderDecision.DROP, hit);
+        }
+        return new ReboarderStep(ReboarderDecision.KEEP, hit); // null, window open → wait for reload
+    }
+
+    /**
+     * Fire the Reboarder trigger for {@code playerUuid} if they're online.
+     *
+     * @return {@code true} once the trigger fired; {@code false} if the puncher
+     *         is briefly offline so the caller can retry within the window.
+     */
+    private static boolean creditPush(ServerLevel level, UUID playerUuid) {
+        ServerPlayer player = level.getServer().getPlayerList().getPlayer(playerUuid);
+        if (player == null) return false;
+        ModAdvancementTriggers.PUSHED_PLAYERMOB_OFF_TRAIN.get().trigger(player);
+        return true;
     }
 
     // ---------------- That's What Friends Are For ----------------
@@ -239,6 +336,60 @@ public final class PlayerMobAdvancementEvents {
             if (y < bb.minY() || y > bb.maxY() + 1.0) continue;
             if (z < bb.minZ() - HORIZONTAL_PADDING || z > bb.maxZ() + HORIZONTAL_PADDING) continue;
             return true;
+        }
+        return false;
+    }
+
+    /**
+     * True when {@code e} is standing on a solid block that belongs to a
+     * carriage — the precise "on the deck/roof" test the coarse
+     * {@link #isOnTrainFootprint} AABB can't make. A flatbed's walkable floor is
+     * narrower than its {@code worldAABB}, so a mob punched off the floor (into
+     * the carriage's open interior, beside the floor, or down onto the rails —
+     * which are world blocks, not carriage blocks) stays inside the AABB but is
+     * supported by no carriage block. That is the real "pushed off the deck"
+     * signal, independent of carriage shape.
+     *
+     * <p>Reads the carriage's Sable sub-level blocks exactly as
+     * {@link VillagerJobSiteAssigner} / {@code SoulCampfireHealEvents} do:
+     * world-AABB pre-filter, {@code worldToShip} into ship-local space, then a
+     * plot block lookup.</p>
+     */
+    private static boolean isOnCarriageDeck(List<Trains.Carriage> carriages, Entity e) {
+        double ex = e.getX();
+        double ey = e.getY();
+        double ez = e.getZ();
+        for (Trains.Carriage c : carriages) {
+            ManagedShip ship = c.ship();
+            AABBdc bb = ship.worldAABB();
+            if (ex < bb.minX() - HORIZONTAL_PADDING || ex > bb.maxX() + HORIZONTAL_PADDING) continue;
+            if (ey < bb.minY() - 1.0 || ey > bb.maxY() + 1.0) continue;
+            if (ez < bb.minZ() - HORIZONTAL_PADDING || ez > bb.maxZ() + HORIZONTAL_PADDING) continue;
+            if (!(ship instanceof SableManagedShip sableShip)) continue;
+
+            Vector3d local = new Vector3d(ex, ey, ez);
+            ship.worldToShip(local);
+            BlockPos feet = BlockPos.containing(local.x, local.y, local.z);
+            if (isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True if the ship plot has a non-air block at the feet or directly below
+     * them (ship-local coords). Checking feet and feet-1 covers both top-slab
+     * walkways and full-block floors. Feet and feet-1 share a column, so a
+     * single chunk lookup serves both.
+     */
+    private static boolean isSupportedByCarriage(LevelPlot plot, BlockPos feet) {
+        long chunkKey = ChunkPos.asLong(feet.getX() >> 4, feet.getZ() >> 4);
+        for (PlotChunkHolder holder : plot.getLoadedChunks()) {
+            LevelChunk chunk = holder.getChunk();
+            if (chunk == null || chunk.getPos().toLong() != chunkKey) continue;
+            return !chunk.getBlockState(feet.below()).isAir()
+                || !chunk.getBlockState(feet).isAir();
         }
         return false;
     }
