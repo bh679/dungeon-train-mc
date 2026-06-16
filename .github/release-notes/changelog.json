@@ -516,7 +516,7 @@
     },
     {
       "id": "reduce-tree-feature-weight",
-      "version": "0.310.0",
+      "version": "0.311.0",
       "type": "content",
       "title": "Fewer trees in carriage contents",
       "summary": "Reduced the tree feature's spawn weight in carriage contents, so trees appear less frequently relative to other decorative features.",
@@ -529,7 +529,7 @@
     },
     {
       "id": "cross-world-advancement-persistence",
-      "version": "0.310.0",
+      "version": "0.311.0",
       "type": "feat",
       "title": "All advancements now persist across worlds",
       "summary": "Every advancement you earn \u2014 vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods \u2014 now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
