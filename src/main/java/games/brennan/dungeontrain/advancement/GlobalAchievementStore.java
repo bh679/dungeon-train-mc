@@ -16,14 +16,15 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 /**
- * Sidecar JSON store that mirrors granted Dungeon-Train advancements per
- * player UUID, OUTSIDE any individual world save. Lives at
+ * Sidecar JSON store that mirrors granted advancements per player UUID,
+ * OUTSIDE any individual world save. Lives at
  * {@code <minecraft>/config/dungeontrain-achievements/<uuid>.json}.
  *
  * <p>Layered on top of the vanilla advancement system: vanilla persists
@@ -32,9 +33,16 @@ import java.util.UUID;
  * regardless of which world it happened in. On advancement-earn we
  * append to the sidecar.</p>
  *
+ * <p>Stores every advancement that appears in the advancements screen —
+ * vanilla, Dungeon Train, and other mods alike (the hidden display-less
+ * {@code recipes/*} tree is excluded). This store is a dumb id container;
+ * the persist policy lives at the call sites in
+ * {@code AchievementEvents.shouldPersist}.</p>
+ *
  * <p>JSON shape:
  * <pre>{@code
  * { "granted": [
+ *     "minecraft:story/mine_stone",
  *     "dungeontrain:dungeon_train/chests_100_unique",
  *     "dungeontrain:dungeon_train/carts_100"
  *   ] }
@@ -101,6 +109,25 @@ public final class GlobalAchievementStore {
         if (!current.add(advancement)) return false;
         writeAtomic(playerUuid, current);
         return true;
+    }
+
+    /**
+     * Append every advancement in {@code advancements} not already present, in a
+     * single atomic read-modify-write. Used by the login back-fill that absorbs a
+     * world's already-earned advancements into the cross-world store — far cheaper
+     * than calling {@link #append} once per id (one file write, not N), and never
+     * writes when nothing new is added.
+     *
+     * @return the number of ids actually added (0 when all were already present).
+     */
+    public static synchronized int appendAll(UUID playerUuid, Collection<ResourceLocation> advancements) {
+        if (advancements.isEmpty()) return 0;
+        Set<ResourceLocation> current = new LinkedHashSet<>(read(playerUuid));
+        int before = current.size();
+        current.addAll(advancements);
+        int added = current.size() - before;
+        if (added > 0) writeAtomic(playerUuid, current);
+        return added;
     }
 
     /**
