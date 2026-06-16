@@ -8,6 +8,7 @@ import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.SimpleContainer;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
@@ -22,32 +23,33 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Per-player Ender Chest contents that persist <em>outside</em> any individual
- * world save. Lives at
+ * Per-player, per-game-mode Ender Chest contents that persist <em>outside</em>
+ * any individual world save. Lives at
  * {@code <minecraft>/config/dungeontrain-enderchest/<uuid>.dat}.
  *
  * <p>Dungeon Train creates a fresh MC world on each death, which resets the
  * vanilla per-world {@code playerdata/<uuid>.dat} (and thus the Ender Chest).
  * This store snapshots the Ender Chest on every player logout and restores it
- * on every player login, bridging the gap across new-world transitions exactly
- * as {@link GlobalPlayerStats} does for cumulative stats.</p>
+ * on every login, bridging the gap across new-world transitions exactly as
+ * {@link GlobalPlayerStats} does for cumulative stats.</p>
  *
- * <p>Disk I/O strategy: compressed binary NBT (same format used by
- * {@link net.minecraft.nbt.NbtIo} throughout the codebase). Items are
- * serialised with the player's live {@link HolderLookup.Provider} so
- * DataComponents referencing registry entries survive round-trips, matching
- * the approach used in {@link PendingInventory}.</p>
+ * <p>Separate inventories are maintained per {@link GameType}: survival,
+ * creative, adventure, and spectator each have their own 27-slot snapshot.
+ * The on-disk format is a single root {@link CompoundTag} keyed by the
+ * game-mode serialized name ({@code "survival"}, {@code "creative"}, …), so
+ * all four slots share one file and switching modes never cross-contaminates
+ * inventories.</p>
  *
- * <p>Cache: an in-memory {@link ConcurrentHashMap} backed by lazy disk loads.
- * A {@code null} value means nothing has ever been stored for that UUID;
- * an empty {@link CompoundTag} means the chest was saved while empty.</p>
+ * <p>Disk I/O: compressed binary NBT via {@link NbtIo}. Items are serialised
+ * with the player's live {@link HolderLookup.Provider} so DataComponents
+ * referencing registry entries survive round-trips, matching {@link PendingInventory}.</p>
  */
 public final class GlobalEnderChestStore {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String DIR_NAME = "dungeontrain-enderchest";
 
-    /** In-memory cache: UUID → serialised chest tag (null = never saved). */
+    /** In-memory cache: UUID → root tag (null = nothing ever saved). */
     private static final Map<UUID, CompoundTag> CACHE = new ConcurrentHashMap<>();
 
     private GlobalEnderChestStore() {}
@@ -57,10 +59,14 @@ public final class GlobalEnderChestStore {
     }
 
     /**
-     * Snapshot {@code player}'s Ender Chest into the cache and write it to
-     * disk. Called on player logout and during server shutdown.
+     * Snapshot {@code player}'s Ender Chest for their current game mode into
+     * the cache and write it to disk. Other game-mode slots in the same file
+     * are preserved.
      */
     public static void save(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        String mode = player.gameMode.getGameModeForPlayer().getSerializedName();
+
         HolderLookup.Provider registries = player.registryAccess();
         SimpleContainer enderChest = player.getEnderChestInventory();
         ListTag itemList = new ListTag();
@@ -72,27 +78,35 @@ public final class GlobalEnderChestStore {
                 itemList.add(slotTag);
             }
         }
-        CompoundTag root = new CompoundTag();
-        root.put("Items", itemList);
-        UUID uuid = player.getUUID();
-        CACHE.put(uuid, root);
-        LOGGER.debug("[DungeonTrain] EnderChestStore: saved {} item stack(s) for {}",
-                itemList.size(), player.getName().getString());
+        CompoundTag modeTag = new CompoundTag();
+        modeTag.put("Items", itemList);
+
+        CACHE.compute(uuid, (k, existing) -> {
+            CompoundTag root = existing != null ? existing : loadFromDisk(k);
+            if (root == null) root = new CompoundTag();
+            root.put(mode, modeTag);
+            return root;
+        });
+
+        LOGGER.debug("[DungeonTrain] EnderChestStore: saved {} item stack(s) for {} ({})",
+                itemList.size(), player.getName().getString(), mode);
     }
 
     /**
-     * Apply the stored Ender Chest contents onto {@code player}. Called on
-     * every player login — no-op if nothing has been stored yet for this UUID.
+     * Apply the stored Ender Chest contents for the player's current game mode
+     * onto {@code player}. No-op if nothing has been stored for this UUID and
+     * game mode. Called on every player login.
      */
     public static void restore(ServerPlayer player) {
         UUID uuid = player.getUUID();
+        String mode = player.gameMode.getGameModeForPlayer().getSerializedName();
         CompoundTag root = CACHE.computeIfAbsent(uuid, GlobalEnderChestStore::loadFromDisk);
-        if (root == null) return;
+        if (root == null || !root.contains(mode)) return;
         try {
             HolderLookup.Provider registries = player.registryAccess();
             SimpleContainer enderChest = player.getEnderChestInventory();
             enderChest.clearContent();
-            ListTag itemList = root.getList("Items", 10); // 10 = CompoundTag tag id
+            ListTag itemList = root.getCompound(mode).getList("Items", 10);
             int applied = 0;
             for (int i = 0; i < itemList.size(); i++) {
                 CompoundTag slotTag = itemList.getCompound(i);
@@ -107,8 +121,8 @@ public final class GlobalEnderChestStore {
             }
             player.inventoryMenu.broadcastChanges();
             if (applied > 0) {
-                LOGGER.info("[DungeonTrain] EnderChestStore: restored {} item stack(s) for {}",
-                        applied, player.getName().getString());
+                LOGGER.info("[DungeonTrain] EnderChestStore: restored {} item stack(s) for {} ({})",
+                        applied, player.getName().getString(), mode);
             }
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] EnderChestStore: restore failed for {} — Ender Chest stays as loaded",
