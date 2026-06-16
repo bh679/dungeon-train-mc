@@ -205,6 +205,8 @@
   "advancements.dungeontrain.dungeon_train.read_all_end_starting_books.description": "Read every End starting book — every variant, every context.",
   "advancements.dungeontrain.dungeon_train.multiplayer.title": "Come Along With Me",
   "advancements.dungeontrain.dungeon_train.multiplayer.description": "Join a multiplayer world, or have someone join yours.",
+  "advancements.dungeontrain.dungeon_train.the_great_beyond.title": "The Great Beyond",
+  "advancements.dungeontrain.dungeon_train.the_great_beyond.description": "Complete the feedback survey after death.",
 
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Build the train you ride.",
