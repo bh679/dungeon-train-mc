@@ -91,6 +91,42 @@ public final class CinematicIntroService {
             String.format("%.1f", groundPose.yaw()), String.format("%.1f", groundPose.pitch()), duration);
     }
 
+    /** Camera-start source for an on-demand cinematic replay. */
+    public enum StartMode {
+        /** A random nearby ground spot facing the live train — the join-intro framing. */
+        SPAWN,
+        /** The player's current eye view. */
+        CURRENT
+    }
+
+    /**
+     * Replay the intro cinematic on demand (the {@code /dungeontrain cinematic} command),
+     * regardless of the once-only {@code SEEN_INTRO_CINEMATIC} gate. {@link StartMode#SPAWN}
+     * anchors the camera at a random nearby ground spot facing the live train (like the join
+     * intro); {@link StartMode#CURRENT} anchors it at the player's current eye pose. Either
+     * way the camera then rises and eases back while tracking the player. Never moves the
+     * body — {@link #play} only sends the camera packet and opens the invulnerability window
+     * (the spawn flow does its own teleport <em>before</em> calling {@code play}).
+     *
+     * @return the {@link StartMode} actually used — {@code SPAWN} degrades to {@code CURRENT}
+     *         when no live train/geometry is available (e.g. outside the train dimension).
+     */
+    public static StartMode replay(ServerPlayer player, StartMode requested) {
+        PlayerJoinEvents.SpawnPlacement pose =
+            (requested == StartMode.SPAWN) ? PlayerJoinEvents.computeReplaySpawnPose(player) : null;
+        StartMode used = (pose != null) ? StartMode.SPAWN : StartMode.CURRENT;
+        if (pose == null) {
+            // CURRENT (or SPAWN fallback): start at the player's current eye pose. play()
+            // adds EYE_HEIGHT to pose.y(), so the feet block-Y yields an eye-level start.
+            pose = new PlayerJoinEvents.SpawnPlacement(
+                player.getX(), player.getBlockY(), player.getZ(),
+                player.getYRot(), player.getXRot(),
+                player.blockPosition());
+        }
+        play(player, pose);
+        return used;
+    }
+
     private static void beginInvuln(ServerPlayer player, int duration) {
         long deadline = player.serverLevel().getGameTime() + duration + INVULN_GRACE_TICKS;
         INVULN_UNTIL.put(player.getUUID(), deadline);

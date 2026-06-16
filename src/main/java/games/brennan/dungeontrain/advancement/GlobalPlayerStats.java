@@ -44,6 +44,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *       accumulated at death from the just-ended run's {@code PlayerRunState}
  *       (see {@code RunStatsEvents}). Feed the death screen's "all your lives"
  *       page. Each is the running sum of every run's per-life counter.</li>
+ *   <li>{@code distanceBlocks} — cumulative boarded distance (metres) accrued
+ *       continuously as the player rides. Drives the lifetime distance
+ *       milestones ("Going the Distance", "Million Metre Club", …).</li>
  * </ul>
  * All counters accrue across worlds and sessions; switching worlds does
  * not reset them.</p>
@@ -61,7 +64,8 @@ public final class GlobalPlayerStats {
 
     public record Data(
             long trainTicks, long randomBooksRead, long startingBooksRead, long playersEncountered,
-            long totalDeaths, long totalCarriages, double totalDistance, long totalFriends, long totalBooks) {
+            long totalDeaths, long totalCarriages, double totalDistance, long totalFriends, long totalBooks,
+            double distanceBlocks) {
 
         public static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
             Codec.LONG.optionalFieldOf("trainTicks", 0L).forGetter(Data::trainTicks),
@@ -72,23 +76,25 @@ public final class GlobalPlayerStats {
             Codec.LONG.optionalFieldOf("totalCarriages", 0L).forGetter(Data::totalCarriages),
             Codec.DOUBLE.optionalFieldOf("totalDistance", 0.0).forGetter(Data::totalDistance),
             Codec.LONG.optionalFieldOf("totalFriends", 0L).forGetter(Data::totalFriends),
-            Codec.LONG.optionalFieldOf("totalBooks", 0L).forGetter(Data::totalBooks)
+            Codec.LONG.optionalFieldOf("totalBooks", 0L).forGetter(Data::totalBooks),
+            Codec.DOUBLE.optionalFieldOf("distanceBlocks", 0.0).forGetter(Data::distanceBlocks)
         ).apply(in, Data::new));
 
-        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L, 0L, 0L, 0.0, 0L, 0L);
+        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L, 0L, 0L, 0.0, 0L, 0L, 0.0);
 
         // Field-wise copy-with-increment helpers so the static adders below
-        // stay one-liners and the 9-arg constructor is written in exactly one
+        // stay one-liners and the 10-arg constructor is written in exactly one
         // place per field.
-        Data plusTrainTicks(long d)         { return new Data(trainTicks + d, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks); }
-        Data plusRandomBooks(long d)        { return new Data(trainTicks, randomBooksRead + d, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks); }
-        Data plusStartingBooks(long d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead + d, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks); }
-        Data plusPlayersEncountered(long d) { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered + d, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks); }
-        Data plusDeaths(long d)             { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths + d, totalCarriages, totalDistance, totalFriends, totalBooks); }
-        Data plusCarriages(long d)          { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages + d, totalDistance, totalFriends, totalBooks); }
-        Data plusDistance(double d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance + d, totalFriends, totalBooks); }
-        Data plusFriends(long d)            { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends + d, totalBooks); }
-        Data plusBooks(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks + d); }
+        Data plusTrainTicks(long d)         { return new Data(trainTicks + d, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusRandomBooks(long d)        { return new Data(trainTicks, randomBooksRead + d, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusStartingBooks(long d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead + d, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusPlayersEncountered(long d) { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered + d, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusDeaths(long d)             { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths + d, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusCarriages(long d)          { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages + d, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusDistance(double d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance + d, totalFriends, totalBooks, distanceBlocks); }
+        Data plusFriends(long d)            { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends + d, totalBooks, distanceBlocks); }
+        Data plusBooks(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks + d, distanceBlocks); }
+        Data plusDistanceBlocks(double d)   { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks + d); }
     }
 
     /** In-memory cache. Holds the full {@link Data} record per UUID. */
@@ -116,6 +122,7 @@ public final class GlobalPlayerStats {
     public static double totalDistance(UUID uuid)    { return current(uuid).totalDistance(); }
     public static long totalFriends(UUID uuid)       { return current(uuid).totalFriends(); }
     public static long totalBooks(UUID uuid)         { return current(uuid).totalBooks(); }
+    public static double distanceBlocks(UUID uuid)   { return current(uuid).distanceBlocks(); }
 
     // ---- Adders. All monotone-increasing: non-positive deltas are ignored. ----
 
@@ -162,6 +169,16 @@ public final class GlobalPlayerStats {
     public static long addBooks(UUID uuid, long delta) {
         if (delta <= 0) return totalBooks(uuid);
         return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusBooks(delta)).totalBooks();
+    }
+
+    /**
+     * Add {@code delta} metres to the player's cumulative boarded-distance
+     * counter and return the new total. Monotone-increasing; non-finite / ≤0
+     * deltas are ignored. Drives the lifetime distance advancements.
+     */
+    public static double addDistanceBlocks(UUID uuid, double delta) {
+        if (delta <= 0.0 || !Double.isFinite(delta)) return distanceBlocks(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusDistanceBlocks(delta)).distanceBlocks();
     }
 
     /** Flush a single player's cached stats to disk. No-op if not in cache. */

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/enjoying_the_ride",
+  "display": {
+    "icon": { "id": "minecraft:golden_apple" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.one_for_the_road.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.one_for_the_road.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:run_train_time",
+      "conditions": { "thresholdTicks": 72000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

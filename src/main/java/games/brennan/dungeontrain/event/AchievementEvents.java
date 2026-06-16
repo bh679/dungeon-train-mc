@@ -43,6 +43,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,12 +63,14 @@ import java.util.UUID;
  *   <li>{@link PlayerEvent.PlayerRespawnEvent} → reset
  *       {@link PlayerRunState} (both streak set and cart counter).</li>
  *   <li>{@link PlayerEvent.PlayerLoggedInEvent} → grant the multiplayer-join
- *       advancement when applicable, then read the sidecar and replay any
+ *       advancement when applicable, absorb this world's already-earned
+ *       advancements into the sidecar, then read the sidecar and replay any
  *       previously-earned advancements onto this world's
  *       {@code PlayerAdvancements}.</li>
- *   <li>{@link AdvancementEvent.AdvancementEarnEvent} → append granted
- *       {@code dungeontrain:*} advancements to the sidecar so they survive
- *       world deletion.</li>
+ *   <li>{@link AdvancementEvent.AdvancementEarnEvent} → append any granted
+ *       GUI-visible advancement (vanilla, Dungeon Train, or other mod) to the
+ *       sidecar so it survives world deletion; the hidden recipe tree is
+ *       excluded (see {@link #shouldPersist}).</li>
  * </ul>
  *
  * <p>Static notify methods are called by other event classes:
@@ -193,6 +196,37 @@ public final class AchievementEvents {
      */
     public static void notifyTrainTime(ServerPlayer player, long totalTicks) {
         ModAdvancementTriggers.TRAIN_TIME.get().trigger(player, totalTicks);
+    }
+
+    /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code runTicks} is the player's single-life
+     * {@link PlayerRunState#trainTimeTicks} (boarded-only, resets on death).
+     * Drives the single-life time milestones ("One for the Road", "Marathon
+     * Passenger"), the per-run twins of the cross-world train-time chain.
+     */
+    public static void notifyRunTrainTime(ServerPlayer player, long runTicks) {
+        ModAdvancementTriggers.RUN_TRAIN_TIME.get().trigger(player, runTicks);
+    }
+
+    /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code runMeters} is the player's single-life
+     * {@link PlayerRunState#distanceBlocks} (boarded-only, resets on death).
+     * Drives the single-life distance milestones.
+     */
+    public static void notifyRunDistance(ServerPlayer player, double runMeters) {
+        ModAdvancementTriggers.RUN_DISTANCE.get().trigger(player, runMeters);
+    }
+
+    /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code lifetimeMeters} is the player's cross-world
+     * {@link GlobalPlayerStats#distanceBlocks(UUID)} accumulator. Drives the
+     * lifetime distance milestones.
+     */
+    public static void notifyLifetimeDistance(ServerPlayer player, double lifetimeMeters) {
+        ModAdvancementTriggers.LIFETIME_DISTANCE.get().trigger(player, lifetimeMeters);
     }
 
     /**
@@ -565,6 +599,22 @@ public final class AchievementEvents {
 
     // ---------------- Global sidecar ↔ vanilla mirror ----------------
 
+    /**
+     * Persistence policy for the cross-world {@link GlobalAchievementStore}: an
+     * advancement is persisted iff it appears in the advancements screen (has a
+     * display). This captures vanilla, Dungeon Train, and other mods'
+     * advancements alike, while excluding the hidden display-less
+     * {@code recipes/*} tree — the same partition
+     * {@link CompletionistAdvancement} uses to skip recipe-style advancements.
+     * Single source of truth for the three sidecar call sites: earn-append
+     * ({@link #onAdvancementEarn}), login back-fill
+     * ({@link #absorbWorldAdvancementsIntoSidecar}), and logout revoke-reconcile
+     * ({@link #onPlayerLoggedOut}).
+     */
+    private static boolean shouldPersist(AdvancementHolder holder) {
+        return holder.value().display().isPresent();
+    }
+
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -578,6 +628,12 @@ public final class AchievementEvents {
         // can complete them here.
         absorbWorldStoryProgressIntoGlobal(player);
         notifyStoryProgress(player);
+        // Absorb this world's already-earned advancements into the cross-world
+        // store FIRST, so progress that predates this store — or a freshly-
+        // updated player's complete vanilla / other-mod trees, which will never
+        // re-fire AdvancementEarnEvent — is captured before the replay below
+        // mirrors the store back onto this world.
+        absorbWorldAdvancementsIntoSidecar(player);
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -651,13 +707,43 @@ public final class AchievementEvents {
     }
 
     /**
+     * Absorb every already-earned, GUI-visible advancement in this world into the
+     * cross-world {@link GlobalAchievementStore}, so it survives into other
+     * worlds. Complements {@link #onAdvancementEarn}, which only captures
+     * advancements earned <em>after</em> this store began tracking: a player who
+     * updated to this version already has complete vanilla / other-mod trees that
+     * will never re-fire {@link AdvancementEvent.AdvancementEarnEvent}, so without
+     * this login-time sweep they'd never enter the store. Mirrors the
+     * {@link #absorbWorldStoryProgressIntoGlobal} pattern. Idempotent set-union,
+     * batched into a single {@link GlobalAchievementStore#appendAll} write, and
+     * filtered by {@link #shouldPersist}.
+     */
+    private static void absorbWorldAdvancementsIntoSidecar(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerAdvancementManager mgr = server.getAdvancements();
+        Set<ResourceLocation> done = new LinkedHashSet<>();
+        for (AdvancementHolder holder : mgr.getAllAdvancements()) {
+            if (!shouldPersist(holder)) continue;
+            if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
+                done.add(holder.id());
+            }
+        }
+        int added = GlobalAchievementStore.appendAll(player.getUUID(), done);
+        if (added > 0) {
+            LOGGER.info("[DungeonTrain] Absorbed {} already-earned advancement(s) into global store for {}",
+                added, player.getName().getString());
+        }
+    }
+
+    /**
      * Flush this player's cumulative stats (train-time) to disk on logout
      * so a crash before server-stop doesn't lose their session's accrual.
      * Also evict from the in-memory cache — the next login re-loads.
      *
-     * <p>Also reconciles the global achievement sidecar: any
-     * {@code dungeontrain:*} advancement currently in the sidecar but
-     * NOT in this world's vanilla state has been revoked via
+     * <p>Also reconciles the global achievement sidecar: any persisted
+     * advancement (vanilla, Dungeon Train, or other mod) currently in the
+     * sidecar but NOT in this world's state has been revoked via
      * {@code /advancement revoke} (since login-replay would otherwise
      * keep them in sync). Drop revoked entries from the sidecar so the
      * revoke sticks across worlds.</p>
@@ -674,9 +760,8 @@ public final class AchievementEvents {
         Set<ResourceLocation> sidecar = GlobalAchievementStore.read(uuid);
         int removed = 0;
         for (ResourceLocation id : sidecar) {
-            if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) continue;
             AdvancementHolder holder = mgr.get(id);
-            if (holder == null) continue;
+            if (holder == null) continue; // removed mod/datapack — leave it (may return)
             if (player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
             if (GlobalAchievementStore.remove(uuid, id)) removed++;
         }
@@ -699,19 +784,27 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onAdvancementEarn(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ResourceLocation id = event.getAdvancement().id();
-        if (!id.getNamespace().equals(DungeonTrain.MOD_ID)) return;
-        if (GlobalAchievementStore.append(player.getUUID(), id)) {
+        AdvancementHolder advancement = event.getAdvancement();
+        ResourceLocation id = advancement.id();
+        // Persist across worlds: capture every GUI-visible advancement — vanilla,
+        // Dungeon Train, and other mods alike — not just dungeontrain:*. The
+        // hidden display-less recipe tree is filtered out by shouldPersist.
+        if (shouldPersist(advancement) && GlobalAchievementStore.append(player.getUUID(), id)) {
             LOGGER.info("[DungeonTrain] Wrote global achievement {} for {}",
                 id, player.getName().getString());
         }
         // Nudge new players toward the advancements screen: on a genuine
         // (non-replay) gameplay-advancement earn, ping the client to maybe show
-        // the keybind hint. editor/* advancements are excluded — they're a
-        // creative-mode dev tab and aren't gated by the game-mode mixin. The
-        // client decides whether to actually display it (gated on its local
-        // "opened advancements" flag) and renders it with the live keybind.
-        if (!replaying && !id.getPath().startsWith("editor/")) {
+        // the keybind hint. Scoped to dungeontrain:* — this guard was previously
+        // implied by the early-return above, before persistence broadened to all
+        // namespaces; without it the hint + capstone re-check would now fire on
+        // every vanilla/mod advancement earn. editor/* is excluded — a
+        // creative-mode dev tab not gated by the game-mode mixin. The client
+        // decides whether to actually display it (gated on its local "opened
+        // advancements" flag) and renders it with the live keybind.
+        if (!replaying
+                && id.getNamespace().equals(DungeonTrain.MOD_ID)
+                && !id.getPath().startsWith("editor/")) {
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside

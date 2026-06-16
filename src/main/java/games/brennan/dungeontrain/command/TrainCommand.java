@@ -7,6 +7,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.CinematicIntroService;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
@@ -66,6 +67,12 @@ public final class TrainCommand {
             .then(Commands.literal("tracks")
                 .then(Commands.literal("on").executes(ctx -> runTracks(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runTracks(ctx.getSource(), false))))
+            .then(Commands.literal("cinematic")
+                .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.SPAWN))
+                .then(Commands.literal("spawn")
+                    .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.SPAWN)))
+                .then(Commands.literal("current")
+                    .executes(ctx -> runCinematic(ctx.getSource(), CinematicIntroService.StartMode.CURRENT))))
             .then(EditorCommand.build(buildContext))
             .then(SaveCommand.build())
             .then(ResetCommand.build())
@@ -170,6 +177,28 @@ public final class TrainCommand {
             "Track generation is now " + (enabled ? "ON" : "OFF")
                 + ". Existing tracks are preserved; this only affects future chunk loads and per-tick scans."
         ), true);
+        return 1;
+    }
+
+    private static int runCinematic(CommandSourceStack source, CinematicIntroService.StartMode requested) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+
+        CinematicIntroService.StartMode used = CinematicIntroService.replay(player, requested);
+        String detail = switch (used) {
+            case SPAWN -> "spawn-style start";
+            case CURRENT -> requested == CinematicIntroService.StartMode.SPAWN
+                ? "from current view (no train nearby for spawn start)"
+                : "from current view";
+        };
+        LOGGER.info("[DungeonTrain] /dungeontrain cinematic replay by {} (requested={}, used={})",
+            player.getName().getString(), requested, used);
+        source.sendSuccess(() -> Component.literal("Replaying intro cinematic — " + detail + "."), true);
         return 1;
     }
 }

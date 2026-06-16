@@ -63,6 +63,16 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Integer> LAST_SENT_PIDX = new HashMap<>();
 
     /**
+     * The carriage index last pushed to {@code playerId}'s HUD — the same value the
+     * "Carriage:" read-out shows — or {@code null} when the player isn't currently
+     * tracked near a train. Lets server-thread callers (e.g. the Discord advancement
+     * embed) report the exact carriage the HUD displays. Read on the server thread.
+     */
+    public static Integer lastCarriageIndex(UUID playerId) {
+        return LAST_SENT_PIDX.get(playerId);
+    }
+
+    /**
      * Per-train, per-direction: the most recently spawned {@link ManagedShip}
      * for that direction. Read by the wait-for-placement-success gate in
      * {@link #updateTrain} — auto-spawn for a given direction defers until

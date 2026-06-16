@@ -513,6 +513,148 @@
       "released": true,
       "released_in": "v0.310.0",
       "released_at": "2026-06-15T23:59:32Z"
+    },
+    {
+      "id": "reduce-tree-feature-weight",
+      "version": "0.311.0",
+      "type": "content",
+      "title": "Fewer trees in carriage contents",
+      "summary": "Reduced the tree feature's spawn weight in carriage contents, so trees appear less frequently relative to other decorative features.",
+      "highlights": [],
+      "pr": 414,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.311.0",
+      "released_at": "2026-06-16T01:39:07Z"
+    },
+    {
+      "id": "cross-world-advancement-persistence",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "All advancements now persist across worlds",
+      "summary": "Every advancement you earn \u2014 vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods \u2014 now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
+      "highlights": [
+        "Vanilla and other-mod advancements now carry across worlds, not just Dungeon Train's",
+        "Earned advancements from existing worlds are absorbed automatically on next load",
+        "Recipe-book unlocks stay per-world"
+      ],
+      "pr": 413,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.311.0",
+      "released_at": "2026-06-16T01:39:07Z"
+    },
+    {
+      "id": "dev-tag-online-status",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Tagging @dev in chat shows how recently Brennan was online",
+      "summary": "Type @dev or @brennanhatton in chat and the game quietly tells you how recently Brennan was last online on Discord \u2014 \"online right now\" or \"online 5 minutes ago\" \u2014 so you know whether to expect a reply. It only appears when he's been around in the last half hour, lands a beat after your own message, and won't show more than once every 5 minutes.",
+      "highlights": [
+        "Tag @dev or @brennanhatton to see Brennan's recent online status in chat",
+        "Only shows when he was online within the last 30 minutes",
+        "Quietly rate-limited to once every 5 minutes, so it never spams"
+      ],
+      "pr": 416,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "reboarder-off-deck-detection",
+      "version": "0.311.0",
+      "type": "fix",
+      "title": "\"Reboarder\" advancement now unlocks reliably",
+      "summary": "Shoving a passenger off the moving train now reliably earns the Reboarder advancement \u2014 including when they tumble off the open side of a carriage into a gap or fall onto the tracks below, not just when they're knocked cleanly clear. Those off-the-edge falls used to slip through and never counted.",
+      "highlights": [
+        "Pushing a passenger off the train now reliably unlocks Reboarder",
+        "Counts passengers that fall off the side or onto the tracks, not only clean knock-offs"
+      ],
+      "pr": 417,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "all-the-creator-asks",
+      "version": "0.311.0",
+      "type": "content",
+      "title": "New book: \"All the Creator Asks\"",
+      "summary": "A new random book joins the pool \u2014 a fallen adventurer's reverent testament that treats the death-screen feedback survey as a holy rite of the afterlife, written to gently beg you to answer it. Eight short variants turn up in chests, on bookshelves, and at narrative lecterns.",
+      "highlights": [
+        "New 8-variant random book that venerates the feedback survey as a spiritual passage",
+        "Found in chest rolls, bookshelf drops, and narrative lecterns"
+      ],
+      "pr": 419,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "cinematic-replay-command",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Replay the intro cinematic on demand",
+      "summary": "The opening cinematic is no longer a one-time thing \u2014 run /dungeontrain cinematic (or /dt cinematic) any time to watch it again. By default the camera lifts off from a spot on the ground beside the track, right where you are, and sweeps up and away as the train carries you onward \u2014 just like the intro. Prefer to start from exactly where you're looking? Use /dt cinematic current.",
+      "highlights": [
+        "New /dt cinematic command replays the opening cinematic on demand",
+        "Default shot rises from the ground beside you near the track; 'current' starts from your current view"
+      ],
+      "pr": 418,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "discord-advancement-carriage-difficulty",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Carriage # and difficulty on Discord advancement posts",
+      "summary": "Earn an advancement and the community Discord now shows which carriage you were riding and your difficulty level at that moment, posted on its own line right below the advancement.",
+      "highlights": [
+        "Reads e.g. \"Carriage +7 \u00b7 Difficulty Level 3\", matching the in-game HUD."
+      ],
+      "pr": 420,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "the-great-beyond-advancement",
+      "version": "0.312.0",
+      "type": "feat",
+      "title": "New advancement: The Great Beyond",
+      "summary": "Earn a new advancement \u2014 \"The Great Beyond\" \u2014 by completing the death-screen feedback survey. Once you've answered every survey question, it unlocks. The survey is provided by the bundled Discord Presence mod, which now also lets you open it any time with the new /feedback command.",
+      "highlights": [
+        "\"The Great Beyond\" \u2014 Complete the feedback survey after death.",
+        "Counts however you finish the survey \u2014 on the death screen or via /feedback."
+      ],
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.313.0",
+      "released_at": "2026-06-16T04:11:21Z"
+    },
+    {
+      "id": "time-and-distance-advancements",
+      "version": "0.313.0",
+      "type": "feat",
+      "title": "Time-aboard & distance-ridden advancements",
+      "summary": "Seven new advancements reward the long haul. Stay aboard for an hour or two without dying, and rack up the kilometres you ride \u2014 both within a single life and across every run you've ever taken. They branch off Dungeon Train Explorer in the advancements screen.",
+      "highlights": [
+        "Single-life time aboard: One Long Ride (1 hour) and Reality Escaped (2 hours)",
+        "Single-life distance: Escaping Spawn (10 km), Cross-Country (100 km), The Long Run (250 km)",
+        "Lifetime distance: Covering ground (100 km) and I got so far (1,000 km)"
+      ],
+      "pr": 425,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.314.0",
+      "released_at": "2026-06-16T05:54:33Z"
     }
   ]
 }

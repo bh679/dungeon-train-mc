@@ -5,6 +5,8 @@ import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.discordpresence.config.DiscordCredentials;
 import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.SurveyAdvancement;
+import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -18,6 +20,7 @@ import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import java.util.List;
+import java.util.UUID;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -43,6 +46,15 @@ public class DungeonTrain {
      * + {@code EditorWelcome}).
      */
     public static final String BRENNAN_DISCORD_ID = "342110421114945537";
+
+    /**
+     * Chat-tag tokens that reach Brennan. Single source of truth for both the DP relay rewrite
+     * ({@code gameRelayMentions} maps each to {@code @token=<@id>}, pinging Brennan in the community feed)
+     * and the in-game presence reply ({@link games.brennan.dungeontrain.event.MentionPresenceEvents}). DP
+     * matches each token as a case-insensitive substring, so the in-game detector mirrors that to fire in
+     * lock-step with the real ping.
+     */
+    public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton");
 
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
@@ -135,8 +147,9 @@ public class DungeonTrain {
             // Chat-tag ping triggers: typing @dev or @brennanhatton in relayed chat is rewritten to a real
             // <@id> mention so Brennan is pinged in the community feed (DP's trusted allowed_mentions path).
             @Override public List<String> gameRelayMentions() {
-                return List.of("@dev=<@" + BRENNAN_DISCORD_ID + ">",
-                               "@brennanhatton=<@" + BRENNAN_DISCORD_ID + ">");
+                return MENTION_TOKENS.stream()
+                        .map(token -> token + "=<@" + BRENNAN_DISCORD_ID + ">")
+                        .toList();
             }
             // Track Brennan's Discord presence so the editor welcome (EditorWelcome) can render a
             // "last seen online …" / "online now" line. Unioned with the admin's presenceTrackUserIds
@@ -145,6 +158,18 @@ public class DungeonTrain {
             // and the query seam stays absent-safe meanwhile, so the welcome line simply omits.
             @Override public List<String> presenceTrackUserIds() {
                 return List.of(BRENNAN_DISCORD_ID);
+            }
+            // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
+            // outside the embed): the carriage # the player earned it in + their difficulty level — the
+            // same values the in-game HUD shows. Computed on the server thread via the compat helper.
+            @Override public String advancementMessageSuffix(UUID playerId, String advancementId) {
+                return DiscordAdvancementSuffix.forPlayer(playerId);
+            }
+            // Award "The Great Beyond" when a player finishes the death-screen feedback survey.
+            // DP fires this on the server thread once the player has answered every outstanding
+            // question; SurveyAdvancement resolves the player and grants it directly (no-throw).
+            @Override public void onSurveyCompleted(UUID playerId, String playerName) {
+                SurveyAdvancement.onSurveyCompleted(playerId);
             }
         });
 

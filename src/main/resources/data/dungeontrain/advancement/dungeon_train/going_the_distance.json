@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:rail" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.going_the_distance.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.going_the_distance.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:run_distance",
+      "conditions": { "thresholdMeters": 10000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}
