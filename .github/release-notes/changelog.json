@@ -515,6 +515,19 @@
       "released_at": "2026-06-15T23:59:32Z"
     },
     {
+      "id": "reduce-tree-feature-weight",
+      "version": "0.310.0",
+      "type": "content",
+      "title": "Fewer trees in carriage contents",
+      "summary": "Reduced the tree feature's spawn weight in carriage contents, so trees appear less frequently relative to other decorative features.",
+      "highlights": [],
+      "pr": 414,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "cross-world-advancement-persistence",
       "version": "0.310.0",
       "type": "feat",
