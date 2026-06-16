@@ -545,6 +545,39 @@
       "released_at": "2026-06-16T01:39:07Z"
     },
     {
+      "id": "dev-tag-online-status",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Tagging @dev in chat shows how recently Brennan was online",
+      "summary": "Type @dev or @brennanhatton in chat and the game quietly tells you how recently Brennan was last online on Discord \u2014 \"online right now\" or \"online 5 minutes ago\" \u2014 so you know whether to expect a reply. It only appears when he's been around in the last half hour, lands a beat after your own message, and won't show more than once every 5 minutes.",
+      "highlights": [
+        "Tag @dev or @brennanhatton to see Brennan's recent online status in chat",
+        "Only shows when he was online within the last 30 minutes",
+        "Quietly rate-limited to once every 5 minutes, so it never spams"
+      ],
+      "pr": 416,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "reboarder-off-deck-detection",
+      "version": "0.311.0",
+      "type": "fix",
+      "title": "\"Reboarder\" advancement now unlocks reliably",
+      "summary": "Shoving a passenger off the moving train now reliably earns the Reboarder advancement \u2014 including when they tumble off the open side of a carriage into a gap or fall onto the tracks below, not just when they're knocked cleanly clear. Those off-the-edge falls used to slip through and never counted.",
+      "highlights": [
+        "Pushing a passenger off the train now reliably unlocks Reboarder",
+        "Counts passengers that fall off the side or onto the tracks, not only clean knock-offs"
+      ],
+      "pr": 417,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "cinematic-replay-command",
       "version": "0.311.0",
       "type": "feat",
