@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/one_for_the_road",
+  "display": {
+    "icon": { "id": "minecraft:totem_of_undying" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.marathon_passenger.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.marathon_passenger.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:run_train_time",
+      "conditions": { "thresholdTicks": 144000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/seasoned_traveller",
+  "display": {
+    "icon": { "id": "minecraft:filled_map" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.million_metre_club.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.million_metre_club.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:lifetime_distance",
+      "conditions": { "thresholdMeters": 1000000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

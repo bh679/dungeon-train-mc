@@ -81,7 +81,8 @@ public final class PlayerRunState {
         Codec.DOUBLE.optionalFieldOf("damageDealt", 0.0).forGetter(PlayerRunState::damageDealt),
         Codec.DOUBLE.optionalFieldOf("damageTaken", 0.0).forGetter(PlayerRunState::damageTaken),
         UUIDUtil.CODEC.listOf().optionalFieldOf("encounteredMobs", List.of()).forGetter(PlayerRunState::encounteredMobsList),
-        UUIDUtil.CODEC.listOf().optionalFieldOf("befriendedMobs", List.of()).forGetter(PlayerRunState::befriendedMobsList)
+        UUIDUtil.CODEC.listOf().optionalFieldOf("befriendedMobs", List.of()).forGetter(PlayerRunState::befriendedMobsList),
+        Codec.LONG.optionalFieldOf("trainTimeTicks", 0L).forGetter(PlayerRunState::trainTimeTicks)
     ).apply(instance, PlayerRunState::new));
 
     private final Set<BlockPos> uniqueChests;
@@ -105,6 +106,8 @@ public final class PlayerRunState {
     private final Set<UUID> encounteredMobs;
     /** Distinct PlayerMobs befriended (mutual gift exchange) this run. */
     private final Set<UUID> befriendedMobs;
+    /** Server ticks spent boarded this run (boarded-only; resets on death). Time twin of {@link #distanceBlocks}. */
+    private long trainTimeTicks;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -122,6 +125,7 @@ public final class PlayerRunState {
         this.damageTaken = 0.0;
         this.encounteredMobs = new HashSet<>();
         this.befriendedMobs = new HashSet<>();
+        this.trainTimeTicks = 0L;
     }
 
     public PlayerRunState(List<BlockPos> uniqueChests,
@@ -138,7 +142,8 @@ public final class PlayerRunState {
                           double damageDealt,
                           double damageTaken,
                           List<UUID> encounteredMobs,
-                          List<UUID> befriendedMobs) {
+                          List<UUID> befriendedMobs,
+                          long trainTimeTicks) {
         this.uniqueChests = new HashSet<>(uniqueChests);
         this.cartsSinceDeath = cartsSinceDeath;
         this.cartsBackwardSinceDeath = cartsBackwardSinceDeath;
@@ -154,6 +159,7 @@ public final class PlayerRunState {
         this.damageTaken = damageTaken;
         this.encounteredMobs = new HashSet<>(encounteredMobs);
         this.befriendedMobs = new HashSet<>(befriendedMobs);
+        this.trainTimeTicks = trainTimeTicks;
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -314,6 +320,18 @@ public final class PlayerRunState {
         return runTicks;
     }
 
+    /** Server ticks spent boarded this run (boarded-only). Drives the single-life time advancements. */
+    public long trainTimeTicks() {
+        return trainTimeTicks;
+    }
+
+    /** Add {@code ticks} to the per-run boarded-time counter. Negatives are ignored. Returns the new total. */
+    public long addTrainTimeTicks(long ticks) {
+        if (ticks <= 0L) return trainTimeTicks;
+        trainTimeTicks += ticks;
+        return trainTimeTicks;
+    }
+
     public int incrementContainersOpened() {
         return ++containersOpened;
     }
@@ -405,6 +423,7 @@ public final class PlayerRunState {
         mobKills = 0;
         distanceBlocks = 0.0;
         runTicks = 0L;
+        trainTimeTicks = 0L;
         containersOpened = 0;
         booksReadCount = 0;
         weaponKills.clear();

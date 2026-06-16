@@ -46,6 +46,15 @@ public final class ModAdvancementTriggers {
     public static final Supplier<TrainTimeTrigger> TRAIN_TIME =
         TRIGGERS.register("train_time", TrainTimeTrigger::new);
 
+    public static final Supplier<RunTrainTimeTrigger> RUN_TRAIN_TIME =
+        TRIGGERS.register("run_train_time", RunTrainTimeTrigger::new);
+
+    public static final Supplier<RunDistanceTrigger> RUN_DISTANCE =
+        TRIGGERS.register("run_distance", RunDistanceTrigger::new);
+
+    public static final Supplier<LifetimeDistanceTrigger> LIFETIME_DISTANCE =
+        TRIGGERS.register("lifetime_distance", LifetimeDistanceTrigger::new);
+
     public static final Supplier<MultiplayerJoinTrigger> MULTIPLAYER_JOIN =
         TRIGGERS.register("multiplayer_join", MultiplayerJoinTrigger::new);
 

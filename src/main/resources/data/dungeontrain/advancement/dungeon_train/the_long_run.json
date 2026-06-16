@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/cross_country",
+  "display": {
+    "icon": { "id": "minecraft:minecart" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_long_run.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_long_run.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:run_distance",
+      "conditions": { "thresholdMeters": 250000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

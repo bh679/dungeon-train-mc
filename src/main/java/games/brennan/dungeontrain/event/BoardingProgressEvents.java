@@ -128,6 +128,11 @@ public final class BoardingProgressEvents {
                     AchievementEvents.notifyTrainTime(p, newTotal);
                     games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
                         .trigger(p, "boarded");
+                    // Single-life time aboard: per-run boarded-tick counter that
+                    // resets on death. Twin of the cross-world train-time above.
+                    long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                        .addTrainTimeTicks(SCAN_PERIOD_TICKS);
+                    AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
                     accumulateBoardedDistance(p);
                 }
             }
@@ -241,7 +246,13 @@ public final class BoardingProgressEvents {
         double dz = current.z - last.z;
         double delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (delta <= 0.0 || delta >= MAX_DELTA_PER_SCAN || !Double.isFinite(delta)) return;
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
+        // Per-run (single-life) distance — death-screen stat + single-life
+        // distance advancements.
+        double runMeters = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
+        AchievementEvents.notifyRunDistance(player, runMeters);
+        // Lifetime distance — the same delta, accrued across all worlds/sessions.
+        double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
+        AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
     }
 
     /**
