@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/going_the_distance",
+  "display": {
+    "icon": { "id": "minecraft:map" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.seasoned_traveller.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.seasoned_traveller.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:lifetime_distance",
+      "conditions": { "thresholdMeters": 100000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

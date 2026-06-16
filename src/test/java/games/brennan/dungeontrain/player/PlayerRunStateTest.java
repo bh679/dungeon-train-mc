@@ -115,6 +115,23 @@ final class PlayerRunStateTest {
     }
 
     @Test
+    @DisplayName("addTrainTimeTicks accumulates; resetDeathStats clears it (single-life semantics)")
+    void trainTimeTicksAccumulateAndReset() {
+        PlayerRunState state = new PlayerRunState();
+        assertEquals(0L, state.trainTimeTicks());
+        state.addTrainTimeTicks(10L);
+        state.addTrainTimeTicks(10L);
+        assertEquals(20L, state.trainTimeTicks());
+        // Negative / zero deltas are ignored (mirrors addRunTicks / addDistance guards).
+        state.addTrainTimeTicks(0L);
+        state.addTrainTimeTicks(-5L);
+        assertEquals(20L, state.trainTimeTicks());
+        // Death resets single-life time, just like distanceBlocks / runTicks.
+        state.resetDeathStats();
+        assertEquals(0L, state.trainTimeTicks());
+    }
+
+    @Test
     @DisplayName("Codec round-trip via NbtOps preserves travelledCarriageIndex and every other field")
     void codecRoundTripPreservesTravelled() {
         List<BlockPos> chests = List.of(
@@ -124,7 +141,7 @@ final class PlayerRunStateTest {
         // Constructor signature: chests, cartsSinceDeath, cartsBackwardSinceDeath,
         // travelledCarriageIndex, mobKills, distanceBlocks, runTicks,
         // containersOpened, booksReadCount, weaponKills, playerKills,
-        // damageDealt, damageTaken, encounteredMobs, befriendedMobs.
+        // damageDealt, damageTaken, encounteredMobs, befriendedMobs, trainTimeTicks.
         List<UUID> encountered = List.of(
             UUID.fromString("00000000-0000-0000-0000-000000000001"),
             UUID.fromString("00000000-0000-0000-0000-000000000002")
@@ -133,7 +150,7 @@ final class PlayerRunStateTest {
             UUID.fromString("00000000-0000-0000-0000-00000000000a")
         );
         PlayerRunState original = new PlayerRunState(chests, 11, 4, 17, 0, 0.0, 0L, 0, 0, Map.of(),
-            3, 12.5, 7.0, encountered, befriended);
+            3, 12.5, 7.0, encountered, befriended, 99000L);
 
         DataResult<Tag> encoded = PlayerRunState.CODEC.encodeStart(NbtOps.INSTANCE, original);
         Tag tag = encoded.result().orElseThrow(
@@ -157,6 +174,7 @@ final class PlayerRunStateTest {
         assertEquals(7.0, reloaded.damageTaken());
         assertEquals(2, reloaded.encounteredCount());
         assertEquals(1, reloaded.befriendedCount());
+        assertEquals(99000L, reloaded.trainTimeTicks());
     }
 
     @Test

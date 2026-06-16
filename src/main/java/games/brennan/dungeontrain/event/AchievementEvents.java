@@ -199,6 +199,37 @@ public final class AchievementEvents {
     }
 
     /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code runTicks} is the player's single-life
+     * {@link PlayerRunState#trainTimeTicks} (boarded-only, resets on death).
+     * Drives the single-life time milestones ("One for the Road", "Marathon
+     * Passenger"), the per-run twins of the cross-world train-time chain.
+     */
+    public static void notifyRunTrainTime(ServerPlayer player, long runTicks) {
+        ModAdvancementTriggers.RUN_TRAIN_TIME.get().trigger(player, runTicks);
+    }
+
+    /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code runMeters} is the player's single-life
+     * {@link PlayerRunState#distanceBlocks} (boarded-only, resets on death).
+     * Drives the single-life distance milestones.
+     */
+    public static void notifyRunDistance(ServerPlayer player, double runMeters) {
+        ModAdvancementTriggers.RUN_DISTANCE.get().trigger(player, runMeters);
+    }
+
+    /**
+     * Called from {@link BoardingProgressEvents} per-scan for every boarded
+     * player. {@code lifetimeMeters} is the player's cross-world
+     * {@link GlobalPlayerStats#distanceBlocks(UUID)} accumulator. Drives the
+     * lifetime distance milestones.
+     */
+    public static void notifyLifetimeDistance(ServerPlayer player, double lifetimeMeters) {
+        ModAdvancementTriggers.LIFETIME_DISTANCE.get().trigger(player, lifetimeMeters);
+    }
+
+    /**
      * Called from {@link games.brennan.dungeontrain.narrative.NarrativeBookEvents}
      * after every random-book held-right-click. {@code totalReads} is the
      * player's cumulative {@link GlobalPlayerStats#randomBooksRead} across

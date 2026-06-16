@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/seasoned_traveller",
+  "display": {
+    "icon": { "id": "minecraft:powered_rail" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.cross_country.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.cross_country.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:run_distance",
+      "conditions": { "thresholdMeters": 100000 }
+    }
+  },
+  "requirements": [["milestone"]]
+}
