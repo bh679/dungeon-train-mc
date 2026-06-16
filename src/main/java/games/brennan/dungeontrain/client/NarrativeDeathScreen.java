@@ -19,6 +19,8 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,6 +93,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private static final int MAX_CONTENT_W = 360;
     private static final int SLOT = 18;
 
@@ -131,6 +135,8 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage < 0) currentPage = 0;
         lastSurveyCount = SurveyClientState.questions().size();
         commentBox = null;
+        LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
+                currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
 
         Page p = pages.get(currentPage);
         if (p.kind() == Kind.SURVEY && p.survey() != null && p.survey().allowComment()) {
@@ -283,7 +289,9 @@ public final class NarrativeDeathScreen extends Screen {
     private int drawSurvey(GuiGraphics g, SurveyQuestionPayload.Entry e, int left, int w, int cx, int y) {
         scoreRects.clear();
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_ledger");
-        y += 16;
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
         y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.survey_intro"), cx, w, y, NARR);
         y += 6;
         if (e != null) {
@@ -318,7 +326,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     private int drawPlatform(GuiGraphics g, DeathNarrative n, int left, int w, int cx, int y) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_platform");
-        y += 16;
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
         y = drawQuestion(g, n.platformQuestion(), cx, w, y);
         y = drawNarration(g, n.platformNarration(), cx, w, y);
         if (!n.platformEpitaph().isEmpty()) {
