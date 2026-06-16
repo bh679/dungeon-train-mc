@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -171,20 +172,11 @@ public final class EditorWelcome {
 
     /**
      * Formats a positive elapsed {@link Duration} as a coarse human phrase — "5 minutes", "1 hour",
-     * "3 days" — picking the largest whole unit (second → minute → hour → day) and pluralising. A zero
-     * or negative duration (clock skew) clamps to "0 seconds". Pure + package-private for unit tests.
+     * "3 days". Delegates to {@link PresenceLine#humanizeAgo} so the editor welcome and the in-game
+     * {@code @brennanhatton} chat reply format durations identically; kept here as the seam the existing
+     * {@code EditorWelcomeTest} exercises.
      */
     static String humanizeAgo(Duration d) {
-        long secs = Math.max(0L, d.getSeconds());
-        if (secs < 60L) return plural(secs, "second");
-        long mins = secs / 60L;
-        if (mins < 60L) return plural(mins, "minute");
-        long hours = mins / 60L;
-        if (hours < 24L) return plural(hours, "hour");
-        return plural(hours / 24L, "day");
-    }
-
-    private static String plural(long n, String unit) {
-        return n + " " + unit + (n == 1L ? "" : "s");
+        return PresenceLine.humanizeAgo(d);
     }
 }

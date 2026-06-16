@@ -44,6 +44,15 @@ public class DungeonTrain {
      */
     public static final String BRENNAN_DISCORD_ID = "342110421114945537";
 
+    /**
+     * Chat-tag tokens that reach Brennan. Single source of truth for both the DP relay rewrite
+     * ({@code gameRelayMentions} maps each to {@code @token=<@id>}, pinging Brennan in the community feed)
+     * and the in-game presence reply ({@link games.brennan.dungeontrain.event.MentionPresenceEvents}). DP
+     * matches each token as a case-insensitive substring, so the in-game detector mirrors that to fire in
+     * lock-step with the real ping.
+     */
+    public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton");
+
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
 
@@ -135,8 +144,9 @@ public class DungeonTrain {
             // Chat-tag ping triggers: typing @dev or @brennanhatton in relayed chat is rewritten to a real
             // <@id> mention so Brennan is pinged in the community feed (DP's trusted allowed_mentions path).
             @Override public List<String> gameRelayMentions() {
-                return List.of("@dev=<@" + BRENNAN_DISCORD_ID + ">",
-                               "@brennanhatton=<@" + BRENNAN_DISCORD_ID + ">");
+                return MENTION_TOKENS.stream()
+                        .map(token -> token + "=<@" + BRENNAN_DISCORD_ID + ">")
+                        .toList();
             }
             // Track Brennan's Discord presence so the editor welcome (EditorWelcome) can render a
             // "last seen online …" / "online now" line. Unioned with the admin's presenceTrackUserIds
