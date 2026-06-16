@@ -635,9 +635,9 @@
         "Counts however you finish the survey \u2014 on the death screen or via /feedback."
       ],
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.313.0",
+      "released_at": "2026-06-16T04:11:21Z"
     }
   ]
 }
