@@ -608,6 +608,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "feedback-command",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "/feedback command \u2014 give feedback any time",
+      "summary": "Type /feedback in chat, in any game mode, to open the feedback survey whenever you like \u2014 not just on the death screen. Already shared your thoughts? You can submit it again.",
+      "highlights": [
+        "/feedback opens the survey on demand \u2014 works in creative, no operator status needed",
+        "Re-submittable: give or update your feedback any time"
+      ],
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
