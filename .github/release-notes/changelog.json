@@ -523,9 +523,9 @@
       "highlights": [],
       "pr": 414,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.311.0",
+      "released_at": "2026-06-16T01:39:07Z"
     },
     {
       "id": "cross-world-advancement-persistence",
@@ -540,9 +540,9 @@
       ],
       "pr": 413,
       "date": "2026-06-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.311.0",
+      "released_at": "2026-06-16T01:39:07Z"
     }
   ]
 }
