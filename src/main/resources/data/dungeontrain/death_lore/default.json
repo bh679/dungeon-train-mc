@@ -62,9 +62,8 @@
     "page": "lives",
     "weight": 1,
     "conditions": { "min_deaths": 10 },
-    "question": "Why do you keep coming back?",
-    "subline": "The line does not need you. And yet you return.",
-    "narration": "{deaths} times the dark has taken you, and {deaths} times you boarded again. The train remembers nothing of your name — only that you keep returning."
+    "question": "These are all good questions",
+    "narration": "These are not the marks of a single life. {deaths} times the dark has taken you, and {deaths} times you boarded again."
   },
   {
     "page": "platform",

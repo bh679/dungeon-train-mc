@@ -85,6 +85,7 @@
   "gui.dungeontrain.death.narr.lbl_deaths": "deaths",
   "gui.dungeontrain.death.narr.lbl_friends": "friends made",
   "gui.dungeontrain.death.narr.lbl_books": "books read",
+  "gui.dungeontrain.death.narr.lbl_loot": "loot containers",
   "gui.dungeontrain.death.reboard": "reboard",
   "gui.dungeontrain.death.leave": "leave the line",
   "gui.dungeontrain.death.continue": "Continue",

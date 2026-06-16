@@ -87,8 +87,6 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int BTN_TEXT       = 0xFFEAEAEA;
     private static final int BTN_PRI_BG     = 0xFF3C6B41;
     private static final int BTN_PRI_LIGHT  = 0xFF5C9162;
-    private static final int DOT_OFF        = 0xFF2A2D33;
-    private static final int DOT_ON         = 0xFFC9923F;
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
@@ -266,7 +264,12 @@ public final class NarrativeDeathScreen extends Screen {
         if (s != null) {
             this.loadoutY = y;
             drawLoadout(g, s, left, w, y, mouseX, mouseY);
-            y += SLOT + 8;
+            y += SLOT + 10;
+            // Cargo tallies under the loadout: loot containers opened and books
+            // read this run.
+            drawCell(g, cx - 52, y, Integer.toString(s.containersOpened()), "gui.dungeontrain.death.narr.lbl_loot");
+            drawCell(g, cx + 52, y, Integer.toString(s.booksRead()), "gui.dungeontrain.death.narr.lbl_books");
+            y += 30;
         }
         return y;
     }
@@ -379,16 +382,6 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawFooter(GuiGraphics g, Page page, int mouseX, int mouseY) {
-        // Page dots.
-        int n = pages.size();
-        int dotGap = 11, dotsW = n * dotGap - (dotGap - 7);
-        int dx = this.width / 2 - dotsW / 2;
-        int dotY = this.height - 40;
-        for (int i = 0; i < n; i++) {
-            int c = i == currentPage ? DOT_ON : DOT_OFF;
-            g.fill(dx + i * dotGap, dotY, dx + i * dotGap + 7, dotY + 7, c);
-        }
-
         int rowY = this.height - 28;
 
         // Continue (centered) on every page except the platform, where Board anew /
@@ -549,10 +542,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * The train fading into the dark — solid carriages on the left dissolving
-     * into fainter ones, then the ∞. As the player advances pages
-     * ({@code advance}), the solid run grows so the train reaches further along
-     * the screen each screen, fading out later — progressing toward a
-     * destination that never comes.
+     * into fainter ones, then the ∞. The solid run grows with the page: a
+     * single carriage on the first screen, filling the whole rail by the last,
+     * where the fade falls away and only the assembled train and its ∞ remain
+     * — a train that completes itself exactly as the narrative ends.
      */
     private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
         int railY = y + 30;
@@ -561,7 +554,18 @@ public final class NarrativeDeathScreen extends Screen {
         int startX = left + 6;
         int rightEdge = left + w - 14;            // leave room for the ∞
         int slots = Math.max(1, (rightEdge - startX) / spacing);
-        int solid = Math.min(2 + Math.max(0, advance), Math.max(1, slots - 3));
+        // One carriage on the first page, scaling to a full rail of solid
+        // carriages by the last. "Full" is the whole rail — the fade tail does
+        // NOT count toward it, so the final screen fills completely (only the ∞
+        // beyond), while earlier screens trail off into the fade.
+        int pageCount = pages.size();
+        boolean lastPage = advance >= pageCount - 1;
+        int full = slots;
+        int solid = pageCount > 1
+                ? Math.round(1f + (full - 1) * (float) advance / (pageCount - 1))
+                : full;
+        if (solid < 1) solid = 1;
+        if (solid > full) solid = full;
         for (int i = 0; i < solid; i++) {
             int cxp = startX + i * spacing;
             if (cxp + carW > rightEdge) break;
@@ -570,15 +574,19 @@ public final class NarrativeDeathScreen extends Screen {
             g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, 0xFF14151A);
             g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, 0xFF14151A);
         }
-        int[] fade = { 0x8033353E, 0x4D2B2C33, 0x2624252B };
-        int fadeX = startX + solid * spacing;
-        for (int j = 0; j < fade.length; j++) {
-            int cxp = fadeX + j * spacing;
-            int fw = Math.min(cxp + carW, rightEdge);
-            if (fw <= cxp) break;
-            int fh = carH - 2 - j * 3;
-            if (fh < 5) fh = 5;
-            g.fill(cxp, railY - fh, fw, railY, fade[j]);
+        // The fade tail trails off beyond the solid run on every screen but the
+        // last, where the train has filled the rail.
+        if (!lastPage) {
+            int[] fade = { 0x8033353E, 0x4D2B2C33, 0x2624252B };
+            int fadeX = startX + solid * spacing;
+            for (int j = 0; j < fade.length; j++) {
+                int cxp = fadeX + j * spacing;
+                int fw = Math.min(cxp + carW, rightEdge);
+                if (fw <= cxp) break;
+                int fh = carH - 2 - j * 3;
+                if (fh < 5) fh = 5;
+                g.fill(cxp, railY - fh, fw, railY, fade[j]);
+            }
         }
         g.drawString(this.font, "∞", left + w - 12, railY - 8, INF, false);
     }
