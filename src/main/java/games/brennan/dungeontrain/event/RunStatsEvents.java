@@ -7,10 +7,13 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
+import games.brennan.dungeontrain.narrative.DeathLoreStore;
+import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.DamageTypeTags;
@@ -39,6 +42,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Per-run stat tracking for the death-screen summary. All increments live
@@ -129,10 +133,34 @@ public final class RunStatsEvents {
      */
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPlayerDeath(LivingDeathEvent event) {
+        if (event.isCanceled()) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        // Accumulate this run's per-life totals into the cross-world lifetime
+        // counters BEFORE respawn resets PlayerRunState. trainTicks already
+        // accrues live (BoardingProgressEvents), so it is NOT re-added here.
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        UUID id = player.getUUID();
+        GlobalPlayerStats.addCarriages(id, run.cartsSinceDeath());
+        GlobalPlayerStats.addDistance(id, run.distanceBlocks());
+        GlobalPlayerStats.addBooks(id, run.booksReadCount());
+        GlobalPlayerStats.addFriends(id, run.befriendedCount());
+        long lifeDeaths = GlobalPlayerStats.addDeaths(id, 1L);
+
+        // Roll the per-death narrative from the data-driven pool, keyed on the
+        // killer + this run's depth / social / lifetime context.
+        DeathNarrative narrative = rollNarrative(player, event.getSource(), run, lifeDeaths);
+
         // Snapshot armor at death — the keep-inventory gamerule and respawn both run AFTER
         // LivingDeathEvent, so the equipment slots still reflect what the player died wearing.
-        DeathStatsPacket packet = buildPacket(player);
+        DeathStatsPacket packet = buildPacket(player,
+                lifeDeaths,
+                GlobalPlayerStats.totalCarriages(id),
+                GlobalPlayerStats.totalDistance(id),
+                GlobalPlayerStats.totalFriends(id),
+                GlobalPlayerStats.totalBooks(id),
+                GlobalPlayerStats.trainTicks(id),
+                narrative);
         DungeonTrainNet.sendTo(player, packet);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
@@ -144,6 +172,28 @@ public final class RunStatsEvents {
                 LOGGER.warn("[DungeonTrain] death report to Discord failed: {}", t.toString());
             }
         }
+    }
+
+    /**
+     * Roll the data-driven death narrative for {@code player}: build the
+     * {@link DeathLoreStore.Context} from the killer entity type and this run's
+     * depth / social counters (plus the freshly-incremented lifetime death
+     * count), then let {@link DeathLoreStore} pick + substitute one line per
+     * page. Empty slots come back when no entry matches a page.
+     */
+    private static DeathNarrative rollNarrative(ServerPlayer player, DamageSource source,
+                                                PlayerRunState run, long lifeDeaths) {
+        ResourceLocation cause = source.getEntity() != null
+                ? EntityType.getKey(source.getEntity().getType()) : null;
+        DeathLoreStore.Context ctx = new DeathLoreStore.Context(
+                cause,
+                run.cartsSinceDeath(),
+                run.befriendedCount(),
+                run.booksReadCount(),
+                run.mobKills(),
+                run.distanceBlocks(),
+                lifeDeaths);
+        return DeathLoreStore.buildNarrative(ctx, player.serverLevel().getRandom());
     }
 
     /**
@@ -171,7 +221,15 @@ public final class RunStatsEvents {
         if (player.isDeadOrDying()) return;
         if (!DungeonTrainConfig.isDeathReportToDiscord()) return;
         try {
-            DeathStatsPacket packet = buildPacket(player);
+            UUID id = player.getUUID();
+            DeathStatsPacket packet = buildPacket(player,
+                    GlobalPlayerStats.totalDeaths(id),
+                    GlobalPlayerStats.totalCarriages(id),
+                    GlobalPlayerStats.totalDistance(id),
+                    GlobalPlayerStats.totalFriends(id),
+                    GlobalPlayerStats.totalBooks(id),
+                    GlobalPlayerStats.trainTicks(id),
+                    DeathNarrative.EMPTY);
             DiscordService.get().postDisconnectReport(player,
                     "👋 " + player.getGameProfile().getName() + " left the game", "",
                     runFields(packet), runIcons(packet));
@@ -185,7 +243,10 @@ public final class RunStatsEvents {
      * the death summary and the alive-logout summary. The equipment slots reflect the player's gear
      * right now (at death — before respawn/keep-inventory; at logout — their live gear).
      */
-    private static DeathStatsPacket buildPacket(ServerPlayer player) {
+    private static DeathStatsPacket buildPacket(ServerPlayer player,
+            long lifeDeaths, long lifeCarriages, double lifeDistance,
+            long lifeFriends, long lifeBooks, long lifeTrainTicks,
+            DeathNarrative narrative) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         return new DeathStatsPacket(
                 run.mobKills(),
@@ -203,7 +264,9 @@ public final class RunStatsEvents {
                 run.playerKills(),
                 run.befriendedCount(),
                 run.damageDealt(),
-                run.damageTaken()
+                run.damageTaken(),
+                lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
+                narrative
         );
     }
 
