@@ -526,6 +526,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cross-world-advancement-persistence",
+      "version": "0.310.0",
+      "type": "feat",
+      "title": "All advancements now persist across worlds",
+      "summary": "Every advancement you earn \u2014 vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods \u2014 now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
+      "highlights": [
+        "Vanilla and other-mod advancements now carry across worlds, not just Dungeon Train's",
+        "Earned advancements from existing worlds are absorbed automatically on next load",
+        "Recipe-book unlocks stay per-world"
+      ],
+      "pr": 413,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
