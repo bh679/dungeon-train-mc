@@ -623,6 +623,21 @@
       "released": true,
       "released_in": "v0.312.0",
       "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "the-great-beyond-advancement",
+      "version": "0.312.0",
+      "type": "feat",
+      "title": "New advancement: The Great Beyond",
+      "summary": "Earn a new advancement \u2014 \"The Great Beyond\" \u2014 by completing the death-screen feedback survey. Once you've answered every survey question, it unlocks. The survey is provided by the bundled Discord Presence mod, which now also lets you open it any time with the new /feedback command.",
+      "highlights": [
+        "\"The Great Beyond\" \u2014 Complete the feedback survey after death.",
+        "Counts however you finish the survey \u2014 on the death screen or via /feedback."
+      ],
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

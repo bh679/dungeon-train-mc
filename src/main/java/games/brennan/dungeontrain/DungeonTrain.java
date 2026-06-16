@@ -5,6 +5,7 @@ import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.discordpresence.config.DiscordCredentials;
 import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -163,6 +164,12 @@ public class DungeonTrain {
             // same values the in-game HUD shows. Computed on the server thread via the compat helper.
             @Override public String advancementMessageSuffix(UUID playerId, String advancementId) {
                 return DiscordAdvancementSuffix.forPlayer(playerId);
+            }
+            // Award "The Great Beyond" when a player finishes the death-screen feedback survey.
+            // DP fires this on the server thread once the player has answered every outstanding
+            // question; SurveyAdvancement resolves the player and grants it directly (no-throw).
+            @Override public void onSurveyCompleted(UUID playerId, String playerName) {
+                SurveyAdvancement.onSurveyCompleted(playerId);
             }
         });
 

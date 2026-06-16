@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:soul_lantern" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_great_beyond.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_great_beyond.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "completed": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [["completed"]]
+}
