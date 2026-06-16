@@ -163,12 +163,24 @@ public final class NarrativeDeathScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         g.fill(0, 0, this.width, this.height, OVERLAY);
-        // The train recedes into silence as the player advances the pages.
-        TrainEngineSound.deathFade = Math.max(0.0f, 1.0f - currentPage * 0.28f);
 
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
         Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+
+        // Train engine: full on the first screen (as if aboard), fading evenly to
+        // silence by the last screen — and rising again if the player steps back.
+        TrainEngineSound.deathScreenActive = true;
+        TrainEngineSound.deathFade = pages.size() > 1
+                ? Math.max(0.0f, 1.0f - (float) currentPage / (pages.size() - 1))
+                : 1.0f;
+
+        // Clickable regions are set by the page body / footer each frame; clear
+        // any from last frame so a page that doesn't draw one can't be clicked.
+        boardAnewRect = null;
+        platformLeaveRect = null;
+        continueRect = null;
+        backRect = null;
 
         int contentW = Math.min(MAX_CONTENT_W, this.width - 40);
         int cx = this.width / 2;
@@ -335,7 +347,19 @@ public final class NarrativeDeathScreen extends Screen {
             y += 6;
             y = drawCentered(g, styled(n.platformEpitaph()), cx, w, y, SUBLINE);
         }
-        return y;
+        y += 14;
+        // Board anew — the prominent action, front and centre under the epitaph.
+        int baW = 180, baH = 22;
+        boardAnewRect = drawBevel(g, cx - baW / 2, y, baW, baH,
+                Component.translatable("gui.dungeontrain.death.board_anew"),
+                BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
+        y += baH + 8;
+        // Leave the line — smaller, secondary, beneath it.
+        int lvW = 116, lvH = 15;
+        platformLeaveRect = drawBevel(g, cx - lvW / 2, y, lvW, lvH,
+                Component.translatable("gui.dungeontrain.death.leave_line"),
+                BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+        return y + lvH + 6;
     }
 
     // ---- Chrome ----
@@ -366,22 +390,10 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         int rowY = this.height - 28;
-        backRect = null;
-        continueRect = null;
-        boardAnewRect = null;
-        platformLeaveRect = null;
 
-        if (page.kind() == Kind.PLATFORM) {
-            // Board anew + Leave, side by side, centered.
-            Component anew = Component.translatable("gui.dungeontrain.death.board_anew");
-            Component leave = Component.translatable("gui.dungeontrain.death.leave_line");
-            int bw = 110, h = 18, gap = 8;
-            int total = bw * 2 + gap;
-            int bx = this.width / 2 - total / 2;
-            boardAnewRect = drawBevel(g, bx, rowY, bw, h, anew, BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
-            platformLeaveRect = drawBevel(g, bx + bw + gap, rowY, bw, h, leave, BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
-        } else {
-            // Centered Continue with a bare back-arrow to its left.
+        // Continue (centered) on every page except the platform, where Board anew /
+        // Leave live in the page body instead.
+        if (page.kind() != Kind.PLATFORM) {
             Component cont = Component.translatable("gui.dungeontrain.death.continue");
             int bw = 120, h = 18;
             int bx = this.width / 2 - bw / 2;
@@ -681,8 +693,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void removed() {
-        // Screen going away (Board anew / Leave / replaced) — let the train
-        // return to its normal world-driven volume.
+        // Screen going away (Board anew / Leave / replaced) — hand the train back
+        // to its normal world-driven volume.
+        TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
     }
 }

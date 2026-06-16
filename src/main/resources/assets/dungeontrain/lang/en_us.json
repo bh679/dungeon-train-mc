@@ -59,7 +59,7 @@
   "gui.dungeontrain.death.stats.short.damage_taken": "TAKEN",
   "gui.dungeontrain.death.narr.title": "You died",
   "gui.dungeontrain.death.narr.brand": "dungeon train",
-  "gui.dungeontrain.death.narr.comment": "a word for the creator's ledger…",
+  "gui.dungeontrain.death.narr.comment": "explain your answer above",
   "gui.dungeontrain.death.narr.kicker_fall": "the fall",
   "gui.dungeontrain.death.narr.kicker_deeds": "the deeds",
   "gui.dungeontrain.death.narr.kicker_lives": "all your lives",

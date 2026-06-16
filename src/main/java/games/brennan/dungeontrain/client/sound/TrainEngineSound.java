@@ -60,6 +60,14 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
     public static volatile float deathFade = 1.0f;
 
     /**
+     * When the narrative death screen is open, the engine plays at {@link #deathFade}
+     * directly (full on the first page, fading by page, rising again on back)
+     * instead of the distance curve — so it sounds like you are aboard the train,
+     * wherever you actually died.
+     */
+    public static volatile boolean deathScreenActive = false;
+
+    /**
      * Sable's {@code SoundEngineMixin.sable$play} runs at registration time
      * and checks {@code Sable.HELPER.getContaining(level, sound.getX(), sound.getZ())}.
      * If a sub-level's XZ AABB contains the sound's world XZ, the sound is
@@ -125,6 +133,13 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
             return;
         }
 
+        // Death screen owns the volume directly: full on the first page, fading
+        // by page (and rising on back), independent of where the player died.
+        if (deathScreenActive) {
+            this.volume = Math.max(0.0001f, deathFade);
+            return;
+        }
+
         ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) {
             this.volume = 0.0f;
@@ -174,9 +189,7 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
             float dist = (float) Math.sqrt(minDistSq);
             this.volume = Mth.clamp(1.0f - (dist / MAX_RANGE), 0.0001f, 1.0f);
         }
-        // Death-screen page fade — multiply, but stay just above 0 so the
-        // looping instance isn't culled by the engine.
-        this.volume = Math.max(0.0001f, this.volume * deathFade);
+        // (Death-screen volume is handled by the deathScreenActive branch above.)
 
         // Log once per 5s (100 ticks) so we can verify the volume curve
         // without spamming the console. INFO so it shows up under default
