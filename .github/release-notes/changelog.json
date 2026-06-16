@@ -638,6 +638,23 @@
       "released": true,
       "released_in": "v0.313.0",
       "released_at": "2026-06-16T04:11:21Z"
+    },
+    {
+      "id": "time-and-distance-advancements",
+      "version": "0.313.0",
+      "type": "feat",
+      "title": "Time-aboard & distance-ridden advancements",
+      "summary": "Seven new advancements reward the long haul. Stay aboard for an hour or two without dying, and rack up the kilometres you ride \u2014 both within a single life and across every run you've ever taken. They branch off Dungeon Train Explorer in the advancements screen.",
+      "highlights": [
+        "Single-life time aboard: One Long Ride (1 hour) and Reality Escaped (2 hours)",
+        "Single-life distance: Escaping Spawn (10 km), Cross-Country (100 km), The Long Run (250 km)",
+        "Lifetime distance: Covering ground (100 km) and I got so far (1,000 km)"
+      ],
+      "pr": 425,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
