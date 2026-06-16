@@ -562,6 +562,22 @@
       "released_at": null
     },
     {
+      "id": "reboarder-off-deck-detection",
+      "version": "0.311.0",
+      "type": "fix",
+      "title": "\"Reboarder\" advancement now unlocks reliably",
+      "summary": "Shoving a passenger off the moving train now reliably earns the Reboarder advancement \u2014 including when they tumble off the open side of a carriage into a gap or fall onto the tracks below, not just when they're knocked cleanly clear. Those off-the-edge falls used to slip through and never counted.",
+      "highlights": [
+        "Pushing a passenger off the train now reliably unlocks Reboarder",
+        "Counts passengers that fall off the side or onto the tracks, not only clean knock-offs"
+      ],
+      "pr": 417,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "all-the-creator-asks",
       "version": "0.311.0",
       "type": "content",
