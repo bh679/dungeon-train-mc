@@ -545,8 +545,88 @@
       "released_at": "2026-06-16T01:39:07Z"
     },
     {
-      "id": "the-great-beyond-advancement",
+      "id": "dev-tag-online-status",
       "version": "0.311.0",
+      "type": "feat",
+      "title": "Tagging @dev in chat shows how recently Brennan was online",
+      "summary": "Type @dev or @brennanhatton in chat and the game quietly tells you how recently Brennan was last online on Discord \u2014 \"online right now\" or \"online 5 minutes ago\" \u2014 so you know whether to expect a reply. It only appears when he's been around in the last half hour, lands a beat after your own message, and won't show more than once every 5 minutes.",
+      "highlights": [
+        "Tag @dev or @brennanhatton to see Brennan's recent online status in chat",
+        "Only shows when he was online within the last 30 minutes",
+        "Quietly rate-limited to once every 5 minutes, so it never spams"
+      ],
+      "pr": 416,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "reboarder-off-deck-detection",
+      "version": "0.311.0",
+      "type": "fix",
+      "title": "\"Reboarder\" advancement now unlocks reliably",
+      "summary": "Shoving a passenger off the moving train now reliably earns the Reboarder advancement \u2014 including when they tumble off the open side of a carriage into a gap or fall onto the tracks below, not just when they're knocked cleanly clear. Those off-the-edge falls used to slip through and never counted.",
+      "highlights": [
+        "Pushing a passenger off the train now reliably unlocks Reboarder",
+        "Counts passengers that fall off the side or onto the tracks, not only clean knock-offs"
+      ],
+      "pr": 417,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "all-the-creator-asks",
+      "version": "0.311.0",
+      "type": "content",
+      "title": "New book: \"All the Creator Asks\"",
+      "summary": "A new random book joins the pool \u2014 a fallen adventurer's reverent testament that treats the death-screen feedback survey as a holy rite of the afterlife, written to gently beg you to answer it. Eight short variants turn up in chests, on bookshelves, and at narrative lecterns.",
+      "highlights": [
+        "New 8-variant random book that venerates the feedback survey as a spiritual passage",
+        "Found in chest rolls, bookshelf drops, and narrative lecterns"
+      ],
+      "pr": 419,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "cinematic-replay-command",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Replay the intro cinematic on demand",
+      "summary": "The opening cinematic is no longer a one-time thing \u2014 run /dungeontrain cinematic (or /dt cinematic) any time to watch it again. By default the camera lifts off from a spot on the ground beside the track, right where you are, and sweeps up and away as the train carries you onward \u2014 just like the intro. Prefer to start from exactly where you're looking? Use /dt cinematic current.",
+      "highlights": [
+        "New /dt cinematic command replays the opening cinematic on demand",
+        "Default shot rises from the ground beside you near the track; 'current' starts from your current view"
+      ],
+      "pr": 418,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "discord-advancement-carriage-difficulty",
+      "version": "0.311.0",
+      "type": "feat",
+      "title": "Carriage # and difficulty on Discord advancement posts",
+      "summary": "Earn an advancement and the community Discord now shows which carriage you were riding and your difficulty level at that moment, posted on its own line right below the advancement.",
+      "highlights": [
+        "Reads e.g. \"Carriage +7 \u00b7 Difficulty Level 3\", matching the in-game HUD."
+      ],
+      "pr": 420,
+      "date": "2026-06-16",
+      "released": true,
+      "released_in": "v0.312.0",
+      "released_at": "2026-06-16T03:13:11Z"
+    },
+    {
+      "id": "the-great-beyond-advancement",
+      "version": "0.312.0",
       "type": "feat",
       "title": "New advancement: The Great Beyond",
       "summary": "Earn a new advancement \u2014 \"The Great Beyond\" \u2014 by completing the death-screen feedback survey. Once you've answered every survey question, it unlocks. The survey is provided by the bundled Discord Presence mod, which now also lets you open it any time with the new /feedback command.",
