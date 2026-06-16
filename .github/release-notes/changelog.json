@@ -560,6 +560,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "all-the-creator-asks",
+      "version": "0.311.0",
+      "type": "content",
+      "title": "New book: \"All the Creator Asks\"",
+      "summary": "A new random book joins the pool \u2014 a fallen adventurer's reverent testament that treats the death-screen feedback survey as a holy rite of the afterlife, written to gently beg you to answer it. Eight short variants turn up in chests, on bookshelves, and at narrative lecterns.",
+      "highlights": [
+        "New 8-variant random book that venerates the feedback survey as a spiritual passage",
+        "Found in chest rolls, bookshelf drops, and narrative lecterns"
+      ],
+      "pr": 419,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
