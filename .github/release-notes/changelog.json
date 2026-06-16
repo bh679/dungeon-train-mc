@@ -655,6 +655,24 @@
       "released": true,
       "released_in": "v0.314.0",
       "released_at": "2026-06-16T05:54:33Z"
+    },
+    {
+      "id": "narrative-death-screen",
+      "version": "0.315.0",
+      "type": "feat",
+      "title": "Narrative death screen",
+      "summary": "Dying on the train now opens a paginated, narrated retrospective instead of the plain vanilla screen. The Dungeon Train reflects on your fall, your deeds, the cargo you carried, all your lives, and the platform ahead \u2014 your run and lifetime stats woven in, a train that fills as you read, and lore that adapts to how you died. Page through with Continue, then Board anew or Leave the line.",
+      "highlights": [
+        "Paginated narrative death screen with data-driven lore",
+        "Per-run and lifetime stats: carriages, distance, time aboard, mobs, friends, loot containers, books, deaths",
+        "A train graphic that fills carriage by carriage as you advance",
+        "Optional end-of-run feedback survey, then Board anew or Leave the line"
+      ],
+      "pr": 427,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

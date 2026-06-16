@@ -29,7 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <ul>
  *   <li>{@code trainTicks} — total accumulated server ticks a player has
  *       been on a carriage. Drives the "Enjoying the Ride", "Settling In",
- *       "I Live Here Now", and "Help, I Can't Get Off" milestones.</li>
+ *       "I Live Here Now", and "Help, I Can't Get Off" milestones, and the
+ *       death screen's "total aboard" all-lives stat.</li>
  *   <li>{@code randomBooksRead} — total right-clicks on random-book items.
  *       Re-reads count. Drives the "Taking Notes" milestone.</li>
  *   <li>{@code startingBooksRead} — total right-clicks on starting-book
@@ -38,6 +39,14 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@code playersEncountered} — total distinct PlayerMobs the player
  *       has come near across all runs. Drives the "Strangers on a Train"
  *       milestone.</li>
+ *   <li>{@code totalDeaths}, {@code totalCarriages}, {@code totalDistance},
+ *       {@code totalFriends}, {@code totalBooks} — lifetime run totals
+ *       accumulated at death from the just-ended run's {@code PlayerRunState}
+ *       (see {@code RunStatsEvents}). Feed the death screen's "all your lives"
+ *       page. Each is the running sum of every run's per-life counter.</li>
+ *   <li>{@code distanceBlocks} — cumulative boarded distance (metres) accrued
+ *       continuously as the player rides. Drives the lifetime distance
+ *       milestones ("Going the Distance", "Million Metre Club", …).</li>
  * </ul>
  * All counters accrue across worlds and sessions; switching worlds does
  * not reset them.</p>
@@ -53,16 +62,39 @@ public final class GlobalPlayerStats {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final String DIR_NAME = "dungeontrain-stats";
 
-    public record Data(long trainTicks, long randomBooksRead, long startingBooksRead, long playersEncountered, double distanceBlocks) {
+    public record Data(
+            long trainTicks, long randomBooksRead, long startingBooksRead, long playersEncountered,
+            long totalDeaths, long totalCarriages, double totalDistance, long totalFriends, long totalBooks,
+            double distanceBlocks) {
+
         public static final Codec<Data> CODEC = RecordCodecBuilder.create(in -> in.group(
             Codec.LONG.optionalFieldOf("trainTicks", 0L).forGetter(Data::trainTicks),
             Codec.LONG.optionalFieldOf("randomBooksRead", 0L).forGetter(Data::randomBooksRead),
             Codec.LONG.optionalFieldOf("startingBooksRead", 0L).forGetter(Data::startingBooksRead),
             Codec.LONG.optionalFieldOf("playersEncountered", 0L).forGetter(Data::playersEncountered),
+            Codec.LONG.optionalFieldOf("totalDeaths", 0L).forGetter(Data::totalDeaths),
+            Codec.LONG.optionalFieldOf("totalCarriages", 0L).forGetter(Data::totalCarriages),
+            Codec.DOUBLE.optionalFieldOf("totalDistance", 0.0).forGetter(Data::totalDistance),
+            Codec.LONG.optionalFieldOf("totalFriends", 0L).forGetter(Data::totalFriends),
+            Codec.LONG.optionalFieldOf("totalBooks", 0L).forGetter(Data::totalBooks),
             Codec.DOUBLE.optionalFieldOf("distanceBlocks", 0.0).forGetter(Data::distanceBlocks)
         ).apply(in, Data::new));
 
-        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L, 0.0);
+        public static final Data EMPTY = new Data(0L, 0L, 0L, 0L, 0L, 0L, 0.0, 0L, 0L, 0.0);
+
+        // Field-wise copy-with-increment helpers so the static adders below
+        // stay one-liners and the 10-arg constructor is written in exactly one
+        // place per field.
+        Data plusTrainTicks(long d)         { return new Data(trainTicks + d, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusRandomBooks(long d)        { return new Data(trainTicks, randomBooksRead + d, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusStartingBooks(long d)      { return new Data(trainTicks, randomBooksRead, startingBooksRead + d, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusPlayersEncountered(long d) { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered + d, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusDeaths(long d)             { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths + d, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusCarriages(long d)          { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages + d, totalDistance, totalFriends, totalBooks, distanceBlocks); }
+        Data plusDistance(double d)         { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance + d, totalFriends, totalBooks, distanceBlocks); }
+        Data plusFriends(long d)            { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends + d, totalBooks, distanceBlocks); }
+        Data plusBooks(long d)              { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks + d, distanceBlocks); }
+        Data plusDistanceBlocks(double d)   { return new Data(trainTicks, randomBooksRead, startingBooksRead, playersEncountered, totalDeaths, totalCarriages, totalDistance, totalFriends, totalBooks, distanceBlocks + d); }
     }
 
     /** In-memory cache. Holds the full {@link Data} record per UUID. */
@@ -74,83 +106,69 @@ public final class GlobalPlayerStats {
         return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(playerUuid + ".json");
     }
 
-    /** Current accumulated train ticks for {@code uuid}. Reads disk on first access. */
-    public static long trainTicks(UUID uuid) {
-        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).trainTicks();
+    /** The player's full cached record, loading from disk on first access. */
+    private static Data current(UUID uuid) {
+        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk);
     }
 
-    /** Current accumulated random-book read count for {@code uuid}. Reads disk on first access. */
-    public static long randomBooksRead(UUID uuid) {
-        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).randomBooksRead();
-    }
+    // ---- Getters (read disk on first access per UUID) ----
 
-    /** Current accumulated starting-book read count for {@code uuid}. Reads disk on first access. */
-    public static long startingBooksRead(UUID uuid) {
-        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).startingBooksRead();
-    }
+    public static long trainTicks(UUID uuid)         { return current(uuid).trainTicks(); }
+    public static long randomBooksRead(UUID uuid)    { return current(uuid).randomBooksRead(); }
+    public static long startingBooksRead(UUID uuid)  { return current(uuid).startingBooksRead(); }
+    public static long playersEncountered(UUID uuid) { return current(uuid).playersEncountered(); }
+    public static long totalDeaths(UUID uuid)        { return current(uuid).totalDeaths(); }
+    public static long totalCarriages(UUID uuid)     { return current(uuid).totalCarriages(); }
+    public static double totalDistance(UUID uuid)    { return current(uuid).totalDistance(); }
+    public static long totalFriends(UUID uuid)       { return current(uuid).totalFriends(); }
+    public static long totalBooks(UUID uuid)         { return current(uuid).totalBooks(); }
+    public static double distanceBlocks(UUID uuid)   { return current(uuid).distanceBlocks(); }
 
-    /** Current accumulated distinct-player encounter count for {@code uuid}. Reads disk on first access. */
-    public static long playersEncountered(UUID uuid) {
-        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).playersEncountered();
-    }
+    // ---- Adders. All monotone-increasing: non-positive deltas are ignored. ----
 
-    /** Current accumulated boarded-distance (metres) for {@code uuid}. Reads disk on first access. */
-    public static double distanceBlocks(UUID uuid) {
-        return CACHE.computeIfAbsent(uuid, GlobalPlayerStats::loadFromDisk).distanceBlocks();
-    }
-
-    /**
-     * Add {@code delta} ticks to the player's cumulative train-time counter
-     * and return the new total. Delta must be non-negative; negatives are
-     * ignored (counter is monotone-increasing — backward movement / death /
-     * etc. does not subtract time).
-     */
     public static long addTrainTicks(UUID uuid, long delta) {
         if (delta <= 0) return trainTicks(uuid);
-        Data updated = CACHE.compute(uuid, (k, existing) -> {
-            Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks() + delta, base.randomBooksRead(), base.startingBooksRead(), base.playersEncountered(), base.distanceBlocks());
-        });
-        return updated.trainTicks();
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusTrainTicks(delta)).trainTicks();
     }
 
-    /**
-     * Add {@code delta} reads to the player's cumulative random-book read
-     * counter and return the new total. Monotone-increasing.
-     */
     public static long addRandomBooksRead(UUID uuid, long delta) {
         if (delta <= 0) return randomBooksRead(uuid);
-        Data updated = CACHE.compute(uuid, (k, existing) -> {
-            Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead() + delta, base.startingBooksRead(), base.playersEncountered(), base.distanceBlocks());
-        });
-        return updated.randomBooksRead();
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusRandomBooks(delta)).randomBooksRead();
     }
 
-    /**
-     * Add {@code delta} reads to the player's cumulative starting-book read
-     * counter and return the new total. Monotone-increasing.
-     */
     public static long addStartingBooksRead(UUID uuid, long delta) {
         if (delta <= 0) return startingBooksRead(uuid);
-        Data updated = CACHE.compute(uuid, (k, existing) -> {
-            Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead() + delta, base.playersEncountered(), base.distanceBlocks());
-        });
-        return updated.startingBooksRead();
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusStartingBooks(delta)).startingBooksRead();
     }
 
-    /**
-     * Add {@code delta} to the player's cumulative distinct-player encounter
-     * counter and return the new total. Monotone-increasing.
-     */
     public static long addPlayersEncountered(UUID uuid, long delta) {
         if (delta <= 0) return playersEncountered(uuid);
-        Data updated = CACHE.compute(uuid, (k, existing) -> {
-            Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead(), base.playersEncountered() + delta, base.distanceBlocks());
-        });
-        return updated.playersEncountered();
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusPlayersEncountered(delta)).playersEncountered();
+    }
+
+    public static long addDeaths(UUID uuid, long delta) {
+        if (delta <= 0) return totalDeaths(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusDeaths(delta)).totalDeaths();
+    }
+
+    public static long addCarriages(UUID uuid, long delta) {
+        if (delta <= 0) return totalCarriages(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusCarriages(delta)).totalCarriages();
+    }
+
+    public static double addDistance(UUID uuid, double delta) {
+        if (delta <= 0) return totalDistance(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusDistance(delta)).totalDistance();
+    }
+
+    public static long addFriends(UUID uuid, long delta) {
+        if (delta <= 0) return totalFriends(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusFriends(delta)).totalFriends();
+    }
+
+    public static long addBooks(UUID uuid, long delta) {
+        if (delta <= 0) return totalBooks(uuid);
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusBooks(delta)).totalBooks();
     }
 
     /**
@@ -160,11 +178,7 @@ public final class GlobalPlayerStats {
      */
     public static double addDistanceBlocks(UUID uuid, double delta) {
         if (delta <= 0.0 || !Double.isFinite(delta)) return distanceBlocks(uuid);
-        Data updated = CACHE.compute(uuid, (k, existing) -> {
-            Data base = existing != null ? existing : loadFromDisk(k);
-            return new Data(base.trainTicks(), base.randomBooksRead(), base.startingBooksRead(), base.playersEncountered(), base.distanceBlocks() + delta);
-        });
-        return updated.distanceBlocks();
+        return CACHE.compute(uuid, (k, e) -> (e != null ? e : loadFromDisk(k)).plusDistanceBlocks(delta)).distanceBlocks();
     }
 
     /** Flush a single player's cached stats to disk. No-op if not in cache. */

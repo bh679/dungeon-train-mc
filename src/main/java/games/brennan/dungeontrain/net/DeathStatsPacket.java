@@ -14,13 +14,18 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * the moment of death plus visual context (most-used weapon, worn armor) so
  * the death screen can render an icon row with hover tooltips.
  *
- * <p>Sent from {@code RunStatsEvents.onLivingDeath} (LOW priority) before
+ * <p>Sent from {@code RunStatsEvents.onPlayerDeath} (LOW priority) before
  * the respawn hook clears the attachment. Cached client-side by
  * {@link DeathStatsCache} until the next death.</p>
  *
  * <p>Armor stacks are sent in head → chest → legs → feet order, each via
  * {@link ItemStack#OPTIONAL_STREAM_CODEC} so empty slots round-trip
  * correctly.</p>
+ *
+ * <p>The {@code life*} fields are the player's cumulative cross-world totals
+ * (from {@code GlobalPlayerStats}), and {@link #narrative} carries the
+ * server-rolled story lines — both feed the paginated narrative death screen.
+ * Any change to this layout must bump {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
  */
 public record DeathStatsPacket(
         int mobKills,
@@ -38,7 +43,14 @@ public record DeathStatsPacket(
         int playersKilled,
         int playersBefriended,
         double damageDealt,
-        double damageTaken
+        double damageTaken,
+        long lifeDeaths,
+        long lifeCarriages,
+        double lifeDistance,
+        long lifeFriends,
+        long lifeBooks,
+        long lifeTrainTicks,
+        DeathNarrative narrative
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -67,6 +79,13 @@ public record DeathStatsPacket(
         buf.writeVarInt(playersBefriended);
         buf.writeDouble(damageDealt);
         buf.writeDouble(damageTaken);
+        buf.writeVarLong(lifeDeaths);
+        buf.writeVarLong(lifeCarriages);
+        buf.writeDouble(lifeDistance);
+        buf.writeVarLong(lifeFriends);
+        buf.writeVarLong(lifeBooks);
+        buf.writeVarLong(lifeTrainTicks);
+        narrative.encode(buf);
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -86,9 +105,18 @@ public record DeathStatsPacket(
         int playersBefriended = buf.readVarInt();
         double damageDealt = buf.readDouble();
         double damageTaken = buf.readDouble();
+        long lifeDeaths = buf.readVarLong();
+        long lifeCarriages = buf.readVarLong();
+        double lifeDistance = buf.readDouble();
+        long lifeFriends = buf.readVarLong();
+        long lifeBooks = buf.readVarLong();
+        long lifeTrainTicks = buf.readVarLong();
+        DeathNarrative narrative = DeathNarrative.decode(buf);
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, weapon, head, chest, legs, feet,
-                playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken);
+                playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
+                lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
+                narrative);
     }
 
     @Override

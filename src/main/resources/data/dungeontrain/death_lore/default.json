@@ -1,0 +1,83 @@
+[
+  {
+    "page": "fall",
+    "weight": 3,
+    "question": "What is the Dungeon Train?",
+    "narration": "Carriage {carriage}. That is where the dark reached you. Do you know it now? The Dungeon Train does not stop — it only goes on, deeper, forever."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "min_carriage": 100 },
+    "question": "What is the Dungeon Train?",
+    "narration": "{carriage} carriages into the dark. Few ride so far before the line takes them. Fewer still board again."
+  },
+  {
+    "page": "fall",
+    "weight": 1,
+    "conditions": { "max_carriage": 3 },
+    "question": "What is the Dungeon Train?",
+    "narration": "Carriage {carriage}. Barely aboard, and already the dark had you. The line is patient — it can afford to be."
+  },
+  {
+    "page": "deeds",
+    "weight": 3,
+    "question": "Why are you here?",
+    "narration": "You felled {mobs} things in the dark, and bled for it with {hearts} hearts.\nOf the {met} souls you met, {slain} you ended — and {friends} you called friend."
+  },
+  {
+    "page": "gear",
+    "weight": 3,
+    "question": "What are you meant to do?",
+    "narration": "Iron and edge, gathered from the dark and carried this far. None of it was enough — perhaps that was never the point."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 5 },
+    "question": "What are you meant to do?",
+    "narration": "You read {books} of the line's books and still carried steel. Knowledge and a blade, and the dark took both."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_friends": 5 },
+    "question": "Were they worth it?",
+    "narration": "You made {friends} friends on the line, and still it took you. Perhaps that is the only number that was ever yours to keep."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_mobs": 200 },
+    "question": "How much of the dark did you answer in kind?",
+    "narration": "{mobs} things fell to your hand before you fell to theirs. The line does not judge. It only counts."
+  },
+  {
+    "page": "lives",
+    "weight": 3,
+    "question": "These are all good questions",
+    "narration": "These are not the marks of a single life. Across all {deaths} — every dark you have boarded, every time the line took you and still you returned — this is the whole of your journey."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 10 },
+    "question": "These are all good questions",
+    "narration": "These are not the marks of a single life. {deaths} times the dark has taken you, and {deaths} times you boarded again."
+  },
+  {
+    "page": "platform",
+    "weight": 3,
+    "question": "Will you board again, or step off into the quiet?",
+    "narration": "The platform is empty. The whistle sounds far down the line. It runs without end — and so, it seems, do you.",
+    "epitaph": "the {deaths}th to fall. perhaps not the last."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 20 },
+    "question": "Need you even ask?",
+    "narration": "The platform knows your face by now. The whistle sounds the way it always does. You already know what comes next.",
+    "epitaph": "the {deaths}th to fall — and not, it seems, the last."
+  }
+]
