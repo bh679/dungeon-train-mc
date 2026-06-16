@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.player.GlobalEnderChestStore;
 import games.brennan.dungeontrain.player.PendingInventory;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -36,5 +37,6 @@ public final class KeepInventoryCarryEvents {
         if (PendingInventory.isPresentFor(player.getUUID())) {
             PendingInventory.restore(player);
         }
+        GlobalEnderChestStore.restore(player);
     }
 }
