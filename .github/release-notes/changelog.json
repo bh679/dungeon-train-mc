@@ -673,6 +673,21 @@
       "released": true,
       "released_in": "v0.315.0",
       "released_at": "2026-06-16T09:29:27Z"
+    },
+    {
+      "id": "disable-vanilla-movement-tutorial",
+      "version": "0.315.0",
+      "type": "fix",
+      "title": "Disable vanilla movement tutorial on world creation",
+      "summary": "The vanilla Minecraft movement tutorial (WASD / look around / jump hints in the top-right corner) no longer appears when starting a new Dungeon Train world. These hints are irrelevant in DT and conflicted with the cinematic intro.",
+      "highlights": [
+        "Vanilla WASD / look / jump tutorial hints no longer appear on world start"
+      ],
+      "pr": 428,
+      "date": "2026-06-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
