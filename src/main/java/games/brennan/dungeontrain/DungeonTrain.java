@@ -5,6 +5,7 @@ import games.brennan.adventureitemnames.api.NamingConfig;
 import games.brennan.discordpresence.config.DiscordCredentials;
 import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -18,6 +19,7 @@ import games.brennan.dungeontrain.registry.ModSounds;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import java.util.List;
+import java.util.UUID;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
@@ -145,6 +147,12 @@ public class DungeonTrain {
             // and the query seam stays absent-safe meanwhile, so the welcome line simply omits.
             @Override public List<String> presenceTrackUserIds() {
                 return List.of(BRENNAN_DISCORD_ID);
+            }
+            // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
+            // outside the embed): the carriage # the player earned it in + their difficulty level — the
+            // same values the in-game HUD shows. Computed on the server thread via the compat helper.
+            @Override public String advancementMessageSuffix(UUID playerId, String advancementId) {
+                return DiscordAdvancementSuffix.forPlayer(playerId);
             }
         });
 
