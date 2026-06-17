@@ -71,6 +71,9 @@ public final class VersionHudOverlay {
             if (mc.options.hideGui) {
                 return;
             }
+            if (mc.player != null && mc.player.isSpectator()) {
+                return;
+            }
             // Step aside when the editor status HUD is active — keeps the
             // top-of-screen area uncluttered while the player is editing.
             if (EditorStatusHudOverlay.isActive()) {
