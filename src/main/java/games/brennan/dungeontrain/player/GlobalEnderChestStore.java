@@ -1,15 +1,14 @@
 package games.brennan.dungeontrain.player;
 
 import com.mojang.logging.LogUtils;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.PlayerEnderChestContainer;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.SimpleContainer;
 import net.neoforged.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 
@@ -28,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code <minecraft>/config/dungeontrain-enderchest/<uuid>.dat}.
  *
  * <p>Dungeon Train creates a fresh MC world on each death, which resets the
- * vanilla per-world {@code playerdata/<uuid>.dat} (and thus the Ender Chest).
+ * vanilla per-world {@code playerdata/<uuid>.dat} and thus the Ender Chest.
  * This store snapshots the Ender Chest on every player logout and restores it
  * on every login, bridging the gap across new-world transitions exactly as
  * {@link GlobalPlayerStats} does for cumulative stats.</p>
@@ -37,12 +36,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * creative, adventure, and spectator each have their own 27-slot snapshot.
  * The on-disk format is a single root {@link CompoundTag} keyed by the
  * game-mode serialized name ({@code "survival"}, {@code "creative"}, …), so
- * all four slots share one file and switching modes never cross-contaminates
- * inventories.</p>
+ * all four slots share one file. Switching game modes mid-session triggers an
+ * immediate swap via {@link #swapGameMode}, so the live
+ * {@link PlayerEnderChestContainer} always reflects the current mode.</p>
  *
- * <p>Disk I/O: compressed binary NBT via {@link NbtIo}. Items are serialised
- * with the player's live {@link HolderLookup.Provider} so DataComponents
- * referencing registry entries survive round-trips, matching {@link PendingInventory}.</p>
+ * <p>Disk I/O: compressed binary NBT via {@link NbtIo}. Serialisation and
+ * deserialisation delegate to {@link PlayerEnderChestContainer#createTag} and
+ * {@link PlayerEnderChestContainer#fromTag}, which are the same paths vanilla
+ * uses for player-data saves.</p>
  */
 public final class GlobalEnderChestStore {
 
@@ -58,38 +59,19 @@ public final class GlobalEnderChestStore {
         return FMLPaths.CONFIGDIR.get().resolve(DIR_NAME).resolve(uuid + ".dat");
     }
 
+    // ---- Public API ----
+
     /**
      * Snapshot {@code player}'s Ender Chest for their current game mode into
-     * the cache and write it to disk. Other game-mode slots in the same file
-     * are preserved.
+     * the cache and write it to disk. Other game-mode slots are preserved.
+     * Called on player logout.
      */
     public static void save(ServerPlayer player) {
-        UUID uuid = player.getUUID();
-        String mode = player.gameMode.getGameModeForPlayer().getSerializedName();
-
-        HolderLookup.Provider registries = player.registryAccess();
-        SimpleContainer enderChest = player.getEnderChestInventory();
-        ListTag itemList = new ListTag();
-        for (int i = 0; i < enderChest.getContainerSize(); i++) {
-            ItemStack stack = enderChest.getItem(i);
-            if (!stack.isEmpty()) {
-                CompoundTag slotTag = (CompoundTag) stack.save(registries, new CompoundTag());
-                slotTag.putByte("Slot", (byte) i);
-                itemList.add(slotTag);
-            }
-        }
-        CompoundTag modeTag = new CompoundTag();
-        modeTag.put("Items", itemList);
-
-        CACHE.compute(uuid, (k, existing) -> {
-            CompoundTag root = existing != null ? existing : loadFromDisk(k);
-            if (root == null) root = new CompoundTag();
-            root.put(mode, modeTag);
-            return root;
-        });
-
+        String mode = currentMode(player);
+        ListTag items = player.getEnderChestInventory().createTag(player.registryAccess());
+        updateCache(player.getUUID(), mode, items);
         LOGGER.debug("[DungeonTrain] EnderChestStore: saved {} item stack(s) for {} ({})",
-                itemList.size(), player.getName().getString(), mode);
+                items.size(), player.getName().getString(), mode);
     }
 
     /**
@@ -99,35 +81,49 @@ public final class GlobalEnderChestStore {
      */
     public static void restore(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        String mode = player.gameMode.getGameModeForPlayer().getSerializedName();
+        String mode = currentMode(player);
         CompoundTag root = CACHE.computeIfAbsent(uuid, GlobalEnderChestStore::loadFromDisk);
-        if (root == null || !root.contains(mode)) return;
-        try {
-            HolderLookup.Provider registries = player.registryAccess();
-            SimpleContainer enderChest = player.getEnderChestInventory();
-            enderChest.clearContent();
-            ListTag itemList = root.getCompound(mode).getList("Items", 10);
-            int applied = 0;
-            for (int i = 0; i < itemList.size(); i++) {
-                CompoundTag slotTag = itemList.getCompound(i);
-                int slot = slotTag.getByte("Slot") & 0xFF;
-                if (slot < enderChest.getContainerSize()) {
-                    ItemStack stack = ItemStack.parse(registries, slotTag).orElse(ItemStack.EMPTY);
-                    if (!stack.isEmpty()) {
-                        enderChest.setItem(slot, stack);
-                        applied++;
-                    }
-                }
-            }
-            player.inventoryMenu.broadcastChanges();
-            if (applied > 0) {
-                LOGGER.info("[DungeonTrain] EnderChestStore: restored {} item stack(s) for {} ({})",
-                        applied, player.getName().getString(), mode);
-            }
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] EnderChestStore: restore failed for {} — Ender Chest stays as loaded",
-                    player.getName().getString(), e);
+        if (root == null || !root.contains(mode, Tag.TAG_LIST)) return;
+        ListTag items = root.getList(mode, Tag.TAG_COMPOUND);
+        player.getEnderChestInventory().fromTag(items, player.registryAccess());
+        if (!items.isEmpty()) {
+            LOGGER.info("[DungeonTrain] EnderChestStore: restored {} item stack(s) for {} ({})",
+                    items.size(), player.getName().getString(), mode);
         }
+    }
+
+    /**
+     * Save the current game mode's Ender Chest then load the new game mode's
+     * Ender Chest into the player's live {@link PlayerEnderChestContainer}.
+     * Called from {@link net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangeGameModeEvent}.
+     * The old mode is still active at call time; {@code newMode} is what the
+     * player is switching to.
+     */
+    public static void swapGameMode(ServerPlayer player, GameType newMode) {
+        UUID uuid = player.getUUID();
+        String oldModeKey = currentMode(player);
+        String newModeKey = newMode.getSerializedName();
+
+        // Persist the current chest under the old mode key.
+        ListTag oldItems = player.getEnderChestInventory().createTag(player.registryAccess());
+        CompoundTag root = CACHE.compute(uuid, (k, existing) -> {
+            CompoundTag r = existing != null ? existing : loadFromDisk(k);
+            if (r == null) r = new CompoundTag();
+            r.put(oldModeKey, oldItems);
+            return r;
+        });
+
+        // Load the new mode's chest (empty if nothing stored yet).
+        PlayerEnderChestContainer enderChest = player.getEnderChestInventory();
+        if (root.contains(newModeKey, Tag.TAG_LIST)) {
+            ListTag newItems = root.getList(newModeKey, Tag.TAG_COMPOUND);
+            enderChest.fromTag(newItems, player.registryAccess());
+        } else {
+            enderChest.clearContent();
+        }
+
+        LOGGER.info("[DungeonTrain] EnderChestStore: swapped ender chest {} → {} for {}",
+                oldModeKey, newModeKey, player.getName().getString());
     }
 
     /** Write the cached entry for {@code uuid} to disk. No-op if not in cache. */
@@ -148,6 +144,21 @@ public final class GlobalEnderChestStore {
         for (var entry : snapshot.entrySet()) {
             saveToDisk(entry.getKey(), entry.getValue());
         }
+    }
+
+    // ---- Internals ----
+
+    private static String currentMode(ServerPlayer player) {
+        return player.gameMode.getGameModeForPlayer().getSerializedName();
+    }
+
+    private static void updateCache(UUID uuid, String modeKey, ListTag items) {
+        CACHE.compute(uuid, (k, existing) -> {
+            CompoundTag root = existing != null ? existing : loadFromDisk(k);
+            if (root == null) root = new CompoundTag();
+            root.put(modeKey, items);
+            return root;
+        });
     }
 
     private static CompoundTag loadFromDisk(UUID uuid) {
