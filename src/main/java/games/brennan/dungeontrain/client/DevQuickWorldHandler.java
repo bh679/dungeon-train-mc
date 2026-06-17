@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
+import net.minecraft.client.tutorial.TutorialSteps;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
@@ -224,6 +225,8 @@ public final class DevQuickWorldHandler {
 
     private static void openLevel(String name, LevelSettings settings, Screen lastScreen) {
         Minecraft mc = Minecraft.getInstance();
+        mc.options.tutorialStep = TutorialSteps.NONE;
+        mc.options.save();
         WorldOptions options = WorldOptions.defaultWithRandomSeed();
         WorldOpenFlows flows = mc.createWorldOpenFlows();
         flows.createFreshLevel(name, settings, options, dtPresetDimensions(), lastScreen);
