@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
@@ -101,7 +102,8 @@ public final class TrainCinematographerEvents {
                 boolean chunkDirty = false;
                 for (BlockPos pos : BlockPos.betweenClosed(startX, startY, startZ, endX, endY, endZ)) {
                     BlockState state = chunk.getBlockState(pos);
-                    if (!state.hasProperty(BlockStateProperties.OPEN)) continue;
+                    // Only real doors — trapdoors, fence gates and barrels also carry OPEN.
+                    if (!(state.getBlock() instanceof DoorBlock)) continue;
                     if (state.getValue(BlockStateProperties.OPEN)) continue;
 
                     if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
@@ -136,7 +138,8 @@ public final class TrainCinematographerEvents {
                 center.offset(-r, -r, -r),
                 center.offset(r, r, r))) {
             BlockState state = level.getBlockState(pos);
-            if (!state.hasProperty(BlockStateProperties.OPEN)) continue;
+            // Only real doors — trapdoors, fence gates and barrels also carry OPEN.
+            if (!(state.getBlock() instanceof DoorBlock)) continue;
             if (state.getValue(BlockStateProperties.OPEN)) continue;
 
             if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)) {
