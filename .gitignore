@@ -41,6 +41,9 @@ __pycache__/
 # Gate 2 testing artifacts (screenshots, previews)
 test-results/
 
+# Local relay SSH connection details (never committed)
+.relay-ssh.local
+
 # Local Claude state
 .claude/settings.local.json
 .claude/hook-versions.json
