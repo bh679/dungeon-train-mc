@@ -113,7 +113,7 @@ tested against (`sable_version` in `gradle.properties`). When you bump `sable_ve
 **also update `modpack.config.json` → `sable.file_id`** to the matching CurseForge file:
 
 1. Open <https://www.curseforge.com/minecraft/mc-mods/sable/files/all> and filter to the
-   NeoForge build for the new `sable_version` (e.g. `sable-neoforge-1.21.1-1.2.1.jar`).
+   NeoForge build for the new `sable_version` (e.g. `sable-neoforge-1.21.1-2.0.2.jar`).
 2. Copy the numeric file ID from its URL (`/files/<id>`).
 3. Set both `sable.version` and `sable.file_id` in `modpack.config.json`.
 
