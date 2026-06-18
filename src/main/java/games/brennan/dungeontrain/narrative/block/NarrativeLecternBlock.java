@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative.block;
 
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.NarrativeBookEvents;
@@ -119,15 +120,22 @@ public class NarrativeLecternBlock extends LecternBlock {
         NarrativeBookTag.read(book).ifPresent(id -> {
             NarrativeProgressData data = NarrativeProgressData.get(overworld);
             data.markRead(id.storyBasename(), id.letterIndex());
-            GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+            // Cross-world store is frozen for cheated runs; per-world `data` (the
+            // login-absorption source + lectern selection) still records.
+            boolean cheated = RunIntegrity.isCheated(sp);
+            if (!cheated) {
+                GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+            }
             if (id.variantIndex() >= 0) {
                 // Mark the variant on BOTH stores, matching recordRead: keeps
                 // the per-world data complete (it is the login absorption
                 // source) and the global store correct for a one-and-done
                 // lectern reader who never re-opens the book.
                 data.markStoryVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
-                GlobalNarrativeProgress.markVariantSeen(
-                    id.storyBasename(), id.letterIndex(), id.variantIndex());
+                if (!cheated) {
+                    GlobalNarrativeProgress.markVariantSeen(
+                        id.storyBasename(), id.letterIndex(), id.variantIndex());
+                }
             }
             AchievementEvents.notifyStoryProgress(sp);
             // First-and-only read of this lectern — count it toward the

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -107,6 +108,7 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (RandomBookTag.read(stack).isEmpty()) return;
+        if (RunIntegrity.isCheated(player)) return; // global book-read stat frozen for cheated runs
         long newTotal = GlobalPlayerStats.addRandomBooksRead(player.getUUID(), 1L);
         AchievementEvents.notifyRandomBooksRead(player, newTotal);
     }
@@ -128,6 +130,7 @@ public final class NarrativeBookEvents {
         ItemStack stack = event.getItemStack();
         if (stack.isEmpty()) return;
         if (!StartingBookTag.isStartingBook(stack)) return;
+        if (RunIntegrity.isCheated(player)) return; // global book-read stat frozen for cheated runs
         long newTotal = GlobalPlayerStats.addStartingBooksRead(player.getUUID(), 1L);
         AchievementEvents.notifyStartingBooksRead(player, newTotal);
     }
@@ -148,10 +151,13 @@ public final class NarrativeBookEvents {
         // Global, cross-world shared read-record. Per-world `data` above still
         // drives lectern selection; this store is what the story advancements
         // read, so "read every story" accumulates across worlds instead of
-        // resetting each new world.
-        GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
-        if (id.variantIndex() >= 0) {
-            GlobalNarrativeProgress.markVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
+        // resetting each new world. Frozen for cheated runs — per-world `data`
+        // above still records, so lectern selection is unaffected.
+        if (!RunIntegrity.isCheated(player)) {
+            GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+            if (id.variantIndex() >= 0) {
+                GlobalNarrativeProgress.markVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
+            }
         }
         if (letterNewly) {
             LOGGER.info("[DungeonTrain] Narrative: world marked {} letter {} read (by {})",

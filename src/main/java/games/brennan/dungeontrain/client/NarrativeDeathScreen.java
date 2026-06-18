@@ -693,8 +693,14 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;
+        // Fallback so the final page is never blank — e.g. a low-deaths Free Play
+        // (creative) death where no conditioned platform lore entry matched.
+        String platformNarration = n.platformNarration();
+        if (n.platformQuestion().isEmpty() && platformNarration.isEmpty() && n.platformEpitaph().isEmpty()) {
+            platformNarration = Component.translatable("gui.dungeontrain.death.narr.platform_fallback").getString();
+        }
         y = drawQuestion(g, n.platformQuestion(), cx, w, y);
-        y = drawNarration(g, n.platformNarration(), cx, w, y);
+        y = drawNarration(g, platformNarration, cx, w, y);
         if (!n.platformEpitaph().isEmpty()) {
             y += 6;
             y = drawCentered(g, styled(n.platformEpitaph()), cx, w, y, SUBLINE);

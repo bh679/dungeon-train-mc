@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
@@ -751,6 +752,9 @@ public final class AchievementEvents {
         Set<ResourceLocation> done = new LinkedHashSet<>();
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
             if (!shouldPersist(holder)) continue;
+            // Don't absorb a cheated world's gameplay/vanilla earns into the
+            // cross-world profile; editor/* authoring still flows through.
+            if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
             if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
                 done.add(holder.id());
             }
@@ -815,7 +819,11 @@ public final class AchievementEvents {
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.
-        if (shouldPersist(advancement) && GlobalAchievementStore.append(player.getUUID(), id)) {
+        // Cheated runs earn live but don't write to the cross-world profile
+        // (editor/* authoring stays exempt) — see RunIntegrity.
+        if (shouldPersist(advancement)
+                && RunIntegrity.persistsAdvancement(player, advancement)
+                && GlobalAchievementStore.append(player.getUUID(), id)) {
             LOGGER.info("[DungeonTrain] Wrote global achievement {} for {}",
                 id, player.getName().getString());
         }
@@ -825,7 +833,7 @@ public final class AchievementEvents {
         // implied by the early-return above, before persistence broadened to all
         // namespaces; without it the hint + capstone re-check would now fire on
         // every vanilla/mod advancement earn. editor/* is excluded — a
-        // creative-mode dev tab not gated by the game-mode mixin. The client
+        // creative-mode dev tab. The client
         // decides whether to actually display it (gated on its local "opened
         // advancements" flag) and renders it with the live keybind.
         if (!replaying

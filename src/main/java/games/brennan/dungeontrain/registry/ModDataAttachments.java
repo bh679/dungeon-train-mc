@@ -65,6 +65,28 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Per-player "this world's run has been cheated" flag. Set the moment a
+     * cheat is detected — a switch to creative/spectator/cinematographer, or any
+     * non-allowlisted command (see
+     * {@link games.brennan.dungeontrain.cheat.RunIntegrity} /
+     * {@link games.brennan.dungeontrain.event.CheatDetectionEvents}). While set,
+     * advancements still earn live but are NOT written to the cross-world
+     * profile, and global lifetime stats stop accruing.
+     *
+     * <p>Sticky per-world: serialized so it survives relog, and
+     * {@code copyOnDeath} so it survives the respawn clone (a cheated world stays
+     * cheated). A brand-new world / run starts {@code false}. Deliberately has
+     * <b>no</b> reset hook (unlike {@code PLAYER_BIOME_PROGRESS}).</p>
+     */
+    public static final Supplier<AttachmentType<Boolean>> RUN_CHEATED =
+        TYPES.register("run_cheated",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .copyOnDeath()
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {

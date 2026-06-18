@@ -1031,6 +1031,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "free-play-runs",
+      "version": "0.322.0",
+      "type": "feat",
+      "title": "Free Play for creative & cheat runs",
+      "summary": "Playing in creative or spectator, or using cheat commands, no longer blocks advancements \u2014 you keep earning them live. The run simply becomes Free Play: you're asked to confirm first (with a don't-show-again option), a spyglass effect marks the run, and anything you earn while it's on won't be saved to your profile or count toward your global stats. Start a new world for a fresh, ranked run.",
+      "highlights": [
+        "Creative, spectator, cinematographer and cheat commands start Free Play instead of silently disabling advancements.",
+        "A confirmation lets you back out before Free Play takes effect, with a Don't-show-again option.",
+        "Free Play is marked by a permanent spyglass status effect \u2014 hover it in your inventory to see what it means.",
+        "Fixed a blank final page on the death screen after dying in Creative."
+      ],
+      "pr": 460,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

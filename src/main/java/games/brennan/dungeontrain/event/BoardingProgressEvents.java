@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
@@ -129,20 +130,24 @@ public final class BoardingProgressEvents {
         // (All aboard) — first boarding earns the tab.
         if (!boarded.isEmpty()) {
             for (UUID uuid : boarded.keySet()) {
-                long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                 ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
-                if (p != null) {
+                if (p == null) continue;
+                // Lifetime train-time is a global stat — frozen for cheated runs.
+                // The per-run counter, the "boarded" advancement trigger, distance
+                // and biome sampling below still run (advancements earn live).
+                if (!RunIntegrity.isCheated(p)) {
+                    long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
-                    games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-                        .trigger(p, "boarded");
-                    // Single-life time aboard: per-run boarded-tick counter that
-                    // resets on death. Twin of the cross-world train-time above.
-                    long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-                        .addTrainTimeTicks(SCAN_PERIOD_TICKS);
-                    AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
-                    accumulateBoardedDistance(p);
-                    sampleBoardedBiome(level, p);
                 }
+                games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                    .trigger(p, "boarded");
+                // Single-life time aboard: per-run boarded-tick counter that
+                // resets on death. Twin of the cross-world train-time above.
+                long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                    .addTrainTimeTicks(SCAN_PERIOD_TICKS);
+                AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
+                accumulateBoardedDistance(p);
+                sampleBoardedBiome(level, p);
             }
         }
         // Drop tracking for players who disembarked since last scan, so the
@@ -259,8 +264,11 @@ public final class BoardingProgressEvents {
         double runMeters = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
         AchievementEvents.notifyRunDistance(player, runMeters);
         // Lifetime distance — the same delta, accrued across all worlds/sessions.
-        double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
-        AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
+        // Global stat: frozen for cheated runs (per-run distance above still ticks).
+        if (!RunIntegrity.isCheated(player)) {
+            double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
+            AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
+        }
     }
 
     /**

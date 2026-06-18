@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "29";
+    public static final String PROTOCOL_VERSION = "30";
 
     private DungeonTrainNet() {}
 
@@ -89,6 +89,12 @@ public final class DungeonTrainNet {
         // advancement. The client decides whether to show it (gated on its local
         // "opened advancements" flag) and renders it with the live keybind.
         registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
+
+        // Free Play confirmation: server holds a tainting action (creative/spectator
+        // switch or cheat command) and asks before it commits; client replies
+        // confirmed/canceled (the "don't show again" pref lives client-side).
+        registrar.playToClient(ShowFreePlayConfirmPacket.TYPE, ShowFreePlayConfirmPacket.STREAM_CODEC, ShowFreePlayConfirmPacket::handle);
+        registrar.playToServer(FreePlayConfirmResponsePacket.TYPE, FreePlayConfirmResponsePacket.STREAM_CODEC, FreePlayConfirmResponsePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */
