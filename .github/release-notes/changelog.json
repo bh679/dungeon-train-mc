@@ -1019,6 +1019,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "over_the_top_advancement",
+      "version": "0.321.1",
+      "type": "feat",
+      "title": "Over the Top advancement",
+      "summary": "New advancement fires when a player runs across the roof of one carriage group without dropping inside \u2014 sits before Skip the Grind in the tree.",
+      "highlights": [],
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

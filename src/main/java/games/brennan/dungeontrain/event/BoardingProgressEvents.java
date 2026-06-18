@@ -321,7 +321,8 @@ public final class BoardingProgressEvents {
      * Find which carriage's worldAABB contains the player, or null if none.
      * Horizontal bounds are padded by {@link #HORIZONTAL_PADDING} to bridge
      * the small joints between adjacent carriage groups; Y is padded above
-     * by 1 to count players standing on a carriage roof as "on the train."
+     * by 3 to count players standing on or sprint-jumping from the roof as
+     * "on the train" (sprint-jump peaks at ~1.25 blocks above standing).
      */
     @Nullable
     private static Integer findPlayerCarriagePIdx(List<Trains.Carriage> carriages, ServerPlayer player) {
@@ -331,7 +332,7 @@ public final class BoardingProgressEvents {
         for (Trains.Carriage c : carriages) {
             AABBdc bb = c.ship().worldAABB();
             if (px < bb.minX() - HORIZONTAL_PADDING || px > bb.maxX() + HORIZONTAL_PADDING) continue;
-            if (py < bb.minY() || py > bb.maxY() + 1.0) continue;
+            if (py < bb.minY() || py > bb.maxY() + 3.0) continue;
             if (pz < bb.minZ() - HORIZONTAL_PADDING || pz > bb.maxZ() + HORIZONTAL_PADDING) continue;
             return c.provider().getPIdx();
         }
