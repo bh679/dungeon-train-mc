@@ -104,7 +104,6 @@ public final class RideSnapshotCapture {
                     new RideSnapshot(id, captureTag, shot.getWidth(), shot.getHeight(), tick),
                     ClientDisplayConfig.getRideSnapshotMaxStored());
             RideSnapshotDirector.onCaptureCommitted(captureTag);
-            maybeDumpDebug(shot, captureTag, tick); // TEMP (Gate 2 verification) — remove before merge
             LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
                     id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
         } catch (Exception e) {
@@ -139,24 +138,6 @@ public final class RideSnapshotCapture {
             }
         }
         return dst;
-    }
-
-    /**
-     * TEMP (Gate 2 verification) — remove before merge. When launched with
-     * {@code -Ddungeontrain.snapshotDebugDump=true}, write each committed capture to
-     * {@code run/dt-snapshot-<tag>-<tick>.png} so occlusion can be eyeballed per shot.
-     * {@code shot} stays owned/open by the just-built DynamicTexture, so its pixels read fine.
-     */
-    private static void maybeDumpDebug(NativeImage shot, SnapshotTag tag, long tick) {
-        if (!Boolean.getBoolean("dungeontrain.snapshotDebugDump")) return;
-        try {
-            java.nio.file.Path path =
-                    java.nio.file.Path.of("dt-snapshot-" + tag.name().toLowerCase() + "-" + tick + ".png");
-            shot.writeToFile(path);
-            LOGGER.info("[DungeonTrain] Ride snapshot debug dump -> {}", path.toAbsolutePath());
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Ride snapshot debug dump failed", e);
-        }
     }
 
     /** Drop any pending/in-flight capture (world leave). */

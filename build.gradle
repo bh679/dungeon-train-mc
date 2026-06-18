@@ -73,7 +73,6 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-            systemProperty 'dungeontrain.snapshotDebugDump', 'true' // TEMP (Gate 2 verification) — remove before merge
         }
 
         server {
