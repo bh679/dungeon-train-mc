@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -208,5 +209,20 @@ final class PlayerRunStateTest {
         assertEquals(3, reloaded.cartsBackwardSinceDeath());
         assertEquals(1, reloaded.chestStreak());
         assertTrue(reloaded.uniqueChests().contains(new BlockPos(100, 65, 200)));
+    }
+
+    @Test
+    @DisplayName("recordNarrativeRead dedupes per run (first true, repeat false); resetDeathStats clears the set")
+    void narrativeReadDedupAndReset() {
+        PlayerRunState state = new PlayerRunState();
+        // First read of a distinct lectern letter counts; a re-read (page-turn /
+        // re-open of the same letter) no-ops, so the books-read tally isn't inflated.
+        assertTrue(state.recordNarrativeRead("augustus_park#1"), "first read of a letter is new this run");
+        assertFalse(state.recordNarrativeRead("augustus_park#1"), "re-reading the same letter no-ops this run");
+        assertTrue(state.recordNarrativeRead("augustus_park#2"), "a different letter is new");
+        // Death resets the per-run set — re-reading next life counts again.
+        state.resetDeathStats();
+        assertTrue(state.recordNarrativeRead("augustus_park#1"),
+            "after respawn the letter is fresh again — counts toward the new life's books-read");
     }
 }

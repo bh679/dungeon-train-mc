@@ -55,8 +55,17 @@
   {
     "page": "lives",
     "weight": 3,
+    "conditions": { "min_deaths": 2 },
     "question": "These are all good questions",
     "narration": "These are not the marks of a single life. Across all {deaths} — every dark you have boarded, every time the line took you and still you returned — this is the whole of your journey."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Is one life so easily spent?",
+    "subline": "your first fall on the line.",
+    "narration": "There are no other lives to weigh against this one — not yet. This is the whole of you: everything done since first you boarded. The line will remember it. So should you."
   },
   {
     "page": "lives",
@@ -68,9 +77,18 @@
   {
     "page": "platform",
     "weight": 3,
+    "conditions": { "min_deaths": 2 },
     "question": "Will you board again, or step off into the quiet?",
     "narration": "The platform is empty. The whistle sounds far down the line. It runs without end — and so, it seems, do you.",
     "epitaph": "the {deaths}th to fall. perhaps not the last."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 1, "max_deaths": 1 },
+    "question": "Will you board again — now that you know how it ends?",
+    "narration": "The platform is empty, the same as it was when first you stepped aboard. The whistle sounds far down the line. You have fallen once. Whether there is a second time is, as ever, yours to decide.",
+    "epitaph": "the first to fall. the line is patient — it will wait for the rest."
   },
   {
     "page": "platform",

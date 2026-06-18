@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.event.AchievementEvents;
+import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -70,6 +72,10 @@ public final class NarrativeBookEvents {
         if (id.isEmpty()) return;
 
         recordRead(player, id.get());
+        // Lectern (block) read — count it toward the death-screen books tally.
+        // The held-book path (onRightClickItem) is intentionally excluded here:
+        // it is already counted by RunStatsEvents.onBookRead.
+        countLecternBookForRun(player, id.get());
     }
 
     @SubscribeEvent
@@ -157,6 +163,27 @@ public final class NarrativeBookEvents {
         }
         if (letterNewly || variantNewly) {
             games.brennan.dungeontrain.event.AchievementEvents.notifyStoryProgress(player);
+        }
+    }
+
+    /**
+     * Count a narrative letter read at a lectern toward the player's per-run
+     * death-screen "books read" tally. Deduped via {@link PlayerRunState}'s
+     * per-run {@code narrativeLetters} set so page-turns / re-opens of the same
+     * letter count once, and the count resets each life.
+     *
+     * <p>Only the lectern (block-interaction) paths call this —
+     * {@link #onRightClickBlock} and
+     * {@link games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock#useWithoutItem}.
+     * Held-book reads are deliberately excluded: they already increment the
+     * tally via {@code RunStatsEvents.onBookRead}, so counting them here would
+     * double-count.</p>
+     */
+    public static void countLecternBookForRun(ServerPlayer player, NarrativeBookTag.NarrativeIdentity id) {
+        String key = id.storyBasename() + "#" + id.letterIndex();
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        if (run.recordNarrativeRead(key)) {
+            run.incrementBooksRead();
         }
     }
 

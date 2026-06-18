@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.narrative.block;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.narrative.BookFactory;
+import games.brennan.dungeontrain.narrative.NarrativeBookEvents;
 import games.brennan.dungeontrain.narrative.NarrativeBookTag;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import net.minecraft.ChatFormatting;
@@ -129,6 +130,10 @@ public class NarrativeLecternBlock extends LecternBlock {
                     id.storyBasename(), id.letterIndex(), id.variantIndex());
             }
             AchievementEvents.notifyStoryProgress(sp);
+            // First-and-only read of this lectern — count it toward the
+            // death-screen books tally (deduped per run; page-turns / re-opens
+            // route through NarrativeBookEvents.onRightClickBlock and no-op).
+            NarrativeBookEvents.countLecternBookForRun(sp, id);
         });
 
         // Now let vanilla open the lectern menu — it reads the BE's book
