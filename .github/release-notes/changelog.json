@@ -824,9 +824,9 @@
       ],
       "pr": 442,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
     },
     {
       "id": "ride-photo-clear-line-of-sight",
@@ -841,9 +841,9 @@
       ],
       "pr": 443,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
     },
     {
       "id": "modpack-ferritecore",
@@ -857,9 +857,9 @@
       ],
       "pr": 445,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
     },
     {
       "id": "death-cause-on-fall-screen",
@@ -873,9 +873,9 @@
       ],
       "pr": 444,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
     },
     {
       "id": "biome-diversity-achievements",
@@ -890,9 +890,9 @@
       ],
       "pr": 446,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
     }
   ]
 }
