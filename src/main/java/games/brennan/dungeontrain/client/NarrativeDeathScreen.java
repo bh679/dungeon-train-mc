@@ -26,6 +26,7 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import com.mojang.logging.LogUtils;
+import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -49,11 +50,13 @@ import java.util.Set;
  * <i>Continue</i> advances; a bare back-arrow returns; <i>reboard</i> and
  * <i>leave the line</i> sit in the top corner throughout.</p>
  *
- * <p>Moving between pages plays a short cross-fade: the chrome + text + vignette
- * fade out (fully revealing the ride photo behind), the photos blend old→new,
- * and the next page's UI fades back in. Settled pages darken the vignette for
- * legibility; the peak of a transition drops it entirely. All of this is driven
- * by a single per-frame {@link #uiAlpha} and a wall-clock transition timer.</p>
+ * <p>Moving between pages plays a slow transition: the chrome + text + vignette
+ * fade out over the held photo (fully revealing it), the bare photo holds for a
+ * beat, then the next page's UI fades in while the photo dips to black and the
+ * next one rises from black beneath it. Settled pages darken the vignette for
+ * legibility; the bare-photo hold drops it entirely. A click or Space skips a
+ * running fade. Driven by per-frame {@link #uiAlpha} + the photo dip
+ * ({@link #photoBlack}/{@link #photoNew}) and a wall-clock timer.</p>
  *
  * <p>All per-run + lifetime numbers and the rolled narrative come from the
  * cached {@link DeathStatsPacket} ({@link DeathStatsCache}); the screen reads
@@ -108,13 +111,20 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int MAX_CONTENT_W = 360;
     private static final int SLOT = 18;
 
-    // ---- Page-to-page cross-fade transition ----
-    // Full transition length; the page swaps at the midpoint (where the UI is
-    // fully faded out and the photo is fully revealed).
-    private static final long TRANS_MS = 380L;
+    // ---- Page-to-page transition ----
+    // Each page change plays: fade the UI out over the held photo, hold the bare
+    // photo, then fade the new UI in while the photo dissolves old -> new.
+    private static final long T_FADE = 350L;  // length of each UI fade (out, then in)
+    private static final long T_HOLD = 500L;  // bare-photo hold between the two fades
+    private static final long T_IMG_DELAY = 0L;       // dip starts with the UI fade — no delay
+    private static final long T_IMG  = 2 * T_FADE;    // dip to black + back, each half at the UI-fade speed
     // uiAlpha at/above this counts as "settled": elements that can't take an
     // alpha tint (item icons, the comment box) only show once the page is settled.
     private static final float SETTLED = 0.95f;
+    // Below this UI alpha the UI is skipped entirely (see render): Minecraft's font
+    // renderer forces text with alpha < ~4/255 to fully opaque, so drawing it at ~0
+    // alpha flashes it solid. Above this the lowest text alpha drawn is a safe ~5/255.
+    private static final float UI_EPS = 0.02f;
 
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
@@ -128,11 +138,13 @@ public final class NarrativeDeathScreen extends Screen {
 
     // Transition state. transStartMs == 0 means "settled, nothing animating".
     private long transStartMs = 0L;
-    private int pendingPage = -1;          // page to switch to at the midpoint
-    private boolean swapped = false;       // midpoint switch already applied
-    private RideSnapshot fromShot, toShot; // cross-faded backdrop photos
-    private float uiAlpha = 1.0f;          // 0..1 — how present the chrome/text is this frame
-    private float crossfadeT = 1.0f;       // 0..1 — fromShot → toShot blend this frame
+    private int pendingPage = -1;          // page to switch to once the fade-out ends
+    private boolean swapped = false;       // page switch already applied this transition
+    private boolean pendingInitialFade = false; // seed the opening fade-in on first frame
+    private RideSnapshot fromShot, toShot; // held (old) photo, and the one we switch to
+    private float uiAlpha = 0.0f;          // 0..1 — how present the chrome/text is this frame
+    private float photoBlack = 0.0f;       // 0..1 — black fill laid over the photo (the dip)
+    private boolean photoNew = false;      // show the incoming photo (true) vs the held one (false)
 
     // Resting backdrop for the current page (re-picked when the page settles).
     private int restShotForPage = -1;
@@ -187,16 +199,17 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         // First appearance: fade the opening page's UI up over its photo instead
-        // of popping in. Seed the timer at the midpoint so only the fade-in half
-        // plays (no page swap). Done once — later rebuildWidgets() (the midpoint
-        // swap, survey arrival) must not retrigger it or it would reset an
-        // in-flight transition.
+        // of popping in. Just the fade-in (no fade-out, no hold, no photo switch);
+        // the timer is seeded on the first rendered frame so a hitch between
+        // opening and that frame can't eat the fade. Done once — later
+        // rebuildWidgets() (the deferred swap, survey arrival) must not retrigger
+        // it or it would reset an in-flight transition.
         if (!opened) {
             opened = true;
-            transStartMs = Util.getMillis() - TRANS_MS / 2;
+            pendingInitialFade = true;
             swapped = true;
             pendingPage = -1;
-            fromShot = null;
+            fromShot = photosAvailable() ? currentShotFor(pages.get(currentPage)) : null;
             toShot = null;
         }
     }
@@ -212,10 +225,18 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Advance the cross-fade first: it may apply the deferred page switch
-        // (and rebuild widgets) at the midpoint, so everything below sees the
-        // settled page.
-        updateTransition(Util.getMillis());
+        // Advance the transition first: it may apply the deferred page switch
+        // (and rebuild widgets) when the fade-out ends, so everything below sees
+        // the right page.
+        long now = Util.getMillis();
+        if (pendingInitialFade) {
+            // Seed the opening fade-in here (not in init) so a hitch between the
+            // screen opening and the first frame can't eat the fade. Offsetting by
+            // T_FADE + T_HOLD starts straight in the fade-in phase.
+            pendingInitialFade = false;
+            transStartMs = now - (T_FADE + T_HOLD);
+        }
+        updateTransition(now);
 
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
@@ -227,10 +248,16 @@ public final class NarrativeDeathScreen extends Screen {
         // photo at the peak. Falls back to the solid overlay when the feature is
         // off or no photos were captured this run.
         if (photosAvailable()) {
-            RideSnapshot base = fromShot != null ? fromShot : currentShotFor(page);
-            DeathBackgroundPainter.drawPhoto(g, base, this.width, this.height, 1.0f);
-            if (toShot != null && toShot != base) {
-                DeathBackgroundPainter.drawPhoto(g, toShot, this.width, this.height, crossfadeT);
+            // The photo always draws fully opaque (blit alpha is unreliable for the
+            // framebuffer textures); the dip-to-black is a black fill laid over it.
+            // The old->new photo swap happens under full black, so it isn't seen.
+            RideSnapshot photo = photoNew && toShot != null
+                    ? toShot
+                    : (fromShot != null ? fromShot : currentShotFor(page));
+            DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height, 1.0f);
+            if (photoBlack > 0.0f) {
+                int a = Math.min(255, Math.round(photoBlack * 255.0f));
+                g.fill(0, 0, this.width, this.height, a << 24);
             }
             DeathBackgroundPainter.drawVignette(g, this.width, this.height, uiAlpha);
         } else {
@@ -257,30 +284,36 @@ public final class NarrativeDeathScreen extends Screen {
         int cx = this.width / 2;
         int left = cx - contentW / 2;
 
-        drawTopBar(g, mouseX, mouseY);
-
-        int y = 40;
-        switch (page.kind()) {
-            case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
-            case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
-            case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
-            case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
-            case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
-            case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
-        }
-
-        drawFooter(g, page, mouseX, mouseY);
-
-        // Widgets (the comment EditBox) render on top of the content. They can't
-        // take an alpha tint, so only show them once the page is settled.
+        // UI content (chrome + text + widgets). Skipped entirely while the page is
+        // essentially invisible: Minecraft's font renderer forces text with alpha
+        // < ~4/255 to fully opaque, so drawing it at ~0 alpha would flash it solid
+        // during the hold and at the tail of each fade. The photo + vignette above
+        // (drawn with fill, which has no such quirk) keep showing.
         if (commentBox != null) commentBox.visible = settled();
-        for (Renderable r : this.renderables) {
-            r.render(g, mouseX, mouseY, partialTick);
-        }
+        if (uiAlpha > UI_EPS) {
+            drawTopBar(g, mouseX, mouseY);
 
-        // Loadout hover tooltip last, above everything — only when settled.
-        if (page.kind() == Kind.GEAR && stats != null && settled()) {
-            drawLoadoutTooltip(g, stats, left, contentW, mouseX, mouseY);
+            int y = 40;
+            switch (page.kind()) {
+                case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+                case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+                case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+                case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
+                case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
+                case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
+            }
+
+            drawFooter(g, page, mouseX, mouseY);
+
+            // Widgets (the comment EditBox) render on top of the content.
+            for (Renderable r : this.renderables) {
+                r.render(g, mouseX, mouseY, partialTick);
+            }
+
+            // Loadout hover tooltip last, above everything — only when settled.
+            if (page.kind() == Kind.GEAR && stats != null && settled()) {
+                drawLoadoutTooltip(g, stats, left, contentW, mouseX, mouseY);
+            }
         }
     }
 
@@ -326,7 +359,7 @@ public final class NarrativeDeathScreen extends Screen {
         return restShot;
     }
 
-    /** Begin a cross-fade toward {@code target}; the swap lands at the midpoint. */
+    /** Begin a transition toward {@code target}; the page swaps when its fade-out ends. */
     private void startTransition(int target) {
         boolean photos = photosAvailable();
         fromShot = photos ? currentShotFor(pages.get(currentPage)) : null;
@@ -336,31 +369,63 @@ public final class NarrativeDeathScreen extends Screen {
         transStartMs = Util.getMillis();
     }
 
+    /** Jump a running transition straight to its settled end (a click / Space skips the fade). */
+    private void skipTransition() {
+        if (transStartMs == 0L) return;
+        if (!swapped && pendingPage >= 0) {
+            currentPage = Math.min(pendingPage, Math.max(0, pages.size() - 1));
+            rebuildWidgets();
+        }
+        if (toShot != null) {
+            restShot = toShot;
+            restShotForPage = currentPage;
+        }
+        swapped = true;
+        transStartMs = 0L;
+        pendingPage = -1;
+        fromShot = null;
+        toShot = null;
+        uiAlpha = 1.0f;
+        photoBlack = 0.0f;
+        photoNew = false;
+    }
+
     /**
-     * Drive the transition clock: compute {@link #uiAlpha} / {@link #crossfadeT}
-     * for this frame, apply the deferred page swap at the midpoint, and settle
-     * when complete.
+     * Drive the transition clock: compute {@link #uiAlpha} and the photo dip
+     * ({@link #photoBlack}/{@link #photoNew}) for this frame, apply the deferred
+     * page swap when the fade-out ends, and settle when complete.
      */
     private void updateTransition(long now) {
         if (transStartMs == 0L) {
-            uiAlpha = 1.0f;
-            crossfadeT = 1.0f;
+            // Before the screen has opened (init not yet run) stay transparent so a
+            // stray pre-init frame can't flash the UI in fully rendered. Once open
+            // and not transitioning, the page is fully present.
+            uiAlpha = opened ? 1.0f : 0.0f;
+            photoBlack = 0.0f;
+            photoNew = false;
             return;
         }
-        float p = (now - transStartMs) / (float) TRANS_MS;
-        if (p < 0.0f) p = 0.0f;
+        long elapsed = Math.max(0L, now - transStartMs);
+        // The photo dip (fade-in only) holds off until partway through the UI fade,
+        // then runs slowly: the old photo dims to black and the new one rises from
+        // black beneath the already-settling UI. With no actual switch (initial
+        // open, or same photo) there's no dip and the fade-in just tracks the UI.
+        boolean switching = toShot != null && !toShot.equals(fromShot);
+        long imgDelay = switching ? T_IMG_DELAY : 0L;
+        long imgDur = switching ? T_IMG : T_FADE;
+        long total = T_FADE + T_HOLD + imgDelay + imgDur;
 
-        // Midpoint: swap the page while nothing is visible, so the new page's
-        // widgets/stats rebuild unseen.
-        if (!swapped && p >= 0.5f && pendingPage >= 0) {
+        // Once the fade-out has finished (UI invisible), apply the deferred page
+        // switch so the new page's widgets/stats rebuild unseen during the hold.
+        if (!swapped && elapsed >= T_FADE && pendingPage >= 0) {
             currentPage = Math.min(pendingPage, Math.max(0, pages.size() - 1));
             swapped = true;
             rebuildWidgets();
         }
 
-        if (p >= 1.0f) {
-            // Lock the resting backdrop to the photo we just cross-faded in, so a
-            // re-pick (survey pages roll randomly) can't pop it after settling.
+        if (elapsed >= total) {
+            // Settle on the new page and lock its photo so a re-pick (survey pages
+            // roll randomly) can't pop the backdrop after settling.
             if (toShot != null) {
                 restShot = toShot;
                 restShotForPage = currentPage;
@@ -370,15 +435,42 @@ public final class NarrativeDeathScreen extends Screen {
             fromShot = null;
             toShot = null;
             uiAlpha = 1.0f;
-            crossfadeT = 1.0f;
+            photoBlack = 0.0f;
+            photoNew = false;
             return;
         }
 
-        // Photo cross-fades over the first half so the incoming photo is fully in
-        // by the midpoint reveal; content fades old out then new in around it.
-        crossfadeT = p < 0.5f ? smooth(p / 0.5f) : 1.0f;
-        float linear = p < 0.5f ? (1.0f - p / 0.5f) : ((p - 0.5f) / 0.5f);
-        uiAlpha = smooth(linear);
+        if (elapsed < T_FADE) {
+            // Fade the old UI out over the held photo — no dip yet.
+            uiAlpha = smooth(1.0f - (float) elapsed / (float) T_FADE);
+            photoBlack = 0.0f;
+            photoNew = false;
+        } else if (elapsed < T_FADE + T_HOLD) {
+            // Hold the bare photo with no UI.
+            uiAlpha = 0.0f;
+            photoBlack = 0.0f;
+            photoNew = false;
+        } else {
+            // Fade the new UI in (over T_FADE); after imgDelay, dip the photo to
+            // black (first half) then raise the new one from black (second half).
+            // The photo swaps under full black at the midpoint, so it isn't seen.
+            long inMs = elapsed - T_FADE - T_HOLD;
+            uiAlpha = smooth(Math.min(1.0f, (float) inMs / (float) T_FADE));
+            long imgMs = inMs - imgDelay;
+            if (imgMs <= 0L) {
+                photoBlack = 0.0f;
+                photoNew = false;
+            } else {
+                float p = Math.min(1.0f, (float) imgMs / (float) imgDur);
+                if (p < 0.5f) {
+                    photoNew = false;                          // old photo...
+                    photoBlack = smooth(p * 2.0f);             // ...dimming to black
+                } else {
+                    photoNew = true;                           // new photo (swapped under black)...
+                    photoBlack = smooth(1.0f - (p - 0.5f) * 2.0f); // ...rising from black
+                }
+            }
+        }
     }
 
     /** Smoothstep ease for 0..1. */
@@ -595,6 +687,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        // A click while a fade is running skips it rather than acting on the
+        // fading / hidden controls beneath.
+        if (button == 0 && isTransitioning()) { skipTransition(); return true; }
         if (button == 0) {
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leave(); return true; }
@@ -617,6 +712,26 @@ public final class NarrativeDeathScreen extends Screen {
             }
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Space / Enter act like Continue: skip a running fade, else advance.
+        if (isTransitioning()) {
+            if (isAdvanceKey(keyCode)) { skipTransition(); return true; }
+            return super.keyPressed(keyCode, scanCode, modifiers);
+        }
+        // Settled: let a focused comment box consume the key first (so a space in a
+        // typed survey answer isn't swallowed as an advance).
+        if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
+        if (isAdvanceKey(keyCode)) { advance(); return true; }
+        return false;
+    }
+
+    private static boolean isAdvanceKey(int keyCode) {
+        return keyCode == GLFW.GLFW_KEY_SPACE
+                || keyCode == GLFW.GLFW_KEY_ENTER
+                || keyCode == GLFW.GLFW_KEY_KP_ENTER;
     }
 
     private void advance() {
