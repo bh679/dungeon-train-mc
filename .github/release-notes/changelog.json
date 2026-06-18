@@ -909,6 +909,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-page-transitions",
+      "version": "0.319.0",
+      "type": "feat",
+      "title": "Cinematic death-screen page transitions",
+      "summary": "The Dungeon Train's death screen now turns its pages like a slow slideshow of your run. The text and dark overlay fade out, the ride photo behind dips to black and the next page's photo rises out of it, then the new page's text fades back in. Each settled page also sits a little darker so the narration reads clearly over the photography. In a hurry? Click or press Space to skip a transition.",
+      "highlights": [
+        "Pages fade through black instead of hard-cutting: the text fades out, the photo dips to black and the next rises from it, then the new text fades in.",
+        "Settled pages are a touch darker so the narrative text is easier to read over the ride photos.",
+        "Click or press Space to skip a transition \u2014 Space also advances to the next page when one is settled."
+      ],
+      "pr": 452,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
