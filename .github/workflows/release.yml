@@ -183,11 +183,13 @@ jobs:
             adventure-item-names(embedded)
             adventure-items-stats(embedded)
             interactive-player-mobs(embedded)
+            ender-chest-persistence(embedded)
           curseforge-dependencies: |
             sable(required)
             adventure-item-names(embedded)
             adventure-item-stats(embedded)
             interactive-player-mobs(embedded)
+            ender-chest-persistence(embedded)
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
