@@ -41,9 +41,15 @@ public final class CommandAllowlist {
     /** Read-only {@code narrative} subcommands (the rest of the tree taints). */
     private static final Set<String> NARRATIVE_READONLY = Set.of("list", "progress");
 
-    /** Vanilla permission-0 social/info commands everyone may run without cheats. */
-    private static final Set<String> VANILLA_ALLOWED = Set.of(
-        "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list");
+    /**
+     * Non-DT-namespaced roots that don't taint a run: vanilla permission-0
+     * social/info commands everyone may run, plus benign "end / reset the run"
+     * actions — {@code /kill} (dying / ending a run) and {@code /new-world} (the
+     * dev world-roll command).
+     */
+    private static final Set<String> ALLOWED_ROOTS = Set.of(
+        "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
+        "kill", "new-world");
 
     private CommandAllowlist() {}
 
@@ -71,7 +77,7 @@ public final class CommandAllowlist {
             }
             return false; // cinematographer, spawn, speed, carriages, tracks, narrative give/reset/…
         }
-        return VANILLA_ALLOWED.contains(root);
+        return ALLOWED_ROOTS.contains(root);
     }
 
     /** A short label for the warning message, e.g. {@code "/give"} or {@code "/dungeontrain cinematographer"}. */

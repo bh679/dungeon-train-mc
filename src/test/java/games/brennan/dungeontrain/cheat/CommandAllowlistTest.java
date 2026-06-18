@@ -112,6 +112,15 @@ class CommandAllowlistTest {
     }
 
     @Test
+    @DisplayName("/kill and /new-world (end / reset the run) are allowed")
+    void runControlAllowed() {
+        assertFalse(CommandAllowlist.taints("kill"));
+        assertFalse(CommandAllowlist.taints("/kill"));
+        assertFalse(CommandAllowlist.taints("new-world"));
+        assertFalse(CommandAllowlist.taints("new-world fresh"));
+    }
+
+    @Test
     @DisplayName("Empty / blank input never taints")
     void emptyNeverTaints() {
         assertFalse(CommandAllowlist.taints(""));
