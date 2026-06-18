@@ -104,7 +104,7 @@ public final class PlayerRunState {
     private double damageTaken;
     /** Distinct PlayerMobs come near this run (drives the death-screen "encountered" stat). */
     private final Set<UUID> encounteredMobs;
-    /** Distinct PlayerMobs befriended (mutual gift exchange) this run. */
+    /** Distinct PlayerMobs that liked this player (feeling above the friend threshold) this run — the death-screen "friends" tally. */
     private final Set<UUID> befriendedMobs;
     /** Server ticks spent boarded this run (boarded-only; resets on death). Time twin of {@link #distanceBlocks}. */
     private long trainTimeTicks;
@@ -448,15 +448,16 @@ public final class PlayerRunState {
     }
 
     /**
-     * Record a PlayerMob befriended (mutual gift exchange) this run.
+     * Record a PlayerMob that likes this player (above the friend threshold) this
+     * run — the death-screen "friends" tally; fed by the proximity scan.
      *
-     * @return {@code true} if newly befriended this run, {@code false} if already counted.
+     * @return {@code true} if newly recorded this run, {@code false} if already counted.
      */
     public boolean recordBefriended(UUID mobUuid) {
         return befriendedMobs.add(mobUuid);
     }
 
-    /** Number of distinct PlayerMobs befriended this run. */
+    /** Number of distinct PlayerMobs that liked this player (above the friend threshold) this run. */
     public int befriendedCount() {
         return befriendedMobs.size();
     }

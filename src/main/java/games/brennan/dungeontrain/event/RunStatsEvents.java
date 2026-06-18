@@ -395,13 +395,17 @@ public final class RunStatsEvents {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
                 }
-                // Death-screen "friend" portrait: the PlayerMob that likes this
-                // player most, when that feeling clears the threshold. Captured
-                // here while the mob is loaded near the player (warmest wins).
+                // Death-screen "friends": any PlayerMob that likes this player above
+                // the threshold counts toward the friends tally (distinct), and the
+                // warmest of them is the friend portrait. Evaluated here while the mob
+                // is loaded near the player.
                 if (mob instanceof PlayerMobEntity pm) {
                     float feeling = pm.feelingToward(player);
-                    if (feeling > FRIEND_FEELING_MIN && feeling > run.friendFeeling()) {
-                        run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
+                    if (feeling > FRIEND_FEELING_MIN) {
+                        run.recordBefriended(mob.getUUID());
+                        if (feeling > run.friendFeeling()) {
+                            run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
+                        }
                     }
                 }
             }
