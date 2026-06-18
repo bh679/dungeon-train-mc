@@ -59,13 +59,15 @@ public final class TrackPresenceEvents {
 
     /**
      * Vertical slack (blocks) above a carriage's {@code worldAABB} top that
-     * still counts as aboard — covers standing on / jumping on the roof.
+     * still counts as aboard — covers standing on the roof and sprint-jumping
+     * from it (~1.25 blocks peak). Matched to {@link RoofRunEvents}'s
+     * {@code JUMP_HEADROOM} so a roof jump never reads as a departure.
      * Horizontal bounds are intentionally strict (no outward pad) so a player
      * beside or towering up next to the train never reads as aboard; the brief
      * seam flicker between groups that the pad would otherwise hide is instead
      * absorbed by {@link #OFF_GRACE_SCANS}.
      */
-    private static final double ROOF_STAND_SLACK = 1.0;
+    private static final double ROOF_STAND_SLACK = 3.0;
 
     /**
      * How far above the rail bed (in blocks of feet-Y) still counts as "on the
