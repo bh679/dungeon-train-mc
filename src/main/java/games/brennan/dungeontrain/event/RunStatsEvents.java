@@ -5,6 +5,7 @@ import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
@@ -150,11 +151,20 @@ public final class RunStatsEvents {
         // accrues live (BoardingProgressEvents), so it is NOT re-added here.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         UUID id = player.getUUID();
-        GlobalPlayerStats.addCarriages(id, run.cartsSinceDeath());
-        GlobalPlayerStats.addDistance(id, run.distanceBlocks());
-        GlobalPlayerStats.addBooks(id, run.booksReadCount());
-        GlobalPlayerStats.addFriends(id, run.befriendedCount());
-        long lifeDeaths = GlobalPlayerStats.addDeaths(id, 1L);
+        // Cheated runs don't accrue the cross-world lifetime counters. The death
+        // screen still renders below — it reads the per-run state plus the current
+        // (un-incremented) totals — so a cheating player still sees their summary.
+        boolean cheated = RunIntegrity.isCheated(player);
+        long lifeDeaths;
+        if (cheated) {
+            lifeDeaths = GlobalPlayerStats.totalDeaths(id);
+        } else {
+            GlobalPlayerStats.addCarriages(id, run.cartsSinceDeath());
+            GlobalPlayerStats.addDistance(id, run.distanceBlocks());
+            GlobalPlayerStats.addBooks(id, run.booksReadCount());
+            GlobalPlayerStats.addFriends(id, run.befriendedCount());
+            lifeDeaths = GlobalPlayerStats.addDeaths(id, 1L);
+        }
 
         // Roll the per-death narrative from the data-driven pool, keyed on the
         // killer + this run's depth / social / lifetime context.
@@ -179,7 +189,7 @@ public final class RunStatsEvents {
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
         // Best-effort: a Discord hiccup must never disrupt the death handling above.
-        if (DungeonTrainConfig.isDeathReportToDiscord()) {
+        if (!cheated && DungeonTrainConfig.isDeathReportToDiscord()) {
             try {
                 postRunSummary(player, event.getSource(), packet);
             } catch (Throwable t) {
@@ -250,6 +260,8 @@ public final class RunStatsEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isDeadOrDying()) return;
+        // Cheated runs don't post run summaries to Discord.
+        if (RunIntegrity.isCheated(player)) return;
         if (!DungeonTrainConfig.isDeathReportToDiscord()) return;
         try {
             UUID id = player.getUUID();
@@ -409,9 +421,12 @@ public final class RunStatsEvents {
         if (players.isEmpty()) return;
         for (ServerPlayer player : players) {
             PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+            boolean cheated = RunIntegrity.isCheated(player);
             AABB box = player.getBoundingBox().inflate(ENCOUNTER_RADIUS);
             for (Entity mob : level.getEntitiesOfClass(Entity.class, box, RunStatsEvents::isPlayerMob)) {
-                if (run.recordEncounter(mob.getUUID())) {
+                // Per-run encounter set still records (death-screen stat); the
+                // cross-world lifetime counter + milestone freeze for cheated runs.
+                if (run.recordEncounter(mob.getUUID()) && !cheated) {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
                 }

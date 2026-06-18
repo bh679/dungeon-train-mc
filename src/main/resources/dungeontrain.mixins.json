@@ -7,8 +7,7 @@
   "mixins": [
     "PlayerFudgeSpawnMixin",
     "LightningBoltVisualOnlyMixin",
-    "AdvancementVisibilityEvaluatorMixin",
-    "SimpleCriterionTriggerGameModeMixin"
+    "AdvancementVisibilityEvaluatorMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",

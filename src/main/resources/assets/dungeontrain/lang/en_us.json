@@ -1,4 +1,8 @@
 {
+  "chat.dungeontrain.cheat.title": "⚠ Cheating detected",
+  "chat.dungeontrain.cheat.cause.gamemode": "You switched to %s.",
+  "chat.dungeontrain.cheat.cause.command": "You used a command: %s",
+  "chat.dungeontrain.cheat.consequence": "Advancements you earn from now on in this world won't be saved to your profile or count toward your global stats.",
   "chat.dungeontrain.advancements_hint.1": "All aboard! Press %s to see all your Dungeon Train advancements.",
   "chat.dungeontrain.advancements_hint.2": "All aboard! Your journey log awaits - press %s.",
   "chat.dungeontrain.advancements_hint.3": "Next stop: your achievements. Press %s to view all Dungeon Train advancements.",
