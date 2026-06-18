@@ -124,21 +124,24 @@ public final class PlayerRunState {
      */
     private final Set<String> narrativeLetters;
     /**
-     * Visual identity of the FIRST PlayerMob befriended this run, or {@code null}
-     * if none yet (first-wins — see {@link #captureBefriendedAppearance}). Drives
-     * the death-screen DEEDS portrait, shipped in
-     * {@link games.brennan.dungeontrain.net.DeathStatsPacket}.
+     * Visual identity of the PlayerMob that likes this player most this run — the
+     * death-screen "friend" portrait — captured while it is loaded near the player
+     * and only kept when its feeling clears the friend threshold (see
+     * {@code RunStatsEvents}). {@code null} if no mob liked you enough. The
+     * companion {@link #friendFeeling} keeps the warmest feeling so a stronger
+     * friend supersedes a weaker one.
      *
      * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field
      * cap, see {@link #narrativeLetters}). It only needs to live until the death
-     * packet is built; the client rebuilds the portrait from the packet. A relog
-     * mid-run drops it until the next befriend — acceptable for a cosmetic.</p>
+     * packet is built; the client rebuilds the portrait from the packet.</p>
      */
-    private PlayerMobAppearance befriendedAppearance;
+    private PlayerMobAppearance friendAppearance;
+    /** Warmest feeling-toward-this-player (0–10) behind {@link #friendAppearance}; lower can be superseded. */
+    private float friendFeeling = Float.NEGATIVE_INFINITY;
     /**
      * Visual identity of the MOST-RECENT PlayerMob killed this run, or
      * {@code null} if none (last-wins — overwritten each kill). Same transient,
-     * non-codec rationale as {@link #befriendedAppearance}.
+     * non-codec rationale as {@link #friendAppearance}.
      */
     private PlayerMobAppearance killedAppearance;
 
@@ -458,19 +461,21 @@ public final class PlayerRunState {
         return befriendedMobs.size();
     }
 
-    /** Visual identity of the first PlayerMob befriended this run, or {@code null}. */
-    public PlayerMobAppearance befriendedAppearance() {
-        return befriendedAppearance;
+    /** Visual identity of the warmest PlayerMob friend this run (likes you most, above threshold), or {@code null}. */
+    public PlayerMobAppearance friendAppearance() {
+        return friendAppearance;
     }
 
-    /**
-     * Capture the befriended mob's appearance — first non-null wins, so the
-     * portrait shows the friend you made, not the last one. Null + later calls
-     * are ignored.
-     */
-    public void captureBefriendedAppearance(PlayerMobAppearance appearance) {
-        if (appearance != null && befriendedAppearance == null) {
-            befriendedAppearance = appearance;
+    /** The feeling (0–10) behind {@link #friendAppearance}, or {@link Float#NEGATIVE_INFINITY} if none captured. */
+    public float friendFeeling() {
+        return friendFeeling;
+    }
+
+    /** Keep the warmest friend's appearance this run — a higher feeling supersedes the current one. */
+    public void captureFriendAppearance(PlayerMobAppearance appearance, float feeling) {
+        if (appearance != null && feeling > friendFeeling) {
+            friendAppearance = appearance;
+            friendFeeling = feeling;
         }
     }
 
@@ -506,7 +511,8 @@ public final class PlayerRunState {
         damageTaken = 0.0;
         encounteredMobs.clear();
         befriendedMobs.clear();
-        befriendedAppearance = null;
+        friendAppearance = null;
+        friendFeeling = Float.NEGATIVE_INFINITY;
         killedAppearance = null;
     }
 

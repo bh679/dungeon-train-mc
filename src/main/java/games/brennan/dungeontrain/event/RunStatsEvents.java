@@ -77,6 +77,8 @@ public final class RunStatsEvents {
     private static final int ENCOUNTER_SCAN_PERIOD_TICKS = 10;
     /** Radius (blocks) within which a PlayerMob counts as "encountered". */
     private static final double ENCOUNTER_RADIUS = 16.0;
+    /** A PlayerMob whose feeling (0–10 scale, default 5) toward the player exceeds this is the death-screen "friend" (portrait). */
+    private static final float FRIEND_FEELING_MIN = 6.0f;
     /**
      * Upper bound on a single tracked damage event. Command / instakill sources
      * (e.g. {@code /kill} deals {@link Float#MAX_VALUE}) are already excluded by
@@ -262,9 +264,9 @@ public final class RunStatsEvents {
         // else the most-recent killed mob (drawn right), else none.
         byte side;
         PlayerMobAppearance portrait;
-        if (run.befriendedAppearance() != null) {
+        if (run.friendAppearance() != null) {
             side = 1;
-            portrait = run.befriendedAppearance();
+            portrait = run.friendAppearance();
         } else if (run.killedAppearance() != null) {
             side = 2;
             portrait = run.killedAppearance();
@@ -392,6 +394,15 @@ public final class RunStatsEvents {
                 if (run.recordEncounter(mob.getUUID())) {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
+                }
+                // Death-screen "friend" portrait: the PlayerMob that likes this
+                // player most, when that feeling clears the threshold. Captured
+                // here while the mob is loaded near the player (warmest wins).
+                if (mob instanceof PlayerMobEntity pm) {
+                    float feeling = pm.feelingToward(player);
+                    if (feeling > FRIEND_FEELING_MIN && feeling > run.friendFeeling()) {
+                        run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
+                    }
                 }
             }
         }
