@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:stone_brick_stairs" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.roof_run_1.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.roof_run_1.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "roof_run": {
+      "trigger": "dungeontrain:roof_run_groups",
+      "conditions": { "threshold": 1 }
+    }
+  },
+  "requirements": [["roof_run"]]
+}

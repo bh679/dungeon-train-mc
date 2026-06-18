@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/roof_run_1",
   "display": {
     "icon": { "id": "minecraft:stone_brick_slab" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.roof_runner.title" },
