@@ -918,7 +918,8 @@
       "summary": "The Dungeon Train CurseForge modpack now ships ModernFix as an on-by-default add-on, alongside AppleSkin and FerriteCore. It speeds up launch and world-load times and trims memory use \u2014 a welcome win on a heavy pack like Dungeon Train. It's optional: untick it at install if you'd rather not. (Modpack only \u2014 the mod jar is unchanged; ModernFix is also now listed as an optional companion on the mod page.)",
       "highlights": [
         "ModernFix added to the modpack, on by default (deselectable at install)",
-        "Faster launch + world-load and lower memory; verified safe alongside Sable"
+        "Faster launch + world-load and lower memory; verified safe alongside Sable",
+        "[Compatibility + launch/memory A/B test results](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#modernfix)"
       ],
       "pr": 451,
       "date": "2026-06-18",
