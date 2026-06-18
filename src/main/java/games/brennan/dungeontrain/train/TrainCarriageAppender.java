@@ -1846,6 +1846,7 @@ public final class TrainCarriageAppender {
         }
         Shipyard shipyard = Shipyards.of(level);
 
+        int released = 0;
         for (Iterator<UUID> it = current.iterator(); it.hasNext(); ) {
             UUID id = it.next();
             if (target.contains(id)) continue;
@@ -1853,15 +1854,22 @@ public final class TrainCarriageAppender {
             if (c == null) continue; // not yet visible — keep tracking
             shipyard.releaseForceLoad(c.ship());
             it.remove();
+            released++;
         }
+        int added = 0;
         for (UUID id : target) {
             if (current.contains(id)) continue;
             Trains.Carriage c = byId.get(id);
             if (c == null) continue;
             shipyard.forceLoad(c.ship());
             current.add(id);
+            added++;
         }
 
+        if (added > 0 || released > 0) {
+            LOGGER.info("[DungeonTrain] Force-load window trainId={} now holding {} trailing sub-level(s) (+{} −{}, target={})",
+                trainId, current.size(), added, released, target.size());
+        }
         if (current.isEmpty()) {
             FORCELOADED_BY_TRAIN.remove(trainId);
         }
