@@ -7,7 +7,7 @@
   "effect.dungeontrain.free_play.desc.1": "Advancements earned here won't be saved to your profile.",
   "effect.dungeontrain.free_play.desc.2": "Stats won't count toward your global totals.",
   "gui.dungeontrain.free_play.confirm.title": "Enter Free Play?",
-  "gui.dungeontrain.free_play.confirm.body": "This starts Free Play for the rest of this run. Keep playing freely — nothing is lost — but from here on:",
+  "gui.dungeontrain.free_play.confirm.body": "Free Play stays on for the rest of this run. Nothing is lost — but from here on:",
   "gui.dungeontrain.free_play.confirm.trigger": "Triggered by: %s",
   "gui.dungeontrain.free_play.confirm.continue": "Continue",
   "gui.dungeontrain.free_play.confirm.cancel": "Cancel, keep my run",
