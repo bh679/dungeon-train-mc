@@ -114,11 +114,11 @@ public final class NarrativeDeathScreen extends Screen {
 
     // ---- Page-to-page transition ----
     // Each page change plays: fade the UI out over the held photo, hold the bare
-    // photo, then fade the new UI in while the photo dissolves old -> new.
-    private static final long T_FADE = 350L;  // length of each UI fade (out, then in)
-    private static final long T_HOLD = 500L;  // bare-photo hold between the two fades
-    private static final long T_IMG_DELAY = 0L;       // dip starts with the UI fade — no delay
-    private static final long T_IMG  = 2 * T_FADE;    // dip to black + back, each half at the UI-fade speed
+    // photo, then fade the new UI in while the photo dips to black and rises back.
+    private static final long T_FADE = 350L;       // length of each UI fade (out, then in)
+    private static final long T_HOLD = 500L;       // bare-photo hold between the two fades
+    private static final long T_DIP_DOWN = T_FADE;  // photo dims to black, synced with the UI fade-in
+    private static final long T_DIP_UP   = 10_000L; // photo rises back in from black — a slow 10s reveal
     // uiAlpha at/above this counts as "settled": elements that can't take an
     // alpha tint (item icons, the comment box) only show once the page is settled.
     private static final float SETTLED = 0.95f;
@@ -146,6 +146,16 @@ public final class NarrativeDeathScreen extends Screen {
     private float uiAlpha = 0.0f;          // 0..1 — how present the chrome/text is this frame
     private float photoBlack = 0.0f;       // 0..1 — black fill laid over the photo (the dip)
     private boolean photoNew = false;      // show the incoming photo (true) vs the held one (false)
+    // A skip during the UI fade hands the still-dark photo to a quick reveal
+    // (fast-track) rather than the full T_DIP_UP or an instant snap.
+    private long imgFinishMs = 0L;         // start of the fast image reveal (0 = none)
+    private float imgFinishFrom = 0.0f;    // photoBlack when the fast reveal began
+    // True only while the chrome is mid-fade (fade-out / hold / fade-in). The slow
+    // image rise afterwards is NOT busy: a click then advances rather than skipping.
+    private boolean uiBusy = false;
+    // photoBlack a transition inherits at its start; if it's > 0 (advancing mid-rise)
+    // the photo finishes rising in during the fade-out instead of snapping to full.
+    private float dipStartBlack = 0.0f;
 
     // One ride photo per page, assigned up-front (unused-first) so pages don't
     // repeat a shot. Empty when the feature is off / no photos were captured.
@@ -320,10 +330,6 @@ public final class NarrativeDeathScreen extends Screen {
 
     // ---- Transition / backdrop ----
 
-    private boolean isTransitioning() {
-        return transStartMs != 0L;
-    }
-
     /** True once the page is settled enough to show non-fadeable elements. */
     private boolean settled() {
         return uiAlpha >= SETTLED;
@@ -365,6 +371,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     /** Begin a transition toward {@code target}; the page swaps when its fade-out ends. */
     private void startTransition(int target) {
+        imgFinishMs = 0L;               // cancel any in-flight fast reveal
+        dipStartBlack = photoBlack;     // carry current darkness (advancing mid-rise won't snap)
         fromShot = bgFor(currentPage);
         toShot = bgFor(target);
         pendingPage = target;
@@ -372,7 +380,11 @@ public final class NarrativeDeathScreen extends Screen {
         transStartMs = Util.getMillis();
     }
 
-    /** Jump a running transition straight to its settled end (a click / Space skips the fade). */
+    /**
+     * A click / Space during a transition settles the UI and page immediately and
+     * fast-tracks the photo: hands the still-dark shot to a quick reveal (over
+     * {@link #T_FADE}) instead of finishing the slow rise — and not a hard snap.
+     */
     private void skipTransition() {
         if (transStartMs == 0L) return;
         if (!swapped && pendingPage >= 0) {
@@ -380,13 +392,14 @@ public final class NarrativeDeathScreen extends Screen {
             rebuildWidgets();
         }
         swapped = true;
+        imgFinishFrom = photoBlack;       // wherever the dip is now...
+        imgFinishMs = Util.getMillis();   // ...rises the rest of the way fast
         transStartMs = 0L;
         pendingPage = -1;
         fromShot = null;
         toShot = null;
         uiAlpha = 1.0f;
-        photoBlack = 0.0f;
-        photoNew = false;
+        photoNew = false;                 // render falls back to the settled page's photo
     }
 
     /**
@@ -395,24 +408,42 @@ public final class NarrativeDeathScreen extends Screen {
      * page swap when the fade-out ends, and settle when complete.
      */
     private void updateTransition(long now) {
+        if (imgFinishMs != 0L) {
+            // Fast-track reveal after a skip: ramp the black overlay from where the
+            // dip was down to nothing over T_FADE; the UI/page are already settled.
+            uiBusy = false;
+            uiAlpha = 1.0f;
+            photoNew = false;
+            float t = Math.min(1.0f, (float) (now - imgFinishMs) / (float) T_FADE);
+            photoBlack = imgFinishFrom * (1.0f - smooth(t));
+            if (t >= 1.0f) {
+                imgFinishMs = 0L;
+                photoBlack = 0.0f;
+            }
+            return;
+        }
         if (transStartMs == 0L) {
             // Before the screen has opened (init not yet run) stay transparent so a
             // stray pre-init frame can't flash the UI in fully rendered. Once open
             // and not transitioning, the page is fully present.
+            uiBusy = false;
             uiAlpha = opened ? 1.0f : 0.0f;
             photoBlack = 0.0f;
             photoNew = false;
             return;
         }
         long elapsed = Math.max(0L, now - transStartMs);
-        // The photo dip (fade-in only) holds off until partway through the UI fade,
-        // then runs slowly: the old photo dims to black and the new one rises from
-        // black beneath the already-settling UI. With no actual switch (initial
-        // open, or same photo) there's no dip and the fade-in just tracks the UI.
+        // On a real photo switch the dip runs during the fade-in: the old photo dims
+        // to black with the UI fade (T_DIP_DOWN), then the new one rises back from
+        // black slowly (T_DIP_UP). With no switch (initial open / same photo) there's
+        // no dip and the fade-in just tracks the UI.
         boolean switching = toShot != null && !toShot.equals(fromShot);
-        long imgDelay = switching ? T_IMG_DELAY : 0L;
-        long imgDur = switching ? T_IMG : T_FADE;
-        long total = T_FADE + T_HOLD + imgDelay + imgDur;
+        long total = switching
+                ? (T_FADE + T_HOLD + T_DIP_DOWN + T_DIP_UP)
+                : (T_FADE + T_HOLD + T_FADE);
+        // Busy through fade-out + hold + fade-in; the slow image rise after that is
+        // settled, so a click then advances instead of skipping.
+        uiBusy = elapsed < (T_FADE + T_HOLD + T_FADE);
 
         // Once the fade-out has finished (UI invisible), apply the deferred page
         // switch so the new page's widgets/stats rebuild unseen during the hold.
@@ -436,35 +467,35 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         if (elapsed < T_FADE) {
-            // Fade the old UI out over the held photo — no dip yet.
-            uiAlpha = smooth(1.0f - (float) elapsed / (float) T_FADE);
-            photoBlack = 0.0f;
+            // Fade the old UI out; if the photo hadn't finished rising in yet, finish
+            // it (dipStartBlack -> 0) in step with the fade-out so it's fully revealed
+            // by the time the UI is gone.
+            float k = (float) elapsed / (float) T_FADE;
+            uiAlpha = smooth(1.0f - k);
+            photoBlack = dipStartBlack * (1.0f - smooth(k));
             photoNew = false;
         } else if (elapsed < T_FADE + T_HOLD) {
-            // Hold the bare photo with no UI.
+            // Hold the now fully-revealed photo with no UI.
             uiAlpha = 0.0f;
             photoBlack = 0.0f;
             photoNew = false;
         } else {
-            // Fade the new UI in (over T_FADE); after imgDelay, dip the photo to
-            // black (first half) then raise the new one from black (second half).
-            // The photo swaps under full black at the midpoint, so it isn't seen.
+            // Fade the new UI in (over T_FADE). The photo dims to black over
+            // T_DIP_DOWN (with the UI fade), then rises back from black over the slow
+            // T_DIP_UP; it swaps under full black at the bottom, so the cut isn't seen.
             long inMs = elapsed - T_FADE - T_HOLD;
             uiAlpha = smooth(Math.min(1.0f, (float) inMs / (float) T_FADE));
-            long imgMs = inMs - imgDelay;
-            if (!switching || imgMs <= 0L) {
+            if (!switching) {
                 // No real switch (initial open / same photo) — never dip.
                 photoBlack = 0.0f;
                 photoNew = false;
+            } else if (inMs < T_DIP_DOWN) {
+                photoNew = false;                                          // old photo...
+                photoBlack = smooth((float) inMs / (float) T_DIP_DOWN);    // ...dimming to black
             } else {
-                float p = Math.min(1.0f, (float) imgMs / (float) imgDur);
-                if (p < 0.5f) {
-                    photoNew = false;                          // old photo...
-                    photoBlack = smooth(p * 2.0f);             // ...dimming to black
-                } else {
-                    photoNew = true;                           // new photo (swapped under black)...
-                    photoBlack = smooth(1.0f - (p - 0.5f) * 2.0f); // ...rising from black
-                }
+                photoNew = true;                                          // new photo (swapped under black)...
+                long upMs = inMs - T_DIP_DOWN;
+                photoBlack = smooth(1.0f - Math.min(1.0f, (float) upMs / (float) T_DIP_UP)); // ...rising from black
             }
         }
     }
@@ -690,9 +721,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
-        // A click while a fade is running skips it rather than acting on the
-        // fading / hidden controls beneath.
-        if (button == 0 && isTransitioning()) { skipTransition(); return true; }
+        // While the chrome is mid-fade, any click fast-tracks it rather than acting
+        // on the fading / hidden controls beneath. Once settled (incl. the slow image
+        // rise) clicks fall through, so only the Continue button advances — not empty space.
+        if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leave(); return true; }
@@ -719,8 +751,8 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Space / Enter act like Continue: skip a running fade, else advance.
-        if (isTransitioning()) {
+        // Space / Enter act like Continue: fast-track while the UI is fading, else advance.
+        if (uiBusy) {
             if (isAdvanceKey(keyCode)) { skipTransition(); return true; }
             return super.keyPressed(keyCode, scanCode, modifiers);
         }
@@ -738,7 +770,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void advance() {
-        if (pages.isEmpty() || isTransitioning()) return;
+        if (pages.isEmpty() || uiBusy) return;
         Page page = pages.get(currentPage);
         if (page.kind() == Kind.SURVEY) maybeSubmit(page.survey());
         if (currentPage < pages.size() - 1) {
@@ -747,7 +779,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void back() {
-        if (isTransitioning()) return;
+        if (uiBusy) return;
         if (currentPage > 0) {
             startTransition(currentPage - 1);
         }
