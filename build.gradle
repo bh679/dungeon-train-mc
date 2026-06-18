@@ -210,6 +210,11 @@ dependencies {
     implementation "bh679:discordpresence:${discordpresence_version}"
     jarJar(group: 'bh679', name: 'discordpresence', version: discordpresence_version)
 
+    // EnderChestPersistence — global Ender Chest persistence across worlds + per-game-mode
+    // isolation. Extracted from DT; bundled here so players get it without a separate install.
+    implementation "bh679:enderchestpersistence:${enderchestpersistence_version}"
+    jarJar(group: 'bh679', name: 'enderchestpersistence', version: enderchestpersistence_version)
+
     // Compile against the companion math types extracted from Sable's
     // jar-in-jar bundle. compileOnly because at runtime the companion is
     // loaded by NeoForge from Sable's own jarJar — we don't ship it.
@@ -277,7 +282,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         adventureitemnames_version : adventureitemnames_version,
         adventureitemstats_version : adventureitemstats_version,
         playermob_version          : playermob_version,
-        discordpresence_version    : discordpresence_version,
+        discordpresence_version          : discordpresence_version,
+        enderchestpersistence_version    : enderchestpersistence_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

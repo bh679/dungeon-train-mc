@@ -49,6 +49,13 @@ logoFile="logo.png"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
+    modId="enderchestpersistence"
+    type="required"
+    versionRange="[${enderchestpersistence_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
     modId="neoforge"
     type="required"
     versionRange="[${neo_version},)"
