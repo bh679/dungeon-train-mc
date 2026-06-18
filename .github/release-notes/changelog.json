@@ -716,6 +716,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-screen-lectern-books-first-death",
+      "version": "0.316.0",
+      "type": "feat",
+      "title": "Death screen: lectern stories count as books, plus first-death send-off",
+      "summary": "Stories you read at narrative lecterns now count toward the \"Books read\" tally on your death-screen run summary \u2014 previously only books read from your hand were counted. And your very first death now gets its own bespoke lines on the \"all your lives\" and \"the platform\" pages, instead of the generic send-off written for veteran riders.",
+      "highlights": [
+        "Narrative-lectern stories now count toward \"Books read\" on the death screen",
+        "Unique first-death dialogue on the \"all your lives\" and \"the platform\" pages"
+      ],
+      "pr": 434,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
