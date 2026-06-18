@@ -6,6 +6,12 @@ import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
+import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
+import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
+import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
+import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
+import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -105,6 +111,11 @@ public final class NarrativeDeathScreen extends Screen {
     private int lastSurveyCount = -1;
     private EditBox commentBox;
 
+    // One ride photo per page, assigned up-front (unused-first) so pages don't
+    // repeat a shot. Empty when the feature is off / no photos were captured.
+    private static final RideSnapshot[] NO_BACKGROUNDS = new RideSnapshot[0];
+    private RideSnapshot[] pageBackgrounds = NO_BACKGROUNDS;
+
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
     private final List<Rect> scoreRects = new ArrayList<>();
@@ -131,6 +142,7 @@ public final class NarrativeDeathScreen extends Screen {
         pages = buildPages();
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
+        assignBackgrounds();
         lastSurveyCount = SurveyClientState.questions().size();
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
@@ -144,7 +156,12 @@ public final class NarrativeDeathScreen extends Screen {
             String qid = p.survey().id();
             commentBox.setValue(comments.getOrDefault(qid, ""));
             commentBox.setResponder(s -> comments.put(qid, s));
-            commentBox.setHint(Component.translatable("gui.dungeontrain.death.narr.comment"));
+            // A text question (no rating scale) makes the box the sole answer, so prompt for it
+            // directly; a scale question's comment just explains the score.
+            boolean hasScale = p.survey().scaleMax() >= p.survey().scaleMin();
+            commentBox.setHint(Component.translatable(hasScale
+                    ? "gui.dungeontrain.death.narr.comment"
+                    : "gui.dungeontrain.death.narr.answer"));
             addRenderableWidget(commentBox);
         }
     }
@@ -160,11 +177,20 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.fill(0, 0, this.width, this.height, OVERLAY);
-
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
         Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+
+        // Backdrop: this run's third-person ride photos, assigned one per page
+        // (preferring photos not used on another page), under a legibility vignette.
+        // Falls back to the solid overlay when the feature is off or no photos exist.
+        RideSnapshot bg = (currentPage >= 0 && currentPage < pageBackgrounds.length)
+                ? pageBackgrounds[currentPage] : null;
+        if (bg != null) {
+            DeathBackgroundPainter.draw(g, bg, this.width, this.height);
+        } else {
+            g.fill(0, 0, this.width, this.height, OVERLAY);
+        }
 
         // Train engine: full on the first screen (as if aboard), fading evenly to
         // silence by the last screen — and rising again if the player steps back.
@@ -209,12 +235,48 @@ public final class NarrativeDeathScreen extends Screen {
         }
     }
 
+    /**
+     * Assign one ride photo to each page up-front, preferring photos not yet used
+     * on another page (so the pages don't repeat the same shot). Re-run whenever
+     * the page set changes; the gallery is frozen at death, so the result is
+     * stable across page navigation. Leaves {@link #pageBackgrounds} empty when
+     * the feature is off or no photos were captured this run → the solid overlay
+     * is used instead.
+     */
+    private void assignBackgrounds() {
+        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty() || pages.isEmpty()) {
+            pageBackgrounds = NO_BACKGROUNDS;
+            return;
+        }
+        List<List<SnapshotTag>> chains = new ArrayList<>(pages.size());
+        for (Page p : pages) chains.add(chainFor(p.kind()));
+        pageBackgrounds = DeathBackgroundAssigner.assign(chains, RideSnapshotGallery.all());
+    }
+
+    /** Each page's thematic fallback chain (tier 0 = preferred tag; empty = any shot). */
+    private static List<SnapshotTag> chainFor(Kind kind) {
+        return switch (kind) {
+            case FALL     -> List.of(SnapshotTag.SCENIC);
+            case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
+            case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
+            case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
+            case SURVEY, PLATFORM -> List.of();
+        };
+    }
+
     // ---- Page renderers. Each returns the y below its content. ----
 
     private int drawFall(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
                          int left, int w, int cx, int y, int mouseX, int mouseY) {
-        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
-        y += 14;
+        // The fall-page title is the second-person death cause ("You fell from a high
+        // place") when the server sent one, wrapped in the kicker style so a long cause
+        // can't clip; otherwise the static "the fall" kicker.
+        if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
+            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y, KICKER) + 3;
+        } else {
+            drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
+            y += 14;
+        }
         drawTrain(g, left, w, y, currentPage);
         y += 46;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);
@@ -312,22 +374,25 @@ public final class NarrativeDeathScreen extends Screen {
         if (e != null) {
             y = drawQuestion(g, e.prompt(), cx, w, y);
             y += 4;
-            int n = e.scaleMax() - e.scaleMin() + 1;
-            if (n < 1) n = 1;
-            int tile = 22, gap = 4;
-            int rowW = n * tile + (n - 1) * gap;
-            int sx = cx - rowW / 2;
-            int selected = scores.getOrDefault(e.id(), -1);
-            for (int i = 0; i < n; i++) {
-                int score = e.scaleMin() + i;
-                int tx = sx + i * (tile + gap);
-                boolean sel = selected == score;
-                g.fill(tx, y, tx + tile, y + tile, sel ? BTN_PRI_BG : SCORE_BG);
-                drawBorder(g, tx, y, tile, tile, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
-                drawCenteredStr(g, Integer.toString(score), tx + tile / 2, y + (tile - this.font.lineHeight) / 2 + 1, sel ? 0xFFFFFFFF : SCORE_TEXT);
-                scoreRects.add(new Rect(tx, y, tile, tile));
+            // The 0–N rating row — only for scale questions. A text question
+            // (scaleMax < scaleMin) shows no tiles; its answer box is the sole input.
+            if (e.scaleMax() >= e.scaleMin()) {
+                int n = e.scaleMax() - e.scaleMin() + 1;
+                int tile = 22, gap = 4;
+                int rowW = n * tile + (n - 1) * gap;
+                int sx = cx - rowW / 2;
+                int selected = scores.getOrDefault(e.id(), -1);
+                for (int i = 0; i < n; i++) {
+                    int score = e.scaleMin() + i;
+                    int tx = sx + i * (tile + gap);
+                    boolean sel = selected == score;
+                    g.fill(tx, y, tx + tile, y + tile, sel ? BTN_PRI_BG : SCORE_BG);
+                    drawBorder(g, tx, y, tile, tile, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
+                    drawCenteredStr(g, Integer.toString(score), tx + tile / 2, y + (tile - this.font.lineHeight) / 2 + 1, sel ? 0xFFFFFFFF : SCORE_TEXT);
+                    scoreRects.add(new Rect(tx, y, tile, tile));
+                }
+                y += tile + 8;
             }
-            y += tile + 8;
             if (e.allowComment() && commentBox != null) {
                 int boxW = Math.min(w, 256);
                 commentBox.setX(cx - boxW / 2);
@@ -448,10 +513,19 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void maybeSubmit(SurveyQuestionPayload.Entry e) {
-        if (e == null) return;
-        int score = scores.getOrDefault(e.id(), -1);
-        if (score < 0 || submitted.contains(e.id())) return;
-        DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comments.getOrDefault(e.id(), "")));
+        if (e == null || submitted.contains(e.id())) return;
+        String comment = comments.getOrDefault(e.id(), "").trim();
+        int score;
+        if (e.scaleMax() >= e.scaleMin()) {
+            // Scale question: needs a chosen rating; the comment stays optional.
+            score = scores.getOrDefault(e.id(), -1);
+            if (score < 0) return;
+        } else {
+            // Text question: the typed answer IS the submission — send nothing until it's entered.
+            if (comment.isEmpty()) return;
+            score = 0; // unused server-side (DP omits the Rating field for no-scale questions)
+        }
+        DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
     }
 

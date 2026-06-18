@@ -82,8 +82,8 @@ public final class DeathLoreStore {
 
     /** Optional match conditions for an entry. {@link #ANY} matches every death. */
     public record Condition(List<ResourceLocation> causes, int minCarriage, int maxCarriage,
-                            int minFriends, int minBooks, long minDeaths, int minMobs) {
-        static final Condition ANY = new Condition(List.of(), 0, Integer.MAX_VALUE, 0, 0, 0L, 0);
+                            int minFriends, int minBooks, long minDeaths, int minMobs, long maxDeaths) {
+        static final Condition ANY = new Condition(List.of(), 0, Integer.MAX_VALUE, 0, 0, 0L, 0, Long.MAX_VALUE);
 
         boolean matches(Context ctx) {
             if (!causes.isEmpty() && (ctx.cause() == null || !causes.contains(ctx.cause()))) return false;
@@ -91,7 +91,7 @@ public final class DeathLoreStore {
             if (ctx.friends() < minFriends) return false;
             if (ctx.books() < minBooks) return false;
             if (ctx.mobs() < minMobs) return false;
-            if (ctx.deaths() < minDeaths) return false;
+            if (ctx.deaths() < minDeaths || ctx.deaths() > maxDeaths) return false;
             return true;
         }
     }
@@ -194,7 +194,8 @@ public final class DeathLoreStore {
         int minB = intval(c, "min_books", 0);
         int minM = intval(c, "min_mobs", 0);
         long minD = c.has("min_deaths") && c.get("min_deaths").isJsonPrimitive() ? c.get("min_deaths").getAsLong() : 0L;
-        return new Condition(List.copyOf(causes), minC, maxC, minF, minB, minD, minM);
+        long maxD = c.has("max_deaths") && c.get("max_deaths").isJsonPrimitive() ? c.get("max_deaths").getAsLong() : Long.MAX_VALUE;
+        return new Condition(List.copyOf(causes), minC, maxC, minF, minB, minD, minM, maxD);
     }
 
     private static String str(JsonObject o, String key, String def) {

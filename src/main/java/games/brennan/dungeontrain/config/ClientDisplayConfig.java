@@ -49,6 +49,10 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue OPENED_ADVANCEMENTS_BEFORE;
+    public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOTS_ENABLED;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_INTERVAL_SECONDS;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_STORED;
+    public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOT_CHAT_LOG;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -60,6 +64,10 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
         OPENED_ADVANCEMENTS_BEFORE = pair.getLeft().openedAdvancementsBefore;
+        RIDE_SNAPSHOTS_ENABLED = pair.getLeft().rideSnapshotsEnabled;
+        RIDE_SNAPSHOT_INTERVAL_SECONDS = pair.getLeft().rideSnapshotIntervalSeconds;
+        RIDE_SNAPSHOT_MAX_STORED = pair.getLeft().rideSnapshotMaxStored;
+        RIDE_SNAPSHOT_CHAT_LOG = pair.getLeft().rideSnapshotChatLog;
     }
 
     private ClientDisplayConfig() {}
@@ -92,7 +100,23 @@ public final class ClientDisplayConfig {
                 .define("openedBefore", false);
         b.pop();
 
-        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, openedAdvancementsBefore);
+        b.push("rideSnapshots");
+        ModConfigSpec.BooleanValue rideSnapshotsEnabled = b
+                .comment("Take third-person photos throughout your ride and show them as the death-screen backgrounds. Set false to disable both capture and the backdrops entirely.")
+                .define("enabled", true);
+        ModConfigSpec.IntValue rideSnapshotIntervalSeconds = b
+                .comment("Baseline seconds between scenic ride photos. Context shots (nearby combat, weapon/tool changes, reading a narrative book) are taken on top of this on their own cooldowns.")
+                .defineInRange("intervalSeconds", 30, 5, 120);
+        ModConfigSpec.IntValue rideSnapshotMaxStored = b
+                .comment("Maximum ride photos kept in memory per run (oldest dropped first). Each is a small off-screen texture; higher = more variety behind the death pages, slightly more VRAM.")
+                .defineInRange("maxStored", 12, 4, 32);
+        ModConfigSpec.BooleanValue rideSnapshotChatLog = b
+                .comment("Log each ride photo to chat ([Ride Snapshot] TAG - reason) as it is taken. Toggle in-game via the X menu -> Options. Off by default.")
+                .define("chatLog", false);
+        b.pop();
+
+        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, openedAdvancementsBefore,
+                rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog);
     }
 
     /**
@@ -217,12 +241,44 @@ public final class ClientDisplayConfig {
         OPENED_ADVANCEMENTS_BEFORE.save();
     }
 
+    // ----- Ride snapshots (third-person photos used as death-screen backgrounds) -----
+
+    /** Capture + death-screen backdrops on? Defaults to {@code true} (also pre-load). */
+    public static boolean isRideSnapshotsEnabled() {
+        return !isLoaded() || RIDE_SNAPSHOTS_ENABLED.get();
+    }
+
+    /** Baseline seconds between scenic ride photos. */
+    public static int getRideSnapshotIntervalSeconds() {
+        return isLoaded() ? RIDE_SNAPSHOT_INTERVAL_SECONDS.get() : 30;
+    }
+
+    /** Max photos held in memory per run (oldest evicted first). */
+    public static int getRideSnapshotMaxStored() {
+        return isLoaded() ? RIDE_SNAPSHOT_MAX_STORED.get() : 12;
+    }
+
+    /** Log each ride photo to chat as it's taken? Toggled from the X menu → Options. */
+    public static boolean isRideSnapshotChatLogEnabled() {
+        return isLoaded() && RIDE_SNAPSHOT_CHAT_LOG.get();
+    }
+
+    public static void setRideSnapshotChatLog(boolean value) {
+        if (!isLoaded()) return;
+        RIDE_SNAPSHOT_CHAT_LOG.set(value);
+        RIDE_SNAPSHOT_CHAT_LOG.save();
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
             ModConfigSpec.DoubleValue hudChannel,
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
-            ModConfigSpec.BooleanValue openedAdvancementsBefore
+            ModConfigSpec.BooleanValue openedAdvancementsBefore,
+            ModConfigSpec.BooleanValue rideSnapshotsEnabled,
+            ModConfigSpec.IntValue rideSnapshotIntervalSeconds,
+            ModConfigSpec.IntValue rideSnapshotMaxStored,
+            ModConfigSpec.BooleanValue rideSnapshotChatLog
     ) {}
 }

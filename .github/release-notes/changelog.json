@@ -700,6 +700,215 @@
       "released": true,
       "released_in": "v0.316.0",
       "released_at": "2026-06-17T05:59:32Z"
+    },
+    {
+      "id": "cinematographer-doors-only",
+      "version": "0.316.0",
+      "type": "fix",
+      "title": "Cinematographer mode only opens doors now",
+      "summary": "The spectator filming mode added in 0.316.0 was also swinging open trapdoors, fence gates and barrels as the camera drifted past. It now opens only actual doors, so set dressing and storage stay put while you film.",
+      "highlights": [
+        "Trapdoors, fence gates and barrels no longer flip open in cinematographer mode",
+        "Only real doors auto-open as the camera approaches"
+      ],
+      "pr": 431,
+      "date": "2026-06-17",
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
+    },
+    {
+      "id": "ender-chest-persistent",
+      "version": "0.316.0",
+      "type": "feat",
+      "title": "Persistent Ender Chest across runs",
+      "summary": "The Ender Chest now persists between worlds \u2014 items you store survive your death and carry into the next run. Survival and creative inventories are kept separate, so switching game modes gives you a fresh Ender Chest for that mode.",
+      "highlights": [
+        "Ender Chest contents carry forward when you die and start a new world",
+        "Separate inventory per game mode (survival, creative, adventure, spectator)",
+        "Swaps live when you switch game modes mid-session"
+      ],
+      "date": "2026-06-17",
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
+    },
+    {
+      "id": "death-screen-lectern-books-first-death",
+      "version": "0.316.0",
+      "type": "feat",
+      "title": "Death screen: lectern stories count as books, plus first-death send-off",
+      "summary": "Stories you read at narrative lecterns now count toward the \"Books read\" tally on your death-screen run summary \u2014 previously only books read from your hand were counted. And your very first death now gets its own bespoke lines on the \"all your lives\" and \"the platform\" pages, instead of the generic send-off written for veteran riders.",
+      "highlights": [
+        "Narrative-lectern stories now count toward \"Books read\" on the death screen",
+        "Unique first-death dialogue on the \"all your lives\" and \"the platform\" pages"
+      ],
+      "pr": 434,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
+    },
+    {
+      "id": "open-ended-feedback-survey-question",
+      "version": "0.317.0",
+      "type": "feat",
+      "title": "Open-ended feedback survey question",
+      "summary": "After you die, the feedback survey's second question is now open-ended \u2014 \"If you could change one thing about the mod, what would it be?\" \u2014 answered in a free-text box instead of a 0\u201310 rating. The first question (how likely you'd recommend the game) is unchanged, and your answer is only sent if you actually type something.",
+      "highlights": [
+        "Survey's second question is now a free-text \"what would you change?\" prompt",
+        "Replaces the old difficulty-progression 0\u201310 rating"
+      ],
+      "pr": 435,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
+    },
+    {
+      "id": "cinematographer-clearview",
+      "version": "0.317.0",
+      "type": "feat",
+      "title": "Cinematographer clear-view: see through walls to film the train",
+      "summary": "TrainCinematographer mode gains a clear-view sub-mode: while filming, the blocks directly in front of the camera turn invisible so terrain, carriage walls and clutter stop blocking the shot \u2014 then quietly return as you pan away, leaving the world untouched. Doors, trapdoors and slabs are left alone, and the camera's automatic door-opening now reaches much further down the train.",
+      "highlights": [
+        "New: /dt cinematographer clearview on|off \u2014 see straight through whatever the camera is pointed at",
+        "Blocks turn invisible (not removed), so nothing collapses and your train stays intact \u2014 decorated pots, bookshelves and chests come back with their contents",
+        "Cinematographer now auto-opens doors much further ahead (50 blocks)"
+      ],
+      "pr": 437,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
+    },
+    {
+      "id": "enderchest-persistence-sibling-mod",
+      "version": "0.317.0",
+      "type": "refactor",
+      "title": "Ender Chest Persistence extracted to standalone mod",
+      "summary": "The Ender Chest cross-world and per-game-mode persistence is now shipped as the standalone Ender Chest Persistence mod (bundled in DT's jar, so no separate install is needed). The player-facing behaviour is identical \u2014 Ender Chest contents are preserved across world resets and isolated by game mode.",
+      "highlights": [],
+      "pr": 438,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
+    },
+    {
+      "id": "ride-snapshots-death-backgrounds",
+      "version": "0.317.0",
+      "type": "feat",
+      "title": "Photos of your ride behind the death screen",
+      "summary": "The train now quietly snaps third-person photos of your journey and shows them as the backdrop on the death screen \u2014 a recap of your run, with the most fitting shot behind each page.",
+      "highlights": [
+        "Photos are taken throughout the ride and become the background on each death-screen page",
+        "Shots favour well-lit moments where you're in clear view, and capture key beats \u2014 fights, new armour, opening chests, breaking pots, reading lore, and meeting travellers",
+        "Optional chat log of when each photo is taken \u2014 toggle it in the X menu under Options"
+      ],
+      "pr": 440,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
+    },
+    {
+      "id": "zombiesrooms-books-refresh",
+      "version": "0.318.0",
+      "type": "content",
+      "title": "Tougher zombie rooms + book carriage refresh",
+      "summary": "Zombie carriages now spawn more zombies and are lit with torches in the corners, and the book carriage's room layout has been refreshed.",
+      "highlights": [
+        "Zombie rooms spawn more zombies, now torch-lit",
+        "Refreshed book carriage layout"
+      ],
+      "pr": 442,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "ride-photo-clear-line-of-sight",
+      "version": "0.318.0",
+      "type": "fix",
+      "title": "Death-screen ride photos only snap when you're in clear view",
+      "summary": "Ride photos now confirm there's an unobstructed line to your character before snapping, so a death-screen background never shows you hidden behind a carriage wall. Inside walled carriages the camera finds an angle that actually sees you \u2014 down an aisle or through a doorway \u2014 or skips the shot until one opens up.",
+      "highlights": [
+        "No more death-screen photos of the back of a wall \u2014 every shot has a clear view of you",
+        "Works inside Sable carriages, not just open decks: the camera checks the carriage's own walls",
+        "If nothing can see you right now, the photo is skipped and retried instead of captured blind"
+      ],
+      "pr": 443,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "modpack-ferritecore",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "FerriteCore added to the modpack for lower memory use",
+      "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
+      "highlights": [
+        "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
+        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable)."
+      ],
+      "pr": 445,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "death-cause-on-fall-screen",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "Cause of death on the fall screen",
+      "summary": "The death screen's first page now tells you what actually ended the run. Its title shows your cause of death in the second person \u2014 \"You fell from a high place\", \"You were slain by a zombie\", \"You blew up\" \u2014 instead of the generic \"the fall\".",
+      "highlights": [
+        "Fall-page title now names how you died",
+        "Reads in second person (\"You fell from a high place\", \"You were blown up by a creeper\")"
+      ],
+      "pr": 444,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "biome-diversity-achievements",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "Biome-diversity achievements",
+      "summary": "Ride the Dungeon Train through a variety of biomes in a single life to earn four new achievements \u2014 from your first handful of biomes all the way to seeing every kind of terrain the world has to offer.",
+      "highlights": [
+        "Far Afield, Many Lands & World Without End \u2014 ride through 10, 17 and 25 different biomes in a single life",
+        "Terra Omnia \u2014 visit all 8 biome families (forest, frozen, jungle, desert, savanna, mountain, wetland and ocean) in one life",
+        "A 'Biome family discovered (N/8)' message keeps track as you roll into each new kind of terrain"
+      ],
+      "pr": 446,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "ride-photo-pacing-and-dedup",
+      "version": "0.319.0",
+      "type": "fix",
+      "title": "Ride photos paced across your journey, with no repeats on the death screen",
+      "summary": "Ride photos no longer bunch up at the start of a run. The first photo of each kind is snapped as soon as it happens, then each kind spaces out the further you travel. The death screen also no longer shows the same photo on more than one page.",
+      "highlights": [
+        "First scenic/combat/gear/lore/social photo is taken as soon as it happens, then spaces out as you travel",
+        "Each death-screen page shows a different photo where enough were captured"
+      ],
+      "pr": 448,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
