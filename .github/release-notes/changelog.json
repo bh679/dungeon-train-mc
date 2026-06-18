@@ -907,9 +907,9 @@
       ],
       "pr": 448,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     },
     {
       "id": "modpack-modernfix",
@@ -924,9 +924,9 @@
       ],
       "pr": 451,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     },
     {
       "id": "ecp-release-metadata",
@@ -936,9 +936,9 @@
       "summary": "CurseForge and Modrinth now show the ender-chest-persistence mod as embedded inside Dungeon Train, matching the existing AIN/AIS/PMOB declarations.",
       "highlights": [],
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     },
     {
       "id": "snapshot-perf-gate",
@@ -953,9 +953,9 @@
       ],
       "pr": 453,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     },
     {
       "id": "ride-photo-no-adjacent-repeat",
@@ -969,9 +969,9 @@
       ],
       "pr": 455,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     },
     {
       "id": "deeds-playermob-portrait",
@@ -987,9 +987,9 @@
       ],
       "pr": 454,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     }
   ]
 }
