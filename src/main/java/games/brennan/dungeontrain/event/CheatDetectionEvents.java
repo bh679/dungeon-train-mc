@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
+import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -14,6 +15,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.CommandEvent;
+import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.util.Map;
@@ -115,6 +117,19 @@ public final class CheatDetectionEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (RunIntegrity.isCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // death cleared the effect; re-apply
+        }
+    }
+
+    /**
+     * Free Play is permanent for the run — block its removal by {@code /effect
+     * clear}, milk, or any cure while the run is still Free Play. (Once a new
+     * world clears the flag the effect isn't present to remove.)
+     */
+    @SubscribeEvent
+    public static void onEffectRemove(MobEffectEvent.Remove event) {
+        if (!event.getEffect().is(ModMobEffects.FREE_PLAY.getId())) return;
+        if (event.getEntity() instanceof ServerPlayer player && RunIntegrity.isCheated(player)) {
+            event.setCanceled(true);
         }
     }
 

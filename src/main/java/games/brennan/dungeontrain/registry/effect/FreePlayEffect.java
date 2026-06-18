@@ -19,7 +19,10 @@ public final class FreePlayEffect extends MobEffect {
     private static final int PARTICLE_COLOUR = 0x5BC8C2;
 
     public FreePlayEffect() {
-        super(MobEffectCategory.NEUTRAL, PARTICLE_COLOUR);
+        // BENEFICIAL so vanilla renders the icon in the top (beneficial) row of
+        // the top-right status area, alongside the other indicators — a NEUTRAL
+        // effect would drop to the lower row.
+        super(MobEffectCategory.BENEFICIAL, PARTICLE_COLOUR);
     }
 
     /** Marker effect — never ticks anything. */
