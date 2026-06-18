@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.player.GlobalEnderChestStore;
 import games.brennan.dungeontrain.player.PendingInventory;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -36,5 +38,18 @@ public final class KeepInventoryCarryEvents {
         if (PendingInventory.isPresentFor(player.getUUID())) {
             PendingInventory.restore(player);
         }
+        GlobalEnderChestStore.restore(player);
+    }
+
+    /**
+     * Swap the live Ender Chest contents whenever the player changes game mode
+     * mid-session. Runs at LOW priority so higher-priority cancellations are
+     * respected before the swap occurs.
+     */
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public static void onPlayerChangeGameMode(PlayerEvent.PlayerChangeGameModeEvent event) {
+        if (event.isCanceled()) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        GlobalEnderChestStore.swapGameMode(player, event.getNewGameMode());
     }
 }

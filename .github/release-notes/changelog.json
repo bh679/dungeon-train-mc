@@ -718,6 +718,22 @@
       "released_at": null
     },
     {
+      "id": "ender-chest-persistent",
+      "version": "0.316.0",
+      "type": "feat",
+      "title": "Persistent Ender Chest across runs",
+      "summary": "The Ender Chest now persists between worlds \u2014 items you store survive your death and carry into the next run. Survival and creative inventories are kept separate, so switching game modes gives you a fresh Ender Chest for that mode.",
+      "highlights": [
+        "Ender Chest contents carry forward when you die and start a new world",
+        "Separate inventory per game mode (survival, creative, adventure, spectator)",
+        "Swaps live when you switch game modes mid-session"
+      ],
+      "date": "2026-06-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "death-screen-lectern-books-first-death",
       "version": "0.316.0",
       "type": "feat",

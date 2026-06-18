@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.player.GlobalEnderChestStore;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
@@ -754,6 +755,9 @@ public final class AchievementEvents {
         UUID uuid = player.getUUID();
         GlobalPlayerStats.flush(uuid);
         GlobalPlayerStats.evict(uuid);
+        GlobalEnderChestStore.save(player);
+        GlobalEnderChestStore.flush(uuid);
+        GlobalEnderChestStore.evict(uuid);
         MinecraftServer server = player.getServer();
         if (server == null) return;
         ServerAdvancementManager mgr = server.getAdvancements();
@@ -779,6 +783,7 @@ public final class AchievementEvents {
     @SubscribeEvent
     public static void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
         GlobalPlayerStats.flushAll();
+        GlobalEnderChestStore.flushAll();
     }
 
     @SubscribeEvent
