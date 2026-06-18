@@ -23,9 +23,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * correctly.</p>
  *
  * <p>The {@code life*} fields are the player's cumulative cross-world totals
- * (from {@code GlobalPlayerStats}), and {@link #narrative} carries the
- * server-rolled story lines — both feed the paginated narrative death screen.
- * Any change to this layout must bump {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
+ * (from {@code GlobalPlayerStats}), {@link #narrative} carries the server-rolled
+ * story lines, and {@link #deathCause} is the second-person death message
+ * ("You fell from a high place") shown as the fall-page title — all feed the
+ * paginated narrative death screen. {@code deathCause} is empty for the
+ * alive-logout snapshot (no death). Any change to this layout must bump
+ * {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
  */
 public record DeathStatsPacket(
         int mobKills,
@@ -50,7 +53,8 @@ public record DeathStatsPacket(
         long lifeFriends,
         long lifeBooks,
         long lifeTrainTicks,
-        DeathNarrative narrative
+        DeathNarrative narrative,
+        String deathCause
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -86,6 +90,7 @@ public record DeathStatsPacket(
         buf.writeVarLong(lifeBooks);
         buf.writeVarLong(lifeTrainTicks);
         narrative.encode(buf);
+        buf.writeUtf(deathCause);
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -112,11 +117,12 @@ public record DeathStatsPacket(
         long lifeBooks = buf.readVarLong();
         long lifeTrainTicks = buf.readVarLong();
         DeathNarrative narrative = DeathNarrative.decode(buf);
+        String deathCause = buf.readUtf();
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative);
+                narrative, deathCause);
     }
 
     @Override
