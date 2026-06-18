@@ -811,6 +811,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "zombiesrooms-books-refresh",
+      "version": "0.318.0",
+      "type": "content",
+      "title": "Tougher zombie rooms + book carriage refresh",
+      "summary": "Zombie carriages now spawn more zombies and are lit with torches in the corners, and the book carriage's room layout has been refreshed.",
+      "highlights": [
+        "Zombie rooms spawn more zombies, now torch-lit",
+        "Refreshed book carriage layout"
+      ],
+      "pr": 442,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
