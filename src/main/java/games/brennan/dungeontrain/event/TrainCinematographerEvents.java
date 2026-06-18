@@ -45,12 +45,17 @@ public final class TrainCinematographerEvents {
             int r = (int) CinematographerService.getDistance(player.getUUID());
             openNearbyDoors(level, player.blockPosition(), r);
             openNearbyDoorsOnShips(level, player, r);
+            if (CinematographerService.isClearView(player.getUUID())) {
+                CinematographerClearView.clearViewAhead(
+                    level, player, CinematographerService.getClearViewDistance(player.getUUID()));
+            }
         }
     }
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            CinematographerClearView.restoreAll(player);
             CinematographerService.cleanup(player.getUUID());
         }
     }
