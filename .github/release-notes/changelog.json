@@ -750,6 +750,22 @@
       "released_at": "2026-06-18T01:14:41Z"
     },
     {
+      "id": "open-ended-feedback-survey-question",
+      "version": "0.317.0",
+      "type": "feat",
+      "title": "Open-ended feedback survey question",
+      "summary": "After you die, the feedback survey's second question is now open-ended \u2014 \"If you could change one thing about the mod, what would it be?\" \u2014 answered in a free-text box instead of a 0\u201310 rating. The first question (how likely you'd recommend the game) is unchanged, and your answer is only sent if you actually type something.",
+      "highlights": [
+        "Survey's second question is now a free-text \"what would you change?\" prompt",
+        "Replaces the old difficulty-progression 0\u201310 rating"
+      ],
+      "pr": 435,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "cinematographer-clearview",
       "version": "0.317.0",
       "type": "feat",
