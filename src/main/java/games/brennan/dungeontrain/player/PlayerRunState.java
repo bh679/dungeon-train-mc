@@ -108,6 +108,21 @@ public final class PlayerRunState {
     private final Set<UUID> befriendedMobs;
     /** Server ticks spent boarded this run (boarded-only; resets on death). Time twin of {@link #distanceBlocks}. */
     private long trainTimeTicks;
+    /**
+     * Distinct narrative letters read at a lectern this run, keyed
+     * {@code storyBasename + "#" + letterIndex}. Dedupes page-turns / re-opens
+     * so each lectern story counts {@link #booksReadCount} once. Reset on death
+     * (per-run), so re-reading a story in a later life counts again.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}.</b> The codec's
+     * {@code RecordCodecBuilder.group(...)} caps at 16 fields and the other
+     * counters already fill it; persisting this would force an existing field
+     * into a nested sub-record (resetting it for everyone mid-run on update).
+     * {@code booksReadCount} itself IS persisted, so a normal logout keeps the
+     * tally — only the dedup memory resets, at worst over-counting by one if a
+     * player relogs mid-run and re-opens a lectern they already read.</p>
+     */
+    private final Set<String> narrativeLetters;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -126,6 +141,7 @@ public final class PlayerRunState {
         this.encounteredMobs = new HashSet<>();
         this.befriendedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
+        this.narrativeLetters = new HashSet<>();
     }
 
     public PlayerRunState(List<BlockPos> uniqueChests,
@@ -160,6 +176,7 @@ public final class PlayerRunState {
         this.encounteredMobs = new HashSet<>(encounteredMobs);
         this.befriendedMobs = new HashSet<>(befriendedMobs);
         this.trainTimeTicks = trainTimeTicks;
+        this.narrativeLetters = new HashSet<>();
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -340,6 +357,18 @@ public final class PlayerRunState {
         return ++booksReadCount;
     }
 
+    /**
+     * Record a narrative letter (key {@code storyBasename + "#" + letterIndex})
+     * read at a lectern this run.
+     *
+     * @return {@code true} if newly read this run — the caller increments the
+     *         death-screen books-read tally; {@code false} if already counted
+     *         (a page-turn or re-open of the same letter).
+     */
+    public boolean recordNarrativeRead(String key) {
+        return narrativeLetters.add(key);
+    }
+
     /** PlayerMob kills this run (subset of {@link #mobKills}). */
     public int playerKills() {
         return playerKills;
@@ -426,6 +455,7 @@ public final class PlayerRunState {
         trainTimeTicks = 0L;
         containersOpened = 0;
         booksReadCount = 0;
+        narrativeLetters.clear();
         weaponKills.clear();
         playerKills = 0;
         damageDealt = 0.0;
