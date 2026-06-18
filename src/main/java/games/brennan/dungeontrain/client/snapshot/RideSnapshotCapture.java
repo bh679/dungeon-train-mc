@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -60,7 +61,7 @@ public final class RideSnapshotCapture {
     public static boolean hasPending() { return pendingTag != null; }
 
     /** renderLevel HEAD: build the render-space pose and arm the override for this frame. */
-    public static void beginLiveCapture(GameRenderer gr) {
+    public static void beginLiveCapture(GameRenderer gr, DeltaTracker deltaTracker) {
         if (capturing || pendingTag == null) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
@@ -70,9 +71,12 @@ public final class RideSnapshotCapture {
         SnapshotTag tag = pendingTag;
         pendingTag = null;
 
-        // Pose in render space (correct world coords). Null = too dark or no clear angle → skip;
-        // the director will request again shortly (its global cool-down throttles retries).
-        CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player);
+        // Pose in render space (correct world coords). The render partial tick lets the
+        // carriage-occlusion check transform against where Sable draws the carriage blocks
+        // this frame. Null = too dark or no clear/unobstructed angle → skip; the director
+        // requests again shortly (its global cool-down throttles retries).
+        float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
+        CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player, partialTick);
         if (pose == null) return;
 
         captureTag = tag;
@@ -100,6 +104,7 @@ public final class RideSnapshotCapture {
                     new RideSnapshot(id, captureTag, shot.getWidth(), shot.getHeight(), tick),
                     ClientDisplayConfig.getRideSnapshotMaxStored());
             RideSnapshotDirector.onCaptureCommitted(captureTag);
+            maybeDumpDebug(shot, captureTag, tick); // TEMP (Gate 2 verification) — remove before merge
             LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
                     id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());
         } catch (Exception e) {
@@ -134,6 +139,24 @@ public final class RideSnapshotCapture {
             }
         }
         return dst;
+    }
+
+    /**
+     * TEMP (Gate 2 verification) — remove before merge. When launched with
+     * {@code -Ddungeontrain.snapshotDebugDump=true}, write each committed capture to
+     * {@code run/dt-snapshot-<tag>-<tick>.png} so occlusion can be eyeballed per shot.
+     * {@code shot} stays owned/open by the just-built DynamicTexture, so its pixels read fine.
+     */
+    private static void maybeDumpDebug(NativeImage shot, SnapshotTag tag, long tick) {
+        if (!Boolean.getBoolean("dungeontrain.snapshotDebugDump")) return;
+        try {
+            java.nio.file.Path path =
+                    java.nio.file.Path.of("dt-snapshot-" + tag.name().toLowerCase() + "-" + tick + ".png");
+            shot.writeToFile(path);
+            LOGGER.info("[DungeonTrain] Ride snapshot debug dump -> {}", path.toAbsolutePath());
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Ride snapshot debug dump failed", e);
+        }
     }
 
     /** Drop any pending/in-flight capture (world leave). */

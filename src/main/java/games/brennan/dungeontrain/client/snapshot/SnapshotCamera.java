@@ -9,6 +9,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.List;
+
 /**
  * Picks a clip-safe, player-in-view third-person camera pose for a snapshot.
  *
@@ -22,9 +24,11 @@ import net.minecraft.world.phys.Vec3;
  * {@link #MIN_VISIBLE_DIST} blocks (boxed in), it returns {@code null} and the
  * director simply tries again shortly.</p>
  *
- * <p>Carriage walls are Sable sub-level blocks (not in the main level), so the
- * ray test covers world terrain — the dominant clipping case — and the angles
- * are kept near deck height to keep the player on an open deck in view.</p>
+ * <p>World terrain is cleared by {@link ClientLevel#clip}; carriage walls are Sable
+ * sub-level blocks that {@code clip} can't see, so a second pass
+ * ({@link CarriageOcclusion}) ray-marches each candidate's camera→player line through
+ * the nearby carriages' blocks and rejects any angle a wall occludes. If no candidate
+ * has a clear, unobstructed view of the player the capture is skipped.</p>
  */
 public final class SnapshotCamera {
 
@@ -34,6 +38,8 @@ public final class SnapshotCamera {
     private static final double MIN_VISIBLE_DIST = 2.5;
     /** Prefer well-lit moments — skip when the player's spot is darker than this (0-15). */
     private static final int MIN_LIGHT = 8;
+    /** How far out to look for carriages whose walls might occlude an angle (covers the widest tag, SCENIC). */
+    private static final double CARRIAGE_SCAN_RADIUS = 12.0;
 
     private SnapshotCamera() {}
 
@@ -43,7 +49,7 @@ public final class SnapshotCamera {
      * render time</b> ({@code player.position()} is the real world position
      * then — at tick time a player on a Sable ship reports far sub-level coords).
      */
-    public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, LocalPlayer player) {
+    public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, LocalPlayer player, float partialTick) {
         // Prefer well-lit moments (checked here, in render space, so the light sample is at the real spot).
         BlockPos eye = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
         if (level.getMaxLocalRawBrightness(eye) < MIN_LIGHT) return null;
@@ -56,18 +62,28 @@ public final class SnapshotCamera {
         double[] base = baseFor(tag);
         double dist = base[0], height = base[1];
 
+        // Carriage walls are Sable sub-level blocks that level.clip can't see; snapshot the
+        // nearby carriages once (this frame's render pose) so each candidate angle can be
+        // rejected when a wall stands between the camera and the player — see CarriageOcclusion.
+        List<CarriageOcclusion.Carriage> carriages =
+                CarriageOcclusion.gatherNearby(level, p, CARRIAGE_SCAN_RADIUS, partialTick);
+
         Vec3 best = null;
         double bestClear = -1.0;
         for (double[] dir : dirsFor(tag)) {
             Vec3 want = new Vec3(p.x + dir[0] * dist, p.y + height, p.z + dir[1] * dist);
             Vec3 adj = clipTowardOpenAir(level, player, from, want);
             double clear = adj.distanceTo(from);
+            // Reject this angle if it's too cramped by world geometry, or if a carriage wall
+            // hides the player's chest or head from it — only fully-clear angles can win.
+            if (clear < MIN_VISIBLE_DIST) continue;
+            if (CarriageOcclusion.blocked(carriages, adj, from, lookTarget)) continue;
             if (clear > bestClear) {
                 bestClear = clear;
                 best = adj;
             }
         }
-        if (best == null || bestClear < MIN_VISIBLE_DIST) return null;
+        if (best == null) return null; // no lit, clip-free, wall-free angle right now → skip + retry
 
         float[] yp = lookAt(best, lookTarget);
         return new CinematicCameraController.Pose(best, yp[0], yp[1]);
