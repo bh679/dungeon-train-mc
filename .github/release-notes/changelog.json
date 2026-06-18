@@ -939,6 +939,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ride-photo-no-adjacent-repeat",
+      "version": "0.319.0",
+      "type": "fix",
+      "title": "Death-screen photos never repeat two pages in a row",
+      "summary": "On a short run that didn't capture enough ride photos to give every death-screen page its own, the screen could show the same photo on two pages back-to-back. Now the photos are spread out so consecutive pages always differ \u2014 you'll only see a photo twice in a row if the whole run produced a single photo.",
+      "highlights": [
+        "Scarce photos are alternated across the death pages instead of doubling up side by side",
+        "Each page still favours its fitting photo where that doesn't cause a back-to-back repeat"
+      ],
+      "pr": 455,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
