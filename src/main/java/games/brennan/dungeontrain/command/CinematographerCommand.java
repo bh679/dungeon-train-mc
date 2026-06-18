@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.command;
 
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import games.brennan.dungeontrain.event.CinematographerClearView;
 import games.brennan.dungeontrain.event.CinematographerService;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -40,6 +41,7 @@ public final class CinematographerCommand {
             return 0;
         }
         if (CinematographerService.isActive(player.getUUID())) {
+            CinematographerClearView.restoreAll(player);
             CinematographerService.exit(player);
             source.sendSuccess(() -> Component.literal("Cinematographer mode OFF."), true);
         } else {
@@ -100,6 +102,7 @@ public final class CinematographerCommand {
                 "Cinematographer clear-view ON (reach: " + reach + ")."
             ), true);
         } else {
+            CinematographerClearView.restoreAll(player);
             if (CinematographerService.isActive(id)) {
                 CinematographerService.setClearView(id, false);
             }

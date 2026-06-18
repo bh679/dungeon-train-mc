@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import dev.ryanhcode.sable.sublevel.plot.SubLevelPlayerChunkSender;
@@ -12,6 +13,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -20,35 +22,61 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.primitives.AABBdc;
+import org.slf4j.Logger;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
- * Clear-view sub-mode for {@link TrainCinematographerEvents}. While active, it
- * removes the solid blocks the camera is looking at — at head height, in front
- * of the camera — so terrain and carriage walls stop blocking the shot. Doors
- * (anything with {@link BlockStateProperties#OPEN}) are left for the existing
- * auto-open path, and liquids are skipped to avoid flows mid-shot.
+ * Clear-view sub-mode for {@link TrainCinematographerEvents}. While active it
+ * swaps the solid blocks the camera is looking at — at head height, in front of
+ * the camera — to an invisible {@link Blocks#BARRIER}, so terrain and carriage
+ * walls stop blocking the shot.
  *
- * <p>Removal is permanent and silent. World blocks go through
- * {@link SilentBlockOps#clearBlockSilent}; Sable train carriage blocks are
- * cleared via direct sub-level chunk access + resync, mirroring
- * {@link TrainCinematographerEvents#openNearbyDoorsOnShips}.</p>
+ * <p>Barrier (not air) is deliberate: it is solid and non-replaceable, so the
+ * blocks above keep their support and gravity blocks (sand/gravel) never fall —
+ * which on a moving Sable train would spawn {@code FallingBlockEntity}s and kick
+ * off physics chaos (the same hazard {@link games.brennan.dungeontrain.worldgen.FallingBlockAnchor}
+ * guards against during worldgen).</p>
+ *
+ * <p>The swap is reversible: each player's swapped blocks are tracked with their
+ * original {@link BlockState} and restored when the ray moves past them, when
+ * clear-view turns off, and on logout — so the world re-solidifies behind the
+ * camera and nothing is left destroyed. World blocks use
+ * {@link SilentBlockOps#setBlockSilent}; Sable carriage blocks use direct
+ * sub-level chunk writes + {@link SubLevelPlayerChunkSender} resync, mirroring
+ * {@link TrainCinematographerEvents#openNearbyDoorsOnShips}. Writes never fire
+ * neighbour updates, so they can't schedule gravity ticks.</p>
  */
 public final class CinematographerClearView {
 
-    private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    private static final Logger LOGGER = LogUtils.getLogger();
+
+    private static final BlockState BARRIER = Blocks.BARRIER.defaultBlockState();
     private static final double STEP = 0.5;
+
+    /** Per-player record of blocks swapped to barrier, keyed by their original state. */
+    private static final class Swaps {
+        final Map<BlockPos, BlockState> world = new HashMap<>();
+        final Map<LevelPlot, Map<BlockPos, BlockState>> ships = new IdentityHashMap<>();
+    }
+
+    private static final Map<UUID, Swaps> SWAPS = new HashMap<>();
 
     private CinematographerClearView() {}
 
     /**
-     * Bore a one-block-wide line of sight from the player's head along their
-     * look direction, up to {@code reach} blocks, removing solid non-door,
-     * non-liquid blocks on both the main world and any overlapping Sable ship.
+     * Make the player's head-height look-line transparent up to {@code reach}
+     * blocks, reverting whatever the line has moved off. Covers both the main
+     * world and any overlapping Sable ship.
      */
     public static void clearViewAhead(ServerLevel level, ServerPlayer player, double reach) {
         Vec3 dir = player.getViewVector(1.0f);
@@ -56,7 +84,6 @@ public final class CinematographerClearView {
         dir = dir.normalize();
         Vec3 eye = player.getEyePosition();
 
-        // Unique world block positions along the look ray, near -> far.
         Set<BlockPos> ray = new LinkedHashSet<>();
         for (double d = 0.0; d <= reach; d += STEP) {
             Vec3 p = eye.add(dir.scale(d));
@@ -64,84 +91,174 @@ public final class CinematographerClearView {
         }
         if (ray.isEmpty()) return;
 
-        // Main world terrain.
-        for (BlockPos pos : ray) {
-            if (shouldRemove(level.getBlockState(pos))) {
-                SilentBlockOps.clearBlockSilent(level, pos);
-            }
-        }
-
-        // Sable train carriages (sub-levels).
-        clearViewOnShips(level, player, ray);
+        Swaps swaps = SWAPS.computeIfAbsent(player.getUUID(), k -> new Swaps());
+        updateWorld(level, ray, swaps);
+        updateShips(level, player, ray, swaps);
     }
 
-    /**
-     * Clears the same ray on any Sable ship whose world AABB overlaps it.
-     *
-     * <p>{@code EmbeddedPlotLevelAccessor.getBlockState/setBlock} delegate to the
-     * host level for DT's NBT-loaded trains and read AIR, so — like the door
-     * scan — we go through the plot's {@link LevelChunk} storage directly and
-     * resend each modified chunk via {@link SubLevelPlayerChunkSender}.</p>
-     */
-    private static void clearViewOnShips(ServerLevel level, ServerPlayer player, Set<BlockPos> worldRay) {
-        // Ray bounding box for quick ship rejection.
+    /** Restore every block this player swapped (world + ships) and forget them. */
+    public static void restoreAll(ServerPlayer player) {
+        Swaps swaps = SWAPS.remove(player.getUUID());
+        if (swaps == null) return;
+
+        ServerLevel level = player.serverLevel();
+        for (Map.Entry<BlockPos, BlockState> e : swaps.world.entrySet()) {
+            restoreWorld(level, e.getKey(), e.getValue());
+        }
+        swaps.world.clear();
+
+        Consumer<Packet<? super ClientGamePacketListener>> sender = pk -> player.connection.send(pk);
+        for (Map.Entry<LevelPlot, Map<BlockPos, BlockState>> pe : swaps.ships.entrySet()) {
+            try {
+                LevelPlot plot = pe.getKey();
+                Map<Long, LevelChunk> chunks = loadedChunks(plot);
+                Set<LevelChunk> dirty = new HashSet<>();
+                for (Map.Entry<BlockPos, BlockState> be : pe.getValue().entrySet()) {
+                    restoreShip(chunks, be.getKey(), be.getValue(), dirty);
+                }
+                resync(sender, plot, dirty);
+            } catch (Exception ex) {
+                LOGGER.warn("[DungeonTrain] clear-view restore failed for a ship plot", ex);
+            }
+        }
+        swaps.ships.clear();
+    }
+
+    // ---- World ----
+
+    private static void updateWorld(ServerLevel level, Set<BlockPos> ray, Swaps swaps) {
+        for (BlockPos pos : ray) {
+            if (swaps.world.containsKey(pos)) continue;
+            BlockState state = level.getBlockState(pos);
+            if (!shouldHide(state)) continue;
+            swaps.world.put(pos.immutable(), state);
+            SilentBlockOps.setBlockSilent(level, pos, BARRIER);
+        }
+        Iterator<Map.Entry<BlockPos, BlockState>> it = swaps.world.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<BlockPos, BlockState> e = it.next();
+            if (ray.contains(e.getKey())) continue;
+            restoreWorld(level, e.getKey(), e.getValue());
+            it.remove();
+        }
+    }
+
+    private static void restoreWorld(ServerLevel level, BlockPos pos, BlockState original) {
+        if (level.getBlockState(pos).is(Blocks.BARRIER)) {
+            SilentBlockOps.setBlockSilent(level, pos, original);
+        }
+    }
+
+    // ---- Ships ----
+
+    private static void updateShips(ServerLevel level, ServerPlayer player, Set<BlockPos> ray, Swaps swaps) {
+        Map<LevelPlot, Set<BlockPos>> current = new IdentityHashMap<>();
+        int[] bb = rayBounds(ray);
+        for (ManagedShip ship : Shipyards.of(level).findAll()) {
+            AABBdc box = ship.worldAABB();
+            if (bb[3] < box.minX() || bb[0] > box.maxX()) continue;
+            if (bb[4] < box.minY() || bb[1] > box.maxY()) continue;
+            if (bb[5] < box.minZ() || bb[2] > box.maxZ()) continue;
+            if (!(ship instanceof SableManagedShip sableShip)) continue;
+
+            Set<BlockPos> local = new HashSet<>();
+            for (BlockPos wp : ray) {
+                Vector3d v = new Vector3d(wp.getX() + 0.5, wp.getY() + 0.5, wp.getZ() + 0.5);
+                ship.worldToShip(v);
+                local.add(BlockPos.containing(v.x, v.y, v.z));
+            }
+            current.put(sableShip.subLevel().getPlot(), local);
+        }
+
+        // Union of plots overlapping now and plots still holding swaps.
+        Set<LevelPlot> plots = Collections.newSetFromMap(new IdentityHashMap<>());
+        plots.addAll(current.keySet());
+        plots.addAll(swaps.ships.keySet());
+
+        Consumer<Packet<? super ClientGamePacketListener>> sender = pk -> player.connection.send(pk);
+        for (LevelPlot plot : plots) {
+            processShipPlot(sender, plot, current.getOrDefault(plot, Set.of()), swaps);
+        }
+    }
+
+    private static void processShipPlot(Consumer<Packet<? super ClientGamePacketListener>> sender,
+                                        LevelPlot plot, Set<BlockPos> targets, Swaps swaps) {
+        Map<Long, LevelChunk> chunks = loadedChunks(plot);
+        Set<LevelChunk> dirty = new HashSet<>();
+        Map<BlockPos, BlockState> tracked = swaps.ships.get(plot);
+
+        // Swap newly-targeted carriage blocks to barrier.
+        for (BlockPos lp : targets) {
+            if (tracked != null && tracked.containsKey(lp)) continue;
+            LevelChunk c = chunks.get(ChunkPos.asLong(lp.getX() >> 4, lp.getZ() >> 4));
+            if (c == null) continue;
+            BlockState st = c.getBlockState(lp);
+            if (!shouldHide(st)) continue;
+            if (tracked == null) {
+                tracked = new HashMap<>();
+                swaps.ships.put(plot, tracked);
+            }
+            tracked.put(lp.immutable(), st);
+            c.setBlockState(lp, BARRIER, false);
+            dirty.add(c);
+        }
+
+        // Revert carriage blocks the ray has moved past.
+        if (tracked != null) {
+            Iterator<Map.Entry<BlockPos, BlockState>> it = tracked.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry<BlockPos, BlockState> e = it.next();
+                if (targets.contains(e.getKey())) continue;
+                restoreShip(chunks, e.getKey(), e.getValue(), dirty);
+                it.remove();
+            }
+            if (tracked.isEmpty()) swaps.ships.remove(plot);
+        }
+
+        resync(sender, plot, dirty);
+    }
+
+    private static void restoreShip(Map<Long, LevelChunk> chunks, BlockPos lp, BlockState original, Set<LevelChunk> dirty) {
+        LevelChunk c = chunks.get(ChunkPos.asLong(lp.getX() >> 4, lp.getZ() >> 4));
+        if (c != null && c.getBlockState(lp).is(Blocks.BARRIER)) {
+            c.setBlockState(lp, original, false);
+            dirty.add(c);
+        }
+    }
+
+    private static Map<Long, LevelChunk> loadedChunks(LevelPlot plot) {
+        Map<Long, LevelChunk> chunks = new HashMap<>();
+        for (PlotChunkHolder holder : plot.getLoadedChunks()) {
+            LevelChunk c = holder.getChunk();
+            if (c != null) chunks.put(ChunkPos.asLong(c.getPos().x, c.getPos().z), c);
+        }
+        return chunks;
+    }
+
+    private static void resync(Consumer<Packet<? super ClientGamePacketListener>> sender,
+                               LevelPlot plot, Set<LevelChunk> dirty) {
+        for (LevelChunk c : dirty) {
+            SubLevelPlayerChunkSender.sendChunk(sender, plot.getLightEngine(), c);
+        }
+    }
+
+    private static int[] rayBounds(Set<BlockPos> ray) {
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (BlockPos p : worldRay) {
+        for (BlockPos p : ray) {
             minX = Math.min(minX, p.getX()); maxX = Math.max(maxX, p.getX());
             minY = Math.min(minY, p.getY()); maxY = Math.max(maxY, p.getY());
             minZ = Math.min(minZ, p.getZ()); maxZ = Math.max(maxZ, p.getZ());
         }
-
-        for (ManagedShip ship : Shipyards.of(level).findAll()) {
-            AABBdc bb = ship.worldAABB();
-            if (maxX < bb.minX() || minX > bb.maxX()) continue;
-            if (maxY < bb.minY() || minY > bb.maxY()) continue;
-            if (maxZ < bb.minZ() || minZ > bb.maxZ()) continue;
-            if (!(ship instanceof SableManagedShip sableShip)) continue;
-
-            // Map world ray cells into ship-local cells.
-            Set<BlockPos> localTargets = new HashSet<>();
-            for (BlockPos wp : worldRay) {
-                Vector3d local = new Vector3d(wp.getX() + 0.5, wp.getY() + 0.5, wp.getZ() + 0.5);
-                ship.worldToShip(local);
-                localTargets.add(BlockPos.containing(local.x, local.y, local.z));
-            }
-            if (localTargets.isEmpty()) continue;
-
-            LevelPlot plot = sableShip.subLevel().getPlot();
-            Consumer<Packet<? super ClientGamePacketListener>> sender =
-                    packet -> player.connection.send(packet);
-
-            for (PlotChunkHolder holder : plot.getLoadedChunks()) {
-                LevelChunk chunk = holder.getChunk();
-                if (chunk == null) continue;
-
-                int cx = chunk.getPos().x;
-                int cz = chunk.getPos().z;
-                boolean chunkDirty = false;
-                for (BlockPos target : localTargets) {
-                    if ((target.getX() >> 4) != cx || (target.getZ() >> 4) != cz) continue;
-                    BlockState state = chunk.getBlockState(target);
-                    if (!shouldRemove(state)) continue;
-                    if (state.hasBlockEntity()) {
-                        chunk.removeBlockEntity(target);
-                    }
-                    chunk.setBlockState(target, AIR, false);
-                    chunkDirty = true;
-                }
-
-                if (chunkDirty) {
-                    SubLevelPlayerChunkSender.sendChunk(sender, plot.getLightEngine(), chunk);
-                }
-            }
-        }
+        return new int[]{minX, minY, minZ, maxX, maxY, maxZ};
     }
 
-    /** Solid blocks only: skip air, door-family (OPEN) blocks, and liquids. */
-    private static boolean shouldRemove(BlockState state) {
+    /** Swap candidates: skip air, existing barriers, doors, block entities, and liquids. */
+    private static boolean shouldHide(BlockState state) {
         if (state.isAir()) return false;
+        if (state.is(Blocks.BARRIER)) return false;
         if (state.hasProperty(BlockStateProperties.OPEN)) return false;
+        if (state.hasBlockEntity()) return false;
         return !(state.getBlock() instanceof LiquidBlock);
     }
 }

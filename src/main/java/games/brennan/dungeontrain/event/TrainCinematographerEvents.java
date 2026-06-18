@@ -54,6 +54,7 @@ public final class TrainCinematographerEvents {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            CinematographerClearView.restoreAll(player);
             CinematographerService.cleanup(player.getUUID());
         }
     }
