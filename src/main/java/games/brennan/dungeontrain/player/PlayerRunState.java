@@ -123,6 +123,24 @@ public final class PlayerRunState {
      * player relogs mid-run and re-opens a lectern they already read.</p>
      */
     private final Set<String> narrativeLetters;
+    /**
+     * Visual identity of the FIRST PlayerMob befriended this run, or {@code null}
+     * if none yet (first-wins — see {@link #captureBefriendedAppearance}). Drives
+     * the death-screen DEEDS portrait, shipped in
+     * {@link games.brennan.dungeontrain.net.DeathStatsPacket}.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field
+     * cap, see {@link #narrativeLetters}). It only needs to live until the death
+     * packet is built; the client rebuilds the portrait from the packet. A relog
+     * mid-run drops it until the next befriend — acceptable for a cosmetic.</p>
+     */
+    private PlayerMobAppearance befriendedAppearance;
+    /**
+     * Visual identity of the MOST-RECENT PlayerMob killed this run, or
+     * {@code null} if none (last-wins — overwritten each kill). Same transient,
+     * non-codec rationale as {@link #befriendedAppearance}.
+     */
+    private PlayerMobAppearance killedAppearance;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -440,6 +458,32 @@ public final class PlayerRunState {
         return befriendedMobs.size();
     }
 
+    /** Visual identity of the first PlayerMob befriended this run, or {@code null}. */
+    public PlayerMobAppearance befriendedAppearance() {
+        return befriendedAppearance;
+    }
+
+    /**
+     * Capture the befriended mob's appearance — first non-null wins, so the
+     * portrait shows the friend you made, not the last one. Null + later calls
+     * are ignored.
+     */
+    public void captureBefriendedAppearance(PlayerMobAppearance appearance) {
+        if (appearance != null && befriendedAppearance == null) {
+            befriendedAppearance = appearance;
+        }
+    }
+
+    /** Visual identity of the most-recent PlayerMob killed this run, or {@code null}. */
+    public PlayerMobAppearance killedAppearance() {
+        return killedAppearance;
+    }
+
+    /** Capture the most-recently killed mob's appearance (last-wins). */
+    public void setKilledAppearance(PlayerMobAppearance appearance) {
+        killedAppearance = appearance;
+    }
+
     /** Reset cart counters and travelled-carriage-index (called on respawn). */
     public void resetCarts() {
         cartsSinceDeath = 0;
@@ -462,6 +506,8 @@ public final class PlayerRunState {
         damageTaken = 0.0;
         encounteredMobs.clear();
         befriendedMobs.clear();
+        befriendedAppearance = null;
+        killedAppearance = null;
     }
 
     /** Reset everything (called on respawn). */

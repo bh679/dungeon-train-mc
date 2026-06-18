@@ -11,8 +11,10 @@ import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -97,9 +99,13 @@ public final class RunStatsEvents {
         PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.incrementMobKills();
         // PlayerMob kills are also tallied separately (the "players killed"
-        // death-screen cell). mobKills still counts everything, so the two
-        // overlap by design — a killed PlayerMob bumps both.
-        if (isPlayerMob(victim)) run.incrementPlayerKills();
+        // death-screen cell) and the victim's look is snapshotted for the
+        // death-screen portrait (most-recent kill wins). mobKills still counts
+        // everything, so the two overlap by design — a killed PlayerMob bumps both.
+        if (victim instanceof PlayerMobEntity pm) {
+            run.incrementPlayerKills();
+            run.setKilledAppearance(PlayerMobAppearance.capture(pm));
+        }
         // Attribute the kill to the weapon that actually dealt it. Arrows
         // (from bows/crossbows) and thrown tridents carry the firing weapon
         // on the projectile itself — that's the correct credit even if the
@@ -252,6 +258,20 @@ public final class RunStatsEvents {
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        // Death-screen portrait subject: prefer a befriended mob (drawn left),
+        // else the most-recent killed mob (drawn right), else none.
+        byte side;
+        PlayerMobAppearance portrait;
+        if (run.befriendedAppearance() != null) {
+            side = 1;
+            portrait = run.befriendedAppearance();
+        } else if (run.killedAppearance() != null) {
+            side = 2;
+            portrait = run.killedAppearance();
+        } else {
+            side = 0;
+            portrait = null;
+        }
         return new DeathStatsPacket(
                 run.mobKills(),
                 run.cartsSinceDeath(),
@@ -270,7 +290,9 @@ public final class RunStatsEvents {
                 run.damageDealt(),
                 run.damageTaken(),
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative
+                narrative,
+                side,
+                portrait
         );
     }
 

@@ -101,6 +101,14 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int MAX_CONTENT_W = 360;
     private static final int SLOT = 18;
 
+    // DEEDS-page portrait of the befriended/killed PlayerMob, drawn beside the stat grid.
+    private static final int PORTRAIT_W = 64;
+    private static final int PORTRAIT_GUTTER = 8;
+    private static final int PORTRAIT_RESERVE = PORTRAIT_W + PORTRAIT_GUTTER;
+    private static final int PORTRAIT_SCALE = 32;
+    /** Below this content width the portrait is skipped (grid stays full-width). */
+    private static final int PORTRAIT_MIN_CONTENT_W = 260;
+
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
     private final Set<String> submitted = new HashSet<>();
@@ -114,6 +122,9 @@ public final class NarrativeDeathScreen extends Screen {
     // so the random survey backdrop doesn't reshuffle every frame.
     private int bgForPage = -1;
     private RideSnapshot bgShot;
+
+    /** Renders the DEEDS-page befriended/killed PlayerMob portrait; cleared on removal. */
+    private final DeathPortraitRenderer portrait = new DeathPortraitRenderer();
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
@@ -286,14 +297,35 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawNarration(g, n.deedsNarration(), cx, w, y);
         y += 10;
         if (s != null) {
-            int third = w / 3;
-            drawCell(g, left + third / 2, y, Integer.toString(s.mobKills()), "gui.dungeontrain.death.narr.lbl_mobs");
-            drawCell(g, left + third + third / 2, y, Integer.toString(s.playersEncountered()), "gui.dungeontrain.death.narr.lbl_met");
-            drawCell(g, left + 2 * third + third / 2, y, Integer.toString(s.playersKilled()), "gui.dungeontrain.death.narr.lbl_slain");
+            // A portrait of the PlayerMob this run was "about" — befriended (left)
+            // or, failing that, killed (right) — sits beside the 3×2 stat grid,
+            // which shrinks to make room. side 0 (neither) keeps the full-width grid.
+            boolean showPortrait = s.side() != 0 && w >= PORTRAIT_MIN_CONTENT_W && portrait.available();
+            int gridLeft = left;
+            int gridW = w;
+            if (showPortrait) {
+                gridW = w - PORTRAIT_RESERVE;
+                if (s.side() == 1) gridLeft = left + PORTRAIT_RESERVE; // friend → portrait on the left
+                // side == 2 (killed) → portrait on the right; grid stays at left
+            }
+            int third = gridW / 3;
+            int cw = Math.min(96, third - 8);
+            // Row 1
+            drawCell(g, gridLeft + third / 2, y, Integer.toString(s.mobKills()), "gui.dungeontrain.death.narr.lbl_mobs", cw);
+            drawCell(g, gridLeft + third + third / 2, y, Integer.toString(s.playersEncountered()), "gui.dungeontrain.death.narr.lbl_met", cw);
+            drawCell(g, gridLeft + 2 * third + third / 2, y, Integer.toString(s.playersKilled()), "gui.dungeontrain.death.narr.lbl_slain", cw);
+            // Row 2
             int y2 = y + 30;
-            drawCell(g, left + third / 2, y2, Integer.toString(s.playersBefriended()), "gui.dungeontrain.death.narr.lbl_befriended");
-            drawCell(g, left + third + third / 2, y2, fmtDmg(s.damageDealt()), "gui.dungeontrain.death.narr.lbl_dealt");
-            drawCell(g, left + 2 * third + third / 2, y2, fmtDmg(s.damageTaken()), "gui.dungeontrain.death.narr.lbl_taken");
+            drawCell(g, gridLeft + third / 2, y2, Integer.toString(s.playersBefriended()), "gui.dungeontrain.death.narr.lbl_befriended", cw);
+            drawCell(g, gridLeft + third + third / 2, y2, fmtDmg(s.damageDealt()), "gui.dungeontrain.death.narr.lbl_dealt", cw);
+            drawCell(g, gridLeft + 2 * third + third / 2, y2, fmtDmg(s.damageTaken()), "gui.dungeontrain.death.narr.lbl_taken", cw);
+            // Portrait spans the same vertical extent as the two rows (top of row 1
+            // to bottom of row 2 = 30 + 26 px), on the side the grid freed up.
+            if (showPortrait) {
+                int bottom = y2 + 26;
+                int px1 = s.side() == 1 ? left : left + gridW + PORTRAIT_GUTTER;
+                portrait.render(g, s.portrait(), px1, y, px1 + PORTRAIT_W, bottom, PORTRAIT_SCALE, mouseX, mouseY);
+            }
             y = y2 + 30;
         }
         return y;
@@ -591,7 +623,11 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey) {
-        int cw = 96, ch = 26;
+        drawCell(g, centerX, y, value, labelKey, 96);
+    }
+
+    private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey, int cw) {
+        int ch = 26;
         int x = centerX - cw / 2;
         g.fill(x, y, x + cw, y + ch, TILE_BG);
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
@@ -764,5 +800,6 @@ public final class NarrativeDeathScreen extends Screen {
         // to its normal world-driven volume.
         TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
+        portrait.clear();
     }
 }

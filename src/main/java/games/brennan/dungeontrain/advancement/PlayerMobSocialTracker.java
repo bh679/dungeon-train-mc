@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.advancement;
 
 import games.brennan.dungeontrain.compat.EchoIdentity;
+import games.brennan.dungeontrain.player.PlayerMobAppearance;
+import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
@@ -91,9 +94,16 @@ public final class PlayerMobSocialTracker {
      */
     private static void awardBefriend(ServerPlayer player, UUID mobUuid) {
         ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
+        run.recordBefriended(mobUuid);
         Entity mob = player.serverLevel().getEntity(mobUuid);
+        // Snapshot the friend's look for the death-screen portrait while the mob
+        // is still loaded (first befriend wins). Reuses the lookup the echo check
+        // below already performs.
+        if (mob instanceof PlayerMobEntity pm) {
+            run.captureBefriendedAppearance(PlayerMobAppearance.capture(pm));
+        }
         if (EchoIdentity.isOwnEcho(mob, player.getUUID())) {
             ModAdvancementTriggers.BEFRIENDED_ECHO.get().trigger(player);
         }

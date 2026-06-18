@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DeathStatsCache;
+import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -26,6 +27,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * (from {@code GlobalPlayerStats}), and {@link #narrative} carries the
  * server-rolled story lines — both feed the paginated narrative death screen.
  * Any change to this layout must bump {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
+ *
+ * <p>{@link #side} + {@link #portrait} carry the DEEDS-page portrait subject:
+ * {@code side} 0 = none, 1 = befriended (drawn left), 2 = killed (drawn right);
+ * {@code portrait} is the chosen mob's {@link PlayerMobAppearance} (null when
+ * {@code side == 0}). Written/read only when {@code side != 0}.</p>
  */
 public record DeathStatsPacket(
         int mobKills,
@@ -50,7 +56,9 @@ public record DeathStatsPacket(
         long lifeFriends,
         long lifeBooks,
         long lifeTrainTicks,
-        DeathNarrative narrative
+        DeathNarrative narrative,
+        byte side,
+        PlayerMobAppearance portrait
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -86,6 +94,15 @@ public record DeathStatsPacket(
         buf.writeVarLong(lifeBooks);
         buf.writeVarLong(lifeTrainTicks);
         narrative.encode(buf);
+        // Death-screen portrait subject (0 = none, 1 = befriended/left, 2 = killed/right).
+        // Self-consistent on the wire: the appearance is written iff a non-zero byte was.
+        boolean hasPortrait = side != 0 && portrait != null;
+        buf.writeByte(hasPortrait ? side : 0);
+        if (hasPortrait) {
+            buf.writeVarInt(portrait.skinIndex());
+            buf.writeUtf(portrait.skinTextureUrl());
+            buf.writeBoolean(portrait.slim());
+        }
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -112,11 +129,19 @@ public record DeathStatsPacket(
         long lifeBooks = buf.readVarLong();
         long lifeTrainTicks = buf.readVarLong();
         DeathNarrative narrative = DeathNarrative.decode(buf);
+        byte side = buf.readByte();
+        PlayerMobAppearance portrait = null;
+        if (side != 0) {
+            int skinIndex = buf.readVarInt();
+            String url = buf.readUtf();
+            boolean slim = buf.readBoolean();
+            portrait = new PlayerMobAppearance(skinIndex, url, slim);
+        }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative);
+                narrative, side, portrait);
     }
 
     @Override
