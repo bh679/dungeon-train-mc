@@ -8,7 +8,8 @@
     "version": "1.2.1+mc1.21.1"
   },
   "optional_mods": [
-    { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442 }
+    { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442 },
+    { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560 }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" },

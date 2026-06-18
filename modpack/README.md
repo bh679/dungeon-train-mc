@@ -11,14 +11,15 @@ The modpack is published automatically — you don't run anything by hand.
 A CurseForge modpack is a `.zip` of a `manifest.json` (Minecraft version + modloader +
 an explicit list of CurseForge mod files) plus an `overrides/` folder. Dungeon Train
 bundles **AIN, AIS, PlayerMob, Discord Presence and joml-primitives inside its own jar**
-via NeoForge jarJar, so the pack needs only **two required entries** — plus one on-by-default
-optional add-on (AppleSkin):
+via NeoForge jarJar, so the pack needs only **two required entries** — plus two on-by-default
+optional add-ons (AppleSkin, ModernFix):
 
 | Mod | CF project | Notes |
 |---|---|---|
 | Dungeon Train | `1527512` | The file ID changes every release — injected at build time. |
 | Sable | `1312371` | The only un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
 | AppleSkin | `248787` | On-by-default optional add-on (`optional_mods` → `required:false` manifest file = CurseForge "Include"). References AppleSkin's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
+| ModernFix | `790626` | On-by-default optional add-on (`optional_mods` → `required:false` manifest file = CurseForge "Include"). Launch-time / world-load / memory optimiser. References ModernFix's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -27,13 +28,21 @@ both read from `gradle.properties`.
 
 Two flavours:
 
-**On-by-default Include (shipped in the pack, player can deselect at install):**
+**On-by-default Includes (shipped in the pack, player can deselect at install):**
 - **AppleSkin** — food saturation / hunger overlay. Shipped as an `optional_mods` entry →
   `required:false` manifest file, which CurseForge surfaces as an **"Include"**. It references
   AppleSkin's own CurseForge file (not embedded in DT's jar, not redistributed); the launcher
   installs it by default and players can untick it. **Pinned** file ID — see "AppleSkin pin" below.
   Because the pack ships it, AppleSkin is **also** declared as an `appleskin(optional)` dependency
   of the *mod* in `release.yml` — see ["Includes must be mod dependencies"](#includes-must-be-mod-dependencies) below.
+- **ModernFix** — launch-time, world-load and memory optimiser (applies many mixins). Shipped the
+  same way as AppleSkin: an `optional_mods` entry → `required:false` manifest file (a CurseForge
+  **"Include"**) referencing ModernFix's own CurseForge file — not embedded, not redistributed; the
+  launcher installs it by default and players can untick it. **Pinned** file ID — see "ModernFix pin"
+  below. Also declared as a `modernfix(optional)` dependency of the *mod* in `release.yml` (see
+  ["Includes must be mod dependencies"](#includes-must-be-mod-dependencies)). Its optional *dynamic
+  resources* feature is off by default, and individual features are togglable in ModernFix's config
+  if anything ever conflicts with Sable or DT's mixins.
 
 **Opt-in relations (declared only, not shipped — players install them themselves):**
 Declared as CurseForge **`optionalDependency` relations** (see the table below); they appear
@@ -68,12 +77,13 @@ from `curseforge_relations` in `modpack.config.json`:
 | `jade` | `optionalDependency` | Opt-in add-on — relation only; tooltips don't render on moving-train blocks (Sable sub-level). |
 
 Keep this list aligned with the mod's own `curseforge-dependencies` in `release.yml`, which
-declares `appleskin(optional)` + `distant-horizons(optional)` + `tectonic(optional)` +
-`mouse-tweaks(optional)` + `jade(optional)`. The two lists are identical **except for AppleSkin**:
-on the *mod* it is a normal `appleskin(optional)` relation, but in the *modpack* it ships as a
-bundled file, so CurseForge auto-creates its "Include" relation from the manifest — it must
-therefore **not** be repeated in `curseforge_relations`. (Lithostitched is Tectonic's dependency,
-not DT's, and CurseForge resolves it automatically — so it appears in neither.)
+declares `appleskin(optional)` + `modernfix(optional)` + `distant-horizons(optional)` +
+`tectonic(optional)` + `mouse-tweaks(optional)` + `jade(optional)`. The two lists are identical
+**except for the Includes (AppleSkin, ModernFix)**: on the *mod* each is a normal `<slug>(optional)`
+relation, but in the *modpack* they ship as bundled files, so CurseForge auto-creates their
+"Include" relation from the manifest — they must therefore **not** be repeated in
+`curseforge_relations`. (Lithostitched is Tectonic's dependency, not DT's, and CurseForge resolves
+it automatically — so it appears in neither.)
 
 ### Includes must be mod dependencies
 
@@ -131,11 +141,24 @@ refresh when you want to ship a newer AppleSkin:
 
 A stale pin just ships an older AppleSkin — harmless, but worth keeping current.
 
+## ModernFix pin
+
+ModernFix ships as an on-by-default Include, pinned by file ID in `modpack.config.json` →
+`optional_mods[].file_id` (project `790626`). Like AppleSkin it has **no** DT-version coupling, so it
+only needs a refresh when you want to ship a newer ModernFix:
+
+1. Open <https://www.curseforge.com/minecraft/mc-mods/modernfix/files/all>, filter to the
+   NeoForge 1.21.1 build, and copy its numeric file ID from the URL.
+2. Set the ModernFix `optional_mods[].file_id` in `modpack.config.json`.
+
+A stale pin just ships an older ModernFix — harmless, but worth keeping current.
+(Current pin: `modernfix-neoforge-5.27.14+mc1.21.1.jar`.)
+
 ## Files
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (on-by-default Includes — AppleSkin; each carries a `slug` for the consistency guard), and `curseforge_relations` (opt-in relations — DH/Tectonic/Mouse Tweaks/Jade). |
+| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (on-by-default Includes — AppleSkin, ModernFix; each carries a `slug` for the consistency guard), and `curseforge_relations` (opt-in relations — DH/Tectonic/Mouse Tweaks/Jade). |
 | `overrides/` | Copied into the player's instance on install. Empty for now. |
 | `../scripts/modpack/build-manifest.py` | Renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` Include must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
