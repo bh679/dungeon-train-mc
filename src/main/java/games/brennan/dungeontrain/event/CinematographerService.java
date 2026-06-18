@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public final class CinematographerService {
 
-    public static final double DEFAULT_DISTANCE = 6.0;
+    public static final double DEFAULT_DISTANCE = 50.0;
 
     /** Default clear-view reach is the door scan distance plus this offset. */
     public static final double CLEARVIEW_DISTANCE_OFFSET = 12.0;

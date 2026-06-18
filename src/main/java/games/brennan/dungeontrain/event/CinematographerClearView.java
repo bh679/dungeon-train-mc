@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
@@ -16,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -39,7 +42,8 @@ import java.util.function.Consumer;
  * Clear-view sub-mode for {@link TrainCinematographerEvents}. While active it
  * swaps the solid blocks the camera is looking at — at head height, in front of
  * the camera — to an invisible {@link Blocks#BARRIER}, so terrain and carriage
- * walls stop blocking the shot.
+ * walls (and decorative blocks like pots / chiseled bookshelves) stop blocking
+ * the shot.
  *
  * <p>Barrier (not air) is deliberate: it is solid and non-replaceable, so the
  * blocks above keep their support and gravity blocks (sand/gravel) never fall —
@@ -47,12 +51,13 @@ import java.util.function.Consumer;
  * off physics chaos (the same hazard {@link games.brennan.dungeontrain.worldgen.FallingBlockAnchor}
  * guards against during worldgen).</p>
  *
- * <p>The swap is reversible: each player's swapped blocks are tracked with their
- * original {@link BlockState} and restored when the ray moves past them, when
- * clear-view turns off, and on logout — so the world re-solidifies behind the
- * camera and nothing is left destroyed. World blocks use
- * {@link SilentBlockOps#setBlockSilent}; Sable carriage blocks use direct
- * sub-level chunk writes + {@link SubLevelPlayerChunkSender} resync, mirroring
+ * <p>The swap is reversible and lossless: each player's swapped blocks are tracked
+ * with their original {@link BlockState} <em>and</em> block-entity NBT, and restored
+ * when the ray moves past them, when clear-view turns off, and on logout — so the
+ * world re-solidifies behind the camera and a pot's sherds / a bookshelf's books /
+ * a chest's contents all come back. World blocks use
+ * {@link SilentBlockOps#setBlockSilent}; Sable carriage blocks use direct sub-level
+ * chunk writes + {@link SubLevelPlayerChunkSender} resync, mirroring
  * {@link TrainCinematographerEvents#openNearbyDoorsOnShips}. Writes never fire
  * neighbour updates, so they can't schedule gravity ticks.</p>
  */
@@ -63,10 +68,13 @@ public final class CinematographerClearView {
     private static final BlockState BARRIER = Blocks.BARRIER.defaultBlockState();
     private static final double STEP = 0.5;
 
-    /** Per-player record of blocks swapped to barrier, keyed by their original state. */
+    /** A swapped block's original state plus its block-entity NBT (null if none). */
+    private record Saved(BlockState state, CompoundTag beNbt) {}
+
+    /** Per-player record of blocks swapped to barrier, keyed by position. */
     private static final class Swaps {
-        final Map<BlockPos, BlockState> world = new HashMap<>();
-        final Map<LevelPlot, Map<BlockPos, BlockState>> ships = new IdentityHashMap<>();
+        final Map<BlockPos, Saved> world = new HashMap<>();
+        final Map<LevelPlot, Map<BlockPos, Saved>> ships = new IdentityHashMap<>();
     }
 
     private static final Map<UUID, Swaps> SWAPS = new HashMap<>();
@@ -102,19 +110,20 @@ public final class CinematographerClearView {
         if (swaps == null) return;
 
         ServerLevel level = player.serverLevel();
-        for (Map.Entry<BlockPos, BlockState> e : swaps.world.entrySet()) {
+        for (Map.Entry<BlockPos, Saved> e : swaps.world.entrySet()) {
             restoreWorld(level, e.getKey(), e.getValue());
         }
         swaps.world.clear();
 
+        RegistryAccess registries = level.registryAccess();
         Consumer<Packet<? super ClientGamePacketListener>> sender = pk -> player.connection.send(pk);
-        for (Map.Entry<LevelPlot, Map<BlockPos, BlockState>> pe : swaps.ships.entrySet()) {
+        for (Map.Entry<LevelPlot, Map<BlockPos, Saved>> pe : swaps.ships.entrySet()) {
             try {
                 LevelPlot plot = pe.getKey();
                 Map<Long, LevelChunk> chunks = loadedChunks(plot);
                 Set<LevelChunk> dirty = new HashSet<>();
-                for (Map.Entry<BlockPos, BlockState> be : pe.getValue().entrySet()) {
-                    restoreShip(chunks, be.getKey(), be.getValue(), dirty);
+                for (Map.Entry<BlockPos, Saved> be : pe.getValue().entrySet()) {
+                    restoreShip(chunks, be.getKey(), be.getValue(), dirty, registries);
                 }
                 resync(sender, plot, dirty);
             } catch (Exception ex) {
@@ -131,21 +140,26 @@ public final class CinematographerClearView {
             if (swaps.world.containsKey(pos)) continue;
             BlockState state = level.getBlockState(pos);
             if (!shouldHide(state)) continue;
-            swaps.world.put(pos.immutable(), state);
+            CompoundTag beNbt = null;
+            if (state.hasBlockEntity()) {
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be != null) beNbt = be.saveWithFullMetadata(level.registryAccess());
+            }
+            swaps.world.put(pos.immutable(), new Saved(state, beNbt));
             SilentBlockOps.setBlockSilent(level, pos, BARRIER);
         }
-        Iterator<Map.Entry<BlockPos, BlockState>> it = swaps.world.entrySet().iterator();
+        Iterator<Map.Entry<BlockPos, Saved>> it = swaps.world.entrySet().iterator();
         while (it.hasNext()) {
-            Map.Entry<BlockPos, BlockState> e = it.next();
+            Map.Entry<BlockPos, Saved> e = it.next();
             if (ray.contains(e.getKey())) continue;
             restoreWorld(level, e.getKey(), e.getValue());
             it.remove();
         }
     }
 
-    private static void restoreWorld(ServerLevel level, BlockPos pos, BlockState original) {
+    private static void restoreWorld(ServerLevel level, BlockPos pos, Saved saved) {
         if (level.getBlockState(pos).is(Blocks.BARRIER)) {
-            SilentBlockOps.setBlockSilent(level, pos, original);
+            SilentBlockOps.setBlockSilent(level, pos, saved.state(), saved.beNbt());
         }
     }
 
@@ -175,41 +189,48 @@ public final class CinematographerClearView {
         plots.addAll(current.keySet());
         plots.addAll(swaps.ships.keySet());
 
+        RegistryAccess registries = level.registryAccess();
         Consumer<Packet<? super ClientGamePacketListener>> sender = pk -> player.connection.send(pk);
         for (LevelPlot plot : plots) {
-            processShipPlot(sender, plot, current.getOrDefault(plot, Set.of()), swaps);
+            processShipPlot(sender, plot, current.getOrDefault(plot, Set.of()), swaps, registries);
         }
     }
 
     private static void processShipPlot(Consumer<Packet<? super ClientGamePacketListener>> sender,
-                                        LevelPlot plot, Set<BlockPos> targets, Swaps swaps) {
+                                        LevelPlot plot, Set<BlockPos> targets, Swaps swaps, RegistryAccess registries) {
         Map<Long, LevelChunk> chunks = loadedChunks(plot);
         Set<LevelChunk> dirty = new HashSet<>();
-        Map<BlockPos, BlockState> tracked = swaps.ships.get(plot);
+        Map<BlockPos, Saved> tracked = swaps.ships.get(plot);
 
-        // Swap newly-targeted carriage blocks to barrier.
+        // Swap newly-targeted carriage blocks to barrier (preserving any BE NBT).
         for (BlockPos lp : targets) {
             if (tracked != null && tracked.containsKey(lp)) continue;
             LevelChunk c = chunks.get(ChunkPos.asLong(lp.getX() >> 4, lp.getZ() >> 4));
             if (c == null) continue;
             BlockState st = c.getBlockState(lp);
             if (!shouldHide(st)) continue;
+            CompoundTag beNbt = null;
+            if (st.hasBlockEntity()) {
+                BlockEntity be = c.getBlockEntity(lp);
+                if (be != null) beNbt = be.saveWithFullMetadata(registries);
+                c.removeBlockEntity(lp);
+            }
             if (tracked == null) {
                 tracked = new HashMap<>();
                 swaps.ships.put(plot, tracked);
             }
-            tracked.put(lp.immutable(), st);
+            tracked.put(lp.immutable(), new Saved(st, beNbt));
             c.setBlockState(lp, BARRIER, false);
             dirty.add(c);
         }
 
         // Revert carriage blocks the ray has moved past.
         if (tracked != null) {
-            Iterator<Map.Entry<BlockPos, BlockState>> it = tracked.entrySet().iterator();
+            Iterator<Map.Entry<BlockPos, Saved>> it = tracked.entrySet().iterator();
             while (it.hasNext()) {
-                Map.Entry<BlockPos, BlockState> e = it.next();
+                Map.Entry<BlockPos, Saved> e = it.next();
                 if (targets.contains(e.getKey())) continue;
-                restoreShip(chunks, e.getKey(), e.getValue(), dirty);
+                restoreShip(chunks, e.getKey(), e.getValue(), dirty, registries);
                 it.remove();
             }
             if (tracked.isEmpty()) swaps.ships.remove(plot);
@@ -218,12 +239,23 @@ public final class CinematographerClearView {
         resync(sender, plot, dirty);
     }
 
-    private static void restoreShip(Map<Long, LevelChunk> chunks, BlockPos lp, BlockState original, Set<LevelChunk> dirty) {
+    private static void restoreShip(Map<Long, LevelChunk> chunks, BlockPos lp, Saved saved,
+                                    Set<LevelChunk> dirty, RegistryAccess registries) {
         LevelChunk c = chunks.get(ChunkPos.asLong(lp.getX() >> 4, lp.getZ() >> 4));
-        if (c != null && c.getBlockState(lp).is(Blocks.BARRIER)) {
-            c.setBlockState(lp, original, false);
-            dirty.add(c);
+        if (c == null || !c.getBlockState(lp).is(Blocks.BARRIER)) return;
+        c.setBlockState(lp, saved.state(), false);
+        if (saved.state().hasBlockEntity() && saved.beNbt() != null) {
+            BlockEntity be = c.getBlockEntity(lp);
+            if (be != null) {
+                CompoundTag positioned = saved.beNbt().copy();
+                positioned.putInt("x", lp.getX());
+                positioned.putInt("y", lp.getY());
+                positioned.putInt("z", lp.getZ());
+                be.loadWithComponents(positioned, registries);
+                be.setChanged();
+            }
         }
+        dirty.add(c);
     }
 
     private static Map<Long, LevelChunk> loadedChunks(LevelPlot plot) {
@@ -253,12 +285,17 @@ public final class CinematographerClearView {
         return new int[]{minX, minY, minZ, maxX, maxY, maxZ};
     }
 
-    /** Swap candidates: skip air, existing barriers, doors, block entities, and liquids. */
+    /**
+     * Swap candidates: hide pretty much anything solid except doors. Skips air,
+     * existing barriers, doors/trapdoors/fence gates ({@code OPEN} — handled by the
+     * door auto-open), and liquids (kept to avoid water/lava flow side effects).
+     * Block entities (pots, chiseled bookshelves, chests, …) ARE hidden — their NBT
+     * is preserved for a lossless revert.
+     */
     private static boolean shouldHide(BlockState state) {
         if (state.isAir()) return false;
         if (state.is(Blocks.BARRIER)) return false;
         if (state.hasProperty(BlockStateProperties.OPEN)) return false;
-        if (state.hasBlockEntity()) return false;
         return !(state.getBlock() instanceof LiquidBlock);
     }
 }
