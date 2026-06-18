@@ -827,6 +827,39 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ride-photo-clear-line-of-sight",
+      "version": "0.318.0",
+      "type": "fix",
+      "title": "Death-screen ride photos only snap when you're in clear view",
+      "summary": "Ride photos now confirm there's an unobstructed line to your character before snapping, so a death-screen background never shows you hidden behind a carriage wall. Inside walled carriages the camera finds an angle that actually sees you \u2014 down an aisle or through a doorway \u2014 or skips the shot until one opens up.",
+      "highlights": [
+        "No more death-screen photos of the back of a wall \u2014 every shot has a clear view of you",
+        "Works inside Sable carriages, not just open decks: the camera checks the carriage's own walls",
+        "If nothing can see you right now, the photo is skipped and retried instead of captured blind"
+      ],
+      "pr": 443,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "modpack-ferritecore",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "FerriteCore added to the modpack for lower memory use",
+      "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
+      "highlights": [
+        "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
+        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable)."
+      ],
+      "pr": 445,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
