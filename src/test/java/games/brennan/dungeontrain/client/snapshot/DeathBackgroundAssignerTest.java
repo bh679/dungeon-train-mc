@@ -12,6 +12,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -47,6 +48,12 @@ final class DeathBackgroundAssignerTest {
         Set<RideSnapshot> seen = Collections.newSetFromMap(new IdentityHashMap<>());
         for (RideSnapshot s : out) {
             if (s != null) assertTrue(seen.add(s), "duplicate background assigned: " + s);
+        }
+    }
+
+    private static void assertNoAdjacentRepeats(RideSnapshot[] out) {
+        for (int i = 1; i < out.length; i++) {
+            assertNotSame(out[i - 1], out[i], "same background on consecutive pages " + (i - 1) + " and " + i);
         }
     }
 
@@ -124,5 +131,36 @@ final class DeathBackgroundAssignerTest {
         RideSnapshot[] a = DeathBackgroundAssigner.assign(standardChains(), g);
         RideSnapshot[] b = DeathBackgroundAssigner.assign(standardChains(), g);
         assertArrayEquals(a, b);
+    }
+
+    @Test
+    @DisplayName("scarce images: reuse never repeats a photo on two consecutive pages")
+    void reuse_avoidsAdjacentRepeat() {
+        // Two shots, six pages → reuse is forced, but neighbours still differ (A/B alternate).
+        List<RideSnapshot> g = new ArrayList<>();
+        g.add(shot(SnapshotTag.SCENIC));
+        g.add(shot(SnapshotTag.SCENIC));
+        RideSnapshot[] out = DeathBackgroundAssigner.assign(standardChains(), g);
+        for (RideSnapshot s : out) assertNotNull(s, "every page gets a shot when the gallery is non-empty");
+        assertNoAdjacentRepeats(out);
+    }
+
+    @Test
+    @DisplayName("reuse takes a non-repeating shot over repeating the chain's preferred tag")
+    void reuse_keepsThematicFitAmongNonRepeats() {
+        // Pages SCENIC, COMBAT, COMBAT with one COMBAT + one SCENIC shot: page 2 must reuse,
+        // and repeating its preferred COMBAT would clash with page 1, so it takes SCENIC.
+        List<List<SnapshotTag>> chains = List.of(
+                List.of(SnapshotTag.SCENIC),
+                List.of(SnapshotTag.COMBAT),
+                List.of(SnapshotTag.COMBAT));
+        List<RideSnapshot> g = new ArrayList<>();
+        RideSnapshot combat = shot(SnapshotTag.COMBAT); g.add(combat);
+        RideSnapshot scenic = shot(SnapshotTag.SCENIC); g.add(scenic);
+        RideSnapshot[] out = DeathBackgroundAssigner.assign(chains, g);
+        assertSame(scenic, out[0], "page 0 -> SCENIC");
+        assertSame(combat, out[1], "page 1 -> COMBAT");
+        assertSame(scenic, out[2], "page 2 reuses SCENIC to avoid repeating page 1's COMBAT");
+        assertNoAdjacentRepeats(out);
     }
 }
