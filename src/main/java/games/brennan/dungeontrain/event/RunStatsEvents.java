@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -159,6 +160,10 @@ public final class RunStatsEvents {
         // killer + this run's depth / social / lifetime context.
         DeathNarrative narrative = rollNarrative(player, event.getSource(), run, lifeDeaths);
 
+        // The second-person death cause ("You fell from a high place"), shown as the
+        // fall-page title. Built from the same DamageSource the Discord report uses.
+        String deathCause = secondPersonCause(player, event.getSource());
+
         // Snapshot armor at death — the keep-inventory gamerule and respawn both run AFTER
         // LivingDeathEvent, so the equipment slots still reflect what the player died wearing.
         DeathStatsPacket packet = buildPacket(player,
@@ -168,7 +173,8 @@ public final class RunStatsEvents {
                 GlobalPlayerStats.totalFriends(id),
                 GlobalPlayerStats.totalBooks(id),
                 GlobalPlayerStats.trainTicks(id),
-                narrative);
+                narrative,
+                deathCause);
         DungeonTrainNet.sendTo(player, packet);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
@@ -209,6 +215,19 @@ public final class RunStatsEvents {
     }
 
     /**
+     * Build the fall-page title: the player's death message rewritten in the second person.
+     * Vanilla and modded death messages always lead with the victim's display name (e.g.
+     * "Brennan was slain by Zombie") — swap that name for "You", then fix the dominant
+     * "was …" verb agreement ("You was" → "You were"). If the message doesn't begin with
+     * the player's name (an unusual modded format), it is returned unchanged.
+     */
+    private static String secondPersonCause(ServerPlayer player, DamageSource source) {
+        String msg = source.getLocalizedDeathMessage(player).getString();
+        String name = player.getDisplayName().getString();
+        return SecondPersonDeathMessage.rewrite(msg, name);
+    }
+
+    /**
      * Forward the run summary to Discord Presence's public death-report API: the death cause,
      * the same stats the death screen shows, and the most-used weapon + worn armor as the
      * composed item image. Discord Presence handles the embed, image, and posting off-thread.
@@ -241,7 +260,7 @@ public final class RunStatsEvents {
                     GlobalPlayerStats.totalFriends(id),
                     GlobalPlayerStats.totalBooks(id),
                     GlobalPlayerStats.trainTicks(id),
-                    DeathNarrative.EMPTY);
+                    DeathNarrative.EMPTY, "");
             DiscordService.get().postDisconnectReport(player,
                     "👋 " + player.getGameProfile().getName() + " left the game", "",
                     runFields(packet), runIcons(packet));
@@ -258,7 +277,7 @@ public final class RunStatsEvents {
     private static DeathStatsPacket buildPacket(ServerPlayer player,
             long lifeDeaths, long lifeCarriages, double lifeDistance,
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
-            DeathNarrative narrative) {
+            DeathNarrative narrative, String deathCause) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         // Death-screen portrait subject: prefer a befriended mob (drawn left),
         // else the most-recent killed mob (drawn right), else none.
@@ -293,6 +312,7 @@ public final class RunStatsEvents {
                 run.damageTaken(),
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
                 narrative,
+                deathCause,
                 side,
                 portrait
         );

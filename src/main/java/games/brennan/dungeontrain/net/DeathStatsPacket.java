@@ -24,9 +24,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * correctly.</p>
  *
  * <p>The {@code life*} fields are the player's cumulative cross-world totals
- * (from {@code GlobalPlayerStats}), and {@link #narrative} carries the
- * server-rolled story lines — both feed the paginated narrative death screen.
- * Any change to this layout must bump {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
+ * (from {@code GlobalPlayerStats}), {@link #narrative} carries the server-rolled
+ * story lines, and {@link #deathCause} is the second-person death message
+ * ("You fell from a high place") shown as the fall-page title — all feed the
+ * paginated narrative death screen. {@code deathCause} is empty for the
+ * alive-logout snapshot (no death). Any change to this layout must bump
+ * {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
  *
  * <p>{@link #side} + {@link #portrait} carry the DEEDS-page portrait subject:
  * {@code side} 0 = none, 1 = befriended (drawn left), 2 = killed (drawn right);
@@ -57,6 +60,7 @@ public record DeathStatsPacket(
         long lifeBooks,
         long lifeTrainTicks,
         DeathNarrative narrative,
+        String deathCause,
         byte side,
         PlayerMobAppearance portrait
 ) implements CustomPacketPayload {
@@ -94,6 +98,7 @@ public record DeathStatsPacket(
         buf.writeVarLong(lifeBooks);
         buf.writeVarLong(lifeTrainTicks);
         narrative.encode(buf);
+        buf.writeUtf(deathCause);
         // Death-screen portrait subject (0 = none, 1 = befriended/left, 2 = killed/right).
         // Self-consistent on the wire: the appearance is written iff a non-zero byte was.
         boolean hasPortrait = side != 0 && portrait != null;
@@ -127,6 +132,7 @@ public record DeathStatsPacket(
         long lifeBooks = buf.readVarLong();
         long lifeTrainTicks = buf.readVarLong();
         DeathNarrative narrative = DeathNarrative.decode(buf);
+        String deathCause = buf.readUtf();
         byte side = buf.readByte();
         PlayerMobAppearance portrait = null;
         if (side != 0) {
@@ -136,7 +142,7 @@ public record DeathStatsPacket(
                 containersOpened, booksRead, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative, side, portrait);
+                narrative, deathCause, side, portrait);
     }
 
     @Override

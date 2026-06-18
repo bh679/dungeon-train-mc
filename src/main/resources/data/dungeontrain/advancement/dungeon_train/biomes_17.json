@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/biomes_10",
+  "display": {
+    "icon": { "id": "minecraft:compass" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.biomes_17.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.biomes_17.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:biomes_visited",
+      "conditions": { "threshold": 17 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

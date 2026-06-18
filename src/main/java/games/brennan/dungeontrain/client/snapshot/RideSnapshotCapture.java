@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -60,7 +61,7 @@ public final class RideSnapshotCapture {
     public static boolean hasPending() { return pendingTag != null; }
 
     /** renderLevel HEAD: build the render-space pose and arm the override for this frame. */
-    public static void beginLiveCapture(GameRenderer gr) {
+    public static void beginLiveCapture(GameRenderer gr, DeltaTracker deltaTracker) {
         if (capturing || pendingTag == null) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
@@ -70,9 +71,12 @@ public final class RideSnapshotCapture {
         SnapshotTag tag = pendingTag;
         pendingTag = null;
 
-        // Pose in render space (correct world coords). Null = too dark or no clear angle → skip;
-        // the director will request again shortly (its global cool-down throttles retries).
-        CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player);
+        // Pose in render space (correct world coords). The render partial tick lets the
+        // carriage-occlusion check transform against where Sable draws the carriage blocks
+        // this frame. Null = too dark or no clear/unobstructed angle → skip; the director
+        // requests again shortly (its global cool-down throttles retries).
+        float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
+        CinematicCameraController.Pose pose = SnapshotCamera.poseFor(level, tag, player, partialTick);
         if (pose == null) return;
 
         captureTag = tag;
