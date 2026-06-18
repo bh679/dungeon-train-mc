@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DeathStatsCache;
+import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -29,6 +30,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * paginated narrative death screen. {@code deathCause} is empty for the
  * alive-logout snapshot (no death). Any change to this layout must bump
  * {@code DungeonTrainNet.PROTOCOL_VERSION}.</p>
+ *
+ * <p>{@link #side} + {@link #portrait} carry the DEEDS-page portrait subject:
+ * {@code side} 0 = none, 1 = befriended (drawn left), 2 = killed (drawn right);
+ * {@code portrait} is the chosen mob's {@link PlayerMobAppearance} (null when
+ * {@code side == 0}). Written/read only when {@code side != 0}.</p>
  */
 public record DeathStatsPacket(
         int mobKills,
@@ -54,7 +60,9 @@ public record DeathStatsPacket(
         long lifeBooks,
         long lifeTrainTicks,
         DeathNarrative narrative,
-        String deathCause
+        String deathCause,
+        byte side,
+        PlayerMobAppearance portrait
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -91,6 +99,13 @@ public record DeathStatsPacket(
         buf.writeVarLong(lifeTrainTicks);
         narrative.encode(buf);
         buf.writeUtf(deathCause);
+        // Death-screen portrait subject (0 = none, 1 = befriended/left, 2 = killed/right).
+        // Self-consistent on the wire: the appearance is written iff a non-zero byte was.
+        boolean hasPortrait = side != 0 && portrait != null;
+        buf.writeByte(hasPortrait ? side : 0);
+        if (hasPortrait) {
+            portrait.encode(buf);
+        }
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -118,11 +133,16 @@ public record DeathStatsPacket(
         long lifeTrainTicks = buf.readVarLong();
         DeathNarrative narrative = DeathNarrative.decode(buf);
         String deathCause = buf.readUtf();
+        byte side = buf.readByte();
+        PlayerMobAppearance portrait = null;
+        if (side != 0) {
+            portrait = PlayerMobAppearance.decode(buf);
+        }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative, deathCause);
+                narrative, deathCause, side, portrait);
     }
 
     @Override

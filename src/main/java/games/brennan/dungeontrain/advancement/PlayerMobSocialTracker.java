@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.advancement;
 
 import games.brennan.dungeontrain.compat.EchoIdentity;
-import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
@@ -91,8 +90,9 @@ public final class PlayerMobSocialTracker {
      */
     private static void awardBefriend(ServerPlayer player, UUID mobUuid) {
         ModAdvancementTriggers.BEFRIENDED_PLAYERMOB.get().trigger(player);
-        // Per-run death-screen "befriended" tally (distinct mobs, deduped by the Set).
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordBefriended(mobUuid);
+        // NB: the death-screen "friends" tally is no longer driven by gift exchange —
+        // it counts PlayerMobs that like the player above the threshold, recorded in
+        // RunStatsEvents' proximity scan. This path only fires the advancements.
         Entity mob = player.serverLevel().getEntity(mobUuid);
         if (EchoIdentity.isOwnEcho(mob, player.getUUID())) {
             ModAdvancementTriggers.BEFRIENDED_ECHO.get().trigger(player);

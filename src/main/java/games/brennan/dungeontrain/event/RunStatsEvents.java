@@ -11,9 +11,11 @@ import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -76,6 +78,8 @@ public final class RunStatsEvents {
     private static final int ENCOUNTER_SCAN_PERIOD_TICKS = 10;
     /** Radius (blocks) within which a PlayerMob counts as "encountered". */
     private static final double ENCOUNTER_RADIUS = 16.0;
+    /** A PlayerMob whose feeling (0–10 scale, default 5) toward the player exceeds this is the death-screen "friend" (portrait). */
+    private static final float FRIEND_FEELING_MIN = 6.0f;
     /**
      * Upper bound on a single tracked damage event. Command / instakill sources
      * (e.g. {@code /kill} deals {@link Float#MAX_VALUE}) are already excluded by
@@ -98,9 +102,13 @@ public final class RunStatsEvents {
         PlayerRunState run = killer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.incrementMobKills();
         // PlayerMob kills are also tallied separately (the "players killed"
-        // death-screen cell). mobKills still counts everything, so the two
-        // overlap by design — a killed PlayerMob bumps both.
-        if (isPlayerMob(victim)) run.incrementPlayerKills();
+        // death-screen cell) and the victim's look is snapshotted for the
+        // death-screen portrait (most-recent kill wins). mobKills still counts
+        // everything, so the two overlap by design — a killed PlayerMob bumps both.
+        if (victim instanceof PlayerMobEntity pm) {
+            run.incrementPlayerKills();
+            run.setKilledAppearance(PlayerMobAppearance.capture(pm));
+        }
         // Attribute the kill to the weapon that actually dealt it. Arrows
         // (from bows/crossbows) and thrown tridents carry the firing weapon
         // on the projectile itself — that's the correct credit even if the
@@ -271,6 +279,20 @@ public final class RunStatsEvents {
             long lifeFriends, long lifeBooks, long lifeTrainTicks,
             DeathNarrative narrative, String deathCause) {
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        // Death-screen portrait subject: prefer a befriended mob (drawn left),
+        // else the most-recent killed mob (drawn right), else none.
+        byte side;
+        PlayerMobAppearance portrait;
+        if (run.friendAppearance() != null) {
+            side = 1;
+            portrait = run.friendAppearance();
+        } else if (run.killedAppearance() != null) {
+            side = 2;
+            portrait = run.killedAppearance();
+        } else {
+            side = 0;
+            portrait = null;
+        }
         return new DeathStatsPacket(
                 run.mobKills(),
                 run.cartsSinceDeath(),
@@ -289,7 +311,10 @@ public final class RunStatsEvents {
                 run.damageDealt(),
                 run.damageTaken(),
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative, deathCause
+                narrative,
+                deathCause,
+                side,
+                portrait
         );
     }
 
@@ -389,6 +414,19 @@ public final class RunStatsEvents {
                 if (run.recordEncounter(mob.getUUID())) {
                     long total = GlobalPlayerStats.addPlayersEncountered(player.getUUID(), 1L);
                     AchievementEvents.notifyEncounter(player, total);
+                }
+                // Death-screen "friends": any PlayerMob that likes this player above
+                // the threshold counts toward the friends tally (distinct), and the
+                // warmest of them is the friend portrait. Evaluated here while the mob
+                // is loaded near the player.
+                if (mob instanceof PlayerMobEntity pm) {
+                    float feeling = pm.feelingToward(player);
+                    if (feeling > FRIEND_FEELING_MIN) {
+                        run.recordBefriended(mob.getUUID());
+                        if (feeling > run.friendFeeling()) {
+                            run.captureFriendAppearance(PlayerMobAppearance.capture(pm), feeling);
+                        }
+                    }
                 }
             }
         }

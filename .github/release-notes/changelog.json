@@ -853,7 +853,8 @@
       "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
       "highlights": [
         "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
-        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable)."
+        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable).",
+        "Full memory benchmark and methodology: [wiki \u2192 Compatibility \u2192 FerriteCore](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#ferritecore)"
       ],
       "pr": 445,
       "date": "2026-06-18",
@@ -906,13 +907,93 @@
       ],
       "pr": 448,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
+    },
+    {
+      "id": "modpack-modernfix",
+      "version": "0.319.0",
+      "type": "perf",
+      "title": "Modpack: ModernFix bundled by default (faster launch, less memory)",
+      "summary": "The Dungeon Train CurseForge modpack now ships ModernFix as an on-by-default add-on, alongside AppleSkin and FerriteCore. It speeds up launch and world-load times and trims memory use \u2014 a welcome win on a heavy pack like Dungeon Train. It's optional: untick it at install if you'd rather not. (Modpack only \u2014 the mod jar is unchanged; ModernFix is also now listed as an optional companion on the mod page.)",
+      "highlights": [
+        "ModernFix added to the modpack, on by default (deselectable at install)",
+        "Faster launch + world-load and lower memory; verified safe alongside Sable",
+        "[Compatibility + launch/memory A/B test results](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#modernfix)"
+      ],
+      "pr": 451,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
+    },
+    {
+      "id": "ecp-release-metadata",
+      "version": "0.319.0",
+      "type": "chore",
+      "title": "Wire Ender Chest Persistence as embedded dependency in release metadata",
+      "summary": "CurseForge and Modrinth now show the ender-chest-persistence mod as embedded inside Dungeon Train, matching the existing AIN/AIS/PMOB declarations.",
+      "highlights": [],
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
+    },
+    {
+      "id": "snapshot-perf-gate",
+      "version": "0.319.0",
+      "type": "perf",
+      "title": "Ride photos wait for a smooth moment",
+      "summary": "Ride snapshots now only fire when your game has the headroom to spare, so the camera no longer hitches a frame while you're already lagging. If performance stays rough for a while, the next time you open a menu it quietly grabs one so your death screen still gets its backdrops.",
+      "highlights": [
+        "Capture pauses when FPS \u2014 or single-player TPS \u2014 drops below a threshold, and resumes on its own once it recovers.",
+        "After a long rough patch, opening your inventory, chat, or a chest takes a catch-up photo.",
+        "Thresholds live in the client config (rideSnapshots.minFps / minTps); set either to 0 to turn that check off."
+      ],
+      "pr": 453,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
+    },
+    {
+      "id": "ride-photo-no-adjacent-repeat",
+      "version": "0.319.0",
+      "type": "fix",
+      "title": "Death-screen photos never repeat two pages in a row",
+      "summary": "On a short run that didn't capture enough ride photos to give every death-screen page its own, the screen could show the same photo on two pages back-to-back. Now the photos are spread out so consecutive pages always differ \u2014 you'll only see a photo twice in a row if the whole run produced a single photo.",
+      "highlights": [
+        "Scarce photos are alternated across the death pages instead of doubling up side by side",
+        "Each page still favours its fitting photo where that doesn't cause a back-to-back repeat"
+      ],
+      "pr": 455,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
+    },
+    {
+      "id": "deeds-playermob-portrait",
+      "version": "0.319.0",
+      "type": "feat",
+      "title": "Portrait of the traveller you befriended or killed, on the death screen",
+      "summary": "The death screen's deeds page now shows an animated, full-body portrait of a fellow traveller from your run \u2014 the player-mob you befriended (on the left), or, if you made no friends, the one you killed (on the right). It's shown with their name and the gear they were carrying. Friendly travellers glance around and crouch-bob when they catch your eye; ones you killed stare you down, swing their weapon, and raise their shield. \"Friends\" now means anyone who grew to like you, and the friends tally counts them all.",
+      "highlights": [
+        "Animated player-mob portrait on the deeds page \u2014 befriended (left) or killed (right)",
+        "Rendered full-body with the traveller's name and the gear they last carried",
+        "Friends look around and crouch-bob at you; foes stare, swing, and block",
+        "The friends tally now counts every traveller who grew to like you"
+      ],
+      "pr": 454,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.320.0",
+      "released_at": "2026-06-18T09:45:52Z"
     },
     {
       "id": "death-screen-page-transitions",
-      "version": "0.319.0",
+      "version": "0.320.0",
       "type": "feat",
       "title": "Cinematic death-screen page transitions",
       "summary": "The Dungeon Train's death screen now turns its pages with a slow fade through black. The text and dark overlay fade out, the next page's text fades in, and the ride photo behind it rises gently up out of black while you read. Each settled page also sits a little darker so the narration stays clear over the photography. Press Continue whenever you're ready and the photo finishes revealing as the page turns.",
