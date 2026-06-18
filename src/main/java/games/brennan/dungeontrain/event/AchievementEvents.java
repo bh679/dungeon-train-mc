@@ -186,6 +186,29 @@ public final class AchievementEvents {
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
     }
 
+    // ---------------- Biome-diversity milestones ----------------
+
+    /**
+     * Called from {@link BoardingProgressEvents} when a boarded player's
+     * distinct-biome count grows. {@code distinctBiomes} is the player's
+     * single-life {@link games.brennan.dungeontrain.player.PlayerBiomeProgress#biomeCount()}.
+     * Drives the exploration count tiers ("Far Afield", "Many Lands", "World
+     * Without End").
+     */
+    public static void notifyBiomesVisited(ServerPlayer player, int distinctBiomes) {
+        ModAdvancementTriggers.BIOMES_VISITED.get().trigger(player, distinctBiomes);
+    }
+
+    /**
+     * Called from {@link BoardingProgressEvents} when a boarded player reaches a
+     * new biome family. {@code distinctFamilies} is the player's single-life
+     * {@link games.brennan.dungeontrain.player.PlayerBiomeProgress#familyCount()}.
+     * Drives "All Under Heaven" (all 8 families in one life).
+     */
+    public static void notifyBiomeFamilies(ServerPlayer player, int distinctFamilies) {
+        ModAdvancementTriggers.BIOME_FAMILIES.get().trigger(player, distinctFamilies);
+    }
+
     // ---------------- Train-time milestones ----------------
 
     /**
@@ -561,6 +584,9 @@ public final class AchievementEvents {
         if (event.isEndConquered()) return; // End → overworld portal, not a death.
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
         run.resetAll();
+        // Exploration progress is per-life too — clear distinct biomes/families
+        // so the count tiers and "All Under Heaven" restart for the new run.
+        player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
         // Per-life travelled-carriage-index is now 0; push the HUD packet
         // immediately so the overlay reflects the reset without waiting for
         // the next 10-tick BoardingProgressEvents scan.

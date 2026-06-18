@@ -9,6 +9,7 @@
   },
   "optional_mods": [
     { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442 },
+    { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151 },
     { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560 }
   ],
   "curseforge_relations": [

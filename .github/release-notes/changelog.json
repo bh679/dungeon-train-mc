@@ -761,9 +761,9 @@
       ],
       "pr": 435,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "cinematographer-clearview",
@@ -778,9 +778,9 @@
       ],
       "pr": 437,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "enderchest-persistence-sibling-mod",
@@ -791,9 +791,9 @@
       "highlights": [],
       "pr": 438,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "ride-snapshots-death-backgrounds",
@@ -807,6 +807,104 @@
         "Optional chat log of when each photo is taken \u2014 toggle it in the X menu under Options"
       ],
       "pr": 440,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
+    },
+    {
+      "id": "zombiesrooms-books-refresh",
+      "version": "0.318.0",
+      "type": "content",
+      "title": "Tougher zombie rooms + book carriage refresh",
+      "summary": "Zombie carriages now spawn more zombies and are lit with torches in the corners, and the book carriage's room layout has been refreshed.",
+      "highlights": [
+        "Zombie rooms spawn more zombies, now torch-lit",
+        "Refreshed book carriage layout"
+      ],
+      "pr": 442,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "ride-photo-clear-line-of-sight",
+      "version": "0.318.0",
+      "type": "fix",
+      "title": "Death-screen ride photos only snap when you're in clear view",
+      "summary": "Ride photos now confirm there's an unobstructed line to your character before snapping, so a death-screen background never shows you hidden behind a carriage wall. Inside walled carriages the camera finds an angle that actually sees you \u2014 down an aisle or through a doorway \u2014 or skips the shot until one opens up.",
+      "highlights": [
+        "No more death-screen photos of the back of a wall \u2014 every shot has a clear view of you",
+        "Works inside Sable carriages, not just open decks: the camera checks the carriage's own walls",
+        "If nothing can see you right now, the photo is skipped and retried instead of captured blind"
+      ],
+      "pr": 443,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "modpack-ferritecore",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "FerriteCore added to the modpack for lower memory use",
+      "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
+      "highlights": [
+        "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
+        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable)."
+      ],
+      "pr": 445,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "death-cause-on-fall-screen",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "Cause of death on the fall screen",
+      "summary": "The death screen's first page now tells you what actually ended the run. Its title shows your cause of death in the second person \u2014 \"You fell from a high place\", \"You were slain by a zombie\", \"You blew up\" \u2014 instead of the generic \"the fall\".",
+      "highlights": [
+        "Fall-page title now names how you died",
+        "Reads in second person (\"You fell from a high place\", \"You were blown up by a creeper\")"
+      ],
+      "pr": 444,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "biome-diversity-achievements",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "Biome-diversity achievements",
+      "summary": "Ride the Dungeon Train through a variety of biomes in a single life to earn four new achievements \u2014 from your first handful of biomes all the way to seeing every kind of terrain the world has to offer.",
+      "highlights": [
+        "Far Afield, Many Lands & World Without End \u2014 ride through 10, 17 and 25 different biomes in a single life",
+        "Terra Omnia \u2014 visit all 8 biome families (forest, frozen, jungle, desert, savanna, mountain, wetland and ocean) in one life",
+        "A 'Biome family discovered (N/8)' message keeps track as you roll into each new kind of terrain"
+      ],
+      "pr": 446,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.319.0",
+      "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "ride-photo-pacing-and-dedup",
+      "version": "0.319.0",
+      "type": "fix",
+      "title": "Ride photos paced across your journey, with no repeats on the death screen",
+      "summary": "Ride photos no longer bunch up at the start of a run. The first photo of each kind is snapped as soon as it happens, then each kind spaces out the further you travel. The death screen also no longer shows the same photo on more than one page.",
+      "highlights": [
+        "First scenic/combat/gear/lore/social photo is taken as soon as it happens, then spaces out as you travel",
+        "Each death-screen page shows a different photo where enough were captured"
+      ],
+      "pr": 448,
       "date": "2026-06-18",
       "released": false,
       "released_in": null,
