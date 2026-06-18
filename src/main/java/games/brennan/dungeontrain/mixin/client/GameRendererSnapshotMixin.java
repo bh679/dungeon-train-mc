@@ -29,7 +29,7 @@ public abstract class GameRendererSnapshotMixin {
 
     @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"))
     private void dungeontrain$beginRideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
-        RideSnapshotCapture.beginLiveCapture((GameRenderer) (Object) this);
+        RideSnapshotCapture.beginLiveCapture((GameRenderer) (Object) this, deltaTracker);
     }
 
     @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("TAIL"))
