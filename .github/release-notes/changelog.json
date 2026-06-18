@@ -713,9 +713,9 @@
       ],
       "pr": 431,
       "date": "2026-06-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
     },
     {
       "id": "ender-chest-persistent",
@@ -729,9 +729,9 @@
         "Swaps live when you switch game modes mid-session"
       ],
       "date": "2026-06-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
     },
     {
       "id": "death-screen-lectern-books-first-death",
@@ -745,13 +745,13 @@
       ],
       "pr": 434,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
     },
     {
       "id": "open-ended-feedback-survey-question",
-      "version": "0.316.0",
+      "version": "0.317.0",
       "type": "feat",
       "title": "Open-ended feedback survey question",
       "summary": "After you die, the feedback survey's second question is now open-ended \u2014 \"If you could change one thing about the mod, what would it be?\" \u2014 answered in a free-text box instead of a 0\u201310 rating. The first question (how likely you'd recommend the game) is unchanged, and your answer is only sent if you actually type something.",
