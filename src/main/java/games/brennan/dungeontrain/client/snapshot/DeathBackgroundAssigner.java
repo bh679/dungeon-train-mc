@@ -15,9 +15,12 @@ import java.util.Set;
  *       claims the newest unused shot of that tag.</li>
  *   <li><b>Fallback</b> — every still-unassigned page (a preferred miss, plus
  *       the wildcard survey / platform pages) takes the newest <em>unused</em>
- *       shot along its thematic chain, then any unused shot; only when no unused
- *       shot remains does it reuse one (newest along the chain, then newest of
- *       any tag).</li>
+ *       shot along its thematic chain, then any unused shot. Only when no unused
+ *       shot remains does it <em>reuse</em> one (there are fewer images than
+ *       pages); a reused shot prefers one that repeats neither the previous nor
+ *       the next page so the same photo never lands on two pages in a row, while
+ *       still favouring the thematic chain among the non-repeating candidates.
+ *       Repetition happens only when a single distinct image exists.</li>
  * </ol>
  *
  * <p>Each page's chain is a list of tags with tier 0 = preferred; an empty chain
@@ -50,9 +53,13 @@ public final class DeathBackgroundAssigner {
             }
         }
         // Pass 2: fill the rest, preferring unused along the chain, then any unused, then reuse.
+        // Filled left-to-right, so out[i-1] is always set; out[i+1] may still be null (a later
+        // reuse page) — the reuse step skips null neighbours.
         for (int i = 0; i < chains.size(); i++) {
             if (out[i] != null) continue;
-            RideSnapshot s = fallback(gallery, used, chains.get(i));
+            RideSnapshot prev = i > 0 ? out[i - 1] : null;
+            RideSnapshot next = i + 1 < out.length ? out[i + 1] : null;
+            RideSnapshot s = fallback(gallery, used, chains.get(i), prev, next);
             if (s != null) {
                 out[i] = s;
                 used.add(s);
@@ -61,14 +68,40 @@ public final class DeathBackgroundAssigner {
         return out;
     }
 
-    private static RideSnapshot fallback(List<RideSnapshot> gallery, Set<RideSnapshot> used, List<SnapshotTag> chain) {
+    private static RideSnapshot fallback(List<RideSnapshot> gallery, Set<RideSnapshot> used,
+                                         List<SnapshotTag> chain, RideSnapshot prev, RideSnapshot next) {
         for (SnapshotTag tag : chain) {
             RideSnapshot s = newestUnused(gallery, used, tag);
             if (s != null) return s;
         }
         RideSnapshot anyUnused = newestUnused(gallery, used, null);
         if (anyUnused != null) return anyUnused;
-        // Everything is used — reuse the most fitting shot rather than leave the page bare.
+        return reuse(gallery, chain, prev, next);
+    }
+
+    /**
+     * Everything is used (fewer images than pages). Reuse the most fitting shot that does not
+     * repeat an adjacent page, so the same photo never appears on two pages in a row. Order:
+     * chain-fit avoiding both neighbours, any avoiding both, chain-fit avoiding the previous,
+     * any avoiding the previous, then (single-image case) the plain best fit. Avoiding the
+     * previous page always succeeds while ≥2 distinct images exist, so a repeat only occurs
+     * when the gallery holds a single distinct shot.
+     */
+    private static RideSnapshot reuse(List<RideSnapshot> gallery, List<SnapshotTag> chain,
+                                      RideSnapshot prev, RideSnapshot next) {
+        for (SnapshotTag tag : chain) {
+            RideSnapshot s = newestAvoiding(gallery, tag, prev, next);
+            if (s != null) return s;
+        }
+        RideSnapshot anyBoth = newestAvoiding(gallery, null, prev, next);
+        if (anyBoth != null) return anyBoth;
+        for (SnapshotTag tag : chain) {
+            RideSnapshot s = newestAvoiding(gallery, tag, prev);
+            if (s != null) return s;
+        }
+        RideSnapshot anyPrev = newestAvoiding(gallery, null, prev);
+        if (anyPrev != null) return anyPrev;
+        // Only one distinct shot exists — repetition is unavoidable.
         for (SnapshotTag tag : chain) {
             RideSnapshot s = newest(gallery, tag);
             if (s != null) return s;
@@ -90,6 +123,25 @@ public final class DeathBackgroundAssigner {
         RideSnapshot match = null;
         for (RideSnapshot s : gallery) {
             if (tag == null || s.tag() == tag) match = s;
+        }
+        return match;
+    }
+
+    /**
+     * Newest shot matching {@code tag} (any tag if {@code null}) whose identity is none of the
+     * {@code avoid} shots, else {@code null}. {@code null} avoid entries are ignored, so a page
+     * with no neighbour on a side imposes no constraint. Identity ({@code ==}) matches the
+     * {@code IdentityHashMap}-based {@code used} set: every capture is a distinct object.
+     */
+    private static RideSnapshot newestAvoiding(List<RideSnapshot> gallery, SnapshotTag tag, RideSnapshot... avoid) {
+        RideSnapshot match = null;
+        for (RideSnapshot s : gallery) {
+            if (tag != null && s.tag() != tag) continue;
+            boolean blocked = false;
+            for (RideSnapshot a : avoid) {
+                if (a == s) { blocked = true; break; }
+            }
+            if (!blocked) match = s;
         }
         return match;
     }
