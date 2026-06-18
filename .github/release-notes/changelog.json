@@ -939,6 +939,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "deeds-playermob-portrait",
+      "version": "0.319.0",
+      "type": "feat",
+      "title": "Portrait of the traveller you befriended or killed, on the death screen",
+      "summary": "The death screen's deeds page now shows an animated, full-body portrait of a fellow traveller from your run \u2014 the player-mob you befriended (on the left), or, if you made no friends, the one you killed (on the right). It's shown with their name and the gear they were carrying. Friendly travellers glance around and crouch-bob when they catch your eye; ones you killed stare you down, swing their weapon, and raise their shield. \"Friends\" now means anyone who grew to like you, and the friends tally counts them all.",
+      "highlights": [
+        "Animated player-mob portrait on the deeds page \u2014 befriended (left) or killed (right)",
+        "Rendered full-body with the traveller's name and the gear they last carried",
+        "Friends look around and crouch-bob at you; foes stare, swing, and block",
+        "The friends tally now counts every traveller who grew to like you"
+      ],
+      "pr": 454,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
