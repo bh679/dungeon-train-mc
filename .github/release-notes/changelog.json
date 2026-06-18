@@ -993,7 +993,7 @@
     },
     {
       "id": "death-screen-page-transitions",
-      "version": "0.320.0",
+      "version": "0.321.0",
       "type": "feat",
       "title": "Cinematic death-screen page transitions",
       "summary": "The Dungeon Train's death screen now turns its pages with a slow fade through black. The text and dark overlay fade out, the next page's text fades in, and the ride photo behind it rises gently up out of black while you read. Each settled page also sits a little darker so the narration stays clear over the photography. Press Continue whenever you're ready and the photo finishes revealing as the page turns.",
@@ -1003,6 +1003,30 @@
         "Press Continue or Space whenever you like; if the photo is still rising in, it finishes as the page turns."
       ],
       "pr": 452,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.321.0",
+      "released_at": "2026-06-18T10:36:46Z"
+    },
+    {
+      "id": "remove-biome-family-toast",
+      "version": "0.321.0",
+      "type": "refactor",
+      "title": "Quieter biome exploration",
+      "summary": "Riding into a new biome family no longer pops a \"Biome family discovered\" message on screen. The exploration advancements still track and award exactly as before \u2014 only the on-screen notification is gone.",
+      "highlights": [],
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "over_the_top_advancement",
+      "version": "0.321.1",
+      "type": "feat",
+      "title": "Over the Top advancement",
+      "summary": "New advancement fires when a player runs across the roof of one carriage group without dropping inside \u2014 sits before Skip the Grind in the tree.",
+      "highlights": [],
       "date": "2026-06-18",
       "released": false,
       "released_in": null,

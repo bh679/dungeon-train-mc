@@ -63,8 +63,20 @@ public final class RoofRunEvents {
     /** Per-level scan period, in ticks. Matches {@link BoardingProgressEvents}. */
     private static final int SCAN_PERIOD_TICKS = 10;
 
-    /** Horizontal slack (blocks) on group footprints, to bridge coupling seams. */
-    private static final double HORIZONTAL_PADDING = 1.0;
+    /**
+     * Horizontal slack (blocks) on group footprints, to bridge coupling seams and
+     * include players on edge stairs or blocks placed immediately adjacent to the
+     * carriage sides. Also used for the cheap world-space pre-filter.
+     */
+    private static final double HORIZONTAL_PADDING = 2.0;
+
+    /**
+     * Extra tolerance (blocks) on each X end of the enclosed section when
+     * deciding whether a <em>roof-height</em> player counts as "over enclosed."
+     * Catches players standing on stair blocks at the roof ends, which may sit
+     * 1 block past the enclosedMinX/enclosedMaxX boundary.
+     */
+    private static final double ENCLOSED_END_PADDING = 1.0;
 
     /**
      * How far below a roof's top face (model-Y) the player's feet may be and
@@ -100,29 +112,32 @@ public final class RoofRunEvents {
             RoofStatus status = classify(carriages, player);
             switch (status.kind()) {
                 case ON_ROOF -> {
+                    int groupSize = Math.max(1, status.groupSize());
                     Streak s = STREAKS.get(id);
                     if (s == null || s.lastScan != now - SCAN_PERIOD_TICKS) {
                         // No prior streak, or a gap broke continuity → start fresh.
-                        s = new Streak(status.anchorPIdx(), now);
+                        s = new Streak(status.anchorPIdx(), now, groupSize);
                         STREAKS.put(id, s);
                     } else {
                         s.min = Math.min(s.min, status.anchorPIdx());
                         s.max = Math.max(s.max, status.anchorPIdx());
                         s.lastScan = now;
+                        s.groupSize = groupSize;
                     }
-                    int groupSize = Math.max(1, status.groupSize());
                     int groups = (s.max - s.min) / groupSize;
                     if (groups > 0) {
                         ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, groups);
                     }
                 }
                 case ON_TOP_OTHER -> {
-                    // On a pad deck / airborne over the top: keep an existing
-                    // streak alive across the coupling, but don't advance the
-                    // anchor (no enclosed roof here). No streak yet ⇒ nothing
-                    // to keep (a run only starts on a roof).
+                    // On a pad deck / airborne over the top: keep an existing streak
+                    // alive across the coupling. Also fires the trigger with groups+1
+                    // so that traversing one enclosed group roof (then landing on the
+                    // pad) satisfies threshold=1 without needing to climb a second roof.
                     Streak s = STREAKS.get(id);
                     if (s != null && s.lastScan == now - SCAN_PERIOD_TICKS) {
+                        int gs = Math.max(1, s.groupSize);
+                        ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, (s.max - s.min) / gs + 1);
                         s.lastScan = now;
                     }
                 }
@@ -186,13 +201,19 @@ public final class RoofRunEvents {
                 && local.z <= originZ + width + HORIZONTAL_PADDING;
             if (!withinX || !withinZ) continue;
 
+            // Strict X range: used for the below-roof check so players approaching
+            // from the coupling pad floor don't inadvertently get BELOW_ROOF.
             boolean overEnclosed = local.x >= enclosedMinX && local.x <= enclosedMaxX;
+            // Wider X range: used at roof height so players on edge stairs or
+            // blocks placed 1 block past the enclosed ends still count as ON_ROOF.
+            boolean overEnclosedOrEdge = local.x >= enclosedMinX - ENCLOSED_END_PADDING
+                && local.x <= enclosedMaxX + ENCLOSED_END_PADDING;
 
             RoofStatus s;
             if (local.y >= roofTopY - ROOF_EPS) {
                 // At or above roof height: on the glass roof (over enclosed) or
                 // airborne over a pad/coupling.
-                s = overEnclosed
+                s = overEnclosedOrEdge
                     ? RoofStatus.onRoof(provider.getPIdx(), groupSize)
                     : RoofStatus.ON_TOP_OTHER;
             } else if (local.y >= originY - FLOOR_TOLERANCE) {
@@ -213,11 +234,13 @@ public final class RoofRunEvents {
         int min;
         int max;
         long lastScan;
+        int groupSize;
 
-        Streak(int anchor, long scan) {
+        Streak(int anchor, long scan, int groupSize) {
             this.min = anchor;
             this.max = anchor;
             this.lastScan = scan;
+            this.groupSize = groupSize;
         }
     }
 
