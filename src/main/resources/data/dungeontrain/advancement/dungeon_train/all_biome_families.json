@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/biomes_25",
+  "display": {
+    "icon": { "id": "minecraft:lodestone" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.all_biome_families.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.all_biome_families.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:biome_families",
+      "conditions": { "threshold": 8 }
+    }
+  },
+  "requirements": [["milestone"]]
+}

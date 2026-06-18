@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": { "id": "minecraft:map" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.biomes_10.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.biomes_10.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "milestone": {
+      "trigger": "dungeontrain:biomes_visited",
+      "conditions": { "threshold": 10 }
+    }
+  },
+  "requirements": [["milestone"]]
+}
