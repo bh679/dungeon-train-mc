@@ -260,8 +260,15 @@ public final class NarrativeDeathScreen extends Screen {
 
     private int drawFall(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
                          int left, int w, int cx, int y, int mouseX, int mouseY) {
-        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
-        y += 14;
+        // The fall-page title is the second-person death cause ("You fell from a high
+        // place") when the server sent one, wrapped in the kicker style so a long cause
+        // can't clip; otherwise the static "the fall" kicker.
+        if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
+            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y, KICKER) + 3;
+        } else {
+            drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
+            y += 14;
+        }
         drawTrain(g, left, w, y, currentPage);
         y += 46;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);

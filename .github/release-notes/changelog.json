@@ -860,6 +860,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-cause-on-fall-screen",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "Cause of death on the fall screen",
+      "summary": "The death screen's first page now tells you what actually ended the run. Its title shows your cause of death in the second person \u2014 \"You fell from a high place\", \"You were slain by a zombie\", \"You blew up\" \u2014 instead of the generic \"the fall\".",
+      "highlights": [
+        "Fall-page title now names how you died",
+        "Reads in second person (\"You fell from a high place\", \"You were blown up by a creeper\")"
+      ],
+      "pr": 444,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
