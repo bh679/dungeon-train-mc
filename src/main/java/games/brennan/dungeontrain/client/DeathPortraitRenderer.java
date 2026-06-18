@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.playermob.PlayerMobRegistry;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -46,11 +47,15 @@ public final class DeathPortraitRenderer {
     private static final int SIZE = 36;
     /** Body yaw that faces the viewer (matches vanilla GUI entity convention). */
     private static final float FACE_YOU = 180.0f;
+    /** One weapon-swing arc lasts this long (seconds) — short so it reads as a real strike, not slow-mo. */
+    private static final float SWING_SECONDS = 0.4f;
 
     private PlayerMobAppearance current;
     private PlayerMobEntity entity;
     /** Whether the cached entity currently holds its shield up (start/stop transition memo). */
     private boolean blocking;
+    /** Wall-clock millis when the cached entity was built; animation time is measured from here. */
+    private long animStartMillis;
 
     /**
      * Whether a portrait can be drawn this frame — a client level exists and the
@@ -73,8 +78,10 @@ public final class DeathPortraitRenderer {
         PlayerMobEntity mob = obtain(appearance);
         if (mob == null) return;
 
-        Level level = Minecraft.getInstance().level;
-        float t = (level.getGameTime() + partialTick) / 20.0f; // seconds
+        // Wall-clock seconds since the portrait appeared — independent of the server
+        // tick rate, so the performance plays at true speed even when the world is
+        // mid-lag (e.g. the post-death spawn storm), unlike a getGameTime() clock.
+        float t = (Util.getMillis() - animStartMillis) / 1000.0f;
         if (side == 1) animateFriend(mob, t);
         else animateKilled(mob, t);
 
@@ -110,6 +117,7 @@ public final class DeathPortraitRenderer {
         this.entity = mob;
         this.current = appearance;
         this.blocking = false;
+        this.animStartMillis = Util.getMillis();
         return mob;
     }
 
@@ -131,14 +139,14 @@ public final class DeathPortraitRenderer {
         if (blocking) { mob.lowerShield(); blocking = false; }
         clearSwing(mob);
 
-        float bodyYaw = FACE_YOU + 6.0f * Mth.sin(t * 0.5f);
-        boolean lookAtYou = (t % 5.0f) < 1.6f;                 // ~1.6s every 5s
-        float headYaw = lookAtYou ? FACE_YOU : FACE_YOU + 55.0f * Mth.sin(t * 1.2f);
-        float headPitch = lookAtYou ? 0.0f : 12.0f * Mth.sin(t * 0.9f);
+        float bodyYaw = FACE_YOU + 6.0f * Mth.sin(t * 0.9f);
+        boolean lookAtYou = (t % 4.0f) < 1.4f;                 // ~1.4s every 4s
+        float headYaw = lookAtYou ? FACE_YOU : FACE_YOU + 45.0f * Mth.sin(t * 2.0f);
+        float headPitch = lookAtYou ? 0.0f : 10.0f * Mth.sin(t * 1.6f);
         setFacing(mob, bodyYaw, headYaw, headPitch);
 
-        // Crouch-bob: a ~1.5s burst of fast sneak toggles every ~3.5s.
-        boolean burst = (t % 3.5f) < 1.5f;
+        // Crouch-bob: a ~1.2s burst of brisk sneak toggles (~3/s) every ~3s.
+        boolean burst = (t % 3.0f) < 1.2f;
         mob.setCrouching(burst && (((int) (t * 6.0f)) & 1) == 0);
     }
 
@@ -148,19 +156,19 @@ public final class DeathPortraitRenderer {
      * weapon at you, hold the shield up, or crouch-then-strike.
      */
     private void animateKilled(PlayerMobEntity mob, float t) {
-        setFacing(mob, FACE_YOU, FACE_YOU + 8.0f * Mth.sin(t * 0.4f), 3.0f * Mth.sin(t * 0.3f));
+        setFacing(mob, FACE_YOU, FACE_YOU + 7.0f * Mth.sin(t * 0.8f), 3.0f * Mth.sin(t * 0.6f));
 
-        float period = 3.6f;
-        int beat = ((int) (t / period)) & 3;                  // 0..3
-        float phase = (t % period) / period;                  // 0..1 within the beat
+        float cycle = 2.6f;                                   // seconds per hostile beat
+        int beat = ((int) (t / cycle)) & 3;                   // 0..3
+        float local = t % cycle;                              // seconds into the beat
 
         boolean wantBlock = false;
         boolean wantCrouch = false;
         float swing = 0.0f;
         switch (beat) {
-            case 1 -> swing = strike(phase, 0.0f);             // swing at you
-            case 2 -> wantBlock = phase < 0.75f;               // raise & hold shield
-            case 3 -> { wantCrouch = phase < 0.45f; if (!wantCrouch) swing = strike(phase, 0.45f); }
+            case 1 -> swing = strike(local, 0.15f);            // a quick swing at you
+            case 2 -> wantBlock = local < 1.9f;                // raise & hold the shield
+            case 3 -> { wantCrouch = local < 0.6f; swing = strike(local, 0.7f); } // crouch, then strike
             default -> { /* just stare */ }
         }
 
@@ -170,9 +178,9 @@ public final class DeathPortraitRenderer {
         if (swing > 0.0f) setSwing(mob, swing); else clearSwing(mob);
     }
 
-    /** A 0→1 swing ramp over ~0.45 of the beat, starting at fraction {@code start}. */
-    private static float strike(float phase, float start) {
-        float p = (phase - start) / 0.45f;
+    /** A sharp 0→1 weapon-swing ramp lasting {@link #SWING_SECONDS}s from {@code start} (seconds into the beat). */
+    private static float strike(float local, float start) {
+        float p = (local - start) / SWING_SECONDS;
         return (p <= 0.0f || p >= 1.0f) ? 0.0f : p;
     }
 
