@@ -63,8 +63,20 @@ public final class RoofRunEvents {
     /** Per-level scan period, in ticks. Matches {@link BoardingProgressEvents}. */
     private static final int SCAN_PERIOD_TICKS = 10;
 
-    /** Horizontal slack (blocks) on group footprints, to bridge coupling seams. */
-    private static final double HORIZONTAL_PADDING = 1.0;
+    /**
+     * Horizontal slack (blocks) on group footprints, to bridge coupling seams and
+     * include players on edge stairs or blocks placed immediately adjacent to the
+     * carriage sides. Also used for the cheap world-space pre-filter.
+     */
+    private static final double HORIZONTAL_PADDING = 2.0;
+
+    /**
+     * Extra tolerance (blocks) on each X end of the enclosed section when
+     * deciding whether a <em>roof-height</em> player counts as "over enclosed."
+     * Catches players standing on stair blocks at the roof ends, which may sit
+     * 1 block past the enclosedMinX/enclosedMaxX boundary.
+     */
+    private static final double ENCLOSED_END_PADDING = 1.0;
 
     /**
      * How far below a roof's top face (model-Y) the player's feet may be and
@@ -189,13 +201,19 @@ public final class RoofRunEvents {
                 && local.z <= originZ + width + HORIZONTAL_PADDING;
             if (!withinX || !withinZ) continue;
 
+            // Strict X range: used for the below-roof check so players approaching
+            // from the coupling pad floor don't inadvertently get BELOW_ROOF.
             boolean overEnclosed = local.x >= enclosedMinX && local.x <= enclosedMaxX;
+            // Wider X range: used at roof height so players on edge stairs or
+            // blocks placed 1 block past the enclosed ends still count as ON_ROOF.
+            boolean overEnclosedOrEdge = local.x >= enclosedMinX - ENCLOSED_END_PADDING
+                && local.x <= enclosedMaxX + ENCLOSED_END_PADDING;
 
             RoofStatus s;
             if (local.y >= roofTopY - ROOF_EPS) {
                 // At or above roof height: on the glass roof (over enclosed) or
                 // airborne over a pad/coupling.
-                s = overEnclosed
+                s = overEnclosedOrEdge
                     ? RoofStatus.onRoof(provider.getPIdx(), groupSize)
                     : RoofStatus.ON_TOP_OTHER;
             } else if (local.y >= originY - FLOOR_TOLERANCE) {
