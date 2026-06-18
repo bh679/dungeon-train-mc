@@ -190,6 +190,7 @@ jobs:
             interactive-player-mobs(embedded)
             appleskin(optional)
             ferritecore(optional)
+            modernfix(optional)
             distant-horizons(optional)
             tectonic(optional)
             mouse-tweaks(optional)
