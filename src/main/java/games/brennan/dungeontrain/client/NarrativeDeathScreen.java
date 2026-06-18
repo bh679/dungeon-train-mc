@@ -144,7 +144,12 @@ public final class NarrativeDeathScreen extends Screen {
             String qid = p.survey().id();
             commentBox.setValue(comments.getOrDefault(qid, ""));
             commentBox.setResponder(s -> comments.put(qid, s));
-            commentBox.setHint(Component.translatable("gui.dungeontrain.death.narr.comment"));
+            // A text question (no rating scale) makes the box the sole answer, so prompt for it
+            // directly; a scale question's comment just explains the score.
+            boolean hasScale = p.survey().scaleMax() >= p.survey().scaleMin();
+            commentBox.setHint(Component.translatable(hasScale
+                    ? "gui.dungeontrain.death.narr.comment"
+                    : "gui.dungeontrain.death.narr.answer"));
             addRenderableWidget(commentBox);
         }
     }
@@ -312,22 +317,25 @@ public final class NarrativeDeathScreen extends Screen {
         if (e != null) {
             y = drawQuestion(g, e.prompt(), cx, w, y);
             y += 4;
-            int n = e.scaleMax() - e.scaleMin() + 1;
-            if (n < 1) n = 1;
-            int tile = 22, gap = 4;
-            int rowW = n * tile + (n - 1) * gap;
-            int sx = cx - rowW / 2;
-            int selected = scores.getOrDefault(e.id(), -1);
-            for (int i = 0; i < n; i++) {
-                int score = e.scaleMin() + i;
-                int tx = sx + i * (tile + gap);
-                boolean sel = selected == score;
-                g.fill(tx, y, tx + tile, y + tile, sel ? BTN_PRI_BG : SCORE_BG);
-                drawBorder(g, tx, y, tile, tile, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
-                drawCenteredStr(g, Integer.toString(score), tx + tile / 2, y + (tile - this.font.lineHeight) / 2 + 1, sel ? 0xFFFFFFFF : SCORE_TEXT);
-                scoreRects.add(new Rect(tx, y, tile, tile));
+            // The 0–N rating row — only for scale questions. A text question
+            // (scaleMax < scaleMin) shows no tiles; its answer box is the sole input.
+            if (e.scaleMax() >= e.scaleMin()) {
+                int n = e.scaleMax() - e.scaleMin() + 1;
+                int tile = 22, gap = 4;
+                int rowW = n * tile + (n - 1) * gap;
+                int sx = cx - rowW / 2;
+                int selected = scores.getOrDefault(e.id(), -1);
+                for (int i = 0; i < n; i++) {
+                    int score = e.scaleMin() + i;
+                    int tx = sx + i * (tile + gap);
+                    boolean sel = selected == score;
+                    g.fill(tx, y, tx + tile, y + tile, sel ? BTN_PRI_BG : SCORE_BG);
+                    drawBorder(g, tx, y, tile, tile, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
+                    drawCenteredStr(g, Integer.toString(score), tx + tile / 2, y + (tile - this.font.lineHeight) / 2 + 1, sel ? 0xFFFFFFFF : SCORE_TEXT);
+                    scoreRects.add(new Rect(tx, y, tile, tile));
+                }
+                y += tile + 8;
             }
-            y += tile + 8;
             if (e.allowComment() && commentBox != null) {
                 int boxW = Math.min(w, 256);
                 commentBox.setX(cx - boxW / 2);
@@ -448,10 +456,19 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void maybeSubmit(SurveyQuestionPayload.Entry e) {
-        if (e == null) return;
-        int score = scores.getOrDefault(e.id(), -1);
-        if (score < 0 || submitted.contains(e.id())) return;
-        DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comments.getOrDefault(e.id(), "")));
+        if (e == null || submitted.contains(e.id())) return;
+        String comment = comments.getOrDefault(e.id(), "").trim();
+        int score;
+        if (e.scaleMax() >= e.scaleMin()) {
+            // Scale question: needs a chosen rating; the comment stays optional.
+            score = scores.getOrDefault(e.id(), -1);
+            if (score < 0) return;
+        } else {
+            // Text question: the typed answer IS the submission — send nothing until it's entered.
+            if (comment.isEmpty()) return;
+            score = 0; // unused server-side (DP omits the Rating field for no-scale questions)
+        }
+        DPNetwork.sendToServer(new SurveySubmitPayload(e.id(), score, comment));
         submitted.add(e.id());
     }
 
