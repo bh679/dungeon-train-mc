@@ -761,9 +761,9 @@
       ],
       "pr": 435,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "cinematographer-clearview",
@@ -778,9 +778,9 @@
       ],
       "pr": 437,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "enderchest-persistence-sibling-mod",
@@ -791,9 +791,9 @@
       "highlights": [],
       "pr": 438,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "ride-snapshots-death-backgrounds",
@@ -808,9 +808,9 @@
       ],
       "pr": 440,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     }
   ]
 }
