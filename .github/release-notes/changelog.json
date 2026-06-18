@@ -703,7 +703,7 @@
     },
     {
       "id": "cinematographer-doors-only",
-      "version": "0.316.0",
+      "version": "0.317.0",
       "type": "fix",
       "title": "Cinematographer mode only opens doors now",
       "summary": "The spectator filming mode added in 0.316.0 was also swinging open trapdoors, fence gates and barrels as the camera drifted past. It now opens only actual doors, so set dressing and storage stay put while you film.",
