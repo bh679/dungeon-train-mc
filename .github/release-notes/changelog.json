@@ -761,9 +761,9 @@
       ],
       "pr": 435,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "cinematographer-clearview",
@@ -778,9 +778,9 @@
       ],
       "pr": 437,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "enderchest-persistence-sibling-mod",
@@ -791,9 +791,9 @@
       "highlights": [],
       "pr": 438,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
     },
     {
       "id": "ride-snapshots-death-backgrounds",
@@ -807,6 +807,22 @@
         "Optional chat log of when each photo is taken \u2014 toggle it in the X menu under Options"
       ],
       "pr": 440,
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.318.0",
+      "released_at": "2026-06-18T04:39:45Z"
+    },
+    {
+      "id": "zombiesrooms-books-refresh",
+      "version": "0.318.0",
+      "type": "content",
+      "title": "Tougher zombie rooms + book carriage refresh",
+      "summary": "Zombie carriages now spawn more zombies and are lit with torches in the corners, and the book carriage's room layout has been refreshed.",
+      "highlights": [
+        "Zombie rooms spawn more zombies, now torch-lit",
+        "Refreshed book carriage layout"
+      ],
+      "pr": 442,
       "date": "2026-06-18",
       "released": false,
       "released_in": null,
