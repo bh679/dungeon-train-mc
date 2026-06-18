@@ -4,8 +4,8 @@
   "dt_project_id": 1527512,
   "sable": {
     "project_id": 1312371,
-    "file_id": 8003927,
-    "version": "1.2.1+mc1.21.1"
+    "file_id": 8255445,
+    "version": "2.0.2+mc1.21.1"
   },
   "optional_mods": [
     { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442 },

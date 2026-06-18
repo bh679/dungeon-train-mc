@@ -956,6 +956,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-2-0-2",
+      "version": "0.319.0",
+      "type": "chore",
+      "title": "Sable physics updated to 2.0.2",
+      "summary": "Updated the Sable physics dependency from 1.2.1 to 2.0.2. Server tick-time is equal-or-better \u2014 worst-case lag spikes are roughly halved \u2014 and the long-standing save-and-quit hang (Sable #679) no longer occurs. Verified API-compatible, so no gameplay changes. Full compatibility & benchmark notes: [Compatibility wiki](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#sable-202mc1211).",
+      "highlights": [
+        "Smoother performance \u2014 roughly 50% fewer worst-case server lag spikes",
+        "Fixed the save-and-quit hang affecting some worlds (Sable #679)",
+        "Sable physics updated to 2.0.2"
+      ],
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
