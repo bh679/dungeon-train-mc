@@ -55,6 +55,14 @@ public final class ModAdvancementTriggers {
     public static final Supplier<LifetimeDistanceTrigger> LIFETIME_DISTANCE =
         TRIGGERS.register("lifetime_distance", LifetimeDistanceTrigger::new);
 
+    // --- Exploration / biome-diversity advancements ---
+
+    public static final Supplier<BiomesVisitedTrigger> BIOMES_VISITED =
+        TRIGGERS.register("biomes_visited", BiomesVisitedTrigger::new);
+
+    public static final Supplier<BiomeFamiliesTrigger> BIOME_FAMILIES =
+        TRIGGERS.register("biome_families", BiomeFamiliesTrigger::new);
+
     public static final Supplier<MultiplayerJoinTrigger> MULTIPLAYER_JOIN =
         TRIGGERS.register("multiplayer_join", MultiplayerJoinTrigger::new);
 

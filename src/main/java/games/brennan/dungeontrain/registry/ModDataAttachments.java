@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
@@ -32,6 +33,20 @@ public final class ModDataAttachments {
         TYPES.register("player_run_state",
             () -> AttachmentType.builder(PlayerRunState::new)
                 .serialize(PlayerRunState.CODEC)
+                .build()
+        );
+
+    /**
+     * Per-player run biome-exploration progress — the distinct biomes and biome
+     * families ridden through this life. Codec-serialized so progress survives
+     * world reload; deliberately <b>not</b> {@code copyOnDeath}, so the respawn
+     * clone starts empty (the {@code AchievementEvents} respawn hook also clears
+     * it explicitly). Drives the exploration advancements.
+     */
+    public static final Supplier<AttachmentType<PlayerBiomeProgress>> PLAYER_BIOME_PROGRESS =
+        TYPES.register("player_biome_progress",
+            () -> AttachmentType.builder(PlayerBiomeProgress::new)
+                .serialize(PlayerBiomeProgress.CODEC)
                 .build()
         );
 

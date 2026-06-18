@@ -876,6 +876,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "biome-diversity-achievements",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "Biome-diversity achievements",
+      "summary": "Ride the Dungeon Train through a variety of biomes in a single life to earn four new achievements \u2014 from your first handful of biomes all the way to seeing every kind of terrain the world has to offer.",
+      "highlights": [
+        "Far Afield, Many Lands & World Without End \u2014 ride through 10, 17 and 25 different biomes in a single life",
+        "Terra Omnia \u2014 visit all 8 biome families (forest, frozen, jungle, desert, savanna, mountain, wetland and ocean) in one life",
+        "A 'Biome family discovered (N/8)' message keeps track as you roll into each new kind of terrain"
+      ],
+      "pr": 446,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
