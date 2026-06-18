@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -286,16 +287,18 @@ public final class CinematographerClearView {
     }
 
     /**
-     * Swap candidates: hide pretty much anything solid except doors. Skips air,
-     * existing barriers, doors/trapdoors/fence gates ({@code OPEN} — handled by the
-     * door auto-open), and liquids (kept to avoid water/lava flow side effects).
-     * Block entities (pots, chiseled bookshelves, chests, …) ARE hidden — their NBT
-     * is preserved for a lossless revert.
+     * Swap candidates: hide pretty much anything solid except doors and slabs. Skips
+     * air, existing barriers, doors/trapdoors/fence gates ({@code OPEN} — handled by
+     * the door auto-open), slabs (half-blocks / walkways that don't really block the
+     * shot), and liquids (kept to avoid water/lava flow side effects). Block entities
+     * (pots, chiseled bookshelves, chests, …) ARE hidden — their NBT is preserved for
+     * a lossless revert.
      */
     private static boolean shouldHide(BlockState state) {
         if (state.isAir()) return false;
         if (state.is(Blocks.BARRIER)) return false;
         if (state.hasProperty(BlockStateProperties.OPEN)) return false;
+        if (state.getBlock() instanceof SlabBlock) return false;
         return !(state.getBlock() instanceof LiquidBlock);
     }
 }
