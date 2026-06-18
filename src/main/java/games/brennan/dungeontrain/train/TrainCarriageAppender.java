@@ -142,15 +142,6 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Set<UUID>> FORCELOADED_BY_TRAIN = new ConcurrentHashMap<>();
 
     /**
-     * Per-train: the last game tick on which backward generation was needed.
-     * The force-load window stays active for {@link #FORCELOAD_IDLE_RELEASE_TICKS}
-     * after this so a freshly-spawned backward carriage keeps its ticket through
-     * the full {@link #CLEAN_TICKS_FOR_SUCCESS} settle even if {@code needsBackward}
-     * momentarily flips off between spawns.
-     */
-    private static final Map<UUID, Long> LAST_BACKWARD_NEED_TICK = new ConcurrentHashMap<>();
-
-    /**
      * Stall threshold: 600 ticks = 30 s at 20 Hz. Comfortably past the
      * 60-tick {@link #CLEAN_TICKS_FOR_SUCCESS} settle window so a normally
      * operating train (which blocks for ~60-100 ticks between spawns)
@@ -333,28 +324,22 @@ public final class TrainCarriageAppender {
     private static final long CULL_DETECTION_GRACE_TICKS = 60L;
 
     /**
-     * How many trailing GROUPS (nearest the tail) Dungeon Train force-loads
-     * while backward generation is active. Sable culls any sub-level whose
-     * world chunks leave the player-centred simulation bubble; the backmost
-     * carriages of a backward-riding train do exactly that and get culled
-     * before the {@link #CLEAN_TICKS_FOR_SUCCESS} settle completes (the
-     * {@code backward-generation-stall}). Force-loading the active frontier
-     * keeps it resident and ticking long enough to settle. Bounded and small
-     * so retained memory stays O(groups), not O(train length): 3 groups
-     * covers the newest backward group plus the one or two settling ahead of
-     * it, with margin.
+     * How many trailing GROUPS (nearest the tail) Dungeon Train force-loads.
+     * Sable culls any sub-level whose world chunks leave the player-centred
+     * simulation bubble; the backmost carriages of a backward-riding train do
+     * exactly that and get culled before the {@link #CLEAN_TICKS_FOR_SUCCESS}
+     * settle completes (the {@code backward-generation-stall}). Force-loading
+     * the active frontier keeps it resident and ticking long enough to settle,
+     * AND keeps the settling carriage's predecessors stable so it doesn't
+     * collide with a culled-then-reloaded (drifted) neighbour.
+     *
+     * <p>The train list is one entry per group/sub-level, so this is a count of
+     * <em>sub-levels</em>. Bounded and small so retained memory stays O(groups),
+     * not O(train length): 4 covers the newest backward group plus the three
+     * settled predecessors a new spawn places against.</p>
      */
-    private static final int TRAILING_FORCELOAD_GROUPS = 3;
+    private static final int TRAILING_FORCELOAD_GROUPS = 4;
 
-    /**
-     * Grace period (ticks) after the last tick backward was needed during
-     * which the trailing force-load window stays active. Once it elapses with
-     * no further backward need, the window releases every ticket so Sable can
-     * cull the now-unneeded trailing carriages normally — this is the "release
-     * once no longer trailing" guarantee that keeps memory bounded. 100 ticks
-     * ≈ 5 s, comfortably longer than the 60-tick settle.
-     */
-    private static final long FORCELOAD_IDLE_RELEASE_TICKS = 100L;
     /**
      * Maximum distance (in blocks, world space) from any player to a
      * placement-settled carriage's current world position at which the
@@ -1009,7 +994,6 @@ public final class TrainCarriageAppender {
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
         // level handle; here we only drop our in-memory mirror.
         FORCELOADED_BY_TRAIN.clear();
-        LAST_BACKWARD_NEED_TICK.clear();
     }
 
     /**
@@ -1545,7 +1529,7 @@ public final class TrainCarriageAppender {
         // backward generation goes idle, not only refreshed while it's active.
         // A backward carriage spawned later this tick is force-loaded directly
         // at its spawn site (it isn't in `train` yet this tick).
-        maintainTrailingForceLoadWindow(level, trainId, train, groupSize, needsBackward, level.getGameTime());
+        maintainTrailingForceLoadWindow(level, trainId, train, needsBackward);
 
         if (!needsForward && !needsBackward) return false;
 
@@ -1790,22 +1774,26 @@ public final class TrainCarriageAppender {
 
     /**
      * Maintain the trailing force-load window for one train, once per tick.
-     * While backward generation is active (or within
-     * {@link #FORCELOAD_IDLE_RELEASE_TICKS} of the last backward need) the
-     * backmost {@link #TRAILING_FORCELOAD_GROUPS} groups are force-loaded so
-     * Sable can't cull them mid-settle; once idle, every ticket is released so
-     * the unneeded carriages cull normally.
+     * Once backward generation has engaged for a train the backmost
+     * {@link #TRAILING_FORCELOAD_GROUPS} groups stay force-loaded
+     * <em>continuously</em> (sliding as new backward carriages spawn) so Sable
+     * can't cull them mid-settle.
+     *
+     * <p>There is deliberately NO time-based idle release: mass-releasing the
+     * tail when the player pauses lets Sable cull + reload those sub-levels, and
+     * the post-reload position drift makes the next backward spawn overlap its
+     * predecessor so it can never settle. The window shrinks only via the slide
+     * ({@link #reconcileForceLoads} drops <em>settled</em> carriages that fall
+     * out of the backmost-N), the walk-away bail
+     * ({@link #releaseTrainForceLoads}), or a train wipe.</p>
      */
     private static void maintainTrailingForceLoadWindow(
         ServerLevel level, UUID trainId, List<Trains.Carriage> train,
-        int groupSize, boolean needsBackward, long now
+        boolean needsBackward
     ) {
-        if (needsBackward) {
-            LAST_BACKWARD_NEED_TICK.put(trainId, now);
-        }
-        Long lastNeed = LAST_BACKWARD_NEED_TICK.get(trainId);
-        boolean active = needsBackward
-            || (lastNeed != null && now - lastNeed <= FORCELOAD_IDLE_RELEASE_TICKS);
+        // Sticky: stay engaged once we've started force-loading this train, so a
+        // pause in backward travel never drops (then re-acquires) the window.
+        boolean active = needsBackward || FORCELOADED_BY_TRAIN.containsKey(trainId);
 
         Map<UUID, Trains.Carriage> byId = new HashMap<>(train.size());
         List<TrailingId> ids = new ArrayList<>(train.size());
@@ -1814,8 +1802,10 @@ public final class TrainCarriageAppender {
             byId.put(id, c);
             ids.add(new TrailingId(c.provider().getPIdx(), id));
         }
+        // The train list is one entry per group/sub-level, so target the
+        // backmost-N GROUPS directly (not × groupSize).
         Set<UUID> target = active
-            ? backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS * Math.max(1, groupSize))
+            ? backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS)
             : Set.of();
 
         reconcileForceLoads(level, trainId, target, byId);
@@ -1852,6 +1842,12 @@ public final class TrainCarriageAppender {
             if (target.contains(id)) continue;
             Trains.Carriage c = byId.get(id);
             if (c == null) continue; // not yet visible — keep tracking
+            // Never cull a carriage mid-settle: keep it force-loaded until it
+            // has settled (placedSuccessfully). Releasing + reloading an
+            // unsettled carriage drifts its position, making its successor
+            // overlap it forever (the placement-collision stall). Once settled
+            // it becomes releasable here as the window slides.
+            if (!c.provider().isPlacedSuccessfully()) continue;
             shipyard.releaseForceLoad(c.ship());
             it.remove();
             released++;
@@ -1885,19 +1881,33 @@ public final class TrainCarriageAppender {
     private static void forceLoadSpawnedBackward(ServerLevel level, UUID trainId, ManagedShip newShip) {
         Shipyards.of(level).forceLoad(newShip);
         FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(newShip.subLevelId());
-        LAST_BACKWARD_NEED_TICK.put(trainId, level.getGameTime());
     }
 
     /**
-     * Release all of one train's trailing force-loads (used when the player
-     * leaves the train's vicinity). Reuses {@link #reconcileForceLoads} with an
-     * empty target.
+     * Release ALL of one train's trailing force-loads — settled <em>and</em>
+     * unsettled — used when the player leaves the train's vicinity. Bypasses
+     * {@link #reconcileForceLoads} (which deliberately keeps unsettled carriages
+     * loaded) because the player is gone: there is nothing left to settle, so
+     * the whole window can drop and Sable can cull the train normally.
      */
     private static void releaseTrainForceLoads(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
-        if (!FORCELOADED_BY_TRAIN.containsKey(trainId)) return;
+        Set<UUID> current = FORCELOADED_BY_TRAIN.remove(trainId);
+        if (current == null || current.isEmpty()) return;
+        Shipyard shipyard = Shipyards.of(level);
         Map<UUID, Trains.Carriage> byId = new HashMap<>(train.size());
         for (Trains.Carriage c : train) byId.put(c.ship().subLevelId(), c);
-        reconcileForceLoads(level, trainId, Set.of(), byId);
+        int released = 0;
+        for (UUID id : current) {
+            Trains.Carriage c = byId.get(id);
+            if (c != null) {
+                shipyard.releaseForceLoad(c.ship());
+                released++;
+            }
+        }
+        if (released > 0) {
+            LOGGER.info("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s) (player left vicinity)",
+                trainId, released);
+        }
     }
 
     /**
