@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.snapshot;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.VersionHudOverlay;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.ChatFormatting;
@@ -37,9 +38,14 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * ({@link SnapshotTag#SOCIAL}); first strike on a mob ({@link SnapshotTag#COMBAT});
  * opening a chest, breaking a decorated pot, or equipping armour
  * ({@link SnapshotTag#GEAR}); reading a narrative book ({@link SnapshotTag#LORE});
- * and a periodic baseline ({@link SnapshotTag#SCENIC}) that <b>stops once enough
- * shots exist to cover the death pages</b>. Each category's cooldown grows with
- * how many of it were taken, so shots taper as the run progresses.</p>
+ * and a periodic baseline ({@link SnapshotTag#SCENIC}).</p>
+ *
+ * <p>Each category's cadence is a per-tag <b>dual gate</b> ({@link SnapshotCooldowns}):
+ * a shot fires only once BOTH an escalating wall-clock cooldown (starting at the
+ * tag's seed — 1 min for context tags, the scenic interval for SCENIC — and
+ * adding a minute per shot) AND an escalating carriage-progress cooldown (1
+ * carriage, then ×1.5 + 2) have elapsed since that tag's last shot. So shots
+ * spread across the journey and taper as the run progresses.</p>
  *
  * <p>Lighting + framing are enforced at render time; a request that can't find a
  * lit, clip-free, player-in-view angle is silently skipped and retried.</p>
@@ -50,25 +56,17 @@ public final class RideSnapshotDirector {
     private static final double RIDE_RANGE = 24.0;
     private static final double SOCIAL_RANGE = 7.0;   // "close enough" to a player-mob
     private static final long COOLDOWN_GLOBAL = 40;   // min ticks between requests / retry back-off
-    private static final int MAX_TAPER = 6;           // cooldown grows up to base × this over the run
-    private static final int COVERAGE_TARGET = 6;     // periodic stops once this many total shots exist
-
-    private static final long BASE_COMBAT = 8 * 20;
-    private static final long BASE_GEAR = 10 * 20;
-    private static final long BASE_LORE = 6 * 20;
-    private static final long BASE_SOCIAL = 8 * 20;
+    /** Context tags (everything but SCENIC) start their time gate at 1 minute. */
+    private static final long CONTEXT_SEED_TICKS = SnapshotCooldowns.ONE_MINUTE_TICKS;
 
     private static final EquipmentSlot[] ARMOR =
             { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
 
-    private static long lastAny = Long.MIN_VALUE;
-    private static long lastScenic = Long.MIN_VALUE;
-    private static long lastCombat = Long.MIN_VALUE;
-    private static long lastGear = Long.MIN_VALUE;
-    private static long lastLore = Long.MIN_VALUE;
-    private static long lastSocial = Long.MIN_VALUE;
+    /** Per-category dual-gate cadence (time + carriage progress), both escalating. */
+    private static final SnapshotCooldowns COOLDOWNS = new SnapshotCooldowns();
 
-    private static int countScenic, countCombat, countGear, countLore, countSocial, countTotal;
+    private static long lastAny = Long.MIN_VALUE;
+    private static int countTotal;
 
     private static final ItemStack[] lastArmor = { ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY };
     private static volatile boolean socialPending; // gift / interaction with a player-mob
@@ -100,9 +98,10 @@ public final class RideSnapshotDirector {
         if (!NearestCarriage.playerAboardOrNear(level, ppos, RIDE_RANGE)) return;
 
         long now = level.getGameTime();
-        if (!due(lastAny, now, COOLDOWN_GLOBAL)) return;
+        if (!dueSince(lastAny, now, COOLDOWN_GLOBAL)) return;
 
-        Choice choice = chooseTag(level, player, ppos, now, book, merchant, container);
+        int progress = VersionHudOverlay.travelledCarriageIndex();
+        Choice choice = chooseTag(level, player, ppos, now, progress, book, merchant, container);
         if (choice == null) return;
 
         // Pose + lighting are decided at render time; just queue the tag.
@@ -111,39 +110,38 @@ public final class RideSnapshotDirector {
         pendingReason = choice.reason();
     }
 
-    private static Choice chooseTag(ClientLevel level, LocalPlayer player, Vec3 ppos, long now,
+    private static Choice chooseTag(ClientLevel level, LocalPlayer player, Vec3 ppos, long now, int progress,
                                     boolean book, boolean merchant, boolean container) {
         if (merchant) {
-            return due(lastSocial, now, taper(BASE_SOCIAL, countSocial)) ? new Choice(SnapshotTag.SOCIAL, "trading") : null;
+            return due(SnapshotTag.SOCIAL, now, progress) ? new Choice(SnapshotTag.SOCIAL, "trading") : null;
         }
         if (book) {
-            return due(lastLore, now, taper(BASE_LORE, countLore)) ? new Choice(SnapshotTag.LORE, "reading") : null;
+            return due(SnapshotTag.LORE, now, progress) ? new Choice(SnapshotTag.LORE, "reading") : null;
         }
         if (container) {
-            return due(lastGear, now, taper(BASE_GEAR, countGear)) ? new Choice(SnapshotTag.GEAR, "opened a chest") : null;
+            return due(SnapshotTag.GEAR, now, progress) ? new Choice(SnapshotTag.GEAR, "opened a chest") : null;
         }
         // No blocking screen open below here.
         if (socialPending) {
             socialPending = false;
-            if (due(lastSocial, now, taper(BASE_SOCIAL, countSocial))) return new Choice(SnapshotTag.SOCIAL, "gave a gift");
+            if (due(SnapshotTag.SOCIAL, now, progress)) return new Choice(SnapshotTag.SOCIAL, "gave a gift");
         }
-        if (due(lastSocial, now, taper(BASE_SOCIAL, countSocial))) {
+        if (due(SnapshotTag.SOCIAL, now, progress)) {
             String reason = playerMobReason(level, player, ppos);
             if (reason != null) return new Choice(SnapshotTag.SOCIAL, reason);
         }
         if (combatPending) {
             combatPending = false;
-            if (due(lastCombat, now, taper(BASE_COMBAT, countCombat))) return new Choice(SnapshotTag.COMBAT, "struck a foe");
+            if (due(SnapshotTag.COMBAT, now, progress)) return new Choice(SnapshotTag.COMBAT, "struck a foe");
         }
         if (potPending) {
             potPending = false;
-            if (due(lastGear, now, taper(BASE_GEAR, countGear))) return new Choice(SnapshotTag.GEAR, "broke a pot");
+            if (due(SnapshotTag.GEAR, now, progress)) return new Choice(SnapshotTag.GEAR, "broke a pot");
         }
-        if (due(lastGear, now, taper(BASE_GEAR, countGear)) && armorChanged(player)) {
+        if (due(SnapshotTag.GEAR, now, progress) && armorChanged(player)) {
             return new Choice(SnapshotTag.GEAR, "geared up");
         }
-        long scenicBase = (long) ClientDisplayConfig.getRideSnapshotIntervalSeconds() * 20L;
-        if (countTotal < COVERAGE_TARGET && due(lastScenic, now, taper(scenicBase, countScenic))) {
+        if (due(SnapshotTag.SCENIC, now, progress)) {
             return new Choice(SnapshotTag.SCENIC, "periodic");
         }
         return null;
@@ -153,14 +151,10 @@ public final class RideSnapshotDirector {
     public static void onCaptureCommitted(SnapshotTag tag) {
         Minecraft mc = Minecraft.getInstance();
         long now = mc.level != null ? mc.level.getGameTime() : 0L;
+        int progress = VersionHudOverlay.travelledCarriageIndex();
         countTotal++;
-        switch (tag) {
-            case SCENIC -> { lastScenic = now; countScenic++; }
-            case COMBAT -> { lastCombat = now; countCombat++; }
-            case GEAR -> { lastGear = now; countGear++; snapshotArmor(mc.player); }
-            case LORE -> { lastLore = now; countLore++; }
-            case SOCIAL -> { lastSocial = now; countSocial++; }
-        }
+        COOLDOWNS.onCommitted(tag, now, progress);
+        if (tag == SnapshotTag.GEAR) snapshotArmor(mc.player);
         chatLog(tag, pendingReason);
     }
 
@@ -172,7 +166,7 @@ public final class RideSnapshotDirector {
         Component msg = Component.literal("[Ride Snapshot] ").withStyle(ChatFormatting.DARK_AQUA)
                 .append(Component.literal(tag.name()).withStyle(ChatFormatting.AQUA))
                 .append(Component.literal(" — " + reason).withStyle(ChatFormatting.GRAY))
-                .append(Component.literal("  (" + countFor(tag) + " " + name + ", " + countTotal + " total)")
+                .append(Component.literal("  (" + COOLDOWNS.count(tag) + " " + name + ", " + countTotal + " total)")
                         .withStyle(ChatFormatting.DARK_GRAY));
         player.displayClientMessage(msg, false);
     }
@@ -206,11 +200,20 @@ public final class RideSnapshotDirector {
 
     // ── helpers ──────────────────────────────────────────────────────────
 
-    private static long taper(long base, int count) {
-        return base * Math.min(MAX_TAPER, 1L + count);
+    /** Per-category dual-gate due check (time + carriage progress) via {@link SnapshotCooldowns}. */
+    private static boolean due(SnapshotTag tag, long now, int progress) {
+        return COOLDOWNS.due(tag, now, progress, seedTicks(tag));
     }
 
-    private static boolean due(long last, long now, long cooldown) {
+    /** First-shot time seed: SCENIC uses the configurable interval; context tags start at 1 min. */
+    private static long seedTicks(SnapshotTag tag) {
+        return tag == SnapshotTag.SCENIC
+                ? (long) ClientDisplayConfig.getRideSnapshotIntervalSeconds() * 20L
+                : CONTEXT_SEED_TICKS;
+    }
+
+    /** Simple elapsed-ticks gate, used for the global one-request/retry back-off. */
+    private static boolean dueSince(long last, long now, long cooldown) {
         return last == Long.MIN_VALUE || now - last >= cooldown;
     }
 
@@ -241,19 +244,10 @@ public final class RideSnapshotDirector {
         }
     }
 
-    private static int countFor(SnapshotTag tag) {
-        return switch (tag) {
-            case SCENIC -> countScenic;
-            case COMBAT -> countCombat;
-            case GEAR -> countGear;
-            case LORE -> countLore;
-            case SOCIAL -> countSocial;
-        };
-    }
-
     private static void reset() {
-        lastAny = lastScenic = lastCombat = lastGear = lastLore = lastSocial = Long.MIN_VALUE;
-        countScenic = countCombat = countGear = countLore = countSocial = countTotal = 0;
+        lastAny = Long.MIN_VALUE;
+        countTotal = 0;
+        COOLDOWNS.reset();
         for (int i = 0; i < lastArmor.length; i++) lastArmor[i] = ItemStack.EMPTY;
         socialPending = combatPending = potPending = false;
         pendingReason = "";
