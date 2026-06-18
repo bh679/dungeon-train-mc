@@ -993,7 +993,7 @@
     },
     {
       "id": "death-screen-page-transitions",
-      "version": "0.320.0",
+      "version": "0.321.0",
       "type": "feat",
       "title": "Cinematic death-screen page transitions",
       "summary": "The Dungeon Train's death screen now turns its pages with a slow fade through black. The text and dark overlay fade out, the next page's text fades in, and the ride photo behind it rises gently up out of black while you read. Each settled page also sits a little darker so the narration stays clear over the photography. Press Continue whenever you're ready and the photo finishes revealing as the page turns.",
