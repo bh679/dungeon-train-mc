@@ -49,6 +49,10 @@ public final class DeathPortraitRenderer {
     private static final float FACE_YOU = 180.0f;
     /** One weapon-swing arc lasts this long (seconds) — short so it reads as a real strike, not slow-mo. */
     private static final float SWING_SECONDS = 0.4f;
+    /** Full crouches per second during a befriended mob's eye-contact bob. */
+    private static final float CROUCH_HZ = 3.0f;
+    /** Minimum crouches a befriended mob holds eye contact for before looking away. */
+    private static final int MIN_CROUCHES = 4;
 
     private PlayerMobAppearance current;
     private PlayerMobEntity entity;
@@ -131,23 +135,31 @@ public final class DeathPortraitRenderer {
     // ---- Animation ----
 
     /**
-     * Friendly idle: body squared to you with a gentle sway; the head mostly
-     * wanders (looking around), snapping to look right at you for a beat every
-     * few seconds; and frequent crouch-bobbing (the classic friendly sneak-spam).
+     * Friendly idle: the mob wanders its gaze (looking around) with a gentle body
+     * sway, then turns to make eye contact and crouch-bobs at you — the classic
+     * friendly sneak-spam. It crouches ONLY while looking right at you, and holds
+     * that eye contact long enough for at least {@link #MIN_CROUCHES} crouches
+     * before glancing away again.
      */
     private void animateFriend(PlayerMobEntity mob, float t) {
         if (blocking) { mob.lowerShield(); blocking = false; }
         clearSwing(mob);
 
+        float contact = MIN_CROUCHES / CROUCH_HZ + 0.3f;      // eye-contact seconds (≥ MIN_CROUCHES bobs)
+        float lookAround = 2.6f;                              // seconds wandering between contacts
+        float local = t % (lookAround + contact);
         float bodyYaw = FACE_YOU + 6.0f * Mth.sin(t * 0.9f);
-        boolean lookAtYou = (t % 4.0f) < 1.4f;                 // ~1.4s every 4s
-        float headYaw = lookAtYou ? FACE_YOU : FACE_YOU + 45.0f * Mth.sin(t * 2.0f);
-        float headPitch = lookAtYou ? 0.0f : 10.0f * Mth.sin(t * 1.6f);
-        setFacing(mob, bodyYaw, headYaw, headPitch);
 
-        // Crouch-bob: a ~1.2s burst of brisk sneak toggles (~3/s) every ~3s.
-        boolean burst = (t % 3.0f) < 1.2f;
-        mob.setCrouching(burst && (((int) (t * 6.0f)) & 1) == 0);
+        if (local >= lookAround) {
+            // Eye contact: stare right at you and crouch-bob.
+            setFacing(mob, bodyYaw, FACE_YOU, 0.0f);
+            float c = local - lookAround;                     // seconds into the contact
+            mob.setCrouching((((int) (c * CROUCH_HZ * 2.0f)) & 1) == 0);
+        } else {
+            // Looking around — standing, no crouch.
+            setFacing(mob, bodyYaw, FACE_YOU + 45.0f * Mth.sin(t * 2.0f), 10.0f * Mth.sin(t * 1.6f));
+            mob.setCrouching(false);
+        }
     }
 
     /**
