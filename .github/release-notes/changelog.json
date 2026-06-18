@@ -764,6 +764,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cinematographer-clearview",
+      "version": "0.317.0",
+      "type": "feat",
+      "title": "Cinematographer clear-view: see through walls to film the train",
+      "summary": "TrainCinematographer mode gains a clear-view sub-mode: while filming, the blocks directly in front of the camera turn invisible so terrain, carriage walls and clutter stop blocking the shot \u2014 then quietly return as you pan away, leaving the world untouched. Doors, trapdoors and slabs are left alone, and the camera's automatic door-opening now reaches much further down the train.",
+      "highlights": [
+        "New: /dt cinematographer clearview on|off \u2014 see straight through whatever the camera is pointed at",
+        "Blocks turn invisible (not removed), so nothing collapses and your train stays intact \u2014 decorated pots, bookshelves and chests come back with their contents",
+        "Cinematographer now auto-opens doors much further ahead (50 blocks)"
+      ],
+      "pr": 437,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
