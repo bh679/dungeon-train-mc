@@ -827,6 +827,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modpack-ferritecore",
+      "version": "0.318.0",
+      "type": "feat",
+      "title": "FerriteCore added to the modpack for lower memory use",
+      "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
+      "highlights": [
+        "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
+        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable)."
+      ],
+      "pr": 445,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
