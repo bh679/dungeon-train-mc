@@ -1007,6 +1007,18 @@
       "released": true,
       "released_in": "v0.321.0",
       "released_at": "2026-06-18T10:36:46Z"
+    },
+    {
+      "id": "remove-biome-family-toast",
+      "version": "0.321.0",
+      "type": "refactor",
+      "title": "Quieter biome exploration",
+      "summary": "Riding into a new biome family no longer pops a \"Biome family discovered\" message on screen. The exploration advancements still track and award exactly as before \u2014 only the on-screen notification is gone.",
+      "highlights": [],
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
