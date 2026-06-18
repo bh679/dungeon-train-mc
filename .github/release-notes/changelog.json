@@ -1016,9 +1016,9 @@
       "summary": "Riding into a new biome family no longer pops a \"Biome family discovered\" message on screen. The exploration advancements still track and award exactly as before \u2014 only the on-screen notification is gone.",
       "highlights": [],
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.322.0",
+      "released_at": "2026-06-18T13:14:44Z"
     },
     {
       "id": "over_the_top_advancement",
@@ -1028,9 +1028,9 @@
       "summary": "New advancement fires when a player runs across the roof of one carriage group without dropping inside \u2014 sits before Skip the Grind in the tree.",
       "highlights": [],
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.322.0",
+      "released_at": "2026-06-18T13:14:44Z"
     },
     {
       "id": "free-play-runs",
@@ -1046,9 +1046,9 @@
       ],
       "pr": 460,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.322.0",
+      "released_at": "2026-06-18T13:14:44Z"
     }
   ]
 }
