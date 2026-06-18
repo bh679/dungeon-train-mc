@@ -893,6 +893,22 @@
       "released": true,
       "released_in": "v0.319.0",
       "released_at": "2026-06-18T07:16:47Z"
+    },
+    {
+      "id": "ride-photo-pacing-and-dedup",
+      "version": "0.319.0",
+      "type": "fix",
+      "title": "Ride photos paced across your journey, with no repeats on the death screen",
+      "summary": "Ride photos no longer bunch up at the start of a run. The first photo of each kind is snapped as soon as it happens, then each kind spaces out the further you travel. The death screen also no longer shows the same photo on more than one page.",
+      "highlights": [
+        "First scenic/combat/gear/lore/social photo is taken as soon as it happens, then spaces out as you travel",
+        "Each death-screen page shows a different photo where enough were captured"
+      ],
+      "pr": 448,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

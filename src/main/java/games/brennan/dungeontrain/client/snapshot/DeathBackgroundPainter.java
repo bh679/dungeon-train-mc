@@ -16,20 +16,6 @@ public final class DeathBackgroundPainter {
 
     private DeathBackgroundPainter() {}
 
-    /**
-     * Choose a snapshot for a page. {@code random=true} draws from the whole
-     * gallery (feedback pages); otherwise prefers {@code preferred}'s newest
-     * shot, falling back to the newest of any tag.
-     */
-    public static RideSnapshot pick(SnapshotTag preferred, boolean random) {
-        if (random) {
-            RideSnapshot r = RideSnapshotGallery.random();
-            return r != null ? r : RideSnapshotGallery.latest();
-        }
-        RideSnapshot s = preferred != null ? RideSnapshotGallery.latestOf(preferred) : null;
-        return s != null ? s : RideSnapshotGallery.latest();
-    }
-
     /** Draw {@code shot} cover-fit across the screen with the legibility vignette. */
     public static void draw(GuiGraphics g, RideSnapshot shot, int screenW, int screenH) {
         if (shot == null) return;

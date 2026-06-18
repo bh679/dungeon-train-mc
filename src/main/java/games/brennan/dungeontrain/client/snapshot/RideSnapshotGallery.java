@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.snapshot;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.RandomSource;
 import org.slf4j.Logger;
 
 import java.util.ArrayDeque;
@@ -25,7 +24,6 @@ public final class RideSnapshotGallery {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Deque<RideSnapshot> SHOTS = new ArrayDeque<>();
-    private static final RandomSource RANDOM = RandomSource.create();
 
     private RideSnapshotGallery() {}
 
@@ -35,31 +33,6 @@ public final class RideSnapshotGallery {
             RideSnapshot evicted = SHOTS.pollFirst();
             if (evicted != null) release(evicted);
         }
-    }
-
-    /** Newest shot carrying {@code tag}, or {@code null} if none. */
-    public static synchronized RideSnapshot latestOf(SnapshotTag tag) {
-        RideSnapshot match = null;
-        for (RideSnapshot s : SHOTS) {
-            if (s.tag() == tag) match = s; // iteration is oldest→newest, so last match wins
-        }
-        return match;
-    }
-
-    /** Newest shot of any tag, or {@code null}. */
-    public static synchronized RideSnapshot latest() {
-        return SHOTS.peekLast();
-    }
-
-    /** Uniformly-random shot of any tag, or {@code null}. */
-    public static synchronized RideSnapshot random() {
-        if (SHOTS.isEmpty()) return null;
-        int idx = RANDOM.nextInt(SHOTS.size());
-        int i = 0;
-        for (RideSnapshot s : SHOTS) {
-            if (i++ == idx) return s;
-        }
-        return SHOTS.peekLast();
     }
 
     public static synchronized List<RideSnapshot> all() {
