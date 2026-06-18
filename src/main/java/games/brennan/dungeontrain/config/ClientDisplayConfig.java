@@ -53,6 +53,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_INTERVAL_SECONDS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_STORED;
     public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOT_CHAT_LOG;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MIN_FPS;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MIN_TPS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -68,6 +70,8 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_INTERVAL_SECONDS = pair.getLeft().rideSnapshotIntervalSeconds;
         RIDE_SNAPSHOT_MAX_STORED = pair.getLeft().rideSnapshotMaxStored;
         RIDE_SNAPSHOT_CHAT_LOG = pair.getLeft().rideSnapshotChatLog;
+        RIDE_SNAPSHOT_MIN_FPS = pair.getLeft().rideSnapshotMinFps;
+        RIDE_SNAPSHOT_MIN_TPS = pair.getLeft().rideSnapshotMinTps;
     }
 
     private ClientDisplayConfig() {}
@@ -113,10 +117,17 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue rideSnapshotChatLog = b
                 .comment("Log each ride photo to chat ([Ride Snapshot] TAG - reason) as it is taken. Toggle in-game via the X menu -> Options. Off by default.")
                 .define("chatLog", false);
+        ModConfigSpec.IntValue rideSnapshotMinFps = b
+                .comment("Skip ride photos while client FPS is below this. Taking a photo adds a brief GPU read-back hitch, so it is only spent when the game has headroom; below this the shot is skipped and retried (every 20s) once FPS recovers. 0 = never skip on FPS.")
+                .defineInRange("minFps", 30, 0, 240);
+        ModConfigSpec.IntValue rideSnapshotMinTps = b
+                .comment("Skip ride photos while server TPS is below this. Single-player only - in multiplayer the client can't read the server's tick rate, so only the FPS gate applies there. 0 = never skip on TPS.")
+                .defineInRange("minTps", 18, 0, 20);
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, openedAdvancementsBefore,
-                rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog);
+                rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
+                rideSnapshotMinFps, rideSnapshotMinTps);
     }
 
     /**
@@ -269,6 +280,16 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_CHAT_LOG.save();
     }
 
+    /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
+    public static int getRideSnapshotMinFps() {
+        return isLoaded() ? RIDE_SNAPSHOT_MIN_FPS.get() : 30;
+    }
+
+    /** Minimum (single-player) server TPS required to take a ride photo; {@code 0} disables the TPS gate. */
+    public static int getRideSnapshotMinTps() {
+        return isLoaded() ? RIDE_SNAPSHOT_MIN_TPS.get() : 18;
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
@@ -279,6 +300,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue rideSnapshotsEnabled,
             ModConfigSpec.IntValue rideSnapshotIntervalSeconds,
             ModConfigSpec.IntValue rideSnapshotMaxStored,
-            ModConfigSpec.BooleanValue rideSnapshotChatLog
+            ModConfigSpec.BooleanValue rideSnapshotChatLog,
+            ModConfigSpec.IntValue rideSnapshotMinFps,
+            ModConfigSpec.IntValue rideSnapshotMinTps
     ) {}
 }

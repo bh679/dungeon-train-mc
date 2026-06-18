@@ -104,4 +104,44 @@ final class SnapshotCooldownsTest {
         assertEquals(0, cd.count(SnapshotTag.SCENIC));
         assertTrue(cd.due(SnapshotTag.SCENIC, 9000, 3, UNIT));
     }
+
+    @Test
+    @DisplayName("a perf-skip holds the tag off for SKIP_RETRY_TICKS, then it is due again")
+    void skip_backsOffFixedWindow() {
+        SnapshotCooldowns cd = new SnapshotCooldowns();
+        cd.onCommitted(SnapshotTag.SCENIC, 1000, 0); // shot #1
+        long due = 1000 + UNIT;                       // 2nd shot would normally be due here (1 unit + 1 carriage)
+        assertTrue(cd.due(SnapshotTag.SCENIC, due, 1, UNIT), "2nd shot due at the normal gate");
+        cd.onSkipped(SnapshotTag.SCENIC, due);        // ...but the game was lagging, so it was skipped
+        assertFalse(cd.due(SnapshotTag.SCENIC, due, 1, UNIT), "skipped → held off");
+        assertFalse(cd.due(SnapshotTag.SCENIC, due + SnapshotCooldowns.SKIP_RETRY_TICKS - 1, 1, UNIT),
+                "still held one tick early");
+        assertTrue(cd.due(SnapshotTag.SCENIC, due + SnapshotCooldowns.SKIP_RETRY_TICKS, 1, UNIT),
+                "due again after the 20s back-off");
+    }
+
+    @Test
+    @DisplayName("a skip is not a shot: it never advances the escalating cooldown; a real shot clears it")
+    void skip_doesNotAdvanceCount_andCommitClears() {
+        SnapshotCooldowns cd = new SnapshotCooldowns();
+        cd.onCommitted(SnapshotTag.GEAR, 1000, 0);    // shot #1, count=1
+        long due = 1000 + UNIT;
+        cd.onSkipped(SnapshotTag.GEAR, due);
+        assertEquals(1, cd.count(SnapshotTag.GEAR), "a skip is not a shot");
+        cd.onCommitted(SnapshotTag.GEAR, due + 10, 1); // a real 2nd shot during the back-off window clears it
+        assertEquals(2, cd.count(SnapshotTag.GEAR));
+        assertFalse(cd.due(SnapshotTag.GEAR, due + 10 + UNIT, 5, UNIT), "3rd shot needs 2 units (escalated normally)");
+        assertTrue(cd.due(SnapshotTag.GEAR, due + 10 + 2 * UNIT, 5, UNIT), "due at 2 units + carriages");
+    }
+
+    @Test
+    @DisplayName("a skip can hold off even the first (uncommitted) shot")
+    void skip_firstShot() {
+        SnapshotCooldowns cd = new SnapshotCooldowns();
+        assertTrue(cd.due(SnapshotTag.COMBAT, 1000, 0, UNIT), "first shot is immediate");
+        cd.onSkipped(SnapshotTag.COMBAT, 1000);
+        assertFalse(cd.due(SnapshotTag.COMBAT, 1000, 0, UNIT), "skipped first shot held off");
+        assertTrue(cd.due(SnapshotTag.COMBAT, 1000 + SnapshotCooldowns.SKIP_RETRY_TICKS, 0, UNIT),
+                "due after the 20s back-off");
+    }
 }
