@@ -130,6 +130,26 @@ def test_real_config_includes_appleskin_as_optional():
     assert {"projectID": 248787, "fileID": 7854442, "required": False} in files, files
 
 
+def test_real_config_includes_ferritecore_as_optional():
+    """Guard: the shipped modpack.config.json keeps FerriteCore as an on-by-default Include.
+
+    Same contract as the AppleSkin guard above — renders the *real* repo config so FerriteCore
+    (a memory-usage reducer) can't be silently dropped from the pack. Ships as an optional_mods
+    entry -> required=False manifest file, which CurseForge surfaces as an "Include" relation.
+    """
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    real_config = os.path.join(repo_root, "modpack", "modpack.config.json")
+    real_gradle = os.path.join(repo_root, "gradle.properties")
+    proc = subprocess.run(
+        [sys.executable, SCRIPT, "--config", real_config, "--gradle-properties", real_gradle,
+         "--dt-file-id", "8123456", "--version", "0.0.0"],
+        capture_output=True, text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
+    files = json.loads(proc.stdout)["files"]
+    assert {"projectID": 429235, "fileID": 7524151, "required": False} in files, files
+
+
 def _main():
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0
