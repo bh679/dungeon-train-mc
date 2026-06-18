@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.snapshot.RideSnapshotCapture;
 import net.minecraft.client.Camera;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.BlockGetter;
@@ -37,6 +38,17 @@ public abstract class CameraCinematicMixin {
         BlockGetter level, Entity entity, boolean detached, boolean thirdPersonReverse, float partialTick,
         CallbackInfo ci
     ) {
+        // Off-screen ride-snapshot pass: apply the snapshot's third-person pose to
+        // our own Camera instance. Set only around RideSnapshotCapture's own
+        // renderLevel call, so it never touches the player's on-screen camera.
+        if (RideSnapshotCapture.isCapturing()) {
+            CinematicCameraController.Pose shot = RideSnapshotCapture.capturePose();
+            if (shot != null) {
+                this.setPosition(shot.pos());
+                this.setRotation(shot.yaw(), shot.pitch());
+            }
+            return;
+        }
         if (!CinematicCameraController.isActive()) return;
         CinematicCameraController.Pose pose = CinematicCameraController.computePose(partialTick);
         this.setPosition(pose.pos());

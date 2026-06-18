@@ -794,6 +794,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ride-snapshots-death-backgrounds",
+      "version": "0.317.0",
+      "type": "feat",
+      "title": "Photos of your ride behind the death screen",
+      "summary": "The train now quietly snaps third-person photos of your journey and shows them as the backdrop on the death screen \u2014 a recap of your run, with the most fitting shot behind each page.",
+      "highlights": [
+        "Photos are taken throughout the ride and become the background on each death-screen page",
+        "Shots favour well-lit moments where you're in clear view, and capture key beats \u2014 fights, new armour, opening chests, breaking pots, reading lore, and meeting travellers",
+        "Optional chat log of when each photo is taken \u2014 toggle it in the X menu under Options"
+      ],
+      "pr": 440,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
