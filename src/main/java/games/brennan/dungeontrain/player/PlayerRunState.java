@@ -104,7 +104,7 @@ public final class PlayerRunState {
     private double damageTaken;
     /** Distinct PlayerMobs come near this run (drives the death-screen "encountered" stat). */
     private final Set<UUID> encounteredMobs;
-    /** Distinct PlayerMobs befriended (mutual gift exchange) this run. */
+    /** Distinct PlayerMobs that liked this player (feeling above the friend threshold) this run — the death-screen "friends" tally. */
     private final Set<UUID> befriendedMobs;
     /** Server ticks spent boarded this run (boarded-only; resets on death). Time twin of {@link #distanceBlocks}. */
     private long trainTimeTicks;
@@ -123,6 +123,27 @@ public final class PlayerRunState {
      * player relogs mid-run and re-opens a lectern they already read.</p>
      */
     private final Set<String> narrativeLetters;
+    /**
+     * Visual identity of the PlayerMob that likes this player most this run — the
+     * death-screen "friend" portrait — captured while it is loaded near the player
+     * and only kept when its feeling clears the friend threshold (see
+     * {@code RunStatsEvents}). {@code null} if no mob liked you enough. The
+     * companion {@link #friendFeeling} keeps the warmest feeling so a stronger
+     * friend supersedes a weaker one.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field
+     * cap, see {@link #narrativeLetters}). It only needs to live until the death
+     * packet is built; the client rebuilds the portrait from the packet.</p>
+     */
+    private PlayerMobAppearance friendAppearance;
+    /** Warmest feeling-toward-this-player (0–10) behind {@link #friendAppearance}; lower can be superseded. */
+    private float friendFeeling = Float.NEGATIVE_INFINITY;
+    /**
+     * Visual identity of the MOST-RECENT PlayerMob killed this run, or
+     * {@code null} if none (last-wins — overwritten each kill). Same transient,
+     * non-codec rationale as {@link #friendAppearance}.
+     */
+    private PlayerMobAppearance killedAppearance;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -427,17 +448,46 @@ public final class PlayerRunState {
     }
 
     /**
-     * Record a PlayerMob befriended (mutual gift exchange) this run.
+     * Record a PlayerMob that likes this player (above the friend threshold) this
+     * run — the death-screen "friends" tally; fed by the proximity scan.
      *
-     * @return {@code true} if newly befriended this run, {@code false} if already counted.
+     * @return {@code true} if newly recorded this run, {@code false} if already counted.
      */
     public boolean recordBefriended(UUID mobUuid) {
         return befriendedMobs.add(mobUuid);
     }
 
-    /** Number of distinct PlayerMobs befriended this run. */
+    /** Number of distinct PlayerMobs that liked this player (above the friend threshold) this run. */
     public int befriendedCount() {
         return befriendedMobs.size();
+    }
+
+    /** Visual identity of the warmest PlayerMob friend this run (likes you most, above threshold), or {@code null}. */
+    public PlayerMobAppearance friendAppearance() {
+        return friendAppearance;
+    }
+
+    /** The feeling (0–10) behind {@link #friendAppearance}, or {@link Float#NEGATIVE_INFINITY} if none captured. */
+    public float friendFeeling() {
+        return friendFeeling;
+    }
+
+    /** Keep the warmest friend's appearance this run — a higher feeling supersedes the current one. */
+    public void captureFriendAppearance(PlayerMobAppearance appearance, float feeling) {
+        if (appearance != null && feeling > friendFeeling) {
+            friendAppearance = appearance;
+            friendFeeling = feeling;
+        }
+    }
+
+    /** Visual identity of the most-recent PlayerMob killed this run, or {@code null}. */
+    public PlayerMobAppearance killedAppearance() {
+        return killedAppearance;
+    }
+
+    /** Capture the most-recently killed mob's appearance (last-wins). */
+    public void setKilledAppearance(PlayerMobAppearance appearance) {
+        killedAppearance = appearance;
     }
 
     /** Reset cart counters and travelled-carriage-index (called on respawn). */
@@ -462,6 +512,9 @@ public final class PlayerRunState {
         damageTaken = 0.0;
         encounteredMobs.clear();
         befriendedMobs.clear();
+        friendAppearance = null;
+        friendFeeling = Float.NEGATIVE_INFINITY;
+        killedAppearance = null;
     }
 
     /** Reset everything (called on respawn). */
