@@ -8,40 +8,46 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Pure-logic tests for {@link SnapshotCooldowns}: the per-tag dual gate (escalating
- * time AND escalating carriage progress — both required), per-tag independence, and
- * the progress-delta clamp. No NeoForge bootstrap — the class takes ticks + progress
+ * Pure-logic tests for {@link SnapshotCooldowns}: the first shot of a tag fires
+ * immediately (on its trigger); taking it starts an escalating time + carriage
+ * cooldown for the rest. No NeoForge bootstrap — the class takes ticks + progress
  * as parameters.
  */
 final class SnapshotCooldownsTest {
 
-    private static final long MIN = SnapshotCooldowns.ONE_MINUTE_TICKS; // 1200 ticks
-    private static final long SEED = MIN;                               // a context-tag seed (1 min)
+    private static final long UNIT = SnapshotCooldowns.ONE_MINUTE_TICKS; // a context-tag cooldown unit (1 min)
 
     @Test
-    @DisplayName("first shot needs BOTH the time seed and 1 carriage")
-    void firstShot_bothGates() {
+    @DisplayName("first shot of a tag fires immediately, with no time/carriage required")
+    void firstShot_immediate() {
         SnapshotCooldowns cd = new SnapshotCooldowns();
-        // The first due() call anchors the run baseline at (tick=1000, progress=0).
-        assertFalse(cd.due(SnapshotTag.COMBAT, 1000, 0, SEED), "nothing elapsed");
-        assertFalse(cd.due(SnapshotTag.COMBAT, 1000 + SEED, 0, SEED), "time met, 0 carriages");
-        assertFalse(cd.due(SnapshotTag.COMBAT, 1000, 5, SEED), "carriages met, no time");
-        assertTrue(cd.due(SnapshotTag.COMBAT, 1000 + SEED, 1, SEED), "both gates met");
+        assertTrue(cd.due(SnapshotTag.COMBAT, 1000, 0, UNIT));
+        assertTrue(cd.due(SnapshotTag.SCENIC, 1000, 0, UNIT));
     }
 
     @Test
-    @DisplayName("time gate escalates +1 min per shot (carriage gate held satisfied)")
+    @DisplayName("the first shot starts the cooldown: the next needs 1 unit AND 1 carriage")
+    void afterFirst_dualGate() {
+        SnapshotCooldowns cd = new SnapshotCooldowns();
+        cd.onCommitted(SnapshotTag.COMBAT, 1000, 0); // shot #1 (fired on its trigger)
+        assertFalse(cd.due(SnapshotTag.COMBAT, 1000, 0, UNIT), "nothing elapsed");
+        assertFalse(cd.due(SnapshotTag.COMBAT, 1000 + UNIT, 0, UNIT), "time met, 0 carriages");
+        assertFalse(cd.due(SnapshotTag.COMBAT, 1000, 1, UNIT), "carriage met, no time");
+        assertTrue(cd.due(SnapshotTag.COMBAT, 1000 + UNIT, 1, UNIT), "1 unit + 1 carriage");
+    }
+
+    @Test
+    @DisplayName("time cooldown escalates 1, 2, 3, 4 units after each shot")
     void timeGate_escalates() {
         SnapshotCooldowns cd = new SnapshotCooldowns();
-        long base = 1000;
-        cd.baseline(base, 0);
-        long t = base;
+        long t = 1000;
         int p = 0;
-        for (int shot = 1; shot <= 4; shot++) {
-            long threshold = SEED + (long) (shot - 1) * MIN; // seed, +1, +2, +3 min
-            assertFalse(cd.due(SnapshotTag.SCENIC, t + threshold - 1, p + 1000, SEED),
+        cd.onCommitted(SnapshotTag.SCENIC, t, p); // shot #1 (immediate)
+        for (int shot = 2; shot <= 5; shot++) {
+            long threshold = (long) (shot - 1) * UNIT; // 1u before #2, 2u before #3, ...
+            assertFalse(cd.due(SnapshotTag.SCENIC, t + threshold - 1, p + 1000, UNIT),
                     "shot " + shot + " not due one tick early");
-            assertTrue(cd.due(SnapshotTag.SCENIC, t + threshold, p + 1000, SEED),
+            assertTrue(cd.due(SnapshotTag.SCENIC, t + threshold, p + 1000, UNIT),
                     "shot " + shot + " due at threshold");
             t += threshold;
             p += 1000;
@@ -50,38 +56,33 @@ final class SnapshotCooldownsTest {
     }
 
     @Test
-    @DisplayName("carriage gate escalates 1, 4, 8, 13, 22 (ceil of X -> X*1.5+2)")
+    @DisplayName("carriage cooldown escalates 1, 4, 8, 13 after each shot")
     void carriageGate_escalates() {
         SnapshotCooldowns cd = new SnapshotCooldowns();
-        long base = 1000;
-        cd.baseline(base, 0);
-        int[] expected = { 1, 4, 8, 13, 22 };
-        long t = base;
+        cd.onCommitted(SnapshotTag.GEAR, 1000, 0); // shot #1 (immediate)
+        int[] expected = { 1, 4, 8, 13 };          // carriage thresholds for shots #2..#5
+        long far = 1000;
         int p = 0;
-        for (int shot = 0; shot < expected.length; shot++) {
-            int need = expected[shot];
-            long far = t + 1_000_000; // time gate always satisfied → isolate the carriage gate
-            assertFalse(cd.due(SnapshotTag.GEAR, far, p + need - 1, SEED),
-                    "shot " + (shot + 1) + " not due at " + (need - 1) + " carriages");
-            assertTrue(cd.due(SnapshotTag.GEAR, far, p + need, SEED),
-                    "shot " + (shot + 1) + " due at " + need + " carriages");
+        for (int idx = 0; idx < expected.length; idx++) {
+            int need = expected[idx];
+            far += 10_000_000; // time always satisfied → isolate the carriage gate
+            assertFalse(cd.due(SnapshotTag.GEAR, far, p + need - 1, UNIT),
+                    "shot " + (idx + 2) + " not due at " + (need - 1) + " carriages");
+            assertTrue(cd.due(SnapshotTag.GEAR, far, p + need, UNIT),
+                    "shot " + (idx + 2) + " due at " + need + " carriages");
             cd.onCommitted(SnapshotTag.GEAR, far, p + need);
-            t = far;
             p += need;
         }
     }
 
     @Test
-    @DisplayName("categories are independent (committing COMBAT doesn't gate SCENIC)")
+    @DisplayName("categories are independent (committing COMBAT doesn't gate SCENIC's first shot)")
     void perTag_independent() {
         SnapshotCooldowns cd = new SnapshotCooldowns();
-        cd.baseline(1000, 0);
         cd.onCommitted(SnapshotTag.COMBAT, 1000, 0);
-        cd.onCommitted(SnapshotTag.COMBAT, 1000, 0);
-        // SCENIC is still at its first-shot thresholds.
-        assertFalse(cd.due(SnapshotTag.SCENIC, 1000, 0, SEED));
-        assertTrue(cd.due(SnapshotTag.SCENIC, 1000 + SEED, 1, SEED));
+        cd.onCommitted(SnapshotTag.COMBAT, 1000 + UNIT, 1);
         assertEquals(2, cd.count(SnapshotTag.COMBAT));
+        assertTrue(cd.due(SnapshotTag.SCENIC, 1000, 0, UNIT), "SCENIC's first shot is still immediate");
         assertEquals(0, cd.count(SnapshotTag.SCENIC));
     }
 
@@ -89,24 +90,18 @@ final class SnapshotCooldownsTest {
     @DisplayName("a regressing progress counter clamps to 0 (waits, never fires early)")
     void progressDelta_clamped() {
         SnapshotCooldowns cd = new SnapshotCooldowns();
-        cd.baseline(1000, 10);
-        cd.onCommitted(SnapshotTag.GEAR, 1000, 10); // x -> 3.5, group threshold ceil = 4
-        // Time hugely satisfied, but progress regressed below the last shot → clamp to 0.
-        assertFalse(cd.due(SnapshotTag.GEAR, 1000 + 10_000_000, 5, SEED));
-        // Recovered + 4 carriages past the last shot → due.
-        assertTrue(cd.due(SnapshotTag.GEAR, 1000 + 10_000_000, 10 + 4, SEED));
+        cd.onCommitted(SnapshotTag.GEAR, 1000, 10); // shot #1; next needs 1 unit + 1 carriage
+        assertFalse(cd.due(SnapshotTag.GEAR, 1000 + 10_000_000, 5, UNIT), "progress regressed → clamp to 0");
+        assertTrue(cd.due(SnapshotTag.GEAR, 1000 + 10_000_000, 11, UNIT), "1 carriage past the last shot");
     }
 
     @Test
-    @DisplayName("reset clears counts and re-anchors the baseline")
-    void reset_reanchors() {
+    @DisplayName("reset clears state; the first shot is immediate again")
+    void reset_clears() {
         SnapshotCooldowns cd = new SnapshotCooldowns();
-        cd.baseline(1000, 0);
         cd.onCommitted(SnapshotTag.SCENIC, 5000, 3);
         cd.reset();
         assertEquals(0, cd.count(SnapshotTag.SCENIC));
-        // Next due() re-anchors the baseline at (9000, 0).
-        assertFalse(cd.due(SnapshotTag.SCENIC, 9000, 0, SEED));
-        assertTrue(cd.due(SnapshotTag.SCENIC, 9000 + SEED, 1, SEED));
+        assertTrue(cd.due(SnapshotTag.SCENIC, 9000, 3, UNIT));
     }
 }

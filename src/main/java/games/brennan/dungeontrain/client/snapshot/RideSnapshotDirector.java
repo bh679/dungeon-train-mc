@@ -40,12 +40,13 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * ({@link SnapshotTag#GEAR}); reading a narrative book ({@link SnapshotTag#LORE});
  * and a periodic baseline ({@link SnapshotTag#SCENIC}).</p>
  *
- * <p>Each category's cadence is a per-tag <b>dual gate</b> ({@link SnapshotCooldowns}):
- * a shot fires only once BOTH an escalating wall-clock cooldown (starting at the
- * tag's seed — 1 min for context tags, the scenic interval for SCENIC — and
- * adding a minute per shot) AND an escalating carriage-progress cooldown (1
- * carriage, then ×1.5 + 2) have elapsed since that tag's last shot. So shots
- * spread across the journey and taper as the run progresses.</p>
+ * <p>The FIRST shot of each category fires as soon as its trigger occurs (no
+ * wait); taking it starts that category's cooldown ({@link SnapshotCooldowns}).
+ * Every later shot is a per-tag <b>dual gate</b>: it fires only once BOTH an
+ * escalating wall-clock cooldown (1 unit, 2 units, … — 1 min for context tags,
+ * the scenic interval for SCENIC) AND an escalating carriage-progress cooldown
+ * (1 carriage, then ×1.5 + 2) have elapsed since that tag's last shot. So each
+ * run captures early, then shots spread out and taper as it progresses.</p>
  *
  * <p>Lighting + framing are enforced at render time; a request that can't find a
  * lit, clip-free, player-in-view angle is silently skipped and retried.</p>
@@ -56,8 +57,8 @@ public final class RideSnapshotDirector {
     private static final double RIDE_RANGE = 24.0;
     private static final double SOCIAL_RANGE = 7.0;   // "close enough" to a player-mob
     private static final long COOLDOWN_GLOBAL = 40;   // min ticks between requests / retry back-off
-    /** Context tags (everything but SCENIC) start their time gate at 1 minute. */
-    private static final long CONTEXT_SEED_TICKS = SnapshotCooldowns.ONE_MINUTE_TICKS;
+    /** Context tags (everything but SCENIC) use a 1-minute cooldown unit (1 min, 2 min, …). */
+    private static final long CONTEXT_UNIT_TICKS = SnapshotCooldowns.ONE_MINUTE_TICKS;
 
     private static final EquipmentSlot[] ARMOR =
             { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
@@ -200,16 +201,16 @@ public final class RideSnapshotDirector {
 
     // ── helpers ──────────────────────────────────────────────────────────
 
-    /** Per-category dual-gate due check (time + carriage progress) via {@link SnapshotCooldowns}. */
+    /** Per-category due check (first shot immediate, then escalating time + carriage) via {@link SnapshotCooldowns}. */
     private static boolean due(SnapshotTag tag, long now, int progress) {
-        return COOLDOWNS.due(tag, now, progress, seedTicks(tag));
+        return COOLDOWNS.due(tag, now, progress, unitTicks(tag));
     }
 
-    /** First-shot time seed: SCENIC uses the configurable interval; context tags start at 1 min. */
-    private static long seedTicks(SnapshotTag tag) {
+    /** Per-shot cooldown unit: SCENIC uses the configurable interval; context tags use 1 min. */
+    private static long unitTicks(SnapshotTag tag) {
         return tag == SnapshotTag.SCENIC
                 ? (long) ClientDisplayConfig.getRideSnapshotIntervalSeconds() * 20L
-                : CONTEXT_SEED_TICKS;
+                : CONTEXT_UNIT_TICKS;
     }
 
     /** Simple elapsed-ticks gate, used for the global one-request/retry back-off. */
