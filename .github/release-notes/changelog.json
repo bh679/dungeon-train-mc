@@ -927,6 +927,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ecp-release-metadata",
+      "version": "0.319.0",
+      "type": "chore",
+      "title": "Wire Ender Chest Persistence as embedded dependency in release metadata",
+      "summary": "CurseForge and Modrinth now show the ender-chest-persistence mod as embedded inside Dungeon Train, matching the existing AIN/AIS/PMOB declarations.",
+      "highlights": [],
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
