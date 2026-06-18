@@ -941,6 +941,23 @@
       "released_at": null
     },
     {
+      "id": "snapshot-perf-gate",
+      "version": "0.319.0",
+      "type": "perf",
+      "title": "Ride photos wait for a smooth moment",
+      "summary": "Ride snapshots now only fire when your game has the headroom to spare, so the camera no longer hitches a frame while you're already lagging. If performance stays rough for a while, the next time you open a menu it quietly grabs one so your death screen still gets its backdrops.",
+      "highlights": [
+        "Capture pauses when FPS \u2014 or single-player TPS \u2014 drops below a threshold, and resumes on its own once it recovers.",
+        "After a long rough patch, opening your inventory, chat, or a chest takes a catch-up photo.",
+        "Thresholds live in the client config (rideSnapshots.minFps / minTps); set either to 0 to turn that check off."
+      ],
+      "pr": 453,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "deeds-playermob-portrait",
       "version": "0.319.0",
       "type": "feat",
