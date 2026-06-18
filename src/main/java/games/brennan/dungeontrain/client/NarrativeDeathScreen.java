@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -47,6 +48,12 @@ import java.util.Set;
  * its public API) → <b>the platform</b> (Board anew / Leave). A single centered
  * <i>Continue</i> advances; a bare back-arrow returns; <i>reboard</i> and
  * <i>leave the line</i> sit in the top corner throughout.</p>
+ *
+ * <p>Moving between pages plays a short cross-fade: the chrome + text + vignette
+ * fade out (fully revealing the ride photo behind), the photos blend old→new,
+ * and the next page's UI fades back in. Settled pages darken the vignette for
+ * legibility; the peak of a transition drops it entirely. All of this is driven
+ * by a single per-frame {@link #uiAlpha} and a wall-clock transition timer.</p>
  *
  * <p>All per-run + lifetime numbers and the rolled narrative come from the
  * cached {@link DeathStatsPacket} ({@link DeathStatsCache}); the screen reads
@@ -101,6 +108,14 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int MAX_CONTENT_W = 360;
     private static final int SLOT = 18;
 
+    // ---- Page-to-page cross-fade transition ----
+    // Full transition length; the page swaps at the midpoint (where the UI is
+    // fully faded out and the photo is fully revealed).
+    private static final long TRANS_MS = 380L;
+    // uiAlpha at/above this counts as "settled": elements that can't take an
+    // alpha tint (item icons, the comment box) only show once the page is settled.
+    private static final float SETTLED = 0.95f;
+
     private final Map<String, Integer> scores = new HashMap<>();
     private final Map<String, String> comments = new HashMap<>();
     private final Set<String> submitted = new HashSet<>();
@@ -109,11 +124,19 @@ public final class NarrativeDeathScreen extends Screen {
     private int currentPage = 0;
     private int lastSurveyCount = -1;
     private EditBox commentBox;
+    private boolean opened = false;
 
-    // Cached per-page ride-photo background. Re-picked only when the page changes
-    // so the random survey backdrop doesn't reshuffle every frame.
-    private int bgForPage = -1;
-    private RideSnapshot bgShot;
+    // Transition state. transStartMs == 0 means "settled, nothing animating".
+    private long transStartMs = 0L;
+    private int pendingPage = -1;          // page to switch to at the midpoint
+    private boolean swapped = false;       // midpoint switch already applied
+    private RideSnapshot fromShot, toShot; // cross-faded backdrop photos
+    private float uiAlpha = 1.0f;          // 0..1 — how present the chrome/text is this frame
+    private float crossfadeT = 1.0f;       // 0..1 — fromShot → toShot blend this frame
+
+    // Resting backdrop for the current page (re-picked when the page settles).
+    private int restShotForPage = -1;
+    private RideSnapshot restShot;
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
@@ -162,6 +185,20 @@ public final class NarrativeDeathScreen extends Screen {
                     : "gui.dungeontrain.death.narr.answer"));
             addRenderableWidget(commentBox);
         }
+
+        // First appearance: fade the opening page's UI up over its photo instead
+        // of popping in. Seed the timer at the midpoint so only the fade-in half
+        // plays (no page swap). Done once — later rebuildWidgets() (the midpoint
+        // swap, survey arrival) must not retrigger it or it would reset an
+        // in-flight transition.
+        if (!opened) {
+            opened = true;
+            transStartMs = Util.getMillis() - TRANS_MS / 2;
+            swapped = true;
+            pendingPage = -1;
+            fromShot = null;
+            toShot = null;
+        }
     }
 
     @Override
@@ -175,17 +212,30 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // Advance the cross-fade first: it may apply the deferred page switch
+        // (and rebuild widgets) at the midpoint, so everything below sees the
+        // settled page.
+        updateTransition(Util.getMillis());
+
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
         Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
 
-        // Backdrop: this run's third-person ride photos, one per page (random behind
-        // survey), under a legibility vignette. Falls back to the solid overlay when
-        // the feature is off or no photos were captured this run.
-        RideSnapshot bg = backgroundFor(page);
-        if (bg != null) {
-            DeathBackgroundPainter.draw(g, bg, this.width, this.height);
+        // Backdrop: this run's third-person ride photos under a legibility
+        // vignette. Between pages the outgoing photo cross-fades into the
+        // incoming one and the vignette fades with the UI, fully revealing the
+        // photo at the peak. Falls back to the solid overlay when the feature is
+        // off or no photos were captured this run.
+        if (photosAvailable()) {
+            RideSnapshot base = fromShot != null ? fromShot : currentShotFor(page);
+            DeathBackgroundPainter.drawPhoto(g, base, this.width, this.height, 1.0f);
+            if (toShot != null && toShot != base) {
+                DeathBackgroundPainter.drawPhoto(g, toShot, this.width, this.height, crossfadeT);
+            }
+            DeathBackgroundPainter.drawVignette(g, this.width, this.height, uiAlpha);
         } else {
+            // No photo to reveal — keep the solid overlay fully opaque (don't lay
+            // bare the frozen world); the chrome still fades out/in against it.
             g.fill(0, 0, this.width, this.height, OVERLAY);
         }
 
@@ -221,39 +271,128 @@ public final class NarrativeDeathScreen extends Screen {
 
         drawFooter(g, page, mouseX, mouseY);
 
-        // Widgets (the comment EditBox) render on top of the content.
+        // Widgets (the comment EditBox) render on top of the content. They can't
+        // take an alpha tint, so only show them once the page is settled.
+        if (commentBox != null) commentBox.visible = settled();
         for (Renderable r : this.renderables) {
             r.render(g, mouseX, mouseY, partialTick);
         }
 
-        // Loadout hover tooltip last, above everything.
-        if (page.kind() == Kind.GEAR && stats != null) {
+        // Loadout hover tooltip last, above everything — only when settled.
+        if (page.kind() == Kind.GEAR && stats != null && settled()) {
             drawLoadoutTooltip(g, stats, left, contentW, mouseX, mouseY);
         }
     }
 
+    // ---- Transition / backdrop ----
+
+    private boolean photosAvailable() {
+        return ClientDisplayConfig.isRideSnapshotsEnabled() && !RideSnapshotGallery.isEmpty();
+    }
+
+    private boolean isTransitioning() {
+        return transStartMs != 0L;
+    }
+
+    /** True once the page is settled enough to show non-fadeable elements. */
+    private boolean settled() {
+        return uiAlpha >= SETTLED;
+    }
+
     /**
-     * The cached ride-photo background for the current page, re-picked only when
-     * the page changes. Each data page prefers its most relevant shot; the survey
-     * page draws a random one. {@code null} = no photos (or feature off) → the
-     * original solid overlay is used instead.
+     * Pick the most relevant ride photo for a page. Each data page prefers its
+     * own tag; the survey page draws a random one; the platform takes the latest.
      */
-    private RideSnapshot backgroundFor(Page page) {
-        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty()) {
-            return null;
+    private RideSnapshot pickFor(Page page) {
+        return switch (page.kind()) {
+            case FALL     -> DeathBackgroundPainter.pick(SnapshotTag.SCENIC, false);
+            case DEEDS    -> DeathBackgroundPainter.pick(SnapshotTag.COMBAT, false);
+            case GEAR     -> DeathBackgroundPainter.pick(SnapshotTag.GEAR, false);
+            case LIVES    -> DeathBackgroundPainter.pick(SnapshotTag.SOCIAL, false);
+            case SURVEY   -> DeathBackgroundPainter.pick(null, true);
+            case PLATFORM -> DeathBackgroundPainter.pick(null, false);
+        };
+    }
+
+    /**
+     * The cached resting photo for the current page, re-picked only when the page
+     * changes so the random survey backdrop doesn't reshuffle every frame.
+     */
+    private RideSnapshot currentShotFor(Page page) {
+        if (restShotForPage != currentPage) {
+            restShotForPage = currentPage;
+            restShot = pickFor(page);
         }
-        if (bgForPage != currentPage) {
-            bgForPage = currentPage;
-            bgShot = switch (page.kind()) {
-                case FALL     -> DeathBackgroundPainter.pick(SnapshotTag.SCENIC, false);
-                case DEEDS    -> DeathBackgroundPainter.pick(SnapshotTag.COMBAT, false);
-                case GEAR     -> DeathBackgroundPainter.pick(SnapshotTag.GEAR, false);
-                case LIVES    -> DeathBackgroundPainter.pick(SnapshotTag.SOCIAL, false);
-                case SURVEY   -> DeathBackgroundPainter.pick(null, true);
-                case PLATFORM -> DeathBackgroundPainter.pick(null, false);
-            };
+        return restShot;
+    }
+
+    /** Begin a cross-fade toward {@code target}; the swap lands at the midpoint. */
+    private void startTransition(int target) {
+        boolean photos = photosAvailable();
+        fromShot = photos ? currentShotFor(pages.get(currentPage)) : null;
+        toShot = photos ? pickFor(pages.get(target)) : null;
+        pendingPage = target;
+        swapped = false;
+        transStartMs = Util.getMillis();
+    }
+
+    /**
+     * Drive the transition clock: compute {@link #uiAlpha} / {@link #crossfadeT}
+     * for this frame, apply the deferred page swap at the midpoint, and settle
+     * when complete.
+     */
+    private void updateTransition(long now) {
+        if (transStartMs == 0L) {
+            uiAlpha = 1.0f;
+            crossfadeT = 1.0f;
+            return;
         }
-        return bgShot;
+        float p = (now - transStartMs) / (float) TRANS_MS;
+        if (p < 0.0f) p = 0.0f;
+
+        // Midpoint: swap the page while nothing is visible, so the new page's
+        // widgets/stats rebuild unseen.
+        if (!swapped && p >= 0.5f && pendingPage >= 0) {
+            currentPage = Math.min(pendingPage, Math.max(0, pages.size() - 1));
+            swapped = true;
+            rebuildWidgets();
+        }
+
+        if (p >= 1.0f) {
+            // Lock the resting backdrop to the photo we just cross-faded in, so a
+            // re-pick (survey pages roll randomly) can't pop it after settling.
+            if (toShot != null) {
+                restShot = toShot;
+                restShotForPage = currentPage;
+            }
+            transStartMs = 0L;
+            pendingPage = -1;
+            fromShot = null;
+            toShot = null;
+            uiAlpha = 1.0f;
+            crossfadeT = 1.0f;
+            return;
+        }
+
+        // Photo cross-fades over the first half so the incoming photo is fully in
+        // by the midpoint reveal; content fades old out then new in around it.
+        crossfadeT = p < 0.5f ? smooth(p / 0.5f) : 1.0f;
+        float linear = p < 0.5f ? (1.0f - p / 0.5f) : ((p - 0.5f) / 0.5f);
+        uiAlpha = smooth(linear);
+    }
+
+    /** Smoothstep ease for 0..1. */
+    private static float smooth(float x) {
+        if (x <= 0.0f) return 0.0f;
+        if (x >= 1.0f) return 1.0f;
+        return x * x * (3.0f - 2.0f * x);
+    }
+
+    /** Scale only the alpha byte of an ARGB colour by the current {@link #uiAlpha}. */
+    private int fade(int argb) {
+        if (uiAlpha >= 1.0f) return argb;
+        int a = Math.round(((argb >>> 24) & 0xFF) * uiAlpha);
+        return (a << 24) | (argb & 0x00FFFFFF);
     }
 
     // ---- Page renderers. Each returns the y below its content. ----
@@ -371,7 +510,7 @@ public final class NarrativeDeathScreen extends Screen {
                     int score = e.scaleMin() + i;
                     int tx = sx + i * (tile + gap);
                     boolean sel = selected == score;
-                    g.fill(tx, y, tx + tile, y + tile, sel ? BTN_PRI_BG : SCORE_BG);
+                    g.fill(tx, y, tx + tile, y + tile, fade(sel ? BTN_PRI_BG : SCORE_BG));
                     drawBorder(g, tx, y, tile, tile, sel ? BTN_PRI_LIGHT : SCORE_BORDER);
                     drawCenteredStr(g, Integer.toString(score), tx + tile / 2, y + (tile - this.font.lineHeight) / 2 + 1, sel ? 0xFFFFFFFF : SCORE_TEXT);
                     scoreRects.add(new Rect(tx, y, tile, tile));
@@ -419,7 +558,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void drawTopBar(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
-                12, 10, 0xFF7A828C, false);
+                12, 10, fade(0xFF7A828C), false);
         // Right-aligned: [reboard] [leave]. leave on the far right.
         Component leave = Component.translatable("gui.dungeontrain.death.leave");
         Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
@@ -447,7 +586,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage > 0) {
             int ax = this.width / 2 - (page.kind() == Kind.PLATFORM ? 110 : 60) - 22;
             boolean hover = mouseX >= ax - 4 && mouseX < ax + 14 && mouseY >= rowY && mouseY < rowY + 18;
-            g.drawString(this.font, "←", ax, rowY + 5, hover ? QUESTION : 0xFF8A909A, false);
+            g.drawString(this.font, "←", ax, rowY + 5, fade(hover ? QUESTION : 0xFF8A909A), false);
             backRect = new Rect(ax - 4, rowY, 22, 18);
         }
     }
@@ -481,19 +620,18 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private void advance() {
-        if (pages.isEmpty()) return;
+        if (pages.isEmpty() || isTransitioning()) return;
         Page page = pages.get(currentPage);
         if (page.kind() == Kind.SURVEY) maybeSubmit(page.survey());
         if (currentPage < pages.size() - 1) {
-            currentPage++;
-            rebuildWidgets();
+            startTransition(currentPage + 1);
         }
     }
 
     private void back() {
+        if (isTransitioning()) return;
         if (currentPage > 0) {
-            currentPage--;
-            rebuildWidgets();
+            startTransition(currentPage - 1);
         }
     }
 
@@ -582,9 +720,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     private int drawCentered(GuiGraphics g, Component text, int cx, int w, int y, int color) {
         List<FormattedCharSequence> lines = this.font.split(text, w - 8);
+        int faded = fade(color);
         for (FormattedCharSequence line : lines) {
             int lw = this.font.width(line);
-            g.drawString(this.font, line, cx - lw / 2, y, color, false);
+            g.drawString(this.font, line, cx - lw / 2, y, faded, false);
             y += this.font.lineHeight + 2;
         }
         return y;
@@ -593,7 +732,7 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawCell(GuiGraphics g, int centerX, int y, String value, String labelKey) {
         int cw = 96, ch = 26;
         int x = centerX - cw / 2;
-        g.fill(x, y, x + cw, y + ch, TILE_BG);
+        g.fill(x, y, x + cw, y + ch, fade(TILE_BG));
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
         drawCenteredStr(g, value, centerX, y + 4, VALUE);
         drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
@@ -608,7 +747,7 @@ public final class NarrativeDeathScreen extends Screen {
      */
     private void drawTrain(GuiGraphics g, int left, int w, int y, int advance) {
         int railY = y + 30;
-        g.fill(left + 2, railY, left + w - 2, railY + 2, RAIL);
+        g.fill(left + 2, railY, left + w - 2, railY + 2, fade(RAIL));
         int carW = 22, carH = 14, gap = 4, spacing = carW + gap;
         int startX = left + 6;
         int rightEdge = left + w - 14;            // leave room for the ∞
@@ -628,26 +767,26 @@ public final class NarrativeDeathScreen extends Screen {
         for (int i = 0; i < solid; i++) {
             int cxp = startX + i * spacing;
             if (cxp + carW > rightEdge) break;
-            g.fill(cxp, railY - carH, cxp + carW, railY, 0xFF33353E);
-            g.fill(cxp, railY - carH, cxp + carW, railY - carH + 2, RED);
-            g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, 0xFF14151A);
-            g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, 0xFF14151A);
+            g.fill(cxp, railY - carH, cxp + carW, railY, fade(0xFF33353E));
+            g.fill(cxp, railY - carH, cxp + carW, railY - carH + 2, fade(RED));
+            g.fill(cxp + 4, railY - carH + 4, cxp + 9, railY - carH + 9, fade(0xFF14151A));
+            g.fill(cxp + 13, railY - carH + 4, cxp + 18, railY - carH + 9, fade(0xFF14151A));
         }
         // The fade tail trails off beyond the solid run on every screen but the
         // last, where the train has filled the rail.
         if (!lastPage) {
-            int[] fade = { 0x8033353E, 0x4D2B2C33, 0x2624252B };
+            int[] tail = { 0x8033353E, 0x4D2B2C33, 0x2624252B };
             int fadeX = startX + solid * spacing;
-            for (int j = 0; j < fade.length; j++) {
+            for (int j = 0; j < tail.length; j++) {
                 int cxp = fadeX + j * spacing;
                 int fw = Math.min(cxp + carW, rightEdge);
                 if (fw <= cxp) break;
                 int fh = carH - 2 - j * 3;
                 if (fh < 5) fh = 5;
-                g.fill(cxp, railY - fh, fw, railY, fade[j]);
+                g.fill(cxp, railY - fh, fw, railY, fade(tail[j]));
             }
         }
-        g.drawString(this.font, "∞", left + w - 12, railY - 8, INF, false);
+        g.drawString(this.font, "∞", left + w - 12, railY - 8, fade(INF), false);
     }
 
     private void drawLoadout(GuiGraphics g, DeathStatsPacket s, int left, int w, int y, int mouseX, int mouseY) {
@@ -655,15 +794,18 @@ public final class NarrativeDeathScreen extends Screen {
         int gap = 6;
         int rowW = gear.length * SLOT + (gear.length - 1) * gap;
         int sx = left + (w - rowW) / 2;
+        boolean showItems = settled();
         for (int i = 0; i < gear.length; i++) {
             int x = sx + i * (SLOT + gap);
-            g.fill(x, y, x + SLOT, y + SLOT, SLOT_BG);
-            g.fill(x, y, x + SLOT, y + 1, SLOT_DARK);
-            g.fill(x, y, x + 1, y + SLOT, SLOT_DARK);
-            g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, SLOT_LIGHT);
-            g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, SLOT_LIGHT);
+            g.fill(x, y, x + SLOT, y + SLOT, fade(SLOT_BG));
+            g.fill(x, y, x + SLOT, y + 1, fade(SLOT_DARK));
+            g.fill(x, y, x + 1, y + SLOT, fade(SLOT_DARK));
+            g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, fade(SLOT_LIGHT));
+            g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, fade(SLOT_LIGHT));
             ItemStack stack = gear[i];
-            if (!stack.isEmpty()) {
+            // Item icons can't take an alpha tint; only draw them once the page is
+            // settled so they don't pop at full opacity mid-fade.
+            if (!stack.isEmpty() && showItems) {
                 g.renderItem(stack, x + 1, y + 1);
                 g.renderItemDecorations(this.font, stack, x + 1, y + 1);
             }
@@ -691,36 +833,37 @@ public final class NarrativeDeathScreen extends Screen {
 
     private Rect drawChip(GuiGraphics g, int x, int y, Component text, int border, int textColor) {
         int w = this.font.width(text) + 16, h = 14;
-        g.fill(x, y, x + w, y + h, 0x66000000);
+        g.fill(x, y, x + w, y + h, fade(0x66000000));
         drawBorder(g, x, y, w, h, border);
-        g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, textColor, false);
+        g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, fade(textColor), false);
         return new Rect(x, y, w, h);
     }
 
     private Rect drawBevel(GuiGraphics g, int x, int y, int w, int h, Component text,
                            int bg, int light, int dark, int textColor) {
-        g.fill(x, y, x + w, y + h, bg);
-        g.fill(x, y, x + w, y + 2, light);
-        g.fill(x, y, x + 2, y + h, light);
-        g.fill(x, y + h - 2, x + w, y + h, dark);
-        g.fill(x + w - 2, y, x + w, y + h, dark);
+        g.fill(x, y, x + w, y + h, fade(bg));
+        g.fill(x, y, x + w, y + 2, fade(light));
+        g.fill(x, y, x + 2, y + h, fade(light));
+        g.fill(x, y + h - 2, x + w, y + h, fade(dark));
+        g.fill(x + w - 2, y, x + w, y + h, fade(dark));
         drawCenteredStr(g, text, x + w / 2, y + (h - this.font.lineHeight) / 2 + 1, textColor);
         return new Rect(x, y, w, h);
     }
 
     private void drawBorder(GuiGraphics g, int x, int y, int w, int h, int color) {
-        g.fill(x, y, x + w, y + 1, color);
-        g.fill(x, y + h - 1, x + w, y + h, color);
-        g.fill(x, y, x + 1, y + h, color);
-        g.fill(x + w - 1, y, x + w, y + h, color);
+        int c = fade(color);
+        g.fill(x, y, x + w, y + 1, c);
+        g.fill(x, y + h - 1, x + w, y + h, c);
+        g.fill(x, y, x + 1, y + h, c);
+        g.fill(x + w - 1, y, x + w, y + h, c);
     }
 
     private void drawCenteredStr(GuiGraphics g, String s, int cx, int y, int color) {
-        g.drawString(this.font, s, cx - this.font.width(s) / 2, y, color, false);
+        g.drawString(this.font, s, cx - this.font.width(s) / 2, y, fade(color), false);
     }
 
     private void drawCenteredStr(GuiGraphics g, Component c, int cx, int y, int color) {
-        g.drawString(this.font, c, cx - this.font.width(c) / 2, y, color, false);
+        g.drawString(this.font, c, cx - this.font.width(c) / 2, y, fade(color), false);
     }
 
     // ---- Formatters ----
