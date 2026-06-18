@@ -38,4 +38,43 @@ public interface Shipyard {
     default boolean isInShip(BlockPos pos) {
         return findAt(pos) != null;
     }
+
+    /**
+     * Force-load {@code ship}'s sub-level so the underlying physics mod keeps
+     * it resident — and its backing world chunks loaded and ticking — even
+     * when no player is close enough to keep it inside the simulation bubble.
+     *
+     * <p>Used to hold a freshly-generated trailing carriage long enough to
+     * settle: a backward-riding player's newest carriages otherwise drift out
+     * of the player-centred simulation distance and get culled before the
+     * appender's placement settle completes (see
+     * {@code TrainCarriageAppender} and the {@code backward-generation-stall}
+     * note). Idempotent — calling it again on an already-force-loaded ship is a
+     * no-op.</p>
+     *
+     * <p>Force-loading is <em>preventive</em>: it keeps a currently-loaded
+     * sub-level loaded. It does not resurrect one the physics mod has already
+     * culled — call this while the ship is still loaded (e.g. at spawn).</p>
+     */
+    void forceLoad(ManagedShip ship);
+
+    /**
+     * Release a force-load previously added via {@link #forceLoad}. Idempotent
+     * — a no-op if {@code ship} was not force-loaded. Once released, the ship
+     * may be culled normally when it leaves every player's simulation bubble.
+     */
+    void releaseForceLoad(ManagedShip ship);
+
+    /**
+     * Release every force-load this shipyard created (Dungeon Train's own
+     * trailing-segment tickets), across all sub-levels in the level. Does
+     * <em>not</em> touch force-loads from other sources (e.g. a manual
+     * {@code /sable forceload} command).
+     *
+     * <p>Called on train wipe / bootstrap so no force-load ticket leaks across
+     * a session boundary: some physics mods persist force-load tickets to disk
+     * and resurrect the ticketed sub-levels on the next world load. Sweeping
+     * here guarantees a clean slate.</p>
+     */
+    void releaseAllForceLoads();
 }
