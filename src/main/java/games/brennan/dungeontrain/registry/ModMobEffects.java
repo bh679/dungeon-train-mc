@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.registry.effect.FreePlayEffect;
 import games.brennan.dungeontrain.registry.effect.WarmthOfTheFireEffect;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.effect.MobEffect;
@@ -19,6 +20,10 @@ public final class ModMobEffects {
 
     public static final DeferredHolder<MobEffect, WarmthOfTheFireEffect> WARMTH_OF_THE_FIRE =
         MOB_EFFECTS.register("warmth_of_the_fire", WarmthOfTheFireEffect::new);
+
+    /** "Free Play" — run-scoped marker shown while the run is unranked. */
+    public static final DeferredHolder<MobEffect, FreePlayEffect> FREE_PLAY =
+        MOB_EFFECTS.register("free_play", FreePlayEffect::new);
 
     private ModMobEffects() {}
 

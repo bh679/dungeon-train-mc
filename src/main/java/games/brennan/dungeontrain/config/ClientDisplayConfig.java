@@ -48,6 +48,7 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.DoubleValue HUD_CHANNEL;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_SHOWN_BEFORE;
     public static final ModConfigSpec.BooleanValue DEVELOPER_POPUP_OPTED_OUT;
+    public static final ModConfigSpec.BooleanValue FREE_PLAY_CONFIRM_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue OPENED_ADVANCEMENTS_BEFORE;
     public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOTS_ENABLED;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_INTERVAL_SECONDS;
@@ -65,6 +66,7 @@ public final class ClientDisplayConfig {
         HUD_CHANNEL = pair.getLeft().hudChannel;
         DEVELOPER_POPUP_SHOWN_BEFORE = pair.getLeft().developerPopupShownBefore;
         DEVELOPER_POPUP_OPTED_OUT = pair.getLeft().developerPopupOptedOut;
+        FREE_PLAY_CONFIRM_OPTED_OUT = pair.getLeft().freePlayConfirmOptedOut;
         OPENED_ADVANCEMENTS_BEFORE = pair.getLeft().openedAdvancementsBefore;
         RIDE_SNAPSHOTS_ENABLED = pair.getLeft().rideSnapshotsEnabled;
         RIDE_SNAPSHOT_INTERVAL_SECONDS = pair.getLeft().rideSnapshotIntervalSeconds;
@@ -98,6 +100,12 @@ public final class ClientDisplayConfig {
                 .define("optedOut", false);
         b.pop();
 
+        b.push("freePlayConfirm");
+        ModConfigSpec.BooleanValue freePlayConfirmOptedOut = b
+                .comment("Whether the player has ticked \"Don't show this again\" on the Free Play confirmation. When true, switching to creative/spectator or running a cheat command starts Free Play immediately, with no confirm screen. Reset by editing this back to false.")
+                .define("optedOut", false);
+        b.pop();
+
         b.push("advancementsHint");
         ModConfigSpec.BooleanValue openedAdvancementsBefore = b
                 .comment("Whether the player has ever opened the advancements screen on this install. While false, earning a Dungeon Train gameplay advancement shows a one-line chat hint reminding the player of the (rebindable) key that opens advancements. Flips to true the first time the advancements screen is closed, permanently silencing the hint. Reset this to false to see the hint again.")
@@ -125,7 +133,7 @@ public final class ClientDisplayConfig {
                 .defineInRange("minTps", 18, 0, 20);
         b.pop();
 
-        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, openedAdvancementsBefore,
+        return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
                 rideSnapshotMinFps, rideSnapshotMinTps);
     }
@@ -229,6 +237,19 @@ public final class ClientDisplayConfig {
         DEVELOPER_POPUP_OPTED_OUT.save();
     }
 
+    // ----- Free Play confirmation opt-out -----
+
+    /** Has the player ticked "Don't show this again" on the Free Play confirmation? */
+    public static boolean isFreePlayConfirmOptedOut() {
+        return isLoaded() && FREE_PLAY_CONFIRM_OPTED_OUT.get();
+    }
+
+    public static void setFreePlayConfirmOptedOut(boolean value) {
+        if (!isLoaded()) return;
+        FREE_PLAY_CONFIRM_OPTED_OUT.set(value);
+        FREE_PLAY_CONFIRM_OPTED_OUT.save();
+    }
+
     // ----- Advancements keybind hint state -----
 
     /**
@@ -296,6 +317,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.DoubleValue hudChannel,
             ModConfigSpec.BooleanValue developerPopupShownBefore,
             ModConfigSpec.BooleanValue developerPopupOptedOut,
+            ModConfigSpec.BooleanValue freePlayConfirmOptedOut,
             ModConfigSpec.BooleanValue openedAdvancementsBefore,
             ModConfigSpec.BooleanValue rideSnapshotsEnabled,
             ModConfigSpec.IntValue rideSnapshotIntervalSeconds,

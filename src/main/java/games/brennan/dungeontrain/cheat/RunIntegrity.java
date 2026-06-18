@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.cheat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.chat.CommonComponents;
@@ -10,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
 import org.slf4j.Logger;
 
 /**
@@ -41,27 +43,41 @@ public final class RunIntegrity {
     }
 
     /**
-     * Mark the run cheated and explain the consequence to the player. Idempotent:
-     * only the first {@code false → true} transition sets the flag, logs, and
-     * sends the one-time message — a {@code /gamemode creative} that fires both a
-     * command event and a game-mode-change event won't double-notify.
+     * Switch the run to Free Play: set the flag, apply the {@code Free Play}
+     * status effect, and send one gentle, non-judgemental chat line. Idempotent —
+     * only the first {@code false → true} transition acts, so the action that
+     * tripped it (a confirmed mode switch / command, the game-mode backstop, or a
+     * login already in creative) won't double-notify.
      *
-     * @param cause a localized phrase naming what tripped the detection (e.g.
-     *              "You switched to Creative Mode.") — rendered as the middle line.
+     * @param cause a soft localized phrase naming what started Free Play (e.g.
+     *              "You switched to Creative.") — shown after the title.
      */
     public static void markCheated(ServerPlayer player, Component cause) {
         if (isCheated(player)) return;
         player.setData(ModDataAttachments.RUN_CHEATED.get(), Boolean.TRUE);
-        LOGGER.info("[DungeonTrain] Run marked cheated for {} — {}",
+        applyFreePlayEffect(player);
+        LOGGER.info("[DungeonTrain] Run is now Free Play for {} — {}",
             player.getName().getString(), cause.getString());
-        MutableComponent msg = Component.translatable("chat.dungeontrain.cheat.title")
-            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
-            .append(CommonComponents.NEW_LINE)
+        MutableComponent msg = Component.translatable("chat.dungeontrain.free_play.title")
+            .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD)
+            .append(CommonComponents.SPACE)
             .append(cause.copy().withStyle(ChatFormatting.GRAY))
             .append(CommonComponents.NEW_LINE)
-            .append(Component.translatable("chat.dungeontrain.cheat.consequence")
+            .append(Component.translatable("chat.dungeontrain.free_play.consequence")
                 .withStyle(ChatFormatting.GRAY));
         player.sendSystemMessage(msg);
+    }
+
+    /**
+     * Apply the permanent, run-scoped {@code Free Play} marker effect — infinite
+     * duration, no particles, HUD icon shown. Re-applied on login and respawn
+     * while the run is Free Play, since effects are cleared on death and can be
+     * removed by milk. ({@code -1} = infinite duration in 1.21.)
+     */
+    public static void applyFreePlayEffect(ServerPlayer player) {
+        player.addEffect(new MobEffectInstance(
+            ModMobEffects.FREE_PLAY, -1, 0,
+            /* ambient */ true, /* visible particles */ false, /* showIcon */ true));
     }
 
     /**

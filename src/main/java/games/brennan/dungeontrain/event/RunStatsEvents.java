@@ -167,8 +167,12 @@ public final class RunStatsEvents {
         }
 
         // Roll the per-death narrative from the data-driven pool, keyed on the
-        // killer + this run's depth / social / lifetime context.
-        DeathNarrative narrative = rollNarrative(player, event.getSource(), run, lifeDeaths);
+        // killer + this run's depth / social / lifetime context. On a Free Play
+        // run we don't persist the death increment, but the narrative should still
+        // reflect the death that just happened — otherwise a first creative death
+        // rolls with deaths=0 and no platform lore entry matches (blank last page).
+        long narrativeDeaths = cheated ? lifeDeaths + 1 : lifeDeaths;
+        DeathNarrative narrative = rollNarrative(player, event.getSource(), run, narrativeDeaths);
 
         // The second-person death cause ("You fell from a high place"), shown as the
         // fall-page title. Built from the same DamageSource the Discord report uses.
