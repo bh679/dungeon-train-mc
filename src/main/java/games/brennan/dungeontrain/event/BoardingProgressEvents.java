@@ -6,11 +6,18 @@ import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
+import games.brennan.dungeontrain.world.BiomeFamilies;
+import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -23,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -134,6 +142,7 @@ public final class BoardingProgressEvents {
                         .addTrainTimeTicks(SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
                     accumulateBoardedDistance(p);
+                    sampleBoardedBiome(level, p);
                 }
             }
         }
@@ -253,6 +262,39 @@ public final class BoardingProgressEvents {
         // Lifetime distance — the same delta, accrued across all worlds/sessions.
         double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
         AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
+    }
+
+    /**
+     * Sample the biome under {@code player}'s current (world-space) position and
+     * fold it into their per-run {@link PlayerBiomeProgress}. A newly seen biome
+     * advances the count tiers ("Far Afield" / "Many Lands" / "World Without
+     * End"); the first biome of a newly reached family fires "All Under Heaven"
+     * and shows a discovery action-bar message.
+     *
+     * <p>Uses {@code player.blockPosition()} — the same world-space position
+     * {@link #accumulateBoardedDistance} books distance against (the deck
+     * position in world space, not a Sable sub-level coordinate).</p>
+     */
+    private static void sampleBoardedBiome(ServerLevel level, ServerPlayer player) {
+        Holder<Biome> biome = level.getBiome(player.blockPosition());
+        Optional<ResourceKey<Biome>> key = biome.unwrapKey();
+        if (key.isEmpty()) return;
+        ResourceLocation id = key.get().location();
+
+        PlayerBiomeProgress progress = player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get());
+        if (progress.addBiome(id)) {
+            AchievementEvents.notifyBiomesVisited(player, progress.biomeCount());
+        }
+
+        Optional<String> family = BiomeFamilies.classify(biome);
+        if (family.isPresent() && progress.addFamily(family.get())) {
+            int familyCount = progress.familyCount();
+            AchievementEvents.notifyBiomeFamilies(player, familyCount);
+            player.displayClientMessage(
+                Component.translatable("dungeontrain.biome_family.discovered",
+                    BiomeFamilies.displayName(family.get()), familyCount, BiomeFamilies.FAMILY_COUNT),
+                true);
+        }
     }
 
     /**

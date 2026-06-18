@@ -6,6 +6,7 @@ import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
+import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
@@ -146,9 +147,10 @@ public final class NarrativeDeathScreen extends Screen {
     private float photoBlack = 0.0f;       // 0..1 — black fill laid over the photo (the dip)
     private boolean photoNew = false;      // show the incoming photo (true) vs the held one (false)
 
-    // Resting backdrop for the current page (re-picked when the page settles).
-    private int restShotForPage = -1;
-    private RideSnapshot restShot;
+    // One ride photo per page, assigned up-front (unused-first) so pages don't
+    // repeat a shot. Empty when the feature is off / no photos were captured.
+    private static final RideSnapshot[] NO_BACKGROUNDS = new RideSnapshot[0];
+    private RideSnapshot[] pageBackgrounds = NO_BACKGROUNDS;
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
@@ -176,6 +178,7 @@ public final class NarrativeDeathScreen extends Screen {
         pages = buildPages();
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
+        assignBackgrounds();
         lastSurveyCount = SurveyClientState.questions().size();
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
@@ -209,7 +212,7 @@ public final class NarrativeDeathScreen extends Screen {
             pendingInitialFade = true;
             swapped = true;
             pendingPage = -1;
-            fromShot = photosAvailable() ? currentShotFor(pages.get(currentPage)) : null;
+            fromShot = bgFor(currentPage);
             toShot = null;
         }
     }
@@ -242,19 +245,17 @@ public final class NarrativeDeathScreen extends Screen {
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
         Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
 
-        // Backdrop: this run's third-person ride photos under a legibility
-        // vignette. Between pages the outgoing photo cross-fades into the
-        // incoming one and the vignette fades with the UI, fully revealing the
-        // photo at the peak. Falls back to the solid overlay when the feature is
-        // off or no photos were captured this run.
-        if (photosAvailable()) {
-            // The photo always draws fully opaque (blit alpha is unreliable for the
-            // framebuffer textures); the dip-to-black is a black fill laid over it.
-            // The old->new photo swap happens under full black, so it isn't seen.
-            RideSnapshot photo = photoNew && toShot != null
-                    ? toShot
-                    : (fromShot != null ? fromShot : currentShotFor(page));
-            DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height, 1.0f);
+        // Backdrop: this run's third-person ride photos, one assigned per page
+        // (preferring photos not used on another page). The photo draws fully
+        // opaque (blit alpha is unreliable for the framebuffer textures); the
+        // dip-to-black is a black fill laid over it, and the old->new swap happens
+        // under full black so it isn't seen. Falls back to the solid overlay when
+        // the feature is off or no photos were captured this run.
+        RideSnapshot photo = photoNew && toShot != null
+                ? toShot
+                : (fromShot != null ? fromShot : bgFor(currentPage));
+        if (photo != null) {
+            DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
             if (photoBlack > 0.0f) {
                 int a = Math.min(255, Math.round(photoBlack * 255.0f));
                 g.fill(0, 0, this.width, this.height, a << 24);
@@ -319,10 +320,6 @@ public final class NarrativeDeathScreen extends Screen {
 
     // ---- Transition / backdrop ----
 
-    private boolean photosAvailable() {
-        return ClientDisplayConfig.isRideSnapshotsEnabled() && !RideSnapshotGallery.isEmpty();
-    }
-
     private boolean isTransitioning() {
         return transStartMs != 0L;
     }
@@ -333,37 +330,43 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     /**
-     * Pick the most relevant ride photo for a page. Each data page prefers its
-     * own tag; the survey page draws a random one; the platform takes the latest.
+     * Assign one ride photo to each page up-front, preferring photos not yet used
+     * on another page (so the pages don't repeat the same shot). Re-run whenever
+     * the page set changes; the gallery is frozen at death, so the result is
+     * stable across page navigation. Leaves {@link #pageBackgrounds} empty when
+     * the feature is off or no photos were captured this run → the solid overlay
+     * is used instead.
      */
-    private RideSnapshot pickFor(Page page) {
-        return switch (page.kind()) {
-            case FALL     -> DeathBackgroundPainter.pick(SnapshotTag.SCENIC, false);
-            case DEEDS    -> DeathBackgroundPainter.pick(SnapshotTag.COMBAT, false);
-            case GEAR     -> DeathBackgroundPainter.pick(SnapshotTag.GEAR, false);
-            case LIVES    -> DeathBackgroundPainter.pick(SnapshotTag.SOCIAL, false);
-            case SURVEY   -> DeathBackgroundPainter.pick(null, true);
-            case PLATFORM -> DeathBackgroundPainter.pick(null, false);
+    private void assignBackgrounds() {
+        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty() || pages.isEmpty()) {
+            pageBackgrounds = NO_BACKGROUNDS;
+            return;
+        }
+        List<List<SnapshotTag>> chains = new ArrayList<>(pages.size());
+        for (Page p : pages) chains.add(chainFor(p.kind()));
+        pageBackgrounds = DeathBackgroundAssigner.assign(chains, RideSnapshotGallery.all());
+    }
+
+    /** Each page's thematic fallback chain (tier 0 = preferred tag; empty = any shot). */
+    private static List<SnapshotTag> chainFor(Kind kind) {
+        return switch (kind) {
+            case FALL     -> List.of(SnapshotTag.SCENIC);
+            case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
+            case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
+            case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
+            case SURVEY, PLATFORM -> List.of();
         };
     }
 
-    /**
-     * The cached resting photo for the current page, re-picked only when the page
-     * changes so the random survey backdrop doesn't reshuffle every frame.
-     */
-    private RideSnapshot currentShotFor(Page page) {
-        if (restShotForPage != currentPage) {
-            restShotForPage = currentPage;
-            restShot = pickFor(page);
-        }
-        return restShot;
+    /** The photo assigned to {@code index}, or {@code null} if out of range / no photos. */
+    private RideSnapshot bgFor(int index) {
+        return (index >= 0 && index < pageBackgrounds.length) ? pageBackgrounds[index] : null;
     }
 
     /** Begin a transition toward {@code target}; the page swaps when its fade-out ends. */
     private void startTransition(int target) {
-        boolean photos = photosAvailable();
-        fromShot = photos ? currentShotFor(pages.get(currentPage)) : null;
-        toShot = photos ? pickFor(pages.get(target)) : null;
+        fromShot = bgFor(currentPage);
+        toShot = bgFor(target);
         pendingPage = target;
         swapped = false;
         transStartMs = Util.getMillis();
@@ -375,10 +378,6 @@ public final class NarrativeDeathScreen extends Screen {
         if (!swapped && pendingPage >= 0) {
             currentPage = Math.min(pendingPage, Math.max(0, pages.size() - 1));
             rebuildWidgets();
-        }
-        if (toShot != null) {
-            restShot = toShot;
-            restShotForPage = currentPage;
         }
         swapped = true;
         transStartMs = 0L;
@@ -424,12 +423,8 @@ public final class NarrativeDeathScreen extends Screen {
         }
 
         if (elapsed >= total) {
-            // Settle on the new page and lock its photo so a re-pick (survey pages
-            // roll randomly) can't pop the backdrop after settling.
-            if (toShot != null) {
-                restShot = toShot;
-                restShotForPage = currentPage;
-            }
+            // Settle on the new page. Backgrounds are assigned per page up-front and
+            // stable, so there's nothing to lock here.
             transStartMs = 0L;
             pendingPage = -1;
             fromShot = null;
@@ -457,7 +452,8 @@ public final class NarrativeDeathScreen extends Screen {
             long inMs = elapsed - T_FADE - T_HOLD;
             uiAlpha = smooth(Math.min(1.0f, (float) inMs / (float) T_FADE));
             long imgMs = inMs - imgDelay;
-            if (imgMs <= 0L) {
+            if (!switching || imgMs <= 0L) {
+                // No real switch (initial open / same photo) — never dip.
                 photoBlack = 0.0f;
                 photoNew = false;
             } else {
@@ -491,8 +487,15 @@ public final class NarrativeDeathScreen extends Screen {
 
     private int drawFall(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
                          int left, int w, int cx, int y, int mouseX, int mouseY) {
-        drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
-        y += 14;
+        // The fall-page title is the second-person death cause ("You fell from a high
+        // place") when the server sent one, wrapped in the kicker style so a long cause
+        // can't clip; otherwise the static "the fall" kicker.
+        if (s != null && s.deathCause() != null && !s.deathCause().isEmpty()) {
+            y = drawCentered(g, Component.literal(s.deathCause()), cx, w, y, KICKER) + 3;
+        } else {
+            drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_fall");
+            y += 14;
+        }
         drawTrain(g, left, w, y, currentPage);
         y += 46;
         y = drawQuestion(g, n.fallQuestion(), cx, w, y);

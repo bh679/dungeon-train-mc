@@ -64,6 +64,17 @@ public final class VersionHudOverlay {
         boardingProgressPresent = true;
     }
 
+    /**
+     * The live carriages-travelled run counter pushed by
+     * {@code BoardingProgressPacket} (the same figure the FALL death page shows
+     * as {@code cartsTravelled}); {@code 0} before the first update. Read by
+     * {@link games.brennan.dungeontrain.client.snapshot.RideSnapshotDirector}
+     * to pace ride snapshots by journey progress.
+     */
+    public static int travelledCarriageIndex() {
+        return travelledCarriageIndex;
+    }
+
     @SubscribeEvent
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         LayeredDraw.Layer overlay = (graphics, deltaTracker) -> {

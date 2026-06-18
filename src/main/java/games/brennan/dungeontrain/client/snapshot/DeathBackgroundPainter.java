@@ -3,17 +3,17 @@ package games.brennan.dungeontrain.client.snapshot;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
- * Picks and draws the per-page ride-photo background for the death screen.
- * Cover-fits the photo to the screen (centre-crop, no distortion) and lays a
- * top/bottom dark vignette over it so the narrative text stays legible while
- * the photo still reads through the middle band.
+ * Draws the per-page ride-photo background for the death screen. Cover-fits the
+ * photo to the screen (centre-crop, no distortion); a separate vignette pass
+ * lays a top/bottom dark gradient over it so the narrative text stays legible
+ * while the photo still reads through the middle band.
  *
- * <p>Drawing is split so {@link games.brennan.dungeontrain.client.NarrativeDeathScreen}
- * can drive a page-to-page transition: two photos cross-fade via
- * {@link #drawPhoto} (alpha), and the vignette opacity tracks how "present" the
- * UI is via {@link #drawVignette} (strength) — at its darkest when the page is
- * settled and legible, fading to nothing at the peak of a transition so the bare
- * photo is fully revealed.</p>
+ * <p>The photo and the vignette are drawn separately so
+ * {@link games.brennan.dungeontrain.client.NarrativeDeathScreen} can drive a
+ * page-to-page transition: the vignette opacity tracks how "present" the UI is
+ * ({@link #drawVignette} strength), and the photo dip-to-black is composited by
+ * the caller (a black fill over {@link #drawPhoto}). Which photo each page shows
+ * is chosen up-front by {@link DeathBackgroundAssigner}.</p>
  */
 public final class DeathBackgroundPainter {
 
@@ -24,31 +24,10 @@ public final class DeathBackgroundPainter {
 
     private DeathBackgroundPainter() {}
 
-    /**
-     * Choose a snapshot for a page. {@code random=true} draws from the whole
-     * gallery (feedback pages); otherwise prefers {@code preferred}'s newest
-     * shot, falling back to the newest of any tag.
-     */
-    public static RideSnapshot pick(SnapshotTag preferred, boolean random) {
-        if (random) {
-            RideSnapshot r = RideSnapshotGallery.random();
-            return r != null ? r : RideSnapshotGallery.latest();
-        }
-        RideSnapshot s = preferred != null ? RideSnapshotGallery.latestOf(preferred) : null;
-        return s != null ? s : RideSnapshotGallery.latest();
-    }
-
-    /**
-     * Draw {@code shot} cover-fit across the screen at {@code alpha} (0..1).
-     * Alpha lets a later photo cross-fade in over an earlier one during a page
-     * transition; {@code alpha <= 0} or a null shot draws nothing.
-     */
-    public static void drawPhoto(GuiGraphics g, RideSnapshot shot, int screenW, int screenH, float alpha) {
-        if (shot == null || alpha <= 0.0f) return;
-        float a = Math.min(1.0f, alpha);
-        if (a < 1.0f) g.setColor(1.0f, 1.0f, 1.0f, a);
+    /** Draw {@code shot} cover-fit across the screen (fully opaque). */
+    public static void drawPhoto(GuiGraphics g, RideSnapshot shot, int screenW, int screenH) {
+        if (shot == null) return;
         drawCover(g, shot, screenW, screenH);
-        if (a < 1.0f) g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     /**
