@@ -713,9 +713,9 @@
       ],
       "pr": 431,
       "date": "2026-06-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
     },
     {
       "id": "ender-chest-persistent",
@@ -729,9 +729,9 @@
         "Swaps live when you switch game modes mid-session"
       ],
       "date": "2026-06-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
     },
     {
       "id": "death-screen-lectern-books-first-death",
@@ -745,9 +745,9 @@
       ],
       "pr": 434,
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.317.0",
+      "released_at": "2026-06-18T01:14:41Z"
     }
   ]
 }
