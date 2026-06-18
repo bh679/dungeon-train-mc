@@ -853,7 +853,8 @@
       "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
       "highlights": [
         "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
-        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable)."
+        "Measured ~18% lower client memory at the menu; safe with the moving train (Sable).",
+        "Full memory benchmark and methodology: [wiki \u2192 Compatibility \u2192 FerriteCore](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#ferritecore)"
       ],
       "pr": 445,
       "date": "2026-06-18",
@@ -905,6 +906,23 @@
         "Each death-screen page shows a different photo where enough were captured"
       ],
       "pr": 448,
+      "date": "2026-06-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "modpack-modernfix",
+      "version": "0.319.0",
+      "type": "perf",
+      "title": "Modpack: ModernFix bundled by default (faster launch, less memory)",
+      "summary": "The Dungeon Train CurseForge modpack now ships ModernFix as an on-by-default add-on, alongside AppleSkin and FerriteCore. It speeds up launch and world-load times and trims memory use \u2014 a welcome win on a heavy pack like Dungeon Train. It's optional: untick it at install if you'd rather not. (Modpack only \u2014 the mod jar is unchanged; ModernFix is also now listed as an optional companion on the mod page.)",
+      "highlights": [
+        "ModernFix added to the modpack, on by default (deselectable at install)",
+        "Faster launch + world-load and lower memory; verified safe alongside Sable",
+        "[Compatibility + launch/memory A/B test results](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#modernfix)"
+      ],
+      "pr": 451,
       "date": "2026-06-18",
       "released": false,
       "released_in": null,
