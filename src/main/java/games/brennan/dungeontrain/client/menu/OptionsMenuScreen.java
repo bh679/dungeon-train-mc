@@ -43,8 +43,21 @@ public final class OptionsMenuScreen implements MenuScreen {
             scaleStepper("HUD", ClientDisplayConfig.getHudChannel(),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() - ClientDisplayConfig.STEP),
                 () -> ClientDisplayConfig.setHudChannel(ClientDisplayConfig.getHudChannel() + ClientDisplayConfig.STEP)),
+            snapshotChatLogRow(),
             new CommandMenuEntry.Back("< Back")
         );
+    }
+
+    /**
+     * ON/OFF toggle for the ride-snapshot chat log. A {@link CommandMenuEntry.ClientAction}
+     * (like the steppers above) so it flips purely client-side config and stays open —
+     * the per-tick rebuild refreshes the {@code ON}/{@code OFF} label.
+     */
+    private static CommandMenuEntry snapshotChatLogRow() {
+        boolean on = ClientDisplayConfig.isRideSnapshotChatLogEnabled();
+        String label = "Snapshot Chat Log: " + (on ? "ON" : "OFF");
+        return new CommandMenuEntry.ClientAction(label,
+            () -> ClientDisplayConfig.setRideSnapshotChatLog(!ClientDisplayConfig.isRideSnapshotChatLogEnabled()));
     }
 
     private static CommandMenuEntry scaleStepper(String name, double currentValue, Runnable onMinus, Runnable onPlus) {

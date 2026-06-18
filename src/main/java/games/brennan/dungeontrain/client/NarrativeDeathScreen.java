@@ -6,6 +6,11 @@ import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
+import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
+import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
+import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
+import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -105,6 +110,11 @@ public final class NarrativeDeathScreen extends Screen {
     private int lastSurveyCount = -1;
     private EditBox commentBox;
 
+    // Cached per-page ride-photo background. Re-picked only when the page changes
+    // so the random survey backdrop doesn't reshuffle every frame.
+    private int bgForPage = -1;
+    private RideSnapshot bgShot;
+
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
     private final List<Rect> scoreRects = new ArrayList<>();
@@ -160,11 +170,19 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        g.fill(0, 0, this.width, this.height, OVERLAY);
-
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
         Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
+
+        // Backdrop: this run's third-person ride photos, one per page (random behind
+        // survey), under a legibility vignette. Falls back to the solid overlay when
+        // the feature is off or no photos were captured this run.
+        RideSnapshot bg = backgroundFor(page);
+        if (bg != null) {
+            DeathBackgroundPainter.draw(g, bg, this.width, this.height);
+        } else {
+            g.fill(0, 0, this.width, this.height, OVERLAY);
+        }
 
         // Train engine: full on the first screen (as if aboard), fading evenly to
         // silence by the last screen — and rising again if the player steps back.
@@ -207,6 +225,30 @@ public final class NarrativeDeathScreen extends Screen {
         if (page.kind() == Kind.GEAR && stats != null) {
             drawLoadoutTooltip(g, stats, left, contentW, mouseX, mouseY);
         }
+    }
+
+    /**
+     * The cached ride-photo background for the current page, re-picked only when
+     * the page changes. Each data page prefers its most relevant shot; the survey
+     * page draws a random one. {@code null} = no photos (or feature off) → the
+     * original solid overlay is used instead.
+     */
+    private RideSnapshot backgroundFor(Page page) {
+        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty()) {
+            return null;
+        }
+        if (bgForPage != currentPage) {
+            bgForPage = currentPage;
+            bgShot = switch (page.kind()) {
+                case FALL     -> DeathBackgroundPainter.pick(SnapshotTag.SCENIC, false);
+                case DEEDS    -> DeathBackgroundPainter.pick(SnapshotTag.COMBAT, false);
+                case GEAR     -> DeathBackgroundPainter.pick(SnapshotTag.GEAR, false);
+                case LIVES    -> DeathBackgroundPainter.pick(SnapshotTag.SOCIAL, false);
+                case SURVEY   -> DeathBackgroundPainter.pick(null, true);
+                case PLATFORM -> DeathBackgroundPainter.pick(null, false);
+            };
+        }
+        return bgShot;
     }
 
     // ---- Page renderers. Each returns the y below its content. ----
