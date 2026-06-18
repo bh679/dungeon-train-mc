@@ -100,29 +100,32 @@ public final class RoofRunEvents {
             RoofStatus status = classify(carriages, player);
             switch (status.kind()) {
                 case ON_ROOF -> {
+                    int groupSize = Math.max(1, status.groupSize());
                     Streak s = STREAKS.get(id);
                     if (s == null || s.lastScan != now - SCAN_PERIOD_TICKS) {
                         // No prior streak, or a gap broke continuity → start fresh.
-                        s = new Streak(status.anchorPIdx(), now);
+                        s = new Streak(status.anchorPIdx(), now, groupSize);
                         STREAKS.put(id, s);
                     } else {
                         s.min = Math.min(s.min, status.anchorPIdx());
                         s.max = Math.max(s.max, status.anchorPIdx());
                         s.lastScan = now;
+                        s.groupSize = groupSize;
                     }
-                    int groupSize = Math.max(1, status.groupSize());
                     int groups = (s.max - s.min) / groupSize;
                     if (groups > 0) {
                         ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, groups);
                     }
                 }
                 case ON_TOP_OTHER -> {
-                    // On a pad deck / airborne over the top: keep an existing
-                    // streak alive across the coupling, but don't advance the
-                    // anchor (no enclosed roof here). No streak yet ⇒ nothing
-                    // to keep (a run only starts on a roof).
+                    // On a pad deck / airborne over the top: keep an existing streak
+                    // alive across the coupling. Also fires the trigger with groups+1
+                    // so that traversing one enclosed group roof (then landing on the
+                    // pad) satisfies threshold=1 without needing to climb a second roof.
                     Streak s = STREAKS.get(id);
                     if (s != null && s.lastScan == now - SCAN_PERIOD_TICKS) {
+                        int gs = Math.max(1, s.groupSize);
+                        ModAdvancementTriggers.ROOF_RUN_GROUPS.get().trigger(player, (s.max - s.min) / gs + 1);
                         s.lastScan = now;
                     }
                 }
@@ -213,11 +216,13 @@ public final class RoofRunEvents {
         int min;
         int max;
         long lastScan;
+        int groupSize;
 
-        Streak(int anchor, long scan) {
+        Streak(int anchor, long scan, int groupSize) {
             this.min = anchor;
             this.max = anchor;
             this.lastScan = scan;
+            this.groupSize = groupSize;
         }
     }
 
