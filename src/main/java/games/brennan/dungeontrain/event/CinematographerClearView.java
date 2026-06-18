@@ -16,12 +16,14 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
@@ -287,18 +289,20 @@ public final class CinematographerClearView {
     }
 
     /**
-     * Swap candidates: hide pretty much anything solid except doors and slabs. Skips
-     * air, existing barriers, doors/trapdoors/fence gates ({@code OPEN} — handled by
-     * the door auto-open), slabs (half-blocks / walkways that don't really block the
-     * shot), and liquids (kept to avoid water/lava flow side effects). Block entities
-     * (pots, chiseled bookshelves, chests, …) ARE hidden — their NBT is preserved for
-     * a lossless revert.
+     * Swap candidates: hide pretty much anything solid except doors, trapdoors and
+     * slabs. Skips air, existing barriers, doors (auto-opened instead), trapdoors,
+     * slabs (half-blocks / walkways that don't really block the shot), and liquids
+     * (kept to avoid water/lava flow side effects). Everything else — including fence
+     * gates and barrels, which no longer auto-open (see #431), and block entities like
+     * pots / chiseled bookshelves / chests — IS hidden; block-entity NBT is preserved
+     * for a lossless revert.
      */
     private static boolean shouldHide(BlockState state) {
         if (state.isAir()) return false;
         if (state.is(Blocks.BARRIER)) return false;
-        if (state.hasProperty(BlockStateProperties.OPEN)) return false;
-        if (state.getBlock() instanceof SlabBlock) return false;
-        return !(state.getBlock() instanceof LiquidBlock);
+        Block block = state.getBlock();
+        if (block instanceof DoorBlock || block instanceof TrapDoorBlock) return false;
+        if (block instanceof SlabBlock) return false;
+        return !(block instanceof LiquidBlock);
     }
 }
