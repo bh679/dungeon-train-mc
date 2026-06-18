@@ -12,7 +12,6 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.BiomeFamilies;
 import net.minecraft.core.Holder;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -268,8 +267,7 @@ public final class BoardingProgressEvents {
      * Sample the biome under {@code player}'s current (world-space) position and
      * fold it into their per-run {@link PlayerBiomeProgress}. A newly seen biome
      * advances the count tiers ("Far Afield" / "Many Lands" / "World Without
-     * End"); the first biome of a newly reached family fires "All Under Heaven"
-     * and shows a discovery action-bar message.
+     * End"); the first biome of a newly reached family fires "All Under Heaven".
      *
      * <p>Uses {@code player.blockPosition()} — the same world-space position
      * {@link #accumulateBoardedDistance} books distance against (the deck
@@ -288,12 +286,7 @@ public final class BoardingProgressEvents {
 
         Optional<String> family = BiomeFamilies.classify(biome);
         if (family.isPresent() && progress.addFamily(family.get())) {
-            int familyCount = progress.familyCount();
-            AchievementEvents.notifyBiomeFamilies(player, familyCount);
-            player.displayClientMessage(
-                Component.translatable("dungeontrain.biome_family.discovered",
-                    BiomeFamilies.displayName(family.get()), familyCount, BiomeFamilies.FAMILY_COUNT),
-                true);
+            AchievementEvents.notifyBiomeFamilies(player, progress.familyCount());
         }
     }
 

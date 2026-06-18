@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.world;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.biome.Biome;
@@ -71,13 +70,5 @@ public final class BiomeFamilies {
             if (biome.is(e.tag())) return Optional.of(e.id());
         }
         return Optional.empty();
-    }
-
-    /**
-     * Localised display name for a family id, e.g. {@code "frozen"} → "Frozen"
-     * (lang key {@code dungeontrain.biome_family.frozen}).
-     */
-    public static Component displayName(String familyId) {
-        return Component.translatable("dungeontrain.biome_family." + familyId);
     }
 }
