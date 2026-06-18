@@ -24,7 +24,8 @@
     "client.AdvancementsScreenAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.DeathScreenMoveTextMixin",
-    "client.CameraCinematicMixin"
+    "client.CameraCinematicMixin",
+    "client.GameRendererSnapshotMixin"
   ],
   "server": [],
   "injectors": {
