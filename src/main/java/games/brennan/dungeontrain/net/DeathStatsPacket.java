@@ -99,9 +99,7 @@ public record DeathStatsPacket(
         boolean hasPortrait = side != 0 && portrait != null;
         buf.writeByte(hasPortrait ? side : 0);
         if (hasPortrait) {
-            buf.writeVarInt(portrait.skinIndex());
-            buf.writeUtf(portrait.skinTextureUrl());
-            buf.writeBoolean(portrait.slim());
+            portrait.encode(buf);
         }
     }
 
@@ -132,10 +130,7 @@ public record DeathStatsPacket(
         byte side = buf.readByte();
         PlayerMobAppearance portrait = null;
         if (side != 0) {
-            int skinIndex = buf.readVarInt();
-            String url = buf.readUtf();
-            boolean slim = buf.readBoolean();
-            portrait = new PlayerMobAppearance(skinIndex, url, slim);
+            portrait = PlayerMobAppearance.decode(buf);
         }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, weapon, head, chest, legs, feet,

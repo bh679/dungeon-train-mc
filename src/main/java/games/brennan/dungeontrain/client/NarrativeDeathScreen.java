@@ -24,6 +24,7 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
@@ -105,7 +106,6 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int PORTRAIT_W = 64;
     private static final int PORTRAIT_GUTTER = 8;
     private static final int PORTRAIT_RESERVE = PORTRAIT_W + PORTRAIT_GUTTER;
-    private static final int PORTRAIT_SCALE = 32;
     /** Below this content width the portrait is skipped (grid stays full-width). */
     private static final int PORTRAIT_MIN_CONTENT_W = 260;
 
@@ -223,7 +223,7 @@ public final class NarrativeDeathScreen extends Screen {
         int y = 40;
         switch (page.kind()) {
             case FALL -> y = drawFall(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
-            case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
+            case DEEDS -> y = drawDeeds(g, stats, narr, left, contentW, cx, y, partialTick);
             case GEAR -> y = drawGear(g, stats, narr, left, contentW, cx, y, mouseX, mouseY);
             case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
             case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
@@ -288,7 +288,7 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private int drawDeeds(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
-                          int left, int w, int cx, int y, int mouseX, int mouseY) {
+                          int left, int w, int cx, int y, float partialTick) {
         drawKicker(g, cx, y, "gui.dungeontrain.death.narr.kicker_deeds");
         y += 14;
         drawTrain(g, left, w, y, currentPage);
@@ -319,12 +319,14 @@ public final class NarrativeDeathScreen extends Screen {
             drawCell(g, gridLeft + third / 2, y2, Integer.toString(s.playersBefriended()), "gui.dungeontrain.death.narr.lbl_befriended", cw);
             drawCell(g, gridLeft + third + third / 2, y2, fmtDmg(s.damageDealt()), "gui.dungeontrain.death.narr.lbl_dealt", cw);
             drawCell(g, gridLeft + 2 * third + third / 2, y2, fmtDmg(s.damageTaken()), "gui.dungeontrain.death.narr.lbl_taken", cw);
-            // Portrait spans the same vertical extent as the two rows (top of row 1
-            // to bottom of row 2 = 30 + 26 px), on the side the grid freed up.
-            if (showPortrait) {
-                int bottom = y2 + 26;
+            // Full-body portrait beside the grid: feet pinned at row-2 bottom, drawn
+            // on top so the head rises above row 1 (uncropped); name labelled below.
+            if (showPortrait && s.portrait() != null) {
+                int feetY = y2 + 26;
                 int px1 = s.side() == 1 ? left : left + gridW + PORTRAIT_GUTTER;
-                portrait.render(g, s.portrait(), px1, y, px1 + PORTRAIT_W, bottom, PORTRAIT_SCALE, mouseX, mouseY);
+                int pcx = px1 + PORTRAIT_W / 2;
+                portrait.render(g, s.portrait(), s.side(), pcx, feetY, partialTick);
+                drawPortraitName(g, s.portrait().name(), pcx, feetY + 2, PORTRAIT_W + 2 * PORTRAIT_GUTTER);
             }
             y = y2 + 30;
         }
@@ -633,6 +635,19 @@ public final class NarrativeDeathScreen extends Screen {
         drawBorder(g, x, y, cw, ch, TILE_BORDER);
         drawCenteredStr(g, value, centerX, y + 4, VALUE);
         drawCenteredStr(g, Component.translatable(labelKey), centerX, y + 4 + this.font.lineHeight + 1, LABEL);
+    }
+
+    /** The portrait subject's name, centered under the figure and shrunk to fit {@code maxW}. */
+    private void drawPortraitName(GuiGraphics g, String name, int centerX, int topY, int maxW) {
+        if (name == null || name.isEmpty()) return;
+        int tw = this.font.width(name);
+        float scale = tw > maxW ? (float) maxW / tw : 1.0f;
+        PoseStack ps = g.pose();
+        ps.pushPose();
+        ps.translate(centerX, topY, 0.0);
+        ps.scale(scale, scale, 1.0f);
+        g.drawString(this.font, name, -tw / 2, 0, VALUE, false);
+        ps.popPose();
     }
 
     /**
