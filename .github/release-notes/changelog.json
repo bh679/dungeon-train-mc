@@ -756,7 +756,7 @@
       "title": "Ender Chest Persistence extracted to standalone mod",
       "summary": "The Ender Chest cross-world and per-game-mode persistence is now shipped as the standalone Ender Chest Persistence mod (bundled in DT's jar, so no separate install is needed). The player-facing behaviour is identical \u2014 Ender Chest contents are preserved across world resets and isolated by game mode.",
       "highlights": [],
-      "pr": 433,
+      "pr": 438,
       "date": "2026-06-18",
       "released": false,
       "released_in": null,
