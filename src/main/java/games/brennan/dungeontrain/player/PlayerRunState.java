@@ -12,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -144,6 +145,19 @@ public final class PlayerRunState {
      * non-codec rationale as {@link #friendAppearance}.
      */
     private PlayerMobAppearance killedAppearance;
+    /**
+     * Dungeon Train advancements (ids) earned this life, in earn order — the
+     * death-screen "accolades" row on the cargo page. Recorded by
+     * {@code AchievementEvents.onAdvancementEarn} (genuine earns only, never the
+     * login replay), read into the death packet at death.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b> (the 16-field
+     * cap, see {@link #narrativeLetters}). It only needs to live until the death
+     * packet is built; the client resolves icons/titles from its own advancement
+     * tree. A logout mid-run drops the list (same trade-off as
+     * {@link #friendAppearance}).</p>
+     */
+    private final Set<ResourceLocation> earnedAdvancements;
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -163,6 +177,7 @@ public final class PlayerRunState {
         this.befriendedMobs = new HashSet<>();
         this.trainTimeTicks = 0L;
         this.narrativeLetters = new HashSet<>();
+        this.earnedAdvancements = new LinkedHashSet<>();
     }
 
     public PlayerRunState(List<BlockPos> uniqueChests,
@@ -198,6 +213,7 @@ public final class PlayerRunState {
         this.befriendedMobs = new HashSet<>(befriendedMobs);
         this.trainTimeTicks = trainTimeTicks;
         this.narrativeLetters = new HashSet<>();
+        this.earnedAdvancements = new LinkedHashSet<>();
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -390,6 +406,21 @@ public final class PlayerRunState {
         return narrativeLetters.add(key);
     }
 
+    /**
+     * Record a Dungeon Train advancement (id) earned this life for the
+     * death-screen accolades row. Earn order preserved; duplicates ignored.
+     *
+     * @return {@code true} if newly recorded this run.
+     */
+    public boolean recordEarnedAdvancement(ResourceLocation id) {
+        return earnedAdvancements.add(id);
+    }
+
+    /** In-memory view of Dungeon Train advancements earned this life, in earn order. */
+    public List<ResourceLocation> earnedAdvancements() {
+        return new ArrayList<>(earnedAdvancements);
+    }
+
     /** PlayerMob kills this run (subset of {@link #mobKills}). */
     public int playerKills() {
         return playerKills;
@@ -506,6 +537,7 @@ public final class PlayerRunState {
         containersOpened = 0;
         booksReadCount = 0;
         narrativeLetters.clear();
+        earnedAdvancements.clear();
         weaponKills.clear();
         playerKills = 0;
         damageDealt = 0.0;
