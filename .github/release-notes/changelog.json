@@ -1079,6 +1079,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "cinematic-pause-menu-buttons",
+      "version": "0.323.0",
+      "type": "fix",
+      "title": "Pause-menu buttons usable during the intro cinematic",
+      "summary": "Opening the pause menu during the spawn intro cinematic and clicking Options, Advancements, Statistics, Feedback, or Report Bugs now works. Previously those buttons did nothing until the cinematic ended \u2014 only Return to Game and Save & Quit responded.",
+      "highlights": [
+        "Pause-menu buttons (Options, Advancements, Statistics, \u2026) now work while the intro cinematic plays"
+      ],
+      "pr": 463,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
