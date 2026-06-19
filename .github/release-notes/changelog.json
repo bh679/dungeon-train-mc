@@ -1049,6 +1049,19 @@
       "released": true,
       "released_in": "v0.322.0",
       "released_at": "2026-06-18T13:14:44Z"
+    },
+    {
+      "id": "fix-death-screen-space-advance",
+      "version": "0.323.0",
+      "type": "fix",
+      "title": "Death screen Space/Enter hotkeys removed",
+      "summary": "Space and Enter no longer advance the death screen \u2014 click Continue to proceed",
+      "highlights": [],
+      "pr": 461,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
