@@ -1094,6 +1094,19 @@
       "released": true,
       "released_in": "v0.324.0",
       "released_at": "2026-06-19T05:12:24Z"
+    },
+    {
+      "id": "survey-optional-continue",
+      "version": "0.324.0",
+      "type": "fix",
+      "title": "Death-screen feedback survey is now skippable",
+      "summary": "The feedback survey on the death screen is optional again \u2014 the Continue button now advances past survey questions whether or not you answer them. Answering still submits your feedback as before.",
+      "highlights": [],
+      "pr": 467,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
