@@ -1309,6 +1309,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ain-0440-community-names",
+      "version": "0.327.0",
+      "type": "content",
+      "title": "More community names in the item-name pool",
+      "summary": "Updated the bundled Adventure Item Names mod to 0.44.0, adding JJ, Freshboii, VidTu, DanMizu, and Varocraft25 to the pool of Discord community members who can appear as item-name contributors.",
+      "highlights": [],
+      "pr": 477,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
