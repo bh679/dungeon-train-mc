@@ -1094,6 +1094,23 @@
       "released": true,
       "released_in": "v0.324.0",
       "released_at": "2026-06-19T05:12:24Z"
+    },
+    {
+      "id": "modpack-companion-mods-default-on",
+      "version": "0.325.0",
+      "type": "feat",
+      "title": "Modpack: Advancement Plaques on by default, plus more one-click add-ons",
+      "summary": "The Dungeon Train modpack now ships Advancement Plaques enabled by default, so your hard-won advancements pop up as a fancy animated plaque instead of the plain vanilla toast. AppleSkin, FerriteCore and ModernFix are now correctly switched on out of the box too, and Mouse Tweaks, Jade, Distant Horizons and Tectonic come bundled and ready to toggle on whenever you want them.",
+      "highlights": [
+        "Advancement Plaques enabled by default \u2014 fancier advancement popups",
+        "AppleSkin, FerriteCore & ModernFix now correctly on by default",
+        "Mouse Tweaks, Jade, Distant Horizons (2.x) & Tectonic bundled as one-click opt-ins"
+      ],
+      "pr": 466,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
