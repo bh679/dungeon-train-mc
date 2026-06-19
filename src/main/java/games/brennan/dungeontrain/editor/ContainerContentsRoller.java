@@ -130,15 +130,28 @@ public final class ContainerContentsRoller {
      * registered potions keeps vanilla names/tooltips for free ("Arrow of
      * Poison", "Arrow of Harming II", …). This table is the single place to
      * retune which effects appear at which level and how power ramps.
+     *
+     * <p>Each tier is a <b>single, distinctly-named</b> effect so crossing a
+     * 50-carriage boundary always <i>visibly</i> changes the arrow. Two rules
+     * keep that promise: (1) no potion repeats across tiers, and (2) no
+     * {@code long_*} duration variants — those render with the SAME display
+     * name as their base potion ({@code long_slowness} → "Arrow of Slowness"),
+     * which would read as "no change" to the player. A tier may still list
+     * multiple ids; if so they must all be distinct from every adjacent tier.</p>
      */
     private static final List<List<ResourceLocation>> ARROW_EFFECT_TIERS = List.of(
-        arrowTier("weakness", "slowness"),            // T0 — annoyance
-        arrowTier("slowness", "poison"),              // T1 — chip damage
-        arrowTier("poison", "long_slowness"),         // T2 — sustained
-        arrowTier("long_poison", "harming"),          // T3 — real damage
-        arrowTier("harming", "strong_poison"),        // T4 — Poison II
-        arrowTier("strong_harming", "strong_poison")  // T5 — Harming II
+        arrowTier("weakness"),        // T0 — carts 0–49    → Weakness
+        arrowTier("slowness"),        // T1 — carts 50–99   → Slowness
+        arrowTier("poison"),          // T2 — carts 100–149 → Poison
+        arrowTier("harming"),         // T3 — carts 150–199 → Harming
+        arrowTier("strong_poison"),   // T4 — carts 200–249 → Poison II
+        arrowTier("strong_harming")   // T5 — carts 250+    → Harming II
     );
+
+    /** Test seam: read-only view of the configured arrow-effect tiers. */
+    static List<List<ResourceLocation>> arrowEffectTiersView() {
+        return ARROW_EFFECT_TIERS;
+    }
 
     private static List<ResourceLocation> arrowTier(String... potionPaths) {
         List<ResourceLocation> ids = new ArrayList<>(potionPaths.length);

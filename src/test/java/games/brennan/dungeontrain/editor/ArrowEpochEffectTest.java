@@ -1,9 +1,15 @@
 package games.brennan.dungeontrain.editor;
 
+import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -79,6 +85,33 @@ final class ArrowEpochEffectTest {
         for (int c = 50; c < 100; c++) {
             assertEquals(block1, ContainerContentsRoller.arrowPotionIndex(seed, c, poolSize),
                 "carriage " + c + " should match block 1");
+        }
+    }
+
+    @Test
+    @DisplayName("tier table: distinct, non-empty, no long_ aliases, no adjacent overlap")
+    void tierTable_isDistinctlyEscalating() {
+        List<List<ResourceLocation>> tiers = ContainerContentsRoller.arrowEffectTiersView();
+        assertTrue(tiers.size() >= 2, "need at least two tiers to escalate");
+        for (int t = 0; t < tiers.size(); t++) {
+            List<ResourceLocation> tier = tiers.get(t);
+            assertFalse(tier.isEmpty(), "tier " + t + " must list at least one potion");
+            for (ResourceLocation id : tier) {
+                // long_* variants render with the SAME display name as their base
+                // ("long_slowness" → "Arrow of Slowness"), so they would read as
+                // "no change" to the player. Forbid them in the escalation table.
+                assertFalse(id.getPath().startsWith("long_"),
+                    "tier " + t + " uses a same-name duration variant: " + id);
+            }
+            // Adjacent tiers must not share a potion, or crossing a 50-carriage
+            // boundary could land on the same effect and look like no change.
+            if (t > 0) {
+                Set<ResourceLocation> prev = new HashSet<>(tiers.get(t - 1));
+                for (ResourceLocation id : tier) {
+                    assertFalse(prev.contains(id),
+                        "tier " + t + " overlaps tier " + (t - 1) + " on " + id);
+                }
+            }
         }
     }
 
