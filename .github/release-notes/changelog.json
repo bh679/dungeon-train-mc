@@ -1096,8 +1096,38 @@
       "released_at": "2026-06-19T05:12:24Z"
     },
     {
+      "id": "death-screen-photo-gallery",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Save your ride photos from the death screen",
+      "summary": "The death screen now has a photos button on its final page that opens a gallery of every ride photo taken during the run. Browse them all and save the ones you love to your screenshots folder before the line carries you on.",
+      "highlights": [
+        "New photos button on the death screen's final page",
+        "Browse all of the run's ride photos in one gallery",
+        "Save any photo (or all of them) to your screenshots folder, plus an Open folder shortcut"
+      ],
+      "pr": 465,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "survey-optional-continue",
+      "version": "0.324.0",
+      "type": "fix",
+      "title": "Death-screen feedback survey is now skippable",
+      "summary": "The feedback survey on the death screen is optional again \u2014 the Continue button now advances past survey questions whether or not you answer them. Answering still submits your feedback as before.",
+      "highlights": [],
+      "pr": 467,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "discord-network-consent-card",
-      "version": "0.325.0",
+      "version": "0.324.0",
       "type": "feat",
       "title": "Discord chat-relay consent card + /chatconnect",
       "summary": "Updated the bundled Discord Presence integration to its latest version. A new card on the title screen explains the optional Discord chat relay and lets you choose whether your in-game chat is shared, and a new /chatconnect command lets you toggle it anytime while playing.",
