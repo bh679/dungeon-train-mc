@@ -1062,6 +1062,23 @@
       "released": true,
       "released_in": "v0.323.0",
       "released_at": "2026-06-19T02:27:35Z"
+    },
+    {
+      "id": "advancement-hints",
+      "version": "0.323.0",
+      "type": "feat",
+      "title": "Advancement hints replace the ??? tooltip",
+      "summary": "Haven't earned an advancement yet? Its tooltip now shows a hint or riddle nudging you toward how to unlock it, instead of a blank \"???\". Covers 48 Dungeon Train advancements across riding, reading, exploring and befriending \u2014 a handful of the most spoiler-heavy ones stay a mystery on purpose.",
+      "highlights": [
+        "Unearned advancements now show a hint instead of \"???\"",
+        "48 advancements hinted across the Dungeon Train tab",
+        "Wiki Advancements page now lists every advancement with its hint"
+      ],
+      "pr": 462,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
