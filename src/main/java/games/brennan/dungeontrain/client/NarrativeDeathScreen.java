@@ -31,8 +31,8 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
-import net.minecraft.client.gui.screens.advancements.AdvancementWidgetType;
 import net.minecraft.resources.ResourceLocation;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -731,31 +731,39 @@ public final class NarrativeDeathScreen extends Screen {
 
         if (viewportW > 0) {
             advViewport = new Rect(vpX, vpY, viewportW, box);
-            // Background panel: tile the DT tab texture across the padded panel (clipped), faded
-            // with the page via setColor.
+            float alpha = Math.min(1f, uiAlpha);
+            // Texture draws (background tiles + frame boxes) fade with the page via setColor + blend
+            // — the vanilla LoadingOverlay pattern. We blit the 26×26 obtained-frame textures
+            // directly (blitSprite ignores setColor, so it can't fade).
+            RenderSystem.enableBlend();
+            g.setColor(1f, 1f, 1f, alpha);
+            // Background panel: tile the DT tab texture across the padded panel (clipped).
             g.enableScissor(panelX, panelY, panelX + panelW, panelY + panelH);
-            g.setColor(1f, 1f, 1f, Math.min(1f, uiAlpha));
             for (int ty = panelY; ty < panelY + panelH; ty += 16) {
                 for (int tx = panelX; tx < panelX + panelW; tx += 16) {
                     g.blit(advBg, tx, ty, 0.0f, 0.0f, 16, 16, 16, 16);
                 }
             }
-            g.setColor(1f, 1f, 1f, 1f);
             g.disableScissor();
-            // Border around the panel — a 2px frame in the advancements palette (drawBorder fades it).
-            drawBorder(g, panelX, panelY, panelW, panelH, 0xFF120D08);
-            drawBorder(g, panelX + 1, panelY + 1, panelW - 2, panelH - 2, 0xFF8A7355);
-            // Advancement boxes: clipped to the inner viewport, scrolled, faded via the sprite colour tint.
+            // Advancement frame boxes (per-tier), clipped to the inner viewport and scrolled.
             g.enableScissor(vpX, vpY, vpX + viewportW, vpY + box);
             for (int i = 0; i < count; i++) {
                 int cxp = vpX + i * pitch - gearAdvScroll;
                 if (cxp + box <= vpX || cxp >= vpX + viewportW) continue;  // fully outside viewport
                 AdvIcon a = resolved.get(i);
-                g.blitSprite(AdvancementWidgetType.OBTAINED.frameSprite(a.type()), cxp, vpY, box, box, fade(0xFFFFFFFF));
-                if (showItems) g.renderFakeItem(a.icon(), cxp + 5, vpY + 5);
+                g.blit(frameTexture(a.type()), cxp, vpY, 0.0f, 0.0f, box, box, box, box);
+                if (showItems) {
+                    g.setColor(1f, 1f, 1f, 1f);                 // item icons can't alpha-fade
+                    g.renderFakeItem(a.icon(), cxp + 5, vpY + 5);
+                    g.setColor(1f, 1f, 1f, alpha);
+                }
                 gearAdvIcons.add(new AdvIcon(a.icon(), a.title(), a.description(), a.type(), new Rect(cxp, vpY, box, box)));
             }
             g.disableScissor();
+            g.setColor(1f, 1f, 1f, 1f);
+            // Border around the panel — a 2px frame in the advancements palette (drawBorder fades it).
+            drawBorder(g, panelX, panelY, panelW, panelH, 0xFF120D08);
+            drawBorder(g, panelX + 1, panelY + 1, panelW - 2, panelH - 2, 0xFF8A7355);
             if (scroll) {
                 int trackY = panelY + panelH + 1;
                 g.fill(vpX, trackY, vpX + viewportW, trackY + 2, fade(0xFF1C1D22));
@@ -777,6 +785,16 @@ public final class NarrativeDeathScreen extends Screen {
         this.seeAllRect = new Rect(btnX, btnY, btnW, btnH);
 
         return panelY + panelH + (scroll ? 8 : 4);
+    }
+
+    /** The standalone obtained-frame texture for a tier — blit directly so it fades via setColor. */
+    private static ResourceLocation frameTexture(AdvancementType t) {
+        String n = switch (t) {
+            case CHALLENGE -> "challenge_frame_obtained";
+            case GOAL -> "goal_frame_obtained";
+            default -> "task_frame_obtained";
+        };
+        return ResourceLocation.withDefaultNamespace("textures/gui/sprites/advancements/" + n + ".png");
     }
 
     private int drawLives(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
