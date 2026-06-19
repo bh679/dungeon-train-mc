@@ -1296,6 +1296,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "field-notes-passenger-obs",
+      "version": "0.327.0",
+      "type": "content",
+      "title": "Adventurer's Field Notes \u2014 passenger observation",
+      "summary": "New field notes entry: an anonymous adventurer wonders whether the passengers are truly alive, and shares that food, armour, or tools are the fastest way to make allies.",
+      "highlights": [],
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
