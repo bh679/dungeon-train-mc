@@ -6,6 +6,7 @@ import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.advancements.AdvancementWidget;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
@@ -24,10 +25,12 @@ import java.util.List;
  *
  * <p>Mechanism: every {@code drawHover} access of {@code this.description}
  * is wrapped by {@link ModifyExpressionValue}. When the advancement is in
- * the mod's namespace AND is not yet earned, the wrapper substitutes a
- * placeholder list (single line of {@code ???}, pre-wrapped to the
- * widget's render width) for the real description. Earned advancements
- * and non-mod advancements get the unmodified description.</p>
+ * the mod's namespace AND is not yet earned, the wrapper substitutes the
+ * advancement's own hint ({@code advancements.<namespace>.<path>.hint},
+ * pre-wrapped to the widget's render width) — or a shared {@code ???}
+ * placeholder when no hint translation exists — for the real description.
+ * Earned advancements and non-mod advancements get the unmodified
+ * description.</p>
  *
  * <p>Roots are skipped (path ends in {@code /root}) so the tab opens
  * with a visible explanation of what the tab is.</p>
@@ -44,10 +47,11 @@ public abstract class AdvancementWidgetHideDescMixin {
     @Shadow @Final private int width;
 
     /**
-     * Lazily-cached placeholder description, computed on first hide so we
-     * don't re-split a Component every frame. Width-bound to {@link #width}
-     * (same as the real description) so layout calculations stay
-     * consistent.
+     * Lazily-cached hint/placeholder description, computed on first hide so we
+     * don't re-split a Component every frame. Each widget instance maps to a
+     * single advancement, so this per-instance cache holds that advancement's
+     * resolved hint (or the {@code ???} fallback). Width-bound to {@link #width}
+     * (same as the real description) so layout calculations stay consistent.
      */
     @Unique
     private List<FormattedCharSequence> dungeontrain$hiddenDesc;
@@ -79,9 +83,29 @@ public abstract class AdvancementWidgetHideDescMixin {
     @Unique
     private List<FormattedCharSequence> dungeontrain$getHiddenDesc() {
         if (dungeontrain$hiddenDesc == null) {
-            Component hidden = Component.translatable("advancements.dungeontrain.hidden_description");
-            dungeontrain$hiddenDesc = minecraft.font.split(hidden, width);
+            dungeontrain$hiddenDesc = minecraft.font.split(dungeontrain$hintOrPlaceholder(), width);
         }
         return dungeontrain$hiddenDesc;
+    }
+
+    /**
+     * The hint shown in place of the hidden description. Looks up
+     * {@code advancements.<namespace>.<path>.hint} (path slashes mapped to
+     * dots, e.g. {@code dungeon_train/track_record} →
+     * {@code advancements.dungeontrain.dungeon_train.track_record.hint}); if
+     * no such translation is present, falls back to the shared {@code ???}
+     * placeholder. Callers only reach this once
+     * {@link #dungeontrain$shouldHideDescription()} has confirmed a non-null
+     * node, so {@code advancementNode} is safe to dereference.
+     */
+    @Unique
+    private Component dungeontrain$hintOrPlaceholder() {
+        ResourceLocation id = advancementNode.holder().id();
+        String key = "advancements." + id.getNamespace() + "."
+            + id.getPath().replace('/', '.') + ".hint";
+        if (I18n.exists(key)) {
+            return Component.translatable(key);
+        }
+        return Component.translatable("advancements.dungeontrain.hidden_description");
     }
 }
