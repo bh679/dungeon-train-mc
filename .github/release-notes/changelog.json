@@ -1094,6 +1094,21 @@
       "released": true,
       "released_in": "v0.324.0",
       "released_at": "2026-06-19T05:12:24Z"
+    },
+    {
+      "id": "discord-network-consent-card",
+      "version": "0.325.0",
+      "type": "feat",
+      "title": "Discord chat-relay consent card + /chatconnect",
+      "summary": "Updated the bundled Discord Presence integration to its latest version. A new card on the title screen explains the optional Discord chat relay and lets you choose whether your in-game chat is shared, and a new /chatconnect command lets you toggle it anytime while playing.",
+      "highlights": [
+        "New title-screen card explains the optional Discord chat relay and lets you opt in or out",
+        "New /chatconnect command toggles the Discord chat relay in-game"
+      ],
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
