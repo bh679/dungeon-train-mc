@@ -1253,9 +1253,9 @@
       ],
       "pr": 473,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.327.0",
+      "released_at": "2026-06-19T12:53:50Z"
     },
     {
       "id": "collecting-stories-hint",
@@ -1265,9 +1265,9 @@
       "summary": "Changed the hint text to 'The lecterns hold the key.'",
       "highlights": [],
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.327.0",
+      "released_at": "2026-06-19T12:53:50Z"
     },
     {
       "id": "narrative-lectern-drops-lectern-and-book",
@@ -1281,9 +1281,9 @@
       ],
       "pr": 475,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.327.0",
+      "released_at": "2026-06-19T12:53:50Z"
     },
     {
       "id": "echo-lore-books",
@@ -1293,9 +1293,35 @@
       "summary": "Added two new echo-themed variants to Quiet Rules of the Train, and two new echo/past-life observations to Adventurer's Field Notes.",
       "highlights": [],
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.327.0",
+      "released_at": "2026-06-19T12:53:50Z"
+    },
+    {
+      "id": "vindicator-stray-command-block",
+      "version": "0.327.0",
+      "type": "fix",
+      "title": "Stray command block removed from the vindicator carriage",
+      "summary": "An enemy (vindicator) carriage could spawn a leftover command block sitting on the floor where a raider belongs. The marker is now cleared, so the cell stays clean and the mob spawns as intended.",
+      "highlights": [],
+      "pr": 477,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.327.0",
+      "released_at": "2026-06-19T12:53:50Z"
+    },
+    {
+      "id": "ain-0440-community-names",
+      "version": "0.327.0",
+      "type": "content",
+      "title": "More community names in the item-name pool",
+      "summary": "Updated the bundled Adventure Item Names mod to 0.44.0, adding JJ, Freshboii, VidTu, DanMizu, and Varocraft25 to the pool of Discord community members who can appear as item-name contributors.",
+      "highlights": [],
+      "pr": 477,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.327.0",
+      "released_at": "2026-06-19T12:53:50Z"
     },
     {
       "id": "field-notes-passenger-obs",
