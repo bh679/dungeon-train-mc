@@ -193,10 +193,13 @@ jobs:
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
+            advancement-plaques(optional)
+            iceberg(optional)
             distant-horizons(optional)
             tectonic(optional)
             mouse-tweaks(optional)
             jade(optional)
+            lithostitched(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
