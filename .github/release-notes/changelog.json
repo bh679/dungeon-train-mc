@@ -1191,6 +1191,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-train-companions",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "PlayerMobs follow you on the train, echoes wear real skins",
+      "summary": "Updated the bundled Interactive PlayerMobs to its latest version. A PlayerMob that has come to love you now leaves its own route to make its way to your carriage and rides along with you, and reincarnated \"Echo of <name>\" mobs now wear the real skin of the player they came from. The skin pool also grew to 68 with 30 new recognizable player skins.",
+      "highlights": [
+        "Loved PlayerMobs leave their route to ride in your carriage (toggle: trainFollowLovedPlayer, on by default)",
+        "Reincarnated echoes now wear the real player's skin instead of a default Steve/Alex",
+        "30 new player skins (pool now 68); recognizable skins appear ~40% of the time"
+      ],
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
