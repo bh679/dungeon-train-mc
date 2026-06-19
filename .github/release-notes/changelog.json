@@ -1076,6 +1076,86 @@
       ],
       "pr": 462,
       "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.324.0",
+      "released_at": "2026-06-19T05:12:24Z"
+    },
+    {
+      "id": "cinematic-pause-menu-buttons",
+      "version": "0.323.0",
+      "type": "fix",
+      "title": "Pause-menu buttons usable during the intro cinematic",
+      "summary": "Opening the pause menu during the spawn intro cinematic and clicking Options, Advancements, Statistics, Feedback, or Report Bugs now works. Previously those buttons did nothing until the cinematic ended \u2014 only Return to Game and Save & Quit responded.",
+      "highlights": [
+        "Pause-menu buttons (Options, Advancements, Statistics, \u2026) now work while the intro cinematic plays"
+      ],
+      "pr": 463,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.324.0",
+      "released_at": "2026-06-19T05:12:24Z"
+    },
+    {
+      "id": "death-screen-photo-gallery",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Save your ride photos from the death screen",
+      "summary": "The death screen now has a photos button on its final page that opens a gallery of every ride photo taken during the run. Browse them all and save the ones you love to your screenshots folder before the line carries you on.",
+      "highlights": [
+        "New photos button on the death screen's final page",
+        "Browse all of the run's ride photos in one gallery",
+        "Save any photo (or all of them) to your screenshots folder, plus an Open folder shortcut"
+      ],
+      "pr": 465,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "survey-optional-continue",
+      "version": "0.324.0",
+      "type": "fix",
+      "title": "Death-screen feedback survey is now skippable",
+      "summary": "The feedback survey on the death screen is optional again \u2014 the Continue button now advances past survey questions whether or not you answer them. Answering still submits your feedback as before.",
+      "highlights": [],
+      "pr": 467,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "uncraftable-arrow-effects",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Uncraftable arrows now pack an escalating punch",
+      "summary": "The effectless \"Uncraftable\" tipped arrows you scavenge from vases and chests now carry a real offensive potion \u2014 and it grows nastier the deeper you ride. Every arrow you find within a 50-carriage stretch shares the same effect, then it steps up at the next stretch: Weakness early on, ramping through Slowness, Poison, and Harming as you travel further from the start. Loot containers you place yourself scale to how far you've travelled, too.",
+      "highlights": [
+        "Uncraftable tipped arrows now apply an offensive effect when fired",
+        "The effect stays the same across each 50-carriage stretch, then escalates at the next one",
+        "Ramps Weakness -> Slowness -> Poison -> Harming -> Poison II -> Harming II the deeper you travel",
+        "Loot containers you place by hand scale to your own travelled distance"
+      ],
+      "pr": 469,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ride-photo-disk-offload",
+      "version": "0.324.0",
+      "type": "perf",
+      "title": "Ride photos use less memory on long runs",
+      "summary": "The third-person photos taken during your run (the ones shown behind the death screen) now quietly save to disk when your game has performance to spare and you're sitting in a menu, freeing up memory while you ride. The death screen and the photo gallery look and work exactly the same.",
+      "highlights": [
+        "Photos offload to disk only during quiet moments (high frame rate and a menu open), so there's no in-game stutter",
+        "Frees memory on long runs; the death screen and photo gallery are unchanged",
+        "Saving a photo from the gallery reuses the offloaded file, so it's instant"
+      ],
+      "pr": 470,
+      "date": "2026-06-19",
       "released": false,
       "released_in": null,
       "released_at": null

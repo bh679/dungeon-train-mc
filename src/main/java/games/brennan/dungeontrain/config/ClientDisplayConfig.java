@@ -56,6 +56,10 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOT_CHAT_LOG;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MIN_FPS;
     public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MIN_TPS;
+    public static final ModConfigSpec.BooleanValue RIDE_SNAPSHOT_DISK_OFFLOAD;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_FPS;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_FLUSH_MIN_TPS;
+    public static final ModConfigSpec.IntValue RIDE_SNAPSHOT_MAX_ON_DISK;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -74,6 +78,10 @@ public final class ClientDisplayConfig {
         RIDE_SNAPSHOT_CHAT_LOG = pair.getLeft().rideSnapshotChatLog;
         RIDE_SNAPSHOT_MIN_FPS = pair.getLeft().rideSnapshotMinFps;
         RIDE_SNAPSHOT_MIN_TPS = pair.getLeft().rideSnapshotMinTps;
+        RIDE_SNAPSHOT_DISK_OFFLOAD = pair.getLeft().rideSnapshotDiskOffload;
+        RIDE_SNAPSHOT_FLUSH_MIN_FPS = pair.getLeft().rideSnapshotFlushMinFps;
+        RIDE_SNAPSHOT_FLUSH_MIN_TPS = pair.getLeft().rideSnapshotFlushMinTps;
+        RIDE_SNAPSHOT_MAX_ON_DISK = pair.getLeft().rideSnapshotMaxOnDisk;
     }
 
     private ClientDisplayConfig() {}
@@ -120,7 +128,7 @@ public final class ClientDisplayConfig {
                 .comment("Baseline seconds between scenic ride photos. Context shots (nearby combat, weapon/tool changes, reading a narrative book) are taken on top of this on their own cooldowns.")
                 .defineInRange("intervalSeconds", 30, 5, 120);
         ModConfigSpec.IntValue rideSnapshotMaxStored = b
-                .comment("Maximum ride photos kept in memory per run (oldest dropped first). Each is a small off-screen texture; higher = more variety behind the death pages, slightly more VRAM.")
+                .comment("Maximum ride photos kept in memory (unflushed) per run before they are offloaded to disk (oldest in-memory dropped first when no disk-offload window is available). Each is a small off-screen texture; higher = more variety behind the death pages, slightly more VRAM.")
                 .defineInRange("maxStored", 12, 4, 32);
         ModConfigSpec.BooleanValue rideSnapshotChatLog = b
                 .comment("Log each ride photo to chat ([Ride Snapshot] TAG - reason) as it is taken. Toggle in-game via the X menu -> Options. Off by default.")
@@ -131,11 +139,24 @@ public final class ClientDisplayConfig {
         ModConfigSpec.IntValue rideSnapshotMinTps = b
                 .comment("Skip ride photos while server TPS is below this. Single-player only - in multiplayer the client can't read the server's tick rate, so only the FPS gate applies there. 0 = never skip on TPS.")
                 .defineInRange("minTps", 18, 0, 20);
+        ModConfigSpec.BooleanValue rideSnapshotDiskOffload = b
+                .comment("Offload ride photos to disk to free memory during a run. When FPS/TPS have headroom (see flushMinFps / flushMinTps) AND a menu is open, in-memory photos are written to <gamedir>/dungeontrain/ride-snapshots/*.png and their GPU textures released; the death screen loads them back from disk. Per-run and deleted on world join/leave. false = keep every photo in memory for the whole run (never touch disk).")
+                .define("diskOffloadEnabled", true);
+        ModConfigSpec.IntValue rideSnapshotFlushMinFps = b
+                .comment("Only offload photos to disk while client FPS is at or above this. The PNG encode is a brief main-thread cost, so it is spent only when the game has headroom - set this higher than minFps. 0 = no FPS requirement to flush.")
+                .defineInRange("flushMinFps", 50, 0, 240);
+        ModConfigSpec.IntValue rideSnapshotFlushMinTps = b
+                .comment("Only offload photos to disk while (single-player) server TPS is at or above this. Multiplayer can't read the server's tick rate, so only the FPS gate applies there. Set at or above minTps. 0 = no TPS requirement to flush.")
+                .defineInRange("flushMinTps", 19, 0, 20);
+        ModConfigSpec.IntValue rideSnapshotMaxOnDisk = b
+                .comment("Maximum ride photos retained per run across memory + disk (oldest dropped first). Each is a small (<=640px) PNG, so a full run is only a few MB; set above maxStored so offloading keeps more variety than memory alone. Clamped to at least maxStored.")
+                .defineInRange("maxOnDisk", 64, 8, 256);
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
-                rideSnapshotMinFps, rideSnapshotMinTps);
+                rideSnapshotMinFps, rideSnapshotMinTps,
+                rideSnapshotDiskOffload, rideSnapshotFlushMinFps, rideSnapshotFlushMinTps, rideSnapshotMaxOnDisk);
     }
 
     /**
@@ -311,6 +332,31 @@ public final class ClientDisplayConfig {
         return isLoaded() ? RIDE_SNAPSHOT_MIN_TPS.get() : 18;
     }
 
+    /**
+     * Offload ride photos to disk to free memory during a run? Deliberately {@code false} until
+     * the config is loaded — unlike {@link #isRideSnapshotsEnabled()} this must NOT default-on
+     * pre-load, so nothing writes to disk before the retention caps are known.
+     */
+    public static boolean isRideSnapshotDiskOffloadEnabled() {
+        return isLoaded() && RIDE_SNAPSHOT_DISK_OFFLOAD.get();
+    }
+
+    /** Minimum client FPS required to offload a photo to disk ("high" perf); {@code 0} disables the FPS gate. */
+    public static int getRideSnapshotFlushMinFps() {
+        return isLoaded() ? RIDE_SNAPSHOT_FLUSH_MIN_FPS.get() : 50;
+    }
+
+    /** Minimum (single-player) server TPS required to offload a photo to disk; {@code 0} disables the TPS gate. */
+    public static int getRideSnapshotFlushMinTps() {
+        return isLoaded() ? RIDE_SNAPSHOT_FLUSH_MIN_TPS.get() : 19;
+    }
+
+    /** Max photos retained per run across memory + disk; never less than the in-memory cap {@link #getRideSnapshotMaxStored()}. */
+    public static int getRideSnapshotMaxOnDisk() {
+        int floor = getRideSnapshotMaxStored();
+        return Math.max(floor, isLoaded() ? RIDE_SNAPSHOT_MAX_ON_DISK.get() : 64);
+    }
+
     private record Holder(
             ModConfigSpec.DoubleValue allScale,
             ModConfigSpec.DoubleValue worldspaceChannel,
@@ -324,6 +370,10 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue rideSnapshotMaxStored,
             ModConfigSpec.BooleanValue rideSnapshotChatLog,
             ModConfigSpec.IntValue rideSnapshotMinFps,
-            ModConfigSpec.IntValue rideSnapshotMinTps
+            ModConfigSpec.IntValue rideSnapshotMinTps,
+            ModConfigSpec.BooleanValue rideSnapshotDiskOffload,
+            ModConfigSpec.IntValue rideSnapshotFlushMinFps,
+            ModConfigSpec.IntValue rideSnapshotFlushMinTps,
+            ModConfigSpec.IntValue rideSnapshotMaxOnDisk
     ) {}
 }
