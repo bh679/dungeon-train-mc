@@ -1240,6 +1240,22 @@
       "released": true,
       "released_in": "v0.325.0",
       "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "modpack-ambientsounds",
+      "version": "0.325.0",
+      "type": "feat",
+      "title": "Modpack: AmbientSounds on by default",
+      "summary": "The Dungeon Train modpack now bundles AmbientSounds \u2014 an immersive ambient/environmental sound engine \u2014 enabled by default, along with its CreativeCore library. Client-side audio only; no effect on the train or Sable physics.",
+      "highlights": [
+        "Richer ambient & environmental audio out of the box",
+        "Bundled with its required CreativeCore library"
+      ],
+      "pr": 473,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
