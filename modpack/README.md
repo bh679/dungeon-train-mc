@@ -10,67 +10,57 @@ The modpack is published automatically — you don't run anything by hand.
 
 A CurseForge modpack is a `.zip` of a `manifest.json` (Minecraft version + modloader +
 an explicit list of CurseForge mod files) plus an `overrides/` folder. Dungeon Train
-bundles **AIN, AIS, PlayerMob, Discord Presence and joml-primitives inside its own jar**
-via NeoForge jarJar, so the pack needs only **two required entries** — plus three on-by-default
-optional add-ons (AppleSkin, FerriteCore, ModernFix):
+bundles **AIN, AIS, PlayerMob, Discord Presence, ender-chest-persistence and joml-primitives
+inside its own jar** via NeoForge jarJar, so those never appear as pack entries. Everything
+else is a manifest file with a `required` flag (see "Enabled vs disabled by default" below):
 
-| Mod | CF project | Notes |
-|---|---|---|
-| Dungeon Train | `1527512` | The file ID changes every release — injected at build time. |
-| Sable | `1312371` | The only un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
-| AppleSkin | `248787` | On-by-default optional add-on (`optional_mods` → `required:false` manifest file = CurseForge "Include"). References AppleSkin's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
-| FerriteCore | `429235` | On-by-default optional add-on (same "Include" mechanism). Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, so safe with Sable. References FerriteCore's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
-| ModernFix | `790626` | On-by-default optional add-on (`optional_mods` → `required:false` manifest file = CurseForge "Include"). Launch-time / world-load / memory optimiser. References ModernFix's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
+| Mod | CF project | In pack | Notes |
+|---|---|---|---|
+| Dungeon Train | `1527512` | **required** | The file ID changes every release — injected at build time. |
+| Sable | `1312371` | **required** | The only un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
+| AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
+| FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
+| ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
+| Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. **Pinned**. |
+| Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
+| Jade | `324717` | off (opt-in) | Block/item tooltip HUD. **Known limitation:** tooltips don't render for blocks **on the moving train** (Sable sub-level). **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
+| Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
+| Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect, and its **Lithostitched** dependency bundled alongside it. **Pinned**. |
+| Lithostitched | `936015` | off (opt-in) | Tectonic's required dependency (`[1.6.0,)`) — bundled so Tectonic loads when a player enables it. **Pinned**. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
 
-### Add-ons
+## Enabled vs disabled by default
 
-Two flavours:
+⚠️ **In the CurseForge app, a manifest file's `required` flag is the ONLY control over
+default state, and there is no "optional but enabled-by-default" option:**
 
-**On-by-default Includes (shipped in the pack, player can deselect at install):**
-- **AppleSkin** — food saturation / hunger overlay. Shipped as an `optional_mods` entry →
-  `required:false` manifest file, which CurseForge surfaces as an **"Include"**. It references
-  AppleSkin's own CurseForge file (not embedded in DT's jar, not redistributed); the launcher
-  installs it by default and players can untick it. **Pinned** file ID — see "AppleSkin pin" below.
-  Because the pack ships it, AppleSkin is **also** declared as an `appleskin(optional)` dependency
-  of the *mod* in `release.yml` — see ["Includes must be mod dependencies"](#includes-must-be-mod-dependencies) below.
-- **FerriteCore** — memory-usage reducer (deduplicates blockstates / property maps and other
-  internal data structures). Same Include mechanism as AppleSkin (`optional_mods` →
-  `required:false`); it touches no rendering, physics, or chunk logic, so it is safe alongside
-  Sable and a clear win for this content-heavy pack (DT jarJars AIN/AIS/PlayerMob/Discord
-  Presence into its own jar). **Pinned** file ID — see "FerriteCore pin" below. Like AppleSkin it
-  is **also** declared as a `ferritecore(optional)` dependency of the *mod* in `release.yml`.
-- **ModernFix** — launch-time, world-load and memory optimiser (applies many mixins). Shipped the
-  same way as AppleSkin: an `optional_mods` entry → `required:false` manifest file (a CurseForge
-  **"Include"**) referencing ModernFix's own CurseForge file — not embedded, not redistributed; the
-  launcher installs it by default and players can untick it. **Pinned** file ID — see "ModernFix pin"
-  below. Also declared as a `modernfix(optional)` dependency of the *mod* in `release.yml` (see
-  ["Includes must be mod dependencies"](#includes-must-be-mod-dependencies)). Its optional *dynamic
-  resources* feature is off by default, and individual features are togglable in ModernFix's config
-  if anything ever conflicts with Sable or DT's mixins.
+| `"required"` | At install | Result |
+|---|---|---|
+| `true`  | installed & **enabled** | On out of the box. The player can still disable it in the app afterward, but it is **not** shown as an opt-out checkbox at install. |
+| `false` | listed **unchecked** in the optional-mods picker | **Ships OFF.** The player opts in. (CurseForge calls this an "Include".) |
 
-**Opt-in relations (declared only, not shipped — players install them themselves):**
-Declared as CurseForge **`optionalDependency` relations** (see the table below); they appear
-under the pack's "Relations". Nothing here is force-installed.
+This is the opposite of a common misconception that `required:false` ships on-by-default —
+it does **not** (confirmed: [MultiMC #2000](https://github.com/MultiMC/Launcher/issues/2000)).
+So a companion we want **on by default must be `required:true`**, and an opt-in companion is
+`required:false`.
 
-- **Distant Horizons** — LOD render distance. **Use 2.x** (3.0.x crashes on world entry).
-- **Tectonic** — terrain generator. Needs **Compatible Terrain** ON in DT settings to take
-  effect (without it DT uses its own raised-floor terrain; DH is render-layer and works
-  regardless). Installing Tectonic via CurseForge automatically pulls in its **Lithostitched**
-  dependency, so the pack doesn't list Lithostitched itself.
-- **Mouse Tweaks** — inventory QoL (shift-drag / scroll-to-move). Relation only.
-- **Jade** — block & item tooltip HUD ("what am I looking at"). Relation only. **Known
-  limitation:** Jade's tooltip doesn't render for blocks **on the moving train** (a Sable
-  sub-level limitation); it works normally everywhere off-train.
+Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` carrying its own
+`"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
+flag straight into the manifest:
 
-### Declared dependencies (CurseForge "Relations")
+- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, Advancement
+  Plaques. QoL / perf / cosmetic companions the pack turns on for everyone.
+- **Bundled but off by default (`required:false`)** — Mouse Tweaks, Jade, Distant Horizons,
+  Tectonic, Lithostitched. Shipped in the pack so a player can flip them on with one click, but
+  inert until they do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
-The siblings are jarJar'd inside DT, so they must **not** be separate `files` entries (that
-would double-load them and break NeoForge). Instead the upload declares them as CurseForge
-**relations** — mirroring the mod's own `curseforge-dependencies` in `release.yml` — sourced
-from `curseforge_relations` in `modpack.config.json`:
+## Declared dependencies (CurseForge "Relations")
+
+The jarJar'd siblings are bundled inside DT, so they must **not** be separate `files` entries
+(that would double-load them and break NeoForge). Instead the upload declares them as CurseForge
+**relations** — sourced from `curseforge_relations` in `modpack.config.json`:
 
 | Slug | Relation | Why |
 |---|---|---|
@@ -78,34 +68,27 @@ from `curseforge_relations` in `modpack.config.json`:
 | `adventure-item-names` | `embeddedLibrary` | jarJar'd inside DT. |
 | `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
 | `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
-| `distant-horizons` | `optionalDependency` | Opt-in add-on — relation only (not bundled). |
-| `tectonic` | `optionalDependency` | Opt-in add-on — relation only; pulls Lithostitched on install. |
-| `mouse-tweaks` | `optionalDependency` | Opt-in add-on — relation only (not shipped). |
-| `jade` | `optionalDependency` | Opt-in add-on — relation only; tooltips don't render on moving-train blocks (Sable sub-level). |
 
-Keep this list aligned with the mod's own `curseforge-dependencies` in `release.yml`, which
-declares `appleskin(optional)` + `ferritecore(optional)` + `modernfix(optional)` +
-`distant-horizons(optional)` + `tectonic(optional)` + `mouse-tweaks(optional)` + `jade(optional)`.
-The two lists are identical **except for the Includes (AppleSkin, FerriteCore, ModernFix)**: on the
-*mod* each is a normal `<slug>(optional)` relation, but in the *modpack* they ship as bundled files,
-so CurseForge auto-creates their "Include" relation from the manifest — they must therefore **not**
-be repeated in `curseforge_relations`. (Lithostitched is Tectonic's dependency, not DT's, and
-CurseForge resolves it automatically — so it appears in neither.)
+Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Mouse
+Tweaks, Jade, Distant Horizons, Tectonic, Lithostitched) is a manifest **file**, so CurseForge
+auto-creates its relation from the manifest — these must therefore **not** be repeated in
+`curseforge_relations`. (Lithostitched is bundled only as Tectonic's transitive dependency.)
 
-### Includes must be mod dependencies
+### Bundled mods must be mod dependencies
 
-**Invariant:** every mod the pack ships as an on-by-default **Include** (`modpack.config.json`
-→ `optional_mods`) must **also** be declared as an `<slug>(optional)` dependency of the *mod*
-in `release.yml` → `curseforge-dependencies`. The pack is "the mod plus its recommended
-companions", so anything it force-bundles should be advertised as an optional dependency on the
-mod's own page too. (The reverse does **not** hold — a mod optional dependency need not be a pack
-Include; e.g. `mouse-tweaks` / `jade` are declared relations the pack doesn't bundle.)
+**Invariant:** every mod the pack bundles (`modpack.config.json` → `optional_mods`) must **also**
+be declared as an `<slug>(optional)` dependency of the *mod* in `release.yml` →
+`curseforge-dependencies`. The pack is "the mod plus its recommended companions", so anything it
+bundles is advertised as an optional dependency on the mod's own page too — regardless of whether
+the pack ships it enabled (`required:true`) or off (`required:false`); the mod's relationship to
+the companion is "optional" either way.
 
-This is enforced in CI by **`scripts/modpack/check-relations.py`** (run from the `modpack-checks`
-job in [`build.yml`](../.github/workflows/build.yml) on every PR). It cross-references each
+This is enforced in CI by **`scripts/modpack/check-relations.py`** (the `modpack-checks` job in
+[`build.yml`](../.github/workflows/build.yml), on every PR). It cross-references each
 `optional_mods` entry's `slug` against the `curseforge-dependencies` block and fails the build if
-an Include is missing its `<slug>(optional)` relation — the gap that shipped AppleSkin undeclared
-in PR #390. So each `optional_mods` entry **must carry a `slug`** (its CurseForge URL slug).
+a bundled mod is missing its `<slug>(optional)` relation — the gap that shipped AppleSkin
+undeclared in PR #390. So each `optional_mods` entry **must carry a `slug`** (its CurseForge URL
+slug). Lithostitched is bundled (Tectonic's dep), so it too is declared `lithostitched(optional)`.
 
 ## How it deploys (15 min after every mod release)
 
@@ -136,51 +119,30 @@ tested against (`sable_version` in `gradle.properties`). When you bump `sable_ve
 
 If these drift, the pack ships an old Sable against a newer DT.
 
-## AppleSkin pin
+## Companion-mod pins
 
-AppleSkin ships as an on-by-default Include, pinned by file ID in `modpack.config.json` →
-`optional_mods[].file_id`. Unlike Sable it has **no** DT-version coupling, so it only needs a
-refresh when you want to ship a newer AppleSkin:
+Every `optional_mods` entry is pinned by `file_id`. Unlike Sable none of them have a
+DT-version coupling, so a pin only needs a refresh when you want to ship a newer build:
 
-1. Open <https://www.curseforge.com/minecraft/mc-mods/appleskin/files/all>, filter to the
-   NeoForge 1.21.1 build, and copy its numeric file ID from the URL.
-2. Set `optional_mods[].file_id` in `modpack.config.json`.
-
-A stale pin just ships an older AppleSkin — harmless, but worth keeping current.
-
-## FerriteCore pin
-
-FerriteCore ships the same way — an on-by-default Include pinned by file ID in
-`modpack.config.json` → its `optional_mods[]` entry. Like AppleSkin it has **no** DT-version
-coupling, so refresh only when you want to ship a newer FerriteCore:
-
-1. Open <https://www.curseforge.com/minecraft/mc-mods/ferritecore/files/all>, filter to the
-   NeoForge 1.21.1 build, and copy its numeric file ID from the URL.
+1. Open `https://www.curseforge.com/minecraft/mc-mods/<slug>/files/all`, filter to the
+   **NeoForge 1.21.1** build, and copy its numeric file ID from the URL.
 2. Set that entry's `file_id` in `modpack.config.json`.
 
-A stale pin just ships an older FerriteCore — harmless, but worth keeping current.
+A stale pin just ships an older companion — harmless, but worth keeping current. Two caveats:
 
-## ModernFix pin
-
-ModernFix ships as an on-by-default Include, pinned by file ID in `modpack.config.json` →
-`optional_mods[].file_id` (project `790626`). Like AppleSkin it has **no** DT-version coupling, so it
-only needs a refresh when you want to ship a newer ModernFix:
-
-1. Open <https://www.curseforge.com/minecraft/mc-mods/modernfix/files/all>, filter to the
-   NeoForge 1.21.1 build, and copy its numeric file ID from the URL.
-2. Set the ModernFix `optional_mods[].file_id` in `modpack.config.json`.
-
-A stale pin just ships an older ModernFix — harmless, but worth keeping current.
-(Current pin: `modernfix-neoforge-5.27.14+mc1.21.1.jar`.)
+- **Distant Horizons must stay on 2.x.** DH 3.0.x crashes the JVM on DT world entry (under both
+  G1 and generational ZGC). Always pick a `DistantHorizons-2.x…-1.21.1-…` file.
+- **Tectonic ↔ Lithostitched.** Tectonic requires Lithostitched `[1.6.0,)`; keep the bundled
+  Lithostitched file at or above that. Bumping Tectonic? Re-check its `mods.toml` dependency range.
 
 ## Files
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (on-by-default Includes — AppleSkin, FerriteCore, ModernFix; each carries a `slug` for the consistency guard), and `curseforge_relations` (opt-in relations — DH/Tectonic/Mouse Tweaks/Jade). |
+| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard and a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in), and `curseforge_relations` (sable + the jarJar'd siblings). |
 | `overrides/` | Copied into the player's instance on install. Empty for now. |
 | `../scripts/modpack/build-manifest.py` | Renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
-| `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` Include must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
+| `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` entry must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
 | `../scripts/modpack/publish-curseforge.sh` | Zips + uploads to CurseForge using the same `CURSEFORGE_TOKEN`. |
 
 ## Local test (no upload)

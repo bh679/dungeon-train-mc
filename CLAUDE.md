@@ -207,17 +207,22 @@ Separate from the mod, there is a CurseForge **modpack** (project `1556213`, var
 hand**. After every successful CurseForge mod upload (real releases AND the ~22 auto-release
 cascade ticks), `release.yml` dispatches `release-modpack.yml`, which waits ~15 min (so
 CurseForge can approve the new DT file), then builds + uploads a matching modpack version
-bundling that release's DT file + the pinned Sable dependency. The modpack is just two
-entries — **Dungeon Train + Sable** — because DT jarJars AIN/AIS/PMOB/DiscordPresence.
+bundling that release's DT file + Sable + the pinned companion mods. Core entries are
+**Dungeon Train + Sable** (DT jarJars AIN/AIS/PMOB/DiscordPresence/ECP); on top of those,
+`modpack.config.json` → `optional_mods[]` bundles companions each with a `required` flag.
+⚠️ In the CurseForge app `required:false` ships a mod **OFF** (opt-in), not on — a companion
+that should be **on by default must be `required:true`**. See `modpack/README.md` §"Enabled vs
+disabled by default" for the two-tier roster (enabled: AppleSkin/FerriteCore/ModernFix/
+Advancement Plaques; opt-in: Mouse Tweaks/Jade/Distant Horizons/Tectonic/Lithostitched).
 
 - Source + config live in `modpack/` (see `modpack/README.md`); upload uses the same
   `CURSEFORGE_TOKEN` via `scripts/modpack/publish-curseforge.sh`.
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (the modpack pins Sable to the tested
   version). This is flagged in `gradle.properties`.
-- **Include ⇒ mod dependency:** when you add an `optional_mods` Include to
-  `modpack/modpack.config.json` (give the entry a `slug`), also add `<slug>(optional)` to
-  `release.yml` `curseforge-dependencies`. Enforced in CI by
+- **Bundled ⇒ mod dependency:** when you add an `optional_mods` entry to
+  `modpack/modpack.config.json` (give it a `slug` + `required` flag), also add `<slug>(optional)`
+  to `release.yml` `curseforge-dependencies`. Enforced in CI by
   `scripts/modpack/check-relations.py` (the `modpack-checks` job in `build.yml`).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
   -f dt_file_id=<id> -f dry_run=true`.
