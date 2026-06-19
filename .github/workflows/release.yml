@@ -193,6 +193,8 @@ jobs:
             appleskin(optional)
             ferritecore(optional)
             modernfix(optional)
+            ambientsounds(optional)
+            creativecore(optional)
             advancement-plaques(optional)
             iceberg(optional)
             distant-horizons(optional)

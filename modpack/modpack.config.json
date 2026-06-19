@@ -11,6 +11,8 @@
     { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442, "required": true },
     { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151, "required": true },
     { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560, "required": true },
+    { "name": "AmbientSounds", "slug": "ambientsounds", "project_id": 254284, "file_id": 8043019, "required": true },
+    { "name": "CreativeCore", "slug": "creativecore", "project_id": 257814, "file_id": 8190065, "required": true },
     { "name": "Advancement Plaques", "slug": "advancement-plaques", "project_id": 499826, "file_id": 5905995, "required": true },
     { "name": "Iceberg", "slug": "iceberg", "project_id": 520110, "file_id": 6423863, "required": true },
     { "name": "Lithostitched", "slug": "lithostitched", "project_id": 936015, "file_id": 8158004, "required": true },

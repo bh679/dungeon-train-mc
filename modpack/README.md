@@ -21,6 +21,8 @@ else is a manifest file with a `required` flag (see "Enabled vs disabled by defa
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
+| AmbientSounds | `254284` | **enabled** | Immersive ambient / environmental sound engine. Client-side audio only — no render/physics/chunk hooks, safe with Sable. Requires **CreativeCore**. **Pinned**. |
+| CreativeCore | `257814` | **enabled** (library) | AmbientSounds' required dependency. Inert library — enabled so AmbientSounds loads on a default install. **Pinned**. |
 | Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
 | Iceberg | `520110` | **enabled** (library) | Advancement Plaques' required dependency (`[1.2.2,)`). Inert UI library — enabled so AP loads on a default install. **Pinned**. |
 | Lithostitched | `936015` | **enabled** (library) | Tectonic's required dependency (`[1.6.0,)`). Inert worldgen library — enabled so enabling Tectonic stays one-click (no separate lib to toggle). **Pinned**. |
@@ -51,11 +53,12 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 `"required"` boolean. [`build-manifest.py`](../scripts/modpack/build-manifest.py) copies that
 flag straight into the manifest:
 
-- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, Advancement
-  Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), plus their inert
-  library deps **Iceberg** (Advancement Plaques) and **Lithostitched** (Tectonic). The libraries
-  ship enabled so their dependent loads on a default install (Iceberg — AP is on) and so enabling
-  an opt-in stays one-click (Lithostitched — Tectonic is off, but its lib is already present).
+- **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, AmbientSounds,
+  Advancement Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), plus their
+  inert library deps **CreativeCore** (AmbientSounds), **Iceberg** (Advancement Plaques) and
+  **Lithostitched** (Tectonic). The libraries ship enabled so their dependent loads on a default
+  install (CreativeCore — AmbientSounds is on; Iceberg — AP is on) and so enabling an opt-in stays
+  one-click (Lithostitched — Tectonic is off, but its lib is already present).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Jade, Distant Horizons,
   Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
   do. (DT itself + Sable are hardcoded `required:true` in the builder.)
@@ -138,6 +141,9 @@ A stale pin just ships an older companion — harmless, but worth keeping curren
 
 - **Distant Horizons must stay on 2.x.** DH 3.0.x crashes the JVM on DT world entry (under both
   G1 and generational ZGC). Always pick a `DistantHorizons-2.x…-1.21.1-…` file.
+- **AmbientSounds ↔ CreativeCore.** AmbientSounds requires CreativeCore (not jarJar'd inside it) —
+  keep the bundled CreativeCore current when bumping AmbientSounds. Both ship `required:true` so
+  AmbientSounds works on a default install. (AmbientSounds' jar is large — ~81 MB of bundled audio.)
 - **Advancement Plaques ↔ Iceberg.** AP requires Iceberg `[1.2.2,)` (not jarJar'd inside AP) —
   keep the bundled Iceberg at or above that. Both ship `required:true` so AP works on a default install.
 - **Tectonic ↔ Lithostitched.** Tectonic requires Lithostitched `[1.6.0,)`; keep the bundled

@@ -156,6 +156,18 @@ def test_real_config_ships_qol_mods_enabled_by_default():
     assert {"projectID": 936015, "fileID": 8158004, "required": True} in files, files  # Lithostitched (Tectonic dep)
 
 
+def test_real_config_ships_ambientsounds_enabled_by_default():
+    """Guard: AmbientSounds + its required CreativeCore lib ship ENABLED (required:true).
+
+    Renders the *real* repo config so they can't be silently dropped or flipped off. CreativeCore
+    is AmbientSounds' mandatory dependency — AmbientSounds crashes on load without it — so both
+    must ship required:true (required:false would ship OFF in the CurseForge app).
+    """
+    files = _render_real_config()
+    assert {"projectID": 254284, "fileID": 8043019, "required": True} in files, files  # AmbientSounds
+    assert {"projectID": 257814, "fileID": 8190065, "required": True} in files, files  # CreativeCore (AmbientSounds dep)
+
+
 def test_real_config_ships_optins_disabled_by_default():
     """Guard: Mouse Tweaks / Jade / Distant Horizons / Tectonic ship OFF by default (opt-in).
 
