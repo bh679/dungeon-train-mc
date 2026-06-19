@@ -11,19 +11,48 @@ The modpack is published automatically — you don't run anything by hand.
 A CurseForge modpack is a `.zip` of a `manifest.json` (Minecraft version + modloader +
 an explicit list of CurseForge mod files) plus an `overrides/` folder. Dungeon Train
 bundles **AIN, AIS, PlayerMob, Discord Presence and joml-primitives inside its own jar**
-via NeoForge jarJar, so the pack needs only **two required entries** — plus three on-by-default
-optional add-ons (AppleSkin, FerriteCore, ModernFix):
+via NeoForge jarJar, so the pack needs only **two base required entries** (DT + Sable) — plus
+**four force-installed add-ons** (AmbientSounds + its CreativeCore lib, Advancement Plaques + its
+Iceberg lib) and **three on-by-default optional add-ons** (AppleSkin, FerriteCore, ModernFix):
 
 | Mod | CF project | Notes |
 |---|---|---|
 | Dungeon Train | `1527512` | The file ID changes every release — injected at build time. |
 | Sable | `1312371` | The only un-bundled runtime dep (PolyForm Shield forbids redistribution). **Pinned** — see below. |
+| AmbientSounds | `254284` | Force-installed add-on (`required_mods` → `required:true` manifest file). Client-side ambient sound engine. References AmbientSounds' own CF file — not embedded, not redistributed. **Pinned** — see "Required add-ons" below. |
+| CreativeCore | `257814` | Force-installed — **AmbientSounds' required library** (crashes without it). Same `required_mods` mechanism. **Pinned**. |
+| Advancement Plaques | `499826` | Force-installed add-on (`required_mods` → `required:true`). Client-side fancy advancement-toast replacement. **Pinned** — see "Required add-ons" below. |
+| Iceberg | `520110` | Force-installed — **Advancement Plaques' required library** (crashes without it). Same `required_mods` mechanism. **Pinned**. |
 | AppleSkin | `248787` | On-by-default optional add-on (`optional_mods` → `required:false` manifest file = CurseForge "Include"). References AppleSkin's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
 | FerriteCore | `429235` | On-by-default optional add-on (same "Include" mechanism). Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, so safe with Sable. References FerriteCore's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
 | ModernFix | `790626` | On-by-default optional add-on (`optional_mods` → `required:false` manifest file = CurseForge "Include"). Launch-time / world-load / memory optimiser. References ModernFix's own CF file — not embedded, not redistributed. **Pinned** file ID — see below. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
+
+### Required add-ons
+
+Force-installed client-side QoL mods, shipped as `required_mods` entries → `required:true`
+manifest files (the launcher installs them and players **cannot** deselect them, unlike the
+optional Includes below). Each references the mod's own CurseForge file — nothing is embedded
+in DT's jar or redistributed — and is **pinned** by file ID, exactly like Sable / AppleSkin.
+
+- **AmbientSounds** (`254284`) — client-side ambient sound engine. Requires **CreativeCore**
+  (`257814`), bundled alongside it as a `required_mods` entry; AmbientSounds crashes on load
+  without it. Both are client-side (`server_side: unsupported` / optional) — no Sable physics hooks.
+- **Advancement Plaques** (`499826`) — replaces the vanilla advancement toast with a nicer plaque.
+  Requires **Iceberg** (`520110`), bundled alongside it as a `required_mods` entry; Advancement
+  Plaques crashes on load without it.
+
+**Refresh a pin** (when you want to ship a newer build): open the mod's CurseForge
+`…/files/all`, filter to the **NeoForge 1.21.1** build, copy the numeric file ID from its URL,
+and set that entry's `file_id` in `modpack.config.json` → `required_mods[]`. A stale pin just
+ships an older build — harmless, but worth keeping current. (Keep a mod and its library on
+compatible versions.)
+
+> **Adaptive Tooltips** was requested too but has **no NeoForge 1.21.1 build** (its only NeoForge
+> release targets MC 26.1.x), so it is intentionally **not** in the pack. Revisit once the MC 26.1.2
+> port lands.
 
 ### Add-ons
 
@@ -75,6 +104,10 @@ from `curseforge_relations` in `modpack.config.json`:
 | Slug | Relation | Why |
 |---|---|---|
 | `sable` | `requiredDependency` | Un-bundled runtime dep (also a `files` entry). |
+| `ambientsounds` | `requiredDependency` | Force-installed `required_mods` entry (also a `files` entry). |
+| `creativecore` | `requiredDependency` | Force-installed `required_mods` entry — AmbientSounds' library. |
+| `advancement-plaques` | `requiredDependency` | Force-installed `required_mods` entry (also a `files` entry). |
+| `iceberg` | `requiredDependency` | Force-installed `required_mods` entry — Advancement Plaques' library. |
 | `adventure-item-names` | `embeddedLibrary` | jarJar'd inside DT. |
 | `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
 | `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
@@ -83,14 +116,22 @@ from `curseforge_relations` in `modpack.config.json`:
 | `mouse-tweaks` | `optionalDependency` | Opt-in add-on — relation only (not shipped). |
 | `jade` | `optionalDependency` | Opt-in add-on — relation only; tooltips don't render on moving-train blocks (Sable sub-level). |
 
-Keep this list aligned with the mod's own `curseforge-dependencies` in `release.yml`, which
+This list mostly mirrors the mod's own `curseforge-dependencies` in `release.yml`, which
 declares `appleskin(optional)` + `ferritecore(optional)` + `modernfix(optional)` +
 `distant-horizons(optional)` + `tectonic(optional)` + `mouse-tweaks(optional)` + `jade(optional)`.
-The two lists are identical **except for the Includes (AppleSkin, FerriteCore, ModernFix)**: on the
-*mod* each is a normal `<slug>(optional)` relation, but in the *modpack* they ship as bundled files,
-so CurseForge auto-creates their "Include" relation from the manifest — they must therefore **not**
-be repeated in `curseforge_relations`. (Lithostitched is Tectonic's dependency, not DT's, and
-CurseForge resolves it automatically — so it appears in neither.)
+Two deliberate divergences:
+
+- **The Includes (AppleSkin, FerriteCore, ModernFix):** on the *mod* each is a normal
+  `<slug>(optional)` relation, but in the *modpack* they ship as bundled files, so CurseForge
+  auto-creates their "Include" relation from the manifest — they must therefore **not** be repeated
+  in `curseforge_relations`.
+- **The required add-ons (AmbientSounds, CreativeCore, Advancement Plaques, Iceberg):** these are
+  *modpack-only* content (force-installed `required_mods` files), declared here as
+  `requiredDependency` relations to mirror Sable. They are **not** dependencies of the DT *mod*, so
+  they are intentionally **absent** from `release.yml` `curseforge-dependencies`.
+
+(Lithostitched is Tectonic's dependency, not DT's, and CurseForge resolves it automatically — so it
+appears in neither.)
 
 ### Includes must be mod dependencies
 
@@ -177,7 +218,7 @@ A stale pin just ships an older ModernFix — harmless, but worth keeping curren
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (on-by-default Includes — AppleSkin, FerriteCore, ModernFix; each carries a `slug` for the consistency guard), and `curseforge_relations` (opt-in relations — DH/Tectonic/Mouse Tweaks/Jade). |
+| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `required_mods` (force-installed `required:true` add-ons — AmbientSounds + CreativeCore, Advancement Plaques + Iceberg), `optional_mods` (on-by-default Includes — AppleSkin, FerriteCore, ModernFix; each carries a `slug` for the consistency guard), and `curseforge_relations` (relations declared on upload). |
 | `overrides/` | Copied into the player's instance on install. Empty for now. |
 | `../scripts/modpack/build-manifest.py` | Renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` Include must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |

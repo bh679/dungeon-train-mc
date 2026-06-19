@@ -58,6 +58,15 @@ def load_config(path: Path) -> dict:
     sable_missing = [k for k in sable_required if k not in config["sable"]]
     if sable_missing:
         raise ValueError(f"{path} sable block is missing keys: {', '.join(sable_missing)}")
+    # required_mods is optional; when present each entry must carry project_id + file_id
+    # (these become required=True CurseForge file entries — force-installed add-ons, e.g.
+    # AmbientSounds + its CreativeCore lib, Advancement Plaques + its Iceberg lib).
+    for i, req in enumerate(config.get("required_mods", [])):
+        req_missing = [k for k in ("project_id", "file_id") if k not in req]
+        if req_missing:
+            raise ValueError(
+                f"{path} required_mods[{i}] is missing keys: {', '.join(req_missing)}"
+            )
     # optional_mods is optional; when present each entry must carry project_id + file_id
     # (these become required=False CurseForge file entries — opt-in add-ons).
     for i, opt in enumerate(config.get("optional_mods", [])):
@@ -92,6 +101,17 @@ def build_manifest(
         {"projectID": int(config["dt_project_id"]), "fileID": dt_file_id, "required": True},
         {"projectID": int(sable["project_id"]), "fileID": int(sable["file_id"]), "required": True},
     ]
+    # Force-installed add-ons (e.g. AmbientSounds, Advancement Plaques + their CreativeCore /
+    # Iceberg libs). required=True → the launcher installs them and players can't deselect; the
+    # libs are mandatory or the dependent mod crashes on load. Pins are maintained like Sable.
+    for req in config.get("required_mods", []):
+        files.append(
+            {
+                "projectID": int(req["project_id"]),
+                "fileID": int(req["file_id"]),
+                "required": True,
+            }
+        )
     # Optional, player-installed add-ons (e.g. Distant Horizons, Tectonic, Lithostitched).
     # required=False → the CurseForge launcher offers them as opt-in at install; they are
     # present in the pack by default but never force-installed. Pins are maintained the same
