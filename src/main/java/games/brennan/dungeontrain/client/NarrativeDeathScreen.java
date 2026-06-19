@@ -195,6 +195,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     protected void init() {
+        // Freeze the gallery for as long as the death screen is up: no flush / eviction / texture
+        // release may run while we're blitting these photos (a released texture would blank a page).
+        RideSnapshotGallery.freeze();
         pages = buildPages();
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
@@ -361,6 +364,11 @@ public final class NarrativeDeathScreen extends Screen {
         List<List<SnapshotTag>> chains = new ArrayList<>(pages.size());
         for (Page p : pages) chains.add(chainFor(p.kind()));
         pageBackgrounds = DeathBackgroundAssigner.assign(chains, RideSnapshotGallery.all());
+        // Pre-resolve now so the first frame of each page doesn't hitch loading a disk-backed photo.
+        // Only the assigned shots (≈ one per page) are touched, not the whole gallery.
+        for (RideSnapshot s : pageBackgrounds) {
+            if (s != null) s.texture();
+        }
     }
 
     /** Each page's thematic fallback chain (tier 0 = preferred tag; empty = any shot). */
@@ -447,7 +455,7 @@ public final class NarrativeDeathScreen extends Screen {
         // to black with the UI fade (T_DIP_DOWN), then the new one rises back from
         // black slowly (T_DIP_UP). With no switch (initial open / same photo) there's
         // no dip and the fade-in just tracks the UI.
-        boolean switching = toShot != null && !toShot.equals(fromShot);
+        boolean switching = toShot != null && toShot != fromShot; // identity: every capture is distinct
         long total = switching
                 ? (T_FADE + T_HOLD + T_DIP_DOWN + T_DIP_UP)
                 : (T_FADE + T_HOLD + T_FADE);
@@ -1099,5 +1107,8 @@ public final class NarrativeDeathScreen extends Screen {
         TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
         portrait.clear();
+        // Lift the gallery freeze. The world-leave paths clear the gallery anyway, but if the
+        // screen is ever dismissed without disconnecting, capture/offload must resume normally.
+        RideSnapshotGallery.unfreeze();
     }
 }
