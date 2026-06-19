@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.snapshot;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
+import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.playermob.entity.PlayerMobEntity;
@@ -104,6 +105,9 @@ public final class RideSnapshotDirector {
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
         if (level == null || player == null) return;
+        // Dead → the death screen is drawing this run's photos (the gallery is frozen). Never
+        // capture or flush here: releasing a texture mid-blit would blank the backdrop.
+        if (mc.screen instanceof NarrativeDeathScreen) return;
         if (CinematicCameraController.isActive()) return;
         if (RideSnapshotCapture.hasPending()) return;
 
@@ -117,6 +121,15 @@ public final class RideSnapshotDirector {
         boolean fallbackMenuOpen = book || merchant || container
                 || screen instanceof InventoryScreen
                 || screen instanceof ChatScreen;
+
+        // Opportunistic disk offload: when a menu is open AND the game has headroom (high FPS/TPS),
+        // drain in-memory photos to disk — one per tick so each PNG encode is a single small hitch
+        // the player won't notice behind the menu. Frees VRAM/RAM during the run; the death screen
+        // reloads from disk. Independent of the aboard gate: opening a menu anywhere drains the backlog.
+        if (ClientDisplayConfig.isRideSnapshotDiskOffloadEnabled() && fallbackMenuOpen
+                && !RideSnapshotGallery.isFrozen() && performanceHighEnoughToFlush(mc)) {
+            RideSnapshotGallery.flushSomeToDisk(1);
+        }
 
         Vec3 ppos = player.position();
         if (!NearestCarriage.playerAboardOrNear(level, ppos, RIDE_RANGE)) return;
@@ -166,6 +179,22 @@ public final class RideSnapshotDirector {
         return SnapshotPerformanceGate.ok(
                 mc.getFps(), ClientDisplayConfig.getRideSnapshotMinFps(),
                 tps, ClientDisplayConfig.getRideSnapshotMinTps(), tpsKnown);
+    }
+
+    /**
+     * Does the client (and, in single-player, the integrated server) have HEADROOM to spend a disk
+     * flush right now? Reuses {@link SnapshotPerformanceGate} with the higher flush thresholds — the
+     * PNG encode is a brief main-thread cost, so it is only spent when the game is running well.
+     */
+    private static boolean performanceHighEnoughToFlush(Minecraft mc) {
+        IntegratedServer server = mc.getSingleplayerServer(); // null on a multiplayer/dedicated server
+        boolean tpsKnown = server != null;
+        double tps = tpsKnown
+                ? SnapshotPerformanceGate.tpsFromTickNanos(server.getAverageTickTimeNanos())
+                : SnapshotPerformanceGate.MAX_TPS;
+        return SnapshotPerformanceGate.ok(
+                mc.getFps(), ClientDisplayConfig.getRideSnapshotFlushMinFps(),
+                tps, ClientDisplayConfig.getRideSnapshotFlushMinTps(), tpsKnown);
     }
 
     private static Choice chooseTag(ClientLevel level, LocalPlayer player, Vec3 ppos, long now, int progress,
@@ -248,6 +277,15 @@ public final class RideSnapshotDirector {
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (!event.getLevel().isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
         if (event.getLevel().getBlockState(event.getPos()).getBlock() instanceof DecoratedPotBlock) potPending = true;
+    }
+
+    @SubscribeEvent
+    public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
+        // Fresh run: clear any stale in-memory shots and wipe an orphan disk dir left behind by a
+        // prior run that didn't log out cleanly (a hard crash). clear() also deletes the run dir.
+        RideSnapshotGallery.clear();
+        RideSnapshotCapture.disposeTarget();
+        reset();
     }
 
     @SubscribeEvent

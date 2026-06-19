@@ -1094,6 +1094,152 @@
       "released": true,
       "released_in": "v0.324.0",
       "released_at": "2026-06-19T05:12:24Z"
+    },
+    {
+      "id": "death-screen-photo-gallery",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Save your ride photos from the death screen",
+      "summary": "The death screen now has a photos button on its final page that opens a gallery of every ride photo taken during the run. Browse them all and save the ones you love to your screenshots folder before the line carries you on.",
+      "highlights": [
+        "New photos button on the death screen's final page",
+        "Browse all of the run's ride photos in one gallery",
+        "Save any photo (or all of them) to your screenshots folder, plus an Open folder shortcut"
+      ],
+      "pr": 465,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "survey-optional-continue",
+      "version": "0.324.0",
+      "type": "fix",
+      "title": "Death-screen feedback survey is now skippable",
+      "summary": "The feedback survey on the death screen is optional again \u2014 the Continue button now advances past survey questions whether or not you answer them. Answering still submits your feedback as before.",
+      "highlights": [],
+      "pr": 467,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "uncraftable-arrow-effects",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Uncraftable arrows now pack an escalating punch",
+      "summary": "The effectless \"Uncraftable\" tipped arrows you scavenge from vases and chests now carry a real offensive potion \u2014 and it grows nastier the deeper you ride. Every arrow you find within a 50-carriage stretch shares the same effect, then it steps up at the next stretch: Weakness early on, ramping through Slowness, Poison, and Harming as you travel further from the start. Loot containers you place yourself scale to how far you've travelled, too.",
+      "highlights": [
+        "Uncraftable tipped arrows now apply an offensive effect when fired",
+        "The effect stays the same across each 50-carriage stretch, then escalates at the next one",
+        "Ramps Weakness -> Slowness -> Poison -> Harming -> Poison II -> Harming II the deeper you travel",
+        "Loot containers you place by hand scale to your own travelled distance"
+      ],
+      "pr": 469,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "ride-photo-disk-offload",
+      "version": "0.324.0",
+      "type": "perf",
+      "title": "Ride photos use less memory on long runs",
+      "summary": "The third-person photos taken during your run (the ones shown behind the death screen) now quietly save to disk when your game has performance to spare and you're sitting in a menu, freeing up memory while you ride. The death screen and the photo gallery look and work exactly the same.",
+      "highlights": [
+        "Photos offload to disk only during quiet moments (high frame rate and a menu open), so there's no in-game stutter",
+        "Frees memory on long runs; the death screen and photo gallery are unchanged",
+        "Saving a photo from the gallery reuses the offloaded file, so it's instant"
+      ],
+      "pr": 470,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "discord-network-consent-card",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Discord chat-relay consent card + /chatconnect",
+      "summary": "Updated the bundled Discord Presence integration to its latest version. A new card on the title screen explains the optional Discord chat relay and lets you choose whether your in-game chat is shared, and a new /chatconnect command lets you toggle it anytime while playing.",
+      "highlights": [
+        "New title-screen card explains the optional Discord chat relay and lets you opt in or out",
+        "New /chatconnect command toggles the Discord chat relay in-game"
+      ],
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "death-screen-advancements",
+      "version": "0.325.0",
+      "type": "feat",
+      "title": "Advancements on the death-screen cargo page",
+      "summary": "The death screen's cargo page now shows the Dungeon Train advancements you earned this life \u2014 each in its real advancement frame \u2014 and moves the loot-container and book tallies onto the gear row as chest and book icons. A button opens the full advancements screen.",
+      "highlights": [
+        "Advancements earned this life, shown on the cargo page in their real per-tier advancement frames",
+        "Loot containers and books read now appear as chest and book icons on the gear row (hover for labels)",
+        "Scrolls when you've earned a lot, plus a button to view all advancements"
+      ],
+      "pr": 471,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "modpack-companion-mods-default-on",
+      "version": "0.325.0",
+      "type": "feat",
+      "title": "Modpack: Advancement Plaques on by default, plus more one-click add-ons",
+      "summary": "The Dungeon Train modpack now ships Advancement Plaques enabled by default, so your hard-won advancements pop up as a fancy animated plaque instead of the plain vanilla toast. AppleSkin, FerriteCore and ModernFix are now correctly switched on out of the box too, and Mouse Tweaks, Jade, Distant Horizons and Tectonic come bundled and ready to toggle on whenever you want them.",
+      "highlights": [
+        "Advancement Plaques enabled by default \u2014 fancier advancement popups",
+        "AppleSkin, FerriteCore & ModernFix now correctly on by default",
+        "Mouse Tweaks, Jade, Distant Horizons (2.x) & Tectonic bundled as one-click opt-ins"
+      ],
+      "pr": 466,
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "sable-2-0-2",
+      "version": "0.325.0",
+      "type": "chore",
+      "title": "Sable physics updated to 2.0.2",
+      "summary": "Updated the Sable physics dependency from 1.2.1 to 2.0.2. Server tick-time is equal-or-better \u2014 worst-case lag spikes are roughly halved \u2014 and the long-standing save-and-quit hang (Sable #679) no longer occurs. Verified API-compatible, so no gameplay changes. Full compatibility & benchmark notes: [Compatibility wiki](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#sable-202mc1211).",
+      "highlights": [
+        "Smoother performance \u2014 roughly 50% fewer worst-case server lag spikes",
+        "Fixed the save-and-quit hang affecting some worlds (Sable #679)",
+        "Sable physics updated to 2.0.2"
+      ],
+      "date": "2026-06-18",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
+    },
+    {
+      "id": "playermob-train-companions",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "PlayerMobs follow you on the train, echoes wear real skins",
+      "summary": "Updated the bundled Interactive PlayerMobs to its latest version. A PlayerMob that has come to love you now leaves its own route to make its way to your carriage and rides along with you, and reincarnated \"Echo of <name>\" mobs now wear the real skin of the player they came from. The skin pool also grew to 68 with 30 new recognizable player skins.",
+      "highlights": [
+        "Loved PlayerMobs leave their route to ride in your carriage (toggle: trainFollowLovedPlayer, on by default)",
+        "Reincarnated echoes now wear the real player's skin instead of a default Steve/Alex",
+        "30 new player skins (pool now 68); recognizable skins appear ~40% of the time"
+      ],
+      "date": "2026-06-19",
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     }
   ]
 }

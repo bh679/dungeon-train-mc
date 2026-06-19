@@ -84,23 +84,38 @@ def test_missing_sable_key_rejected():
     assert "file_id" in proc.stderr
 
 
-def test_optional_mods_appended_as_not_required():
+def test_optional_mods_honour_required_flag():
+    """Each optional_mods entry's own 'required' flag flows into the manifest file entry.
+
+    required=True  -> bundled & enabled by default; required=False (or absent) -> bundled but
+    disabled by default (CurseForge ships required:false OFF — see modpack/README.md).
+    """
     config = {
         **CONFIG,
         "optional_mods": [
-            {"name": "Distant Horizons", "project_id": 508933, "file_id": 7375285},
-            {"name": "Tectonic", "project_id": 686836, "file_id": 7903156},
+            {"name": "AppleSkin", "project_id": 248787, "file_id": 7854442, "required": True},
+            {"name": "Distant Horizons", "project_id": 508933, "file_id": 7375285, "required": False},
+            {"name": "Legacy (no flag)", "project_id": 686836, "file_id": 7903156},
         ],
     }
     proc = run(["--dt-file-id", "8123456", "--version", "0.293.0"], config=config)
     assert proc.returncode == 0, proc.stderr
     files = json.loads(proc.stdout)["files"]
-    # DT + Sable are required; the two optional add-ons are appended as required=False.
+    # DT + Sable are always required:true.
     assert files[0] == {"projectID": 1527512, "fileID": 8123456, "required": True}
     assert files[1] == {"projectID": 1312371, "fileID": 8003927, "required": True}
+    # on-by-default entry keeps required:true; off-by-default + flag-absent both render false.
+    assert {"projectID": 248787, "fileID": 7854442, "required": True} in files
     assert {"projectID": 508933, "fileID": 7375285, "required": False} in files
     assert {"projectID": 686836, "fileID": 7903156, "required": False} in files
-    assert len(files) == 4
+    assert len(files) == 5
+
+
+def test_non_boolean_required_rejected():
+    bad = {**CONFIG, "optional_mods": [{"name": "X", "project_id": 1, "file_id": 2, "required": "yes"}]}
+    proc = run(["--dt-file-id", "5", "--version", "0.1.0"], config=bad)
+    assert proc.returncode != 0
+    assert "required" in proc.stderr and "boolean" in proc.stderr
 
 
 def test_malformed_optional_mod_rejected():
@@ -110,90 +125,8 @@ def test_malformed_optional_mod_rejected():
     assert "file_id" in proc.stderr
 
 
-def test_required_mods_appended_as_required():
-    config = {
-        **CONFIG,
-        "required_mods": [
-            {"name": "AmbientSounds", "project_id": 254284, "file_id": 8043019},
-            {"name": "CreativeCore", "project_id": 257814, "file_id": 8190065},
-        ],
-    }
-    proc = run(["--dt-file-id", "8123456", "--version", "0.293.0"], config=config)
-    assert proc.returncode == 0, proc.stderr
-    files = json.loads(proc.stdout)["files"]
-    # DT + Sable stay first; the two required add-ons are appended as required=True.
-    assert files[0] == {"projectID": 1527512, "fileID": 8123456, "required": True}
-    assert files[1] == {"projectID": 1312371, "fileID": 8003927, "required": True}
-    assert {"projectID": 254284, "fileID": 8043019, "required": True} in files
-    assert {"projectID": 257814, "fileID": 8190065, "required": True} in files
-    assert len(files) == 4
-    # Every entry must be force-installed (no required=False leaked in).
-    assert all(f["required"] is True for f in files)
-
-
-def test_required_mods_precede_optional_mods():
-    """required_mods (required=True) are emitted before optional_mods (required=False)."""
-    config = {
-        **CONFIG,
-        "required_mods": [{"name": "Iceberg", "project_id": 520110, "file_id": 6423863}],
-        "optional_mods": [{"name": "AppleSkin", "project_id": 248787, "file_id": 7854442}],
-    }
-    proc = run(["--dt-file-id", "1", "--version", "0.1.0"], config=config)
-    assert proc.returncode == 0, proc.stderr
-    files = json.loads(proc.stdout)["files"]
-    assert files[2] == {"projectID": 520110, "fileID": 6423863, "required": True}
-    assert files[3] == {"projectID": 248787, "fileID": 7854442, "required": False}
-
-
-def test_malformed_required_mod_rejected():
-    bad = {**CONFIG, "required_mods": [{"name": "X", "project_id": 1}]}  # no file_id
-    proc = run(["--dt-file-id", "5", "--version", "0.1.0"], config=bad)
-    assert proc.returncode != 0
-    assert "file_id" in proc.stderr
-
-
-def test_real_config_includes_appleskin_as_optional():
-    """Guard: the shipped modpack.config.json keeps AppleSkin as an on-by-default Include.
-
-    Renders the *real* repo config (not the synthetic CONFIG above) so AppleSkin can't be
-    silently dropped from the pack. AppleSkin ships as an optional_mods entry -> required=False
-    manifest file, which CurseForge surfaces as an "Include" relation.
-    """
-    repo_root = os.path.dirname(os.path.dirname(HERE))
-    real_config = os.path.join(repo_root, "modpack", "modpack.config.json")
-    real_gradle = os.path.join(repo_root, "gradle.properties")
-    proc = subprocess.run(
-        [sys.executable, SCRIPT, "--config", real_config, "--gradle-properties", real_gradle,
-         "--dt-file-id", "8123456", "--version", "0.0.0"],
-        capture_output=True, text=True,
-    )
-    assert proc.returncode == 0, proc.stderr
-    files = json.loads(proc.stdout)["files"]
-    assert {"projectID": 248787, "fileID": 7854442, "required": False} in files, files
-
-
-def test_real_config_includes_ferritecore_as_optional():
-    """Guard: the shipped modpack.config.json keeps FerriteCore as an on-by-default Include.
-
-    Same contract as the AppleSkin guard above — renders the *real* repo config so FerriteCore
-    (a memory-usage reducer) can't be silently dropped from the pack. Ships as an optional_mods
-    entry -> required=False manifest file, which CurseForge surfaces as an "Include" relation.
-    """
-    repo_root = os.path.dirname(os.path.dirname(HERE))
-    real_config = os.path.join(repo_root, "modpack", "modpack.config.json")
-    real_gradle = os.path.join(repo_root, "gradle.properties")
-    proc = subprocess.run(
-        [sys.executable, SCRIPT, "--config", real_config, "--gradle-properties", real_gradle,
-         "--dt-file-id", "8123456", "--version", "0.0.0"],
-        capture_output=True, text=True,
-    )
-    assert proc.returncode == 0, proc.stderr
-    files = json.loads(proc.stdout)["files"]
-    assert {"projectID": 429235, "fileID": 7524151, "required": False} in files, files
-
-
 def _render_real_config():
-    """Render the *real* shipped modpack.config.json and return its files[] list."""
+    """Render the *real* shipped modpack.config.json and return its manifest files[]."""
     repo_root = os.path.dirname(os.path.dirname(HERE))
     real_config = os.path.join(repo_root, "modpack", "modpack.config.json")
     real_gradle = os.path.join(repo_root, "gradle.properties")
@@ -206,16 +139,45 @@ def _render_real_config():
     return json.loads(proc.stdout)["files"]
 
 
-def test_real_config_bundles_ambientsounds_as_required():
-    """Guard: the shipped config keeps AmbientSounds as a force-installed (required) file."""
+def test_real_config_ships_qol_mods_enabled_by_default():
+    """Guard: the on-by-default tier + the library deps it needs ship ENABLED (required:true).
+
+    Renders the *real* repo config so these can't be silently dropped or flipped off. In the
+    CurseForge app required:false ships OFF, so on-by-default companions MUST be required:true.
+    Iceberg (Advancement Plaques' required dep) and Lithostitched (Tectonic's) ship required:true
+    too — inert when unused, but always present so their dependent loads whenever it's enabled.
+    """
     files = _render_real_config()
-    assert {"projectID": 254284, "fileID": 8043019, "required": True} in files, files
+    assert {"projectID": 248787, "fileID": 7854442, "required": True} in files, files  # AppleSkin
+    assert {"projectID": 429235, "fileID": 7524151, "required": True} in files, files  # FerriteCore
+    assert {"projectID": 790626, "fileID": 8255560, "required": True} in files, files  # ModernFix
+    assert {"projectID": 499826, "fileID": 5905995, "required": True} in files, files  # Advancement Plaques
+    assert {"projectID": 520110, "fileID": 6423863, "required": True} in files, files  # Iceberg (AP dep)
+    assert {"projectID": 936015, "fileID": 8158004, "required": True} in files, files  # Lithostitched (Tectonic dep)
 
 
-def test_real_config_bundles_advancement_plaques_as_required():
-    """Guard: the shipped config keeps Advancement Plaques as a force-installed (required) file."""
+def test_real_config_ships_ambientsounds_enabled_by_default():
+    """Guard: AmbientSounds + its required CreativeCore lib ship ENABLED (required:true).
+
+    Renders the *real* repo config so they can't be silently dropped or flipped off. CreativeCore
+    is AmbientSounds' mandatory dependency — AmbientSounds crashes on load without it — so both
+    must ship required:true (required:false would ship OFF in the CurseForge app).
+    """
     files = _render_real_config()
-    assert {"projectID": 499826, "fileID": 5905995, "required": True} in files, files
+    assert {"projectID": 254284, "fileID": 8043019, "required": True} in files, files  # AmbientSounds
+    assert {"projectID": 257814, "fileID": 8190065, "required": True} in files, files  # CreativeCore (AmbientSounds dep)
+
+
+def test_real_config_ships_optins_disabled_by_default():
+    """Guard: Mouse Tweaks / Jade / Distant Horizons / Tectonic ship OFF by default (opt-in).
+
+    Distant Horizons is pinned to a 2.x file (file 7350266) — 3.x crashes on DT world entry.
+    """
+    files = _render_real_config()
+    assert {"projectID": 60089, "fileID": 5637846, "required": False} in files, files   # Mouse Tweaks
+    assert {"projectID": 324717, "fileID": 7545219, "required": False} in files, files  # Jade
+    assert {"projectID": 508933, "fileID": 7350266, "required": False} in files, files  # Distant Horizons 2.x
+    assert {"projectID": 686836, "fileID": 7903156, "required": False} in files, files  # Tectonic
 
 
 def _main():

@@ -100,9 +100,12 @@ public final class RideSnapshotCapture {
             ResourceLocation id = mc.getTextureManager().register("dungeontrain_ride", texture);
             ClientLevel level = mc.level;
             long tick = level != null ? level.getGameTime() : 0L;
+            // Keep the DynamicTexture on the snapshot so it can be flushed to disk later (reading
+            // its pixels), freeing this texture when the game has headroom and a menu is open.
             RideSnapshotGallery.add(
-                    new RideSnapshot(id, captureTag, shot.getWidth(), shot.getHeight(), tick),
-                    ClientDisplayConfig.getRideSnapshotMaxStored());
+                    new RideSnapshot(texture, id, captureTag, shot.getWidth(), shot.getHeight(), tick),
+                    ClientDisplayConfig.getRideSnapshotMaxStored(),
+                    ClientDisplayConfig.getRideSnapshotMaxOnDisk());
             RideSnapshotDirector.onCaptureCommitted(captureTag);
             LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gallery={}",
                     id, captureTag, shot.getWidth(), shot.getHeight(), RideSnapshotGallery.size());

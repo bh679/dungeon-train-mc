@@ -1,9 +1,13 @@
 package games.brennan.dungeontrain.editor;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.tags.EnchantmentTags;
@@ -11,6 +15,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -84,6 +91,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_TRIM_PATTERN  = 0x7411B0BB1EA110CEL;
     /** Salt for picking the trim material via weighted selection. */
     private static final long SALT_TRIM_MATERIAL = 0x7411DECAFC0FFEE5L;
+    /** Salt for the per-50-carriage offensive arrow potion roll. */
+    private static final long SALT_ARROW_EPOCH_POTION = 0xA770E1EC7C0FFEE5L;
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -94,6 +103,63 @@ public final class ContainerContentsRoller {
      * spills it on break alongside the sherd shards.
      */
     private static final String NBT_POT_ITEM = "item";
+
+    // ------------------------------------------------------------------
+    // Uncraftable-arrow offensive effects: a random offensive potion is
+    // applied to otherwise-effectless tipped arrows, rolled once per
+    // 50-carriage block (sticky within the block) and escalating in power
+    // as the run progresses.
+    // ------------------------------------------------------------------
+
+    /**
+     * Carriages per effect re-roll. The rolled potion stays constant for this
+     * many carriages, so every uncraftable tipped arrow found inside one block
+     * shares the same effect; it changes at the next block boundary. Doubles as
+     * the progression "level" that drives {@link #ARROW_EFFECT_TIERS}.
+     */
+    private static final int ARROW_EFFECT_EPOCH_CARRIAGES = 50;
+
+    /** Levels that share one power tier — the pacing dial for the ramp. */
+    private static final int ARROW_EFFECT_LEVELS_PER_TIER = 1;
+
+    /**
+     * Ordered, escalating power tiers of offensive vanilla potions applied to
+     * "Uncraftable" tipped arrows. The level (= carriages travelled /
+     * {@link #ARROW_EFFECT_EPOCH_CARRIAGES}) selects a tier via
+     * {@link #arrowEffectTierIndex(int)}; deeper tiers are nastier. Using
+     * registered potions keeps vanilla names/tooltips for free ("Arrow of
+     * Poison", "Arrow of Harming II", …). This table is the single place to
+     * retune which effects appear at which level and how power ramps.
+     *
+     * <p>Each tier is a <b>single, distinctly-named</b> effect so crossing a
+     * 50-carriage boundary always <i>visibly</i> changes the arrow. Two rules
+     * keep that promise: (1) no potion repeats across tiers, and (2) no
+     * {@code long_*} duration variants — those render with the SAME display
+     * name as their base potion ({@code long_slowness} → "Arrow of Slowness"),
+     * which would read as "no change" to the player. A tier may still list
+     * multiple ids; if so they must all be distinct from every adjacent tier.</p>
+     */
+    private static final List<List<ResourceLocation>> ARROW_EFFECT_TIERS = List.of(
+        arrowTier("weakness"),        // T0 — carts 0–49    → Weakness
+        arrowTier("slowness"),        // T1 — carts 50–99   → Slowness
+        arrowTier("poison"),          // T2 — carts 100–149 → Poison
+        arrowTier("harming"),         // T3 — carts 150–199 → Harming
+        arrowTier("strong_poison"),   // T4 — carts 200–249 → Poison II
+        arrowTier("strong_harming")   // T5 — carts 250+    → Harming II
+    );
+
+    /** Test seam: read-only view of the configured arrow-effect tiers. */
+    static List<List<ResourceLocation>> arrowEffectTiersView() {
+        return ARROW_EFFECT_TIERS;
+    }
+
+    private static List<ResourceLocation> arrowTier(String... potionPaths) {
+        List<ResourceLocation> ids = new ArrayList<>(potionPaths.length);
+        for (String path : potionPaths) {
+            ids.add(ResourceLocation.withDefaultNamespace(path));
+        }
+        return List.copyOf(ids);
+    }
 
     private ContainerContentsRoller() {}
 
@@ -620,6 +686,11 @@ public final class ContainerContentsRoller {
             }
         }
 
+        // Otherwise-effectless ("Uncraftable") tipped arrows get a per-block
+        // offensive effect. Keyed on (worldSeed, level) only — independent of
+        // localPos/slot — so every arrow in the same 50-carriage block matches.
+        applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
+
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
         RandomSource nameRng = RandomSource.create(nameSeed);
         NameComposer.applyName(stack, nameRng);
@@ -644,6 +715,89 @@ public final class ContainerContentsRoller {
             stack, trimChanceRng, trimPatternRng, trimMaterialRng, registries);
 
         return stack;
+    }
+
+    /**
+     * Apply the per-level offensive effect to an otherwise-effectless
+     * ("Uncraftable") tipped arrow. No-op for any other item, and never
+     * overwrites an arrow that already carries a potion.
+     *
+     * <p><b>Determinism exception:</b> unlike every other roll in this class,
+     * the potion is keyed on {@code (worldSeed, level)} ONLY — deliberately not
+     * {@code localPos}/{@code slot}. That is exactly what makes every
+     * uncraftable arrow within the same 50-carriage block resolve to the same
+     * effect. The {@code level} also selects an escalating power tier
+     * ({@link #ARROW_EFFECT_TIERS}) so arrows grow nastier deeper into the run.</p>
+     */
+    static void applyEpochArrowEffect(ItemStack stack, Item item, long worldSeed,
+                                      int carriageIndex, HolderLookup.Provider registries) {
+        if (item != Items.TIPPED_ARROW) return;
+        PotionContents existing = stack.get(DataComponents.POTION_CONTENTS);
+        if (existing != null && existing.potion().isPresent()) return; // already tipped — leave it
+
+        int level = arrowEffectLevel(carriageIndex);
+        int tier = arrowEffectTierIndex(level);
+        List<Holder<Potion>> pool = resolvePotions(ARROW_EFFECT_TIERS.get(tier), registries);
+        if (pool.isEmpty()) return;
+
+        int idx = arrowPotionIndex(worldSeed, carriageIndex, pool.size());
+        Holder<Potion> potion = pool.get(idx);
+        stack.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
+
+        if (DebugFlags.logLootRolls()) {
+            LOGGER.info("[DT-arrow] level={} tier={} potion={} carriageIdx={}",
+                level, tier,
+                potion.unwrapKey().map(k -> k.location().toString()).orElse("?"),
+                carriageIndex);
+        }
+    }
+
+    /**
+     * Progression level for an arrow roll = carriages travelled divided by the
+     * epoch size. Symmetric for backward generation (negative indices).
+     */
+    static int arrowEffectLevel(int carriageIndex) {
+        return Math.floorDiv(Math.abs(carriageIndex), ARROW_EFFECT_EPOCH_CARRIAGES);
+    }
+
+    /** Map a level to a power tier, clamped to the strongest available tier. */
+    static int arrowEffectTierIndex(int level) {
+        int tier = Math.max(0, level) / ARROW_EFFECT_LEVELS_PER_TIER;
+        return Math.min(tier, ARROW_EFFECT_TIERS.size() - 1);
+    }
+
+    /**
+     * Deterministic index into a tier's pool, keyed on {@code (worldSeed,
+     * level)} only — independent of {@code localPos}/{@code slot} so every
+     * uncraftable arrow in the block resolves to the same entry.
+     */
+    static int arrowPotionIndex(long worldSeed, int carriageIndex, int poolSize) {
+        if (poolSize <= 1) return 0;
+        int level = arrowEffectLevel(carriageIndex);
+        long state = worldSeed
+            ^ ((long) level * MIX_C)
+            ^ SALT_ARROW_EPOCH_POTION;
+        state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+        state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+        state = state ^ (state >>> 31);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % poolSize);
+    }
+
+    /**
+     * Resolve potion ids to holders via the {@code registries} provider
+     * (mirroring the enchantment branch), dropping any that don't resolve so a
+     * stripped/modded registry degrades to a shorter pool rather than crashing.
+     */
+    private static List<Holder<Potion>> resolvePotions(List<ResourceLocation> ids,
+                                                       HolderLookup.Provider registries) {
+        Optional<HolderLookup.RegistryLookup<Potion>> lookup =
+            registries.lookup(Registries.POTION);
+        if (lookup.isEmpty()) return List.of();
+        List<Holder<Potion>> out = new ArrayList<>(ids.size());
+        for (ResourceLocation id : ids) {
+            lookup.get().get(ResourceKey.create(Registries.POTION, id)).ifPresent(out::add);
+        }
+        return out;
     }
 
     /**
