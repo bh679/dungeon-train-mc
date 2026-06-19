@@ -26,6 +26,12 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementType;
+import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
+import net.minecraft.resources.ResourceLocation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
@@ -35,6 +41,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -77,6 +84,9 @@ public final class NarrativeDeathScreen extends Screen {
         boolean has(double mx, double my) { return mx >= x && mx < x + w && my >= y && my < y + h; }
     }
 
+    /** A resolved advancement icon on the GEAR page: display + its on-screen rect (for hover). */
+    private record AdvIcon(ItemStack icon, Component title, AdvancementType frame, Rect rect) {}
+
     // ---- Palette (ARGB) ----
     private static final int OVERLAY        = 0xF2090A0D;
     private static final int TILE_BG        = 0x14FFFFFF;
@@ -106,6 +116,10 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
+    // Advancement tier frame colours (matches the L-screen ⬛ task / 🟡 goal / 🟣 challenge framing).
+    private static final int FRAME_TASK      = 0xFF4A443C;
+    private static final int FRAME_GOAL      = 0xFFB6892E;
+    private static final int FRAME_CHALLENGE = 0xFF8A4FB0;
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -176,6 +190,16 @@ public final class NarrativeDeathScreen extends Screen {
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
     private final List<Rect> scoreRects = new ArrayList<>();
 
+    // ---- Cargo (GEAR) page: inline cargo icons + scrollable advancements row ----
+    private int gearAdvScroll = 0;          // horizontal scroll offset (px) of the advancements row
+    private int gearAdvMaxScroll = 0;       // scroll clamp bound, set during drawGear
+    private int cargoRowY = -1;             // top y of row 1 (equipment + cargo icons), for tooltips
+    private int cargoSx = -1;               // start x of the equipment slots, for tooltips
+    private Rect containersRect, booksRect; // chest / book cargo-icon hover regions (tooltips)
+    private Rect seeAllRect;                // "see all advancements" button
+    private Rect advViewport;               // advancements scroll viewport (hover / scroll hit-test)
+    private final List<AdvIcon> gearAdvIcons = new ArrayList<>();  // resolved this frame, for hover
+
     public NarrativeDeathScreen() {
         super(Component.translatable("gui.dungeontrain.death.narr.title"));
     }
@@ -200,6 +224,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
         lastSurveyCount = SurveyClientState.questions().size();
+        gearAdvScroll = 0;
         commentBox = null;
         LOGGER.info("[DungeonTrain] NarrativeDeathScreen: page {}/{}, surveyQuestions={}, statsCached={}",
                 currentPage, pages.size(), lastSurveyCount, DeathStatsCache.get() != null);
@@ -300,6 +325,11 @@ public final class NarrativeDeathScreen extends Screen {
         platformLeaveRect = null;
         continueRect = null;
         backRect = null;
+        containersRect = null;
+        booksRect = null;
+        seeAllRect = null;
+        advViewport = null;
+        gearAdvIcons.clear();
 
         int contentW = Math.min(MAX_CONTENT_W, this.width - 40);
         int cx = this.width / 2;
@@ -331,9 +361,9 @@ public final class NarrativeDeathScreen extends Screen {
                 r.render(g, mouseX, mouseY, partialTick);
             }
 
-            // Loadout hover tooltip last, above everything — only when settled.
+            // Cargo-page hover tooltips last, above everything — only when settled.
             if (page.kind() == Kind.GEAR && stats != null && settled()) {
-                drawLoadoutTooltip(g, stats, left, contentW, mouseX, mouseY);
+                drawCargoTooltips(g, stats, mouseX, mouseY);
             }
         }
     }
@@ -606,17 +636,126 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawQuestion(g, n.gearQuestion(), cx, w, y);
         y = drawNarration(g, n.gearNarration(), cx, w, y);
         y += 8;
-        if (s != null) {
-            this.loadoutY = y;
-            drawLoadout(g, s, left, w, y, mouseX, mouseY);
-            y += SLOT + 10;
-            // Cargo tallies under the loadout: loot containers opened and books
-            // read this run.
-            drawCell(g, cx - 52, y, Integer.toString(s.containersOpened()), "gui.dungeontrain.death.narr.lbl_loot");
-            drawCell(g, cx + 52, y, Integer.toString(s.booksRead()), "gui.dungeontrain.death.narr.lbl_books");
-            y += 30;
+        if (s == null) return y;
+        boolean showItems = settled();
+
+        // ---- Row 1: worn gear (weapon + 4 armor) + gathered cargo (chest + book), one row.
+        // The two cargo cells replace the old loot/books stat cells; their counts draw in the
+        // native item-stack style via the renderItemDecorations text override.
+        ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
+        int gap = 6, cargoGap = 12;
+        int equipW = gear.length * SLOT + (gear.length - 1) * gap;   // 5 worn slots
+        int cargoW = 2 * SLOT + gap;                                 // chest + book
+        int rowW = equipW + cargoGap + cargoW;
+        int sx = left + (w - rowW) / 2;
+        this.cargoRowY = y;
+        this.cargoSx = sx;
+        for (int i = 0; i < gear.length; i++) {
+            int x = sx + i * (SLOT + gap);
+            drawSlot(g, x, y);
+            ItemStack stack = gear[i];
+            if (!stack.isEmpty() && showItems) {
+                g.renderItem(stack, x + 1, y + 1);
+                g.renderItemDecorations(this.font, stack, x + 1, y + 1);
+            }
         }
-        return y;
+        int chestX = sx + equipW + cargoGap;
+        int bookX = chestX + SLOT + gap;
+        drawSlot(g, chestX, y);
+        drawSlot(g, bookX, y);
+        if (showItems) {
+            ItemStack chest = new ItemStack(Items.CHEST);
+            ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
+            g.renderItem(chest, chestX + 1, y + 1);
+            g.renderItemDecorations(this.font, chest, chestX + 1, y + 1, Integer.toString(s.containersOpened()));
+            g.renderItem(book, bookX + 1, y + 1);
+            g.renderItemDecorations(this.font, book, bookX + 1, y + 1, Integer.toString(s.booksRead()));
+        }
+        this.containersRect = new Rect(chestX, y, SLOT, SLOT);
+        this.booksRect = new Rect(bookX, y, SLOT, SLOT);
+        y += SLOT + 12;
+
+        // ---- Row 2: Dungeon Train advancements earned this life (scrollable) + see-all button.
+        return drawAdvancements(g, s, left, w, y, showItems);
+    }
+
+    /**
+     * The cargo page's second row: Dungeon Train advancements earned this life, tier-framed
+     * and horizontally scrollable past 10, with a "see all" button outside the scroll viewport.
+     * Resolves each earned id to its client-side {@link DisplayInfo}; ids the client can't resolve
+     * (not synced / display-less) are skipped. Returns the y below the row.
+     */
+    private int drawAdvancements(GuiGraphics g, DeathStatsPacket s, int left, int w, int y, boolean showItems) {
+        List<AdvIcon> resolved = new ArrayList<>();
+        var conn = Minecraft.getInstance().getConnection();
+        if (conn != null) {
+            for (ResourceLocation id : s.earnedAdvancements()) {
+                AdvancementHolder h = conn.getAdvancements().get(id);
+                if (h == null) continue;
+                Optional<DisplayInfo> disp = h.value().display();
+                if (disp.isEmpty()) continue;
+                DisplayInfo d = disp.get();
+                resolved.add(new AdvIcon(d.getIcon(), d.getTitle(), d.getType(), null));
+            }
+        }
+        int count = resolved.size();
+
+        int advGap = 4, pitch = SLOT + advGap;
+        int maxVisible = 10;
+        int btnGap = 10, btnW = SLOT, btnH = SLOT;
+        int visible = Math.min(count, maxVisible);
+        int viewportW = visible > 0 ? visible * pitch - advGap : 0;
+        int contentRowW = count > 0 ? count * pitch - advGap : 0;
+        boolean scroll = count > maxVisible;
+        // Whole assembly (viewport + gap + see-all button) centered in the content width.
+        int assemblyW = (viewportW > 0 ? viewportW + btnGap : 0) + btnW;
+        int vpX = left + (w - assemblyW) / 2, vpY = y;
+
+        gearAdvMaxScroll = Math.max(0, contentRowW - viewportW);
+        gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll));
+
+        if (viewportW > 0) {
+            advViewport = new Rect(vpX, vpY, viewportW, SLOT);
+            if (scroll) g.enableScissor(vpX, vpY, vpX + viewportW, vpY + SLOT);
+            for (int i = 0; i < count; i++) {
+                int cxp = vpX + i * pitch - gearAdvScroll;
+                if (cxp + SLOT <= vpX || cxp >= vpX + viewportW) continue;  // fully outside viewport
+                AdvIcon a = resolved.get(i);
+                g.fill(cxp, vpY, cxp + SLOT, vpY + SLOT, fade(SLOT_BG));
+                drawBorder(g, cxp, vpY, SLOT, SLOT, frameColor(a.frame()));
+                if (showItems) g.renderItem(a.icon(), cxp + 1, vpY + 1);
+                gearAdvIcons.add(new AdvIcon(a.icon(), a.title(), a.frame(), new Rect(cxp, vpY, SLOT, SLOT)));
+            }
+            if (scroll) {
+                g.disableScissor();
+                int trackY = vpY + SLOT + 2;
+                g.fill(vpX, trackY, vpX + viewportW, trackY + 2, fade(0xFF1C1D22));
+                int thumbW = Math.max(12, (int) ((long) viewportW * viewportW / contentRowW));
+                int thumbX = vpX + (gearAdvMaxScroll > 0 ? (viewportW - thumbW) * gearAdvScroll / gearAdvMaxScroll : 0);
+                g.fill(thumbX, trackY, thumbX + thumbW, trackY + 2, fade(0xFF4A443C));
+            }
+        }
+
+        // "See all advancements" button — beveled, outside the viewport, to the right.
+        int btnX = viewportW > 0 ? vpX + viewportW + btnGap : vpX;
+        int btnY = vpY;
+        g.fill(btnX, btnY, btnX + btnW, btnY + btnH, fade(BTN_BG));
+        g.fill(btnX, btnY, btnX + btnW, btnY + 2, fade(BTN_LIGHT));
+        g.fill(btnX, btnY, btnX + 2, btnY + btnH, fade(BTN_LIGHT));
+        g.fill(btnX, btnY + btnH - 2, btnX + btnW, btnY + btnH, fade(BTN_DARK));
+        g.fill(btnX + btnW - 2, btnY, btnX + btnW, btnY + btnH, fade(BTN_DARK));
+        if (showItems) g.renderItem(new ItemStack(Items.KNOWLEDGE_BOOK), btnX + 1, btnY + 1);
+        this.seeAllRect = new Rect(btnX, btnY, btnW, btnH);
+
+        return vpY + SLOT + (scroll ? 8 : 4);
+    }
+
+    private static int frameColor(AdvancementType t) {
+        return switch (t) {
+            case CHALLENGE -> FRAME_CHALLENGE;
+            case GOAL -> FRAME_GOAL;
+            default -> FRAME_TASK;
+        };
     }
 
     private int drawLives(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
@@ -776,6 +915,10 @@ public final class NarrativeDeathScreen extends Screen {
                 return true;
             }
             if (backRect != null && backRect.has(mx, my)) { back(); return true; }
+            if (page.kind() == Kind.GEAR && seeAllRect != null && seeAllRect.has(mx, my)) {
+                openAdvancements();
+                return true;
+            }
             if (page.kind() == Kind.SURVEY && page.survey() != null) {
                 for (int i = 0; i < scoreRects.size(); i++) {
                     if (scoreRects.get(i).has(mx, my)) {
@@ -786,6 +929,18 @@ public final class NarrativeDeathScreen extends Screen {
             }
         }
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        // Horizontal-scroll the GEAR advancements row when the cursor is over its viewport.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.GEAR
+                && advViewport != null && advViewport.has(mx, my) && gearAdvMaxScroll > 0) {
+            int step = SLOT + 4;  // one cell per notch
+            gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll - (int) Math.round(dy) * step));
+            return true;
+        }
+        return super.mouseScrolled(mx, my, dx, dy);
     }
 
 
@@ -980,47 +1135,62 @@ public final class NarrativeDeathScreen extends Screen {
         g.drawString(this.font, "∞", left + w - 12, railY - 8, fade(INF), false);
     }
 
-    private void drawLoadout(GuiGraphics g, DeathStatsPacket s, int left, int w, int y, int mouseX, int mouseY) {
-        ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
-        int gap = 6;
-        int rowW = gear.length * SLOT + (gear.length - 1) * gap;
-        int sx = left + (w - rowW) / 2;
-        boolean showItems = settled();
-        for (int i = 0; i < gear.length; i++) {
-            int x = sx + i * (SLOT + gap);
-            g.fill(x, y, x + SLOT, y + SLOT, fade(SLOT_BG));
-            g.fill(x, y, x + SLOT, y + 1, fade(SLOT_DARK));
-            g.fill(x, y, x + 1, y + SLOT, fade(SLOT_DARK));
-            g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, fade(SLOT_LIGHT));
-            g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, fade(SLOT_LIGHT));
-            ItemStack stack = gear[i];
-            // Item icons can't take an alpha tint; only draw them once the page is
-            // settled so they don't pop at full opacity mid-fade.
-            if (!stack.isEmpty() && showItems) {
-                g.renderItem(stack, x + 1, y + 1);
-                g.renderItemDecorations(this.font, stack, x + 1, y + 1);
+    /** A single beveled inventory-style slot (matches the loadout slots). */
+    private void drawSlot(GuiGraphics g, int x, int y) {
+        g.fill(x, y, x + SLOT, y + SLOT, fade(SLOT_BG));
+        g.fill(x, y, x + SLOT, y + 1, fade(SLOT_DARK));
+        g.fill(x, y, x + 1, y + SLOT, fade(SLOT_DARK));
+        g.fill(x, y + SLOT - 1, x + SLOT, y + SLOT, fade(SLOT_LIGHT));
+        g.fill(x + SLOT - 1, y, x + SLOT, y + SLOT, fade(SLOT_LIGHT));
+    }
+
+    /**
+     * Cargo-page hover tooltips: worn-gear item tooltips, the chest/book cargo-icon labels,
+     * advancement titles (within the scroll viewport), and the see-all button. Uses the row
+     * geometry + clickable regions captured during {@link #drawGear}. One tooltip at a time.
+     */
+    private void drawCargoTooltips(GuiGraphics g, DeathStatsPacket s, int mouseX, int mouseY) {
+        if (cargoRowY >= 0 && cargoSx >= 0) {
+            ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
+            int gap = 6;
+            for (int i = 0; i < gear.length; i++) {
+                int x = cargoSx + i * (SLOT + gap);
+                ItemStack stack = gear[i];
+                if (stack.isEmpty()) continue;
+                if (mouseX >= x && mouseX < x + SLOT && mouseY >= cargoRowY && mouseY < cargoRowY + SLOT) {
+                    g.renderTooltip(this.font, Screen.getTooltipFromItem(Minecraft.getInstance(), stack),
+                            stack.getTooltipImage(), mouseX, mouseY);
+                    return;
+                }
             }
+        }
+        if (containersRect != null && containersRect.has(mouseX, mouseY)) {
+            g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_loot"), mouseX, mouseY);
+            return;
+        }
+        if (booksRect != null && booksRect.has(mouseX, mouseY)) {
+            g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.tip_books"), mouseX, mouseY);
+            return;
+        }
+        if (advViewport != null && advViewport.has(mouseX, mouseY)) {
+            for (AdvIcon a : gearAdvIcons) {
+                if (a.rect().has(mouseX, mouseY)) {
+                    g.renderTooltip(this.font, a.title(), mouseX, mouseY);
+                    return;
+                }
+            }
+        }
+        if (seeAllRect != null && seeAllRect.has(mouseX, mouseY)) {
+            g.renderTooltip(this.font, Component.translatable("gui.dungeontrain.death.narr.see_all_adv"), mouseX, mouseY);
         }
     }
 
-    private void drawLoadoutTooltip(GuiGraphics g, DeathStatsPacket s, int left, int w, int mouseX, int mouseY) {
-        if (loadoutY < 0) return;
-        ItemStack[] gear = { s.mostUsedWeapon(), s.armorHead(), s.armorChest(), s.armorLegs(), s.armorFeet() };
-        int gap = 6;
-        int rowW = gear.length * SLOT + (gear.length - 1) * gap;
-        int sx = left + (w - rowW) / 2;
-        for (int i = 0; i < gear.length; i++) {
-            int x = sx + i * (SLOT + gap);
-            ItemStack stack = gear[i];
-            if (stack.isEmpty()) continue;
-            if (mouseX >= x && mouseX < x + SLOT && mouseY >= loadoutY && mouseY < loadoutY + SLOT) {
-                g.renderTooltip(this.font, Screen.getTooltipFromItem(Minecraft.getInstance(), stack),
-                        stack.getTooltipImage(), mouseX, mouseY);
-            }
-        }
+    /** Open the vanilla advancements screen (DT tab via DefaultAdvancementsTab); returns here on close. */
+    private void openAdvancements() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() == null) return;
+        mc.setScreen(new AdvancementsScreen(mc.getConnection().getAdvancements(), this));
     }
-
-    private int loadoutY = -1;
 
     private Rect drawChip(GuiGraphics g, int x, int y, Component text, int border, int textColor) {
         int w = this.font.width(text) + 16, h = 14;

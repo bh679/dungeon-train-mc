@@ -330,7 +330,8 @@ public final class RunStatsEvents {
                 narrative,
                 deathCause,
                 side,
-                portrait
+                portrait,
+                run.earnedAdvancements()
         );
     }
 

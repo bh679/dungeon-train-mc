@@ -839,6 +839,9 @@ public final class AchievementEvents {
         if (!replaying
                 && id.getNamespace().equals(DungeonTrain.MOD_ID)
                 && !id.getPath().startsWith("editor/")) {
+            // Death-screen "accolades": record this genuine, non-editor Dungeon Train
+            // earn into the per-life run state; read into the death packet on death.
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordEarnedAdvancement(id);
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
