@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
+import games.brennan.dungeontrain.client.snapshot.RideGalleryScreen;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
@@ -97,6 +98,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int CHIP_RB_TEXT   = 0xFF7FAE84;
     private static final int CHIP_LV_BORDER = 0xFF2A2D33;
     private static final int CHIP_LV_TEXT   = 0xFF8A909A;
+    private static final int CHIP_PH_BORDER = 0xFF5A5236;
+    private static final int CHIP_PH_TEXT   = 0xFFC9B98A;
     private static final int BTN_BG         = 0xFF585B5E;
     private static final int BTN_LIGHT      = 0xFF76797D;
     private static final int BTN_DARK       = 0xFF1E1F21;
@@ -174,6 +177,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
+    private Rect photosRect;
     private final List<Rect> scoreRects = new ArrayList<>();
 
     public NarrativeDeathScreen() {
@@ -195,6 +199,9 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     protected void init() {
+        // Freeze the gallery for as long as the death screen is up: no flush / eviction / texture
+        // release may run while we're blitting these photos (a released texture would blank a page).
+        RideSnapshotGallery.freeze();
         pages = buildPages();
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
@@ -361,6 +368,11 @@ public final class NarrativeDeathScreen extends Screen {
         List<List<SnapshotTag>> chains = new ArrayList<>(pages.size());
         for (Page p : pages) chains.add(chainFor(p.kind()));
         pageBackgrounds = DeathBackgroundAssigner.assign(chains, RideSnapshotGallery.all());
+        // Pre-resolve now so the first frame of each page doesn't hitch loading a disk-backed photo.
+        // Only the assigned shots (≈ one per page) are touched, not the whole gallery.
+        for (RideSnapshot s : pageBackgrounds) {
+            if (s != null) s.texture();
+        }
     }
 
     /** Each page's thematic fallback chain (tier 0 = preferred tag; empty = any shot). */
@@ -447,7 +459,7 @@ public final class NarrativeDeathScreen extends Screen {
         // to black with the UI fade (T_DIP_DOWN), then the new one rises back from
         // black slowly (T_DIP_UP). With no switch (initial open / same photo) there's
         // no dip and the fade-in just tracks the UI.
-        boolean switching = toShot != null && !toShot.equals(fromShot);
+        boolean switching = toShot != null && toShot != fromShot; // identity: every capture is distinct
         long total = switching
                 ? (T_FADE + T_HOLD + T_DIP_DOWN + T_DIP_UP)
                 : (T_FADE + T_HOLD + T_FADE);
@@ -724,7 +736,7 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopBar(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
-        // Right-aligned: [reboard] [leave]. leave on the far right.
+        // Right-aligned: [photos] [reboard] [leave]. leave on the far right.
         Component leave = Component.translatable("gui.dungeontrain.death.leave");
         Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
         int leaveW = this.font.width(leave) + 16;
@@ -733,6 +745,17 @@ public final class NarrativeDeathScreen extends Screen {
         int reboardX = leaveX - 6 - reboardW;
         leaveRect = drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
         reboardRect = drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
+
+        // "photos" → ride-photo gallery. Only on the final platform page, and only
+        // when this run actually captured photos to browse.
+        photosRect = null;
+        boolean onPlatform = !pages.isEmpty() && pages.get(currentPage).kind() == Kind.PLATFORM;
+        if (onPlatform && !RideSnapshotGallery.isEmpty()) {
+            Component photos = Component.translatable("gui.dungeontrain.death.narr.photos", RideSnapshotGallery.size());
+            int photosW = this.font.width(photos) + 16;
+            int photosX = reboardX - 6 - photosW;
+            photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
+        }
     }
 
     private void drawFooter(GuiGraphics g, Page page, int mouseX, int mouseY) {
@@ -765,6 +788,7 @@ public final class NarrativeDeathScreen extends Screen {
         // rise) clicks fall through, so only the Continue button advances — not empty space.
         if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
+            if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leave(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
@@ -793,9 +817,9 @@ public final class NarrativeDeathScreen extends Screen {
         if (pages.isEmpty() || uiBusy) return;
         Page page = pages.get(currentPage);
         if (page.kind() == Kind.SURVEY) {
-            SurveyQuestionPayload.Entry e = page.survey();
-            maybeSubmit(e);
-            if (e != null && !submitted.contains(e.id())) return;
+            // Submit the answer if one was given; the survey is optional, so an
+            // unanswered question must not block Continue.
+            maybeSubmit(page.survey());
         }
         if (currentPage < pages.size() - 1) {
             startTransition(currentPage + 1);
@@ -832,6 +856,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void leave() {
         DeathScreenLayoutHandler.goToTitleScreen();
+    }
+
+    private void openGallery() {
+        Minecraft.getInstance().setScreen(new RideGalleryScreen(this));
     }
 
     // ---- Draw helpers ----
@@ -1099,5 +1127,8 @@ public final class NarrativeDeathScreen extends Screen {
         TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
         portrait.clear();
+        // Lift the gallery freeze. The world-leave paths clear the gallery anyway, but if the
+        // screen is ever dismissed without disconnecting, capture/offload must resume normally.
+        RideSnapshotGallery.unfreeze();
     }
 }
