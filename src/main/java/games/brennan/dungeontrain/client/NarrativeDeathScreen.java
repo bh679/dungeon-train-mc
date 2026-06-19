@@ -28,7 +28,6 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -789,25 +788,6 @@ public final class NarrativeDeathScreen extends Screen {
         return super.mouseClicked(mx, my, button);
     }
 
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        // Space / Enter act like Continue: fast-track while the UI is fading, else advance.
-        if (uiBusy) {
-            if (isAdvanceKey(keyCode)) { skipTransition(); return true; }
-            return super.keyPressed(keyCode, scanCode, modifiers);
-        }
-        // Settled: let a focused comment box consume the key first (so a space in a
-        // typed survey answer isn't swallowed as an advance).
-        if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
-        if (isAdvanceKey(keyCode)) { advance(); return true; }
-        return false;
-    }
-
-    private static boolean isAdvanceKey(int keyCode) {
-        return keyCode == GLFW.GLFW_KEY_SPACE
-                || keyCode == GLFW.GLFW_KEY_ENTER
-                || keyCode == GLFW.GLFW_KEY_KP_ENTER;
-    }
 
     private void advance() {
         if (pages.isEmpty() || uiBusy) return;
