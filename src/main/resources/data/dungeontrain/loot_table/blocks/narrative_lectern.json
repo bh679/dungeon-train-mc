@@ -11,7 +11,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "dungeontrain:narrative_lectern"
+          "name": "minecraft:lectern"
         }
       ],
       "rolls": 1.0
