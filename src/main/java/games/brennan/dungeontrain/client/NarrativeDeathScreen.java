@@ -31,6 +31,7 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementType;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
+import net.minecraft.client.gui.screens.advancements.AdvancementWidgetType;
 import net.minecraft.resources.ResourceLocation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.logging.LogUtils;
@@ -84,8 +85,8 @@ public final class NarrativeDeathScreen extends Screen {
         boolean has(double mx, double my) { return mx >= x && mx < x + w && my >= y && my < y + h; }
     }
 
-    /** A resolved advancement icon on the GEAR page: display + its on-screen rect (for hover). */
-    private record AdvIcon(ItemStack icon, Component title, AdvancementType frame, Rect rect) {}
+    /** A resolved advancement on the GEAR page: vanilla display data + its on-screen rect (for hover). */
+    private record AdvIcon(ItemStack icon, Component title, Component description, AdvancementType type, Rect rect) {}
 
     // ---- Palette (ARGB) ----
     private static final int OVERLAY        = 0xF2090A0D;
@@ -116,10 +117,6 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int SCORE_BG       = 0xFF1A1813;
     private static final int SCORE_BORDER   = 0xFF4A443C;
     private static final int SCORE_TEXT     = 0xFFCDBB95;
-    // Advancement tier frame colours (matches the L-screen ⬛ task / 🟡 goal / 🟣 challenge framing).
-    private static final int FRAME_TASK      = 0xFF4A443C;
-    private static final int FRAME_GOAL      = 0xFFB6892E;
-    private static final int FRAME_CHALLENGE = 0xFF8A4FB0;
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -686,6 +683,7 @@ public final class NarrativeDeathScreen extends Screen {
      * (not synced / display-less) are skipped. Returns the y below the row.
      */
     private int drawAdvancements(GuiGraphics g, DeathStatsPacket s, int left, int w, int y, boolean showItems) {
+        // Resolve each earned id to its client-side display (icon / title / description / type).
         List<AdvIcon> resolved = new ArrayList<>();
         var conn = Minecraft.getInstance().getConnection();
         if (conn != null) {
@@ -695,19 +693,21 @@ public final class NarrativeDeathScreen extends Screen {
                 Optional<DisplayInfo> disp = h.value().display();
                 if (disp.isEmpty()) continue;
                 DisplayInfo d = disp.get();
-                resolved.add(new AdvIcon(d.getIcon(), d.getTitle(), d.getType(), null));
+                resolved.add(new AdvIcon(d.getIcon(), d.getTitle(), d.getDescription(), d.getType(), null));
             }
         }
         int count = resolved.size();
 
-        int advGap = 4, pitch = SLOT + advGap;
-        int maxVisible = 10;
-        int btnGap = 10, btnW = SLOT, btnH = SLOT;
+        // Vanilla advancement-box sizing: a 26×26 framed box per tier, icon inset 5px (matches the L screen).
+        int box = 26, advGap = 4, pitch = box + advGap;
+        int btnGap = 10, btnW = 26, btnH = 26;
+        // Visible cell count: as many as fit beside the button, capped at 10 (so it scrolls past ~10).
+        int avail = Math.max(pitch, w - btnW - btnGap);
+        int maxVisible = Math.min(10, Math.max(1, (avail + advGap) / pitch));
         int visible = Math.min(count, maxVisible);
         int viewportW = visible > 0 ? visible * pitch - advGap : 0;
         int contentRowW = count > 0 ? count * pitch - advGap : 0;
-        boolean scroll = count > maxVisible;
-        // Whole assembly (viewport + gap + see-all button) centered in the content width.
+        boolean scroll = contentRowW > viewportW;
         int assemblyW = (viewportW > 0 ? viewportW + btnGap : 0) + btnW;
         int vpX = left + (w - assemblyW) / 2, vpY = y;
 
@@ -715,20 +715,22 @@ public final class NarrativeDeathScreen extends Screen {
         gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll));
 
         if (viewportW > 0) {
-            advViewport = new Rect(vpX, vpY, viewportW, SLOT);
-            if (scroll) g.enableScissor(vpX, vpY, vpX + viewportW, vpY + SLOT);
+            advViewport = new Rect(vpX, vpY, viewportW, box);
+            if (scroll) g.enableScissor(vpX, vpY, vpX + viewportW, vpY + box);
             for (int i = 0; i < count; i++) {
                 int cxp = vpX + i * pitch - gearAdvScroll;
-                if (cxp + SLOT <= vpX || cxp >= vpX + viewportW) continue;  // fully outside viewport
+                if (cxp + box <= vpX || cxp >= vpX + viewportW) continue;  // fully outside viewport
                 AdvIcon a = resolved.get(i);
-                g.fill(cxp, vpY, cxp + SLOT, vpY + SLOT, fade(SLOT_BG));
-                drawBorder(g, cxp, vpY, SLOT, SLOT, frameColor(a.frame()));
-                if (showItems) g.renderItem(a.icon(), cxp + 1, vpY + 1);
-                gearAdvIcons.add(new AdvIcon(a.icon(), a.title(), a.frame(), new Rect(cxp, vpY, SLOT, SLOT)));
+                // The exact vanilla obtained-advancement frame box, faded with the page.
+                g.setColor(1f, 1f, 1f, Math.min(1f, uiAlpha));
+                g.blitSprite(AdvancementWidgetType.OBTAINED.frameSprite(a.type()), cxp, vpY, box, box);
+                g.setColor(1f, 1f, 1f, 1f);
+                if (showItems) g.renderFakeItem(a.icon(), cxp + 5, vpY + 5);
+                gearAdvIcons.add(new AdvIcon(a.icon(), a.title(), a.description(), a.type(), new Rect(cxp, vpY, box, box)));
             }
             if (scroll) {
                 g.disableScissor();
-                int trackY = vpY + SLOT + 2;
+                int trackY = vpY + box + 1;
                 g.fill(vpX, trackY, vpX + viewportW, trackY + 2, fade(0xFF1C1D22));
                 int thumbW = Math.max(12, (int) ((long) viewportW * viewportW / contentRowW));
                 int thumbX = vpX + (gearAdvMaxScroll > 0 ? (viewportW - thumbW) * gearAdvScroll / gearAdvMaxScroll : 0);
@@ -744,18 +746,10 @@ public final class NarrativeDeathScreen extends Screen {
         g.fill(btnX, btnY, btnX + 2, btnY + btnH, fade(BTN_LIGHT));
         g.fill(btnX, btnY + btnH - 2, btnX + btnW, btnY + btnH, fade(BTN_DARK));
         g.fill(btnX + btnW - 2, btnY, btnX + btnW, btnY + btnH, fade(BTN_DARK));
-        if (showItems) g.renderItem(new ItemStack(Items.KNOWLEDGE_BOOK), btnX + 1, btnY + 1);
+        if (showItems) g.renderFakeItem(new ItemStack(Items.KNOWLEDGE_BOOK), btnX + 5, btnY + 5);
         this.seeAllRect = new Rect(btnX, btnY, btnW, btnH);
 
-        return vpY + SLOT + (scroll ? 8 : 4);
-    }
-
-    private static int frameColor(AdvancementType t) {
-        return switch (t) {
-            case CHALLENGE -> FRAME_CHALLENGE;
-            case GOAL -> FRAME_GOAL;
-            default -> FRAME_TASK;
-        };
+        return vpY + box + (scroll ? 8 : 4);
     }
 
     private int drawLives(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
@@ -1175,7 +1169,14 @@ public final class NarrativeDeathScreen extends Screen {
         if (advViewport != null && advViewport.has(mouseX, mouseY)) {
             for (AdvIcon a : gearAdvIcons) {
                 if (a.rect().has(mouseX, mouseY)) {
-                    g.renderTooltip(this.font, a.title(), mouseX, mouseY);
+                    // Same content + tier colouring as the advancements-menu hover: title, then
+                    // the description tinted by the frame's chat colour.
+                    List<Component> lines = new ArrayList<>();
+                    lines.add(a.title());
+                    if (a.description() != null && !a.description().getString().isEmpty()) {
+                        lines.add(a.description().copy().withStyle(a.type().getChatColor()));
+                    }
+                    g.renderComponentTooltip(this.font, lines, mouseX, mouseY);
                     return;
                 }
             }
