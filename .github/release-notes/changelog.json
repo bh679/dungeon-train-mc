@@ -1108,9 +1108,9 @@
       ],
       "pr": 465,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "survey-optional-continue",
@@ -1121,9 +1121,9 @@
       "highlights": [],
       "pr": 467,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "uncraftable-arrow-effects",
@@ -1139,9 +1139,9 @@
       ],
       "pr": 469,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "ride-photo-disk-offload",
@@ -1156,9 +1156,9 @@
       ],
       "pr": 470,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "discord-network-consent-card",
@@ -1171,9 +1171,9 @@
         "New /chatconnect command toggles the Discord chat relay in-game"
       ],
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "death-screen-advancements",
@@ -1188,9 +1188,9 @@
       ],
       "pr": 471,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "modpack-companion-mods-default-on",
@@ -1205,9 +1205,9 @@
       ],
       "pr": 466,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "sable-2-0-2",
@@ -1221,9 +1221,9 @@
         "Sable physics updated to 2.0.2"
       ],
       "date": "2026-06-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     },
     {
       "id": "playermob-train-companions",
@@ -1237,9 +1237,9 @@
         "30 new player skins (pool now 68); recognizable skins appear ~40% of the time"
       ],
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.325.0",
+      "released_at": "2026-06-19T10:39:34Z"
     }
   ]
 }
