@@ -41,19 +41,31 @@ public final class RideSnapshotExporter {
 
     /**
      * Write {@code shot} to a uniquely-named PNG under {@link #screenshotsDir()}
-     * and return the saved path.
+     * and return the saved path. An already-offloaded photo ({@link RideSnapshot#diskPath()})
+     * is copied straight from its disk cache; otherwise its pixels are read from the live texture.
      *
-     * @throws IOException if the texture's pixels are unavailable (released) or
-     *                     the write fails
+     * @throws IOException if the write/copy fails, or the photo is neither cached nor has live
+     *                     texture pixels (released without an offload)
      */
     public static Path save(RideSnapshot shot) throws IOException {
+        Path dir = screenshotsDir();
+        Files.createDirectories(dir);
+        Path target = uniquePath(dir, shot);
+
+        // If the photo was already offloaded to the disk cache (its texture freed to save memory),
+        // copy that PNG straight across — no texture read-back or re-encode, and it works even
+        // though the live texture is gone. The cache holds the same down-scaled frame.
+        Path cached = shot.diskPath();
+        if (cached != null && Files.exists(cached)) {
+            Files.copy(cached, target);
+            LOGGER.debug("[DungeonTrain] Saved ride photo (from cache) {} -> {}", cached, target);
+            return target;
+        }
+
         NativeImage image = pixelsOf(shot);
         if (image == null) {
             throw new IOException("ride photo pixels unavailable (texture released)");
         }
-        Path dir = screenshotsDir();
-        Files.createDirectories(dir);
-        Path target = uniquePath(dir, shot);
         image.writeToFile(target);
         LOGGER.debug("[DungeonTrain] Saved ride photo {} -> {}", shot.texture(), target);
         return target;

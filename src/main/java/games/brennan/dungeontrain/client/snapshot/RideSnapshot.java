@@ -73,6 +73,15 @@ public final class RideSnapshot {
         return diskPath != null;
     }
 
+    /**
+     * The offload cache file backing this photo, or {@code null} if it was never flushed to disk.
+     * Lets a consumer (e.g. the gallery's save-to-{@code screenshots/}) copy the existing PNG
+     * instead of re-reading the released texture.
+     */
+    public Path diskPath() {
+        return diskPath;
+    }
+
     /** In memory, holding a live texture and not yet flushed — a candidate for offloading. */
     public boolean isInMemoryUnflushed() {
         return diskPath == null && liveTexture != null;
