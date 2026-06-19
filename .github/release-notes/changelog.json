@@ -1142,6 +1142,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ride-photo-disk-offload",
+      "version": "0.324.0",
+      "type": "perf",
+      "title": "Ride photos use less memory on long runs",
+      "summary": "The third-person photos taken during your run (the ones shown behind the death screen) now quietly save to disk when your game has performance to spare and you're sitting in a menu, freeing up memory while you ride. The death screen and the photo gallery look and work exactly the same.",
+      "highlights": [
+        "Photos offload to disk only during quiet moments (high frame rate and a menu open), so there's no in-game stutter",
+        "Frees memory on long runs; the death screen and photo gallery are unchanged",
+        "Saving a photo from the gallery reuses the offloaded file, so it's instant"
+      ],
+      "pr": 470,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

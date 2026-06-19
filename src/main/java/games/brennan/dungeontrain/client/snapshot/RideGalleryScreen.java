@@ -74,6 +74,9 @@ public final class RideGalleryScreen extends Screen {
 
     @Override
     protected void init() {
+        // Keep the store frozen while browsing — no offload / eviction may release a texture we are
+        // blitting. The death screen lifts its freeze in removed() as it hands off to us, so re-take it.
+        RideSnapshotGallery.freeze();
         relayout();
 
         int btnY = this.height - 28;
@@ -263,6 +266,13 @@ public final class RideGalleryScreen extends Screen {
     @Override
     public void onClose() {
         this.minecraft.setScreen(parent);
+    }
+
+    @Override
+    public void removed() {
+        // Returning to the death screen re-freezes in its init(); leaving the world clears the
+        // gallery. Lift our freeze so normal capture/offload resumes if neither path re-takes it.
+        RideSnapshotGallery.unfreeze();
     }
 
     @Override
