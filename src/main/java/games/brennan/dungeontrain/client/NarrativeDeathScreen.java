@@ -714,9 +714,29 @@ public final class NarrativeDeathScreen extends Screen {
         gearAdvMaxScroll = Math.max(0, contentRowW - viewportW);
         gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll));
 
+        // The Dungeon Train advancements-tab background (the 16×16 texture the menu tiles behind
+        // the tree) — resolved from the DT root advancement so it follows the data, with a fallback.
+        ResourceLocation advBg = ResourceLocation.withDefaultNamespace("textures/gui/advancements/backgrounds/adventure.png");
+        if (conn != null) {
+            AdvancementHolder root = conn.getAdvancements().get(
+                    ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/root"));
+            if (root != null && root.value().display().isPresent()) {
+                advBg = root.value().display().get().getBackground().orElse(advBg);
+            }
+        }
+
         if (viewportW > 0) {
             advViewport = new Rect(vpX, vpY, viewportW, box);
-            if (scroll) g.enableScissor(vpX, vpY, vpX + viewportW, vpY + box);
+            // Clip the section to the viewport, tile the DT tab background behind the boxes, then
+            // draw the boxes — all faded with the page. (Always scissored so the bg can't bleed.)
+            g.enableScissor(vpX, vpY, vpX + viewportW, vpY + box);
+            g.setColor(1f, 1f, 1f, Math.min(1f, uiAlpha));
+            for (int ty = vpY; ty < vpY + box; ty += 16) {
+                for (int tx = vpX; tx < vpX + viewportW; tx += 16) {
+                    g.blit(advBg, tx, ty, 0.0f, 0.0f, 16, 16, 16, 16);
+                }
+            }
+            g.setColor(1f, 1f, 1f, 1f);
             for (int i = 0; i < count; i++) {
                 int cxp = vpX + i * pitch - gearAdvScroll;
                 if (cxp + box <= vpX || cxp >= vpX + viewportW) continue;  // fully outside viewport
@@ -728,8 +748,8 @@ public final class NarrativeDeathScreen extends Screen {
                 if (showItems) g.renderFakeItem(a.icon(), cxp + 5, vpY + 5);
                 gearAdvIcons.add(new AdvIcon(a.icon(), a.title(), a.description(), a.type(), new Rect(cxp, vpY, box, box)));
             }
+            g.disableScissor();
             if (scroll) {
-                g.disableScissor();
                 int trackY = vpY + box + 1;
                 g.fill(vpX, trackY, vpX + viewportW, trackY + 2, fade(0xFF1C1D22));
                 int thumbW = Math.max(12, (int) ((long) viewportW * viewportW / contentRowW));
