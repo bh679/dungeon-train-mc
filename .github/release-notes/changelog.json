@@ -1176,6 +1176,23 @@
       "released_at": null
     },
     {
+      "id": "death-screen-advancements",
+      "version": "0.325.0",
+      "type": "feat",
+      "title": "Advancements on the death-screen cargo page",
+      "summary": "The death screen's cargo page now shows the Dungeon Train advancements you earned this life — each in its real advancement frame — and moves the loot-container and book tallies onto the gear row as chest and book icons. A button opens the full advancements screen.",
+      "highlights": [
+        "Advancements earned this life, shown on the cargo page in their real per-tier advancement frames",
+        "Loot containers and books read now appear as chest and book icons on the gear row (hover for labels)",
+        "Scrolls when you've earned a lot, plus a button to view all advancements"
+      ],
+      "pr": 471,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "modpack-companion-mods-default-on",
       "version": "0.325.0",
       "type": "feat",
