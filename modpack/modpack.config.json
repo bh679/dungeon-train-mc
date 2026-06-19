@@ -4,22 +4,25 @@
   "dt_project_id": 1527512,
   "sable": {
     "project_id": 1312371,
-    "file_id": 8003927,
-    "version": "1.2.1+mc1.21.1"
+    "file_id": 8255445,
+    "version": "2.0.2+mc1.21.1"
   },
   "optional_mods": [
-    { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442 },
-    { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151 },
-    { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560 }
+    { "name": "AppleSkin", "slug": "appleskin", "project_id": 248787, "file_id": 7854442, "required": true },
+    { "name": "FerriteCore", "slug": "ferritecore", "project_id": 429235, "file_id": 7524151, "required": true },
+    { "name": "ModernFix", "slug": "modernfix", "project_id": 790626, "file_id": 8255560, "required": true },
+    { "name": "Advancement Plaques", "slug": "advancement-plaques", "project_id": 499826, "file_id": 5905995, "required": true },
+    { "name": "Iceberg", "slug": "iceberg", "project_id": 520110, "file_id": 6423863, "required": true },
+    { "name": "Lithostitched", "slug": "lithostitched", "project_id": 936015, "file_id": 8158004, "required": true },
+    { "name": "Mouse Tweaks", "slug": "mouse-tweaks", "project_id": 60089, "file_id": 5637846, "required": false },
+    { "name": "Jade", "slug": "jade", "project_id": 324717, "file_id": 7545219, "required": false },
+    { "name": "Distant Horizons", "slug": "distant-horizons", "project_id": 508933, "file_id": 7350266, "required": false },
+    { "name": "Tectonic", "slug": "tectonic", "project_id": 686836, "file_id": 7903156, "required": false }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" },
     { "slug": "adventure-item-names", "type": "embeddedLibrary" },
     { "slug": "adventure-item-stats", "type": "embeddedLibrary" },
-    { "slug": "interactive-player-mobs", "type": "embeddedLibrary" },
-    { "slug": "distant-horizons", "type": "optionalDependency" },
-    { "slug": "tectonic", "type": "optionalDependency" },
-    { "slug": "mouse-tweaks", "type": "optionalDependency" },
-    { "slug": "jade", "type": "optionalDependency" }
+    { "slug": "interactive-player-mobs", "type": "embeddedLibrary" }
   ]
 }
