@@ -26,11 +26,14 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
  *       keys do nothing except surface the hint.)</li>
  *   <li>Mouse buttons / scroll / interaction key-mappings → cancelled (swallow
  *       attack/use/zoom) and surface the hint.</li>
- *   <li>{@link ScreenEvent.Opening} → inventory / chat are cancelled to protect the
- *       cutscene, but the pause menu is allowed (window-focus-loss / Escape). While any
- *       screen owns input the in-world blockers above stand down and
- *       {@link CinematicCameraController#clientTick()} suspends the clock, so the menu is
- *       fully usable and the cinematic resumes from where it paused on close.</li>
+ *   <li>{@link ScreenEvent.Opening} → opening inventory / chat <em>straight from the
+ *       cutscene</em> is cancelled to protect the shot, but the pause menu is allowed
+ *       (window-focus-loss / Escape). Once a screen is already open, navigating onward to
+ *       its sub-screens (Options / Advancements / Stats / confirm-link …) is allowed — gated
+ *       on {@code getCurrentScreen() != null}. While any screen owns input the in-world
+ *       blockers above stand down and {@link CinematicCameraController#clientTick()} suspends
+ *       the clock, so the menu is fully usable and the cinematic resumes from where it paused
+ *       on close.</li>
  *   <li>{@link ClientPlayerNetworkEvent.LoggingOut} → hard reset.</li>
  * </ul>
  */
@@ -85,8 +88,13 @@ public final class CinematicInputHandler {
     @SubscribeEvent
     public static void onScreenOpening(ScreenEvent.Opening event) {
         if (!CinematicCameraController.isActive()) return;
-        // Allow the pause menu (window-focus-loss auto-pause / Escape) to open so the
-        // player can use it; the cinematic suspends and resumes when the menu closes.
+        // A screen is already open ⇒ the cinematic is suspended and the player is in
+        // menu-land; allow every in-menu navigation (Options / Advancements / Stats /
+        // confirm-link, etc.). getCurrentScreen() is the screen being replaced — it is
+        // null only when opening straight from the cutscene (HUD-only, no screen).
+        if (event.getCurrentScreen() != null) return;
+        // From the cutscene itself, allow only the pause menu (window-focus-loss
+        // auto-pause / Escape) so the cinematic suspends and resumes when it closes.
         if (event.getNewScreen() instanceof PauseScreen) return;
         // Keep blocking inventory / chat / etc. to preserve the cutscene.
         event.setCanceled(true);
