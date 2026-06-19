@@ -812,7 +812,11 @@ public final class NarrativeDeathScreen extends Screen {
     private void advance() {
         if (pages.isEmpty() || uiBusy) return;
         Page page = pages.get(currentPage);
-        if (page.kind() == Kind.SURVEY) maybeSubmit(page.survey());
+        if (page.kind() == Kind.SURVEY) {
+            SurveyQuestionPayload.Entry e = page.survey();
+            maybeSubmit(e);
+            if (e != null && !submitted.contains(e.id())) return;
+        }
         if (currentPage < pages.size() - 1) {
             startTransition(currentPage + 1);
         }
