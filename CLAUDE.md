@@ -213,7 +213,9 @@ bundling that release's DT file + Sable + the pinned companion mods. Core entrie
 ⚠️ In the CurseForge app `required:false` ships a mod **OFF** (opt-in), not on — a companion
 that should be **on by default must be `required:true`**. See `modpack/README.md` §"Enabled vs
 disabled by default" for the two-tier roster (enabled: AppleSkin/FerriteCore/ModernFix/
-Advancement Plaques; opt-in: Mouse Tweaks/Jade/Distant Horizons/Tectonic/Lithostitched).
+Advancement Plaques + inert library deps Iceberg & Lithostitched; opt-in: Mouse Tweaks/Jade/
+Distant Horizons/Tectonic). Library deps of a bundled mod ship `required:true` so the dependent
+loads (Advancement Plaques needs Iceberg; Tectonic needs Lithostitched).
 
 - Source + config live in `modpack/` (see `modpack/README.md`); upload uses the same
   `CURSEFORGE_TOKEN` via `scripts/modpack/publish-curseforge.sh`.

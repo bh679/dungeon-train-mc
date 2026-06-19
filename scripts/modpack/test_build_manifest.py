@@ -140,20 +140,24 @@ def _render_real_config():
 
 
 def test_real_config_ships_qol_mods_enabled_by_default():
-    """Guard: AppleSkin / FerriteCore / ModernFix / Advancement Plaques ship ENABLED by default.
+    """Guard: the on-by-default tier + the library deps it needs ship ENABLED (required:true).
 
     Renders the *real* repo config so these can't be silently dropped or flipped off. In the
     CurseForge app required:false ships OFF, so on-by-default companions MUST be required:true.
+    Iceberg (Advancement Plaques' required dep) and Lithostitched (Tectonic's) ship required:true
+    too — inert when unused, but always present so their dependent loads whenever it's enabled.
     """
     files = _render_real_config()
     assert {"projectID": 248787, "fileID": 7854442, "required": True} in files, files  # AppleSkin
     assert {"projectID": 429235, "fileID": 7524151, "required": True} in files, files  # FerriteCore
     assert {"projectID": 790626, "fileID": 8255560, "required": True} in files, files  # ModernFix
     assert {"projectID": 499826, "fileID": 5905995, "required": True} in files, files  # Advancement Plaques
+    assert {"projectID": 520110, "fileID": 6423863, "required": True} in files, files  # Iceberg (AP dep)
+    assert {"projectID": 936015, "fileID": 8158004, "required": True} in files, files  # Lithostitched (Tectonic dep)
 
 
 def test_real_config_ships_optins_disabled_by_default():
-    """Guard: Mouse Tweaks / Jade / Distant Horizons / Tectonic / Lithostitched ship OFF (opt-in).
+    """Guard: Mouse Tweaks / Jade / Distant Horizons / Tectonic ship OFF by default (opt-in).
 
     Distant Horizons is pinned to a 2.x file (file 7350266) — 3.x crashes on DT world entry.
     """
@@ -162,7 +166,6 @@ def test_real_config_ships_optins_disabled_by_default():
     assert {"projectID": 324717, "fileID": 7545219, "required": False} in files, files  # Jade
     assert {"projectID": 508933, "fileID": 7350266, "required": False} in files, files  # Distant Horizons 2.x
     assert {"projectID": 686836, "fileID": 7903156, "required": False} in files, files  # Tectonic
-    assert {"projectID": 936015, "fileID": 8158004, "required": False} in files, files  # Lithostitched
 
 
 def _main():

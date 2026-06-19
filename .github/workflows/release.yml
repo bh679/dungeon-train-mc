@@ -194,6 +194,7 @@ jobs:
             ferritecore(optional)
             modernfix(optional)
             advancement-plaques(optional)
+            iceberg(optional)
             distant-horizons(optional)
             tectonic(optional)
             mouse-tweaks(optional)

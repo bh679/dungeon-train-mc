@@ -21,12 +21,13 @@ else is a manifest file with a `required` flag (see "Enabled vs disabled by defa
 | AppleSkin | `248787` | **enabled** | Food saturation / hunger overlay. **Pinned** file ID. |
 | FerriteCore | `429235` | **enabled** | Memory-usage reducer (data-structure dedup) — no render/physics/chunk hooks, safe with Sable. **Pinned**. |
 | ModernFix | `790626` | **enabled** | Launch-time / world-load / memory optimiser. **Pinned**. |
-| Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. **Pinned**. |
+| Advancement Plaques | `499826` | **enabled** | Replaces vanilla advancement toasts with fancy plaques. Client-side toast render only — safe with Sable. Requires **Iceberg**. **Pinned**. |
+| Iceberg | `520110` | **enabled** (library) | Advancement Plaques' required dependency (`[1.2.2,)`). Inert UI library — enabled so AP loads on a default install. **Pinned**. |
+| Lithostitched | `936015` | **enabled** (library) | Tectonic's required dependency (`[1.6.0,)`). Inert worldgen library — enabled so enabling Tectonic stays one-click (no separate lib to toggle). **Pinned**. |
 | Mouse Tweaks | `60089` | off (opt-in) | Inventory QoL (shift-drag / scroll-to-move). **Pinned**. |
 | Jade | `324717` | off (opt-in) | Block/item tooltip HUD. **Known limitation:** tooltips don't render for blocks **on the moving train** (Sable sub-level). **Pinned** (15.10.5 — the build Sable's bundled Jade compat is verified against). |
 | Distant Horizons | `508933` | off (opt-in) | LOD render distance. **Use 2.x** — 3.0.x crashes the JVM on DT world entry. **Pinned** to a 2.x file. |
-| Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect, and its **Lithostitched** dependency bundled alongside it. **Pinned**. |
-| Lithostitched | `936015` | off (opt-in) | Tectonic's required dependency (`[1.6.0,)`) — bundled so Tectonic loads when a player enables it. **Pinned**. |
+| Tectonic | `686836` | off (opt-in) | Terrain generator. Needs **Compatible Terrain** ON in DT settings to take effect; its **Lithostitched** dependency ships enabled (above). **Pinned**. |
 
 …plus NeoForge as the modloader (`neoforge-<neo_version>`) and the Minecraft version,
 both read from `gradle.properties`.
@@ -51,10 +52,13 @@ Each non-core mod is an entry in `modpack.config.json` → `optional_mods[]` car
 flag straight into the manifest:
 
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, Advancement
-  Plaques. QoL / perf / cosmetic companions the pack turns on for everyone.
+  Plaques (QoL / perf / cosmetic companions the pack turns on for everyone), plus their inert
+  library deps **Iceberg** (Advancement Plaques) and **Lithostitched** (Tectonic). The libraries
+  ship enabled so their dependent loads on a default install (Iceberg — AP is on) and so enabling
+  an opt-in stays one-click (Lithostitched — Tectonic is off, but its lib is already present).
 - **Bundled but off by default (`required:false`)** — Mouse Tweaks, Jade, Distant Horizons,
-  Tectonic, Lithostitched. Shipped in the pack so a player can flip them on with one click, but
-  inert until they do. (DT itself + Sable are hardcoded `required:true` in the builder.)
+  Tectonic. Shipped in the pack so a player can flip them on with one click, but inert until they
+  do. (DT itself + Sable are hardcoded `required:true` in the builder.)
 
 ## Declared dependencies (CurseForge "Relations")
 
@@ -69,10 +73,11 @@ The jarJar'd siblings are bundled inside DT, so they must **not** be separate `f
 | `adventure-item-stats` | `embeddedLibrary` | jarJar'd inside DT. |
 | `interactive-player-mobs` | `embeddedLibrary` | jarJar'd inside DT. |
 
-Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Mouse
-Tweaks, Jade, Distant Horizons, Tectonic, Lithostitched) is a manifest **file**, so CurseForge
-auto-creates its relation from the manifest — these must therefore **not** be repeated in
-`curseforge_relations`. (Lithostitched is bundled only as Tectonic's transitive dependency.)
+Everything in `optional_mods[]` (AppleSkin, FerriteCore, ModernFix, Advancement Plaques, Iceberg,
+Lithostitched, Mouse Tweaks, Jade, Distant Horizons, Tectonic) is a manifest **file**, so
+CurseForge auto-creates its relation from the manifest — these must therefore **not** be repeated
+in `curseforge_relations`. (Iceberg is bundled as Advancement Plaques' library dependency;
+Lithostitched as Tectonic's.)
 
 ### Bundled mods must be mod dependencies
 
@@ -88,7 +93,8 @@ This is enforced in CI by **`scripts/modpack/check-relations.py`** (the `modpack
 `optional_mods` entry's `slug` against the `curseforge-dependencies` block and fails the build if
 a bundled mod is missing its `<slug>(optional)` relation — the gap that shipped AppleSkin
 undeclared in PR #390. So each `optional_mods` entry **must carry a `slug`** (its CurseForge URL
-slug). Lithostitched is bundled (Tectonic's dep), so it too is declared `lithostitched(optional)`.
+slug). The library deps are bundled too, so they are likewise declared `iceberg(optional)` (for
+Advancement Plaques) and `lithostitched(optional)` (for Tectonic).
 
 ## How it deploys (15 min after every mod release)
 
@@ -132,6 +138,8 @@ A stale pin just ships an older companion — harmless, but worth keeping curren
 
 - **Distant Horizons must stay on 2.x.** DH 3.0.x crashes the JVM on DT world entry (under both
   G1 and generational ZGC). Always pick a `DistantHorizons-2.x…-1.21.1-…` file.
+- **Advancement Plaques ↔ Iceberg.** AP requires Iceberg `[1.2.2,)` (not jarJar'd inside AP) —
+  keep the bundled Iceberg at or above that. Both ship `required:true` so AP works on a default install.
 - **Tectonic ↔ Lithostitched.** Tectonic requires Lithostitched `[1.6.0,)`; keep the bundled
   Lithostitched file at or above that. Bumping Tectonic? Re-check its `mods.toml` dependency range.
 
