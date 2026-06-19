@@ -1296,6 +1296,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "vindicator-stray-command-block",
+      "version": "0.327.0",
+      "type": "fix",
+      "title": "Stray command block removed from the vindicator carriage",
+      "summary": "An enemy (vindicator) carriage could spawn a leftover command block sitting on the floor where a raider belongs. The marker is now cleared, so the cell stays clean and the mob spawns as intended.",
+      "highlights": [],
+      "pr": 477,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
