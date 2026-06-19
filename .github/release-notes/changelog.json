@@ -1059,9 +1059,9 @@
       "highlights": [],
       "pr": 461,
       "date": "2026-06-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.323.0",
+      "released_at": "2026-06-19T02:27:35Z"
     }
   ]
 }
