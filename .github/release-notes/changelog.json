@@ -1124,6 +1124,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "uncraftable-arrow-effects",
+      "version": "0.324.0",
+      "type": "feat",
+      "title": "Uncraftable arrows now pack an escalating punch",
+      "summary": "The effectless \"Uncraftable\" tipped arrows you scavenge from vases and chests now carry a real offensive potion \u2014 and it grows nastier the deeper you ride. Every arrow you find within a 50-carriage stretch shares the same effect, then it steps up at the next stretch: Weakness early on, ramping through Slowness, Poison, and Harming as you travel further from the start. Loot containers you place yourself scale to how far you've travelled, too.",
+      "highlights": [
+        "Uncraftable tipped arrows now apply an offensive effect when fired",
+        "The effect stays the same across each 50-carriage stretch, then escalates at the next one",
+        "Ramps Weakness -> Slowness -> Poison -> Harming -> Poison II -> Harming II the deeper you travel",
+        "Loot containers you place by hand scale to your own travelled distance"
+      ],
+      "pr": 469,
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
