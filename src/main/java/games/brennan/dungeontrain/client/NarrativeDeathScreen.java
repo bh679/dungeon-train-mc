@@ -700,16 +700,20 @@ public final class NarrativeDeathScreen extends Screen {
 
         // Vanilla advancement-box sizing: a 26×26 framed box per tier, icon inset 5px (matches the L screen).
         int box = 26, advGap = 4, pitch = box + advGap;
+        int padX = 7, padY = 6;              // background-panel padding around the box row
         int btnGap = 10, btnW = 26, btnH = 26;
-        // Visible cell count: as many as fit beside the button, capped at 10 (so it scrolls past ~10).
-        int avail = Math.max(pitch, w - btnW - btnGap);
+        // Visible cell count: as many as fit beside the button + panel padding, capped at 10.
+        int avail = Math.max(pitch, w - btnW - btnGap - 2 * padX);
         int maxVisible = Math.min(10, Math.max(1, (avail + advGap) / pitch));
         int visible = Math.min(count, maxVisible);
         int viewportW = visible > 0 ? visible * pitch - advGap : 0;
         int contentRowW = count > 0 ? count * pitch - advGap : 0;
         boolean scroll = contentRowW > viewportW;
-        int assemblyW = (viewportW > 0 ? viewportW + btnGap : 0) + btnW;
-        int vpX = left + (w - assemblyW) / 2, vpY = y;
+        int panelW = viewportW > 0 ? viewportW + 2 * padX : 0;
+        int panelH = box + 2 * padY;
+        int assemblyW = (panelW > 0 ? panelW + btnGap : 0) + btnW;
+        int panelX = left + (w - assemblyW) / 2, panelY = y;
+        int vpX = panelX + padX, vpY = panelY + padY;
 
         gearAdvMaxScroll = Math.max(0, contentRowW - viewportW);
         gearAdvScroll = Math.max(0, Math.min(gearAdvMaxScroll, gearAdvScroll));
@@ -727,30 +731,33 @@ public final class NarrativeDeathScreen extends Screen {
 
         if (viewportW > 0) {
             advViewport = new Rect(vpX, vpY, viewportW, box);
-            // Clip the section to the viewport, tile the DT tab background behind the boxes, then
-            // draw the boxes — all faded with the page. (Always scissored so the bg can't bleed.)
-            g.enableScissor(vpX, vpY, vpX + viewportW, vpY + box);
+            // Background panel: tile the DT tab texture across the padded panel (clipped), faded
+            // with the page via setColor.
+            g.enableScissor(panelX, panelY, panelX + panelW, panelY + panelH);
             g.setColor(1f, 1f, 1f, Math.min(1f, uiAlpha));
-            for (int ty = vpY; ty < vpY + box; ty += 16) {
-                for (int tx = vpX; tx < vpX + viewportW; tx += 16) {
+            for (int ty = panelY; ty < panelY + panelH; ty += 16) {
+                for (int tx = panelX; tx < panelX + panelW; tx += 16) {
                     g.blit(advBg, tx, ty, 0.0f, 0.0f, 16, 16, 16, 16);
                 }
             }
             g.setColor(1f, 1f, 1f, 1f);
+            g.disableScissor();
+            // Border around the panel — a 2px frame in the advancements palette (drawBorder fades it).
+            drawBorder(g, panelX, panelY, panelW, panelH, 0xFF120D08);
+            drawBorder(g, panelX + 1, panelY + 1, panelW - 2, panelH - 2, 0xFF8A7355);
+            // Advancement boxes: clipped to the inner viewport, scrolled, faded via the sprite colour tint.
+            g.enableScissor(vpX, vpY, vpX + viewportW, vpY + box);
             for (int i = 0; i < count; i++) {
                 int cxp = vpX + i * pitch - gearAdvScroll;
                 if (cxp + box <= vpX || cxp >= vpX + viewportW) continue;  // fully outside viewport
                 AdvIcon a = resolved.get(i);
-                // The exact vanilla obtained-advancement frame box, faded with the page.
-                g.setColor(1f, 1f, 1f, Math.min(1f, uiAlpha));
-                g.blitSprite(AdvancementWidgetType.OBTAINED.frameSprite(a.type()), cxp, vpY, box, box);
-                g.setColor(1f, 1f, 1f, 1f);
+                g.blitSprite(AdvancementWidgetType.OBTAINED.frameSprite(a.type()), cxp, vpY, box, box, fade(0xFFFFFFFF));
                 if (showItems) g.renderFakeItem(a.icon(), cxp + 5, vpY + 5);
                 gearAdvIcons.add(new AdvIcon(a.icon(), a.title(), a.description(), a.type(), new Rect(cxp, vpY, box, box)));
             }
             g.disableScissor();
             if (scroll) {
-                int trackY = vpY + box + 1;
+                int trackY = panelY + panelH + 1;
                 g.fill(vpX, trackY, vpX + viewportW, trackY + 2, fade(0xFF1C1D22));
                 int thumbW = Math.max(12, (int) ((long) viewportW * viewportW / contentRowW));
                 int thumbX = vpX + (gearAdvMaxScroll > 0 ? (viewportW - thumbW) * gearAdvScroll / gearAdvMaxScroll : 0);
@@ -758,9 +765,9 @@ public final class NarrativeDeathScreen extends Screen {
             }
         }
 
-        // "See all advancements" button — beveled, outside the viewport, to the right.
-        int btnX = viewportW > 0 ? vpX + viewportW + btnGap : vpX;
-        int btnY = vpY;
+        // "See all advancements" button — beveled, outside the panel, vertically centred beside it.
+        int btnX = panelW > 0 ? panelX + panelW + btnGap : panelX;
+        int btnY = panelY + (panelH - btnH) / 2;
         g.fill(btnX, btnY, btnX + btnW, btnY + btnH, fade(BTN_BG));
         g.fill(btnX, btnY, btnX + btnW, btnY + 2, fade(BTN_LIGHT));
         g.fill(btnX, btnY, btnX + 2, btnY + btnH, fade(BTN_LIGHT));
@@ -769,7 +776,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (showItems) g.renderFakeItem(new ItemStack(Items.KNOWLEDGE_BOOK), btnX + 5, btnY + 5);
         this.seeAllRect = new Rect(btnX, btnY, btnW, btnH);
 
-        return vpY + box + (scroll ? 8 : 4);
+        return panelY + panelH + (scroll ? 8 : 4);
     }
 
     private int drawLives(GuiGraphics g, DeathStatsPacket s, DeathNarrative n,
