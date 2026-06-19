@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
+import games.brennan.dungeontrain.client.snapshot.RideGalleryScreen;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
@@ -97,6 +98,8 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int CHIP_RB_TEXT   = 0xFF7FAE84;
     private static final int CHIP_LV_BORDER = 0xFF2A2D33;
     private static final int CHIP_LV_TEXT   = 0xFF8A909A;
+    private static final int CHIP_PH_BORDER = 0xFF5A5236;
+    private static final int CHIP_PH_TEXT   = 0xFFC9B98A;
     private static final int BTN_BG         = 0xFF585B5E;
     private static final int BTN_LIGHT      = 0xFF76797D;
     private static final int BTN_DARK       = 0xFF1E1F21;
@@ -174,6 +177,7 @@ public final class NarrativeDeathScreen extends Screen {
 
     // Clickable regions, recomputed each render() and read by mouseClicked().
     private Rect reboardRect, leaveRect, continueRect, backRect, boardAnewRect, platformLeaveRect;
+    private Rect photosRect;
     private final List<Rect> scoreRects = new ArrayList<>();
 
     public NarrativeDeathScreen() {
@@ -724,7 +728,7 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopBar(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
-        // Right-aligned: [reboard] [leave]. leave on the far right.
+        // Right-aligned: [photos] [reboard] [leave]. leave on the far right.
         Component leave = Component.translatable("gui.dungeontrain.death.leave");
         Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
         int leaveW = this.font.width(leave) + 16;
@@ -733,6 +737,17 @@ public final class NarrativeDeathScreen extends Screen {
         int reboardX = leaveX - 6 - reboardW;
         leaveRect = drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
         reboardRect = drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
+
+        // "photos" → ride-photo gallery. Only on the final platform page, and only
+        // when this run actually captured photos to browse.
+        photosRect = null;
+        boolean onPlatform = !pages.isEmpty() && pages.get(currentPage).kind() == Kind.PLATFORM;
+        if (onPlatform && !RideSnapshotGallery.isEmpty()) {
+            Component photos = Component.translatable("gui.dungeontrain.death.narr.photos", RideSnapshotGallery.size());
+            int photosW = this.font.width(photos) + 16;
+            int photosX = reboardX - 6 - photosW;
+            photosRect = drawChip(g, photosX, 8, photos, CHIP_PH_BORDER, CHIP_PH_TEXT);
+        }
     }
 
     private void drawFooter(GuiGraphics g, Page page, int mouseX, int mouseY) {
@@ -765,6 +780,7 @@ public final class NarrativeDeathScreen extends Screen {
         // rise) clicks fall through, so only the Continue button advances — not empty space.
         if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
+            if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
             if (leaveRect != null && leaveRect.has(mx, my)) { leave(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
@@ -832,6 +848,10 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void leave() {
         DeathScreenLayoutHandler.goToTitleScreen();
+    }
+
+    private void openGallery() {
+        Minecraft.getInstance().setScreen(new RideGalleryScreen(this));
     }
 
     // ---- Draw helpers ----
