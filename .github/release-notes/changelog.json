@@ -1256,6 +1256,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "collecting-stories-hint",
+      "version": "0.326.1",
+      "type": "fix",
+      "title": "Update 'Collecting Stories' hint",
+      "summary": "Changed the hint text to 'The lecterns hold the key.'",
+      "highlights": [],
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
