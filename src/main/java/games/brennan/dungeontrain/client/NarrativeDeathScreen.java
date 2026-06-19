@@ -793,9 +793,9 @@ public final class NarrativeDeathScreen extends Screen {
         if (pages.isEmpty() || uiBusy) return;
         Page page = pages.get(currentPage);
         if (page.kind() == Kind.SURVEY) {
-            SurveyQuestionPayload.Entry e = page.survey();
-            maybeSubmit(e);
-            if (e != null && !submitted.contains(e.id())) return;
+            // Submit the answer if one was given; the survey is optional, so an
+            // unanswered question must not block Continue.
+            maybeSubmit(page.survey());
         }
         if (currentPage < pages.size() - 1) {
             startTransition(currentPage + 1);
