@@ -1284,6 +1284,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-lore-books",
+      "version": "0.327.0",
+      "type": "content",
+      "title": "Echo lore books",
+      "summary": "Added two new echo-themed variants to Quiet Rules of the Train, and two new echo/past-life observations to Adventurer's Field Notes.",
+      "highlights": [],
+      "date": "2026-06-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
