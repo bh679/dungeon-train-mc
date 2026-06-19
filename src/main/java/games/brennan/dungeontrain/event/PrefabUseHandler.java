@@ -12,6 +12,7 @@ import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -223,11 +224,18 @@ public final class PrefabUseHandler {
             return;
         }
 
-        // Roll the pool deterministically off the world seed + cell pos.
+        // Roll the pool deterministically off the world seed + cell pos. A
+        // hand-placed loot container scales with how far the placing player has
+        // travelled (their signed travelledCarriageIndex), so placed-container
+        // loot — including the per-50-carriage "Uncraftable" arrow effect tier
+        // — matches what the player would find in a naturally-generated carriage
+        // at that distance, instead of always rolling as start-of-run.
         long worldSeed = serverLevel.getSeed();
+        int placedCarriageIndex = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+            .travelledCarriageIndex();
         CompoundTag baseNbt = be.saveWithFullMetadata(serverLevel.registryAccess());
         CompoundTag rolled = ContainerContentsRoller.roll(
-            loaded.get().pool(), placedState, pos, worldSeed, /* carriageIndex */ 0, baseNbt,
+            loaded.get().pool(), placedState, pos, worldSeed, placedCarriageIndex, baseNbt,
             serverLevel.registryAccess(), serverLevel);
         if (rolled == null) return;
         be.loadCustomOnly(rolled, serverLevel.registryAccess());
