@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.cheat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.discord.FreePlayReport;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
@@ -66,6 +67,8 @@ public final class RunIntegrity {
             .append(Component.translatable("chat.dungeontrain.free_play.consequence")
                 .withStyle(ChatFormatting.GRAY));
         player.sendSystemMessage(msg);
+        // Mirror the transition to Discord (best-effort; never disrupts the run state above).
+        FreePlayReport.post(player, cause);
     }
 
     /**
