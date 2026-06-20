@@ -1420,6 +1420,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-free-play-notice",
+      "version": "0.329.0",
+      "type": "feat",
+      "title": "Free Play activity now shows in Discord",
+      "summary": "When a player's run enters Free Play (creative, spectator, or cheat commands), Discord now gets a heads-up. Free Play runs also keep posting their death and \"left the game\" run summaries to Discord, so the community feed stays complete \u2014 cross-world stats still stay frozen in Free Play.",
+      "highlights": [
+        "Discord notice the moment a run enters Free Play",
+        "Death and \"left the game\" summaries now post for Free Play runs too",
+        "New freePlayNoticeToDiscord config toggle (on by default)"
+      ],
+      "pr": 487,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
