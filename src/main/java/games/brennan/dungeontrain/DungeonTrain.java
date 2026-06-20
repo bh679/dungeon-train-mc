@@ -7,6 +7,7 @@ import games.brennan.discordpresence.config.DiscordCredentialsProvider;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
+import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -187,6 +188,19 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but social-gift seam unavailable ({}); "
                         + "befriend advancements disabled.", t.toString());
+            }
+        }
+
+        // Lock a Free Play (cheated) run's Ender Chest onto the creative slot via
+        // EnderChestPersistence's slot-key provider seam, so cheated items can't
+        // reach the player's legit chest. ECP is always bundled (jarJar), but
+        // tolerate a build predating the seam (0.1.0): degrade to "no lock".
+        if (ModList.get().isLoaded("enderchestpersistence")) {
+            try {
+                EnderChestLockBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("EnderChestPersistence present but slot-lock seam unavailable ({}); "
+                        + "Free Play Ender Chest lock disabled.", t.toString());
             }
         }
     }
