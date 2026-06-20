@@ -69,6 +69,8 @@ public final class DungeonTrainConfig {
 
     public static final boolean DEFAULT_DEATH_REPORT_TO_DISCORD = true;
 
+    public static final boolean DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD = true;
+
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_ENABLED = true;
     public static final int MIN_INTRO_DURATION_TICKS = 20;
@@ -94,6 +96,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue FIRST_LEVEL_STARTER_LOOT;
     public static final ModConfigSpec.IntValue RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN;
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
 
@@ -119,6 +122,7 @@ public final class DungeonTrainConfig {
         FIRST_LEVEL_STARTER_LOOT = pair.getLeft().firstLevelStarterLoot;
         RANDOM_BOOK_FROM_BOOKSHELF_ONE_IN = pair.getLeft().randomBookFromBookshelfOneIn;
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
+        FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
     }
@@ -193,6 +197,13 @@ public final class DungeonTrainConfig {
                         "config/discordpresence-server.toml. To avoid a duplicate post, also set autoDeathReport=false",
                         "there (this richer report replaces Discord Presence's basic vanilla one).")
                 .define("deathReportToDiscord", DEFAULT_DEATH_REPORT_TO_DISCORD);
+        ModConfigSpec.BooleanValue freePlayNoticeToDiscord = b
+                .comment("Post a short embed to Discord when a player's run first enters Free Play — i.e. they",
+                        "switch to creative/spectator, run a non-allowlisted cheat command, or join a world already",
+                        "in creative. Posts into that player's Discord thread, naming what tripped Free Play. Fires",
+                        "once per run/world. Requires the bundled Discord Presence mod with a webhookUrl configured in",
+                        "config/discordpresence-server.toml.")
+                .define("freePlayNoticeToDiscord", DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD);
         b.pop();
         b.push("intro");
         ModConfigSpec.BooleanValue introCinematicEnabled = b
@@ -209,7 +220,7 @@ public final class DungeonTrainConfig {
                 difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
-                introCinematicEnabled, introCinematicDurationTicks);
+                freePlayNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -299,6 +310,11 @@ public final class DungeonTrainConfig {
     /** Whether to post the death-screen run summary to Discord (via the bundled Discord Presence mod). */
     public static boolean isDeathReportToDiscord() {
         return isLoaded() ? DEATH_REPORT_TO_DISCORD.get() : DEFAULT_DEATH_REPORT_TO_DISCORD;
+    }
+
+    /** Whether to post a notice to Discord when a player's run enters Free Play (via the bundled Discord Presence mod). */
+    public static boolean isFreePlayNoticeToDiscord() {
+        return isLoaded() ? FREE_PLAY_NOTICE_TO_DISCORD.get() : DEFAULT_FREE_PLAY_NOTICE_TO_DISCORD;
     }
 
     /** Whether the fly-up spawn cinematic plays the first time a player enters a world. */
@@ -396,6 +412,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue firstLevelStarterLoot,
             ModConfigSpec.IntValue randomBookFromBookshelfOneIn,
             ModConfigSpec.BooleanValue deathReportToDiscord,
+            ModConfigSpec.BooleanValue freePlayNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks
     ) {}
