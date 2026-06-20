@@ -1334,6 +1334,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "effectless-loot-potions",
+      "version": "0.327.0",
+      "type": "feat",
+      "title": "Useless loot potions now brew up a real, escalating effect",
+      "summary": "The blank, effectless potions you used to scavenge \u2014 the 'Uncraftable' bottles and plain water that did nothing \u2014 now come brewed with a real effect, and they grow more potent the deeper you ride. How strong an effect you find is tied to how far you've travelled: gentle brews early on, ramping up to powerful concoctions later. But each bottle is its own surprise \u2014 it might be a drink, a splash, or a lingering cloud, carrying any effect from the current tier, so two potions found in the same stretch can be completely different. Loot containers you place yourself scale to how far you've travelled, too.",
+      "highlights": [
+        "Effectless 'Uncraftable' potions in loot now carry a real effect",
+        "Effects grow stronger the further you travel \u2014 gentle early, powerful later",
+        "Every bottle is its own roll: a mix of effects, and drinkable / splash / lingering forms",
+        "Water, awkward and other no-effect potions get upgraded too; real potions are left untouched",
+        "Loot containers you place by hand scale to your own travelled distance"
+      ],
+      "pr": 481,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
