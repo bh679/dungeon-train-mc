@@ -43,6 +43,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_GENERATION_SEED = "generationSeed";
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
+    private static final String TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE = "playerMobBehindSpawnPercentOverride";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -51,6 +52,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private StartingDimension startingDimension;
     /** Per-world override of the PlayerMob 1-in-N spawn rate; null = use the global COMMON default. */
     private Integer playerMobSpawnOneInOverride;
+    /** Per-world override of the behind-the-player PlayerMob spawn percent chance; null = global COMMON default. */
+    private Integer playerMobBehindSpawnPercentOverride;
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -115,6 +118,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_PLAYER_MOB_SPAWN_OVERRIDE)) {
             data.playerMobSpawnOneInOverride = tag.getInt(TAG_PLAYER_MOB_SPAWN_OVERRIDE);
         }
+        if (tag.contains(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE)) {
+            data.playerMobBehindSpawnPercentOverride = tag.getInt(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE);
+        }
         return data;
     }
 
@@ -130,6 +136,9 @@ public final class DungeonTrainWorldData extends SavedData {
         // Only persist the override when set, so "unset" stays distinguishable from "0 (disabled)".
         if (playerMobSpawnOneInOverride != null) {
             tag.putInt(TAG_PLAYER_MOB_SPAWN_OVERRIDE, playerMobSpawnOneInOverride);
+        }
+        if (playerMobBehindSpawnPercentOverride != null) {
+            tag.putInt(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE, playerMobBehindSpawnPercentOverride);
         }
         return tag;
     }
@@ -187,6 +196,35 @@ public final class DungeonTrainWorldData extends SavedData {
                 Math.min(DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN, value));
         if (Objects.equals(next, playerMobSpawnOneInOverride)) return;
         playerMobSpawnOneInOverride = next;
+        setDirty();
+    }
+
+    /** This world's behind-spawn percent override, or null when the world follows the global default. */
+    public Integer getPlayerMobBehindSpawnPercentOverride() {
+        return playerMobBehindSpawnPercentOverride;
+    }
+
+    /**
+     * Effective behind-spawn percent chance for this world: the per-world override if one has been
+     * set in-game, otherwise the global default from {@link DungeonTrainCommonConfig}. Read live by
+     * {@link games.brennan.dungeontrain.train.PlayerMobBehindSpawner}.
+     */
+    public int getEffectivePlayerMobBehindSpawnPercent() {
+        return playerMobBehindSpawnPercentOverride != null
+                ? playerMobBehindSpawnPercentOverride
+                : DungeonTrainCommonConfig.getDefaultPlayerMobBehindSpawnPercent();
+    }
+
+    /**
+     * Set (non-null) or clear (null) this world's behind-spawn percent override.
+     * A non-null value is clamped to the COMMON config's legal percent range.
+     */
+    public void setPlayerMobBehindSpawnPercentOverride(Integer value) {
+        Integer next = value == null ? null : Math.max(
+                DungeonTrainCommonConfig.MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT,
+                Math.min(DungeonTrainCommonConfig.MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT, value));
+        if (Objects.equals(next, playerMobBehindSpawnPercentOverride)) return;
+        playerMobBehindSpawnPercentOverride = next;
         setDirty();
     }
 
