@@ -1519,6 +1519,18 @@
       "released_at": "2026-06-20T08:53:48Z"
     },
     {
+      "id": "consent-wont-do-line",
+      "version": "0.336.0",
+      "type": "feat",
+      "title": "The internet prompt now says what it won't do",
+      "summary": "The first-launch \"Connect to the internet?\" prompt now lists a reassurance alongside the features \u2014 marked with a red \u2717 \u2014 clarifying one thing the connection will never do. Rest easy: it will not harvest your soul.",
+      "highlights": [],
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "richer-death-narration",
       "version": "0.335.0",
       "type": "content",
