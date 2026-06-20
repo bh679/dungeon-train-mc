@@ -60,7 +60,7 @@ import java.util.Set;
  * (cross-world lifetime totals) → one page per unanswered feedback-survey
  * question (driven by the bundled Discord Presence survey, submitted through
  * its public API) → <b>the platform</b> (Board anew / Leave). A single centered
- * <i>Continue</i> advances; a bare back-arrow returns; <i>reboard</i> and
+ * <i>Next Screen</i> advances; a bare back-arrow returns; <i>reboard</i> and
  * <i>leave the line</i> sit in the top corner throughout.</p>
  *
  * <p>Moving between pages plays a slow transition: the chrome + text + vignette
