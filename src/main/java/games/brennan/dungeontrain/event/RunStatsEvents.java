@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
@@ -17,6 +18,7 @@ import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,6 +47,7 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -197,7 +200,7 @@ public final class RunStatsEvents {
         // Best-effort: a Discord hiccup must never disrupt the death handling above.
         if (DungeonTrainConfig.isDeathReportToDiscord()) {
             try {
-                postRunSummary(player, event.getSource(), packet);
+                postRunSummary(player, event.getSource(), packet, cheated);
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] death report to Discord failed: {}", t.toString());
             }
@@ -226,7 +229,8 @@ public final class RunStatsEvents {
                 run.playerKills(),
                 hearts,
                 run.distanceBlocks(),
-                lifeDeaths);
+                lifeDeaths,
+                run.containersOpened());
         return DeathLoreStore.buildNarrative(ctx, player.serverLevel().getRandom());
     }
 
@@ -248,11 +252,46 @@ public final class RunStatsEvents {
      * the same stats the death screen shows, and the most-used weapon + worn armor as the
      * composed item image. Discord Presence handles the embed, image, and posting off-thread.
      */
-    private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet) {
+    private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
+                                       boolean cheated) {
         String cause = source.getLocalizedDeathMessage(player).getString();
-        DiscordService.get().postDeathReport(player,
-                "💀 " + player.getGameProfile().getName() + " — Run Ended", cause,
-                runFields(packet), runIcons(packet));
+        String title = "💀 " + player.getGameProfile().getName() + " — Run Ended";
+        List<DeathField> fields = runFields(packet);
+        List<ItemStack> icons = runIcons(packet);
+        DiscordService.get().postDeathReport(player, title, cause, fields, icons);
+        // Dev/test builds also post a redesigned report OUTSIDE the player's thread — "the manifest":
+        // the rolled fall narration, each section headed by the line the player saw, de-duped stat
+        // strips, and this run's ride photo. This is the upcoming public death feed (dev-gated preview
+        // for now). Free Play (cheated) runs are EXCLUDED — they still get the basic threaded report
+        // above in dev, but never the public manifest report.
+        if (DungeonTrain.isDevBuild() && !cheated) {
+            List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
+            String manifestTitle = DeathManifestFormat.title(
+                    player.getGameProfile().getName(), packet.cartsTravelled());
+            String manifestDesc = DeathManifestFormat.description(
+                    packet.narrative(), packet.deathCause(),
+                    packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
+                    packet.containersOpened(), packet.booksRead(), advTitles,
+                    packet.lifeCarriages(), packet.lifeDistance(), packet.lifeFriends(), packet.lifeBooks());
+            // Buffer the top-level report until the client sends this run's scenic ride photo
+            // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
+            DeathReportBuffer.await(player, manifestTitle, manifestDesc, icons);
+        }
+    }
+
+    /**
+     * Resolve each earned advancement id to its display title (server-side), skipping ids the server
+     * can't resolve or that have no display. Used for the manifest report's "the cargo" segment.
+     */
+    private static List<String> resolveAdvancementTitles(ServerPlayer player, List<ResourceLocation> ids) {
+        List<String> out = new ArrayList<>();
+        var advancements = player.server.getAdvancements();
+        for (ResourceLocation id : ids) {
+            AdvancementHolder h = advancements.get(id);
+            if (h == null) continue;
+            h.value().display().ifPresent(d -> out.add(d.getTitle().getString()));
+        }
+        return out;
     }
 
     /**
