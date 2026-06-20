@@ -202,6 +202,13 @@ jobs:
             mouse-tweaks(optional)
             jade(optional)
             lithostitched(optional)
+            controlling(optional)
+            searchables(optional)
+            equipment-compare(optional)
+            item-highlighter(optional)
+            pick-up-notifier(optional)
+            puzzles-lib(optional)
+            smooth-swapping(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000
