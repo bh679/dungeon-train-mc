@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
+import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.train.TrainMembership;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import java.util.List;
@@ -55,6 +56,43 @@ public class DungeonTrain {
      * lock-step with the real ping.
      */
     public static final List<String> MENTION_TOKENS = List.of("@dev", "@brennanhatton");
+
+    /**
+     * Discord relay capability URLs. Release builds (the {@code main} branch) report to the live
+     * community feed; every other build (feature branches, worktrees, detached HEAD) reports to a
+     * separate dev channel via a distinct capability, so dev/test runs never post to the live feed by
+     * accident. Both caps are non-secret + revocable (they ship in the jar like the prod cap always
+     * has); the actual dev-channel webhook lives only on the relay (its {@code DEV_WEBHOOK_URL}), never
+     * in the jar. The same relay bot serves both channels, so the dev feed has full message parity
+     * (threads / chat / presence) — only the destination differs.
+     */
+    private static final String RELAY_LIVE_BASE_URL =
+            "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
+    private static final String RELAY_DEV_BASE_URL =
+            "https://brennan.games/api/dp-relay/0e908e2d067e81eb3e31e43e6c4e337182db24232994dc25";
+
+    /**
+     * True for any non-release build — the same branch-ref dev signal the title screen + version HUD
+     * use ({@code !"main".equals(branch)}). Drives dev-vs-live Discord relay routing.
+     */
+    private static boolean isDevBuild() {
+        return !"main".equals(VersionInfo.BRANCH);
+    }
+
+    /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
+    private static String discordRelayBaseUrl() {
+        return relayBaseUrlForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;relay-URL mapping (package-private for unit testing). Only the literal {@code main}
+     * branch reports to the live community feed; every other branch value (feature branches, worktrees,
+     * detached-HEAD short SHA, the {@code "?"} fallback) reports to the dev channel — fail-safe toward
+     * dev so a mis-detected branch can never post to the live feed.
+     */
+    static String relayBaseUrlForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_LIVE_BASE_URL : RELAY_DEV_BASE_URL;
+    }
 
     public DungeonTrain(IEventBus modBus, ModContainer modContainer) {
         modBus.addListener(this::commonSetup);
@@ -140,7 +178,7 @@ public class DungeonTrain {
         DiscordCredentials.register(new DiscordCredentialsProvider() {
             @Override public String webhookUrl() { return ""; } // unused in relay-mode
             @Override public String relayBaseUrl() {
-                return "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
+                return discordRelayBaseUrl();
             }
             @Override public boolean suppressAutoDeathReport() { return true; } // DT posts its own "Run Ended"
             @Override public boolean suppressAutoDisconnectReport() { return true; } // DT posts its own "left the game"
@@ -172,6 +210,11 @@ public class DungeonTrain {
                 SurveyAdvancement.onSurveyCompleted(playerId);
             }
         });
+
+        // One-line dev-vs-live routing signal at startup: states which Discord channel this build
+        // reports to (the cap itself is non-secret). Complements DP 0.29.0's "routing" log.
+        LOGGER.info("Dungeon Train Discord relay -> {} (build branch '{}')",
+                isDevBuild() ? "DEV channel" : "LIVE community feed", VersionInfo.BRANCH);
 
         // Befriend advancements (A Silent Friend / Friends) observe PlayerMob
         // item gifts. PlayerMob's feeling-tiered gift rewrite removed the

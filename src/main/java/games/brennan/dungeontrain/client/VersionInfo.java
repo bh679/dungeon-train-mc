@@ -9,7 +9,18 @@ import java.util.Properties;
 /**
  * Shared holder for the mod version + git branch baked into the jar at build
  * time via {@code processResources} (see build.gradle). Loaded once on class
- * init and reused by every overlay/screen that needs to show build info.
+ * init and reused by every overlay/screen that needs build info, plus
+ * common/server code that needs the dev-vs-release signal (e.g. dev-vs-live
+ * Discord relay routing in {@code DungeonTrain.commonSetup}).
+ *
+ * <p><b>Do not relocate this class.</b> It is pure (a classpath resource read,
+ * no client-only references) so it loads on dedicated servers too — and the
+ * bundled sibling mod <b>PlayerMob</b> references it by this exact FQN
+ * ({@code games.brennan.dungeontrain.client.VersionInfo}) from its
+ * {@code DungeonTrainHud} compat. Moving the class is a binary-breaking change
+ * for that bundled jar (NoClassDefFoundError at client setup). It lives in
+ * {@code client} for historical reasons; common code referencing it is fine
+ * because the class itself has no client-only dependencies.</p>
  */
 public final class VersionInfo {
 
