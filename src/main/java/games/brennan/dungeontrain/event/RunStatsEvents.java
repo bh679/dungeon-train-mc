@@ -192,8 +192,10 @@ public final class RunStatsEvents {
         DungeonTrainNet.sendTo(player, packet);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
+        // Posts even on a Free Play run (the death screen renders for cheated runs too); only the
+        // cross-world stat accrual above is frozen in Free Play, not the Discord report.
         // Best-effort: a Discord hiccup must never disrupt the death handling above.
-        if (!cheated && DungeonTrainConfig.isDeathReportToDiscord()) {
+        if (DungeonTrainConfig.isDeathReportToDiscord()) {
             try {
                 postRunSummary(player, event.getSource(), packet);
             } catch (Throwable t) {
@@ -264,8 +266,8 @@ public final class RunStatsEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isDeadOrDying()) return;
-        // Cheated runs don't post run summaries to Discord.
-        if (RunIntegrity.isCheated(player)) return;
+        // Free Play runs still post the "left the game" summary — only cross-world stat accrual
+        // (elsewhere) is frozen in Free Play, not the Discord report.
         if (!DungeonTrainConfig.isDeathReportToDiscord()) return;
         try {
             UUID id = player.getUUID();
