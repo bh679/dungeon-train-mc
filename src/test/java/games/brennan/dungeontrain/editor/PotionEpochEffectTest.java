@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.editor;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,21 +14,23 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for the pure helpers behind the per-50-carriage effectless-potion
- * effect: {@link ContainerContentsRoller#potionEffectTierIndex(int)},
- * {@link ContainerContentsRoller#potionEffectIndex(long, int, int)} and
- * {@link ContainerContentsRoller#potionFormIndex(long, int)}. Mirrors
- * {@code ArrowEpochEffectTest} — both share the same epoch math
- * ({@code epochLevel}/{@code epochTierIndex}/{@code epochPotionIndex}); here we
- * lock in the potion-specific tier table + sticky form roll.
+ * Unit tests for the pure helpers behind the effectless-potion epoch effect:
+ * {@link ContainerContentsRoller#potionEffectTierIndex(int)},
+ * {@link ContainerContentsRoller#potionEffectIndex(BlockPos, long, int, int, int)} and
+ * {@link ContainerContentsRoller#potionFormIndex(BlockPos, long, int, int)}.
  *
- * <p>The actual potion application ({@code applyEpochPotionEffect}) touches the
- * vanilla potion registry and is covered by the in-game Gate 2 flow.</p>
+ * <p>Unlike the band-locked arrow effect ({@code ArrowEpochEffectTest}), the
+ * potion <b>tier</b> escalates with distance but the specific effect + form are
+ * <b>per-instance random</b> — keyed on the full {@code (localPos, worldSeed,
+ * carriageIndex, slot)} so two potions in the same 50-carriage band can differ,
+ * while a fixed chest/slot stays deterministic. These tests lock that contract;
+ * the actual registry application ({@code applyEpochPotionEffect}) is covered by
+ * the in-game Gate 2 flow.</p>
  */
 final class PotionEpochEffectTest {
 
     @Test
-    @DisplayName("potionEffectTierIndex: starts at 0, non-decreasing, clamps at the top tier")
+    @DisplayName("potionEffectTierIndex: starts at 0, non-decreasing with distance, clamps at the top")
     void tierIndex_monotonicAndClamped() {
         int prev = ContainerContentsRoller.potionEffectTierIndex(0);
         assertEquals(0, prev);
@@ -44,65 +47,58 @@ final class PotionEpochEffectTest {
 
     @Test
     @DisplayName("potionEffectIndex: in range, and degenerate pools collapse to 0")
-    void effectIndex_inRange() {
+    void effectIndex_inRangeAndDegenerate() {
         long seed = 0xC0FFEEBEEF12L;
-        for (int carriage = 0; carriage < 500; carriage++) {
-            int idx = ContainerContentsRoller.potionEffectIndex(seed, carriage, 3);
-            assertTrue(idx >= 0 && idx < 3, "index out of range: " + idx);
-        }
-        assertEquals(0, ContainerContentsRoller.potionEffectIndex(seed, 123, 1));
-        assertEquals(0, ContainerContentsRoller.potionEffectIndex(seed, 123, 0));
-    }
-
-    @Test
-    @DisplayName("potionEffectIndex: identical for every carriage inside a 50-block (sticky)")
-    void effectIndex_stickyWithinBlock() {
-        long seed = 0x5EED_F00D_1234L;
-        int poolSize = 3;
-        int block0 = ContainerContentsRoller.potionEffectIndex(seed, 0, poolSize);
-        for (int c = 0; c < 50; c++) {
-            assertEquals(block0, ContainerContentsRoller.potionEffectIndex(seed, c, poolSize),
-                "carriage " + c + " should match block 0");
-        }
-        int block1 = ContainerContentsRoller.potionEffectIndex(seed, 50, poolSize);
-        for (int c = 50; c < 100; c++) {
-            assertEquals(block1, ContainerContentsRoller.potionEffectIndex(seed, c, poolSize),
-                "carriage " + c + " should match block 1");
-        }
-    }
-
-    @Test
-    @DisplayName("potionEffectIndex: the block/level actually influences the roll")
-    void effectIndex_variesAcrossBlocks() {
-        long seed = 0xABCDEF98765L;
-        boolean sawZero = false, sawOne = false;
-        for (int level = 0; level <= 100; level++) {
-            int idx = ContainerContentsRoller.potionEffectIndex(seed, level * 50, 2);
-            if (idx == 0) sawZero = true;
-            if (idx == 1) sawOne = true;
-        }
-        assertTrue(sawZero && sawOne,
-            "both pool entries should occur across 101 blocks (level must affect the roll)");
-    }
-
-    @Test
-    @DisplayName("potionFormIndex: in range [0,3) and sticky within a 50-block")
-    void formIndex_inRangeAndSticky() {
-        long seed = 0xF0F0_AAAA_5555L;
-        // In range for a long sweep.
-        for (int carriage = 0; carriage < 600; carriage++) {
-            int form = ContainerContentsRoller.potionFormIndex(seed, carriage);
-            assertTrue(form >= 0 && form < 3, "form out of range: " + form);
-        }
-        // Sticky within each of the first few bands.
-        for (int block = 0; block < 4; block++) {
-            int first = block * 50;
-            int expected = ContainerContentsRoller.potionFormIndex(seed, first);
-            for (int c = first; c < first + 50; c++) {
-                assertEquals(expected, ContainerContentsRoller.potionFormIndex(seed, c),
-                    "carriage " + c + " form should match block " + block);
+        for (int x = 0; x < 12; x++) {
+            for (int z = 0; z < 12; z++) {
+                for (int slot = 0; slot < 6; slot++) {
+                    int idx = ContainerContentsRoller.potionEffectIndex(
+                        new BlockPos(x, 4, z), seed, 0, slot, 3);
+                    assertTrue(idx >= 0 && idx < 3, "index out of range: " + idx);
+                }
             }
         }
+        BlockPos p = new BlockPos(1, 2, 3);
+        assertEquals(0, ContainerContentsRoller.potionEffectIndex(p, seed, 7, 0, 1));
+        assertEquals(0, ContainerContentsRoller.potionEffectIndex(p, seed, 7, 0, 0));
+    }
+
+    @Test
+    @DisplayName("potionEffectIndex: varies across positions in the same band, stable for a fixed position")
+    void effectIndex_variesButDeterministic() {
+        long seed = 0x5EED_F00D_1234L;
+        int carriage = 0; // a single band
+        Set<Integer> seen = new HashSet<>();
+        for (int x = 0; x < 20; x++) {
+            for (int slot = 0; slot < 5; slot++) {
+                BlockPos pos = new BlockPos(x, 4, 0);
+                int a = ContainerContentsRoller.potionEffectIndex(pos, seed, carriage, slot, 3);
+                int b = ContainerContentsRoller.potionEffectIndex(pos, seed, carriage, slot, 3);
+                assertEquals(a, b, "same (pos,slot) must be deterministic at " + pos + " slot " + slot);
+                seen.add(a);
+            }
+        }
+        assertTrue(seen.size() >= 2,
+            "potions within one band should NOT all share an effect index (got " + seen + ")");
+    }
+
+    @Test
+    @DisplayName("potionFormIndex: in range [0,3), varies across positions, stable for a fixed position")
+    void formIndex_inRangeVariesAndStable() {
+        long seed = 0xF0F0_AAAA_5555L;
+        Set<Integer> seen = new HashSet<>();
+        for (int x = 0; x < 20; x++) {
+            for (int slot = 0; slot < 5; slot++) {
+                BlockPos pos = new BlockPos(x, 4, 1);
+                int form = ContainerContentsRoller.potionFormIndex(pos, seed, 0, slot);
+                assertTrue(form >= 0 && form < 3, "form out of range: " + form);
+                assertEquals(form, ContainerContentsRoller.potionFormIndex(pos, seed, 0, slot),
+                    "form must be deterministic for a fixed (pos,slot)");
+                seen.add(form);
+            }
+        }
+        assertTrue(seen.size() >= 2,
+            "bottle form should vary across positions (got " + seen + ")");
     }
 
     @Test
@@ -123,8 +119,8 @@ final class PotionEpochEffectTest {
                 assertFalse(id.getPath().startsWith("long_"),
                     "tier " + t + " uses a same-name duration variant: " + id);
             }
-            // Adjacent tiers must not share a potion, or crossing a 50-carriage
-            // boundary could land on the same effect and look like no change.
+            // Adjacent tiers must not share a potion, or crossing a band boundary
+            // could land on the same effect and look like no progression.
             if (t > 0) {
                 Set<ResourceLocation> prev = new HashSet<>(tiers.get(t - 1));
                 for (ResourceLocation id : tier) {

@@ -731,10 +731,12 @@ public final class ContainerContentsRoller {
         // localPos/slot — so every arrow in the same 50-carriage block matches.
         applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
 
-        // Effectless drinkable / splash / lingering potions get the same per-block
-        // treatment — a real effect plus a sticky bottle form. May return a NEW
-        // stack when the rolled form differs from the found item, so reassign.
-        stack = applyEpochPotionEffect(stack, item, worldSeed, carriageIndex, registries);
+        // Effectless drinkable / splash / lingering potions get a real effect +
+        // bottle form. The TIER escalates per 50-carriage band, but the specific
+        // effect + form are per-instance random (keyed on localPos/slot), so
+        // potions in the same band vary. May return a NEW stack when the rolled
+        // form differs from the found item, so reassign.
+        stack = applyEpochPotionEffect(stack, item, localPos, worldSeed, carriageIndex, slot, registries);
 
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
         RandomSource nameRng = RandomSource.create(nameSeed);
@@ -815,29 +817,34 @@ public final class ContainerContentsRoller {
      * {@code localPos}/{@code slot} — which makes every effectless potion within
      * one 50-carriage block resolve identically.</p>
      */
-    static ItemStack applyEpochPotionEffect(ItemStack stack, Item item, long worldSeed,
-                                            int carriageIndex, HolderLookup.Provider registries) {
+    static ItemStack applyEpochPotionEffect(ItemStack stack, Item item, BlockPos localPos,
+                                            long worldSeed, int carriageIndex, int slot,
+                                            HolderLookup.Provider registries) {
         if (!isPotionFormItem(item)) return stack;
         if (!isEffectlessPotion(stack)) return stack; // leave real-effect potions alone
 
+        // The TIER (the pool of allowed effects) escalates with travelled
+        // distance; WITHIN the tier each potion is independently random — keyed
+        // on the full position so two potions in the same 50-carriage band can
+        // differ, yet a fixed chest/slot stays deterministic (re-opens identical).
         int level = epochLevel(carriageIndex);
         int tier = potionEffectTierIndex(level);
         List<Holder<Potion>> pool = resolvePotions(POTION_EFFECT_TIERS.get(tier), registries);
         if (pool.isEmpty()) return stack;
 
-        int effIdx = potionEffectIndex(worldSeed, carriageIndex, pool.size());
+        int effIdx = potionEffectIndex(localPos, worldSeed, carriageIndex, slot, pool.size());
         Holder<Potion> potion = pool.get(effIdx);
 
-        Item formItem = potionFormItem(potionFormIndex(worldSeed, carriageIndex));
+        Item formItem = potionFormItem(potionFormIndex(localPos, worldSeed, carriageIndex, slot));
         ItemStack result = item == formItem ? stack : new ItemStack(formItem, stack.getCount());
         result.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
 
         if (DebugFlags.logLootRolls()) {
-            LOGGER.info("[DT-potion] level={} tier={} potion={} form={} carriageIdx={}",
+            LOGGER.info("[DT-potion] level={} tier={} potion={} form={} carriageIdx={} localPos={}",
                 level, tier,
                 potion.unwrapKey().map(k -> k.location().toString()).orElse("?"),
                 net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(formItem),
-                carriageIndex);
+                carriageIndex, localPos);
         }
         return result;
     }
@@ -887,10 +894,12 @@ public final class ContainerContentsRoller {
     }
 
     /**
-     * Deterministic index into a tier's pool, keyed on {@code (worldSeed, level,
-     * salt)} only — independent of {@code localPos}/{@code slot} so every
-     * effectless item in the block resolves to the same entry. The {@code salt}
-     * decorrelates independent rolls (arrow effect vs potion effect vs form).
+     * Deterministic, <b>band-locked</b> index into a tier's pool, keyed on
+     * {@code (worldSeed, level, salt)} only — independent of {@code localPos}/
+     * {@code slot} so every effectless item in the block resolves to the same
+     * entry. Used by the arrow path ({@link #arrowPotionIndex}); potions instead
+     * roll per-instance via {@link #potionEffectIndex}. The {@code salt} keeps
+     * the roll independent of other epoch rolls.
      */
     static int epochPotionIndex(long worldSeed, int carriageIndex, int poolSize, long salt) {
         if (poolSize <= 1) return 0;
@@ -924,13 +933,22 @@ public final class ContainerContentsRoller {
         return epochTierIndex(level, POTION_EFFECT_TIERS.size());
     }
 
-    static int potionEffectIndex(long worldSeed, int carriageIndex, int poolSize) {
-        return epochPotionIndex(worldSeed, carriageIndex, poolSize, SALT_POTION_EPOCH_EFFECT);
+    /**
+     * Per-instance random index into the current tier's pool — keyed on the full
+     * {@code (localPos, worldSeed, carriageIndex, slot)} so potions in the same
+     * band vary, while a fixed chest/slot stays deterministic.
+     */
+    static int potionEffectIndex(BlockPos localPos, long worldSeed, int carriageIndex,
+                                 int slot, int poolSize) {
+        if (poolSize <= 1) return 0;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_POTION_EPOCH_EFFECT);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % poolSize);
     }
 
-    /** Sticky per-band form pick: 0 = drinkable, 1 = splash, 2 = lingering. */
-    static int potionFormIndex(long worldSeed, int carriageIndex) {
-        return epochPotionIndex(worldSeed, carriageIndex, POTION_FORM_COUNT, SALT_POTION_EPOCH_FORM);
+    /** Per-instance random bottle form: 0 = drinkable, 1 = splash, 2 = lingering. */
+    static int potionFormIndex(BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_POTION_EPOCH_FORM);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % POTION_FORM_COUNT);
     }
 
     /**
