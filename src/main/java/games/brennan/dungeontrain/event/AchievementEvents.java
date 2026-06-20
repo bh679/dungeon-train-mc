@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
@@ -185,6 +186,10 @@ public final class AchievementEvents {
             .trigger(player, Math.abs(run.travelledCarriageIndex()));
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
+        // "The Far Start" — same travelled-carriage counter as carts_100 but a
+        // longer haul, reached while still carrying the (unread, unburned)
+        // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
+        FarStartAdvancement.checkAndGrant(player, Math.abs(run.travelledCarriageIndex()));
     }
 
     // ---------------- Biome-diversity milestones ----------------
