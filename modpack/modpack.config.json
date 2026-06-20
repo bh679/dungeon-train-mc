@@ -19,7 +19,14 @@
     { "name": "Mouse Tweaks", "slug": "mouse-tweaks", "project_id": 60089, "file_id": 5637846, "required": false },
     { "name": "Jade", "slug": "jade", "project_id": 324717, "file_id": 7545219, "required": false },
     { "name": "Distant Horizons", "slug": "distant-horizons", "project_id": 508933, "file_id": 7350266, "required": false },
-    { "name": "Tectonic", "slug": "tectonic", "project_id": 686836, "file_id": 7903156, "required": false }
+    { "name": "Tectonic", "slug": "tectonic", "project_id": 686836, "file_id": 7903156, "required": false },
+    { "name": "Controlling", "slug": "controlling", "project_id": 250398, "file_id": 6368976, "required": true },
+    { "name": "Searchables", "slug": "searchables", "project_id": 858542, "file_id": 5831692, "required": true },
+    { "name": "Equipment Compare", "slug": "equipment-compare", "project_id": 502561, "file_id": 6375501, "required": true },
+    { "name": "Item Highlighter", "slug": "item-highlighter", "project_id": 521590, "file_id": 5591015, "required": true },
+    { "name": "Pick Up Notifier", "slug": "pick-up-notifier", "project_id": 351441, "file_id": 6409785, "required": true },
+    { "name": "Puzzles Lib", "slug": "puzzles-lib", "project_id": 495476, "file_id": 8251525, "required": true },
+    { "name": "Smooth Swapping", "slug": "smooth-swapping", "project_id": 513689, "file_id": 7274625, "required": false }
   ],
   "curseforge_relations": [
     { "slug": "sable", "type": "requiredDependency" },
