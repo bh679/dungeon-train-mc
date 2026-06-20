@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "dungeontrain:abandoned",
+    "dungeontrain:stepped_off",
+    "dungeontrain:left_the_line",
+    "dungeontrain:walked_away"
+  ]
+}
