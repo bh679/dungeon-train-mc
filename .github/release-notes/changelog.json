@@ -1325,7 +1325,7 @@
     },
     {
       "id": "field-notes-passenger-obs",
-      "version": "0.327.0",
+      "version": "0.328.0",
       "type": "content",
       "title": "Adventurer's Field Notes \u2014 passenger observation",
       "summary": "New field notes entry: an anonymous adventurer wonders whether the passengers are truly alive, and shares that food, armour, or tools are the fastest way to make allies.",
@@ -1337,7 +1337,7 @@
     },
     {
       "id": "modpack-qol-companions",
-      "version": "0.327.0",
+      "version": "0.328.0",
       "type": "feat",
       "title": "Five new quality-of-life companion mods in the modpack",
       "summary": "The Dungeon Train modpack now bundles a set of client-side quality-of-life and cosmetic companions: a searchable controls menu (Controlling), side-by-side gear comparison tooltips (Equipment Compare), a highlight on freshly picked-up inventory items (Item Highlighter), and an on-screen item pickup notifier (Pick Up Notifier) \u2014 all enabled out of the box. Smooth Swapping (animated inventory item movement) is bundled as an opt-in extra.",
