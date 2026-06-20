@@ -193,13 +193,26 @@ public final class RunStatsEvents {
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
         // Best-effort: a Discord hiccup must never disrupt the death handling above.
-        if (!cheated && DungeonTrainConfig.isDeathReportToDiscord()) {
+        if (shouldReportDeath(cheated, DungeonTrain.isDevBuild(), DungeonTrainConfig.isDeathReportToDiscord())) {
             try {
                 postRunSummary(player, event.getSource(), packet);
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] death report to Discord failed: {}", t.toString());
             }
         }
+    }
+
+    /**
+     * Whether a player death should post a Discord death report. Posts when the feature is enabled AND
+     * either the run is legit OR this is a dev/test build. The dev-build exception lets creative-mode
+     * dev testing (which flips the run to Free Play, see {@code RunIntegrity}) still report to the dev
+     * channel; {@code main} (release) builds keep suppressing Free Play deaths, so the live community
+     * feed is unaffected. Free Play runs are still excluded from global stats either way (handled by the
+     * separate {@code !cheated} gate above) — only the report is un-gated for dev builds. Pure for unit
+     * testing.
+     */
+    static boolean shouldReportDeath(boolean cheated, boolean devBuild, boolean enabled) {
+        return enabled && (!cheated || devBuild);
     }
 
     /**
