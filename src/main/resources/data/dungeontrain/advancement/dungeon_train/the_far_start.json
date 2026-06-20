@@ -1,0 +1,18 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:writable_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_far_start.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_far_start.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "carried": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [["carried"]]
+}
