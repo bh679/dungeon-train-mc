@@ -1526,9 +1526,9 @@
       "summary": "The first-launch \"Connect to the internet?\" prompt now lists a reassurance alongside the features \u2014 marked with a red \u2717 \u2014 clarifying one thing the connection will never do. Rest easy: it will not harvest your soul.",
       "highlights": [],
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.336.0",
+      "released_at": "2026-06-20T11:52:24Z"
     },
     {
       "id": "richer-death-narration",
@@ -1558,9 +1558,9 @@
       ],
       "pr": 500,
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.336.0",
+      "released_at": "2026-06-20T11:52:24Z"
     }
   ]
 }
