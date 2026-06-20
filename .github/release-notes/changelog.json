@@ -1372,6 +1372,22 @@
       "released": true,
       "released_in": "v0.328.0",
       "released_at": "2026-06-20T01:00:53Z"
+    },
+    {
+      "id": "far-start-advancement",
+      "version": "0.329.0",
+      "type": "feat",
+      "title": "\"The Far Start\" advancement \u2014 carry your first book past 100 carriages",
+      "summary": "A new challenge advancement, \"The Far Start\": keep the unread starting book that drops at spawn and carry it past 100 carriages in a single life to earn it. Reading the book burns it, so this rewards hauling it the long way without ever opening it.",
+      "highlights": [
+        "New \"The Far Start\" challenge advancement (child of \"Dungeon Train Explorer\")",
+        "Earned by carrying the starting book beyond 100 carriages in one life"
+      ],
+      "pr": 484,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
