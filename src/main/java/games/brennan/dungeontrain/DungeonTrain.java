@@ -159,6 +159,18 @@ public class DungeonTrain {
             @Override public List<String> presenceTrackUserIds() {
                 return List.of(BRENNAN_DISCORD_ID);
             }
+            // The one-time title-screen "use the internet?" popup (DP's NetworkConsentScreen) lists what
+            // the connection is for; DP renders these bullets verbatim on the card. Leaderboard scoring
+            // isn't built yet, so it's flagged "(coming soon)"; the dev support chat is the @dev relay above;
+            // the reincarnation bullet discloses that a death snapshot (name, skin, gear, traits) can be
+            // relayed cross-world so the player may return as a PlayerMob "echo" in another player's world
+            // (PlayerMob's external-reincarnation seam, surfaced via DP).
+            @Override public List<String> networkConsentFeatures() {
+                return List.of(
+                        "Leaderboard scoring (coming soon)",
+                        "Dev support chat",
+                        "Reincarnate as a mob in other players' worlds");
+            }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
             // outside the embed): the carriage # the player earned it in + their difficulty level — the
             // same values the in-game HUD shows. Computed on the server thread via the compat helper.
