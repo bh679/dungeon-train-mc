@@ -76,6 +76,8 @@ public final class DungeonTrainNet {
 
         // Death-screen run-stats snapshot, server → dying player on LivingDeathEvent.
         registrar.playToClient(DeathStatsPacket.TYPE, DeathStatsPacket.STREAM_CODEC, DeathStatsPacket::handle);
+        // Scenic ride photo for the top-level death report, client → server when the death screen opens.
+        registrar.playToServer(DeathPhotoPacket.TYPE, DeathPhotoPacket.STREAM_CODEC, DeathPhotoPacket::handle);
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);

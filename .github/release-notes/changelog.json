@@ -1520,11 +1520,26 @@
     },
     {
       "id": "consent-wont-do-line",
-      "version": "0.334.0",
+      "version": "0.335.0",
       "type": "feat",
       "title": "The internet prompt now says what it won't do",
       "summary": "The first-launch \"Connect to the internet?\" prompt now lists a reassurance alongside the features \u2014 marked with a red \u2717 \u2014 clarifying one thing the connection will never do. Rest easy: it will not harvest your soul.",
       "highlights": [],
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "richer-death-narration",
+      "version": "0.335.0",
+      "type": "content",
+      "title": "More to read at the end of the line",
+      "summary": "The death screen's narration has more variety. New lines across all five pages \u2014 the fall, the deeds, the cargo, all your lives, and the platform \u2014 so back-to-back deaths read differently, including lines that react to a friendless run, a heavy kill count, an empty or overflowing pack, and how many times you've ridden.",
+      "highlights": [
+        "Many new narration variants on every death-screen page",
+        "Some lines react to your run: no friends made, 5+ slain, an empty or 250+-loot pack, books read, and your total deaths"
+      ],
       "date": "2026-06-20",
       "released": false,
       "released_in": null,

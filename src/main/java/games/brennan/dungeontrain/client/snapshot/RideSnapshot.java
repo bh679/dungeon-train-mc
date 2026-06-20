@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -85,6 +86,26 @@ public final class RideSnapshot {
     /** In memory, holding a live texture and not yet flushed — a candidate for offloading. */
     public boolean isInMemoryUnflushed() {
         return diskPath == null && liveTexture != null;
+    }
+
+    /**
+     * PNG-encode this photo for sending off the client (e.g. the Discord death report's ride-photo
+     * image). Prefers the already-written disk PNG; otherwise encodes the live texture's pixels. Lazily
+     * reloads a released shot via {@link #texture()}. Returns {@code null} when no pixels are available
+     * or encoding fails — callers fall back to no/other image. Runs on the client thread (a small
+     * ≤640px PNG — cheap).
+     */
+    public byte[] pngBytes() {
+        try {
+            if (diskPath != null) return Files.readAllBytes(diskPath);
+            if (liveTexture == null) texture(); // lazy reload if the texture was released
+            if (liveTexture == null) return null;
+            NativeImage px = liveTexture.getPixels();
+            return px == null ? null : px.asByteArray();
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Ride snapshot PNG encode failed", e);
+            return null;
+        }
     }
 
     /**

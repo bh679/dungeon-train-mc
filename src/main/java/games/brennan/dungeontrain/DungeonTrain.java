@@ -74,9 +74,12 @@ public class DungeonTrain {
 
     /**
      * True for any non-release build — the same branch-ref dev signal the title screen + version HUD
-     * use ({@code !"main".equals(branch)}). Drives dev-vs-live Discord relay routing.
+     * use ({@code !"main".equals(branch)}). Drives dev-vs-live Discord relay routing, and (server-side)
+     * lets dev/test builds report Free Play death runs to the dev channel — see
+     * {@link games.brennan.dungeontrain.event.RunStatsEvents}. Public so that single dev signal has one
+     * source of truth rather than a duplicated branch check.
      */
-    private static boolean isDevBuild() {
+    public static boolean isDevBuild() {
         return !"main".equals(VersionInfo.BRANCH);
     }
 

@@ -4,7 +4,10 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DeathNarrative;
+import games.brennan.dungeontrain.net.DeathPhotoPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
@@ -157,6 +160,7 @@ public final class NarrativeDeathScreen extends Screen {
     private int lastSurveyCount = -1;
     private EditBox commentBox;
     private boolean opened = false;
+    private boolean photoSent = false;
 
     // Transition state. transStartMs == 0 means "settled, nothing animating".
     private long transStartMs = 0L;
@@ -227,6 +231,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (currentPage >= pages.size()) currentPage = pages.size() - 1;
         if (currentPage < 0) currentPage = 0;
         assignBackgrounds();
+        maybeSendRidePhoto();
         lastSurveyCount = SurveyClientState.questions().size();
         gearAdvScroll = 0;
         commentBox = null;
@@ -264,6 +269,20 @@ public final class NarrativeDeathScreen extends Screen {
             fromShot = bgFor(currentPage);
             toShot = null;
         }
+    }
+
+    /**
+     * Once per death, hand this run's scenic fall-page ride photo to the server ({@link DeathPhotoPacket})
+     * so the dev/public top-level death report can use it as its image. Dev-only for now (matches the
+     * server's dev-gated top-level report); sends an empty array when there's no photo so the server
+     * posts the report promptly with its fallback rather than waiting out the timeout.
+     */
+    private void maybeSendRidePhoto() {
+        if (photoSent || !DungeonTrain.isDevBuild()) return;
+        photoSent = true;
+        RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
+        byte[] png = fall != null ? fall.pngBytes() : null;
+        DungeonTrainNet.sendToServer(new DeathPhotoPacket(png != null ? png : new byte[0]));
     }
 
     @Override
