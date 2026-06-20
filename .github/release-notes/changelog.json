@@ -1385,9 +1385,9 @@
       ],
       "pr": 484,
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.329.0",
+      "released_at": "2026-06-20T03:02:48Z"
     },
     {
       "id": "free-play-ender-chest-lock",
@@ -1402,9 +1402,9 @@
       ],
       "pr": 485,
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.329.0",
+      "released_at": "2026-06-20T03:02:48Z"
     }
   ]
 }
