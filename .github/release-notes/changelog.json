@@ -1544,6 +1544,23 @@
       "released": true,
       "released_in": "v0.335.0",
       "released_at": "2026-06-20T09:30:15Z"
+    },
+    {
+      "id": "cross-world-reincarnation",
+      "version": "0.336.0",
+      "type": "feat",
+      "title": "Cross-world reincarnation \u2014 passengers return as echoes from other worlds",
+      "summary": "Player-mob passengers on the train can now return as \"echoes\" of people who died in other worlds \u2014 not just your own past lives. Every death is shared to a community-wide pool, and a passenger riding near your depth may come back carrying someone else's final loadout and story.",
+      "highlights": [
+        "Passengers can spawn as remote echoes of players from other worlds, not only your own past lives",
+        "Each death you suffer joins a shared cross-world pool that feeds everyone's trains",
+        "Echoes are drawn from deaths near your current carriage depth, favouring recent ones"
+      ],
+      "pr": 500,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
