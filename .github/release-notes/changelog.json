@@ -1451,13 +1451,13 @@
       ],
       "pr": 489,
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.331.0",
+      "released_at": "2026-06-20T07:08:55Z"
     },
     {
       "id": "playermob-spawn-behind-you",
-      "version": "0.331.0",
+      "version": "0.332.0",
       "type": "feat",
       "title": "PlayerMobs can now turn up behind you on the train",
       "summary": "Each time a PlayerMob spawns on the train, there is now a small chance another one also appears a short way behind you and walks your direction of travel, catching up from the rear. It is not hostile; it just shows up behind you. Adjust it with the new 'Behind %' setting (default 15%, 0 to disable).",
