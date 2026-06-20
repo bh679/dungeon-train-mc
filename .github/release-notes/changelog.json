@@ -1372,6 +1372,23 @@
       "released": true,
       "released_in": "v0.328.0",
       "released_at": "2026-06-20T01:00:53Z"
+    },
+    {
+      "id": "free-play-ender-chest-lock",
+      "version": "0.329.0",
+      "type": "feat",
+      "title": "Free Play protects your real Ender Chest",
+      "summary": "When a run switches to Free Play \u2014 by going creative or spectator, or using cheat commands \u2014 your Ender Chest now swaps to a separate Creative one for the rest of that run. Cheated items can never end up in the Ender Chest you use on your legit survival runs, and a Free Play run can't peek into or change your real chest. Your saved items stay exactly as you left them.",
+      "highlights": [
+        "Free Play runs get their own separate Creative Ender Chest",
+        "Your real Ender Chest is never read or written during a cheated run",
+        "Swaps the instant a run becomes Free Play, and stays put across relogs"
+      ],
+      "pr": 485,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
