@@ -1408,7 +1408,7 @@
     },
     {
       "id": "dev-discord-channel-routing",
-      "version": "0.329.0",
+      "version": "0.330.0",
       "type": "chore",
       "title": "Dev/test builds send Discord to a dev channel, not the live feed",
       "summary": "Development and test builds of the mod now route their Discord activity (joins, deaths, chat, advancements) to a separate dev channel instead of the live community feed, so testing no longer adds noise for players. Released builds are unchanged \u2014 they post to the community feed exactly as before.",
@@ -1417,9 +1417,26 @@
         "Released builds unchanged \u2014 still post to the live community feed"
       ],
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.330.0",
+      "released_at": "2026-06-20T06:08:59Z"
+    },
+    {
+      "id": "discord-free-play-notice",
+      "version": "0.330.0",
+      "type": "feat",
+      "title": "Free Play activity now shows in Discord",
+      "summary": "When a player's run enters Free Play (creative, spectator, or cheat commands), Discord now gets a heads-up. Free Play runs also keep posting their death and \"left the game\" run summaries to Discord, so the community feed stays complete \u2014 cross-world stats still stay frozen in Free Play.",
+      "highlights": [
+        "Discord notice the moment a run enters Free Play",
+        "Death and \"left the game\" summaries now post for Free Play runs too",
+        "New freePlayNoticeToDiscord config toggle (on by default)"
+      ],
+      "pr": 487,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.330.0",
+      "released_at": "2026-06-20T06:08:59Z"
     }
   ]
 }
