@@ -1465,9 +1465,26 @@
         "New 'Behind %' spawn chance (default 15%) with a per-world override in the in-game settings screen."
       ],
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.332.0",
+      "released_at": "2026-06-20T07:37:04Z"
+    },
+    {
+      "id": "abandon-this-run-pause-menu",
+      "version": "0.332.0",
+      "type": "feat",
+      "title": "Abandon This Run replaces Save and Quit on the pause menu",
+      "summary": "The pause menu now leads with a red \"Abandon This Run\" button: one click ends your run and takes you straight to the death recap \u2014 no quiet save-and-quit. The usual exits are still there, tucked behind Shift: hold Shift and the red button splits into \"Exit to Title\" and \"Quit Game\". Singleplayer only; on servers the normal Disconnect button is unchanged.",
+      "highlights": [
+        "Red \"Abandon This Run\" button ends the run and opens the death screen",
+        "Hold Shift to reveal \"Exit to Title\" and \"Quit Game\"",
+        "Both exits save the world cleanly (no Sable save-quit hang)"
+      ],
+      "pr": 492,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.333.0",
+      "released_at": "2026-06-20T07:59:13Z"
     }
   ]
 }
