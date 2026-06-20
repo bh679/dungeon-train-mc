@@ -1541,9 +1541,9 @@
         "Some lines react to your run: no friends made, 5+ slain, an empty or 250+-loot pack, books read, and your total deaths"
       ],
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.335.0",
+      "released_at": "2026-06-20T09:30:15Z"
     }
   ]
 }
