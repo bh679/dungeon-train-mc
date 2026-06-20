@@ -4,10 +4,12 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
+import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.narrative.NarrativeProgress;
 import games.brennan.dungeontrain.narrative.NarrativeProgressData;
 import games.brennan.dungeontrain.narrative.PlayerPlayedMarker;
@@ -184,6 +186,10 @@ public final class AchievementEvents {
             .trigger(player, Math.abs(run.travelledCarriageIndex()));
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
+        // "The Far Start" — same travelled-carriage counter as carts_100 but a
+        // longer haul, reached while still carrying the (unread, unburned)
+        // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
+        FarStartAdvancement.checkAndGrant(player, Math.abs(run.travelledCarriageIndex()));
     }
 
     // ---------------- Biome-diversity milestones ----------------
@@ -751,6 +757,9 @@ public final class AchievementEvents {
         Set<ResourceLocation> done = new LinkedHashSet<>();
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
             if (!shouldPersist(holder)) continue;
+            // Don't absorb a cheated world's gameplay/vanilla earns into the
+            // cross-world profile; editor/* authoring still flows through.
+            if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
             if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
                 done.add(holder.id());
             }
@@ -815,7 +824,11 @@ public final class AchievementEvents {
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.
-        if (shouldPersist(advancement) && GlobalAchievementStore.append(player.getUUID(), id)) {
+        // Cheated runs earn live but don't write to the cross-world profile
+        // (editor/* authoring stays exempt) — see RunIntegrity.
+        if (shouldPersist(advancement)
+                && RunIntegrity.persistsAdvancement(player, advancement)
+                && GlobalAchievementStore.append(player.getUUID(), id)) {
             LOGGER.info("[DungeonTrain] Wrote global achievement {} for {}",
                 id, player.getName().getString());
         }
@@ -825,12 +838,15 @@ public final class AchievementEvents {
         // implied by the early-return above, before persistence broadened to all
         // namespaces; without it the hint + capstone re-check would now fire on
         // every vanilla/mod advancement earn. editor/* is excluded — a
-        // creative-mode dev tab not gated by the game-mode mixin. The client
+        // creative-mode dev tab. The client
         // decides whether to actually display it (gated on its local "opened
         // advancements" flag) and renders it with the live keybind.
         if (!replaying
                 && id.getNamespace().equals(DungeonTrain.MOD_ID)
                 && !id.getPath().startsWith("editor/")) {
+            // Death-screen "accolades": record this genuine, non-editor Dungeon Train
+            // earn into the per-life run state; read into the death packet on death.
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordEarnedAdvancement(id);
             DungeonTrainNet.sendTo(player, new AdvancementsHintPacket());
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside

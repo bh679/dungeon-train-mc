@@ -10,6 +10,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Server → client: snapshot of the player's {@code PlayerRunState} stats at
  * the moment of death plus visual context (most-used weapon, worn armor) so
@@ -62,7 +65,8 @@ public record DeathStatsPacket(
         DeathNarrative narrative,
         String deathCause,
         byte side,
-        PlayerMobAppearance portrait
+        PlayerMobAppearance portrait,
+        List<ResourceLocation> earnedAdvancements
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -106,6 +110,11 @@ public record DeathStatsPacket(
         if (hasPortrait) {
             portrait.encode(buf);
         }
+        // Death-screen accolades: Dungeon Train advancements earned this life.
+        buf.writeVarInt(earnedAdvancements.size());
+        for (ResourceLocation id : earnedAdvancements) {
+            buf.writeResourceLocation(id);
+        }
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -138,11 +147,16 @@ public record DeathStatsPacket(
         if (side != 0) {
             portrait = PlayerMobAppearance.decode(buf);
         }
+        int advCount = buf.readVarInt();
+        List<ResourceLocation> earnedAdvancements = new ArrayList<>(advCount);
+        for (int i = 0; i < advCount; i++) {
+            earnedAdvancements.add(buf.readResourceLocation());
+        }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, runTicks,
                 containersOpened, booksRead, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
-                narrative, deathCause, side, portrait);
+                narrative, deathCause, side, portrait, earnedAdvancements);
     }
 
     @Override

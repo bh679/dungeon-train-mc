@@ -58,13 +58,19 @@ def load_config(path: Path) -> dict:
     sable_missing = [k for k in sable_required if k not in config["sable"]]
     if sable_missing:
         raise ValueError(f"{path} sable block is missing keys: {', '.join(sable_missing)}")
-    # optional_mods is optional; when present each entry must carry project_id + file_id
-    # (these become required=False CurseForge file entries — opt-in add-ons).
+    # optional_mods is optional; when present each entry must carry project_id + file_id.
+    # Each becomes a CurseForge manifest file whose "required" flag is taken from the entry's
+    # own "required" field (default False): True => bundled & ENABLED by default; False =>
+    # bundled but DISABLED by default (CurseForge's opt-in "Include"). See modpack/README.md.
     for i, opt in enumerate(config.get("optional_mods", [])):
         opt_missing = [k for k in ("project_id", "file_id") if k not in opt]
         if opt_missing:
             raise ValueError(
                 f"{path} optional_mods[{i}] is missing keys: {', '.join(opt_missing)}"
+            )
+        if "required" in opt and not isinstance(opt["required"], bool):
+            raise ValueError(
+                f"{path} optional_mods[{i}] 'required' must be a boolean, got {opt['required']!r}"
             )
     return config
 
@@ -92,16 +98,19 @@ def build_manifest(
         {"projectID": int(config["dt_project_id"]), "fileID": dt_file_id, "required": True},
         {"projectID": int(sable["project_id"]), "fileID": int(sable["file_id"]), "required": True},
     ]
-    # Optional, player-installed add-ons (e.g. Distant Horizons, Tectonic, Lithostitched).
-    # required=False → the CurseForge launcher offers them as opt-in at install; they are
-    # present in the pack by default but never force-installed. Pins are maintained the same
-    # way as Sable (see modpack/README.md).
+    # Additional bundled mods, each carrying its own "required" flag (default False):
+    #   required=True  → installed & ENABLED by default (QoL/perf/cosmetic companions:
+    #                    AppleSkin, FerriteCore, ModernFix, Advancement Plaques).
+    #   required=False → bundled but DISABLED by default; the CurseForge launcher offers them
+    #                    as opt-in at install (Mouse Tweaks, Jade, Distant Horizons, Tectonic,
+    #                    Lithostitched). NOTE: in the CurseForge app required=False means the
+    #                    mod ships OFF — see modpack/README.md. Pins maintained like Sable.
     for opt in config.get("optional_mods", []):
         files.append(
             {
                 "projectID": int(opt["project_id"]),
                 "fileID": int(opt["file_id"]),
-                "required": False,
+                "required": bool(opt.get("required", False)),
             }
         )
     return {

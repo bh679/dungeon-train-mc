@@ -1,9 +1,13 @@
 package games.brennan.dungeontrain.editor;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderSet;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.tags.EnchantmentTags;
@@ -11,6 +15,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.AbstractCookingRecipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeType;
@@ -84,6 +91,12 @@ public final class ContainerContentsRoller {
     private static final long SALT_TRIM_PATTERN  = 0x7411B0BB1EA110CEL;
     /** Salt for picking the trim material via weighted selection. */
     private static final long SALT_TRIM_MATERIAL = 0x7411DECAFC0FFEE5L;
+    /** Salt for the per-50-carriage offensive arrow potion roll. */
+    private static final long SALT_ARROW_EPOCH_POTION = 0xA770E1EC7C0FFEE5L;
+    /** Salt for the per-50-carriage drinkable-potion effect roll (decorrelated from arrows). */
+    private static final long SALT_POTION_EPOCH_EFFECT = 0xB0D1ED5EEDC0FFEEL;
+    /** Salt for the per-50-carriage potion-form roll (drinkable / splash / lingering). */
+    private static final long SALT_POTION_EPOCH_FORM = 0xF0E1F0E1CAFED00DL;
 
     /**
      * BE NBT key on {@code decorated_pot} that holds the single contained
@@ -94,6 +107,99 @@ public final class ContainerContentsRoller {
      * spills it on break alongside the sherd shards.
      */
     private static final String NBT_POT_ITEM = "item";
+
+    // ------------------------------------------------------------------
+    // Epoch effects: an otherwise-effectless item found in loot gains a
+    // random vanilla potion, rolled once per 50-carriage block (sticky
+    // within the block) and escalating in power as the run progresses.
+    // Tipped arrows and drinkable/splash/lingering potions share the
+    // level/tier/index math below but each carries its own tier table and
+    // a decorrelating salt:
+    //   • tipped arrows                       → ARROW_EFFECT_TIERS  (offensive)
+    //   • drinkable / splash / lingering pots → POTION_EFFECT_TIERS (broad)
+    // ------------------------------------------------------------------
+
+    /**
+     * Carriages per effect re-roll, shared by every epoch effect. The rolled
+     * potion stays constant for this many carriages, so every effectless item
+     * found inside one block shares the same effect; it changes at the next
+     * block boundary. Doubles as the progression "level" that drives the tier
+     * tables.
+     */
+    private static final int EFFECT_EPOCH_CARRIAGES = 50;
+
+    /** Levels that share one power tier — the pacing dial for the ramp. */
+    private static final int EFFECT_LEVELS_PER_TIER = 1;
+
+    /** Potion bottle forms rolled per band: drinkable / splash / lingering. */
+    private static final int POTION_FORM_COUNT = 3;
+
+    /**
+     * Ordered, escalating power tiers of offensive vanilla potions applied to
+     * "Uncraftable" tipped arrows. The level (= carriages travelled /
+     * {@link #EFFECT_EPOCH_CARRIAGES}) selects a tier via
+     * {@link #arrowEffectTierIndex(int)}; deeper tiers are nastier. Using
+     * registered potions keeps vanilla names/tooltips for free ("Arrow of
+     * Poison", "Arrow of Harming II", …). This table is the single place to
+     * retune which effects appear at which level and how power ramps.
+     *
+     * <p>Each tier is a <b>single, distinctly-named</b> effect so crossing a
+     * 50-carriage boundary always <i>visibly</i> changes the arrow. Two rules
+     * keep that promise: (1) no potion repeats across tiers, and (2) no
+     * {@code long_*} duration variants — those render with the SAME display
+     * name as their base potion ({@code long_slowness} → "Arrow of Slowness"),
+     * which would read as "no change" to the player. A tier may still list
+     * multiple ids; if so they must all be distinct from every adjacent tier.</p>
+     */
+    private static final List<List<ResourceLocation>> ARROW_EFFECT_TIERS = List.of(
+        tierIds("weakness"),        // T0 — carts 0–49    → Weakness
+        tierIds("slowness"),        // T1 — carts 50–99   → Slowness
+        tierIds("poison"),          // T2 — carts 100–149 → Poison
+        tierIds("harming"),         // T3 — carts 150–199 → Harming
+        tierIds("strong_poison"),   // T4 — carts 200–249 → Poison II
+        tierIds("strong_harming")   // T5 — carts 250+    → Harming II
+    );
+
+    /** Test seam: read-only view of the configured arrow-effect tiers. */
+    static List<List<ResourceLocation>> arrowEffectTiersView() {
+        return ARROW_EFFECT_TIERS;
+    }
+
+    /**
+     * Ordered, escalating tiers of vanilla potions applied to otherwise-
+     * effectless drinkable / splash / lingering potions found in loot. Unlike
+     * the offensive arrow table these span ALL effect kinds (beneficial +
+     * offensive + utility), arranged by rough potency: a 50-carriage block
+     * sticky-picks one id from its tier, and deeper blocks unlock stronger /
+     * level-II effects.
+     *
+     * <p>Same two invariants as {@link #ARROW_EFFECT_TIERS} (enforced by
+     * {@code PotionEpochEffectTest}): no {@code long_*} duration variants (they
+     * render with the base potion's display name) and no potion shared across
+     * adjacent tiers, so crossing a block boundary always visibly changes the
+     * potion.</p>
+     */
+    private static final List<List<ResourceLocation>> POTION_EFFECT_TIERS = List.of(
+        tierIds("weakness", "healing", "night_vision"),                      // T0 — carts 0–49
+        tierIds("slowness", "swiftness", "water_breathing"),                 // T1 — carts 50–99
+        tierIds("poison", "fire_resistance", "leaping"),                     // T2 — carts 100–149
+        tierIds("harming", "strength", "invisibility"),                      // T3 — carts 150–199
+        tierIds("strong_poison", "strong_healing", "slow_falling"),          // T4 — carts 200–249
+        tierIds("strong_harming", "strong_regeneration", "strong_strength")  // T5 — carts 250+
+    );
+
+    /** Test seam: read-only view of the configured potion-effect tiers. */
+    static List<List<ResourceLocation>> potionEffectTiersView() {
+        return POTION_EFFECT_TIERS;
+    }
+
+    private static List<ResourceLocation> tierIds(String... potionPaths) {
+        List<ResourceLocation> ids = new ArrayList<>(potionPaths.length);
+        for (String path : potionPaths) {
+            ids.add(ResourceLocation.withDefaultNamespace(path));
+        }
+        return List.copyOf(ids);
+    }
 
     private ContainerContentsRoller() {}
 
@@ -620,6 +726,18 @@ public final class ContainerContentsRoller {
             }
         }
 
+        // Otherwise-effectless ("Uncraftable") tipped arrows get a per-block
+        // offensive effect. Keyed on (worldSeed, level) only — independent of
+        // localPos/slot — so every arrow in the same 50-carriage block matches.
+        applyEpochArrowEffect(stack, item, worldSeed, carriageIndex, registries);
+
+        // Effectless drinkable / splash / lingering potions get a real effect +
+        // bottle form. The TIER escalates per 50-carriage band, but the specific
+        // effect + form are per-instance random (keyed on localPos/slot), so
+        // potions in the same band vary. May return a NEW stack when the rolled
+        // form differs from the found item, so reassign.
+        stack = applyEpochPotionEffect(stack, item, localPos, worldSeed, carriageIndex, slot, registries);
+
         long nameSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_NAME);
         RandomSource nameRng = RandomSource.create(nameSeed);
         NameComposer.applyName(stack, nameRng);
@@ -644,6 +762,210 @@ public final class ContainerContentsRoller {
             stack, trimChanceRng, trimPatternRng, trimMaterialRng, registries);
 
         return stack;
+    }
+
+    /**
+     * Apply the per-level offensive effect to an otherwise-effectless
+     * ("Uncraftable") tipped arrow. No-op for any other item, and never
+     * overwrites an arrow that already carries a potion.
+     *
+     * <p><b>Determinism exception:</b> unlike every other roll in this class,
+     * the potion is keyed on {@code (worldSeed, level)} ONLY — deliberately not
+     * {@code localPos}/{@code slot}. That is exactly what makes every
+     * uncraftable arrow within the same 50-carriage block resolve to the same
+     * effect. The {@code level} also selects an escalating power tier
+     * ({@link #ARROW_EFFECT_TIERS}) so arrows grow nastier deeper into the run.</p>
+     */
+    static void applyEpochArrowEffect(ItemStack stack, Item item, long worldSeed,
+                                      int carriageIndex, HolderLookup.Provider registries) {
+        if (item != Items.TIPPED_ARROW) return;
+        PotionContents existing = stack.get(DataComponents.POTION_CONTENTS);
+        if (existing != null && existing.potion().isPresent()) return; // already tipped — leave it
+
+        int level = arrowEffectLevel(carriageIndex);
+        int tier = arrowEffectTierIndex(level);
+        List<Holder<Potion>> pool = resolvePotions(ARROW_EFFECT_TIERS.get(tier), registries);
+        if (pool.isEmpty()) return;
+
+        int idx = arrowPotionIndex(worldSeed, carriageIndex, pool.size());
+        Holder<Potion> potion = pool.get(idx);
+        stack.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
+
+        if (DebugFlags.logLootRolls()) {
+            LOGGER.info("[DT-arrow] level={} tier={} potion={} carriageIdx={}",
+                level, tier,
+                potion.unwrapKey().map(k -> k.location().toString()).orElse("?"),
+                carriageIndex);
+        }
+    }
+
+    /**
+     * Turn an otherwise-effectless drinkable / splash / lingering potion found
+     * in loot into a real one: a vanilla potion effect from
+     * {@link #POTION_EFFECT_TIERS} plus a (possibly different) bottle form, both
+     * rolled once per 50-carriage block so every effectless potion in the block
+     * matches and the pair escalates with travel.
+     *
+     * <p>Returns the input stack unchanged for non-potion items and for potions
+     * that already carry a real effect. When the rolled form differs from the
+     * found item the result is a <b>new</b> stack of that form (a found
+     * "Uncraftable Potion" can come back as a "Splash Potion of Poison"), so the
+     * caller must use the returned reference.</p>
+     *
+     * <p><b>Determinism exception</b> (as with the arrow path): the effect + form
+     * are keyed on {@code (worldSeed, level)} ONLY — deliberately not
+     * {@code localPos}/{@code slot} — which makes every effectless potion within
+     * one 50-carriage block resolve identically.</p>
+     */
+    static ItemStack applyEpochPotionEffect(ItemStack stack, Item item, BlockPos localPos,
+                                            long worldSeed, int carriageIndex, int slot,
+                                            HolderLookup.Provider registries) {
+        if (!isPotionFormItem(item)) return stack;
+        if (!isEffectlessPotion(stack)) return stack; // leave real-effect potions alone
+
+        // The TIER (the pool of allowed effects) escalates with travelled
+        // distance; WITHIN the tier each potion is independently random — keyed
+        // on the full position so two potions in the same 50-carriage band can
+        // differ, yet a fixed chest/slot stays deterministic (re-opens identical).
+        int level = epochLevel(carriageIndex);
+        int tier = potionEffectTierIndex(level);
+        List<Holder<Potion>> pool = resolvePotions(POTION_EFFECT_TIERS.get(tier), registries);
+        if (pool.isEmpty()) return stack;
+
+        int effIdx = potionEffectIndex(localPos, worldSeed, carriageIndex, slot, pool.size());
+        Holder<Potion> potion = pool.get(effIdx);
+
+        Item formItem = potionFormItem(potionFormIndex(localPos, worldSeed, carriageIndex, slot));
+        ItemStack result = item == formItem ? stack : new ItemStack(formItem, stack.getCount());
+        result.set(DataComponents.POTION_CONTENTS, new PotionContents(potion));
+
+        if (DebugFlags.logLootRolls()) {
+            LOGGER.info("[DT-potion] level={} tier={} potion={} form={} carriageIdx={} localPos={}",
+                level, tier,
+                potion.unwrapKey().map(k -> k.location().toString()).orElse("?"),
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(formItem),
+                carriageIndex, localPos);
+        }
+        return result;
+    }
+
+    /** True for the three drinkable / splash / lingering potion item types. */
+    private static boolean isPotionFormItem(Item item) {
+        return item == Items.POTION
+            || item == Items.SPLASH_POTION
+            || item == Items.LINGERING_POTION;
+    }
+
+    /** Map a {@link #potionFormIndex} result to its potion item (0/1/2 → drink/splash/lingering). */
+    private static Item potionFormItem(int formIndex) {
+        return switch (formIndex) {
+            case 1 -> Items.SPLASH_POTION;
+            case 2 -> Items.LINGERING_POTION;
+            default -> Items.POTION;
+        };
+    }
+
+    /**
+     * True when {@code stack} carries no potion effect — absent contents, or a
+     * no-effect base potion (water / mundane / thick / awkward) with no custom
+     * effects. A potion with any real effect returns false so it is never
+     * overwritten. {@link PotionContents#hasEffects()} is false for exactly the
+     * effectless bases (and the empty "Uncraftable" contents).
+     */
+    private static boolean isEffectlessPotion(ItemStack stack) {
+        PotionContents pc = stack.get(DataComponents.POTION_CONTENTS);
+        return pc == null || !pc.hasEffects();
+    }
+
+    // ---- Shared epoch math (arrows + potions) -----------------------------
+
+    /**
+     * Progression level for an epoch roll = carriages travelled divided by the
+     * epoch size. Symmetric for backward generation (negative indices).
+     */
+    static int epochLevel(int carriageIndex) {
+        return Math.floorDiv(Math.abs(carriageIndex), EFFECT_EPOCH_CARRIAGES);
+    }
+
+    /** Map a level to a power tier in a {@code tierCount}-tier table, clamped to the top. */
+    static int epochTierIndex(int level, int tierCount) {
+        int tier = Math.max(0, level) / EFFECT_LEVELS_PER_TIER;
+        return Math.min(tier, tierCount - 1);
+    }
+
+    /**
+     * Deterministic, <b>band-locked</b> index into a tier's pool, keyed on
+     * {@code (worldSeed, level, salt)} only — independent of {@code localPos}/
+     * {@code slot} so every effectless item in the block resolves to the same
+     * entry. Used by the arrow path ({@link #arrowPotionIndex}); potions instead
+     * roll per-instance via {@link #potionEffectIndex}. The {@code salt} keeps
+     * the roll independent of other epoch rolls.
+     */
+    static int epochPotionIndex(long worldSeed, int carriageIndex, int poolSize, long salt) {
+        if (poolSize <= 1) return 0;
+        int level = epochLevel(carriageIndex);
+        long state = worldSeed
+            ^ ((long) level * MIX_C)
+            ^ salt;
+        state = (state ^ (state >>> 30)) * 0xBF58476D1CE4E5B9L;
+        state = (state ^ (state >>> 27)) * 0x94D049BB133111EBL;
+        state = state ^ (state >>> 31);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % poolSize);
+    }
+
+    // ---- Arrow delegates (stable names for rollItemStack + ArrowEpochEffectTest)
+
+    static int arrowEffectLevel(int carriageIndex) {
+        return epochLevel(carriageIndex);
+    }
+
+    static int arrowEffectTierIndex(int level) {
+        return epochTierIndex(level, ARROW_EFFECT_TIERS.size());
+    }
+
+    static int arrowPotionIndex(long worldSeed, int carriageIndex, int poolSize) {
+        return epochPotionIndex(worldSeed, carriageIndex, poolSize, SALT_ARROW_EPOCH_POTION);
+    }
+
+    // ---- Potion seams (PotionEpochEffectTest) -----------------------------
+
+    static int potionEffectTierIndex(int level) {
+        return epochTierIndex(level, POTION_EFFECT_TIERS.size());
+    }
+
+    /**
+     * Per-instance random index into the current tier's pool — keyed on the full
+     * {@code (localPos, worldSeed, carriageIndex, slot)} so potions in the same
+     * band vary, while a fixed chest/slot stays deterministic.
+     */
+    static int potionEffectIndex(BlockPos localPos, long worldSeed, int carriageIndex,
+                                 int slot, int poolSize) {
+        if (poolSize <= 1) return 0;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_POTION_EPOCH_EFFECT);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % poolSize);
+    }
+
+    /** Per-instance random bottle form: 0 = drinkable, 1 = splash, 2 = lingering. */
+    static int potionFormIndex(BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        long state = mix(localPos, worldSeed, carriageIndex, slot, SALT_POTION_EPOCH_FORM);
+        return (int) ((state & 0x7FFFFFFFFFFFFFFFL) % POTION_FORM_COUNT);
+    }
+
+    /**
+     * Resolve potion ids to holders via the {@code registries} provider
+     * (mirroring the enchantment branch), dropping any that don't resolve so a
+     * stripped/modded registry degrades to a shorter pool rather than crashing.
+     */
+    private static List<Holder<Potion>> resolvePotions(List<ResourceLocation> ids,
+                                                       HolderLookup.Provider registries) {
+        Optional<HolderLookup.RegistryLookup<Potion>> lookup =
+            registries.lookup(Registries.POTION);
+        if (lookup.isEmpty()) return List.of();
+        List<Holder<Potion>> out = new ArrayList<>(ids.size());
+        for (ResourceLocation id : ids) {
+            lookup.get().get(ResourceKey.create(Registries.POTION, id)).ifPresent(out::add);
+        }
+        return out;
     }
 
     /**

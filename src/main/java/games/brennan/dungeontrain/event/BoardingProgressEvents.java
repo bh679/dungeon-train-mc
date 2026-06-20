@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
@@ -12,7 +13,6 @@ import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.BiomeFamilies;
 import net.minecraft.core.Holder;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -130,20 +130,24 @@ public final class BoardingProgressEvents {
         // (All aboard) — first boarding earns the tab.
         if (!boarded.isEmpty()) {
             for (UUID uuid : boarded.keySet()) {
-                long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                 ServerPlayer p = level.getServer().getPlayerList().getPlayer(uuid);
-                if (p != null) {
+                if (p == null) continue;
+                // Lifetime train-time is a global stat — frozen for cheated runs.
+                // The per-run counter, the "boarded" advancement trigger, distance
+                // and biome sampling below still run (advancements earn live).
+                if (!RunIntegrity.isCheated(p)) {
+                    long newTotal = GlobalPlayerStats.addTrainTicks(uuid, SCAN_PERIOD_TICKS);
                     AchievementEvents.notifyTrainTime(p, newTotal);
-                    games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
-                        .trigger(p, "boarded");
-                    // Single-life time aboard: per-run boarded-tick counter that
-                    // resets on death. Twin of the cross-world train-time above.
-                    long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-                        .addTrainTimeTicks(SCAN_PERIOD_TICKS);
-                    AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
-                    accumulateBoardedDistance(p);
-                    sampleBoardedBiome(level, p);
                 }
+                games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
+                    .trigger(p, "boarded");
+                // Single-life time aboard: per-run boarded-tick counter that
+                // resets on death. Twin of the cross-world train-time above.
+                long runTrainTicks = p.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                    .addTrainTimeTicks(SCAN_PERIOD_TICKS);
+                AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
+                accumulateBoardedDistance(p);
+                sampleBoardedBiome(level, p);
             }
         }
         // Drop tracking for players who disembarked since last scan, so the
@@ -260,16 +264,18 @@ public final class BoardingProgressEvents {
         double runMeters = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addDistance(delta);
         AchievementEvents.notifyRunDistance(player, runMeters);
         // Lifetime distance — the same delta, accrued across all worlds/sessions.
-        double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
-        AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
+        // Global stat: frozen for cheated runs (per-run distance above still ticks).
+        if (!RunIntegrity.isCheated(player)) {
+            double lifetimeMeters = GlobalPlayerStats.addDistanceBlocks(player.getUUID(), delta);
+            AchievementEvents.notifyLifetimeDistance(player, lifetimeMeters);
+        }
     }
 
     /**
      * Sample the biome under {@code player}'s current (world-space) position and
      * fold it into their per-run {@link PlayerBiomeProgress}. A newly seen biome
      * advances the count tiers ("Far Afield" / "Many Lands" / "World Without
-     * End"); the first biome of a newly reached family fires "All Under Heaven"
-     * and shows a discovery action-bar message.
+     * End"); the first biome of a newly reached family fires "All Under Heaven".
      *
      * <p>Uses {@code player.blockPosition()} — the same world-space position
      * {@link #accumulateBoardedDistance} books distance against (the deck
@@ -288,12 +294,7 @@ public final class BoardingProgressEvents {
 
         Optional<String> family = BiomeFamilies.classify(biome);
         if (family.isPresent() && progress.addFamily(family.get())) {
-            int familyCount = progress.familyCount();
-            AchievementEvents.notifyBiomeFamilies(player, familyCount);
-            player.displayClientMessage(
-                Component.translatable("dungeontrain.biome_family.discovered",
-                    BiomeFamilies.displayName(family.get()), familyCount, BiomeFamilies.FAMILY_COUNT),
-                true);
+            AchievementEvents.notifyBiomeFamilies(player, progress.familyCount());
         }
     }
 
@@ -328,7 +329,8 @@ public final class BoardingProgressEvents {
      * Find which carriage's worldAABB contains the player, or null if none.
      * Horizontal bounds are padded by {@link #HORIZONTAL_PADDING} to bridge
      * the small joints between adjacent carriage groups; Y is padded above
-     * by 1 to count players standing on a carriage roof as "on the train."
+     * by 3 to count players standing on or sprint-jumping from the roof as
+     * "on the train" (sprint-jump peaks at ~1.25 blocks above standing).
      */
     @Nullable
     private static Integer findPlayerCarriagePIdx(List<Trains.Carriage> carriages, ServerPlayer player) {
@@ -338,7 +340,7 @@ public final class BoardingProgressEvents {
         for (Trains.Carriage c : carriages) {
             AABBdc bb = c.ship().worldAABB();
             if (px < bb.minX() - HORIZONTAL_PADDING || px > bb.maxX() + HORIZONTAL_PADDING) continue;
-            if (py < bb.minY() || py > bb.maxY() + 1.0) continue;
+            if (py < bb.minY() || py > bb.maxY() + 3.0) continue;
             if (pz < bb.minZ() - HORIZONTAL_PADDING || pz > bb.maxZ() + HORIZONTAL_PADDING) continue;
             return c.provider().getPIdx();
         }

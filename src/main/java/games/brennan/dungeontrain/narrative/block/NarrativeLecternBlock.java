@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.narrative.block;
 
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.NarrativeBookEvents;
@@ -48,9 +49,10 @@ import java.util.Optional;
  *   <li>If every story is complete for the world, the right-click no-ops
  *       and shows an action-bar message — and the lectern stays "empty"
  *       until more content loads.</li>
- *   <li>On break, drops only the lectern item — the rotating book is
- *       transient w.r.t. block loot (the BE is destroyed with the block,
- *       so the lock dies with the lectern).</li>
+ *   <li>On break, drops a plain {@code minecraft:lectern} (its block loot
+ *       table) plus the resolved book if one was opened — vanilla
+ *       {@link LecternBlock#onRemove} pops the {@link LecternBlockEntity}'s
+ *       stored book. An un-opened lectern (empty BE) drops only the lectern.</li>
  * </ul>
  *
  * <p>Reuses {@link LecternBlockEntity} via NeoForge's
@@ -119,15 +121,22 @@ public class NarrativeLecternBlock extends LecternBlock {
         NarrativeBookTag.read(book).ifPresent(id -> {
             NarrativeProgressData data = NarrativeProgressData.get(overworld);
             data.markRead(id.storyBasename(), id.letterIndex());
-            GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+            // Cross-world store is frozen for cheated runs; per-world `data` (the
+            // login-absorption source + lectern selection) still records.
+            boolean cheated = RunIntegrity.isCheated(sp);
+            if (!cheated) {
+                GlobalNarrativeProgress.markRead(id.storyBasename(), id.letterIndex());
+            }
             if (id.variantIndex() >= 0) {
                 // Mark the variant on BOTH stores, matching recordRead: keeps
                 // the per-world data complete (it is the login absorption
                 // source) and the global store correct for a one-and-done
                 // lectern reader who never re-opens the book.
                 data.markStoryVariantSeen(id.storyBasename(), id.letterIndex(), id.variantIndex());
-                GlobalNarrativeProgress.markVariantSeen(
-                    id.storyBasename(), id.letterIndex(), id.variantIndex());
+                if (!cheated) {
+                    GlobalNarrativeProgress.markVariantSeen(
+                        id.storyBasename(), id.letterIndex(), id.variantIndex());
+                }
             }
             AchievementEvents.notifyStoryProgress(sp);
             // First-and-only read of this lectern — count it toward the
@@ -141,19 +150,8 @@ public class NarrativeLecternBlock extends LecternBlock {
         return super.useWithoutItem(state, level, pos, player, hit);
     }
 
-    /**
-     * Vanilla {@link LecternBlock#onRemove} drops the stored book as an
-     * item. The lock dies with the lectern — clear the BE's book before
-     * super so vanilla's drop logic has nothing to scatter.
-     */
-    @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!state.is(newState.getBlock())) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof LecternBlockEntity lectern) {
-                lectern.setBook(ItemStack.EMPTY);
-            }
-        }
-        super.onRemove(state, level, pos, newState, movedByPiston);
-    }
+    // Block removal is left to vanilla LecternBlock#onRemove: it pops the
+    // stored book (popBook) and then clears the BE. Breaking a narrative
+    // lectern therefore drops both the plain lectern (block loot table) and
+    // the resolved book, if one was opened.
 }
