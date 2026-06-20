@@ -261,9 +261,16 @@ public final class RunStatsEvents {
      */
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet) {
         String cause = source.getLocalizedDeathMessage(player).getString();
-        DiscordService.get().postDeathReport(player,
-                "💀 " + player.getGameProfile().getName() + " — Run Ended", cause,
-                runFields(packet), runIcons(packet));
+        String title = "💀 " + player.getGameProfile().getName() + " — Run Ended";
+        List<DeathField> fields = runFields(packet);
+        List<ItemStack> icons = runIcons(packet);
+        DiscordService.get().postDeathReport(player, title, cause, fields, icons);
+        // Dev/test builds also post the SAME report OUTSIDE the player's thread — a dev-channel preview
+        // of the upcoming public death feed (a flat, non-threaded stream of deaths). Identical content
+        // for now; slated to be redesigned. Dev-gated so the live community feed is unaffected.
+        if (DungeonTrain.isDevBuild()) {
+            DiscordService.get().postDeathReportTopLevel(player, title, cause, fields, icons);
+        }
     }
 
     /**
