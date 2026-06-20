@@ -46,6 +46,7 @@ public final class DungeonTrainSettingsScreen extends Screen {
     private EditBox trainYField;
     private CycleButton<CarriageGenerationMode> modeButton;
     private EditBox playerMobSpawnField;
+    private EditBox playerMobBehindSpawnField;
     private EditBox groupSizeField;
     private CycleButton<Boolean> compatibleTerrainButton;
 
@@ -97,7 +98,15 @@ public final class DungeonTrainSettingsScreen extends Screen {
         playerMobSpawnField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
         addRenderableWidget(playerMobSpawnField);
 
-        groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 5, FIELD_WIDTH, FIELD_HEIGHT,
+        playerMobBehindSpawnField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 5, FIELD_WIDTH, FIELD_HEIGHT,
+                Component.literal("Behind %"));
+        // Two-tier like the forward field: in a world this is THIS world's effective behind-spawn
+        // percent; on the title screen it's the global default for new worlds.
+        playerMobBehindSpawnField.setValue(Integer.toString(currentPlayerMobBehindSpawnPercent()));
+        playerMobBehindSpawnField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
+        addRenderableWidget(playerMobBehindSpawnField);
+
+        groupSizeField = new EditBox(this.font, centerX + 10, topY + ROW_GAP * 6, FIELD_WIDTH, FIELD_HEIGHT,
                 Component.literal("Group size"));
         groupSizeField.setValue(Integer.toString(DungeonTrainConfig.getGroupSize()));
         groupSizeField.setFilter(DungeonTrainSettingsScreen::isIntegerInput);
@@ -109,16 +118,16 @@ public final class DungeonTrainSettingsScreen extends Screen {
         // Horizons take effect. Does not change the current world (terrain is baked at creation).
         compatibleTerrainButton = CycleButton.onOffBuilder(DungeonTrainCommonConfig.getDefaultCompatibleTerrain())
                 .displayOnlyValue()
-                .create(centerX + 10, topY + ROW_GAP * 6, FIELD_WIDTH, FIELD_HEIGHT,
+                .create(centerX + 10, topY + ROW_GAP * 7, FIELD_WIDTH, FIELD_HEIGHT,
                         Component.literal("Compatible Terrain"));
         addRenderableWidget(compatibleTerrainButton);
 
         addRenderableWidget(Button.builder(Component.literal("Save"), b -> saveAndClose())
-                .bounds(centerX - 105, topY + ROW_GAP * 7 + 20, 100, 20)
+                .bounds(centerX - 105, topY + ROW_GAP * 8 + 20, 100, 20)
                 .build());
 
         addRenderableWidget(Button.builder(Component.literal("Cancel"), b -> onClose())
-                .bounds(centerX + 5, topY + ROW_GAP * 7 + 20, 100, 20)
+                .bounds(centerX + 5, topY + ROW_GAP * 8 + 20, 100, 20)
                 .build());
     }
 
@@ -141,36 +150,37 @@ public final class DungeonTrainSettingsScreen extends Screen {
         graphics.drawString(this.font, "Train Y:", centerX - LABEL_OFFSET, topY + ROW_GAP * 2 + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "Mode:", centerX - LABEL_OFFSET, topY + ROW_GAP * 3 + 6, 0xFFFFFFFF);
         graphics.drawString(this.font, "PlayerMob 1-in-N:", centerX - LABEL_OFFSET, topY + ROW_GAP * 4 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, "Behind %:", centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
         if (modeButton != null && modeButton.getValue() == CarriageGenerationMode.RANDOM_GROUPED) {
-            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 5 + 6, 0xFFFFFFFF);
+            graphics.drawString(this.font, "Group size:", centerX - LABEL_OFFSET, topY + ROW_GAP * 6 + 6, 0xFFFFFFFF);
         }
-        graphics.drawString(this.font, "Compat terrain:", centerX - LABEL_OFFSET, topY + ROW_GAP * 6 + 6, 0xFFFFFFFF);
+        graphics.drawString(this.font, "Compat terrain:", centerX - LABEL_OFFSET, topY + ROW_GAP * 7 + 6, 0xFFFFFFFF);
 
         String rangeHint = "Carriages " + DungeonTrainConfig.MIN_CARRIAGES + "-" + DungeonTrainConfig.MAX_CARRIAGES
                 + ", Speed " + DungeonTrainConfig.MIN_SPEED + "-" + DungeonTrainConfig.MAX_SPEED
                 + ", Train Y " + DungeonTrainConfig.MIN_TRAIN_Y + "-" + DungeonTrainConfig.MAX_TRAIN_Y
                 + ", Group " + CarriageGenerationConfig.MIN_GROUP_SIZE + "-" + CarriageGenerationConfig.MAX_GROUP_SIZE
                 + ", PlayerMob " + DungeonTrainCommonConfig.MIN_PLAYER_MOB_SPAWN_ONE_IN + "-" + DungeonTrainCommonConfig.MAX_PLAYER_MOB_SPAWN_ONE_IN;
-        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 7 - 4, 0xFFAAAAAA);
+        graphics.drawCenteredString(this.font, rangeHint, centerX, topY + ROW_GAP * 8 - 4, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 "Train Y applies to next spawn only. Mode affects new carriage placements.",
-                centerX, topY + ROW_GAP * 7 + 50, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 8 + 50, 0xFFAAAAAA);
 
         boolean inWorld = Minecraft.getInstance().getSingleplayerServer() != null;
         String playerMobScope = inWorld
-                ? "PlayerMob 1-in-N applies to THIS world (0 disables, 1 = every group)."
-                : "PlayerMob 1-in-N sets the DEFAULT for new worlds (0 disables, 1 = every group).";
-        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 7 + 64, 0xFFAAAAAA);
+                ? "PlayerMob = 1-in-N ahead spawns; Behind = % chance one also spawns a group behind you (THIS world)."
+                : "PlayerMob = 1-in-N ahead spawns; Behind = % chance one also spawns a group behind you (new worlds).";
+        graphics.drawCenteredString(this.font, playerMobScope, centerX, topY + ROW_GAP * 8 + 64, 0xFFAAAAAA);
 
         graphics.drawCenteredString(this.font,
                 "Compat terrain = default for NEW worlds; lets terrain mods (Tectonic) + Distant Horizons generate.",
-                centerX, topY + ROW_GAP * 7 + 78, 0xFFAAAAAA);
+                centerX, topY + ROW_GAP * 8 + 78, 0xFFAAAAAA);
 
         if (!inWorld) {
             graphics.drawCenteredString(this.font,
                     "Note: other settings require an active world; PlayerMob + Compat terrain defaults save here.",
-                    centerX, topY + ROW_GAP * 7 + 92, 0xFFFFAA55);
+                    centerX, topY + ROW_GAP * 8 + 92, 0xFFFFAA55);
         }
     }
 
@@ -180,11 +190,13 @@ public final class DungeonTrainSettingsScreen extends Screen {
         Integer trainY = parseIntOrNull(trainYField.getValue());
         Integer groupSize = parseIntOrNull(groupSizeField.getValue());
         Integer playerMobSpawn = parseIntOrNull(playerMobSpawnField.getValue());
+        Integer playerMobBehindSpawn = parseIntOrNull(playerMobBehindSpawnField.getValue());
 
-        if (carriages == null || speed == null || trainY == null || groupSize == null || playerMobSpawn == null) {
-            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={} groupSize={} playerMobSpawn={}",
+        if (carriages == null || speed == null || trainY == null || groupSize == null
+                || playerMobSpawn == null || playerMobBehindSpawn == null) {
+            LOGGER.warn("[DungeonTrain] Settings screen: invalid input carriages={} speed={} trainY={} groupSize={} playerMobSpawn={} behind={}",
                     carriagesField.getValue(), speedField.getValue(), trainYField.getValue(),
-                    groupSizeField.getValue(), playerMobSpawnField.getValue());
+                    groupSizeField.getValue(), playerMobSpawnField.getValue(), playerMobBehindSpawnField.getValue());
             return;
         }
 
@@ -205,10 +217,16 @@ public final class DungeonTrainSettingsScreen extends Screen {
         String playerMobScope;
         if (server != null) {
             final int rate = playerMobSpawn;
-            server.execute(() -> DungeonTrainWorldData.get(server.overworld()).setPlayerMobSpawnOneInOverride(rate));
+            final int behindRate = playerMobBehindSpawn;
+            server.execute(() -> {
+                DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+                data.setPlayerMobSpawnOneInOverride(rate);
+                data.setPlayerMobBehindSpawnPercentOverride(behindRate);
+            });
             playerMobScope = "world-override";
         } else {
             DungeonTrainCommonConfig.setDefaultPlayerMobSpawnOneIn(playerMobSpawn);
+            DungeonTrainCommonConfig.setDefaultPlayerMobBehindSpawnPercent(playerMobBehindSpawn);
             playerMobScope = "global-default";
         }
 
@@ -219,8 +237,8 @@ public final class DungeonTrainSettingsScreen extends Screen {
         int effectiveGroupSize = DungeonTrainConfig.getGroupSize();
 
         applyToLiveTrains(effectiveCarriages, effectiveSpeed);
-        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={} mode={} groupSize={} playerMobSpawnOneIn={} ({})",
-                effectiveCarriages, effectiveSpeed, effectiveTrainY, effectiveMode, effectiveGroupSize, playerMobSpawn, playerMobScope);
+        LOGGER.info("[DungeonTrain] Settings saved: carriages={} speed={} trainY={} mode={} groupSize={} playerMobSpawnOneIn={} behindOneIn={} ({})",
+                effectiveCarriages, effectiveSpeed, effectiveTrainY, effectiveMode, effectiveGroupSize, playerMobSpawn, playerMobBehindSpawn, playerMobScope);
 
         onClose();
     }
@@ -235,6 +253,14 @@ public final class DungeonTrainSettingsScreen extends Screen {
         return server != null
                 ? DungeonTrainWorldData.get(server.overworld()).getEffectivePlayerMobSpawnOneIn()
                 : DungeonTrainCommonConfig.getDefaultPlayerMobSpawnOneIn();
+    }
+
+    /** Behind-spawn percent counterpart of {@link #currentPlayerMobSpawnOneIn()}. */
+    private static int currentPlayerMobBehindSpawnPercent() {
+        MinecraftServer server = Minecraft.getInstance().getSingleplayerServer();
+        return server != null
+                ? DungeonTrainWorldData.get(server.overworld()).getEffectivePlayerMobBehindSpawnPercent()
+                : DungeonTrainCommonConfig.getDefaultPlayerMobBehindSpawnPercent();
     }
 
     private static Component modeLabel(CarriageGenerationMode mode) {

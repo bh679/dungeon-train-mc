@@ -97,6 +97,9 @@ public final class DungeonTrainNet {
         // confirmed/canceled (the "don't show again" pref lives client-side).
         registrar.playToClient(ShowFreePlayConfirmPacket.TYPE, ShowFreePlayConfirmPacket.STREAM_CODEC, ShowFreePlayConfirmPacket::handle);
         registrar.playToServer(FreePlayConfirmResponsePacket.TYPE, FreePlayConfirmResponsePacket.STREAM_CODEC, FreePlayConfirmResponsePacket::handle);
+
+        // Pause-menu "Abandon This Run": client → server kill request, ending the run via the death screen.
+        registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

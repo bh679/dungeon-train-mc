@@ -27,11 +27,21 @@ public final class DungeonTrainCommonConfig {
     public static final int MAX_PLAYER_MOB_SPAWN_ONE_IN = 10_000;
     public static final int DEFAULT_PLAYER_MOB_SPAWN_ONE_IN = 10;
 
+    /**
+     * Percent chance, rolled each time a PlayerMob spawns, that an extra PlayerMob is ALSO spawned
+     * one full carriage group BEHIND a riding player and set to march the player's travel direction.
+     * 0 disables; 100 = always.
+     */
+    public static final int MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT = 0;
+    public static final int MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT = 100;
+    public static final int DEFAULT_PLAYER_MOB_BEHIND_SPAWN_PERCENT = 15;
+
     /** Global DEFAULT Compatible Terrain mode for new worlds. false = classic Dungeon Train terrain. */
     public static final boolean DEFAULT_COMPATIBLE_TERRAIN = false;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
+    public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
 
     static {
@@ -39,6 +49,7 @@ public final class DungeonTrainCommonConfig {
                 .configure(DungeonTrainCommonConfig::build);
         SPEC = pair.getRight();
         DEFAULT_PLAYER_MOB_SPAWN = pair.getLeft().defaultPlayerMobSpawnOneIn;
+        DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
     }
 
@@ -52,6 +63,12 @@ public final class DungeonTrainCommonConfig {
                         + "Default 10 (~1-in-10); set to 1 for a PlayerMob on every group (testing); 0 disables.")
                 .defineInRange("defaultPlayerMobSpawnOneIn", DEFAULT_PLAYER_MOB_SPAWN_ONE_IN,
                         MIN_PLAYER_MOB_SPAWN_ONE_IN, MAX_PLAYER_MOB_SPAWN_ONE_IN);
+        ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent = b
+                .comment("Global DEFAULT percent chance, rolled each time a PlayerMob spawns, that an extra PlayerMob ALSO spawns "
+                        + "one full carriage group BEHIND a riding player and marches the player's direction of travel (catching up "
+                        + "from the rear). Used by any world that has not set a per-world override. Default 15; 0 disables; 100 = always.")
+                .defineInRange("defaultPlayerMobBehindSpawnPercent", DEFAULT_PLAYER_MOB_BEHIND_SPAWN_PERCENT,
+                        MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT);
         b.pop();
 
         b.push("worldgen");
@@ -64,7 +81,7 @@ public final class DungeonTrainCommonConfig {
                 .define("defaultCompatibleTerrain", DEFAULT_COMPATIBLE_TERRAIN);
         b.pop();
 
-        return new Holder(defaultPlayerMobSpawnOneIn, compatibleTerrain);
+        return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain);
     }
 
     /**
@@ -89,6 +106,18 @@ public final class DungeonTrainCommonConfig {
         DEFAULT_PLAYER_MOB_SPAWN.save();
     }
 
+    /** Global default behind-spawn percent chance; falls back to the hardcoded default pre-load. */
+    public static int getDefaultPlayerMobBehindSpawnPercent() {
+        return isLoaded() ? DEFAULT_PLAYER_MOB_BEHIND_SPAWN.get() : DEFAULT_PLAYER_MOB_BEHIND_SPAWN_PERCENT;
+    }
+
+    public static void setDefaultPlayerMobBehindSpawnPercent(int value) {
+        if (!isLoaded()) return;
+        int clamped = Math.max(MIN_PLAYER_MOB_BEHIND_SPAWN_PERCENT, Math.min(MAX_PLAYER_MOB_BEHIND_SPAWN_PERCENT, value));
+        DEFAULT_PLAYER_MOB_BEHIND_SPAWN.set(clamped);
+        DEFAULT_PLAYER_MOB_BEHIND_SPAWN.save();
+    }
+
     /** Global default Compatible Terrain mode for new worlds; falls back to the hardcoded default pre-load. */
     public static boolean getDefaultCompatibleTerrain() {
         return isLoaded() ? COMPATIBLE_TERRAIN.get() : DEFAULT_COMPATIBLE_TERRAIN;
@@ -101,5 +130,6 @@ public final class DungeonTrainCommonConfig {
     }
 
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
+                          ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain) {}
 }

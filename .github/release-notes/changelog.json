@@ -1408,7 +1408,7 @@
     },
     {
       "id": "dev-discord-channel-routing",
-      "version": "0.329.0",
+      "version": "0.330.0",
       "type": "chore",
       "title": "Dev/test builds send Discord to a dev channel, not the live feed",
       "summary": "Development and test builds of the mod now route their Discord activity (joins, deaths, chat, advancements) to a separate dev channel instead of the live community feed, so testing no longer adds noise for players. Released builds are unchanged \u2014 they post to the community feed exactly as before.",
@@ -1417,9 +1417,106 @@
         "Released builds unchanged \u2014 still post to the live community feed"
       ],
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.330.0",
+      "released_at": "2026-06-20T06:08:59Z"
+    },
+    {
+      "id": "discord-free-play-notice",
+      "version": "0.330.0",
+      "type": "feat",
+      "title": "Free Play activity now shows in Discord",
+      "summary": "When a player's run enters Free Play (creative, spectator, or cheat commands), Discord now gets a heads-up. Free Play runs also keep posting their death and \"left the game\" run summaries to Discord, so the community feed stays complete \u2014 cross-world stats still stay frozen in Free Play.",
+      "highlights": [
+        "Discord notice the moment a run enters Free Play",
+        "Death and \"left the game\" summaries now post for Free Play runs too",
+        "New freePlayNoticeToDiscord config toggle (on by default)"
+      ],
+      "pr": 487,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.330.0",
+      "released_at": "2026-06-20T06:08:59Z"
+    },
+    {
+      "id": "network-consent-card-dp-0-31-0",
+      "version": "0.330.0",
+      "type": "feat",
+      "title": "Custom network-access card + Discord Presence 0.31.0",
+      "summary": "The title-screen \"use the internet?\" prompt is now Dungeon Train's own card spelling out exactly what the connection is used for, and the bundled Discord integration was updated to 0.31.0 with a bot-token security fix.",
+      "highlights": [
+        "The title-screen network-access prompt is now Dungeon Train's own card \u2014 leaderboard scoring (coming soon), dev support chat, and a heads-up that a future update will let you return as a mob \"echo\" in other players' worlds.",
+        "Toggle network features anytime with /chatconnect on|off (works even with cheats off).",
+        "Bundled Discord Presence 0.31.0 \u2014 the Discord bot token now stays server-side only (security fix)."
+      ],
+      "pr": 489,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.331.0",
+      "released_at": "2026-06-20T07:08:55Z"
+    },
+    {
+      "id": "playermob-spawn-behind-you",
+      "version": "0.332.0",
+      "type": "feat",
+      "title": "PlayerMobs can now turn up behind you on the train",
+      "summary": "Each time a PlayerMob spawns on the train, there is now a small chance another one also appears a short way behind you and walks your direction of travel, catching up from the rear. It is not hostile; it just shows up behind you. Adjust it with the new 'Behind %' setting (default 15%, 0 to disable).",
+      "highlights": [
+        "New 'Behind %' spawn chance (default 15%) with a per-world override in the in-game settings screen."
+      ],
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.332.0",
+      "released_at": "2026-06-20T07:37:04Z"
+    },
+    {
+      "id": "abandon-this-run-pause-menu",
+      "version": "0.332.0",
+      "type": "feat",
+      "title": "Abandon This Run replaces Save and Quit on the pause menu",
+      "summary": "The pause menu now leads with a red \"Abandon This Run\" button: one click ends your run and takes you straight to the death recap \u2014 no quiet save-and-quit. The usual exits are still there, tucked behind Shift: hold Shift and the red button splits into \"Exit to Title\" and \"Quit Game\". Singleplayer only; on servers the normal Disconnect button is unchanged.",
+      "highlights": [
+        "Red \"Abandon This Run\" button ends the run and opens the death screen",
+        "Hold Shift to reveal \"Exit to Title\" and \"Quit Game\"",
+        "Both exits save the world cleanly (no Sable save-quit hang)"
+      ],
+      "pr": 492,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.333.0",
+      "released_at": "2026-06-20T07:59:13Z"
+    },
+    {
+      "id": "arrival-death-photo",
+      "version": "0.333.0",
+      "type": "feat",
+      "title": "Arrival death-photo",
+      "summary": "The death screen now always opens on a shot of where your run began: a photo of you on the train is captured as soon as you arrive \u2014 once the carriages around you have rendered in \u2014 so even a quick death has a memento of the start of the journey.",
+      "highlights": [
+        "A photo of your arrival on the train is now guaranteed for the death screen",
+        "Waits for the surrounding carriages to load so the shot frames the train, not empty space"
+      ],
+      "pr": 494,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.334.0",
+      "released_at": "2026-06-20T08:53:48Z"
+    },
+    {
+      "id": "abandon-run-death-cause",
+      "version": "0.333.0",
+      "type": "feat",
+      "title": "Themed cause of death when you abandon a run",
+      "summary": "Abandoning a run from the pause menu now ends it with a themed Dungeon Train cause of death instead of a plain \"You died\". One of four lines is picked at random each time \u2014 \"You abandoned the train\", \"You stepped off the train\", \"You left the line\", or \"You walked away from the line\" \u2014 and it shows on your death screen (and in the Discord run report).",
+      "highlights": [
+        "Abandoning a run now reads as a themed cause of death, not \"You died\"",
+        "Four flavor lines, picked at random each time"
+      ],
+      "pr": 495,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.334.0",
+      "released_at": "2026-06-20T08:53:48Z"
     }
   ]
 }

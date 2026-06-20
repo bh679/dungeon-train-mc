@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.difficulty.DifficultyApplier;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.playermob.compat.TrainConfinement;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -86,9 +87,16 @@ public final class PlayerMobGroupSpawner {
         if (host == null) return;                     // no enclosed carriage to stand in
 
         BlockPos spawnPos = interiorFloorCentre(host.shipyardOrigin(), host.dims());
-        boolean ok = spawnPlayerMob(level, spawnPos, host.carriageIndex(), rng);
+        // marchDir 0: the forward spawn leaves the mob's normal boarding latch to choose.
+        boolean ok = spawnPlayerMob(level, spawnPos, host.carriageIndex(), rng, 0);
         LOGGER.info("[DungeonTrain] PlayerMob group-spawn (1-in-{}) anchorPIdx={} carriagePIdx={} pos={} -> {}",
             oneIn, provider.getPIdx(), host.carriageIndex(), spawnPos, ok ? "spawned" : "FAILED");
+
+        // Per mob spawn: a configurable percent chance to ALSO spawn a PlayerMob one full carriage
+        // group behind a riding player, marching their travel direction so it closes in from the rear.
+        if (ok) {
+            PlayerMobBehindSpawner.maybeSpawnBehind(level, provider.getTrainId(), rng);
+        }
     }
 
     /**
@@ -120,7 +128,7 @@ public final class PlayerMobGroupSpawner {
      * (inside the walls/floor) per {@link CarriageContentsPlacer}; we centre on
      * the interior footprint and sit on its floor.
      */
-    private static BlockPos interiorFloorCentre(BlockPos shipyardOrigin, CarriageDims dims) {
+    static BlockPos interiorFloorCentre(BlockPos shipyardOrigin, CarriageDims dims) {
         BlockPos interiorOrigin = shipyardOrigin.offset(1, 1, 1);
         Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
         return interiorOrigin.offset(interior.getX() / 2, 0, interior.getZ() / 2);
@@ -132,10 +140,15 @@ public final class PlayerMobGroupSpawner {
      * {@link CarriageContentsPlacer#spawnVariantMob} but additionally calls
      * {@code finalizeSpawn} (rolls personality + skin).
      *
+     * @param marchDir if non-zero, the spawned mob's fixed train march direction is set to this
+     *                 sign (via {@link TrainConfinement#setMarchDirection}) before it is added,
+     *                 overriding the normal boarding latch — used by the behind-the-player spawn
+     *                 ({@link PlayerMobBehindSpawner}) to march the player's travel direction.
+     *                 0 leaves the boarding latch to choose normally.
      * @return {@code true} if the mob was added to the level
      */
-    private static boolean spawnPlayerMob(ServerLevel level, BlockPos floorPos,
-                                          int carriagePIdx, RandomSource rng) {
+    static boolean spawnPlayerMob(ServerLevel level, BlockPos floorPos,
+                                  int carriagePIdx, RandomSource rng, int marchDir) {
         Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
         if (typeOpt.isEmpty()) {
             LOGGER.warn("[DungeonTrain] PlayerMob spawn: entity '{}' not registered — is the bundled mod present?",
@@ -196,6 +209,13 @@ public final class PlayerMobGroupSpawner {
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_X, pos.x);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Y, pos.y);
         persistent.putDouble(CarriageContentsPlacer.NBT_SPAWN_SHIPYARD_Z, pos.z);
+
+        // Optional explicit march heading (behind-spawn → the player's travel direction). Set
+        // before addFreshEntity so it's latched ahead of the mob's first AI tick; 0 = no override
+        // (the boarding latch picks). No-op on a non-PlayerMob, which this always is.
+        if (marchDir != 0) {
+            TrainConfinement.setMarchDirection(mob, marchDir);
+        }
 
         if (!level.addFreshEntity(mob)) {
             LOGGER.warn("[DungeonTrain] PlayerMob spawn: addFreshEntity rejected at {} pIdx={}",

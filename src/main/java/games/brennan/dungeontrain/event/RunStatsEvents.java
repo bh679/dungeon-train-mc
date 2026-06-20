@@ -195,27 +195,16 @@ public final class RunStatsEvents {
         DungeonTrainNet.sendTo(player, packet);
 
         // Mirror the death-screen run summary to Discord via the bundled Discord Presence API.
+        // Posts even on a Free Play run (the death screen renders for cheated runs too); only the
+        // cross-world stat accrual above is frozen in Free Play, not the Discord report.
         // Best-effort: a Discord hiccup must never disrupt the death handling above.
-        if (shouldReportDeath(cheated, DungeonTrain.isDevBuild(), DungeonTrainConfig.isDeathReportToDiscord())) {
+        if (DungeonTrainConfig.isDeathReportToDiscord()) {
             try {
-                postRunSummary(player, event.getSource(), packet);
+                postRunSummary(player, event.getSource(), packet, cheated);
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] death report to Discord failed: {}", t.toString());
             }
         }
-    }
-
-    /**
-     * Whether a player death should post a Discord death report. Posts when the feature is enabled AND
-     * either the run is legit OR this is a dev/test build. The dev-build exception lets creative-mode
-     * dev testing (which flips the run to Free Play, see {@code RunIntegrity}) still report to the dev
-     * channel; {@code main} (release) builds keep suppressing Free Play deaths, so the live community
-     * feed is unaffected. Free Play runs are still excluded from global stats either way (handled by the
-     * separate {@code !cheated} gate above) — only the report is un-gated for dev builds. Pure for unit
-     * testing.
-     */
-    static boolean shouldReportDeath(boolean cheated, boolean devBuild, boolean enabled) {
-        return enabled && (!cheated || devBuild);
     }
 
     /**
@@ -263,17 +252,19 @@ public final class RunStatsEvents {
      * the same stats the death screen shows, and the most-used weapon + worn armor as the
      * composed item image. Discord Presence handles the embed, image, and posting off-thread.
      */
-    private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet) {
+    private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
+                                       boolean cheated) {
         String cause = source.getLocalizedDeathMessage(player).getString();
         String title = "💀 " + player.getGameProfile().getName() + " — Run Ended";
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
         DiscordService.get().postDeathReport(player, title, cause, fields, icons);
         // Dev/test builds also post a redesigned report OUTSIDE the player's thread — "the manifest":
-        // the rolled fall narration as the title, each section headed by the line the player saw, with
-        // de-duped stat strips. A dev-channel preview of the upcoming public death feed. Dev-gated so
-        // the live community feed is unaffected; gear icons stay the image until the ride photo lands.
-        if (DungeonTrain.isDevBuild()) {
+        // the rolled fall narration, each section headed by the line the player saw, de-duped stat
+        // strips, and this run's ride photo. This is the upcoming public death feed (dev-gated preview
+        // for now). Free Play (cheated) runs are EXCLUDED — they still get the basic threaded report
+        // above in dev, but never the public manifest report.
+        if (DungeonTrain.isDevBuild() && !cheated) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -314,8 +305,8 @@ public final class RunStatsEvents {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isDeadOrDying()) return;
-        // Cheated runs don't post run summaries to Discord.
-        if (RunIntegrity.isCheated(player)) return;
+        // Free Play runs still post the "left the game" summary — only cross-world stat accrual
+        // (elsewhere) is frozen in Free Play, not the Discord report.
         if (!DungeonTrainConfig.isDeathReportToDiscord()) return;
         try {
             UUID id = player.getUUID();
