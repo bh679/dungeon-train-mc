@@ -119,7 +119,7 @@
   "gui.dungeontrain.death.narr.see_all_adv": "see all advancements",
   "gui.dungeontrain.death.reboard": "reboard",
   "gui.dungeontrain.death.leave": "leave the line",
-  "gui.dungeontrain.death.continue": "Continue",
+  "gui.dungeontrain.death.continue": "Next Screen",
   "gui.dungeontrain.death.board_anew": "Board anew",
   "gui.dungeontrain.abandon_run": "Abandon This Run",
   "death.attack.dungeontrain.abandoned": "%1$s abandoned the train",
