@@ -1485,6 +1485,38 @@
       "released": true,
       "released_in": "v0.333.0",
       "released_at": "2026-06-20T07:59:13Z"
+    },
+    {
+      "id": "arrival-death-photo",
+      "version": "0.333.0",
+      "type": "feat",
+      "title": "Arrival death-photo",
+      "summary": "The death screen now always opens on a shot of where your run began: a photo of you on the train is captured as soon as you arrive \u2014 once the carriages around you have rendered in \u2014 so even a quick death has a memento of the start of the journey.",
+      "highlights": [
+        "A photo of your arrival on the train is now guaranteed for the death screen",
+        "Waits for the surrounding carriages to load so the shot frames the train, not empty space"
+      ],
+      "pr": 494,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.334.0",
+      "released_at": "2026-06-20T08:53:48Z"
+    },
+    {
+      "id": "abandon-run-death-cause",
+      "version": "0.333.0",
+      "type": "feat",
+      "title": "Themed cause of death when you abandon a run",
+      "summary": "Abandoning a run from the pause menu now ends it with a themed Dungeon Train cause of death instead of a plain \"You died\". One of four lines is picked at random each time \u2014 \"You abandoned the train\", \"You stepped off the train\", \"You left the line\", or \"You walked away from the line\" \u2014 and it shows on your death screen (and in the Discord run report).",
+      "highlights": [
+        "Abandoning a run now reads as a themed cause of death, not \"You died\"",
+        "Four flavor lines, picked at random each time"
+      ],
+      "pr": 495,
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.334.0",
+      "released_at": "2026-06-20T08:53:48Z"
     }
   ]
 }

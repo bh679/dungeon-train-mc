@@ -45,6 +45,16 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * ({@link SnapshotTag#GEAR}); reading a narrative book ({@link SnapshotTag#LORE});
  * and a periodic baseline ({@link SnapshotTag#SCENIC}).</p>
  *
+ * <p><b>Arrival shot:</b> the very first capture of a run is guaranteed — once the player is aboard
+ * and back in control (after the intro cinematic, which this director sits out, or immediately when
+ * the cinematic is off) one {@link SnapshotTag#SCENIC} shot is taken. It first waits for the
+ * carriages around the player to load ({@link NearestCarriage#countLoadedCarriages}) and a short
+ * settle for their meshes to build (with a timeout fallback) so the photo shows the train rather
+ * than an empty deck. It owns the run's
+ * first capture and <em>bypasses the performance gate</em>, so the arrival-time spawn lag can't leave
+ * a quick death with an empty death screen. It still honours the render-time framing/lighting/clip
+ * checks, so a blocked angle is retried rather than captured badly.</p>
+ *
  * <p>The FIRST shot of each category fires as soon as its trigger occurs (no
  * wait); taking it starts that category's cooldown ({@link SnapshotCooldowns}).
  * Every later shot is a per-tag <b>dual gate</b>: it fires only once BOTH an
@@ -75,6 +85,18 @@ public final class RideSnapshotDirector {
     private static final int SKIP_FALLBACK_THRESHOLD = 5;
     /** Clamp for {@link #skipsInARow} — no need to keep counting past the threshold. */
     private static final int SKIP_CAP = 5;
+    /** Loaded carriages the arrival shot waits for (the player's own + the next one back). */
+    private static final int ARRIVAL_MIN_CARRIAGES = 2;
+    /** Diagnostic cap when counting loaded carriages — no need to scan past a handful. */
+    private static final int ARRIVAL_CARRIAGE_COUNT_CAP = 8;
+    /**
+     * After the carriages' block data is loaded, hold this long before shooting so their render
+     * meshes have time to build — block data syncs almost instantly but the visible geometry lags,
+     * and Sable exposes no "mesh built" query, so a short settle is the pragmatic readiness signal (~1.5 s).
+     */
+    private static final long ARRIVAL_MESH_SETTLE_TICKS = 30L;
+    /** Take the arrival shot anyway after this long if the train still hasn't streamed in (~7 s). */
+    private static final long ARRIVAL_READY_TIMEOUT_TICKS = 140L;
 
     private static final EquipmentSlot[] ARMOR =
             { EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET };
@@ -86,6 +108,10 @@ public final class RideSnapshotDirector {
     private static int countTotal;
     /** Consecutive shots blocked by the perf gate; resets on any committed capture (and run reset). */
     private static int skipsInARow;
+    /** Has the guaranteed arrival shot been committed this run yet? Re-armed on every run reset. */
+    private static boolean arrivalCaptured;
+    /** Tick the arrival wait began (first eligible aboard tick); {@code MIN_VALUE} until then / after reset. */
+    private static long arrivalAboardSince = Long.MIN_VALUE;
 
     private static final ItemStack[] lastArmor = { ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY };
     private static volatile boolean socialPending; // gift / interaction with a player-mob
@@ -136,6 +162,37 @@ public final class RideSnapshotDirector {
 
         long now = level.getGameTime();
         if (!dueSince(lastAny, now, COOLDOWN_GLOBAL)) return;
+
+        // Arrival shot: guarantee the run's first photo. We only reach here once the player is
+        // aboard and the intro cinematic is over (the director sits out the cinematic above), so
+        // this is the moment they arrive in control. Grab one SCENIC shot regardless of the perf
+        // gate — the arrival-time spawn lag must not leave a quick death with an empty gallery.
+        // In-world only (a clean shot of the player on the deck); if a menu is briefly open we
+        // wait. Owns the run's first capture: until it commits, no other tag is requested. The
+        // render-time framing/lighting/clip checks still apply, so a blocked angle just retries
+        // on the global back-off below.
+        if (!arrivalCaptured) {
+            if (screen == null) {
+                // Hold until the carriages around the player are actually VISIBLE, so the photo isn't
+                // of an empty deck in the void. Two parts: (1) their block data is loaded (≥2 carriages),
+                // and (2) a short settle has elapsed so the render meshes have built — block data syncs
+                // almost instantly but the visible geometry lags a beat, and Sable exposes no "mesh
+                // built" query. A longer timeout shoots anyway so a fast death still gets a photo if
+                // streaming stalls. While waiting we don't touch lastAny, so this re-polls every tick.
+                if (arrivalAboardSince == Long.MIN_VALUE) arrivalAboardSince = now;
+                long waited = now - arrivalAboardSince;
+                int carriages = NearestCarriage.countLoadedCarriages(level, ARRIVAL_CARRIAGE_COUNT_CAP);
+                boolean ready = carriages >= ARRIVAL_MIN_CARRIAGES && waited >= ARRIVAL_MESH_SETTLE_TICKS;
+                boolean timedOut = waited >= ARRIVAL_READY_TIMEOUT_TICKS;
+                if (ready || timedOut) {
+                    RideSnapshotCapture.request(SnapshotTag.SCENIC);
+                    lastAny = now;
+                    pendingReason = "arrived on the train (" + carriages + " carriages, " + waited + "t"
+                            + (ready ? "" : ", timeout") + ")";
+                }
+            }
+            return;
+        }
 
         boolean perfOk = performanceOk(mc);
 
@@ -241,6 +298,7 @@ public final class RideSnapshotDirector {
         int progress = VersionHudOverlay.travelledCarriageIndex();
         countTotal++;
         skipsInARow = 0; // a committed shot breaks the perf-skip streak (resets the menu fallback)
+        arrivalCaptured = true; // the run's first committed shot is the arrival shot (the only requester until now)
         COOLDOWNS.onCommitted(tag, now, progress);
         if (tag == SnapshotTag.GEAR) snapshotArmor(mc.player);
         chatLog(tag, pendingReason);
@@ -345,6 +403,8 @@ public final class RideSnapshotDirector {
         lastAny = Long.MIN_VALUE;
         countTotal = 0;
         skipsInARow = 0;
+        arrivalCaptured = false; // re-arm the guaranteed arrival shot for the new run
+        arrivalAboardSince = Long.MIN_VALUE;
         COOLDOWNS.reset();
         for (int i = 0; i < lastArmor.length; i++) lastArmor[i] = ItemStack.EMPTY;
         socialPending = combatPending = potPending = false;
