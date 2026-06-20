@@ -288,6 +288,29 @@ public final class DeathScreenLayoutHandler {
         mc.setScreen(new TitleScreen());
     }
 
+    /**
+     * Save the current world and quit Minecraft to the desktop. Mirrors
+     * {@link #goToTitleScreen()} — same Sable sub-level pre-drain + integrated-server
+     * teardown so shutdown doesn't hang on the chunk-map wait loop — but ends in
+     * {@link Minecraft#stop()} instead of returning to the title screen. Called by
+     * the pause menu's Shift-revealed "Quit Game" button. After {@code disconnect}
+     * the level and integrated server are gone, so {@code stop()} runs the same
+     * orderly shutdown as the title-screen Quit button.
+     */
+    public static void quitToDesktop() {
+        PendingInventory.clear();
+        Minecraft mc = Minecraft.getInstance();
+        MinecraftServer server = mc.getSingleplayerServer();
+        if (server != null) {
+            preDrainTrainSubLevels(server);
+        }
+        if (mc.level != null) {
+            mc.level.disconnect();
+        }
+        mc.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
+        mc.stop();
+    }
+
     private static ResourceKey<WorldPreset> presetFor(StartingDimension dim) {
         return switch (dim) {
             case NETHER -> DT_NETHER;
