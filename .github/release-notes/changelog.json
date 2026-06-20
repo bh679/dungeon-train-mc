@@ -1520,7 +1520,7 @@
     },
     {
       "id": "consent-wont-do-line",
-      "version": "0.335.0",
+      "version": "0.336.0",
       "type": "feat",
       "title": "The internet prompt now says what it won't do",
       "summary": "The first-launch \"Connect to the internet?\" prompt now lists a reassurance alongside the features \u2014 marked with a red \u2717 \u2014 clarifying one thing the connection will never do. Rest easy: it will not harvest your soul.",
