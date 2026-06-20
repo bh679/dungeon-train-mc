@@ -1334,6 +1334,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modpack-qol-companions",
+      "version": "0.327.0",
+      "type": "feat",
+      "title": "Five new quality-of-life companion mods in the modpack",
+      "summary": "The Dungeon Train modpack now bundles a set of client-side quality-of-life and cosmetic companions: a searchable controls menu (Controlling), side-by-side gear comparison tooltips (Equipment Compare), a highlight on freshly picked-up inventory items (Item Highlighter), and an on-screen item pickup notifier (Pick Up Notifier) \u2014 all enabled out of the box. Smooth Swapping (animated inventory item movement) is bundled as an opt-in extra.",
+      "highlights": [
+        "Searchable controls/key-binds screen (Controlling)",
+        "Hold-Shift gear comparison tooltips (Equipment Compare)",
+        "New-item highlight in your inventory (Item Highlighter)",
+        "On-screen item pickup notifications (Pick Up Notifier)",
+        "Optional animated inventory swapping (Smooth Swapping, off by default)"
+      ],
+      "pr": 480,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
