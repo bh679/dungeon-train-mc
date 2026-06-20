@@ -210,6 +210,11 @@ public class DungeonTrain {
                         "Dev support chat",
                         "Reincarnate as a mob in other players' worlds");
             }
+            // A "won't do" line (DP renders these with a red ✗ marker below the bullets above) — a
+            // deliberately silly reassurance that sets the positive features apart from the absurd.
+            @Override public List<String> networkConsentNonFeatures() {
+                return List.of("Harvest your soul");
+            }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
             // outside the embed): the carriage # the player earned it in + their difficulty level — the
             // same values the in-game HUD shows. Computed on the server thread via the compat helper.
