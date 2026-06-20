@@ -1485,6 +1485,22 @@
       "released": true,
       "released_in": "v0.333.0",
       "released_at": "2026-06-20T07:59:13Z"
+    },
+    {
+      "id": "arrival-death-photo",
+      "version": "0.333.0",
+      "type": "feat",
+      "title": "Arrival death-photo",
+      "summary": "The death screen now always opens on a shot of where your run began: a photo of you on the train is captured as soon as you arrive \u2014 once the carriages around you have rendered in \u2014 so even a quick death has a memento of the start of the journey.",
+      "highlights": [
+        "A photo of your arrival on the train is now guaranteed for the death screen",
+        "Waits for the surrounding carriages to load so the shot frames the train, not empty space"
+      ],
+      "pr": 494,
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
