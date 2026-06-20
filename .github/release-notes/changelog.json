@@ -1564,7 +1564,7 @@
     },
     {
       "id": "death-screen-next-screen-label",
-      "version": "0.336.0",
+      "version": "0.337.0",
       "type": "fix",
       "title": "Death-screen button now reads \"Next Screen\"",
       "summary": "The button that pages through your end-of-run recap on the death screen now reads \"Next Screen\" instead of \"Continue\", making it clearer that it steps through the recap rather than dismissing it.",
