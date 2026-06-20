@@ -1417,9 +1417,9 @@
         "Released builds unchanged \u2014 still post to the live community feed"
       ],
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.330.0",
+      "released_at": "2026-06-20T06:08:59Z"
     },
     {
       "id": "discord-free-play-notice",
@@ -1434,9 +1434,9 @@
       ],
       "pr": 487,
       "date": "2026-06-20",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.330.0",
+      "released_at": "2026-06-20T06:08:59Z"
     }
   ]
 }
