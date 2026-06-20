@@ -186,9 +186,9 @@ public final class AchievementEvents {
             .trigger(player, Math.abs(run.travelledCarriageIndex()));
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()
             .trigger(player, run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
-        // "The Far Start" — the carts_100 milestone reached while still carrying
-        // the (unread, so unburned) starting book. Gated cheaply on the same
-        // counter, so the inventory scan only runs once past the threshold.
+        // "The Far Start" — same travelled-carriage counter as carts_100 but a
+        // longer haul, reached while still carrying the (unread, unburned)
+        // starting book. Gated cheaply, so the inventory scan only runs past the threshold.
         FarStartAdvancement.checkAndGrant(player, Math.abs(run.travelledCarriageIndex()));
     }
 

@@ -14,8 +14,9 @@ import org.slf4j.Logger;
 
 /**
  * "The Far Start" — granted when a player carries their starting book past
- * {@link #CARRIAGE_THRESHOLD} carriages in a single life. It is the
- * {@code carts_100} ("Dungeon Train Explorer") milestone with one extra
+ * {@link #CARRIAGE_THRESHOLD} carriages in a single life. It mirrors the
+ * {@code carts_100} ("Dungeon Train Explorer") mechanic — the same
+ * travelled-carriage counter — but at a higher threshold and with one extra
  * condition: the starting book delivered at spawn must still be in the
  * player's inventory at the moment the carriage counter crosses the threshold
  * (reading the book burns it, so this rewards carrying it the long way without
@@ -44,11 +45,11 @@ public final class FarStartAdvancement {
 
     /**
      * Carriages-in-this-life the player must traverse while still carrying the
-     * starting book. Matches {@code carts_100}'s threshold ("Traverse 100
-     * carriages in a single life") so "The Far Start" reads as that same
-     * milestone reached with the book in hand.
+     * starting book. Sits above {@code carts_100}'s 100-carriage milestone, so
+     * "The Far Start" is a deliberately longer haul with the (unread) book in
+     * hand.
      */
-    public static final int CARRIAGE_THRESHOLD = 100;
+    public static final int CARRIAGE_THRESHOLD = 150;
 
     private FarStartAdvancement() {}
 
