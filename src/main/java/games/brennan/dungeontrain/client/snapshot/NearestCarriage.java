@@ -4,7 +4,10 @@ import dev.ryanhcode.sable.api.sublevel.ClientSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ClientSubLevel;
+import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -33,6 +36,45 @@ public final class NearestCarriage {
             double dy = pos.y < minY ? minY - pos.y : (pos.y > maxY ? pos.y - maxY : 0.0);
             double dz = pos.z < minZ ? minZ - pos.z : (pos.z > maxZ ? pos.z - maxZ : 0.0);
             if (dx * dx + dy * dy + dz * dz <= rangeSq) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Count how many carriages have their block data loaded — a non-zero AABB (the sub-level has
+     * had its first physics tick) <em>and</em> at least one loaded plot chunk. Same two checks
+     * {@link CarriageOcclusion#gatherNearby} uses. Stops counting at {@code cap} so it touches only
+     * a few sub-levels.
+     *
+     * <p>Sable streams sub-levels nearest-first, so the first carriages to report data are the ones
+     * around the player. NOTE this reflects block <em>data</em>, not the render mesh — the visible
+     * geometry builds a beat later — so callers that need the train to be <em>visible</em> (the
+     * arrival snapshot) pair this with a short settle delay. No per-carriage distance math (cheapest).</p>
+     */
+    public static int countLoadedCarriages(ClientLevel level, int cap) {
+        if (cap <= 0) return 0;
+        ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return 0;
+        int loaded = 0;
+        for (ClientSubLevel sub : container.getAllSubLevels()) {
+            BoundingBox3dc box = sub.boundingBox();
+            if (box == null) continue;
+            // Fresh sub-levels report a zero AABB before their first physics tick — not yet loaded.
+            if (box.minX() == 0 && box.minY() == 0 && box.minZ() == 0
+                && box.maxX() == 0 && box.maxY() == 0 && box.maxZ() == 0) continue;
+            if (!hasLoadedChunk(sub)) continue;
+            if (++loaded >= cap) return loaded;
+        }
+        return loaded;
+    }
+
+    /** Does this carriage's plot have at least one loaded chunk (blocks present to render)? */
+    private static boolean hasLoadedChunk(ClientSubLevel sub) {
+        LevelPlot plot = sub.getPlot();
+        if (plot == null) return false;
+        for (PlotChunkHolder holder : plot.getLoadedChunks()) {
+            LevelChunk chunk = holder.getChunk();
+            if (chunk != null) return true;
         }
         return false;
     }
