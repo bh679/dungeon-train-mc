@@ -1405,6 +1405,21 @@
       "released": true,
       "released_in": "v0.329.0",
       "released_at": "2026-06-20T03:02:48Z"
+    },
+    {
+      "id": "dev-discord-channel-routing",
+      "version": "0.329.0",
+      "type": "chore",
+      "title": "Dev/test builds send Discord to a dev channel, not the live feed",
+      "summary": "Development and test builds of the mod now route their Discord activity (joins, deaths, chat, advancements) to a separate dev channel instead of the live community feed, so testing no longer adds noise for players. Released builds are unchanged \u2014 they post to the community feed exactly as before.",
+      "highlights": [
+        "Dev/test builds post Discord to a separate dev channel",
+        "Released builds unchanged \u2014 still post to the live community feed"
+      ],
+      "date": "2026-06-20",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
