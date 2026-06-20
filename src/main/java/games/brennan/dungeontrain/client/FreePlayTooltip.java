@@ -29,5 +29,7 @@ public final class FreePlayTooltip {
             Component.translatable("effect.dungeontrain.free_play.desc.1").withStyle(ChatFormatting.GRAY));
         event.getTooltip().add(
             Component.translatable("effect.dungeontrain.free_play.desc.2").withStyle(ChatFormatting.GRAY));
+        event.getTooltip().add(
+            Component.translatable("effect.dungeontrain.free_play.desc.3").withStyle(ChatFormatting.GRAY));
     }
 }

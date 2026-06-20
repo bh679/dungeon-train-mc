@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ShowFreePlayConfirmPacket;
 import games.brennan.dungeontrain.registry.ModMobEffects;
@@ -84,6 +85,9 @@ public final class CheatDetectionEvents {
         if (!confirmed) return; // backed out — the command stayed canceled
         RunIntegrity.markCheated(player, Component.translatable(
             "chat.dungeontrain.free_play.cause.command", pending.label()));
+        // Lock the live Ender Chest onto the Free Play (creative) slot now, before
+        // the held command runs — the legit chest is hidden the instant the run trips.
+        EnderChestLockBridge.engage(player);
         // Re-run the held command. isCheated is now true, so onCommand won't re-gate it.
         MinecraftServer server = player.getServer();
         if (server != null) {
@@ -96,6 +100,10 @@ public final class CheatDetectionEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (RunIntegrity.isCheated(player)) return;
         markGameModeFreePlay(player, event.getNewGameMode());
+        // If that just tripped Free Play (creative/spectator), lock the Ender Chest.
+        // Runs before ECP's LOW-priority game-mode swap, while the old mode is still
+        // active, so the legit chest is snapshotted back to its own slot first.
+        if (RunIntegrity.isCheated(player)) EnderChestLockBridge.engage(player);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
