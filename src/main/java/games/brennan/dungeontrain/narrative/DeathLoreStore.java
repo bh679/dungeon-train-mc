@@ -56,10 +56,12 @@ import java.util.Locale;
  *   }
  * ]
  * </pre>
- * Placeholders {@code {carriage} {friends} {books} {mobs} {met} {slain}
+ * Placeholders {@code {carriage} {friends} {books} {mobs} {met} {slain} {loot}
  * {hearts} {deaths}} are substituted as English <em>words</em> ("twenty-eight"),
- * and {@code {distance}} as a numeric metre count. All {@code conditions}
- * fields are optional; absent ones match anything.
+ * and {@code {distance}} as a numeric metre count. Condition keys:
+ * {@code cause, min_carriage, max_carriage, min_friends, max_friends, min_books,
+ * max_books, min_mobs, min_slain, min_loot, max_loot, min_deaths, max_deaths} —
+ * all optional; absent ones match anything.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DeathLoreStore {
@@ -82,15 +84,19 @@ public final class DeathLoreStore {
 
     /** Optional match conditions for an entry. {@link #ANY} matches every death. */
     public record Condition(List<ResourceLocation> causes, int minCarriage, int maxCarriage,
-                            int minFriends, int minBooks, long minDeaths, int minMobs, long maxDeaths) {
-        static final Condition ANY = new Condition(List.of(), 0, Integer.MAX_VALUE, 0, 0, 0L, 0, Long.MAX_VALUE);
+                            int minFriends, int minBooks, long minDeaths, int minMobs, long maxDeaths,
+                            int maxFriends, int minSlain, int maxBooks, int minLoot, int maxLoot) {
+        static final Condition ANY = new Condition(List.of(), 0, Integer.MAX_VALUE, 0, 0, 0L, 0, Long.MAX_VALUE,
+                Integer.MAX_VALUE, 0, Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
 
         boolean matches(Context ctx) {
             if (!causes.isEmpty() && (ctx.cause() == null || !causes.contains(ctx.cause()))) return false;
             if (ctx.carriage() < minCarriage || ctx.carriage() > maxCarriage) return false;
-            if (ctx.friends() < minFriends) return false;
-            if (ctx.books() < minBooks) return false;
+            if (ctx.friends() < minFriends || ctx.friends() > maxFriends) return false;
+            if (ctx.books() < minBooks || ctx.books() > maxBooks) return false;
             if (ctx.mobs() < minMobs) return false;
+            if (ctx.slain() < minSlain) return false;
+            if (ctx.loot() < minLoot || ctx.loot() > maxLoot) return false;
             if (ctx.deaths() < minDeaths || ctx.deaths() > maxDeaths) return false;
             return true;
         }
@@ -107,7 +113,7 @@ public final class DeathLoreStore {
      * {@code hearts} is damage taken expressed in hearts (points / 2).
      */
     public record Context(ResourceLocation cause, int carriage, int friends, int books,
-                          int mobs, int met, int slain, int hearts, double distance, long deaths) {}
+                          int mobs, int met, int slain, int hearts, double distance, long deaths, int loot) {}
 
     public static synchronized void reload() {
         POOL.clear();
@@ -195,7 +201,12 @@ public final class DeathLoreStore {
         int minM = intval(c, "min_mobs", 0);
         long minD = c.has("min_deaths") && c.get("min_deaths").isJsonPrimitive() ? c.get("min_deaths").getAsLong() : 0L;
         long maxD = c.has("max_deaths") && c.get("max_deaths").isJsonPrimitive() ? c.get("max_deaths").getAsLong() : Long.MAX_VALUE;
-        return new Condition(List.copyOf(causes), minC, maxC, minF, minB, minD, minM, maxD);
+        int maxF = intval(c, "max_friends", Integer.MAX_VALUE);
+        int minS = intval(c, "min_slain", 0);
+        int maxB = intval(c, "max_books", Integer.MAX_VALUE);
+        int minL = intval(c, "min_loot", 0);
+        int maxL = intval(c, "max_loot", Integer.MAX_VALUE);
+        return new Condition(List.copyOf(causes), minC, maxC, minF, minB, minD, minM, maxD, maxF, minS, maxB, minL, maxL);
     }
 
     private static String str(JsonObject o, String key, String def) {
@@ -253,6 +264,7 @@ public final class DeathLoreStore {
                 .replace("{mobs}", num(ctx.mobs()))
                 .replace("{met}", num(ctx.met()))
                 .replace("{slain}", num(ctx.slain()))
+                .replace("{loot}", num(ctx.loot()))
                 .replace("{hearts}", num(ctx.hearts()))
                 .replace("{deaths}", num(ctx.deaths()))
                 .replace("{distance}", "" + String.format(Locale.ROOT, "%,.0f", ctx.distance()) + "");

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
 import games.brennan.dungeontrain.net.DeathNarrative;
@@ -17,6 +18,7 @@ import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -45,6 +47,7 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -237,7 +240,8 @@ public final class RunStatsEvents {
                 run.playerKills(),
                 hearts,
                 run.distanceBlocks(),
-                lifeDeaths);
+                lifeDeaths,
+                run.containersOpened());
         return DeathLoreStore.buildNarrative(ctx, player.serverLevel().getRandom());
     }
 
@@ -265,12 +269,38 @@ public final class RunStatsEvents {
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
         DiscordService.get().postDeathReport(player, title, cause, fields, icons);
-        // Dev/test builds also post the SAME report OUTSIDE the player's thread — a dev-channel preview
-        // of the upcoming public death feed (a flat, non-threaded stream of deaths). Identical content
-        // for now; slated to be redesigned. Dev-gated so the live community feed is unaffected.
+        // Dev/test builds also post a redesigned report OUTSIDE the player's thread — "the manifest":
+        // the rolled fall narration as the title, each section headed by the line the player saw, with
+        // de-duped stat strips. A dev-channel preview of the upcoming public death feed. Dev-gated so
+        // the live community feed is unaffected; gear icons stay the image until the ride photo lands.
         if (DungeonTrain.isDevBuild()) {
-            DiscordService.get().postDeathReportTopLevel(player, title, cause, fields, icons);
+            List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
+            String manifestTitle = DeathManifestFormat.title(
+                    player.getGameProfile().getName(), packet.cartsTravelled());
+            String manifestDesc = DeathManifestFormat.description(
+                    packet.narrative(), packet.deathCause(),
+                    packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
+                    packet.containersOpened(), packet.booksRead(), advTitles,
+                    packet.lifeCarriages(), packet.lifeDistance(), packet.lifeFriends(), packet.lifeBooks());
+            // Buffer the top-level report until the client sends this run's scenic ride photo
+            // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
+            DeathReportBuffer.await(player, manifestTitle, manifestDesc, icons);
         }
+    }
+
+    /**
+     * Resolve each earned advancement id to its display title (server-side), skipping ids the server
+     * can't resolve or that have no display. Used for the manifest report's "the cargo" segment.
+     */
+    private static List<String> resolveAdvancementTitles(ServerPlayer player, List<ResourceLocation> ids) {
+        List<String> out = new ArrayList<>();
+        var advancements = player.server.getAdvancements();
+        for (ResourceLocation id : ids) {
+            AdvancementHolder h = advancements.get(id);
+            if (h == null) continue;
+            h.value().display().ifPresent(d -> out.add(d.getTitle().getString()));
+        }
+        return out;
     }
 
     /**

@@ -97,5 +97,178 @@
     "question": "Need you even ask?",
     "narration": "The platform knows your face by now. The whistle sounds the way it always does. You already know what comes next.",
     "epitaph": "the {deaths}th to fall — and not, it seems, the last."
+  },
+
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "What is the Dungeon Train?",
+    "narration": "Carriage {carriage}. The dark had been waiting there all along — you only arrived to meet it."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "What is the Dungeon Train?",
+    "narration": "Carriage {carriage}, and no further. The line keeps no grudge and no mercy; it simply keeps going."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "What is the Dungeon Train?",
+    "narration": "The lanterns of carriage {carriage} still swing where you fell. The train does not slow to look."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "What is the Dungeon Train?",
+    "narration": "You reached carriage {carriage} before the floor of the world gave way. The line carries on without your weight."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "What is the Dungeon Train?",
+    "narration": "Carriage {carriage}. Somewhere ahead the track keeps unrolling into the black, indifferent that you are no longer on it."
+  },
+  {
+    "page": "fall",
+    "weight": 2,
+    "question": "What is the Dungeon Train?",
+    "narration": "Here, at carriage {carriage}, the dark finally matched your pace. It was always going to."
+  },
+
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Why are you here?",
+    "narration": "You felled {mobs} things in the dark and gave up {hearts} hearts to do it. Of the {met} souls you passed, {slain} you struck down and {friends} you let close."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Why are you here?",
+    "narration": "{mobs} things fell to you and {hearts} hearts fell from you. You crossed {met} other souls in the dark — ended {slain}, kept {friends} — and then it was your turn."
+  },
+  {
+    "page": "deeds",
+    "weight": 2,
+    "question": "Why are you here?",
+    "narration": "Of the dark you took {mobs}; of yourself you spent {hearts} hearts. {met} souls shared the line: {slain} you ended, {friends} you held onto."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "max_friends": 0 },
+    "question": "Why are you here?",
+    "narration": "You felled {mobs} things and bled {hearts} hearts. You met {met} souls, ended {slain}, and called not one of them friend. The dark is simpler alone."
+  },
+  {
+    "page": "deeds",
+    "weight": 1,
+    "conditions": { "min_slain": 5 },
+    "question": "What did you answer the dark with?",
+    "narration": "Of the {met} you met, {slain} you cut down — {mobs} things more in the dark besides — for {hearts} hearts, and {friends} you spared to call friend. The line does not call it murder."
+  },
+
+  {
+    "page": "gear",
+    "weight": 2,
+    "question": "What are you meant to do?",
+    "narration": "You gathered all you could hold from the carriages. The line lets you keep it — it has no use for cargo, only for passengers."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 0 },
+    "question": "What are you meant to do?",
+    "narration": "You cracked not a single crate on the line — carried only what you boarded with, and swung it till the end. The dark keeps what you would not take."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_loot": 9 },
+    "question": "What are you meant to do?",
+    "narration": "A handful of crates opened — {loot} in all — and a blade kept close. The line is generous to those who stop; you barely paused."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_loot": 250 },
+    "question": "What are you meant to do?",
+    "narration": "{loot} containers emptied into your pack. You stripped the dark of all that wasn't nailed down, and still it took the one thing that mattered."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "max_books": 0 },
+    "question": "What are you meant to do?",
+    "narration": "Not a page turned — only steel gathered and swung. The line keeps its stories for those who stop to read."
+  },
+  {
+    "page": "gear",
+    "weight": 1,
+    "conditions": { "min_books": 10 },
+    "question": "What are you meant to do?",
+    "narration": "You read {books} of the line's books and carried steel besides. Wisdom and a blade, and the dark was patient with both."
+  },
+
+  {
+    "page": "lives",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "These are all good questions",
+    "narration": "Count them: {deaths} times the line took you, {deaths} times you answered the whistle. This is the shape of you, drawn in departures."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "These are all good questions",
+    "narration": "Across {deaths} lives the numbers gather like dust on the rails. None of it is lost; the line forgets nothing."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Why do you keep boarding?",
+    "narration": "{deaths} falls, and still you board. The line stopped wondering whether you would return. So, perhaps, have you."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Why do you keep boarding?",
+    "narration": "{deaths} deaths behind you and the same whistle ahead. You are not a passenger anymore — you are part of the timetable."
+  },
+  {
+    "page": "lives",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Why do you keep boarding?",
+    "narration": "The dark has stopped being a stranger; {deaths} times over you have learned its face. That is its own kind of loss."
+  },
+
+  {
+    "page": "platform",
+    "weight": 2,
+    "conditions": { "min_deaths": 2 },
+    "question": "Will you board again, or let the platform keep you?",
+    "narration": "The whistle is already sounding, far ahead. It is not waiting for you — it never was — and yet here you stand, deciding to follow.",
+    "epitaph": "the {deaths}th to fall. the line goes on."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 3 },
+    "question": "Will you board again?",
+    "narration": "The platform is quiet. Somewhere the train is already full of someone else's story. There is always room for one more of yours.",
+    "epitaph": "the {deaths}th to fall. perhaps not the last."
+  },
+  {
+    "page": "platform",
+    "weight": 1,
+    "conditions": { "min_deaths": 5 },
+    "question": "Need the line even ask?",
+    "narration": "You know the weight of the door, the cold of the step. The dark is just a place you visit now.",
+    "epitaph": "the {deaths}th to fall — a regular of the line."
   }
 ]
