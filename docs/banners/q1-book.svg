@@ -1,0 +1,10 @@
+<svg width="100%" viewBox="0 0 680 150" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>What is the Dungeon Train?</title>
+<desc>Question banner.</desc>
+<rect x="0" y="0" width="680" height="150" rx="3" fill="#efe6cf"/>
+<rect x="10" y="10" width="660" height="130" rx="2" fill="none" stroke="#cebd92" stroke-width="1"/>
+<text x="340" y="74" text-anchor="middle" font-family="Georgia,'Times New Roman',serif" font-size="28" font-weight="700" fill="#3b3020">What is the Dungeon Train?</text>
+<line x1="250" y1="98" x2="318" y2="98" stroke="#b8a87e" stroke-width="1"/>
+<rect x="326" y="94" width="8" height="8" fill="#b8a87e" transform="rotate(45 330 98)"/>
+<line x1="342" y1="98" x2="410" y2="98" stroke="#b8a87e" stroke-width="1"/>
+</svg>

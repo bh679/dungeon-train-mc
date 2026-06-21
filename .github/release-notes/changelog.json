@@ -1632,9 +1632,9 @@
       ],
       "pr": 509,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     },
     {
       "id": "remote-echo-encounter-story",
@@ -1648,9 +1648,9 @@
       ],
       "pr": 0,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     },
     {
       "id": "passenger-log-wide-layout",
@@ -1667,9 +1667,25 @@
       ],
       "pr": 513,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
+    },
+    {
+      "id": "echo-encounter-screenshot",
+      "version": "0.340.0",
+      "type": "feat",
+      "title": "Echo encounter stories now include a photo of the echo",
+      "summary": "When the game shares the tale of your meeting with a remote echo on Discord, it now adds a snapshot of that traveller \u2014 framed against the train and captured the moment you first lay eyes on one another.",
+      "highlights": [
+        "Each echo encounter story now carries a photo of the echo, taken at first eye contact.",
+        "Quietly falls back to the text-only story when a clear shot can't be grabbed in time."
+      ],
+      "pr": 515,
+      "date": "2026-06-21",
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     }
   ]
 }
