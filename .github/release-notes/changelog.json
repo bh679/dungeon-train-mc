@@ -1653,6 +1653,25 @@
       "released_at": null
     },
     {
+      "id": "passenger-log-wide-layout",
+      "version": "0.340.0",
+      "type": "feat",
+      "title": "Cleaner, wider passenger-log death report",
+      "summary": "The public death report in #passenger-log has a cleaner, wider layout. Your run's story stays at the top, the key stats move into tidy side-by-side columns, and any advancements you earned get their own row above the ride photo.",
+      "highlights": [
+        "Run stats now sit in side-by-side columns: The fall, This run, and The souls",
+        "New 'The souls' column \u2014 other souls met, befriended, and slain this run",
+        "Advancements earned this run show on their own row beneath the columns",
+        "The story now shows what mattered most that run \u2014 your fights and friendships, or your haul",
+        "Shorter and easier to read at a glance"
+      ],
+      "pr": 513,
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "echo-encounter-screenshot",
       "version": "0.340.0",
       "type": "feat",
@@ -1662,6 +1681,7 @@
         "Each echo encounter story now carries a photo of the echo, taken at first eye contact.",
         "Quietly falls back to the text-only story when a clear shot can't be grabbed in time."
       ],
+      "pr": 515,
       "date": "2026-06-21",
       "released": false,
       "released_in": null,
