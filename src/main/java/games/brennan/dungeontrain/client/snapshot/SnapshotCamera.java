@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.CinematicCameraController;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -44,27 +45,39 @@ public final class SnapshotCamera {
     private SnapshotCamera() {}
 
     /**
-     * A clip-safe pose framing the player, or {@code null} if there is no clean
+     * A clip-safe pose framing the local player, or {@code null} if there is no clean
      * angle right now or the player's spot is too dark. <b>Must be called at
      * render time</b> ({@code player.position()} is the real world position
      * then — at tick time a player on a Sable ship reports far sub-level coords).
+     * Thin overload over {@link #poseFor(ClientLevel, SnapshotTag, Entity, float)}.
      */
     public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, LocalPlayer player, float partialTick) {
+        return poseFor(level, tag, (Entity) player, partialTick);
+    }
+
+    /**
+     * A clip-safe pose framing an arbitrary {@code subject} entity (the local player, or a remote
+     * echo for the encounter-story screenshot), or {@code null} if there is no clean angle right now
+     * or the subject's spot is too dark. <b>Must be called at render time</b> ({@code subject.position()}
+     * is the real world position then — at tick time an entity on a Sable ship reports far sub-level
+     * coords).
+     */
+    public static CinematicCameraController.Pose poseFor(ClientLevel level, SnapshotTag tag, Entity subject, float partialTick) {
         // Prefer well-lit moments (checked here, in render space, so the light sample is at the real spot).
-        BlockPos eye = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
+        BlockPos eye = BlockPos.containing(subject.getX(), subject.getEyeY(), subject.getZ());
         if (level.getMaxLocalRawBrightness(eye) < MIN_LIGHT) return null;
 
-        Vec3 p = player.position();
-        Vec3 lookTarget = new Vec3(p.x, p.y + player.getEyeHeight() * 0.85, p.z);
-        // Ray origin at the player's chest — a clear ray to the camera means the player is visible.
-        Vec3 from = new Vec3(p.x, p.y + player.getBbHeight() * 0.6, p.z);
+        Vec3 p = subject.position();
+        Vec3 lookTarget = new Vec3(p.x, p.y + subject.getEyeHeight() * 0.85, p.z);
+        // Ray origin at the subject's chest — a clear ray to the camera means the subject is visible.
+        Vec3 from = new Vec3(p.x, p.y + subject.getBbHeight() * 0.6, p.z);
 
         double[] base = baseFor(tag);
         double dist = base[0], height = base[1];
 
         // Carriage walls are Sable sub-level blocks that level.clip can't see; snapshot the
         // nearby carriages once (this frame's render pose) so each candidate angle can be
-        // rejected when a wall stands between the camera and the player — see CarriageOcclusion.
+        // rejected when a wall stands between the camera and the subject — see CarriageOcclusion.
         List<CarriageOcclusion.Carriage> carriages =
                 CarriageOcclusion.gatherNearby(level, p, CARRIAGE_SCAN_RADIUS, partialTick);
 
@@ -72,10 +85,10 @@ public final class SnapshotCamera {
         double bestClear = -1.0;
         for (double[] dir : dirsFor(tag)) {
             Vec3 want = new Vec3(p.x + dir[0] * dist, p.y + height, p.z + dir[1] * dist);
-            Vec3 adj = clipTowardOpenAir(level, player, from, want);
+            Vec3 adj = clipTowardOpenAir(level, subject, from, want);
             double clear = adj.distanceTo(from);
             // Reject this angle if it's too cramped by world geometry, or if a carriage wall
-            // hides the player's chest or head from it — only fully-clear angles can win.
+            // hides the subject's chest or head from it — only fully-clear angles can win.
             if (clear < MIN_VISIBLE_DIST) continue;
             if (CarriageOcclusion.blocked(carriages, adj, from, lookTarget)) continue;
             if (clear > bestClear) {
@@ -118,13 +131,13 @@ public final class SnapshotCamera {
     /**
      * Clip the segment {@code from → want} against world blocks. Clear → return
      * {@code want}. Blocked → return a point just short of the hit so the camera
-     * sits in open air on the player's side (nothing between it and the player).
+     * sits in open air on the subject's side (nothing between it and the subject).
      */
-    private static Vec3 clipTowardOpenAir(ClientLevel level, LocalPlayer player, Vec3 from, Vec3 want) {
+    private static Vec3 clipTowardOpenAir(ClientLevel level, Entity subject, Vec3 from, Vec3 want) {
         double len = want.subtract(from).length();
         if (len < 1.0e-6) return from;
         BlockHitResult hit = level.clip(new ClipContext(
-                from, want, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+                from, want, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject));
         if (hit.getType() == HitResult.Type.MISS) return want;
         double hitDist = hit.getLocation().distanceTo(from);
         // A real hit lies on the from→want segment (hitDist ≤ len). Sable wraps Level.clip to
