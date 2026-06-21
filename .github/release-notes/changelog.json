@@ -1686,6 +1686,22 @@
       "released": true,
       "released_in": "v0.341.0",
       "released_at": "2026-06-21T05:30:29Z"
+    },
+    {
+      "id": "backward-generation-forceload",
+      "version": "0.342.0",
+      "type": "fix",
+      "title": "Backward train generation no longer stalls",
+      "summary": "Walking toward the back of a moving train used to hit a dead end where new carriages stopped appearing \u2014 most noticeably when travelling slowly. The trailing carriages are now kept loaded long enough to lock into place, so the train keeps building behind you for as far as you care to walk.",
+      "highlights": [
+        "The train now keeps generating carriages as you travel toward the rear",
+        "Fixes the missing 'end of train' when moving slowly backward"
+      ],
+      "pr": 519,
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

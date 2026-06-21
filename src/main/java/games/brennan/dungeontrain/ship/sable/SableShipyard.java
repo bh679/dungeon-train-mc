@@ -5,17 +5,22 @@ import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.ticket.SubLevelLoadingTicketType;
 import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Unit;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -39,6 +44,24 @@ import java.util.WeakHashMap;
 public final class SableShipyard implements Shipyard {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /**
+     * Dungeon Train's private force-load ticket type. Distinct from Sable's
+     * built-in {@code COMMAND_FORCED} (used by {@code /sable forceload}) so our
+     * trailing-segment tickets never collide with an admin's manual force-load:
+     * {@link #releaseAllForceLoads} only removes tickets of <em>this</em> type.
+     *
+     * <p>{@link SubLevelLoadingTicketType#create} self-registers the type in
+     * Sable's static registry at class-load — well before any world loads — so
+     * a ticket that happened to persist and reload still resolves by name
+     * (and is then swept by {@link #releaseAllForceLoads}). Keyed by
+     * {@link Unit} because a sub-level is either held by us or not; there is
+     * only ever one DT ticket per sub-level.</p>
+     */
+    private static final SubLevelLoadingTicketType<Unit> DT_TRAILING_TICKET =
+        SubLevelLoadingTicketType.create(
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "trailing_segment"),
+            Unit.CODEC);
 
     private final ServerLevel level;
 
@@ -116,6 +139,48 @@ public final class SableShipyard implements Shipyard {
             return null;
         }
         return wrappers.computeIfAbsent(server, SableManagedShip::new);
+    }
+
+    @Override
+    public void forceLoad(ManagedShip ship) {
+        if (!(ship instanceof SableManagedShip sableShip)) {
+            LOGGER.warn("[Sable] forceLoad called with non-Sable ManagedShip: {}", ship);
+            return;
+        }
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return;
+        container.addForceLoadTicket(sableShip.subLevel(), DT_TRAILING_TICKET, Unit.INSTANCE);
+    }
+
+    @Override
+    public void releaseForceLoad(ManagedShip ship) {
+        if (!(ship instanceof SableManagedShip sableShip)) {
+            LOGGER.warn("[Sable] releaseForceLoad called with non-Sable ManagedShip: {}", ship);
+            return;
+        }
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return;
+        container.removeForceLoadTicket(sableShip.subLevel(), DT_TRAILING_TICKET, Unit.INSTANCE);
+    }
+
+    @Override
+    public void releaseAllForceLoads() {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return;
+        // collectForceLoadedSubLevels() returns a fresh set, so removing
+        // tickets while iterating it is safe. removeForceLoadTicket is a no-op
+        // for any sub-level not holding OUR ticket type (e.g. a manual
+        // /sable forceload), so unrelated force-loads are left intact.
+        Collection<ServerSubLevel> forceLoaded = container.collectForceLoadedSubLevels();
+        int removed = 0;
+        for (ServerSubLevel sub : forceLoaded) {
+            if (container.removeForceLoadTicket(sub, DT_TRAILING_TICKET, Unit.INSTANCE)) {
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            LOGGER.info("[Sable] Released {} Dungeon Train force-load ticket(s)", removed);
+        }
     }
 
     /** Centre of the block set's integer AABB, rounded down to a {@link BlockPos}. */
