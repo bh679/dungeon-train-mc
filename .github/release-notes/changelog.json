@@ -1588,9 +1588,9 @@
         "Free Play / creative runs are excluded from the public feed"
       ],
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.338.0",
+      "released_at": "2026-06-21T01:02:13Z"
     }
   ]
 }
