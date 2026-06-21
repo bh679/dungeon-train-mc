@@ -1,10 +1,17 @@
-# Dungeon Train — CurseForge modpack
+# Dungeon Train — modpacks (CurseForge + Modrinth)
 
-This directory is the source for the **Dungeon Train** CurseForge _modpack_
-([project 1556213](https://www.curseforge.com/minecraft/modpacks/dungeon-train)),
-which is distinct from the **mod** ([project 1527512](https://www.curseforge.com/minecraft/mc-mods/dungeon-train)).
+This directory is the source for the **Dungeon Train** _modpack_, published to two platforms
+from one config:
 
-The modpack is published automatically — you don't run anything by hand.
+- **CurseForge** ([project 1556213](https://www.curseforge.com/minecraft/modpacks/dungeon-train))
+- **Modrinth** ([project `bEFyz3ji`](https://modrinth.com/modpack/dungeon-train-pack-a-lore-rich-roguelite-adventure))
+
+Both are distinct from the **mod** ([CurseForge 1527512](https://www.curseforge.com/minecraft/mc-mods/dungeon-train) /
+[Modrinth `dungeon-train`](https://modrinth.com/mod/dungeon-train)).
+
+The modpacks are published automatically — you don't run anything by hand. `modpack.config.json`
+is the single source of truth for both; the only platform-specific part is how each pins a mod
+file (CurseForge by `project_id` + `file_id`; Modrinth by `modrinth_project` + `modrinth_version`).
 
 ## What's in the pack
 
@@ -119,25 +126,30 @@ Every mod release triggers it — including the ~22 quiet auto-release cascade t
 
 `modpack.config.json` pins Sable to the **exact** version Dungeon Train is built and
 tested against (`sable_version` in `gradle.properties`). When you bump `sable_version`,
-**also update `modpack.config.json` → `sable.file_id`** to the matching CurseForge file:
+**update both pins** in `modpack.config.json` → `sable`:
 
-1. Open <https://www.curseforge.com/minecraft/mc-mods/sable/files/all> and filter to the
-   NeoForge build for the new `sable_version` (e.g. `sable-neoforge-1.21.1-2.0.2.jar`).
-2. Copy the numeric file ID from its URL (`/files/<id>`).
-3. Set both `sable.version` and `sable.file_id` in `modpack.config.json`.
+1. CurseForge: open <https://www.curseforge.com/minecraft/mc-mods/sable/files/all>, filter to the
+   NeoForge build for the new `sable_version` (e.g. `sable-neoforge-1.21.1-2.0.2.jar`), copy the
+   numeric file ID from its URL (`/files/<id>`), and set `sable.file_id`.
+2. Modrinth: open <https://modrinth.com/mod/sable/versions>, filter to the matching NeoForge 1.21.1
+   build, copy the version id from its URL (`/version/<id>`), and set `sable.modrinth_version`.
+3. Set `sable.version` to the new `sable_version`.
 
-If these drift, the pack ships an old Sable against a newer DT.
+If these drift, a pack ships an old Sable against a newer DT.
 
 ## Companion-mod pins
 
-Every `optional_mods` entry is pinned by `file_id`. Unlike Sable none of them have a
-DT-version coupling, so a pin only needs a refresh when you want to ship a newer build:
+Every `optional_mods` entry is pinned for both platforms (`file_id` for CurseForge,
+`modrinth_version` for Modrinth). Unlike Sable none of them have a DT-version coupling, so a pin
+only needs a refresh when you want to ship a newer build:
 
-1. Open `https://www.curseforge.com/minecraft/mc-mods/<slug>/files/all`, filter to the
-   **NeoForge 1.21.1** build, and copy its numeric file ID from the URL.
-2. Set that entry's `file_id` in `modpack.config.json`.
+1. CurseForge: open `https://www.curseforge.com/minecraft/mc-mods/<slug>/files/all`, filter to the
+   **NeoForge 1.21.1** build, copy its numeric file ID from the URL, set the entry's `file_id`.
+2. Modrinth: open `https://modrinth.com/mod/<modrinth_project>/versions`, filter to **NeoForge
+   1.21.1**, copy the version id from the URL (`/version/<id>`), set the entry's `modrinth_version`.
 
-A stale pin just ships an older companion — harmless, but worth keeping current. Two caveats:
+Keep the two in sync so both packs ship the same build. A stale pin just ships an older companion
+— harmless, but worth keeping current. Caveats:
 
 - **Distant Horizons must stay on 2.x.** DH 3.0.x crashes the JVM on DT world entry (under both
   G1 and generational ZGC). Always pick a `DistantHorizons-2.x…-1.21.1-…` file.
@@ -153,21 +165,79 @@ A stale pin just ships an older companion — harmless, but worth keeping curren
 
 | File | Purpose |
 |---|---|
-| `modpack.config.json` | Editable config: pack name/author, DT project ID, the pinned Sable project/file/version, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard and a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in), and `curseforge_relations` (sable + the jarJar'd siblings). |
-| `overrides/` | Copied into the player's instance on install. Empty for now. |
-| `../scripts/modpack/build-manifest.py` | Renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
+| `modpack.config.json` | Editable config (drives **both** packs): pack name/author, DT project IDs, the pinned Sable project/file/version + `modrinth_project`/`modrinth_version`, `optional_mods` (every non-core bundled mod, each with a `slug` for the consistency guard, a `required` flag — `true` = enabled by default, `false` = shipped-but-off opt-in — and a `modrinth_project`/`modrinth_version` pin), and `curseforge_relations` (sable + the jarJar'd siblings). |
+| `overrides/` | Copied into the player's instance on install. Empty for now. Shared by both packs. |
+| `../scripts/modpack/build-manifest.py` | CurseForge: renders `manifest.json` from this config + `gradle.properties` + the release's DT file ID. |
+| `../scripts/modpack/build-mrpack.py` | Modrinth: renders `modrinth.index.json` from this config + `gradle.properties` + the release's DT Modrinth version (resolving each pin's URL/hashes from the Modrinth API). `--check-config` validates pins with no network (CI). |
 | `../scripts/modpack/check-relations.py` | CI guard: every `optional_mods` entry must also be an `<slug>(optional)` dependency of the mod in `release.yml`. Run by the `modpack-checks` job. |
-| `../scripts/modpack/publish-curseforge.sh` | Zips + uploads to CurseForge using the same `CURSEFORGE_TOKEN`. |
+| `../scripts/modpack/publish-curseforge.sh` | Zips + uploads the CurseForge pack using `CURSEFORGE_TOKEN`. |
+| `../scripts/modpack/publish-modrinth.sh` | Zips the `.mrpack` + uploads to Modrinth using `MODRINTH_TOKEN`. |
 
 ## Local test (no upload)
 
+CurseForge:
 ```bash
 python3 scripts/modpack/build-manifest.py --dt-file-id 9999999 --version 0.0.0 | python3 -m json.tool
 DRY_RUN=1 CURSEFORGE_MODPACK_PROJECT_ID=1556213 \
   scripts/modpack/publish-curseforge.sh --manifest /tmp/manifest.json --tag v0.0.0
 ```
 
-> Modrinth modpack support is planned later (a `.mrpack` is a different format —
-> `modrinth.index.json` + overrides, referenced by download URL + hash). The
-> config/builder split here is structured so a `build-mrpack.py` sibling can be added
-> without reworking the pipeline.
+Modrinth (`--dt-version` is any real DT Modrinth version id; resolving the pins hits the Modrinth API):
+```bash
+python3 scripts/modpack/build-mrpack.py --dt-version <dt-modrinth-version-id> --version 0.0.0 \
+  --output /tmp/modrinth.index.json
+DRY_RUN=1 MODRINTH_MODPACK_PROJECT_ID=bEFyz3ji \
+  scripts/modpack/publish-modrinth.sh --index /tmp/modrinth.index.json --tag v0.0.0
+```
+
+## Modrinth modpack (`.mrpack`)
+
+Modrinth publishes from the **same `modpack.config.json`** but the format differs from CurseForge:
+a `.mrpack` is a zip of `modrinth.index.json` + `overrides/`, and each mod is referenced by its
+**download URL + sha1 + sha512 + fileSize** (not a `project_id`/`file_id`). Those fields are
+resolved at build time from the Modrinth API, from each mod's pinned `modrinth_version`. Because
+every bundled mod — including Sable — is on Modrinth, nothing is bundled into `overrides/`.
+
+```
+release.yml (real release OR auto-release cascade tick)
+  └─ mc-publish uploads the DT jar to Modrinth  → modrinth-version id
+  └─ dispatches release-modpack-modrinth.yml with that version id  (NO approval wait)
+        └─ scripts/modpack/build-mrpack.py   → modrinth.index.json
+        └─ zip  modrinth.index.json + overrides/  → dungeon-train-<version>.mrpack
+        └─ scripts/modpack/publish-modrinth.sh → uploads to project bEFyz3ji
+```
+
+Unlike CurseForge there is **no 15-minute wait** — Modrinth versions are available the instant
+they upload, so the `.mrpack` can reference the freshly uploaded DT version right away.
+
+### Modrinth pins
+Each `optional_mods` entry (and `sable`) carries `modrinth_project` (slug) + `modrinth_version`
+(the version id), pinned to the **same build the CurseForge pack ships**. The DT mod is the only
+un-pinned reference: its Modrinth version id is passed in per release. Refresh a pin the same way
+as a CurseForge pin — open `https://modrinth.com/mod/<slug>/versions`, filter to **NeoForge
+1.21.1**, and copy the version id from the version URL (`/version/<id>`). Two slugs differ from
+their CurseForge slug: **FerriteCore** is `ferrite-core` and **Distant Horizons** is
+`distanthorizons` on Modrinth.
+
+CI guards the pins: `build-mrpack.py --check-config` (in the `modpack-checks` job) fails the build
+if any mod is missing its `modrinth_project`/`modrinth_version`, so a new companion can't silently
+drop out of the Modrinth pack.
+
+### `env` (client / server)
+Modrinth files carry a per-file `env` (`client`/`server` ∈ `required|optional|unsupported`)
+instead of CurseForge's single `required` flag. `build-mrpack.py` derives it
+([`compute_env`](../scripts/modpack/build-mrpack.py)):
+
+- **client** is always `required` (bundled-enabled) or `optional` (opt-in) — never `unsupported`.
+  The pack mirrors CurseForge (every bundled mod is in the player's single-player-capable instance).
+  We deliberately ignore a mod's own `client_side=unsupported`: some libraries (e.g. **Lithostitched**,
+  a worldgen lib) declare it yet are needed by the integrated server in single-player, and dropping
+  them would break the one-click opt-ins that depend on them (Tectonic needs Lithostitched).
+- **server** respects `server_side=unsupported`, so genuinely client-only mods (AmbientSounds'
+  ~84 MB of audio, the inventory/HUD QoL mods) are skipped on dedicated servers.
+
+### First publish
+The Modrinth project starts as a **draft** (it 404s on the public API until it has a published
+version). The first release publishes its first version, which enters Modrinth's **modpack review
+queue** — the pack won't be publicly listed until Modrinth staff approve it. Subsequent releases
+publish without re-review.
