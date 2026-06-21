@@ -1863,7 +1863,7 @@ public final class TrainCarriageAppender {
         }
 
         if (added > 0 || released > 0) {
-            LOGGER.info("[DungeonTrain] Force-load window trainId={} now holding {} trailing sub-level(s) (+{} −{}, target={})",
+            LOGGER.debug("[DungeonTrain] Force-load window trainId={} now holding {} trailing sub-level(s) (+{} −{}, target={})",
                 trainId, current.size(), added, released, target.size());
         }
         if (current.isEmpty()) {
@@ -1905,7 +1905,7 @@ public final class TrainCarriageAppender {
             }
         }
         if (released > 0) {
-            LOGGER.info("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s) (player left vicinity)",
+            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s) (player left vicinity)",
                 trainId, released);
         }
     }
