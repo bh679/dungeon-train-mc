@@ -1591,6 +1591,18 @@
       "released": true,
       "released_in": "v0.338.0",
       "released_at": "2026-06-21T01:02:13Z"
+    },
+    {
+      "id": "public-death-photo-fix",
+      "version": "0.339.0",
+      "type": "fix",
+      "title": "Public death reports show your ride photo",
+      "summary": "Death reports in the public Discord channel now use a scenic photo from your run as the image, as intended \u2014 released builds were falling back to your gear composite.",
+      "highlights": [],
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
