@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
+import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.playermob.compat.PlayerMobSocialHooks;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -36,12 +37,14 @@ public final class PlayerMobSocialBridge {
             public void onMobGift(ServerPlayer recipient, UUID mobId) {
                 // A PlayerMob gifted the player an item (tossGift). mob -> player.
                 PlayerMobSocialTracker.recordMobGift(recipient, mobId);
+                RemoteEchoEncounters.onReceivedGift(recipient, mobId);
             }
 
             @Override
             public void onPlayerGift(ServerPlayer giver, UUID mobId) {
                 // The player gave a PlayerMob an item it picked up (creditGift). player -> mob.
                 PlayerMobSocialTracker.recordPlayerGift(giver, mobId);
+                RemoteEchoEncounters.onGaveGift(giver, mobId);
             }
         });
     }

@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
+import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
@@ -251,6 +252,16 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("PlayerMob present but social-gift seam unavailable ({}); "
                         + "befriend advancements disabled.", t.toString());
+            }
+            // Remote-echo encounter stories subscribe to PlayerMob's echo-spawn seam
+            // (PlayerMobSpawnHooks, playermob 0.46.0+). Independent try so a build predating
+            // the seam (e.g. an older bundled version) degrades to "no encounter stories"
+            // rather than disabling the gift bridge above too.
+            try {
+                PlayerMobSpawnBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("PlayerMob present but echo-spawn seam unavailable ({}); "
+                        + "remote-echo encounter stories disabled.", t.toString());
             }
         }
 
