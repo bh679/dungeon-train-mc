@@ -1,33 +1,26 @@
-<svg width="100%" viewBox="0 0 680 380" role="img" xmlns="http://www.w3.org/2000/svg">
-<title>The rider's codex — Where is it going?</title>
-<desc>An open book on a dark surface. The left page is a chapter heading; the right page holds a verse answer.</desc>
-<text x="340" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="15" font-style="italic" fill="#9a8fc4">~ the rider's codex ~</text>
-<rect x="30" y="60" width="620" height="300" rx="10" fill="#241a36"/>
-<rect x="44" y="72" width="292" height="276" rx="3" fill="#efe6cf"/>
-<rect x="344" y="72" width="292" height="276" rx="3" fill="#efe6cf"/>
-<rect x="336" y="72" width="8" height="276" fill="#1c1530"/>
-<rect x="318" y="72" width="18" height="276" fill="#000000" opacity="0.08"/>
-<rect x="344" y="72" width="18" height="276" fill="#000000" opacity="0.08"/>
-<text x="190" y="196" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="500" fill="#3b3020">Where is it</text>
-<text x="190" y="224" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="500" fill="#3b3020">going?</text>
-<line x1="120" y1="252" x2="178" y2="252" stroke="#b8a87e" stroke-width="1"/>
-<rect x="186" y="248" width="8" height="8" fill="#b8a87e" transform="rotate(45 190 252)"/>
-<line x1="202" y1="252" x2="260" y2="252" stroke="#b8a87e" stroke-width="1"/>
-<text x="354" y="102" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Depends who you ask.</text>
-<text x="354" y="117" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Some speak of loved ones.</text>
-<text x="354" y="132" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Other treasure.</text>
-<text x="354" y="147" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Many simply green fields. Lush forests.</text>
-<text x="354" y="162" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Endless desert. The dark depths.</text>
-<text x="354" y="177" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Fewer speak of fire. Of voids without end.</text>
-<text x="354" y="192" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">A Kingdom of Candy.</text>
-<text x="354" y="207" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Beyond the worlds boarder.</text>
-<text x="354" y="222" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Escape.</text>
-<text x="354" y="252" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Fewer still speak of the Creator —</text>
-<text x="354" y="267" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">The request he makes,</text>
-<text x="354" y="282" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">asked only in death.</text>
-<text x="354" y="297" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">They say his passion will not let him rest.</text>
-<text x="354" y="312" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">That he listens to anyone</text>
-<text x="354" y="327" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">with a word to offer.</text>
-
-<text x="620" y="336" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-size="11" font-style="italic" fill="#8a7a52">i</text>
+<svg width="100%" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Where is it going? (continued)</title>
+<desc>An open book on a dark surface, ink verse on parchment pages.</desc>
+<rect x="30" y="40" width="620" height="300" rx="10" fill="#241a36"/>
+<rect x="44" y="52" width="292" height="276" rx="3" fill="#efe6cf"/><rect x="344" y="52" width="292" height="276" rx="3" fill="#efe6cf"/><rect x="336" y="52" width="8" height="276" fill="#1c1530"/><rect x="318" y="52" width="18" height="276" fill="#000000" opacity="0.08"/><rect x="344" y="52" width="18" height="276" fill="#000000" opacity="0.08"/>
+<text x="66" y="97" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Some practice ancient rituals</text>
+<text x="66" y="112" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">in attempt to reach him.</text>
+<text x="66" y="127" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">They speak of "<tspan fill="#2b50c8" text-decoration="underline">discord linking.</tspan>"</text>
+<text x="66" y="142" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">A summoning, of sorts.</text>
+<text x="66" y="157" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">A gathering place</text>
+<text x="66" y="172" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">beyond the train,</text>
+<text x="66" y="187" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">where the living and the Creator</text>
+<text x="66" y="202" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">trade words.</text>
+<text x="66" y="232" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">They say he answers there.</text>
+<text x="66" y="247" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">That he takes every offering —</text>
+<text x="66" y="262" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">every idea, every grievance, every prayer —</text>
+<text x="66" y="277" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">and folds it back into the train.</text>
+<text x="66" y="307" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">If you have a word to give,</text>
+<text x="366" y="82" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">speak it.</text>
+<text x="366" y="112" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Me?</text>
+<text x="366" y="127" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">I stopped believing in the destination.</text>
+<text x="366" y="142" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Only the journey remains.</text>
+<text x="366" y="157" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Perhaps that was the point.</text>
+<text x="60" y="316" font-family="Georgia, 'Times New Roman', serif" font-size="11" font-style="italic" fill="#8a7a52">ii</text>
+<text x="620" y="316" text-anchor="end" font-family="Georgia, 'Times New Roman', serif" font-size="11" font-style="italic" fill="#8a7a52">iii</text>
 </svg>
