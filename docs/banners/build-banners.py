@@ -48,7 +48,7 @@ def banner(q):
 <clipPath id="rnd"><rect x="0" y="0" width="680" height="150" rx="10"/></clipPath>
 </defs>
 <g clip-path="url(#rnd)">
-<image href="{bg}" x="0" y="0" width="680" height="150" preserveAspectRatio="xMidYMid slice"/>
+<image href="{bg}" x="170" y="0" width="680" height="150" preserveAspectRatio="xMidYMid slice"/>
 <rect x="0" y="0" width="680" height="150" fill="url(#fade)"/>
 <rect x="0" y="0" width="680" height="150" fill="#0e0f14" opacity="0.12"/>
 </g>
