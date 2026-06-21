@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "32";
+    public static final String PROTOCOL_VERSION = "33";
 
     private DungeonTrainNet() {}
 
@@ -100,6 +100,11 @@ public final class DungeonTrainNet {
 
         // Pause-menu "Abandon This Run": client → server kill request, ending the run via the death screen.
         registrar.playToServer(AbandonRunPacket.TYPE, AbandonRunPacket.STREAM_CODEC, AbandonRunPacket::handle);
+
+        // Remote-echo encounter screenshot: server → player at first eye-contact to frame + capture the
+        // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
+        registrar.playToClient(CaptureEchoPacket.TYPE, CaptureEchoPacket.STREAM_CODEC, CaptureEchoPacket::handle);
+        registrar.playToServer(EchoPhotoPacket.TYPE, EchoPhotoPacket.STREAM_CODEC, EchoPhotoPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

@@ -1670,6 +1670,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-encounter-screenshot",
+      "version": "0.340.0",
+      "type": "feat",
+      "title": "Echo encounter stories now include a photo of the echo",
+      "summary": "When the game shares the tale of your meeting with a remote echo on Discord, it now adds a snapshot of that traveller \u2014 framed against the train and captured the moment you first lay eyes on one another.",
+      "highlights": [
+        "Each echo encounter story now carries a photo of the echo, taken at first eye contact.",
+        "Quietly falls back to the text-only story when a clear shot can't be grabbed in time."
+      ],
+      "pr": 515,
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
