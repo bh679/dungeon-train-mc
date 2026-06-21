@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.discord;
 
+import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.dungeontrain.net.DeathNarrative;
 
 import java.util.List;
@@ -12,11 +13,11 @@ import java.util.regex.Pattern;
  * in-game death screens into one Discord message:
  *
  * <ul>
- *   <li><b>title</b> = the fall-page narration the player saw (e.g. "Carriage 47. The dark had been
- *       waiting there all along…"), falling back to the death cause then "💀 name — Run Ended";</li>
- *   <li>each section is <b>headed by that page's narration</b> (deeds / cargo / lives), followed by a
- *       de-duped stat strip carrying only the numbers the prose doesn't already state;</li>
- *   <li>the platform epitaph closes it as an italic line.</li>
+ *   <li><b>title</b> = "{player} - Carriage {n}";</li>
+ *   <li><b>description</b> = the rolled narration as prose — the fall / deeds / cargo paragraphs,
+ *       closed by the italic platform epitaph;</li>
+ *   <li><b>fields</b> = three inline stat columns (The fall / This run / The souls) carrying the run's
+ *       numbers, which Discord lays out side-by-side.</li>
  * </ul>
  *
  * <p>Pure + side-effect-free (no Minecraft types) so it is unit-testable. Reuses {@link DeathReportFormat}
@@ -34,9 +35,9 @@ public final class DeathManifestFormat {
     private static final String E_LOOT = "🎒";
     private static final String E_BOOK = "📖";
     private static final String E_ADV = "🏆";
-    private static final String E_CARR = "🚃";
-    private static final String E_FRIEND = "🫂";
-    private static final String E_BOOKS = "📚";
+    private static final String E_MET = "👥";
+    private static final String E_BEFRIEND = "🤝";
+    private static final String E_SLAIN = "🗡️";
 
     /** The embed title: "{player} - Carriage {n}" — a compact header above the narrated body. */
     public static String title(String playerName, int carriage) {
@@ -44,58 +45,76 @@ public final class DeathManifestFormat {
     }
 
     /**
-     * The embed body: the fall narration as opening prose, then its stat strip, then a narration-headed
-     * section per page with a de-duped stat strip, then the epitaph. Sections whose narration is empty
-     * are omitted; the advancement segment is omitted when none were earned.
+     * The embed body: the rolled narration as prose — the fall / deeds / cargo paragraphs, closed by
+     * the italic platform epitaph. Sections whose narration is empty are omitted. The lifetime "lives"
+     * narration is intentionally left out of the embed (this-run only); the numbers move to {@link
+     * #fields}.
      */
-    public static String description(DeathNarrative narr, String deathCause,
-            double distanceBlocks, long runTicks, double damageDealt, double damageTaken,
-            int loot, int booksRead, List<String> advancementTitles,
-            long lifeCarriages, double lifeDistance, long lifeFriends, long lifeBooks) {
+    public static String description(DeathNarrative narr) {
         StringBuilder sb = new StringBuilder();
 
-        // the fall — narration as opening prose, then the strip.
-        String fall = clean(narr == null ? "" : narr.fallNarration());
-        if (!fall.isBlank()) sb.append(fall).append("\n\n");
-        String cause = clean(deathCause);
-        if (!cause.isBlank()) sb.append(E_CAUSE).append(' ').append(cause).append(" · ");
-        sb.append(E_DIST).append(' ').append(DeathReportFormat.distance(distanceBlocks))
-          .append(" · ").append(E_TIME).append(' ').append(DeathReportFormat.time(runTicks));
-
-        // the deeds — narration carries mobs/met/slain/friends/hearts; strip adds the damage.
-        String deeds = clean(narr == null ? "" : narr.deedsNarration());
-        if (!deeds.isBlank()) {
-            sb.append("\n\n").append(deeds)
-              .append("\n\n").append(E_DMG).append(' ').append(DeathReportFormat.damage(damageDealt))
-              .append(" dealt · ").append(DeathReportFormat.damage(damageTaken)).append(" taken");
-        }
-
-        // the cargo — strip adds loot / books / advancement names.
-        String gear = clean(narr == null ? "" : narr.gearNarration());
-        if (!gear.isBlank()) {
-            sb.append("\n\n").append(gear).append("\n\n")
-              .append(E_LOOT).append(' ').append(loot).append(" loot · ")
-              .append(E_BOOK).append(' ').append(booksRead).append(" books");
-            if (advancementTitles != null && !advancementTitles.isEmpty()) {
-                sb.append(" · ").append(E_ADV).append(' ').append(String.join(", ", advancementTitles));
-            }
-        }
-
-        // all your lives — narration carries the death count; strip adds the lifetime totals.
-        String lives = clean(narr == null ? "" : narr.livesNarration());
-        if (!lives.isBlank()) {
-            sb.append("\n\n").append(lives).append("\n\n")
-              .append(E_CARR).append(' ').append(lifeCarriages).append(" carriages · ")
-              .append(E_DIST).append(' ').append(DeathReportFormat.distance(lifeDistance)).append(" · ")
-              .append(E_FRIEND).append(' ').append(lifeFriends).append(" friends · ")
-              .append(E_BOOKS).append(' ').append(lifeBooks).append(" books");
-        }
+        append(sb, clean(narr == null ? "" : narr.fallNarration()));
+        append(sb, clean(narr == null ? "" : narr.deedsNarration()));
+        append(sb, clean(narr == null ? "" : narr.gearNarration()));
 
         // the platform — the epitaph, italic.
         String epitaph = clean(narr == null ? "" : narr.platformEpitaph());
-        if (!epitaph.isBlank()) sb.append("\n\n*").append(epitaph).append('*');
+        if (!epitaph.isBlank()) {
+            if (sb.length() > 0) sb.append("\n\n");
+            sb.append('*').append(epitaph).append('*');
+        }
 
         return sb.toString();
+    }
+
+    /** Append a non-blank paragraph, separated from any preceding text by a blank line. */
+    private static void append(StringBuilder sb, String paragraph) {
+        if (paragraph.isBlank()) return;
+        if (sb.length() > 0) sb.append("\n\n");
+        sb.append(paragraph);
+    }
+
+    /**
+     * The embed's three inline stat columns, which Discord renders side-by-side:
+     * <ul>
+     *   <li><b>The fall</b> — death cause / distance / run time;</li>
+     *   <li><b>This run</b> — damage dealt &amp; taken / loot &amp; books / earned advancements
+     *       (the advancement line is omitted when none were earned);</li>
+     *   <li><b>The souls</b> — other players/PlayerMobs met / befriended / slain this run.</li>
+     * </ul>
+     * Each value is newline-separated; emoji are kept (Discord renders them).
+     */
+    public static List<DeathField> fields(String deathCause,
+            double distanceBlocks, long runTicks, double damageDealt, double damageTaken,
+            int loot, int booksRead, List<String> advancementTitles,
+            int playersEncountered, int playersBefriended, int playersKilled) {
+
+        // The fall — cause / distance / time.
+        StringBuilder fall = new StringBuilder();
+        String cause = clean(deathCause);
+        if (!cause.isBlank()) fall.append(E_CAUSE).append(' ').append(cause).append('\n');
+        fall.append(E_DIST).append(' ').append(DeathReportFormat.distance(distanceBlocks)).append('\n')
+            .append(E_TIME).append(' ').append(DeathReportFormat.time(runTicks));
+
+        // This run — damage / loot + books / advancements.
+        StringBuilder run = new StringBuilder();
+        run.append(E_DMG).append(' ').append(DeathReportFormat.damage(damageDealt)).append(" dealt · ")
+           .append(DeathReportFormat.damage(damageTaken)).append(" taken").append('\n')
+           .append(E_LOOT).append(' ').append(loot).append(" loot · ")
+           .append(E_BOOK).append(' ').append(booksRead).append(" books");
+        if (advancementTitles != null && !advancementTitles.isEmpty()) {
+            run.append('\n').append(E_ADV).append(' ').append(String.join(", ", advancementTitles));
+        }
+
+        // The souls — other souls met / befriended / slain this run.
+        String souls = E_MET + ' ' + playersEncountered + " met\n"
+                + E_BEFRIEND + ' ' + playersBefriended + " befriended\n"
+                + E_SLAIN + ' ' + playersKilled + " slain";
+
+        return List.of(
+                new DeathField("The fall", fall.toString()),
+                new DeathField("This run", run.toString()),
+                new DeathField("The souls", souls));
     }
 
     /** Strip the number sentinels, then rewrite the second-person screen voice into the third person. */

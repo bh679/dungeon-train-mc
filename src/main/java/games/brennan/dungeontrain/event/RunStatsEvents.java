@@ -268,14 +268,16 @@ public final class RunStatsEvents {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
-            String manifestDesc = DeathManifestFormat.description(
-                    packet.narrative(), packet.deathCause(),
+            String manifestDesc = DeathManifestFormat.description(packet.narrative());
+            List<DeathField> manifestFields = DeathManifestFormat.fields(
+                    packet.deathCause(),
                     packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
                     packet.containersOpened(), packet.booksRead(), advTitles,
-                    packet.lifeCarriages(), packet.lifeDistance(), packet.lifeFriends(), packet.lifeBooks());
+                    packet.playersEncountered(), packet.playersBefriended(), packet.playersKilled());
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
-            DeathReportBuffer.await(player, manifestTitle, manifestDesc, icons, DungeonTrain.manifestWebhookOverride());
+            DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
+                    DungeonTrain.manifestWebhookOverride());
         }
     }
 

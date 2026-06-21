@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.Util;
@@ -30,7 +31,8 @@ public final class DeathReportBuffer {
     private static final String PHOTO_FILENAME = "ride.png";
 
     private record Pending(ServerPlayer player, String title, String description,
-                           List<ItemStack> fallbackIcons, String webhookOverride, long deadlineMs) {}
+                           List<DeathField> fields, List<ItemStack> fallbackIcons,
+                           String webhookOverride, long deadlineMs) {}
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
@@ -42,9 +44,10 @@ public final class DeathReportBuffer {
      * {@code null} = the build's default cap (the dev channel on dev builds).
      */
     public static void await(ServerPlayer player, String title, String description,
-                             List<ItemStack> fallbackIcons, String webhookOverride) {
+                             List<DeathField> fields, List<ItemStack> fallbackIcons, String webhookOverride) {
         PENDING.put(player.getUUID(),
-                new Pending(player, title, description, fallbackIcons, webhookOverride, Util.getMillis() + TIMEOUT_MS));
+                new Pending(player, title, description, fields, fallbackIcons, webhookOverride,
+                        Util.getMillis() + TIMEOUT_MS));
     }
 
     /** Client delivered the scenic ride photo — post the buffered report with it (or the fallback if empty). */
@@ -53,10 +56,10 @@ public final class DeathReportBuffer {
         if (p == null) return;
         if (png != null && png.length > 0) {
             DiscordService.get().postDeathReportTopLevel(
-                    p.player(), p.title(), p.description(), List.of(), png, PHOTO_FILENAME, p.webhookOverride());
+                    p.player(), p.title(), p.description(), p.fields(), png, PHOTO_FILENAME, p.webhookOverride());
         } else {
             DiscordService.get().postDeathReportTopLevel(
-                    p.player(), p.title(), p.description(), List.of(), p.fallbackIcons(), p.webhookOverride());
+                    p.player(), p.title(), p.description(), p.fields(), p.fallbackIcons(), p.webhookOverride());
         }
     }
 
@@ -70,7 +73,7 @@ public final class DeathReportBuffer {
             if (now >= p.deadlineMs()) {
                 it.remove();
                 DiscordService.get().postDeathReportTopLevel(
-                        p.player(), p.title(), p.description(), List.of(), p.fallbackIcons(), p.webhookOverride());
+                        p.player(), p.title(), p.description(), p.fields(), p.fallbackIcons(), p.webhookOverride());
             }
         }
     }
