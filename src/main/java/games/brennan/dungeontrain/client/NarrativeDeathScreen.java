@@ -4,7 +4,6 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -112,12 +111,21 @@ public final class NarrativeDeathScreen extends Screen {
     private static final int CHIP_RB_TEXT   = 0xFF7FAE84;
     private static final int CHIP_LV_BORDER = 0xFF2A2D33;
     private static final int CHIP_LV_TEXT   = 0xFF8A909A;
+    // Shift-held "Quit Game" variant of the leave chip: darker bg, lighter border + text.
+    private static final int CHIP_LV_QUIT_BG     = 0x99000000;
+    private static final int CHIP_LV_QUIT_BORDER = 0xFF6A6F78;
+    private static final int CHIP_LV_QUIT_TEXT   = 0xFFD8DCE2;
     private static final int CHIP_PH_BORDER = 0xFF5A5236;
     private static final int CHIP_PH_TEXT   = 0xFFC9B98A;
     private static final int BTN_BG         = 0xFF585B5E;
     private static final int BTN_LIGHT      = 0xFF76797D;
     private static final int BTN_DARK       = 0xFF1E1F21;
     private static final int BTN_TEXT       = 0xFFEAEAEA;
+    // Shift-held "Quit Game" variant of the bevel button: darker bg, lighter bevel + text.
+    private static final int BTN_QUIT_BG    = 0xFF3A3C3F;
+    private static final int BTN_QUIT_LIGHT = 0xFF9CA0A6;
+    private static final int BTN_QUIT_DARK  = 0xFF26272A;
+    private static final int BTN_QUIT_TEXT  = 0xFFFFFFFF;
     private static final int BTN_PRI_BG     = 0xFF3C6B41;
     private static final int BTN_PRI_LIGHT  = 0xFF5C9162;
     private static final int SCORE_BG       = 0xFF1A1813;
@@ -273,12 +281,14 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * Once per death, hand this run's scenic fall-page ride photo to the server ({@link DeathPhotoPacket})
-     * so the dev/public top-level death report can use it as its image. Dev-only for now (matches the
-     * server's dev-gated top-level report); sends an empty array when there's no photo so the server
-     * posts the report promptly with its fallback rather than waiting out the timeout.
+     * so the top-level manifest death report can use it as its image. Sent on ALL builds (the manifest
+     * now posts to the public channel on release builds, not just the dev channel) — the server only
+     * uses it when it has a pending top-level report (legit deaths), so a stray send is harmless. Sends
+     * an empty array when there's no photo so the server posts promptly with its gear-composite fallback
+     * rather than waiting out the timeout.
      */
     private void maybeSendRidePhoto() {
-        if (photoSent || !DungeonTrain.isDevBuild()) return;
+        if (photoSent) return;
         photoSent = true;
         RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
         byte[] png = fall != null ? fall.pngBytes() : null;
@@ -920,11 +930,16 @@ public final class NarrativeDeathScreen extends Screen {
                 Component.translatable("gui.dungeontrain.death.board_anew"),
                 BTN_PRI_BG, BTN_PRI_LIGHT, BTN_DARK, 0xFFFFFFFF);
         y += baH + 8;
-        // Leave the line — smaller, secondary, beneath it.
+        // Leave the line — smaller, secondary, beneath it. Hold Shift to convert it
+        // into a "Quit Game" button (darker, lighter text + bevel) that quits to desktop.
+        boolean quit = Screen.hasShiftDown();
         int lvW = 116, lvH = 15;
         platformLeaveRect = drawBevel(g, cx - lvW / 2, y, lvW, lvH,
-                Component.translatable("gui.dungeontrain.death.leave_line"),
-                BTN_BG, BTN_LIGHT, BTN_DARK, BTN_TEXT);
+                Component.translatable(quit ? "menu.quit" : "gui.dungeontrain.death.leave_line"),
+                quit ? BTN_QUIT_BG    : BTN_BG,
+                quit ? BTN_QUIT_LIGHT : BTN_LIGHT,
+                quit ? BTN_QUIT_DARK  : BTN_DARK,
+                quit ? BTN_QUIT_TEXT  : BTN_TEXT);
         return y + lvH + 6;
     }
 
@@ -933,14 +948,18 @@ public final class NarrativeDeathScreen extends Screen {
     private void drawTopBar(GuiGraphics g, int mouseX, int mouseY) {
         g.drawString(this.font, Component.translatable("gui.dungeontrain.death.narr.brand"),
                 12, 10, fade(0xFF7A828C), false);
-        // Right-aligned: [photos] [reboard] [leave]. leave on the far right.
-        Component leave = Component.translatable("gui.dungeontrain.death.leave");
+        // Right-aligned: [photos] [reboard] [leave]. leave on the far right. Holding
+        // Shift turns the leave chip into a "Quit Game" chip (darker, lighter border + text).
+        boolean quit = Screen.hasShiftDown();
+        Component leave = Component.translatable(quit ? "menu.quit" : "gui.dungeontrain.death.leave");
         Component reboard = Component.translatable("gui.dungeontrain.death.reboard");
         int leaveW = this.font.width(leave) + 16;
         int reboardW = this.font.width(reboard) + 16;
         int leaveX = this.width - 10 - leaveW;
         int reboardX = leaveX - 6 - reboardW;
-        leaveRect = drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
+        leaveRect = quit
+                ? drawChip(g, leaveX, 8, leave, CHIP_LV_QUIT_BG, CHIP_LV_QUIT_BORDER, CHIP_LV_QUIT_TEXT)
+                : drawChip(g, leaveX, 8, leave, CHIP_LV_BORDER, CHIP_LV_TEXT);
         reboardRect = drawChip(g, reboardX, 8, reboard, CHIP_RB_BORDER, CHIP_RB_TEXT);
 
         // "photos" → ride-photo gallery. Only on the final platform page, and only
@@ -987,11 +1006,11 @@ public final class NarrativeDeathScreen extends Screen {
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
             if (reboardRect != null && reboardRect.has(mx, my)) { boardAnew(); return true; }
-            if (leaveRect != null && leaveRect.has(mx, my)) { leave(); return true; }
+            if (leaveRect != null && leaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             Page page = pages.isEmpty() ? Page.of(Kind.FALL) : pages.get(currentPage);
             if (page.kind() == Kind.PLATFORM) {
                 if (boardAnewRect != null && boardAnewRect.has(mx, my)) { boardAnew(); return true; }
-                if (platformLeaveRect != null && platformLeaveRect.has(mx, my)) { leave(); return true; }
+                if (platformLeaveRect != null && platformLeaveRect.has(mx, my)) { leaveOrQuit(); return true; }
             } else if (continueRect != null && continueRect.has(mx, my)) {
                 advance();
                 return true;
@@ -1069,6 +1088,20 @@ public final class NarrativeDeathScreen extends Screen {
 
     private void leave() {
         DeathScreenLayoutHandler.goToTitleScreen();
+    }
+
+    /**
+     * The leave control's action, gated on Shift: with Shift held it quits Minecraft to
+     * desktop ({@link DeathScreenLayoutHandler#quitToDesktop()}); otherwise it returns to
+     * the title screen via {@link #leave()}. Both render and click poll
+     * {@link Screen#hasShiftDown()}, so the action matches the drawn label.
+     */
+    private void leaveOrQuit() {
+        if (Screen.hasShiftDown()) {
+            DeathScreenLayoutHandler.quitToDesktop();
+        } else {
+            leave();
+        }
     }
 
     private void openGallery() {
@@ -1286,8 +1319,12 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     private Rect drawChip(GuiGraphics g, int x, int y, Component text, int border, int textColor) {
+        return drawChip(g, x, y, text, 0x66000000, border, textColor);
+    }
+
+    private Rect drawChip(GuiGraphics g, int x, int y, Component text, int bg, int border, int textColor) {
         int w = this.font.width(text) + 16, h = 14;
-        g.fill(x, y, x + w, y + h, fade(0x66000000));
+        g.fill(x, y, x + w, y + h, fade(bg));
         drawBorder(g, x, y, w, h, border);
         g.drawString(this.font, text, x + 8, y + (h - this.font.lineHeight) / 2 + 1, fade(textColor), false);
         return new Rect(x, y, w, h);

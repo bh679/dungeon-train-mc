@@ -1,0 +1,18 @@
+<svg width="100%" viewBox="0 0 680 360" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>What is the Dungeon Train?</title>
+<desc>An open book on a dark surface, ink verse on parchment pages.</desc>
+<rect x="30" y="40" width="620" height="300" rx="10" fill="#241a36"/>
+<rect x="44" y="52" width="292" height="276" rx="3" fill="#efe6cf"/><rect x="344" y="52" width="292" height="276" rx="3" fill="#efe6cf"/><rect x="336" y="52" width="8" height="276" fill="#1c1530"/><rect x="318" y="52" width="18" height="276" fill="#000000" opacity="0.08"/><rect x="344" y="52" width="18" height="276" fill="#000000" opacity="0.08"/>
+<text x="190" y="174" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="500" fill="#3b3020">What is the</text>
+<text x="190" y="202" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="22" font-weight="500" fill="#3b3020">Dungeon Train?</text>
+<line x1="120" y1="232" x2="178" y2="232" stroke="#b8a87e" stroke-width="1"/><rect x="186" y="228" width="8" height="8" fill="#b8a87e" transform="rotate(45 190 232)"/><line x1="202" y1="232" x2="260" y2="232" stroke="#b8a87e" stroke-width="1"/>
+<text x="366" y="82" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">The train is a curious thing.</text>
+<text x="366" y="97" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Some call it multi-dimensional.</text>
+<text x="366" y="112" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">A carriage adrift in liminal space and time.</text>
+<text x="366" y="127" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Others, a dungeon crawler with a view.</text>
+<text x="366" y="142" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">An escape from reality.</text>
+<text x="366" y="157" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">A madman once claimed it a physics mod.</text>
+<text x="366" y="172" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Sable-built. Endless.</text>
+<text x="366" y="187" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Dreamed up by an award-winning hand.</text>
+<text x="366" y="202" font-family="Georgia, 'Times New Roman', serif" font-size="12" fill="#4a3d28">Does the answer change the ride?</text>
+</svg>

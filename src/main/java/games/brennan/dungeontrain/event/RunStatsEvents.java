@@ -259,12 +259,12 @@ public final class RunStatsEvents {
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
         DiscordService.get().postDeathReport(player, title, cause, fields, icons);
-        // Dev/test builds also post a redesigned report OUTSIDE the player's thread — "the manifest":
+        // Also post the redesigned "manifest" report OUTSIDE the player's thread — the public death feed:
         // the rolled fall narration, each section headed by the line the player saw, de-duped stat
-        // strips, and this run's ride photo. This is the upcoming public death feed (dev-gated preview
-        // for now). Free Play (cheated) runs are EXCLUDED — they still get the basic threaded report
-        // above in dev, but never the public manifest report.
-        if (DungeonTrain.isDevBuild() && !cheated) {
+        // strips, and this run's ride photo. Routes to the PUBLIC channel on release (main) builds and
+        // to the dev channel on dev builds (manifestWebhookOverride: null on dev → default cap). Free
+        // Play (cheated) runs are EXCLUDED — they still get the basic threaded report above.
+        if (!cheated) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -275,7 +275,7 @@ public final class RunStatsEvents {
                     packet.lifeCarriages(), packet.lifeDistance(), packet.lifeFriends(), packet.lifeBooks());
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
-            DeathReportBuffer.await(player, manifestTitle, manifestDesc, icons);
+            DeathReportBuffer.await(player, manifestTitle, manifestDesc, icons, DungeonTrain.manifestWebhookOverride());
         }
     }
 
