@@ -71,6 +71,14 @@ public class DungeonTrain {
             "https://brennan.games/api/dp-relay/adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
     private static final String RELAY_DEV_BASE_URL =
             "https://brennan.games/api/dp-relay/0e908e2d067e81eb3e31e43e6c4e337182db24232994dc25";
+    /**
+     * Public death-feed capability. The redesigned "manifest" death report routes here on RELEASE
+     * ({@code main}) builds so legit production deaths land in a read-only PUBLIC channel, separate from
+     * the live community feed (which keeps the threaded report). Non-secret + revocable like the others;
+     * the real public-channel webhook lives only on the relay ({@code PUBLIC_WEBHOOK_URL}).
+     */
+    private static final String RELAY_PUBLIC_BASE_URL =
+            "https://brennan.games/api/dp-relay/55800db451a785a14030978edf0e352179a160287da24981";
 
     /**
      * True for any non-release build — the same branch-ref dev signal the title screen + version HUD
@@ -86,6 +94,25 @@ public class DungeonTrain {
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
     private static String discordRelayBaseUrl() {
         return relayBaseUrlForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Where the redesigned "manifest" public death report should post. On a RELEASE ({@code main}) build
+     * it routes to the dedicated PUBLIC channel cap; on a dev/test build it returns {@code null} so the
+     * report falls through to the build's default cap (the dev channel) — keeping the dev preview intact.
+     * The threaded community-feed report is unaffected either way.
+     */
+    public static String manifestWebhookOverride() {
+        return manifestWebhookOverrideForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;manifest-destination mapping (package-private for unit testing). Only a {@code main}
+     * build routes the public manifest report to the dedicated public cap; every other branch returns
+     * {@code null} → the report posts to the build's default cap (the dev channel).
+     */
+    static String manifestWebhookOverrideForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_PUBLIC_BASE_URL + "/hook" : null;
     }
 
     /**
