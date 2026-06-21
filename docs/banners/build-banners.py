@@ -74,6 +74,26 @@ def style_modern(q):
     return wrap(q["full"], body)
 
 
+def style_modernshot(q, bg):
+    """Modern panel on the left fading into the in-game screenshot on the right."""
+    body = f'''<defs>
+<linearGradient id="fade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0e0f14" stop-opacity="1"/><stop offset="0.40" stop-color="#0e0f14" stop-opacity="1"/><stop offset="0.92" stop-color="#0e0f14" stop-opacity="0"/></linearGradient>
+<linearGradient id="acc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient>
+<clipPath id="rnd"><rect x="0" y="0" width="680" height="150" rx="10"/></clipPath>
+</defs>
+<g clip-path="url(#rnd)">
+<image href="{bg}" x="0" y="0" width="680" height="150" preserveAspectRatio="xMidYMid slice"/>
+<rect x="0" y="0" width="680" height="150" fill="url(#fade)"/>
+<rect x="0" y="0" width="680" height="150" fill="#0e0f14" opacity="0.12"/>
+</g>
+<rect x="32" y="34" width="118" height="26" rx="13" fill="#8b5cf61f" stroke="#8b5cf6" stroke-width="1"/>
+<text x="50" y="51" font-family="{SANS}" font-size="11" font-weight="700" letter-spacing="1.5" fill="#b794f6">QUESTION {q["idx"]}</text>
+<text x="33" y="105" font-family="{SANS}" font-size="30" font-weight="700" fill="#000000" opacity="0.6">{esc(q["full"])}</text>
+<text x="32" y="104" font-family="{SANS}" font-size="30" font-weight="700" fill="#f3f3f7">{esc(q["full"])}</text>
+<rect x="32" y="118" width="72" height="4" rx="2" fill="url(#acc)"/>'''
+    return wrap(q["full"], body)
+
+
 def style_book(q):
     body = f'''<rect x="0" y="0" width="680" height="150" rx="3" fill="#efe6cf"/>
 <rect x="10" y="10" width="660" height="130" rx="2" fill="none" stroke="#cebd92" stroke-width="1"/>
@@ -88,6 +108,7 @@ def build():
     bg = bg_data_uri()
     styles = {
         "screenshot": lambda q: style_screenshot(q, bg),
+        "modernshot": lambda q: style_modernshot(q, bg),
         "brutalist": style_brutalist,
         "modern": style_modern,
         "book": style_book,
