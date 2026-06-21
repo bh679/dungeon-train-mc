@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.compat.ReincarnationRecord;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -185,6 +186,27 @@ public final class RemoteEchoEncounters {
     /** Drop every journal (world unload / server stop). */
     public static void clearAll() {
         ACTIVE.clear();
+    }
+
+    /** Number of currently-open journals (for the dev test command's feedback). */
+    public static int activeCount() {
+        return ACTIVE.size();
+    }
+
+    /**
+     * Dev/test helper: end every open journal now ({@link EndReason#LEFT_BEHIND}), posting each
+     * story. Returns how many were ended. Used only by the dev-only encounter test command.
+     */
+    public static int devEndAll(MinecraftServer server) {
+        int ended = 0;
+        for (EchoEncounter enc : new ArrayList<>(ACTIVE.values())) {
+            ServerLevel level = server.getLevel(enc.dimension);
+            if (level != null) {
+                endEcho(level, enc.echoId, EndReason.LEFT_BEHIND);
+                ended++;
+            }
+        }
+        return ended;
     }
 
     // ---------------- internals ----------------
