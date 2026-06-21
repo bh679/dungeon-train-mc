@@ -30,16 +30,21 @@ public final class DeathReportBuffer {
     private static final String PHOTO_FILENAME = "ride.png";
 
     private record Pending(ServerPlayer player, String title, String description,
-                           List<ItemStack> fallbackIcons, long deadlineMs) {}
+                           List<ItemStack> fallbackIcons, String webhookOverride, long deadlineMs) {}
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
 
     private DeathReportBuffer() {}
 
-    /** Buffer a top-level report; it posts when the photo arrives ({@link #onPhoto}) or the timeout fires. */
-    public static void await(ServerPlayer player, String title, String description, List<ItemStack> fallbackIcons) {
+    /**
+     * Buffer a top-level report; it posts when the photo arrives ({@link #onPhoto}) or the timeout fires.
+     * {@code webhookOverride} routes it to a specific channel cap (the public channel on release builds);
+     * {@code null} = the build's default cap (the dev channel on dev builds).
+     */
+    public static void await(ServerPlayer player, String title, String description,
+                             List<ItemStack> fallbackIcons, String webhookOverride) {
         PENDING.put(player.getUUID(),
-                new Pending(player, title, description, fallbackIcons, Util.getMillis() + TIMEOUT_MS));
+                new Pending(player, title, description, fallbackIcons, webhookOverride, Util.getMillis() + TIMEOUT_MS));
     }
 
     /** Client delivered the scenic ride photo — post the buffered report with it (or the fallback if empty). */
@@ -48,10 +53,10 @@ public final class DeathReportBuffer {
         if (p == null) return;
         if (png != null && png.length > 0) {
             DiscordService.get().postDeathReportTopLevel(
-                    p.player(), p.title(), p.description(), List.of(), png, PHOTO_FILENAME);
+                    p.player(), p.title(), p.description(), List.of(), png, PHOTO_FILENAME, p.webhookOverride());
         } else {
             DiscordService.get().postDeathReportTopLevel(
-                    p.player(), p.title(), p.description(), List.of(), p.fallbackIcons());
+                    p.player(), p.title(), p.description(), List.of(), p.fallbackIcons(), p.webhookOverride());
         }
     }
 
@@ -65,7 +70,7 @@ public final class DeathReportBuffer {
             if (now >= p.deadlineMs()) {
                 it.remove();
                 DiscordService.get().postDeathReportTopLevel(
-                        p.player(), p.title(), p.description(), List.of(), p.fallbackIcons());
+                        p.player(), p.title(), p.description(), List.of(), p.fallbackIcons(), p.webhookOverride());
             }
         }
     }

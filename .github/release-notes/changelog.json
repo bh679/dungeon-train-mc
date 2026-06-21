@@ -1576,6 +1576,21 @@
       "released": true,
       "released_in": "v0.337.0",
       "released_at": "2026-06-20T23:45:56Z"
+    },
+    {
+      "id": "public-death-channel",
+      "version": "0.338.0",
+      "type": "feat",
+      "title": "Deaths now share to a public Discord channel",
+      "summary": "Death reports now post to a dedicated public Discord deaths channel \u2014 the redesigned 'manifest' report, with your run's ride photo and the train's account of how it ended. Free Play (creative / cheats) runs are kept out of the public feed.",
+      "highlights": [
+        "Legit deaths post the full manifest report (ride photo + narrated run) to the public deaths channel",
+        "Free Play / creative runs are excluded from the public feed"
+      ],
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

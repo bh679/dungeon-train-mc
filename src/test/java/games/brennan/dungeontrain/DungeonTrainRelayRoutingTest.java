@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ class DungeonTrainRelayRoutingTest {
     // Non-secret capability segments (they ship in the jar; see DungeonTrain's relay constants).
     private static final String LIVE_CAP = "adc3dc432f437e9401092c143dec86767dd06c2a5d94f48f";
     private static final String DEV_CAP = "0e908e2d067e81eb3e31e43e6c4e337182db24232994dc25";
+    private static final String PUBLIC_CAP = "55800db451a785a14030978edf0e352179a160287da24981";
 
     @Test
     void mainBuildReportsToLiveFeed() {
@@ -27,6 +29,17 @@ class DungeonTrainRelayRoutingTest {
     void featureBranchReportsToDevChannel() {
         assertTrue(DungeonTrain.relayBaseUrlForBranch("dev/discord-dev-channel").endsWith("/" + DEV_CAP));
         assertTrue(DungeonTrain.relayBaseUrlForBranch("claude/some-worktree-slug").endsWith("/" + DEV_CAP));
+    }
+
+    @Test
+    void manifestRoutesToPublicCapOnlyOnMain() {
+        // The public "manifest" death report posts to the dedicated public cap ONLY on a main build;
+        // every other branch returns null → it falls through to the build's default cap (dev channel).
+        assertTrue(DungeonTrain.manifestWebhookOverrideForBranch("main").endsWith("/" + PUBLIC_CAP + "/hook"),
+                "main must route the manifest to the public cap");
+        assertNull(DungeonTrain.manifestWebhookOverrideForBranch("dev/some-feature"));
+        assertNull(DungeonTrain.manifestWebhookOverrideForBranch("claude/worktree-slug"));
+        assertNull(DungeonTrain.manifestWebhookOverrideForBranch("?"));
     }
 
     @Test
