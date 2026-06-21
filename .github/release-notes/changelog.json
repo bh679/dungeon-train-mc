@@ -1632,9 +1632,9 @@
       ],
       "pr": 509,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     },
     {
       "id": "remote-echo-encounter-story",
@@ -1648,9 +1648,9 @@
       ],
       "pr": 0,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     },
     {
       "id": "passenger-log-wide-layout",
@@ -1667,9 +1667,9 @@
       ],
       "pr": 513,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     },
     {
       "id": "echo-encounter-screenshot",
@@ -1683,9 +1683,9 @@
       ],
       "pr": 515,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.341.0",
+      "released_at": "2026-06-21T05:30:29Z"
     }
   ]
 }
