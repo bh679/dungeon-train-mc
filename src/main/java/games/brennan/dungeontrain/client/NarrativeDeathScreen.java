@@ -4,7 +4,6 @@ import games.brennan.discordpresence.client.SurveyClientState;
 import games.brennan.discordpresence.network.DPNetwork;
 import games.brennan.discordpresence.network.SurveyQuestionPayload;
 import games.brennan.discordpresence.network.SurveySubmitPayload;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -273,12 +272,14 @@ public final class NarrativeDeathScreen extends Screen {
 
     /**
      * Once per death, hand this run's scenic fall-page ride photo to the server ({@link DeathPhotoPacket})
-     * so the dev/public top-level death report can use it as its image. Dev-only for now (matches the
-     * server's dev-gated top-level report); sends an empty array when there's no photo so the server
-     * posts the report promptly with its fallback rather than waiting out the timeout.
+     * so the top-level manifest death report can use it as its image. Sent on ALL builds (the manifest
+     * now posts to the public channel on release builds, not just the dev channel) — the server only
+     * uses it when it has a pending top-level report (legit deaths), so a stray send is harmless. Sends
+     * an empty array when there's no photo so the server posts promptly with its gear-composite fallback
+     * rather than waiting out the timeout.
      */
     private void maybeSendRidePhoto() {
-        if (photoSent || !DungeonTrain.isDevBuild()) return;
+        if (photoSent) return;
         photoSent = true;
         RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
         byte[] png = fall != null ? fall.pngBytes() : null;
