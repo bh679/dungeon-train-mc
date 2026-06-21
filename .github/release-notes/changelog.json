@@ -1637,6 +1637,22 @@
       "released_at": null
     },
     {
+      "id": "remote-echo-encounter-story",
+      "version": "0.340.0",
+      "type": "feat",
+      "title": "Echo encounter stories on Discord",
+      "summary": "When you cross paths with a remote echo \u2014 a traveller who died in another world, now walking your train \u2014 the game quietly chronicles the meeting and shares the tale to Discord when it ends.",
+      "highlights": [
+        "Tracks the whole encounter: meeting, eye contact, a crouched greeting, blows traded, gifts exchanged, a shove off the train, and the final parting.",
+        "Each story names who the echo was and how your paths crossed; only remote (cross-world) echoes are chronicled."
+      ],
+      "pr": 0,
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "passenger-log-wide-layout",
       "version": "0.340.0",
       "type": "feat",

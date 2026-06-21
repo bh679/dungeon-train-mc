@@ -1,17 +1,13 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
-import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.compat.EchoIdentity;
-import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.ship.sable.SableManagedShip;
+import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.entity.PlayerMobEntity;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,8 +16,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.ChunkPos;
-import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -30,8 +24,6 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import org.joml.Vector3d;
-import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -83,9 +75,6 @@ public final class PlayerMobAdvancementEvents {
      * departure from the carriage counts.
      */
     private static final int OFF_DECK_GRACE_SCANS = 2;
-
-    /** Horizontal pad on each carriage AABB — matches {@link BoardingProgressEvents}. */
-    private static final double HORIZONTAL_PADDING = 1.0;
 
     /** Echo-proximity scan cadence (ticks) for the {@code Echo Encounter} advancement. */
     private static final int ECHO_SCAN_PERIOD_TICKS = 10;
@@ -144,7 +133,7 @@ public final class PlayerMobAdvancementEvents {
         // Lenient capture: the mob was on/around the train when struck. The
         // precise "pushed off the deck" decision is made per-scan in onLevelTick
         // via isOnCarriageDeck — see step().
-        boolean onTrain = isOnTrainFootprint(Trains.allCarriages(level), target);
+        boolean onTrain = CarriageDeck.isOnTrainFootprint(Trains.allCarriages(level), target);
         RECENT_HITS.put(target.getUUID(), new ReboarderHit(
             player.getUUID(), level.getGameTime(), onTrain, true, 0));
     }
@@ -167,7 +156,7 @@ public final class PlayerMobAdvancementEvents {
             boolean dead = mob != null && !mob.isAlive();
             // null ⇒ unloaded or dead (no live position); otherwise its support.
             Boolean onDeck = (mob != null && mob.isAlive())
-                ? isOnCarriageDeck(carriages, mob) : null;
+                ? CarriageDeck.isOnCarriageDeck(carriages, mob) : null;
 
             ReboarderStep outcome = step(hit, onDeck, dead, expired);
             if (LOGGER.isDebugEnabled()) {
@@ -318,79 +307,5 @@ public final class PlayerMobAdvancementEvents {
     private static boolean isPlayerMob(Entity entity) {
         return entity != null
             && PLAYERMOB_NAMESPACE.equals(EntityType.getKey(entity.getType()).getNamespace());
-    }
-
-    /**
-     * True when {@code e} is within any carriage's padded world AABB — the
-     * same geometry {@link BoardingProgressEvents} uses to decide a player is
-     * "on the train" (horizontal pad to bridge group joints; +1 above to
-     * count standing on a roof).
-     */
-    private static boolean isOnTrainFootprint(List<Trains.Carriage> carriages, Entity e) {
-        double x = e.getX();
-        double y = e.getY();
-        double z = e.getZ();
-        for (Trains.Carriage c : carriages) {
-            AABBdc bb = c.ship().worldAABB();
-            if (x < bb.minX() - HORIZONTAL_PADDING || x > bb.maxX() + HORIZONTAL_PADDING) continue;
-            if (y < bb.minY() || y > bb.maxY() + 1.0) continue;
-            if (z < bb.minZ() - HORIZONTAL_PADDING || z > bb.maxZ() + HORIZONTAL_PADDING) continue;
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * True when {@code e} is standing on a solid block that belongs to a
-     * carriage — the precise "on the deck/roof" test the coarse
-     * {@link #isOnTrainFootprint} AABB can't make. A flatbed's walkable floor is
-     * narrower than its {@code worldAABB}, so a mob punched off the floor (into
-     * the carriage's open interior, beside the floor, or down onto the rails —
-     * which are world blocks, not carriage blocks) stays inside the AABB but is
-     * supported by no carriage block. That is the real "pushed off the deck"
-     * signal, independent of carriage shape.
-     *
-     * <p>Reads the carriage's Sable sub-level blocks exactly as
-     * {@link VillagerJobSiteAssigner} / {@code SoulCampfireHealEvents} do:
-     * world-AABB pre-filter, {@code worldToShip} into ship-local space, then a
-     * plot block lookup.</p>
-     */
-    private static boolean isOnCarriageDeck(List<Trains.Carriage> carriages, Entity e) {
-        double ex = e.getX();
-        double ey = e.getY();
-        double ez = e.getZ();
-        for (Trains.Carriage c : carriages) {
-            ManagedShip ship = c.ship();
-            AABBdc bb = ship.worldAABB();
-            if (ex < bb.minX() - HORIZONTAL_PADDING || ex > bb.maxX() + HORIZONTAL_PADDING) continue;
-            if (ey < bb.minY() - 1.0 || ey > bb.maxY() + 1.0) continue;
-            if (ez < bb.minZ() - HORIZONTAL_PADDING || ez > bb.maxZ() + HORIZONTAL_PADDING) continue;
-            if (!(ship instanceof SableManagedShip sableShip)) continue;
-
-            Vector3d local = new Vector3d(ex, ey, ez);
-            ship.worldToShip(local);
-            BlockPos feet = BlockPos.containing(local.x, local.y, local.z);
-            if (isSupportedByCarriage(sableShip.subLevel().getPlot(), feet)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * True if the ship plot has a non-air block at the feet or directly below
-     * them (ship-local coords). Checking feet and feet-1 covers both top-slab
-     * walkways and full-block floors. Feet and feet-1 share a column, so a
-     * single chunk lookup serves both.
-     */
-    private static boolean isSupportedByCarriage(LevelPlot plot, BlockPos feet) {
-        long chunkKey = ChunkPos.asLong(feet.getX() >> 4, feet.getZ() >> 4);
-        for (PlotChunkHolder holder : plot.getLoadedChunks()) {
-            LevelChunk chunk = holder.getChunk();
-            if (chunk == null || chunk.getPos().toLong() != chunkKey) continue;
-            return !chunk.getBlockState(feet.below()).isAir()
-                || !chunk.getBlockState(feet).isAir();
-        }
-        return false;
     }
 }
