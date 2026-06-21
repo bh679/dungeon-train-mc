@@ -262,20 +262,26 @@ public final class RunStatsEvents {
         // Also post the redesigned "manifest" report OUTSIDE the player's thread — the public death feed:
         // the rolled fall narration, each section headed by the line the player saw, de-duped stat
         // strips, and this run's ride photo. Routes to the PUBLIC channel on release (main) builds and
-        // to the dev channel on dev builds (manifestWebhookOverride: null on dev → default cap). Free
-        // Play (cheated) runs are EXCLUDED — they still get the basic threaded report above.
-        if (!cheated) {
+        // to the dev channel on dev builds (manifestWebhookOverride: null on dev → default cap). On
+        // RELEASE builds, Free Play (cheated) runs are EXCLUDED from the public feed — they still get
+        // the basic threaded report above. Dev/test builds DO post Free Play runs (to the dev channel)
+        // so the report stays testable in creative — see DungeonTrain.isDevBuild().
+        if (!cheated || DungeonTrain.isDevBuild()) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
             String manifestDesc = DeathManifestFormat.description(
-                    packet.narrative(), packet.deathCause(),
+                    packet.narrative(), packet.playersKilled(), packet.playersBefriended(),
+                    packet.containersOpened());
+            List<DeathField> manifestFields = DeathManifestFormat.fields(
+                    packet.deathCause(),
                     packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
                     packet.containersOpened(), packet.booksRead(), advTitles,
-                    packet.lifeCarriages(), packet.lifeDistance(), packet.lifeFriends(), packet.lifeBooks());
+                    packet.playersEncountered(), packet.playersBefriended(), packet.playersKilled());
             // Buffer the top-level report until the client sends this run's scenic ride photo
             // (DeathPhotoPacket); a 5s timeout posts it with the gear composite if the photo never comes.
-            DeathReportBuffer.await(player, manifestTitle, manifestDesc, icons, DungeonTrain.manifestWebhookOverride());
+            DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
+                    DungeonTrain.manifestWebhookOverride());
         }
     }
 
