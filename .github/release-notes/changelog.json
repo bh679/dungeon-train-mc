@@ -1603,6 +1603,22 @@
       "released": true,
       "released_in": "v0.339.0",
       "released_at": "2026-06-21T01:34:07Z"
+    },
+    {
+      "id": "death-screen-shift-quit",
+      "version": "0.339.0",
+      "type": "feat",
+      "title": "Hold Shift on the death screen to quit straight to desktop",
+      "summary": "On the death screen, hold Shift to turn the \"leave the line\" controls into a \"Quit Game\" button that exits Minecraft straight to desktop \u2014 no need to stop at the title screen first. Mirrors the pause menu's Shift-to-quit shortcut, and restyles darker with lighter text so it's clearly a different action.",
+      "highlights": [
+        "Hold Shift on the death screen to swap \"Leave the line\" for \"Quit Game\" (quits to desktop)",
+        "Works on both the always-visible top-bar chip and the final platform-page button"
+      ],
+      "pr": 508,
+      "date": "2026-06-21",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
