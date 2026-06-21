@@ -17,10 +17,6 @@ final class DeathManifestFormatTest {
         return new DeathNarrative("q", fall, "q", deeds, "q", gear, "q", "", lives, "q", "platform", epitaph);
     }
 
-    private static String desc(DeathNarrative n) {
-        return DeathManifestFormat.description(n);
-    }
-
     private static List<DeathField> fields(List<String> advs) {
         return DeathManifestFormat.fields("You were slain by a Zombie",
                 1284.0, 15160L, 412.0, 196.0, 21, 4, advs, 9, 2, 5);
@@ -62,34 +58,39 @@ final class DeathManifestFormatTest {
     }
 
     @Test
-    void descriptionIsThirdPersonProseWithoutLivesOrStrips() {
+    void descriptionShowsDeedsWhenSocialOtherwiseCargo() {
         DeathNarrative n = narr(
                 "Carriage forty-seven. The dark reached you.",
                 "You felled eighty-three things; nine met, three slain, two friends.",
                 "Iron and edge, none of it enough.",
                 "Across fourteen lives.",
                 "the fourteenth to fall.");
-        String d = desc(n);
 
-        // The fall narration opens the BODY, rewritten to third person ("you" → "them").
-        assertTrue(d.startsWith("Carriage forty-seven. The dark reached them."), "fall narration leads the body, 3rd person");
-        assertTrue(d.contains("They felled eighty-three things"), "deeds narration header, 3rd person");
-        assertFalse(d.contains("You felled") || d.contains("reached you"), "no second-person left");
-        // The lives narration is intentionally dropped from the embed body.
-        assertFalse(d.contains("Across fourteen lives"), "lives narration omitted from the embed");
-        // The body is prose only — the numbers live in fields, not the description.
-        assertFalse(d.contains("1284 m") || d.contains("21 loot"), "no stat strips in the description");
-        // Epitaph closes it, italic.
-        assertTrue(d.contains("*the fourteenth to fall.*"), "italic epitaph");
+        // Social contact (someone slain or befriended) → deeds narration, not cargo.
+        String social = DeathManifestFormat.description(n, 3, 2);
+        assertTrue(social.startsWith("Carriage forty-seven. The dark reached them."), "fall leads, 3rd person");
+        assertTrue(social.contains("They felled eighty-three things"), "deeds shown when killed+befriended > 0");
+        assertFalse(social.contains("Iron and edge"), "cargo hidden when killed+befriended > 0");
+        assertFalse(social.contains("Across fourteen lives"), "lives narration omitted from the embed");
+        assertFalse(social.contains("You felled") || social.contains("reached you"), "no second-person left");
+        assertFalse(social.contains("1284 m") || social.contains("21 loot"), "no stat strips in the description");
+        assertTrue(social.contains("*the fourteenth to fall.*"), "italic epitaph");
+
+        // No social contact → cargo narration, not deeds.
+        String quiet = DeathManifestFormat.description(n, 0, 0);
+        assertTrue(quiet.contains("Iron and edge"), "cargo shown when killed+befriended == 0");
+        assertFalse(quiet.contains("They felled eighty-three things"), "deeds hidden when killed+befriended == 0");
+        assertTrue(quiet.contains("*the fourteenth to fall.*"), "epitaph still present");
     }
 
     @Test
-    void descriptionOmitsEmptyNarrationSections() {
-        DeathNarrative n = narr("fall", "", "Iron and edge.", "", "");
-        String d = desc(n);
+    void descriptionFallsBackWhenChosenSectionBlank() {
+        // No social contact picks cargo; but when cargo is blank it falls back to deeds.
+        DeathNarrative n = narr("fall", "Deeds line.", "", "", "");
+        String d = DeathManifestFormat.description(n, 0, 0);
         assertTrue(d.contains("fall"), "fall section present");
-        assertTrue(d.contains("Iron and edge."), "cargo section present");
-        assertFalse(d.contains("\n\n\n"), "empty deeds/lives sections leave no doubled blank lines");
+        assertTrue(d.contains("Deeds line."), "falls back to deeds when cargo is blank");
+        assertFalse(d.contains("\n\n\n"), "no doubled blank lines");
     }
 
     @Test

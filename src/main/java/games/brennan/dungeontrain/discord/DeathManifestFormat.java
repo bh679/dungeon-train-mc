@@ -45,17 +45,25 @@ public final class DeathManifestFormat {
     }
 
     /**
-     * The embed body: the rolled narration as prose — the fall / deeds / cargo paragraphs, closed by
-     * the italic platform epitaph. Sections whose narration is empty are omitted. The lifetime "lives"
-     * narration is intentionally left out of the embed (this-run only); the numbers move to {@link
-     * #fields}.
+     * The embed body: the fall narration, then EITHER the deeds (combat/social) OR the cargo narration
+     * — not both — closed by the italic platform epitaph. The deeds line is chosen when the run had any
+     * social contact (at least one other soul slain or befriended), otherwise the cargo line; it falls
+     * back to whichever is non-blank. The lifetime "lives" narration is intentionally left out of the
+     * embed (this-run only); the numbers move to {@link #fields}.
      */
-    public static String description(DeathNarrative narr) {
+    public static String description(DeathNarrative narr, int playersKilled, int playersBefriended) {
         StringBuilder sb = new StringBuilder();
 
         append(sb, clean(narr == null ? "" : narr.fallNarration()));
-        append(sb, clean(narr == null ? "" : narr.deedsNarration()));
-        append(sb, clean(narr == null ? "" : narr.gearNarration()));
+
+        // Deeds when the run had social contact (someone slain or befriended), else the cargo line;
+        // fall back to the other if the chosen narration is blank.
+        String deeds = clean(narr == null ? "" : narr.deedsNarration());
+        String gear = clean(narr == null ? "" : narr.gearNarration());
+        boolean social = (playersKilled + playersBefriended) > 0;
+        String chosen = social ? deeds : gear;
+        if (chosen.isBlank()) chosen = social ? gear : deeds;
+        append(sb, chosen);
 
         // the platform — the epitaph, italic.
         String epitaph = clean(narr == null ? "" : narr.platformEpitaph());

@@ -262,13 +262,16 @@ public final class RunStatsEvents {
         // Also post the redesigned "manifest" report OUTSIDE the player's thread — the public death feed:
         // the rolled fall narration, each section headed by the line the player saw, de-duped stat
         // strips, and this run's ride photo. Routes to the PUBLIC channel on release (main) builds and
-        // to the dev channel on dev builds (manifestWebhookOverride: null on dev → default cap). Free
-        // Play (cheated) runs are EXCLUDED — they still get the basic threaded report above.
-        if (!cheated) {
+        // to the dev channel on dev builds (manifestWebhookOverride: null on dev → default cap). On
+        // RELEASE builds, Free Play (cheated) runs are EXCLUDED from the public feed — they still get
+        // the basic threaded report above. Dev/test builds DO post Free Play runs (to the dev channel)
+        // so the report stays testable in creative — see DungeonTrain.isDevBuild().
+        if (!cheated || DungeonTrain.isDevBuild()) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
-            String manifestDesc = DeathManifestFormat.description(packet.narrative());
+            String manifestDesc = DeathManifestFormat.description(
+                    packet.narrative(), packet.playersKilled(), packet.playersBefriended());
             List<DeathField> manifestFields = DeathManifestFormat.fields(
                     packet.deathCause(),
                     packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),
