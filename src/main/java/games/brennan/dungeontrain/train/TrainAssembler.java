@@ -390,6 +390,12 @@ public final class TrainAssembler {
         TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         Shipyard shipyard = Shipyards.of(level);
+        // Sweep any trailing-segment force-load tickets before the train
+        // re-fills. Guarantees no DT force-load survives a session boundary —
+        // Sable persists tickets to disk and resurrects the ticketed
+        // sub-levels on world load, so a ticket left live at save would
+        // otherwise reappear as an orphan carriage. See SableShipyard.
+        shipyard.releaseAllForceLoads();
         List<ManagedShip> trains = new ArrayList<>();
         for (ManagedShip ship : shipyard.findAll()) {
             if (ship.getKinematicDriver() instanceof TrainTransformProvider) {

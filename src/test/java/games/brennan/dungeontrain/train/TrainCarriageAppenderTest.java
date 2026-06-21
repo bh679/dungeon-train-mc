@@ -1,9 +1,13 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.train.TrainCarriageAppender.TrailingId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -184,5 +188,78 @@ final class TrainCarriageAppenderTest {
         assertEquals(33, out.size());
         assertEquals(-9, (int) out.get(0));
         assertEquals(-105, (int) out.get(out.size() - 1));
+    }
+
+    // ---- Trailing force-load window target selector ----
+    //
+    // backmostForceLoadTargets is the policy core of the
+    // backward-generation-stall fix: it picks the carriages nearest the tail
+    // (lowest pIdx) to force-load so Sable can't cull them mid-settle. The
+    // reconcile that consumes this set is a plain add/release set-diff over the
+    // live tickets, exercised end-to-end by the in-game Gate 2 test.
+
+    /** Deterministic sub-level id for carriage {@code n} (stable assertions). */
+    private static UUID slId(int n) {
+        return new UUID(0L, n);
+    }
+
+    /** Carriages at the given pIdxs, each with slId(pIdx) so ids track pIdx. */
+    private static List<TrailingId> trailing(int... pidxs) {
+        List<TrailingId> out = new ArrayList<>();
+        for (int p : pidxs) out.add(new TrailingId(p, slId(p)));
+        return out;
+    }
+
+    @Test
+    @DisplayName("force-load window selects the backmost (lowest-pIdx) N carriages")
+    void forceLoad_picksBackmostN() {
+        // Tail .. front: -5 -4 -3 -2 -1 0 1 2. Backmost 3 = {-5,-4,-3}.
+        Set<UUID> target = TrainCarriageAppender.backmostForceLoadTargets(
+            trailing(2, 1, 0, -1, -2, -3, -4, -5), 3);
+        assertEquals(Set.of(slId(-5), slId(-4), slId(-3)), target);
+    }
+
+    @Test
+    @DisplayName("force-load window returns all carriages when the train is shorter than the window")
+    void forceLoad_shorterThanWindowReturnsAll() {
+        Set<UUID> target = TrainCarriageAppender.backmostForceLoadTargets(trailing(0, -1), 6);
+        assertEquals(Set.of(slId(0), slId(-1)), target);
+    }
+
+    @Test
+    @DisplayName("force-load window: maxCarriages <= 0 or empty input yields empty (inactive)")
+    void forceLoad_emptyOrZeroYieldsEmpty() {
+        assertTrue(TrainCarriageAppender.backmostForceLoadTargets(trailing(0, -1, -2), 0).isEmpty());
+        assertTrue(TrainCarriageAppender.backmostForceLoadTargets(trailing(0, -1, -2), -1).isEmpty());
+        assertTrue(TrainCarriageAppender.backmostForceLoadTargets(List.of(), 3).isEmpty());
+    }
+
+    @Test
+    @DisplayName("force-load window selection is independent of input ordering")
+    void forceLoad_orderIndependent() {
+        Set<UUID> a = TrainCarriageAppender.backmostForceLoadTargets(trailing(-2, 0, -1, 1, -3), 2);
+        Set<UUID> b = TrainCarriageAppender.backmostForceLoadTargets(trailing(1, -3, 0, -1, -2), 2);
+        assertEquals(Set.of(slId(-3), slId(-2)), a);
+        assertEquals(a, b);
+    }
+
+    @Test
+    @DisplayName("force-load window breaks pIdx ties deterministically (stable window edge)")
+    void forceLoad_tieBreakDeterministic() {
+        UUID a = new UUID(0L, 100);
+        UUID b = new UUID(0L, 200);
+        List<TrailingId> train = new ArrayList<>(List.of(
+            new TrailingId(-3, a), new TrailingId(-3, b), new TrailingId(0, slId(0))));
+        Set<UUID> first = TrainCarriageAppender.backmostForceLoadTargets(train, 2);
+        Set<UUID> second = TrainCarriageAppender.backmostForceLoadTargets(train, 2);
+        assertEquals(first, second);
+        assertEquals(Set.of(a, b), first); // both tied backmost entries fit a window of 2
+    }
+
+    @Test
+    @DisplayName("force-load window of 1 holds only the single backmost carriage")
+    void forceLoad_windowOfOne() {
+        Set<UUID> target = TrainCarriageAppender.backmostForceLoadTargets(trailing(3, -7, 2, -1), 1);
+        assertEquals(Set.of(slId(-7)), target);
     }
 }
