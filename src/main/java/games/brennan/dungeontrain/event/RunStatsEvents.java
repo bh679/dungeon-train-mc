@@ -271,7 +271,8 @@ public final class RunStatsEvents {
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
             String manifestDesc = DeathManifestFormat.description(
-                    packet.narrative(), packet.playersKilled(), packet.playersBefriended());
+                    packet.narrative(), packet.playersKilled(), packet.playersBefriended(),
+                    packet.containersOpened());
             List<DeathField> manifestFields = DeathManifestFormat.fields(
                     packet.deathCause(),
                     packet.distanceBlocks(), packet.runTicks(), packet.damageDealt(), packet.damageTaken(),

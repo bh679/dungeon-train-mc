@@ -66,8 +66,8 @@ final class DeathManifestFormatTest {
                 "Across fourteen lives.",
                 "the fourteenth to fall.");
 
-        // Social contact (someone slain or befriended) → deeds narration, not cargo.
-        String social = DeathManifestFormat.description(n, 3, 2);
+        // Social contact (someone slain or befriended) → deeds narration, not cargo (even with no loot).
+        String social = DeathManifestFormat.description(n, 3, 2, 0);
         assertTrue(social.startsWith("Carriage forty-seven. The dark reached them."), "fall leads, 3rd person");
         assertTrue(social.contains("They felled eighty-three things"), "deeds shown when killed+befriended > 0");
         assertFalse(social.contains("Iron and edge"), "cargo hidden when killed+befriended > 0");
@@ -76,20 +76,21 @@ final class DeathManifestFormatTest {
         assertFalse(social.contains("1284 m") || social.contains("21 loot"), "no stat strips in the description");
         assertTrue(social.contains("*the fourteenth to fall.*"), "italic epitaph");
 
-        // No social contact → cargo narration, not deeds.
-        String quiet = DeathManifestFormat.description(n, 0, 0);
-        assertTrue(quiet.contains("Iron and edge"), "cargo shown when killed+befriended == 0");
-        assertFalse(quiet.contains("They felled eighty-three things"), "deeds hidden when killed+befriended == 0");
-        assertTrue(quiet.contains("*the fourteenth to fall.*"), "epitaph still present");
+        // No social contact but loot > 0 → cargo narration, not deeds.
+        String looted = DeathManifestFormat.description(n, 0, 0, 7);
+        assertTrue(looted.contains("Iron and edge"), "cargo shown when no social contact but loot > 0");
+        assertFalse(looted.contains("They felled eighty-three things"), "deeds hidden when killed+befriended == 0");
+        assertTrue(looted.contains("*the fourteenth to fall.*"), "epitaph still present");
     }
 
     @Test
-    void descriptionFallsBackWhenChosenSectionBlank() {
-        // No social contact picks cargo; but when cargo is blank it falls back to deeds.
-        DeathNarrative n = narr("fall", "Deeds line.", "", "", "");
-        String d = DeathManifestFormat.description(n, 0, 0);
-        assertTrue(d.contains("fall"), "fall section present");
-        assertTrue(d.contains("Deeds line."), "falls back to deeds when cargo is blank");
+    void descriptionSkipsMiddleWhenNoSocialAndNoLoot() {
+        DeathNarrative n = narr("Carriage zero.", "Deeds line.", "Cargo line.", "lives", "the first to fall.");
+        String d = DeathManifestFormat.description(n, 0, 0, 0);
+        assertTrue(d.startsWith("Carriage zero."), "fall section present");
+        assertFalse(d.contains("Cargo line."), "cargo skipped when loot == 0");
+        assertFalse(d.contains("Deeds line."), "deeds not shown without social contact");
+        assertTrue(d.contains("*the first to fall.*"), "epitaph still present");
         assertFalse(d.contains("\n\n\n"), "no doubled blank lines");
     }
 

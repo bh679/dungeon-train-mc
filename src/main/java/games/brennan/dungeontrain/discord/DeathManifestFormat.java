@@ -45,25 +45,28 @@ public final class DeathManifestFormat {
     }
 
     /**
-     * The embed body: the fall narration, then EITHER the deeds (combat/social) OR the cargo narration
-     * — not both — closed by the italic platform epitaph. The deeds line is chosen when the run had any
-     * social contact (at least one other soul slain or befriended), otherwise the cargo line; it falls
-     * back to whichever is non-blank. The lifetime "lives" narration is intentionally left out of the
-     * embed (this-run only); the numbers move to {@link #fields}.
+     * The embed body: the fall narration, then ONE optional middle paragraph, closed by the italic
+     * platform epitaph. The middle paragraph is:
+     * <ul>
+     *   <li>the <b>deeds</b> (combat/social) line when the run had any social contact — at least one
+     *       other soul slain or befriended;</li>
+     *   <li>otherwise the <b>cargo</b> line, but only when something was looted ({@code loot > 0});</li>
+     *   <li>otherwise nothing (just the fall + epitaph).</li>
+     * </ul>
+     * The lifetime "lives" narration is intentionally left out of the embed (this-run only); the numbers
+     * move to {@link #fields}.
      */
-    public static String description(DeathNarrative narr, int playersKilled, int playersBefriended) {
+    public static String description(DeathNarrative narr, int playersKilled, int playersBefriended, int loot) {
         StringBuilder sb = new StringBuilder();
 
         append(sb, clean(narr == null ? "" : narr.fallNarration()));
 
-        // Deeds when the run had social contact (someone slain or befriended), else the cargo line;
-        // fall back to the other if the chosen narration is blank.
-        String deeds = clean(narr == null ? "" : narr.deedsNarration());
-        String gear = clean(narr == null ? "" : narr.gearNarration());
-        boolean social = (playersKilled + playersBefriended) > 0;
-        String chosen = social ? deeds : gear;
-        if (chosen.isBlank()) chosen = social ? gear : deeds;
-        append(sb, chosen);
+        // Deeds when the run had social contact; else the cargo line only if anything was looted.
+        if (playersKilled + playersBefriended > 0) {
+            append(sb, clean(narr == null ? "" : narr.deedsNarration()));
+        } else if (loot > 0) {
+            append(sb, clean(narr == null ? "" : narr.gearNarration()));
+        }
 
         // the platform — the epitaph, italic.
         String epitaph = clean(narr == null ? "" : narr.platformEpitaph());
