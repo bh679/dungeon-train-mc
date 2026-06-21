@@ -1616,13 +1616,13 @@
       ],
       "pr": 508,
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.340.0",
+      "released_at": "2026-06-21T02:29:54Z"
     },
     {
       "id": "modrinth-modpack",
-      "version": "0.339.0",
+      "version": "0.340.0",
       "type": "feat",
       "title": "Dungeon Train modpack now on Modrinth",
       "summary": "The curated Dungeon Train modpack \u2014 the mod plus Sable and its recommended companions \u2014 now publishes to Modrinth alongside CurseForge, so you can install it straight from the Modrinth App. It ships the same mods at the same versions as the CurseForge pack.",
