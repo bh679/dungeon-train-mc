@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.discord;
 import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.dungeontrain.net.DeathNarrative;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
@@ -86,14 +87,15 @@ public final class DeathManifestFormat {
     }
 
     /**
-     * The embed's three inline stat columns, which Discord renders side-by-side:
+     * The embed's stat fields, which Discord lays out as columns:
      * <ul>
      *   <li><b>The fall</b> — death cause / distance / run time;</li>
-     *   <li><b>This run</b> — damage dealt &amp; taken / loot &amp; books / earned advancements
-     *       (the advancement line is omitted when none were earned);</li>
-     *   <li><b>The souls</b> — other players/PlayerMobs met / befriended / slain this run.</li>
+     *   <li><b>This run</b> — damage dealt &amp; taken / loot &amp; books;</li>
+     *   <li><b>The souls</b> — other players/PlayerMobs met / befriended / slain this run;</li>
+     *   <li><b>Advancements</b> — any earned this run, on their own row below the three columns
+     *       (omitted entirely when none were earned).</li>
      * </ul>
-     * Each value is newline-separated; emoji are kept (Discord renders them).
+     * Within a column each value is newline-separated; emoji are kept (Discord renders them).
      */
     public static List<DeathField> fields(String deathCause,
             double distanceBlocks, long runTicks, double damageDealt, double damageTaken,
@@ -107,25 +109,29 @@ public final class DeathManifestFormat {
         fall.append(E_DIST).append(' ').append(DeathReportFormat.distance(distanceBlocks)).append('\n')
             .append(E_TIME).append(' ').append(DeathReportFormat.time(runTicks));
 
-        // This run — damage / loot + books / advancements.
+        // This run — damage / loot + books.
         StringBuilder run = new StringBuilder();
         run.append(E_DMG).append(' ').append(DeathReportFormat.damage(damageDealt)).append(" dealt · ")
            .append(DeathReportFormat.damage(damageTaken)).append(" taken").append('\n')
            .append(E_LOOT).append(' ').append(loot).append(" loot · ")
            .append(E_BOOK).append(' ').append(booksRead).append(" books");
-        if (advancementTitles != null && !advancementTitles.isEmpty()) {
-            run.append('\n').append(E_ADV).append(' ').append(String.join(", ", advancementTitles));
-        }
 
         // The souls — other souls met / befriended / slain this run.
         String souls = E_MET + ' ' + playersEncountered + " met\n"
                 + E_BEFRIEND + ' ' + playersBefriended + " befriended\n"
                 + E_SLAIN + ' ' + playersKilled + " slain";
 
-        return List.of(
+        List<DeathField> out = new ArrayList<>(List.of(
                 new DeathField("The fall", fall.toString()),
                 new DeathField("This run", run.toString()),
-                new DeathField("The souls", souls));
+                new DeathField("The souls", souls)));
+
+        // Earned advancements get their own row at the bottom — a 4th field renders on its own row
+        // under the three columns. Omitted entirely when none were earned.
+        if (advancementTitles != null && !advancementTitles.isEmpty()) {
+            out.add(new DeathField("Advancements", E_ADV + " " + String.join(", ", advancementTitles)));
+        }
+        return out;
     }
 
     /** Strip the number sentinels, then rewrite the second-person screen voice into the third person. */

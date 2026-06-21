@@ -95,12 +95,13 @@ final class DeathManifestFormatTest {
     }
 
     @Test
-    void fieldsCarryRunStatsInThreeColumns() {
+    void fieldsCarryRunStatsWithAdvancementRow() {
         List<DeathField> f = fields(List.of("Strangers on a Train", "A Friend Defended"));
-        assertEquals(3, f.size(), "three inline columns");
+        assertEquals(4, f.size(), "three columns + an advancement row");
         assertEquals("The fall", f.get(0).name());
         assertEquals("This run", f.get(1).name());
         assertEquals("The souls", f.get(2).name());
+        assertEquals("Advancements", f.get(3).name());
 
         String fall = f.get(0).value();
         assertTrue(fall.contains("They were slain by a Zombie"), "death cause, 3rd person");
@@ -109,16 +110,21 @@ final class DeathManifestFormatTest {
         String run = f.get(1).value();
         assertTrue(run.contains("412") && run.contains("196"), "damage dealt + taken");
         assertTrue(run.contains("21 loot") && run.contains("4 books"), "loot + books");
-        assertTrue(run.contains("Strangers on a Train, A Friend Defended"), "advancement names");
+        assertFalse(run.contains("Strangers on a Train"), "advancements no longer live in the This run column");
 
         String souls = f.get(2).value();
         assertTrue(souls.contains("9 met") && souls.contains("2 befriended") && souls.contains("5 slain"),
                 "souls met / befriended / slain");
+
+        String adv = f.get(3).value();
+        assertTrue(adv.contains("Strangers on a Train, A Friend Defended"), "advancement names in their own row");
     }
 
     @Test
-    void fieldsOmitAdvancementLineWhenNoneEarned() {
+    void fieldsOmitAdvancementRowWhenNoneEarned() {
         List<DeathField> f = fields(List.of());
-        assertFalse(f.get(1).value().contains("🏆"), "no advancement line when none earned");
+        assertEquals(3, f.size(), "no advancement row when none earned");
+        assertFalse(f.stream().anyMatch(x -> x.name().equals("Advancements")), "no Advancements field");
+        assertFalse(f.get(1).value().contains("🏆"), "no advancement marker in the This run column");
     }
 }
