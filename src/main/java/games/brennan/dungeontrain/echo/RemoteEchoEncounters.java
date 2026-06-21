@@ -50,6 +50,8 @@ public final class RemoteEchoEncounters {
     private static final int MAX_ACTIVE = 64;
 
     private static final String PHOTO_FILENAME = "echo.png";
+    /** Embed bar colour for the encounter story — greyish-blue (Blue Grey), distinct from death-red. */
+    private static final int EMBED_COLOR = 0x607D8B;
 
     private static final Map<UUID, EchoEncounter> ACTIVE = new HashMap<>();
 
@@ -236,6 +238,6 @@ public final class RemoteEchoEncounters {
         String story = EchoEncounterFormat.story(player.getGameProfile().getName(), enc, reason);
         LOGGER.info("[DungeonTrain] Remote-echo encounter ended ({}) — posting story for {} vs echo of '{}'.",
                 reason, player.getGameProfile().getName(), enc.sourceName);
-        DiscordService.get().postDeathReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME);
+        DiscordService.get().postReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME, EMBED_COLOR);
     }
 }
