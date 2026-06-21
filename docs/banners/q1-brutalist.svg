@@ -1,0 +1,12 @@
+<svg width="100%" viewBox="0 0 680 150" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>What is the Dungeon Train?</title>
+<desc>Question banner.</desc>
+<rect x="0" y="0" width="680" height="150" fill="#ece8df"/>
+<rect x="0" y="0" width="680" height="28" fill="#111111"/>
+<text x="18" y="19" font-family="'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" letter-spacing="2" fill="#ece8df">THE DUNGEON TRAIN — A RIDER'S CATECHISM</text>
+<text x="662" y="19" text-anchor="end" font-family="'Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="700" fill="#e2402c">N&#186; 01 / &#8734;</text>
+<text x="556" y="138" font-family="'Helvetica Neue',Arial,sans-serif" font-size="104" font-weight="800" fill="#e2402c">01</text>
+<text x="24" y="92" font-family="'Helvetica Neue',Arial,sans-serif" font-size="36" font-weight="800" fill="#111111">What is the</text>
+<text x="24" y="126" font-family="'Helvetica Neue',Arial,sans-serif" font-size="36" font-weight="800" fill="#111111">Dungeon Train?</text>
+<rect x="24" y="140" width="528" height="5" fill="#e2402c"/>
+</svg>
