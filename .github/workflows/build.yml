@@ -55,7 +55,13 @@ jobs:
       - name: Modpack Include ↔ mod dependency consistency
         run: python3 scripts/modpack/check-relations.py
 
+      - name: Modpack Modrinth pins present on every mod
+        # Fails CI if a mod is added to modpack.config.json without its Modrinth
+        # project+version pin (which would silently drop it from the .mrpack). No network.
+        run: python3 scripts/modpack/build-mrpack.py --check-config
+
       - name: Modpack manifest + relation tests
         run: |
           python3 scripts/modpack/test_build_manifest.py
           python3 scripts/modpack/test_check_relations.py
+          python3 scripts/modpack/test_build_mrpack.py

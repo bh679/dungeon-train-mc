@@ -236,6 +236,27 @@ jobs:
             -f dt_file_id="$DT_FILE_ID" \
             -f auto="$IS_AUTO"
 
+      # Mirror every mod release into the Modrinth modpack too. Dispatches
+      # release-modpack-modrinth.yml (the Modrinth sibling — no approval wait), which builds +
+      # uploads a matching .mrpack referencing this release's DT Modrinth version + the pinned
+      # companions. Gated on the Modrinth mod upload having produced a version id: mc-publish uses
+      # fail-mode: warn, so a Modrinth hiccup leaves modrinth-version empty and we skip the modpack
+      # rather than reference a version that never uploaded. Independent of the CurseForge dispatch
+      # above — either platform can publish its modpack even if the other's mod upload failed.
+      - name: Dispatch Modrinth modpack release
+        if: ${{ success() && steps.publish_check.outputs.modrinth == 'true' && steps.mcpublish.outputs.modrinth-version != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          DT_MODRINTH_VERSION: ${{ steps.mcpublish.outputs.modrinth-version }}
+          IS_AUTO: ${{ inputs.auto }}
+        run: |
+          echo "Dispatching Modrinth modpack release for $RELEASE_TAG (DT Modrinth version $DT_MODRINTH_VERSION, auto=$IS_AUTO)…"
+          gh workflow run release-modpack-modrinth.yml \
+            -f tag="$RELEASE_TAG" \
+            -f dt_modrinth_version="$DT_MODRINTH_VERSION" \
+            -f auto="$IS_AUTO"
+
       # After a successful real release (auto=false), mark the shipped changelog
       # entries released so the next release's "unreleased" set starts clean.
       # The ~22 cascade micro-releases pass auto=true and skip this, so

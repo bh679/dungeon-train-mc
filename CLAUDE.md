@@ -200,14 +200,24 @@ Tags are created exclusively by `release.yml`. **Never run `git tag` or
 corresponding GitHub release) are ignored — they exist for historical reasons
 and won't trigger anything.
 
-### CurseForge modpack (auto-follows every release)
+### Modpacks (auto-follow every release: CurseForge + Modrinth)
 
-Separate from the mod, there is a CurseForge **modpack** (project `1556213`, var
-`CURSEFORGE_MODPACK_PROJECT_ID`). It is published automatically — **you never deploy it by
-hand**. After every successful CurseForge mod upload (real releases AND the ~22 auto-release
-cascade ticks), `release.yml` dispatches `release-modpack.yml`, which waits ~15 min (so
-CurseForge can approve the new DT file), then builds + uploads a matching modpack version
-bundling that release's DT file + Sable + the pinned companion mods. Core entries are
+Separate from the mod, there are **two modpacks** published from one config
+(`modpack/modpack.config.json`) — **you never deploy either by hand**:
+
+- **CurseForge** modpack (project `1556213`, var `CURSEFORGE_MODPACK_PROJECT_ID`) — built by
+  `scripts/modpack/build-manifest.py`, uploaded by `scripts/modpack/publish-curseforge.sh`.
+- **Modrinth** modpack (project `bEFyz3ji`, var `MODRINTH_MODPACK_PROJECT_ID`) — built by
+  `scripts/modpack/build-mrpack.py`, uploaded by `scripts/modpack/publish-modrinth.sh`. The
+  `.mrpack` references mods by Modrinth URL+hash (resolved from each mod's `modrinth_version`
+  pin), so config entries carry `modrinth_project`+`modrinth_version` alongside the CurseForge
+  `project_id`/`file_id`. First publish is a **draft** → enters Modrinth's modpack review queue.
+
+After every successful mod upload (real releases AND the ~22 auto-release cascade ticks),
+`release.yml` dispatches **`release-modpack.yml`** (CurseForge — waits ~15 min for CurseForge to
+approve the new DT file) and **`release-modpack-modrinth.yml`** (Modrinth — no wait), each
+gated on that platform's mod upload having produced a file/version id. Both bundle that release's
+DT file + Sable + the pinned companion mods. Core entries are
 **Dungeon Train + Sable** (DT jarJars AIN/AIS/PMOB/DiscordPresence/ECP); on top of those,
 `modpack.config.json` → `optional_mods[]` bundles companions each with a `required` flag.
 ⚠️ In the CurseForge app `required:false` ships a mod **OFF** (opt-in), not on — a companion
@@ -217,18 +227,20 @@ Advancement Plaques + inert library deps Iceberg & Lithostitched; opt-in: Mouse 
 Distant Horizons/Tectonic). Library deps of a bundled mod ship `required:true` so the dependent
 loads (Advancement Plaques needs Iceberg; Tectonic needs Lithostitched).
 
-- Source + config live in `modpack/` (see `modpack/README.md`); upload uses the same
-  `CURSEFORGE_TOKEN` via `scripts/modpack/publish-curseforge.sh`.
+- Source + config live in `modpack/` (see `modpack/README.md`); CurseForge upload uses
+  `CURSEFORGE_TOKEN`, Modrinth upload reuses `MODRINTH_TOKEN`.
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
-  `modpack/modpack.config.json` → `sable.file_id` (the modpack pins Sable to the tested
-  version). This is flagged in `gradle.properties`.
-- **Bundled ⇒ mod dependency:** when you add an `optional_mods` entry to
-  `modpack/modpack.config.json` (give it a `slug` + `required` flag), also add `<slug>(optional)`
-  to `release.yml` `curseforge-dependencies`. Enforced in CI by
-  `scripts/modpack/check-relations.py` (the `modpack-checks` job in `build.yml`).
+  `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
+  (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
+- **New companion ⇒ add both pins + mod dependency:** when you add an `optional_mods` entry to
+  `modpack/modpack.config.json`, give it a `slug` + `required` flag + `modrinth_project` +
+  `modrinth_version`, and add `<slug>(optional)` to `release.yml` `curseforge-dependencies`.
+  Enforced in CI (`modpack-checks` job in `build.yml`): `check-relations.py` (CurseForge dep) +
+  `build-mrpack.py --check-config` (Modrinth pins present).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>
-  -f dt_file_id=<id> -f dry_run=true`.
-- **Modrinth modpack** is planned later (not yet implemented).
+  -f dt_file_id=<id> -f dry_run=true` (CurseForge); `gh workflow run
+  release-modpack-modrinth.yml --ref <branch> -f tag=v<ver> -f dt_modrinth_version=<id>
+  -f dry_run=true` (Modrinth).
 
 ---
 
