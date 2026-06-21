@@ -1600,9 +1600,9 @@
       "summary": "Death reports in the public Discord channel now use a scenic photo from your run as the image, as intended \u2014 released builds were falling back to your gear composite.",
       "highlights": [],
       "date": "2026-06-21",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.339.0",
+      "released_at": "2026-06-21T01:34:07Z"
     }
   ]
 }
