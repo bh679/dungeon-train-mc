@@ -1849,9 +1849,9 @@
       ],
       "pr": 533,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.348.0",
+      "released_at": "2026-06-22T14:12:14Z"
     },
     {
       "id": "aaro-stories-complete",
@@ -1865,9 +1865,9 @@
         "Tomas Aaro's 'The Walking Father' was already shipped in v0.347.0"
       ],
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.348.0",
+      "released_at": "2026-06-22T14:12:14Z"
     }
   ]
 }
