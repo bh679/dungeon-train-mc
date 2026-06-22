@@ -1747,6 +1747,22 @@
       "released_at": null
     },
     {
+      "id": "tomas-aaro-the-walking-father",
+      "version": "0.345.0",
+      "type": "content",
+      "title": "New story: Tomas Aaro, \"The Walking Father\"",
+      "summary": "A new findable story rides the train: Tomas Aaro, \"The Walking Father.\" A farmer leaves his dying village chasing a rumor that the train holds \"what you need,\" and the endless carriages take their toll. The third of the Aaro stories, completing the family begun by Pip and Della.",
+      "highlights": [
+        "New findable story: \"The Walking Father\" (6 letters, branching variants)",
+        "Completes the Aaro family stories \u2014 Pip, Della, and now Tomas"
+      ],
+      "pr": 527,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "survey-second-question-plea",
       "version": "0.345.0",
       "type": "feat",
