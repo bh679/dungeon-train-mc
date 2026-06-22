@@ -1715,9 +1715,9 @@
       ],
       "pr": 522,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.344.0",
+      "released_at": "2026-06-22T01:38:47Z"
     },
     {
       "id": "echo-story-public-channel",
@@ -1730,9 +1730,9 @@
         "Keeps the greyish-blue embed bar so they stay visually distinct from deaths."
       ],
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.344.0",
+      "released_at": "2026-06-22T01:38:47Z"
     }
   ]
 }
