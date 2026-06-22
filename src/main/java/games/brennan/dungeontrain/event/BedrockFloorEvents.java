@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
@@ -58,12 +60,20 @@ public final class BedrockFloorEvents {
         }
 
         ChunkAccess chunk = event.getChunk();
+        int chunkMinX = chunk.getPos().getMinBlockX();
 
-        // No bedrock floor inside the disintegration band — the void has no floor.
-        long[] band = DisintegrationBand.range(level);
-        if (band != null) {
-            int cMinX = chunk.getPos().getMinBlockX();
-            if (cMinX + 15 >= band[0] && cMinX < band[1]) return;
+        // The disintegration band's void has no floor — skip bedrock in columns whose band
+        // phase is void/End (middleRamp > 0). Computed per column so a chunk straddling a
+        // phase edge keeps its overworld bedrock and drops it under the void, independent of
+        // event ordering vs the erosion handler.
+        long bandStartX = DisintegrationBand.startX(level);
+        boolean maybeBand = chunkMinX + 15 >= bandStartX;
+        int fade = 0, voidHold = 0, endHold = 0, owHold = 0;
+        if (maybeBand) {
+            fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
+            voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
+            endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
+            owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
         }
 
         int minY = level.getMinBuildHeight();
@@ -73,6 +83,9 @@ public final class BedrockFloorEvents {
         int localY = minY - sectionBaseY;
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
         for (int dx = 0; dx < 16; dx++) {
+            boolean voidColumn = maybeBand
+                    && Disintegration.middleRamp(chunkMinX + dx, bandStartX, fade, voidHold, endHold, owHold) > 0.0;
+            if (voidColumn) continue;
             for (int dz = 0; dz < 16; dz++) {
                 section.setBlockState(dx, localY, dz, bedrock, false);
             }

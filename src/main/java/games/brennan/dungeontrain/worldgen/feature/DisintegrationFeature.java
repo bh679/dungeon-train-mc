@@ -96,12 +96,9 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             ServerLevel overworld = server.overworld();
             if (overworld == null) return false;
 
-            long[] band = DisintegrationBand.range(overworld);
-            if (band == null) return false;
-            long startX = band[0];
-            long bandLen = band[1] - band[0];
+            long startX = DisintegrationBand.startX(overworld);
             int chunkMinX = cp.getMinBlockX();
-            if (!Disintegration.chunkInBand(chunkMinX, chunkMinX + 15, startX, bandLen)) return false;
+            if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
 
             // Real End terrain density (2D islands + BASE_3D_NOISE_END + End slide) and the End's
             // noise-cell size, so we can trilinearly interpolate exactly like the End's NoiseChunk.
@@ -125,11 +122,12 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
             int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
             int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
+            int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
 
             double[] endRamp = new double[16];
             boolean anyEnd = false;
             for (int dx = 0; dx < 16; dx++) {
-                endRamp[dx] = Disintegration.endRamp(chunkMinX + dx, startX, fade, voidHold, endHold);
+                endRamp[dx] = Disintegration.endRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold);
                 if (endRamp[dx] > 0.0) anyEnd = true;
             }
             if (!anyEnd) return false;

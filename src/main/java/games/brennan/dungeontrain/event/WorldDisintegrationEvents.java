@@ -51,15 +51,12 @@ public final class WorldDisintegrationEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
-        long[] band = DisintegrationBand.range(level);
-        if (band == null) return;
-        long startX = band[0];
-        long bandLen = band[1] - band[0];
+        long startX = DisintegrationBand.startX(level);
 
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
-        if (!Disintegration.chunkInBand(chunkMinX, chunkMinX + 15, startX, bandLen)) return;
+        if (chunkMinX + 15 < startX) return; // before the first band (or disabled)
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
@@ -72,11 +69,12 @@ public final class WorldDisintegrationEvents {
         int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
         int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
         int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
+        int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
 
         double[] middle = new double[16];
         boolean anyMiddle = false;
         for (int dx = 0; dx < 16; dx++) {
-            middle[dx] = Disintegration.middleRamp(chunkMinX + dx, startX, fade, voidHold, endHold);
+            middle[dx] = Disintegration.middleRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold);
             if (middle[dx] > 0.0) anyMiddle = true;
         }
         if (!anyMiddle) return;

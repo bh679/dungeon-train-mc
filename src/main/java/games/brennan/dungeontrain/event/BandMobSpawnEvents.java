@@ -32,10 +32,9 @@ public final class BandMobSpawnEvents {
         ServerLevel level = event.getLevel().getLevel();
         if (!level.dimension().equals(Level.OVERWORLD)) return;
 
-        long[] band = DisintegrationBand.range(level);
-        if (band == null) return;
+        // Only inside a void/End phase of the (repeating) band — leave the overworld stretches alone.
         int x = (int) Math.floor(event.getX());
-        if (x >= band[0] && x < band[1]) {
+        if (DisintegrationBand.middleRampAt(level, x) > 0.0) {
             event.setSpawnCancelled(true);
         }
     }

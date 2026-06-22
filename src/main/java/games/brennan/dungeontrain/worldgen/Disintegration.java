@@ -60,44 +60,62 @@ public final class Disintegration {
         return (long) startCarriages * (long) carriageLength;
     }
 
-    /** Total band width on X: {@code 4·fade + 2·voidHold + endHold}. */
+    /** Width of one active band (the void+End+void with its fades): {@code 4·fade + 2·voidHold + endHold}. */
     public static long bandLength(int fade, int voidHold, int endHold) {
         return 4L * Math.max(0, fade) + 2L * Math.max(0, voidHold) + Math.max(0, endHold);
     }
 
-    /** True if a chunk's X span {@code [chunkMinX, chunkMaxX]} intersects {@code [startX, startX+bandLen)}. */
-    public static boolean chunkInBand(int chunkMinX, int chunkMaxX, long startX, long bandLen) {
-        return chunkMaxX >= startX && chunkMinX < startX + bandLen;
+    /**
+     * Length of one full repeating cycle: an active band followed by an overworld
+     * stretch — {@code bandLength + owHold}. The pattern tiles this period forever
+     * along +X from {@code startX}.
+     */
+    public static long cyclePeriod(int fade, int voidHold, int endHold, int owHold) {
+        return bandLength(fade, voidHold, endHold) + Math.max(0, owHold);
     }
 
     /**
-     * Middle ramp {@code M ∈ [0,1]}: 0 before the band, linear 0→1 across the first
-     * fade, flat 1 across the entire void+End+void middle, linear 1→0 across the
-     * last fade, 0 after. Drives erosion intensity and the End sky/fog blend.
+     * Offset into the current cycle for a world-X: {@code (worldX − startX) mod period},
+     * or {@code -1} before {@code startX} (the initial overworld). Each cycle is
+     * {@code [0, bandLength)} = the active band (void/End), then
+     * {@code [bandLength, period)} = the overworld stretch.
      */
-    public static double middleRamp(int worldX, long startX, int fade, int voidHold, int endHold) {
-        if (worldX < startX) return 0.0;
-        int f = Math.max(0, fade);
+    private static long cycleOffset(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
+        if (worldX < startX) return -1L;
+        long period = cyclePeriod(fade, voidHold, endHold, owHold);
+        if (period <= 0L) return -1L;
+        return Math.floorMod((long) worldX - startX, period);
+    }
+
+    /**
+     * Middle ramp {@code M ∈ [0,1]}, evaluated on the repeating cycle: 0 in the
+     * overworld stretch, linear 0→1 across the first fade, flat 1 across the whole
+     * void+End+void middle, linear 1→0 across the last fade. Drives erosion intensity
+     * and the End sky/fog blend. Repeats every cycle forever from {@code startX}.
+     */
+    public static double middleRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
+        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        if (d < 0L) return 0.0;
         long band = bandLength(fade, voidHold, endHold);
-        long d = (long) worldX - startX;
-        if (d >= band) return 0.0;
-        if (d < f) return (double) d / f;                 // fade-in (f>0 here)
-        long holdEnd = band - f;                          // start of the fade-out
-        if (d < holdEnd) return 1.0;                       // void+End+void plateau
-        return 1.0 - (double) (d - holdEnd) / f;          // fade-out (f>0 here)
+        if (d >= band) return 0.0;                         // overworld stretch of the cycle
+        int f = Math.max(0, fade);
+        if (d < f) return (double) d / f;                  // fade-in (f>0 here)
+        long holdEnd = band - f;                           // start of the fade-out
+        if (d < holdEnd) return 1.0;                        // void+End+void plateau
+        return 1.0 - (double) (d - holdEnd) / f;           // fade-out (f>0 here)
     }
 
     /**
-     * End ramp {@code E ∈ [0,1]}: 0 through the void holds, linear 0→1 as the void
-     * fades into End world-gen, flat 1 across the End core, linear 1→0 back to void.
-     * Drives how much floating End-stone island terrain is placed.
+     * End ramp {@code E ∈ [0,1]}, evaluated on the repeating cycle: 0 through the
+     * overworld + void holds, linear 0→1 as the void fades into End world-gen, flat 1
+     * across the End core, linear 1→0 back to void. Drives End-stone island fill.
      */
-    public static double endRamp(int worldX, long startX, int fade, int voidHold, int endHold) {
-        if (worldX < startX) return 0.0;
+    public static double endRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
+        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        if (d < 0L) return 0.0;
         int f = Math.max(0, fade);
         int vh = Math.max(0, voidHold);
         int eh = Math.max(0, endHold);
-        long d = (long) worldX - startX;
         long a2 = (long) f + vh;          // void→End begins
         long a3 = 2L * f + vh;            // End core begins
         long a4 = 2L * f + vh + eh;       // End core ends
@@ -109,8 +127,8 @@ public final class Disintegration {
     }
 
     /** Removal probability at {@code (worldX, y)}; derives the column middle-ramp internally (test convenience). */
-    public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int voidHold, int endHold) {
-        return removalProbabilityFromRamp(middleRamp(worldX, startX, fade, voidHold, endHold), y, bedY);
+    public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int voidHold, int endHold, int owHold) {
+        return removalProbabilityFromRamp(middleRamp(worldX, startX, fade, voidHold, endHold, owHold), y, bedY);
     }
 
     /**
