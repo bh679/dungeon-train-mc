@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * The paginated "the Dungeon Train asks" death screen — a guided, single-button
@@ -166,6 +167,22 @@ public final class NarrativeDeathScreen extends Screen {
     private List<Page> pages = List.of();
     private int currentPage = 0;
     private int lastSurveyCount = -1;
+    // Plea variants shown above the 2nd (and any later) survey question. The 1st question keeps the
+    // calm "ledger" intro; the 2nd swaps to one of these urgent pleas, chosen at random per death
+    // (see surveyIntro2Choice).
+    private static final String[] SURVEY_INTRO_2_KEYS = {
+            "gui.dungeontrain.death.narr.survey_intro_2_1",
+            "gui.dungeontrain.death.narr.survey_intro_2_2",
+            "gui.dungeontrain.death.narr.survey_intro_2_3",
+            "gui.dungeontrain.death.narr.survey_intro_2_4",
+            "gui.dungeontrain.death.narr.survey_intro_2_5",
+            "gui.dungeontrain.death.narr.survey_intro_2_6",
+            "gui.dungeontrain.death.narr.survey_intro_2_7",
+    };
+    // Index into SURVEY_INTRO_2_KEYS. Picked once, lazily, the first time a 2nd survey page renders —
+    // deliberately NOT reset in init(), so it stays stable across paging / re-renders within one
+    // death (a new death = new screen instance = fresh pick). -1 = not yet picked.
+    private int surveyIntro2Choice = -1;
     private EditBox commentBox;
     private boolean opened = false;
     private boolean photoSent = false;
@@ -871,7 +888,23 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;
-        y = drawCentered(g, Component.translatable("gui.dungeontrain.death.narr.survey_intro"), cx, w, y, NARR);
+        // The first survey question keeps the calm "ledger" intro; the second (and any later)
+        // question switches to a more urgent plea. drawSurvey only runs for the current page, so
+        // the survey's ordinal is how many SURVEY pages occur up to and including this one.
+        int surveyOrdinal = 0;
+        for (int i = 0; i <= currentPage && i < pages.size(); i++) {
+            if (pages.get(i).kind() == Kind.SURVEY) surveyOrdinal++;
+        }
+        String introKey;
+        if (surveyOrdinal <= 1) {
+            introKey = "gui.dungeontrain.death.narr.survey_intro";
+        } else {
+            if (surveyIntro2Choice < 0) {
+                surveyIntro2Choice = ThreadLocalRandom.current().nextInt(SURVEY_INTRO_2_KEYS.length);
+            }
+            introKey = SURVEY_INTRO_2_KEYS[surveyIntro2Choice];
+        }
+        y = drawCentered(g, Component.translatable(introKey), cx, w, y, NARR);
         y += 6;
         if (e != null) {
             y = drawQuestion(g, e.prompt(), cx, w, y);
