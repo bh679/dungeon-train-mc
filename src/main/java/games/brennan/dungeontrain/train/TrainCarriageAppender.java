@@ -1565,6 +1565,10 @@ public final class TrainCarriageAppender {
         // below reads {@code knownAnchors} AFTER the drop, so a just-freed anchor
         // is refillable this tick; while a stuck ghost is still within its grace
         // window the guard keeps its anchor reserved (no respawn-on-top).
+        // Reap any resurrected-ghost duplicates first (a stuck ghost dropped on a
+        // previous tick that Sable's collectReadySubLevels brought back live at an
+        // anchor we've since refilled), then drop matured stuck ghosts.
+        reapResurrectedOrphans(level, trainId, train);
         dropMaturedStuckGhosts(level, trainId, train, level.getGameTime());
         SpawnableExtent extent = computeSpawnableExtent(
             level, trainId, train, leadAnchorPIdx, tail.provider().getPIdx());
@@ -2171,6 +2175,67 @@ public final class TrainCarriageAppender {
                 dropped.size(), trainId, dropped);
         }
         return !dropped.isEmpty();
+    }
+
+    /**
+     * Reap VISIBLE carriages that have resurrected from Sable holding as
+     * duplicates — the anti-duplicate backstop for {@link #dropMaturedStuckGhosts}.
+     *
+     * <p>{@link Shipyard#delete} (Sable {@code markRemoved}) only flags the LIVE
+     * sub-level wrapper. A stuck null-pointer ghost was already moved out of the
+     * active container into holding when it was culled, so {@code markRemoved} on
+     * its stale registry wrapper does NOT evict it from the holding chunk map.
+     * Sable's own {@code processChanges() → collectReadySubLevels()} then
+     * {@code fullyLoad}s it back from the cached {@code SubLevelData} (no pointer
+     * needed) the moment its backing chunks load — typically right when we respawn
+     * the anchor nearby. The resurrected ghost re-enters the live train at its old
+     * pIdx and collides with the fresh respawn (both compute the same
+     * deterministic world pose at that pIdx), producing a duplicate that the
+     * placement tracker would otherwise fight for ~200 ticks before force-
+     * finalising.</p>
+     *
+     * <p>Fix: reap it the tick it surfaces. By then it is LIVE and resident
+     * ({@code collectReadySubLevels} already removed it from holding), so
+     * {@link Shipyard#delete} (markRemoved → {@code REMOVED}, the live-deletion
+     * path) removes it for good — {@code REMOVED} sub-levels are not re-held, so
+     * it can't resurrect again.</p>
+     *
+     * <p>Canonicity rule: the {@link Trains#knownGroups} registry is the source of
+     * truth for which sub-level owns an anchor. A visible carriage whose
+     * subLevelId is not the registered ship for its own pIdx is a stray — we never
+     * spawn onto an occupied anchor (the duplicate guard forbids it), and the
+     * reload path keeps the original subLevelId registered, so a mismatch can only
+     * be a resurrected ghost. Returns {@code true} iff anything was reaped.</p>
+     */
+    private static boolean reapResurrectedOrphans(
+        ServerLevel level, UUID trainId, List<Trains.Carriage> train
+    ) {
+        Map<Integer, ManagedShip> groups = Trains.knownGroups(trainId);
+        Shipyard shipyard = Shipyards.of(level);
+        Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.get(trainId);
+        List<Integer> reaped = null;
+        for (Trains.Carriage c : train) {
+            int pIdx = c.provider().getPIdx();
+            UUID id = c.ship().subLevelId();
+            ManagedShip registered = groups.get(pIdx);
+            if (registered != null && registered.subLevelId().equals(id)) continue; // canonical
+            // Stray: a resurrected ghost (registry assigns this anchor to a
+            // different ship, or no longer registers it). Delete it while live so
+            // it goes REMOVED (not re-held) and stops colliding with the
+            // registered carriage at the same pIdx.
+            STUCK_GHOST_SINCE.remove(id);
+            if (forceLoaded != null && forceLoaded.remove(id)) shipyard.releaseForceLoad(c.ship());
+            shipyard.delete(c.ship());
+            if (reaped == null) reaped = new ArrayList<>();
+            reaped.add(pIdx);
+        }
+        if (forceLoaded != null && forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
+        if (reaped == null) return false;
+        if (SEAMGAP_TRACE_ENABLED) {
+            LOGGER.info("[DungeonTrain][ghost-reap] gameTick={} trainId={} reaped {} resurrected orphan carriage(s) at pIdx={} (deleted while live → REMOVED, can't re-resurrect or collide with the registered carriage)",
+                level.getGameTime(), trainId, reaped.size(), reaped);
+        }
+        return true;
     }
 
     /**
