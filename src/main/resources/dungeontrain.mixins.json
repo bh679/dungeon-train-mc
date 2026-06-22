@@ -9,7 +9,8 @@
     "LightningBoltVisualOnlyMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "ChunkAccessAccessor",
-    "NoiseBasedChunkGeneratorMixin"
+    "NoiseBasedChunkGeneratorMixin",
+    "ChunkGeneratorDecorationMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",
