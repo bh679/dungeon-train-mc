@@ -152,10 +152,13 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             int endYLo = END_ISLAND_CENTER_Y + (yLo - bedY);
             int cellRowBase = Math.floorDiv(endYLo, cellH);
             int rows = Math.floorDiv(END_ISLAND_CENTER_Y + (yHi - bedY), cellH) - cellRowBase + 2;
-            double[] c00 = new double[rows];
-            double[] c10 = new double[rows];
-            double[] c01 = new double[rows];
-            double[] c11 = new double[rows];
+            // Per-chunk memo of End-density corner columns, keyed by (cornerX, cornerZ). The four
+            // cell corners a column trilinearly interpolates between are shared across every block in
+            // that 8×8 cell — so without this, each of the up-to-256 columns re-walks the entire End
+            // density tree at its corners (~30k uncached SinglePointContext evals/chunk). Memoising
+            // collapses that to one column per distinct corner (a few hundred evals) with
+            // byte-identical output, since the corner density is deterministic per (x, y, z).
+            java.util.Map<Long, double[]> cornerColumns = new java.util.HashMap<>();
 
             for (int dx = 0; dx < 16; dx++) {
                 double e = endRamp[dx];
@@ -176,14 +179,12 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                     int z1 = z0 + cellW;
                     double fz = (double) (worldZ - z0) / cellW;
 
-                    // Density at the four XZ cell corners for every cell-Y boundary spanning the island band.
-                    for (int r = 0; r < rows; r++) {
-                        int by = (cellRowBase + r) * cellH;
-                        c00[r] = endDensity.compute(new DensityFunction.SinglePointContext(x0, by, z0));
-                        c10[r] = endDensity.compute(new DensityFunction.SinglePointContext(x1, by, z0));
-                        c01[r] = endDensity.compute(new DensityFunction.SinglePointContext(x0, by, z1));
-                        c11[r] = endDensity.compute(new DensityFunction.SinglePointContext(x1, by, z1));
-                    }
+                    // Four shared corner columns of End density spanning the island band, computed
+                    // once per distinct corner and memoised (see cornerColumns above).
+                    double[] col00 = cornerColumn(endDensity, x0, z0, cellRowBase, rows, cellH, cornerColumns);
+                    double[] col10 = cornerColumn(endDensity, x1, z0, cellRowBase, rows, cellH, cornerColumns);
+                    double[] col01 = cornerColumn(endDensity, x0, z1, cellRowBase, rows, cellH, cornerColumns);
+                    double[] col11 = cornerColumn(endDensity, x1, z1, cellRowBase, rows, cellH, cornerColumns);
 
                     int top = Integer.MIN_VALUE;
                     for (int myY = yLo; myY <= yHi; myY++) {
@@ -191,8 +192,8 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                         if (endY < 0 || endY > 127) continue;
                         int r = Math.floorDiv(endY, cellH) - cellRowBase;
                         double fy = (double) (endY - (cellRowBase + r) * cellH) / cellH;
-                        double bot = bilerp(c00[r], c10[r], c01[r], c11[r], fx, fz);
-                        double topD = bilerp(c00[r + 1], c10[r + 1], c01[r + 1], c11[r + 1], fx, fz);
+                        double bot = bilerp(col00[r], col10[r], col01[r], col11[r], fx, fz);
+                        double topD = bilerp(col00[r + 1], col10[r + 1], col01[r + 1], col11[r + 1], fx, fz);
                         double d = bot + (topD - bot) * fy;
                         if (d <= threshold) continue;
                         setRaw(chunk, dx, myY, dz, Blocks.END_STONE.defaultBlockState());
@@ -243,6 +244,26 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             LOGGER.error("[DungeonTrain] DisintegrationFeature.place failed at chunk {}", ctx.origin(), t);
             return false;
         }
+    }
+
+    /**
+     * End-density column at a single noise-cell corner {@code (cornerX, cornerZ)}, sampled at each
+     * cell-Y boundary {@code (cellRowBase + r) · cellH} for {@code r ∈ [0, rows)}. Memoised in
+     * {@code cache} (keyed by the packed corner XZ) so the corners shared by neighbouring island
+     * columns are walked through the End density tree only once per chunk.
+     */
+    private static double[] cornerColumn(DensityFunction endDensity, int cornerX, int cornerZ,
+                                         int cellRowBase, int rows, int cellH, java.util.Map<Long, double[]> cache) {
+        long key = (((long) cornerX) << 32) | (cornerZ & 0xFFFFFFFFL);
+        double[] col = cache.get(key);
+        if (col != null) return col;
+        col = new double[rows];
+        for (int r = 0; r < rows; r++) {
+            int by = (cellRowBase + r) * cellH;
+            col[r] = endDensity.compute(new DensityFunction.SinglePointContext(cornerX, by, cornerZ));
+        }
+        cache.put(key, col);
+        return col;
     }
 
     /** Bilinear blend of the four XZ cell corners (d at x0z0, x1z0, x0z1, x1z1). */

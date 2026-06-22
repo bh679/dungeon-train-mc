@@ -113,6 +113,30 @@ public final class Disintegration {
     }
 
     /**
+     * True iff EVERY column of the 16-wide chunk starting at {@code chunkMinX} is fully eroded
+     * ({@link #middleRamp} ≥ 1) — i.e. the overworld terrain there would be 100% removed by the
+     * post-process erosion, so generating it is pure waste and the noise fill can be skipped
+     * entirely. This covers the void holds, the End core, and the void↔End transitions (all held at
+     * {@code middleRamp == 1}). A chunk with any fade column ({@code middleRamp < 1}) returns false
+     * and keeps real overworld terrain so the erosion gradient stays smooth.
+     *
+     * <p>Used by both the {@code fillFromNoise} short-circuit (skip noise generation) and
+     * {@code TrackBedFeature} (skip support pillars — on empty terrain the ground probe would build
+     * full-height pillars to bedrock, and they'd be fully eroded anyway). Pure / unit-testable.</p>
+     */
+    public static boolean isChunkFullyEroded(int chunkMinX, long startX, int fade, int voidHold, int endHold, int owHold) {
+        return isChunkFullyEroded(chunkMinX, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #isChunkFullyEroded(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static boolean isChunkFullyEroded(int chunkMinX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        for (int dx = 0; dx < 16; dx++) {
+            if (middleRamp(chunkMinX + dx, startX, phaseShift, fade, voidHold, endHold, owHold) < 1.0) return false;
+        }
+        return true;
+    }
+
+    /**
      * Sky ramp {@code S ∈ [0,1]} — the {@link #middleRamp} shape but with both fades
      * pushed inward toward the void core by {@code skyOffset} blocks, so the End sky/fog
      * lags the terrain erosion: the fade-in is delayed past the overworld→void crumble,

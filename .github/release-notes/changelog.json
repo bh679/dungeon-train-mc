@@ -1918,6 +1918,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "disintegration-band-perf",
+      "version": "0.348.0",
+      "type": "perf",
+      "title": "Smoother world-disintegration band",
+      "summary": "Crossing the band where the world breaks into the void and reforms as the End now generates much more smoothly. The empty void stretches are no longer built as full terrain and then immediately erased, and the floating End islands generate far faster \u2014 so there's noticeably less chunk-loading hitch as you travel through the band.",
+      "highlights": [
+        "Void stretches no longer build terrain just to delete it",
+        "Floating End islands generate much faster",
+        "Less stutter crossing the disintegration band"
+      ],
+      "pr": 538,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

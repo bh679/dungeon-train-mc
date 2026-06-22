@@ -1,13 +1,17 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGenerator;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.Disintegration;
+import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -97,7 +101,17 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // Pillars first — the ground probe reads raw terrain at probeZ,
             // which becomes opaque (bed/rail) as soon as placeTracksForChunk
             // runs. Order matters.
-            TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
+            //
+            // ...but skip them inside the disintegration band's fully-eroded core: there the
+            // overworld noise fill is short-circuited to empty (NoiseBasedChunkGeneratorMixin), so
+            // the ground probe would fall straight to bedrock and stamp a full-height pillar that the
+            // erosion pass then deletes in full — wasted work. The bed + rails below still float
+            // (placed at fixed Y). Only the overworld carries the band.
+            boolean inErodedCore = serverLevel.dimension().equals(Level.OVERWORLD)
+                    && bandFullyErodedChunk(overworld, chunkPos);
+            if (!inErodedCore) {
+                TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
+            }
             // Down-stairs precompute — must run BEFORE
             // placeTunnelSpaceAtWorldgen because the underground
             // qualification probe at ceilingY+1 reads inside the tunnel
@@ -126,5 +140,23 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             LOGGER.error("[DungeonTrain] TrackBedFeature.place failed at chunk {}", ctx.origin(), t);
             return false;
         }
+    }
+
+    /**
+     * True iff this overworld chunk lies entirely within the disintegration band's fully-eroded core
+     * (every column at {@code middleRamp == 1}), where the overworld noise fill is short-circuited to
+     * empty. Mirrors the gate in {@code NoiseBasedChunkGeneratorMixin} so the two stay in lockstep.
+     */
+    private static boolean bandFullyErodedChunk(ServerLevel overworld, ChunkPos chunkPos) {
+        long startX = DisintegrationBand.startX(overworld);
+        if (startX == DisintegrationBand.OFF) return false;
+        int chunkMinX = chunkPos.getMinBlockX();
+        if (chunkMinX + 15 < startX) return false;
+        return Disintegration.isChunkFullyEroded(chunkMinX, startX,
+                DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks());
     }
 }
