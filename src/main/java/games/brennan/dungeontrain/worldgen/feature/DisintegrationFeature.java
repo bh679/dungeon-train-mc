@@ -121,6 +121,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             int bedY = g.bedY();
             int zMin = g.trackZMin();
             int zMax = g.trackZMax();
+            int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
             int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
             int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
             int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
@@ -129,7 +130,7 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             double[] endRamp = new double[16];
             boolean anyEnd = false;
             for (int dx = 0; dx < 16; dx++) {
-                endRamp[dx] = Disintegration.endRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold);
+                endRamp[dx] = Disintegration.endRamp(chunkMinX + dx, startX, phaseShift, fade, voidHold, endHold, owHold);
                 if (endRamp[dx] > 0.0) anyEnd = true;
             }
             if (!anyEnd) return false;

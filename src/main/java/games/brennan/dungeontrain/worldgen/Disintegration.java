@@ -72,16 +72,19 @@ public final class Disintegration {
     /**
      * Offset into the current cycle for a world-X (measured in blocks from {@code startX},
      * which is a fixed block distance from spawn — not a train metric): {@code (worldX −
-     * startX) mod period}, or {@code -1} before {@code startX}. Each cycle is
+     * startX + phaseShift) mod period}, or {@code -1} before {@code startX}. Each cycle is
      * {@code [0, owHold)} = the overworld phase, then {@code [owHold, period)} = the
-     * active band (void → End → void). The pattern therefore starts every cycle in the
-     * overworld, so the player spawns in normal terrain.
+     * active band (void → End → void). With {@code phaseShift = 0} the pattern starts every
+     * cycle in the overworld at {@code startX}; a positive {@code phaseShift} lands {@code
+     * startX} that many blocks into the cycle, so the first overworld stretch past the anchor
+     * is shorter (the player spawns partway through it). The {@code worldX < startX} region is
+     * always pure overworld regardless of the shift.
      */
-    private static long cycleOffset(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
+    private static long cycleOffset(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
         if (worldX < startX) return -1L;
         long period = cyclePeriod(fade, voidHold, endHold, owHold);
         if (period <= 0L) return -1L;
-        return Math.floorMod((long) worldX - startX, period);
+        return Math.floorMod((long) worldX - startX + phaseShift, period);
     }
 
     /**
@@ -91,7 +94,12 @@ public final class Disintegration {
      * erosion intensity and the End sky/fog blend. Repeats forever from {@code startX}.
      */
     public static double middleRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
-        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        return middleRamp(worldX, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #middleRamp(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static double middleRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
@@ -110,7 +118,12 @@ public final class Disintegration {
      * across the End core, linear 1→0 back to void. Drives End-stone island fill.
      */
     public static double endRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
-        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        return endRamp(worldX, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #endRamp(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static double endRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase
@@ -130,7 +143,12 @@ public final class Disintegration {
 
     /** Removal probability at {@code (worldX, y)}; derives the column middle-ramp internally (test convenience). */
     public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int voidHold, int endHold, int owHold) {
-        return removalProbabilityFromRamp(middleRamp(worldX, startX, fade, voidHold, endHold, owHold), y, bedY);
+        return removalProbability(worldX, y, bedY, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #removalProbability(int, int, int, long, int, int, int, int)} with a {@code phaseShift} into the cycle. */
+    public static double removalProbability(int worldX, int y, int bedY, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        return removalProbabilityFromRamp(middleRamp(worldX, startX, phaseShift, fade, voidHold, endHold, owHold), y, bedY);
     }
 
     /**

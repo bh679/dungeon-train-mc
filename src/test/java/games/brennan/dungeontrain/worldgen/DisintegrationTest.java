@@ -63,6 +63,39 @@ final class DisintegrationTest {
         assertEquals(0.0, Disintegration.middleRamp(1000 + PERIOD, START_X, F, VH, EH, OW), EPS); // overworld again
     }
 
+    // ---- phase shift (shorter first overworld) ------------------------------
+
+    @Test
+    @DisplayName("phaseShift shortens the FIRST overworld (5k) while the recurring one stays full (10k); later phases unshifted")
+    void phaseShift_firstOverworldShorter() {
+        // Production-shaped geometry, anchored at spawn: OW 10000, fade 120, void 500, End 5000.
+        long sx = 0L;
+        int f = 120, vh = 500, eh = 5000, ow = 10000;
+        int shift = 5000;                                            // = ow − firstOverworld(5000)
+        int period = (int) Disintegration.cyclePeriod(f, vh, eh, ow); // 16480
+
+        // First overworld is only 5000 blocks: the void fade begins at X≈5000, not X=10000.
+        assertEquals(0.0, Disintegration.middleRamp(0, sx, shift, f, vh, eh, ow), EPS);     // spawn = overworld
+        assertEquals(0.0, Disintegration.middleRamp(4999, sx, shift, f, vh, eh, ow), EPS);  // still overworld
+        assertEquals(0.5, Disintegration.middleRamp(5060, sx, shift, f, vh, eh, ow), EPS);  // mid OW→void fade
+        assertEquals(1.0, Disintegration.middleRamp(5120, sx, shift, f, vh, eh, ow), EPS);  // first void reached
+        // With no shift the same X is still overworld — proves the shift is what shortens the first leg.
+        assertEquals(0.0, Disintegration.middleRamp(5060, sx, 0, f, vh, eh, ow), EPS);
+
+        // End islands fill across the core (endRamp == 1) through the middle of the band.
+        assertEquals(1.0, Disintegration.endRamp(5740, sx, shift, f, vh, eh, ow), EPS);
+        assertEquals(1.0, Disintegration.endRamp(10000, sx, shift, f, vh, eh, ow), EPS);
+
+        // Overworld resumes at X=11480 and runs a FULL 10000 before the next void fade (~21540).
+        assertEquals(0.0, Disintegration.middleRamp(11480, sx, shift, f, vh, eh, ow), EPS); // recurring OW start
+        assertEquals(0.0, Disintegration.middleRamp(21479, sx, shift, f, vh, eh, ow), EPS); // still OW 9999 blocks later
+        assertEquals(0.5, Disintegration.middleRamp(21540, sx, shift, f, vh, eh, ow), EPS); // next void fade, a period on
+
+        // Ramps remain periodic under the shift.
+        assertEquals(Disintegration.middleRamp(5060, sx, shift, f, vh, eh, ow),
+                Disintegration.middleRamp(5060 + period, sx, shift, f, vh, eh, ow), EPS);
+    }
+
     // ---- endRamp (End-island fill) ------------------------------------------
 
     @Test

@@ -45,6 +45,7 @@ public final class DisintegrationBand {
         long sx = startX(overworld);
         if (sx == OFF) return 0.0;
         return Disintegration.middleRamp(worldX, sx,
+                DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),

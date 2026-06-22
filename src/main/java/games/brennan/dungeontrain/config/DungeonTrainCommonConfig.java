@@ -59,11 +59,19 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of End world-gen (floating End-stone islands) at the centre of the band. */
     public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 500;
+    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 5000;
     /** Blocks of normal overworld between repeats of the band (the cycle repeats forever). */
     public static final int MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
+    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 10000;
+    /**
+     * Blocks of overworld before the very FIRST void band (measured from startBlocks). Lets the
+     * player spawn partway through an overworld stretch so the first leg is shorter than the
+     * repeating overworldHold; when ≥ overworldHold there is no early shift (classic behaviour).
+     */
+    public static final int MIN_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 5000;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -75,6 +83,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DISINTEGRATION_VOID_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -89,6 +98,7 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_VOID_HOLD_BLOCKS = pair.getLeft().disintegrationVoidHoldBlocks;
         DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
         DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = pair.getLeft().disintegrationOverworldHoldBlocks;
+        DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = pair.getLeft().disintegrationFirstOverworldBlocks;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -143,20 +153,28 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("disintegrationVoidHoldBlocks", DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_VOID_HOLD_BLOCKS, MAX_DISINTEGRATION_VOID_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationEndHoldBlocks = b
-                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 500.")
+                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 5000.")
                 .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationOverworldHoldBlocks = b
                 .comment("Blocks of normal overworld at the start of each cycle. The whole cycle —",
                         "overworld → void → End islands → void → (repeat) — tiles forever along +X from startBlocks.",
-                        "One cycle = overworldHold + 4 × fade + 2 × voidHold + endHold. Default 500.")
+                        "One cycle = overworldHold + 4 × fade + 2 × voidHold + endHold. Default 10000.")
                 .defineInRange("disintegrationOverworldHoldBlocks", DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS, MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationFirstOverworldBlocks = b
+                .comment("Blocks of overworld before the very FIRST void band, measured from startBlocks. Lets the player",
+                        "spawn partway through an overworld stretch so the first leg to the void is shorter than the",
+                        "repeating overworldHold (every later overworld stretch is the full overworldHold). When this is",
+                        "≥ overworldHold there is no early shift and the classic behaviour applies. Default 5000.")
+                .defineInRange("disintegrationFirstOverworldBlocks", DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS,
+                        MIN_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS, MAX_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
-                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks);
+                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
+                disintegrationFirstOverworldBlocks);
     }
 
     /**
@@ -234,6 +252,22 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_OVERWORLD_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     }
 
+    /** Overworld stretch (blocks) before the first band; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationFirstOverworldBlocks() {
+        return isLoaded() ? DISINTEGRATION_FIRST_OVERWORLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
+    }
+
+    /**
+     * Phase shift (blocks) into the repeating cycle at {@code startBlocks}, so the first overworld
+     * stretch is {@code firstOverworldBlocks} rather than the full {@code overworldHold}: the single
+     * source of truth shared by the worldgen, erosion, mob-spawn, and client-sky paths. Equals
+     * {@code max(0, overworldHold − firstOverworld)} — 0 (no shift) when {@code firstOverworld ≥
+     * overworldHold}, so the classic "first stretch ≥ recurring" behaviour is preserved.
+     */
+    public static int getDisintegrationPhaseShiftBlocks() {
+        return Math.max(0, getDisintegrationOverworldHoldBlocks() - getDisintegrationFirstOverworldBlocks());
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -242,5 +276,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
                           ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
                           ModConfigSpec.IntValue disintegrationEndHoldBlocks,
-                          ModConfigSpec.IntValue disintegrationOverworldHoldBlocks) {}
+                          ModConfigSpec.IntValue disintegrationOverworldHoldBlocks,
+                          ModConfigSpec.IntValue disintegrationFirstOverworldBlocks) {}
 }
