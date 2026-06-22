@@ -1886,6 +1886,24 @@
       "released_at": null
     },
     {
+      "id": "disintegration-longer-phases",
+      "version": "0.348.0",
+      "type": "feat",
+      "title": "A longer, more dramatic disintegration journey",
+      "summary": "The stretch where the world falls apart now runs much further before it reforms. You travel roughly 5,000 blocks of normal overworld before the ground erodes into a void, cross floating End islands stretching about 5,000 blocks under the End sky, fall back through void, and then ride a full 10,000 blocks of overworld before the whole cycle begins again.",
+      "highlights": [
+        "~5,000 blocks of overworld before the first void (previously 500)",
+        "~5,000 blocks of floating End islands at the heart of the band (previously 500)",
+        "10,000 blocks of overworld between repeats of the band (previously 500)",
+        "All phase lengths are configurable, including a new setting for how long the first overworld lasts"
+      ],
+      "pr": 534,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "void-band-end-soundtrack",
       "version": "0.348.0",
       "type": "feat",

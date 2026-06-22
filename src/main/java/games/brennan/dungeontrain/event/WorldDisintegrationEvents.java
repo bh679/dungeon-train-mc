@@ -67,6 +67,7 @@ public final class WorldDisintegrationEvents {
         int zMin = g.trackZMin();
         int zMax = g.trackZMax();
         long seed = data.getGenerationSeed();
+        int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
         int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
         int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
         int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
@@ -75,7 +76,7 @@ public final class WorldDisintegrationEvents {
         double[] middle = new double[16];
         boolean anyMiddle = false;
         for (int dx = 0; dx < 16; dx++) {
-            middle[dx] = Disintegration.middleRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold);
+            middle[dx] = Disintegration.middleRamp(chunkMinX + dx, startX, phaseShift, fade, voidHold, endHold, owHold);
             if (middle[dx] > 0.0) anyMiddle = true;
         }
         if (!anyMiddle) return;
