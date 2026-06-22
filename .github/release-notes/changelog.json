@@ -1868,6 +1868,22 @@
       "released": true,
       "released_in": "v0.348.0",
       "released_at": "2026-06-22T14:12:14Z"
+    },
+    {
+      "id": "void-sky-fade-lag",
+      "version": "0.348.0",
+      "type": "feat",
+      "title": "Smoother void sky transitions",
+      "summary": "As the world breaks apart into the void, the sky now holds onto its overworld look a little longer before fading to the End \u2014 and on the way out, the sky clears back to normal before solid ground returns beneath you.",
+      "highlights": [
+        "Sky fade lags the crumbling terrain on both edges for a less abrupt transition",
+        "Tunable via the disintegrationSkyFadeOffsetBlocks config (0 = old synced behaviour)"
+      ],
+      "pr": 536,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

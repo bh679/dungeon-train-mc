@@ -63,6 +63,66 @@ final class DisintegrationTest {
         assertEquals(0.0, Disintegration.middleRamp(1000 + PERIOD, START_X, F, VH, EH, OW), EPS); // overworld again
     }
 
+    // ---- skyRamp (End sky/fog, lagged behind the terrain) -------------------
+
+    @Test
+    @DisplayName("skyRamp with offset 0 is identical to middleRamp across the cycle")
+    void sky_offsetZero_matchesMiddle() {
+        for (int d : new int[] {-50, 0, 50, 79, 80, 130, 180, 400, 660, 710, 759, 760}) {
+            int x = (int) START_X + d;
+            assertEquals(Disintegration.middleRamp(x, START_X, F, VH, EH, OW),
+                    Disintegration.skyRamp(x, START_X, F, VH, EH, OW, 0), EPS,
+                    "skyRamp(offset=0) should equal middleRamp at offset " + d);
+        }
+    }
+
+    @Test
+    @DisplayName("skyRamp delays the entry fade: stays 0 across the terrain crumble, reaches 1 offset+fade in")
+    void sky_entry_delayed() {
+        int o = 60; // active band dd = worldX - (START_X + OW) = worldX - 1080
+        assertEquals(0.0, Disintegration.skyRamp(1080, START_X, F, VH, EH, OW, o), EPS); // dd=0
+        assertEquals(0.0, Disintegration.skyRamp(1139, START_X, F, VH, EH, OW, o), EPS); // dd=59, still overworld sky
+        assertEquals(0.0, Disintegration.skyRamp(1140, START_X, F, VH, EH, OW, o), EPS); // dd=60, fade begins
+        assertEquals(0.5, Disintegration.skyRamp(1190, START_X, F, VH, EH, OW, o), EPS); // dd=110
+        assertEquals(1.0, Disintegration.skyRamp(1240, START_X, F, VH, EH, OW, o), EPS); // dd=160 = o+fade, full End
+        // ...while the terrain (middleRamp) was already mid-crumble at dd=0..60:
+        assertTrue(Disintegration.middleRamp(1100, START_X, F, VH, EH, OW) > 0.0,
+                "terrain should already be eroding while the sky is still overworld");
+    }
+
+    @Test
+    @DisplayName("skyRamp advances the exit fade: returns to 0 before the terrain finishes reforming")
+    void sky_exit_early() {
+        int o = 60; // band=680: fall over dd [520,620), reaches 0 at dd=620
+        assertEquals(1.0, Disintegration.skyRamp(1600, START_X, F, VH, EH, OW, o), EPS); // dd=520 fade-out start
+        assertEquals(0.5, Disintegration.skyRamp(1650, START_X, F, VH, EH, OW, o), EPS); // dd=570
+        assertEquals(0.0, Disintegration.skyRamp(1700, START_X, F, VH, EH, OW, o), EPS); // dd=620, sky back to overworld
+        // ...while the terrain (middleRamp) is still > 0 there (its fade-out runs dd [580,680)):
+        assertTrue(Disintegration.middleRamp(1700, START_X, F, VH, EH, OW) > 0.0,
+                "sky should return to overworld while the terrain is still reforming");
+    }
+
+    @Test
+    @DisplayName("skyRamp clamps a huge offset so the hold collapses but never inverts; stays in [0,1]")
+    void sky_largeOffset_clamped() {
+        // band=680, fade=100 → maxOffset=(680-2·100)/2=240; a triangle peaking at dd=340.
+        int o = 100_000;
+        assertEquals(1.0, Disintegration.skyRamp(1420, START_X, F, VH, EH, OW, o), EPS); // dd=340 peak
+        assertEquals(0.5, Disintegration.skyRamp(1370, START_X, F, VH, EH, OW, o), EPS); // dd=290 rising
+        assertEquals(0.5, Disintegration.skyRamp(1470, START_X, F, VH, EH, OW, o), EPS); // dd=390 falling
+        for (int dd = 0; dd <= 680; dd++) {
+            double s = Disintegration.skyRamp(1080 + dd, START_X, F, VH, EH, OW, o);
+            assertTrue(s >= 0.0 && s <= 1.0, "skyRamp out of [0,1] at dd=" + dd + ": " + s);
+        }
+    }
+
+    @Test
+    @DisplayName("skyRamp survives fade=0 (hard edges) without dividing by zero")
+    void sky_degenerate_fade() {
+        assertEquals(0.0, Disintegration.skyRamp(1000, START_X, 0, VH, EH, OW, 30), EPS);       // overworld phase
+        assertEquals(1.0, Disintegration.skyRamp(1000 + OW, START_X, 0, VH, EH, OW, 0), EPS);   // band start, offset 0
+    }
+
     // ---- endRamp (End-island fill) ------------------------------------------
 
     @Test

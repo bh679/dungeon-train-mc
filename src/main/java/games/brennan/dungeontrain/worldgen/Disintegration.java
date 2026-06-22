@@ -105,6 +105,41 @@ public final class Disintegration {
     }
 
     /**
+     * Sky ramp {@code S ∈ [0,1]} — the {@link #middleRamp} shape but with both fades
+     * pushed inward toward the void core by {@code skyOffset} blocks, so the End sky/fog
+     * lags the terrain erosion: the fade-in is delayed past the overworld→void crumble,
+     * and the fade-out finishes before the void→overworld terrain has fully reformed.
+     * Drives only the client sky/fog/cloud look — terrain erosion still uses
+     * {@link #middleRamp}.
+     *
+     * <p>Structure over the active-band offset {@code dd}, with effective offset {@code o}:
+     * 0 across {@code [0, o)}, linear 0→1 over {@code [o, o+fade)}, flat 1 across the
+     * middle, linear 1→0 over {@code [band−fade−o, band−o)}, then 0 again across the last
+     * {@code o}. {@code skyOffset} is clamped to {@code (band − 2·fade) / 2} so the flat
+     * hold can shrink to zero but never invert; {@code skyOffset == 0} reproduces
+     * {@link #middleRamp} exactly.</p>
+     */
+    public static double skyRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold, int skyOffset) {
+        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        if (d < 0L) return 0.0;
+        int oh = Math.max(0, owHold);
+        if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
+        long dd = d - oh;                                  // offset within the active band
+        long band = bandLength(fade, voidHold, endHold);
+        int f = Math.max(0, fade);
+        long maxOffset = Math.max(0L, (band - 2L * f) / 2L);
+        long o = Math.min(Math.max(0, skyOffset), maxOffset);
+        if (dd < o) return 0.0;                            // delayed: still overworld while ground erodes
+        long riseEnd = o + f;
+        if (dd < riseEnd) return f == 0 ? 1.0 : (double) (dd - o) / f;   // overworld → void (delayed)
+        long fallStart = band - f - o;
+        if (dd < fallStart) return 1.0;                     // void + End + void
+        long fallEnd = band - o;
+        if (dd < fallEnd) return f == 0 ? 0.0 : 1.0 - (double) (dd - fallStart) / f; // void → overworld (early)
+        return 0.0;                                         // returned to overworld before band end
+    }
+
+    /**
      * End ramp {@code E ∈ [0,1]}, evaluated on the repeating cycle: 0 through the
      * overworld + void holds, linear 0→1 as the void fades into End world-gen, flat 1
      * across the End core, linear 1→0 back to void. Drives End-stone island fill.
