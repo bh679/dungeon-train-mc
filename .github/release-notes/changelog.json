@@ -1963,9 +1963,9 @@
         "Pillars rise from island tops; the track bridges the open void between islands"
       ],
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.351.0",
+      "released_at": "2026-06-22T23:25:41Z"
     }
   ]
 }
