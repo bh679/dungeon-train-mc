@@ -27,7 +27,8 @@
     "client.DeathScreenMoveTextMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
-    "client.LevelRendererVoidSkyMixin"
+    "client.LevelRendererVoidSkyMixin",
+    "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],
   "injectors": {
