@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.echo;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
@@ -238,6 +239,9 @@ public final class RemoteEchoEncounters {
         String story = EchoEncounterFormat.story(player.getGameProfile().getName(), enc, reason);
         LOGGER.info("[DungeonTrain] Remote-echo encounter ended ({}) — posting story for {} vs echo of '{}'.",
                 reason, player.getGameProfile().getName(), enc.sourceName);
-        DiscordService.get().postReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME, EMBED_COLOR);
+        // Route to the public death-report channel (same cap as the death manifest) on main builds,
+        // keeping the encounter story's greyish-blue bar; null on dev → the build's default cap.
+        DiscordService.get().postReportTopLevel(player, title, story, List.of(), enc.photo, PHOTO_FILENAME,
+                EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
     }
 }
