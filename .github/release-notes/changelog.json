@@ -1787,9 +1787,9 @@
       "highlights": [],
       "pr": 529,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
     },
     {
       "id": "curseforge-changelog-carry-forward",
@@ -1802,9 +1802,9 @@
       ],
       "pr": 530,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
     },
     {
       "id": "world-join-discord-info",
@@ -1815,9 +1815,9 @@
       "highlights": [],
       "pr": 531,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
     },
     {
       "id": "backward-train-seamless",
@@ -1832,9 +1832,9 @@
       ],
       "pr": 532,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
     }
   ]
 }
