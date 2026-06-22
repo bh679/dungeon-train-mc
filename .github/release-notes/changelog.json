@@ -1902,6 +1902,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "void-band-end-soundtrack",
+      "version": "0.348.0",
+      "type": "feat",
+      "title": "The End's soundtrack across the disintegration void",
+      "summary": "When the world breaks apart into the void and End islands, the music now crossfades to the End's theme to match the End sky overhead \u2014 the normal soundtrack fades out as you approach the void, the End theme plays across the void and floating islands, and it fades back as the world reforms on the far side.",
+      "highlights": [
+        "End music now plays across the void/End disintegration band",
+        "Smooth crossfade in and out, tied to your position so it matches the End-sky fade"
+      ],
+      "pr": 537,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
