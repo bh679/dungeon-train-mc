@@ -70,8 +70,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
      */
     private static final double ISLAND_2D_PREFILTER = -0.8;
 
-    /** Blocks of clearance kept island-free on each side of the track lane (so the train has a clear path). */
-    private static final int CORRIDOR_ISLAND_MARGIN = 2;
     /** Air pocket (blocks) cleared above an island top so a chorus plant can grow there. */
     private static final int CHORUS_POCKET = 10;
     /** Max chorus attempts per chunk — vanilla {@code CountPlacement.of(UniformInt.of(0, 4))}. */
@@ -119,8 +117,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
             int bedY = g.bedY();
-            int zMin = g.trackZMin();
-            int zMax = g.trackZMax();
             int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
             int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
             int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
@@ -170,7 +166,9 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 double threshold = Disintegration.islandDensityThreshold(e);
                 for (int dz = 0; dz < 16; dz++) {
                     int worldZ = chunkMinZ + dz;
-                    if (worldZ >= zMin - CORRIDOR_ISLAND_MARGIN && worldZ <= zMax + CORRIDOR_ISLAND_MARGIN) continue;
+                    // Islands are stamped across the whole band, INCLUDING the track lane, so the
+                    // track feature (which now runs AFTER this one — see track_bed_overworld.json)
+                    // can tunnel/pillar through them. The bed/rail + envelope carve clears the lane.
                     // Cheap 2D prefilter — skip deep End void columns before the costly 3D sampling.
                     if (END_ISLANDS_2D.compute(new DensityFunction.SinglePointContext(sampleX, 0, worldZ)) < ISLAND_2D_PREFILTER) {
                         continue;

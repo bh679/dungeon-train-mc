@@ -1951,6 +1951,21 @@
       "released": true,
       "released_in": "v0.350.0",
       "released_at": "2026-06-22T15:32:48Z"
+    },
+    {
+      "id": "end-islands-tunnel-through",
+      "version": "0.351.0",
+      "type": "feat",
+      "title": "The train carves through the End islands",
+      "summary": "In the disintegration band \u2014 where the world dissolves into floating End islands \u2014 the train no longer skirts a cleared lane around the islands. It now bores tunnels straight through the islands in its path and rides out across the gaps on pillars, the same way it tunnels through hills and bridges ravines back in the overworld.",
+      "highlights": [
+        "Tunnels are carved through End islands that block the track",
+        "Pillars rise from island tops; the track bridges the open void between islands"
+      ],
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
