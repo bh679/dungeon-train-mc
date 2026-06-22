@@ -183,6 +183,38 @@ public final class SableShipyard implements Shipyard {
         }
     }
 
+    @Override
+    public boolean isHeld(java.util.UUID subLevelId) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        return holding != null && holding.getHoldingSubLevel(subLevelId) != null;
+    }
+
+    @Override
+    public boolean reloadFromHolding(java.util.UUID subLevelId) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        if (holding == null) return false;
+        // Sable does NOT snatch-from-holding for a force-load ticket at runtime
+        // (the only such path, ServerSubLevelContainer.loadForceLoadedSubLevels(),
+        // runs solely at container.initialize()). getHoldingSubLevel + loadHoldingSubLevel
+        // is the public runtime path to bring a culled-to-holding sub-level back.
+        dev.ryanhcode.sable.sublevel.storage.HoldingSubLevel held =
+            holding.getHoldingSubLevel(subLevelId);
+        if (held == null) return false; // not in holding (still live, or genuinely gone)
+        try {
+            holding.loadHoldingSubLevel(held);
+            return true;
+        } catch (Throwable t) {
+            LOGGER.warn("[Sable] reloadFromHolding failed for sub-level {}: {}", subLevelId, t.toString());
+            return false;
+        }
+    }
+
     /** Centre of the block set's integer AABB, rounded down to a {@link BlockPos}. */
     private static BlockPos computeAnchor(Set<BlockPos> blocks) {
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;

@@ -161,6 +161,36 @@ public final class TrainCarriageAppender {
      */
     private static volatile boolean STALL_DETECTION_ENABLED = false;
 
+    /**
+     * Opt-in master switch for the backward-seam-gap diagnostic probes
+     * ({@code [seamgap]} / {@code [bwd-place]} / {@code [anchor-div]} /
+     * {@code [capture-lag]}). Off by default — flip via
+     * {@code /dungeontrain debug seamgap-trace on} during a backward-ride
+     * test session to capture the per-seam world-gap-vs-pIdx time series used
+     * to diagnose the post-#519 growing-gap regression. When off, every probe
+     * is a no-op (no extra {@link Trains#byTrainId} scan, no log lines), so the
+     * spawn loop runs bit-identical to the non-instrumented build.
+     */
+    private static volatile boolean SEAMGAP_TRACE_ENABLED = false;
+
+    /** @see #SEAMGAP_TRACE_ENABLED */
+    public static boolean isSeamGapTraceEnabled() {
+        return SEAMGAP_TRACE_ENABLED;
+    }
+
+    /** Toggle the backward-seam-gap diagnostic probes. Server thread only. */
+    public static void setSeamGapTraceEnabled(boolean enabled) {
+        SEAMGAP_TRACE_ENABLED = enabled;
+    }
+
+    /**
+     * Sample cadence for the periodic {@code [seamgap]} and {@code [anchor-div]}
+     * probes: once every 20 game ticks (≈1 s at 20 Hz) when
+     * {@link #SEAMGAP_TRACE_ENABLED} is on. Keeps the log readable over a
+     * multi-minute ride while still resolving how the gap grows over time.
+     */
+    private static final int SEAMGAP_SAMPLE_PERIOD_TICKS = 20;
+
 
     /**
      * Minimum visible gap (in blocks) between a freshly-spawned group and
@@ -997,6 +1027,52 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Backward-seam-gap diagnostic probe ({@code [seamgap]}). For every loaded
+     * train, walks carriages in ascending pIdx order and logs the world-X gap
+     * between each adjacent pair — {@code distance = nextAabb.minX − thisAabb.maxX},
+     * the identical metric {@link CarriageGroupGap#compute} feeds the gap-line
+     * overlay — together with each side's force-load and placement-settle state.
+     *
+     * <p>Pivoting {@code distanceBlocks} by {@code thisPIdx} across a backward
+     * ride is the recorded proof of whether per-seam gaps GROW with backward
+     * distance (rising slope toward more-negative pIdx ⇒ H1 reference/anchor
+     * mismatch) or merely scatter inside the settle dead-band (flat ⇒ H2). The
+     * force-load / placed flags show whether a gapping seam is still settling
+     * or has frozen. Gated by {@link #SEAMGAP_TRACE_ENABLED}; sampled every
+     * {@link #SEAMGAP_SAMPLE_PERIOD_TICKS} ticks by {@link #onLevelTick}.</p>
+     */
+    private static void logBackwardSeamGaps(ServerLevel level) {
+        long now = level.getGameTime();
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            UUID trainId = entry.getKey();
+            List<Trains.Carriage> train = entry.getValue();
+            if (train.size() < 2) continue;
+            List<Trains.Carriage> sorted = new ArrayList<>(train);
+            sorted.sort(Comparator.comparingInt(c -> c.provider().getPIdx()));
+            Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.getOrDefault(trainId, Set.of());
+            for (int i = 0; i < sorted.size() - 1; i++) {
+                Trains.Carriage thisGroup = sorted.get(i);
+                Trains.Carriage nextGroup = sorted.get(i + 1);
+                AABBdc thisAabb = thisGroup.ship().worldAABB();
+                AABBdc nextAabb = nextGroup.ship().worldAABB();
+                if (isZeroAabb(thisAabb) || isZeroAabb(nextAabb)) continue;
+                double distance = nextAabb.minX() - thisAabb.maxX();
+                LOGGER.info("[DungeonTrain][seamgap] gameTick={} trainId={} thisPIdx={} nextPIdx={} distanceBlocks={} thisMaxX={} nextMinX={} thisForceLoaded={} nextForceLoaded={} thisPlaced={} nextPlaced={}",
+                    now, trainId,
+                    thisGroup.provider().getPIdx(), nextGroup.provider().getPIdx(),
+                    String.format("%.4f", distance),
+                    String.format("%.4f", thisAabb.maxX()),
+                    String.format("%.4f", nextAabb.minX()),
+                    forceLoaded.contains(thisGroup.ship().subLevelId()),
+                    forceLoaded.contains(nextGroup.ship().subLevelId()),
+                    thisGroup.provider().isPlacedSuccessfully(),
+                    nextGroup.provider().isPlacedSuccessfully());
+            }
+        }
+    }
+
+    /**
      * Hard upper bound on how many GROUPS the appender will spawn in a
      * single server tick. Set to 2 — one per direction. Forward and
      * backward spawn lanes run independently (separate
@@ -1236,6 +1312,15 @@ public final class TrainCarriageAppender {
         // post-spawn displacement (vanilla ejection vs Sable lazy-bind race).
         tickEntityDriftTracking(level);
 
+        // Backward-seam-gap diagnostic (opt-in, off by default). Periodic
+        // per-seam world-X gap-vs-pIdx snapshot used to diagnose the growing
+        // backward-gap regression. Self-gated on the sample cadence; no-op
+        // (and no Trains.byTrainId scan) unless seamgap-trace is on.
+        if (SEAMGAP_TRACE_ENABLED
+            && Math.floorMod(level.getGameTime(), SEAMGAP_SAMPLE_PERIOD_TICKS) == 0) {
+            logBackwardSeamGaps(level);
+        }
+
         // Manual mode: spawn cycles fire only when a J-press has set
         // MANUAL_SPAWN_REQUESTED. The flag is NOT consumed at the top of
         // the tick — it's consumed only after a spawn actually happens
@@ -1470,6 +1555,27 @@ public final class TrainCarriageAppender {
                 trainMaxAnchor = maxA;
                 trainMinAnchor = minA;
             }
+        }
+
+        // Backward-anchor-divergence diagnostic ([anchor-div], opt-in, off by
+        // default). Tracks whether the REGISTRY-min anchor (used to derive the
+        // backward spawn anchor) falls below the VISIBLE tail pIdx (the spawn
+        // reference) as the player rides backward — the precondition for the
+        // H1 reference/anchor mismatch. A span that grows over the ride
+        // confirms H1 is possible; span ≈ 0 throughout rules H1 out and points
+        // at the settle dead-band (H2). registryCount − visibleCount = the
+        // count of culled-but-registered ghosts feeding H3.
+        if (SEAMGAP_TRACE_ENABLED
+            && Math.floorMod(level.getGameTime(), SEAMGAP_SAMPLE_PERIOD_TICKS) == 0) {
+            int visibleTailPIdx = tail.provider().getPIdx();
+            Set<UUID> fl = FORCELOADED_BY_TRAIN.get(trainId);
+            LOGGER.info("[DungeonTrain][anchor-div] gameTick={} trainId={} registryMin={} registryMax={} visibleTailPIdx={} visibleLeadPIdx={} registryCount={} visibleCount={} forceLoadedCount={} span={}",
+                level.getGameTime(), trainId,
+                trainMinAnchor, trainMaxAnchor,
+                visibleTailPIdx, leadAnchorPIdx,
+                knownAnchors.size(), train.size(),
+                (fl == null) ? 0 : fl.size(),
+                visibleTailPIdx - trainMinAnchor);
         }
 
         // Independent per-direction spawn decision. Forward and backward
@@ -2544,6 +2650,31 @@ public final class TrainCarriageAppender {
             plan.subLevelStride,
             plan.collisionAdjustments);
 
+        // [bwd-place] diagnostic (opt-in, backward spawns only). Decomposes the
+        // idealX placement math so a growing seam gap can be attributed: H1 is
+        // confirmed iff subLevelDelta is consistently NOT -1 (refAnchor diverged
+        // from registryMin); H5 iff refShipToWorldX and refWorldAabbMaxX disagree
+        // by more than a tick-step; H3 iff offenderRegistryOnly=true on an
+        // inflated seam.
+        if (SEAMGAP_TRACE_ENABLED && !plan.forward) {
+            int registryMin = Integer.MAX_VALUE;
+            int registryMax = Integer.MIN_VALUE;
+            for (int a : Trains.knownAnchors(trainId)) {
+                if (a < registryMin) registryMin = a;
+                if (a > registryMax) registryMax = a;
+            }
+            AABBdc refAabb = reference.ship().worldAABB();
+            double refWorldAabbMaxX = isZeroAabb(refAabb) ? Double.NaN : refAabb.maxX();
+            LOGGER.info("[DungeonTrain][bwd-place] gameTick={} trainId={} newAnchor={} refAnchor={} registryMin={} registryMax={} subLevelDelta={} subLevelStride={} refShipToWorldX={} refWorldAabbMaxX={} idealX={} initialPlaceX={} adjustedPlaceX={} collisionAdjustments={} offenderPIdx={} offenderRegistryOnly={}",
+                level.getGameTime(), trainId, newAnchor, plan.refAnchor,
+                registryMin, registryMax, plan.subLevelDelta, plan.subLevelStride,
+                String.format("%.4f", plan.refShipToWorldX),
+                String.format("%.4f", refWorldAabbMaxX),
+                String.format("%.4f", plan.idealX),
+                plan.initialPlaceX, plan.adjustedPlaceX, plan.collisionAdjustments,
+                plan.lastOffenderPIdx, plan.lastOffenderRegistryOnly);
+        }
+
         markCollidingNeighbours(level, newShip, newAnchor, train);
         return newShip;
     }
@@ -2593,8 +2724,9 @@ public final class TrainCarriageAppender {
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
 
-        int adjustedPlaceX = adjustForCollisions(
+        CollisionAdjustResult adjusted = adjustForCollisions(
             initialPlaceX, placeY, placeZ, subLevelStride, dims, train, refTrainId, forward, newAnchor);
+        int adjustedPlaceX = adjusted.placeX();
 
         BlockPos origin = new BlockPos(adjustedPlaceX, placeY, placeZ);
         double gap = forward ? (adjustedPlaceX - idealX) : (idealX - adjustedPlaceX);
@@ -2607,7 +2739,14 @@ public final class TrainCarriageAppender {
             idealX,
             gap,
             forward,
-            adjustedPlaceX - initialPlaceX);
+            adjustedPlaceX - initialPlaceX,
+            refAnchor,
+            refWorldOriginVec.x,
+            subLevelDelta,
+            initialPlaceX,
+            adjustedPlaceX,
+            adjusted.lastOffenderPIdx(),
+            adjusted.lastOffenderRegistryOnly());
     }
 
     private record Plan(
@@ -2618,7 +2757,33 @@ public final class TrainCarriageAppender {
         double idealX,
         double gap,
         boolean forward,
-        int collisionAdjustments
+        int collisionAdjustments,
+        // Diagnostic-only fields consumed by the [bwd-place] probe — they
+        // record the inputs to the idealX placement math so a growing gap can
+        // be attributed to the reference/anchor mismatch (H1) rather than the
+        // settle dead-band (H2). Carry no behaviour.
+        int refAnchor,
+        double refShipToWorldX,
+        int subLevelDelta,
+        int initialPlaceX,
+        int adjustedPlaceX,
+        int lastOffenderPIdx,
+        boolean lastOffenderRegistryOnly
+    ) {}
+
+    /**
+     * Result of {@link #adjustForCollisions}: the resolved {@code placeX} plus
+     * the last collision offender encountered (sentinel {@link Integer#MIN_VALUE}
+     * for {@code lastOffenderPIdx} when the initial placement never overlapped a
+     * sibling). {@code lastOffenderRegistryOnly} is {@code true} when that
+     * offender was a culled/ghost carriage present in the spawn registry but
+     * NOT in the visible train — the H3 diagnostic signal that a stale registry
+     * AABB drove the shift.
+     */
+    private record CollisionAdjustResult(
+        int placeX,
+        int lastOffenderPIdx,
+        boolean lastOffenderRegistryOnly
     ) {}
 
     /**
@@ -2633,7 +2798,7 @@ public final class TrainCarriageAppender {
      * time we get here, the previous spawn's {@code worldAABB} is
      * non-zero and the collision pass can see it.</p>
      */
-    private static int adjustForCollisions(
+    private static CollisionAdjustResult adjustForCollisions(
         int placeX,
         int placeY,
         int placeZ,
@@ -2646,6 +2811,11 @@ public final class TrainCarriageAppender {
     ) {
         int height = dims.height();
         int width = dims.width();
+        // siblingsForLog entry: { shipId, pIdx, registryOnly(0|1) }. The third
+        // slot flags a sibling present in the spawn registry but NOT in the
+        // visible train (a culled/ghost carriage) — surfaced to the [bwd-place]
+        // probe as the H3 signal when such a stale box becomes the collision
+        // offender.
         List<long[]> siblingsForLog = new ArrayList<>();
         List<AABBdc> siblings = new ArrayList<>();
         Set<Long> seen = new HashSet<>();
@@ -2655,7 +2825,7 @@ public final class TrainCarriageAppender {
             AABBdc aabb = other.ship().worldAABB();
             if (isZeroAabb(aabb)) continue;
             siblings.add(aabb);
-            siblingsForLog.add(new long[] { id, other.provider().getPIdx() });
+            siblingsForLog.add(new long[] { id, other.provider().getPIdx(), 0L });
         }
         Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
         for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
@@ -2665,8 +2835,11 @@ public final class TrainCarriageAppender {
             AABBdc aabb = ship.worldAABB();
             if (isZeroAabb(aabb)) continue;
             siblings.add(aabb);
-            siblingsForLog.add(new long[] { id, e.getKey() });
+            siblingsForLog.add(new long[] { id, e.getKey(), 1L });
         }
+
+        int lastOffenderPIdx = Integer.MIN_VALUE;
+        boolean lastOffenderRegistryOnly = false;
 
         for (int iter = 0; iter < COLLISION_ADJUST_SAFETY_LIMIT; iter++) {
             double candMinX = placeX;
@@ -2678,6 +2851,7 @@ public final class TrainCarriageAppender {
 
             AABBdc colliding = null;
             int collidingPIdx = 0;
+            boolean collidingRegistryOnly = false;
             for (int i = 0; i < siblings.size(); i++) {
                 AABBdc o = siblings.get(i);
                 if (candMaxX > o.minX() && candMinX < o.maxX()
@@ -2685,6 +2859,7 @@ public final class TrainCarriageAppender {
                     && candMaxZ > o.minZ() && candMinZ < o.maxZ()) {
                     colliding = o;
                     collidingPIdx = (int) siblingsForLog.get(i)[1];
+                    collidingRegistryOnly = siblingsForLog.get(i)[2] == 1L;
                     break;
                 }
             }
@@ -2693,8 +2868,10 @@ public final class TrainCarriageAppender {
                     LOGGER.info("[DungeonTrain] Pre-spawn collision adjust resolved for newAnchor={} after {} iter(s); finalPlaceX={}",
                         newAnchor, iter, placeX);
                 }
-                return placeX;
+                return new CollisionAdjustResult(placeX, lastOffenderPIdx, lastOffenderRegistryOnly);
             }
+            lastOffenderPIdx = collidingPIdx;
+            lastOffenderRegistryOnly = collidingRegistryOnly;
 
             int newPlaceX;
             if (forward) {
@@ -2707,7 +2884,7 @@ public final class TrainCarriageAppender {
                     newAnchor, forward, placeX, collidingPIdx,
                     String.format("%.3f", colliding.minX()),
                     String.format("%.3f", colliding.maxX()));
-                return placeX;
+                return new CollisionAdjustResult(placeX, lastOffenderPIdx, lastOffenderRegistryOnly);
             }
             LOGGER.debug("[DungeonTrain] Pre-spawn collision adjust iter={} newAnchor={}: shifted placeX {} → {} (offender pIdx={} offenderEdgeX={})",
                 iter, newAnchor, placeX, newPlaceX, collidingPIdx,
@@ -2716,7 +2893,7 @@ public final class TrainCarriageAppender {
         }
         LOGGER.warn("[DungeonTrain] Pre-spawn collision adjust hit safety cap ({}) for newAnchor={} (forward={}); proceeding with placeX={}",
             COLLISION_ADJUST_SAFETY_LIMIT, newAnchor, forward, placeX);
-        return placeX;
+        return new CollisionAdjustResult(placeX, lastOffenderPIdx, lastOffenderRegistryOnly);
     }
 
     private static boolean isZeroAabb(AABBdc aabb) {
