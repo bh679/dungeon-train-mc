@@ -1745,6 +1745,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "survey-second-question-plea",
+      "version": "0.345.0",
+      "type": "feat",
+      "title": "A creator's plea on the second feedback question",
+      "summary": "When the death-screen feedback survey reaches its second question, the calm 'ledger' welcome gives way to an urgent, heartfelt plea from the line's creator to keep the railway alive \u2014 drawn at random from seven variations so it lands a little differently each run.",
+      "highlights": [
+        "The second feedback question now has its own message, distinct from the first",
+        "Seven randomized creator pleas \u2014 one chosen per death"
+      ],
+      "pr": 528,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
