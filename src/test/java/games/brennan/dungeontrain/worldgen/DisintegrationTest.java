@@ -106,13 +106,15 @@ final class DisintegrationTest {
     // ---- End-island density threshold (band fade for real End terrain) ------
 
     @Test
-    @DisplayName("island density threshold is 0 in the End core and rises toward the void edges")
+    @DisplayName("island density threshold is the core value in the End core and rises toward the void edges")
     void islandDensityThreshold_fade() {
-        // Full End intensity → threshold 0: any solid End density (>0) becomes an island.
-        assertEquals(0.0, Disintegration.islandDensityThreshold(1.0), EPS);
+        // Full End intensity → core threshold (trims thin skirts so islands aren't over-thick).
+        assertEquals(Disintegration.ISLAND_CORE_DENSITY, Disintegration.islandDensityThreshold(1.0), EPS);
         // Fading out → only denser island cores survive.
         assertEquals(Disintegration.ISLAND_EDGE_DENSITY, Disintegration.islandDensityThreshold(0.0), EPS);
-        assertEquals(Disintegration.ISLAND_EDGE_DENSITY / 2.0, Disintegration.islandDensityThreshold(0.5), EPS);
+        // Halfway interpolates between core and edge.
+        assertEquals((Disintegration.ISLAND_CORE_DENSITY + Disintegration.ISLAND_EDGE_DENSITY) / 2.0,
+                Disintegration.islandDensityThreshold(0.5), EPS);
         // Monotonic: lower End intensity ⇒ higher threshold ⇒ less End terrain.
         assertTrue(Disintegration.islandDensityThreshold(0.25) > Disintegration.islandDensityThreshold(0.75));
     }

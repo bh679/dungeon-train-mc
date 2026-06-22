@@ -56,8 +56,8 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
     private static final int ISLAND_SAMPLE_OFFSET_X = 16_000;
     /** End-space Y that maps onto the track's bed Y (the End's islands cluster around here). */
     private static final int END_ISLAND_CENTER_Y = 56;
-    /** Vertical reach (blocks) around the bed within which islands may form. */
-    private static final int ISLAND_Y_RADIUS = 40;
+    /** Vertical reach (blocks) around the bed within which islands may form (kept tight so they don't hang too deep). */
+    private static final int ISLAND_Y_RADIUS = 20;
     /** Skip columns whose 2D island value is below this (deep End void) before the costly 3D sampling. */
     private static final double ISLAND_2D_PREFILTER = -0.55;
 
@@ -66,8 +66,8 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
     /** Air pocket (blocks) cleared above an island top so a chorus plant can grow there. */
     private static final int CHORUS_POCKET = 10;
     /** Per-island-top chance (scaled by End intensity) to grow a chorus plant, capped per chunk. */
-    private static final float CHORUS_CHANCE = 0.06f;
-    private static final int MAX_CHORUS_PER_CHUNK = 6;
+    private static final float CHORUS_CHANCE = 0.022f;
+    private static final int MAX_CHORUS_PER_CHUNK = 3;
 
     private static final Set<Heightmap.Types> WG_HEIGHTMAPS = EnumSet.of(
             Heightmap.Types.MOTION_BLOCKING,
