@@ -49,6 +49,14 @@
     {
       "id": "zombiesrooms",
       "weight": 6
+    },
+    {
+      "id": "spiders",
+      "weight": 4
+    },
+    {
+      "id": "huskskel",
+      "weight": 2
     }
   ]
 }
