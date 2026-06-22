@@ -1,0 +1,55 @@
+{
+  "id": "tomas_aaro_the_walking_father",
+  "character": "Tomas Aaro",
+  "story": "The Walking Father",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "My dear.\n\nI found the train.\nIt's real.\n\nYet still I hold doubts.\n\n\nThey say the train carries what you need.\n\nNo one says what exactly.\nI only hope our need isn't too great.\n\nA short while aboard, and it has no end.\n\n— Tomas",
+        "I told my young one, I'd be back by harvest.\n\nI shouldn't have promised a season. I don't know if this place has them.\n\nBut this train holds our only hope.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Letter Two",
+      "variants": [
+        "My young one.\n\nThere are dead men on this train. They walk.\n\nI know how that sounds.\n\nDa had to fight one.\n\n\nMy hands know seed and soil.\nToday they learned a hoe swings two ways.\n\nI was afraid. I did it anyway. That is what brave is.\n\nIt went down. I am not hurt.\n\nDa is still coming home.\n\n— Da",
+        "My young one.\n\nI have done a thing I can't undo. A man came at me, only he wasn't a man anymore.\n\nI used what was in my hands.\n\n\nYou'd have closed your eyes. I kept mine open. One of us had to.\n\nAfter, my hands shook like yours do in the cold.\n\nI held them till they stopped. Then I kept walking.\n\n— Da"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Letter Three",
+      "variants": [
+        "My dear.\n\nA rat spoke to me today. In a little vest.\n\nI'm not losing my head. Others see him too.\n\nHe gave me paper, and a riddle.\n\n\n\"A seed doesn't chase the spring,\" he said. \"It waits. The young learn it first.\"\n\nThen he wished me well, and looked sad. I thanked him and kept walking.\n\n— Tomas",
+        "My dear.\n\nI met the rat again. He talks like a gentleman, which is strange on a rat.\n\nI asked him which way to the front.\n\n\n\"There's no front for the walking,\" he said. \"Only the ones who stop get found. The little ones know.\"\n\nI don't have time to stop. He wished me well anyway.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Letter Four",
+      "variants": [
+        "My dear.\n\nThe train is full of locked boxes. Every car has them.\n\nAny one could hold what we need. So I open them all.\n\n\nGold. Iron. Enough to buy the village back twice.\n\nI take it all. It's for you, I say.\n\nI'll stop at the right box. I keep saying that too.\n\n— Tomas",
+        "My dear.\n\nI keep meaning to walk on. Then there's another box, and another.\n\nA man could fill a barn with what I've left behind.\n\n\nI take only what fits the pack now. The pack is always full.\n\nYesterday I couldn't recall what I came aboard to find.\n\nOnly that I'd know it. So I keep opening boxes.\n\n— Tomas"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Letter Five",
+      "variants": [
+        "i don't know how long i've been here.\n\nthe wheels make three notes. i count those instead of days.\n\ni tried to say the village name aloud. it wouldn't come.\n\n\ni still know the orange book. small. orange. she never put it down.\n\nif i can hold onto that, i can hold the rest.\n\ncan't i.\n\n— tomas",
+        "i catch myself talking. out loud. no one there.\n\ni look at my hands and they aren't a farmer's. i don't know whose they are.\n\n\ni keep walking because stopping feels like dying.\n\nthe rat said the opposite. the rat. did i dream the rat.\n\ni forget what i'm walking toward. i walk toward it anyway.\n\n— tomas"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Letter Six",
+      "variants": [
+        "My dear.\n\nThere's a child ahead. Far up the car.\n\nShe holds something orange. She won't put it down.\n\nMy chest. My chest.\n\n\nIs it her? Could it be, after all this?\n\nWho is the woman beside her? Where is her mother? Why would a child be here at all?\n\nOr have I lost my mind, and is the train just being kind?\n\n— Da",
+        "My dear.\n\nA child, ahead in the car. A woman I don't know sits with her.\n\nThe child has something orange in her lap.\n\nI know that orange.\n\n\nWhat if I walk up and it isn't her? What is left of me then?\n\nAnd what if it is? Why is she here? Where are you? And who is that woman?\n\nI've stopped walking. After all this time, I've stopped.\n\n— Tomas"
+      ]
+    }
+  ]
+}
