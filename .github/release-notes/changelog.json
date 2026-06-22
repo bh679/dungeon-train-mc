@@ -1790,6 +1790,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-changelog-carry-forward",
+      "version": "0.346.0",
+      "type": "fix",
+      "title": "CurseForge changelogs now show real release notes",
+      "summary": "CurseForge pages for the mod and modpack now display each update's real release notes instead of a bare GitHub link or a generic placeholder. CurseForge only shows the newest file's changelog, and the steady stream of automated bundle updates kept pushing the real notes out of view \u2014 they're now carried forward so they stay visible.",
+      "highlights": [
+        "Curated release notes now appear on the CurseForge mod and modpack Changelog tab"
+      ],
+      "pr": 530,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
