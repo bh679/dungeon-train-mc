@@ -1733,6 +1733,18 @@
       "released": true,
       "released_in": "v0.344.0",
       "released_at": "2026-06-22T01:38:47Z"
+    },
+    {
+      "id": "spiders-huskskel-carriages",
+      "version": "0.345.0",
+      "type": "content",
+      "title": "Spider and Husk/Skeleton enemy carriages",
+      "summary": "Two new enemy carriage types join the train: a spider carriage and a husk/skeleton carriage, adding more variety to the enemies you'll face.",
+      "highlights": [],
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
