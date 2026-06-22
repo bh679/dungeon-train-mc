@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "della-l2-b",
-      "label": "Della - Letter 2 variant B",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
-      "story_meta": {
-        "id": "della_aaro_the_searching_mother",
-        "character": "Della Aaro",
-        "story": "The Searching Mother"
-      },
-      "letter": {
-        "index": 2,
-        "label": "Letter Two"
-      },
-      "variant": "Philippa,\n\nYour father went ahead to the train weeks ago, to find us a way through. Then the raiders came, and it was only us.\n\nWe ran. We came here to find him.\n\n\nSo I'm looking for two faces now. Yours, and his.\n\nTwo is not harder than one. It is twice the reason to keep my eyes open.\n\nI cross out the carriages. I don't cross out the days.\n\nDella",
-      "commit_message": "content(narrative): Della Letter 2 variant B"
-    },
-    {
       "id": "della-l3-a",
       "label": "Della - Letter 3 variant A",
       "type": "add_variant",
@@ -1225,6 +1208,11 @@
     {
       "id": "della-l2-a",
       "applied_at": "2026-06-22T05:38:59Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json"
+    },
+    {
+      "id": "della-l2-b",
+      "applied_at": "2026-06-22T06:33:02Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json"
     }
   ]
