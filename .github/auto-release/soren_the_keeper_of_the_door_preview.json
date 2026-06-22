@@ -1,0 +1,64 @@
+{
+  "_preview_note": "PREVIEW of the compiled story file. The cascade builds this up one variant per tick from the 14 pending queue entries. Do NOT load this directly — it lives outside the mod data dir on purpose. Final target: src/main/resources/data/dungeontrain/narratives/stories/soren_the_keeper_of_the_door.json",
+  "id": "soren_the_keeper_of_the_door",
+  "character": "Soren",
+  "story": "The Keeper of the Door",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "Whoever finds this seat,\n\nit is warm. I have only just left it.\n\nThe apple is yours. A gift you have surely earnt.\n\nI have been aboard longer than I can count. I stopped looking for the front a long way back.\n\n\nOne thing, dear one. Stay out of the dark stretches.\n\nWhatever you have lost, it is not in there. The dark keeps what it takes.\n\nEat something first.\n\nSoren",
+        "If you are reading this, love, you are new. Or you are kind. Both wear out here.\n\nI left the apple because feeding someone is the last thing here that still feels like winning.\n\n\nI believed once I would get off. The train cured me of that.\n\nAvoid the dark stretches. I know why now. It cost more than I had. The dark keeps what it takes.\n\nRest here a while.\n\nSoren"
+      ]
+    },
+    {
+      "index": 2,
+      "label": "Letter Two",
+      "variants": [
+        "For years I told people about the door.\n\nA way off the train. Go through it, I would say, if you ever find it.\n\nI half meant it. You give people hope you are not sure of. It is still hope.\n\n\nToday I learned it is real. I will not tell you how. But I know it now.\n\nAll these years I gave away a hope I was not sure of. Now the hope is true.\n\nIf you find that door, sweetheart.\n\nGo through it.\n\nSoren",
+        "I had made my peace. Peace is only wanting nothing. It is a kind of sleep.\n\nThen I learned the door is real, and the wanting woke up all at once.\n\nI am awake again now. I am not certain I thank it for that.\n\n\nI could be home by morning. You forget how strange that word gets. Home.\n\nBut I have never walked past a frightened face here. I will not start now.\n\nSo I will guide others to it, on my own way there.\n\nGo through it.\n\nSoren"
+      ]
+    },
+    {
+      "index": 3,
+      "label": "Letter Three",
+      "variants": [
+        "Della.\n\nI found you at the bottom of a bad hour. I gave you an apple. I did not leave.\n\nIt has been years since I walked beside anyone. I had forgotten the weight of it.\n\nWe search for your child together now. Two sets of eyes.\n\n\nThe door is real, Della. You could be home.\n\nYou shook your head. You will not leave without her.\n\nA small girl of eight. An orange book in her bag. You taught her to read. Pip.\n\nEat. We walk at first light.\n\nSoren",
+        "Della.\n\nYears alone, and then you. You handed me back something I had stopped letting myself miss. A voice that answers.\n\nEven after this train took your child, you keep walking. So I help you search. My door can wait a moment longer.\n\n\nI have seen this train wear people to nothing. I am afraid it will wear you.\n\nYou push too hard. I fear you are right to.\n\nThe door will be there for the three of us. Once we find little Philippa.\n\nEat. We walk at first light.\n\nSoren"
+      ]
+    },
+    {
+      "index": 4,
+      "label": "Letter Four",
+      "variants": [
+        "Della.\n\nThe trail went into a dark stretch. The kind I do not enter. I begged you to turn back.\n\nYou said it goes forward, so you go forward. We said hard things. They were the last.\n\n\nThen it felt like the floor gave way. I think I heard you dropped into the dark between the carriages.\n\nI heard your scream.\nThen... nothing.\n\n\nI screamed your name until I had no voice, and the dark gave none of it back. The dark keeps what it takes.\n\nSoren",
+        "Della.\n\nI told you the dark stretch would kill you. You said your girl's trail led into it.\n\nSo you went in. I wanted you to live. You wanted your daughter. We were both right. That is the cruel part.\n\n\nI have replayed the fall a thousand times. There is no version where I catch you.\n\nThere is no three of us now. I broke my own rule, and the dark took you. The dark keeps what it takes.\n\nSoren"
+      ]
+    },
+    {
+      "index": 5,
+      "label": "Letter Five",
+      "variants": [
+        "Della.\n\nAfter the dark, I stopped. I stopped handing out apples. I stopped looking at faces. I walked, and I did not see the carriages go by.\n\nGrief is its own dark stretch. I did not heed my own rule.\n\n\nI do not know how long I have been like this. The train eats time. Too long, I think.\n\nBut today the fog lifted. I can taste an apple again. It is time, Della. I am going to the door.\n\nSoren",
+        "Della.\n\nThere are people on this train who have stopped. You meet them. Their eyes are somewhere else. I always pitied them.\n\nAfter the dark, I became one of them. I do not know for how long.\n\n\nThe train eats time. I think it ate too much of mine. I am ashamed of the apples I let go cold.\n\nBut I am awake now. I can carry the grief and still walk. So I am going to the door. It is finally time.\n\nSoren"
+      ]
+    },
+    {
+      "index": 6,
+      "label": "Letter Six",
+      "variants": [
+        "Pip.\n\nYou asked after your mother, and I knew you at once. I had walked with her, until the dark took her.\n\nYou saw only a woman with an apple. I gave it to you, and you called us friends.\n\n\nYou told me all about her. I went quiet.\n\nI said your mother sounds wonderful. It came out hollow, like a thing you say but no longer believe. You are still going to find her.\n\nSoren",
+        "Pip.\n\nYou had her face. I knew you before you finished asking. She walked with me until she fell into the dark and did not come up.\n\nYou are her girl, hunting for her, and you do not know she is gone.\n\n\nYou asked how long I had been here. I would not say. You told me of her.\n\nI went quiet. I said she sounds wonderful. One word more was to say she is dead. So I let you keep looking. Forgive me, sweetheart.\n\nSoren"
+      ]
+    },
+    {
+      "index": 7,
+      "label": "Letter Seven",
+      "variants": [
+        "Pip.\n\nI told you about the door at last. The real way home. Go through it, I said, the moment you find it.\n\nYou said you would sit by it and wait for your mother. I said okay. This time I meant it.\n\n\nI was leaving, my hand on the way home. But I will not walk out of the dark while a child waits in it.\n\nSo I am the keeper of the door now. She waits for a mother I am sure is gone, and I never tell her.\n\nSoren",
+        "Pip.\n\nI gave you the way home. The true one, at last. I told you to go through it and not look back.\n\nYou will not. You will sit by it and keep your seat for your mother. I did not argue. For once I meant the kindness.\n\n\nI had my own way home in my hand. I let it go.\n\nI will grow old at this door, giving it away and using it for no one. A child waits here for a mother who is gone, and I keep the truth I will never say.\n\nSoren"
+      ]
+    }
+  ]
+}
