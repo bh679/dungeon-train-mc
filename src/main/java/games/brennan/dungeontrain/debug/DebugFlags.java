@@ -40,15 +40,12 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class DebugFlags {
 
-    // TEST SCAFFOLD (option-2 A/B ride, branch dev/backward-gap-registry-edge):
-    // diagnostics default ON so a tester rides straight in with overlays + chat
-    // feedback. REVERT to `false` before any merge to main.
-    private static volatile boolean gapCubes = true;
-    private static volatile boolean gapLine = true;
-    private static volatile boolean nextSpawn = true;
-    private static volatile boolean collision = true;
-    private static volatile boolean hudDistance = true;
-    private static volatile boolean chatTrainSpawn = true;
+    private static volatile boolean gapCubes = false;
+    private static volatile boolean gapLine = false;
+    private static volatile boolean nextSpawn = false;
+    private static volatile boolean collision = false;
+    private static volatile boolean hudDistance = false;
+    private static volatile boolean chatTrainSpawn = false;
     private static volatile boolean chatCollision = false;
     /**
      * Per-train "spawn stall" warnings emitted by
@@ -56,7 +53,7 @@ public final class DebugFlags {
      * default so normal play stays quiet; the server-side {@code LOGGER.warn}
      * fires regardless, so flipping this off does NOT lose forensic data.
      */
-    private static volatile boolean chatStallTrain = true; // TEST SCAFFOLD — revert before merge
+    private static volatile boolean chatStallTrain = false;
     /**
      * Verbose lifecycle logging for carriage-contents entities (per-entity
      * JOIN / LEAVE log lines with stack traces, plus per-entity spawn lines

@@ -180,7 +180,7 @@ public final class TrainCarriageAppender {
      * pre-diagnostic build (no map ops, no {@code LOGGER.warn}, no chat
      * broadcast).
      */
-    private static volatile boolean STALL_DETECTION_ENABLED = true; // TEST SCAFFOLD (option-2 ride) — revert before merge
+    private static volatile boolean STALL_DETECTION_ENABLED = false;
 
     /**
      * Opt-in master switch for the backward-seam-gap diagnostic probes
@@ -192,7 +192,7 @@ public final class TrainCarriageAppender {
      * is a no-op (no extra {@link Trains#byTrainId} scan, no log lines), so the
      * spawn loop runs bit-identical to the non-instrumented build.
      */
-    private static volatile boolean SEAMGAP_TRACE_ENABLED = true; // TEST SCAFFOLD (option-2 ride) — revert before merge
+    private static volatile boolean SEAMGAP_TRACE_ENABLED = false;
 
     /** @see #SEAMGAP_TRACE_ENABLED */
     public static boolean isSeamGapTraceEnabled() {
