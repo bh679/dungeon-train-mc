@@ -56,18 +56,24 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
     private static final int ISLAND_SAMPLE_OFFSET_X = 16_000;
     /** End-space Y that maps onto the track's bed Y (the End's islands cluster around here). */
     private static final int END_ISLAND_CENTER_Y = 56;
-    /** Vertical reach (blocks) around the bed within which islands may form (kept tight so they don't hang too deep). */
-    private static final int ISLAND_Y_RADIUS = 20;
-    /** Skip columns whose 2D island value is below this (deep End void) before the costly 3D sampling. */
-    private static final double ISLAND_2D_PREFILTER = -0.55;
+    /**
+     * Vertical reach (blocks) around the bed within which islands may form. Wide enough to contain
+     * a whole island's natural taper so its top/bottom aren't sliced flat (which read as sharp edges).
+     */
+    private static final int ISLAND_Y_RADIUS = 28;
+    /**
+     * Skip columns whose 2D island value is below this before the costly 3D sampling. Kept very low
+     * (near the function's −0.84 minimum) so it only rejects deep void, never clips an island fringe
+     * that the 3D noise would have filled.
+     */
+    private static final double ISLAND_2D_PREFILTER = -0.8;
 
     /** Blocks of clearance kept island-free on each side of the track lane (so the train has a clear path). */
     private static final int CORRIDOR_ISLAND_MARGIN = 2;
     /** Air pocket (blocks) cleared above an island top so a chorus plant can grow there. */
     private static final int CHORUS_POCKET = 10;
-    /** Per-island-top chance (scaled by End intensity) to grow a chorus plant, capped per chunk. */
-    private static final float CHORUS_CHANCE = 0.022f;
-    private static final int MAX_CHORUS_PER_CHUNK = 3;
+    /** Max chorus attempts per chunk — vanilla {@code CountPlacement.of(UniformInt.of(0, 4))}. */
+    private static final int CHORUS_COUNT_BOUND = 5;
 
     private static final Set<Heightmap.Types> WG_HEIGHTMAPS = EnumSet.of(
             Heightmap.Types.MOTION_BLOCKING,
@@ -200,27 +206,34 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
             Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
 
-            // Grow real chorus plants on island tops (clear an air pocket first; overworld terrain is still
-            // present at this gen step and is eroded away later on chunk load).
+            // Grow real chorus plants — matching vanilla's distribution exactly: 0-4 attempts per chunk
+            // (CountPlacement), random X/Z (InSquarePlacement), and ONLY in the end_highlands biome (the
+            // sole End biome that carries CHORUS_PLANT). We query the real End biome source at the sample
+            // column so chorus lands in the same places it would in the real End — far sparser than before.
+            net.minecraft.world.level.biome.BiomeSource endBiomes = end.getChunkSource().getGenerator().getBiomeSource();
+            net.minecraft.world.level.biome.Climate.Sampler endSampler = end.getChunkSource().randomState().sampler();
             ChunkGenerator generator = ctx.chunkGenerator();
             RandomSource random = ctx.random();
-            int placed = 0;
-            for (int dx = 0; dx < 16 && placed < MAX_CHORUS_PER_CHUNK; dx++) {
-                double e = endRamp[dx];
-                if (e <= 0.0) continue;
-                int worldX = chunkMinX + dx;
-                for (int dz = 0; dz < 16 && placed < MAX_CHORUS_PER_CHUNK; dz++) {
-                    int top = islandTop[dx * 16 + dz];
-                    if (top == Integer.MIN_VALUE || top + 1 > maxY) continue;
-                    if (random.nextFloat() >= CHORUS_CHANCE * e) continue;
-                    for (int dy = 1; dy <= CHORUS_POCKET && top + dy <= maxY; dy++) {
-                        setRaw(chunk, dx, top + dy, dz, Blocks.AIR.defaultBlockState());
-                    }
-                    BlockPos pos = new BlockPos(worldX, top + 1, chunkMinZ + dz);
-                    if (Feature.CHORUS_PLANT.place(NoneFeatureConfiguration.INSTANCE, level, generator, random, pos)) {
-                        placed++;
-                    }
+            int count = random.nextInt(CHORUS_COUNT_BOUND);
+            for (int i = 0; i < count; i++) {
+                int dx = random.nextInt(16);
+                int dz = random.nextInt(16);
+                if (endRamp[dx] <= 0.0) continue;
+                int top = islandTop[dx * 16 + dz];
+                if (top == Integer.MIN_VALUE || top + 1 > maxY) continue;
+                int sampleX = chunkMinX + dx + ISLAND_SAMPLE_OFFSET_X;
+                int worldZ = chunkMinZ + dz;
+                int endY = END_ISLAND_CENTER_Y + (top - bedY);
+                net.minecraft.core.Holder<net.minecraft.world.level.biome.Biome> biome = endBiomes.getNoiseBiome(
+                        net.minecraft.core.QuartPos.fromBlock(sampleX),
+                        net.minecraft.core.QuartPos.fromBlock(endY),
+                        net.minecraft.core.QuartPos.fromBlock(worldZ), endSampler);
+                if (!biome.is(net.minecraft.world.level.biome.Biomes.END_HIGHLANDS)) continue;
+                for (int dy = 1; dy <= CHORUS_POCKET && top + dy <= maxY; dy++) {
+                    setRaw(chunk, dx, top + dy, dz, Blocks.AIR.defaultBlockState());
                 }
+                BlockPos pos = new BlockPos(chunkMinX + dx, top + 1, worldZ);
+                Feature.CHORUS_PLANT.place(NoneFeatureConfiguration.INSTANCE, level, generator, random, pos);
             }
 
             chunk.setUnsaved(true);
