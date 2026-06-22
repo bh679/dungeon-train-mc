@@ -73,6 +73,15 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 5000;
+    /**
+     * Blocks the End sky/fog fade lags the terrain on each edge (sky-only; pushed toward
+     * the void core). Delays the fade-in on entry and advances the fade-out on exit, so the
+     * sky stays overworld while the ground first crumbles and returns to overworld before
+     * the terrain has fully reformed. 0 = synced with terrain erosion.
+     */
+    public static final int MIN_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 10_000;
+    public static final int DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 120;
 
     /**
      * Dev-test preset for the disintegration band — the old compact 500-block journey, used
@@ -98,6 +107,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -113,6 +123,7 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
         DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = pair.getLeft().disintegrationOverworldHoldBlocks;
         DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = pair.getLeft().disintegrationFirstOverworldBlocks;
+        DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = pair.getLeft().disintegrationSkyFadeOffsetBlocks;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -183,12 +194,19 @@ public final class DungeonTrainCommonConfig {
                         "≥ overworldHold there is no early shift and the classic behaviour applies. Default 5000.")
                 .defineInRange("disintegrationFirstOverworldBlocks", DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS,
                         MIN_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS, MAX_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks = b
+                .comment("Blocks the End sky/fog fade lags the terrain on each edge (sky-only; toward the void core).",
+                        "Delays the sky fade-in on entry and advances the fade-out on exit, so the sky stays overworld",
+                        "while the ground first crumbles and returns to overworld before the terrain has fully reformed.",
+                        "Does not affect terrain erosion. 0 = synced with terrain. Default 120.")
+                .defineInRange("disintegrationSkyFadeOffsetBlocks", DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS,
+                        MIN_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS, MAX_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
-                disintegrationFirstOverworldBlocks);
+                disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks);
     }
 
     /**
@@ -297,6 +315,11 @@ public final class DungeonTrainCommonConfig {
         return Math.max(0, getDisintegrationOverworldHoldBlocks() - getDisintegrationFirstOverworldBlocks());
     }
 
+    /** Sky/fog fade lag (blocks) behind the terrain on each band edge; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationSkyFadeOffsetBlocks() {
+        return isLoaded() ? DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS.get() : DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -306,5 +329,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
                           ModConfigSpec.IntValue disintegrationEndHoldBlocks,
                           ModConfigSpec.IntValue disintegrationOverworldHoldBlocks,
-                          ModConfigSpec.IntValue disintegrationFirstOverworldBlocks) {}
+                          ModConfigSpec.IntValue disintegrationFirstOverworldBlocks,
+                          ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks) {}
 }

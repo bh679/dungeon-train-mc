@@ -43,6 +43,11 @@ public final class ClientVoidBand {
      * 1 across the whole void+End+void middle. Repeats every cycle, so the End
      * atmosphere returns each time the world breaks apart. Drives the sky crossfade,
      * the fog darkening, and cloud suppression.
+     *
+     * <p>Uses {@link Disintegration#skyRamp} (not {@code middleRamp}), so the sky lags the
+     * terrain by {@code disintegrationSkyFadeOffsetBlocks} on each edge: it stays overworld
+     * while the ground first crumbles on entry and returns to overworld before the terrain
+     * has fully reformed on exit. Offset 0 reproduces the terrain-synced behaviour.</p>
      */
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
@@ -53,6 +58,7 @@ public final class ClientVoidBand {
         int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
         int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
         int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
-        return Disintegration.middleRamp((int) Math.floor(worldX), startX, phaseShift, fade, voidHold, endHold, owHold);
+        int skyOffset = DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks();
+        return Disintegration.skyRamp((int) Math.floor(worldX), startX, phaseShift, fade, voidHold, endHold, owHold, skyOffset);
     }
 }
