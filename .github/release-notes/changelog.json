@@ -1782,11 +1782,9 @@
       "id": "survey-submission-dev-ping",
       "version": "0.346.0",
       "type": "feat",
-      "title": "Feedback reaches the developer instantly",
-      "summary": "Every feedback-survey answer you submit now pings the developer in Discord, so your suggestions are seen right away. The Free Play notice no longer pings.",
-      "highlights": [
-        "Each submitted survey answer notifies the dev in the community Discord"
-      ],
+      "title": "Your feedback gets noticed",
+      "summary": "Survey answers you submit are now flagged straight to the developer, so your suggestions don't get lost.",
+      "highlights": [],
       "pr": 529,
       "date": "2026-06-22",
       "released": false,
