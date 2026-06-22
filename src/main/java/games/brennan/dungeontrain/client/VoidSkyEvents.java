@@ -2,11 +2,13 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.sounds.Musics;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.SelectMusicEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 
 /**
@@ -15,6 +17,11 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  *   <li>{@link ViewportEvent.ComputeFogColor} — darkens fog toward the End's look
  *       (~15% brightness) as the void intensity {@code t} rises, so the horizon
  *       blackens out under the End-sky overlay.</li>
+ *   <li>{@link SelectMusicEvent} — swaps the soundtrack to the vanilla End music
+ *       ({@code minecraft:music.end}) while the player is inside the band, so the
+ *       music matches the End sky/fog already on screen. The band is layered onto the
+ *       Overworld (not the real {@code the_end} dimension), so vanilla would otherwise
+ *       keep playing Overworld/biome music across the void.</li>
  *   <li>{@link ClientPlayerNetworkEvent.LoggingOut} — clears the synced band state
  *       so it never leaks into the next world.</li>
  * </ul>
@@ -22,6 +29,13 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class VoidSkyEvents {
+
+    /**
+     * Above this End-sky intensity, the soundtrack switches to the End music. Matches
+     * {@code LevelRendererVoidSkyMixin}'s cloud-hide threshold so the music change lands
+     * at the same point the clouds vanish and the End sky has mostly faded in.
+     */
+    private static final double END_MUSIC_THRESHOLD = 0.5;
 
     private VoidSkyEvents() {}
 
@@ -35,6 +49,19 @@ public final class VoidSkyEvents {
         event.setRed(event.getRed() * f);
         event.setGreen(event.getGreen() * f);
         event.setBlue(event.getBlue() * f);
+    }
+
+    @SubscribeEvent
+    public static void onSelectMusic(SelectMusicEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return;
+        if (!mc.level.dimension().equals(Level.OVERWORLD)) return;
+        // Respect screens that carry their own music (e.g. credits) — only override in-world.
+        if (mc.screen != null && mc.screen.getBackgroundMusic() != null) return;
+        double t = ClientVoidBand.endSkyIntensityAt(mc.player.getX());
+        if (t > END_MUSIC_THRESHOLD) {
+            event.setMusic(Musics.END);
+        }
     }
 
     @SubscribeEvent
