@@ -1718,6 +1718,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-story-public-channel",
+      "version": "0.344.0",
+      "type": "fix",
+      "title": "Echo encounter stories now post to the public death feed",
+      "summary": "The remote-echo encounter story now appears in the public death-report channel alongside the death manifests, instead of the live community feed \u2014 keeping its distinct greyish-blue colour so it still reads apart from a death.",
+      "highlights": [
+        "Encounter stories moved to the public death-report channel, next to the death manifests.",
+        "Keeps the greyish-blue embed bar so they stay visually distinct from deaths."
+      ],
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
