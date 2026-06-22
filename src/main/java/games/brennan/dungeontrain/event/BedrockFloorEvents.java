@@ -57,6 +57,14 @@ public final class BedrockFloorEvents {
         }
 
         ChunkAccess chunk = event.getChunk();
+
+        // No bedrock floor inside the disintegration band — the void has no floor.
+        long[] band = WorldDisintegrationEvents.bandRange(level);
+        if (band != null) {
+            int cMinX = chunk.getPos().getMinBlockX();
+            if (cMinX + 15 >= band[0] && cMinX < band[1]) return;
+        }
+
         int minY = level.getMinBuildHeight();
         int sectionIdx = chunk.getSectionIndex(minY);
         LevelChunkSection section = chunk.getSection(sectionIdx);

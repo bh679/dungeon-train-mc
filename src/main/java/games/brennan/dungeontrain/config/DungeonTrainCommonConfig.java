@@ -39,10 +39,32 @@ public final class DungeonTrainCommonConfig {
     /** Global DEFAULT Compatible Terrain mode for new worlds. false = classic Dungeon Train terrain. */
     public static final boolean DEFAULT_COMPATIBLE_TERRAIN = false;
 
+    /**
+     * World disintegration band — the world breaks apart into void past a carriage
+     * count, then reassembles. Always-on core mechanic with a kill switch.
+     */
+    public static final boolean DEFAULT_DISINTEGRATION_ENABLED = true;
+    /** Carriages of forward travel before the world starts breaking apart. */
+    public static final int MIN_DISINTEGRATION_START_CARRIAGES = 0;
+    public static final int MAX_DISINTEGRATION_START_CARRIAGES = 1_000_000;
+    public static final int DEFAULT_DISINTEGRATION_START_CARRIAGES = 250;
+    /** Blocks over which terrain fades in/out of void at each band edge. */
+    public static final int MIN_DISINTEGRATION_FADE_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_FADE_BLOCKS = 10_000;
+    public static final int DEFAULT_DISINTEGRATION_FADE_BLOCKS = 100;
+    /** Blocks of fully-void core (only the floating track) between the two fades. */
+    public static final int MIN_DISINTEGRATION_CORE_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_CORE_BLOCKS = 100_000;
+    public static final int DEFAULT_DISINTEGRATION_CORE_BLOCKS = 60;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
+    public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_START_CARRIAGES;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_CORE_BLOCKS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -51,6 +73,10 @@ public final class DungeonTrainCommonConfig {
         DEFAULT_PLAYER_MOB_SPAWN = pair.getLeft().defaultPlayerMobSpawnOneIn;
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
+        DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
+        DISINTEGRATION_START_CARRIAGES = pair.getLeft().disintegrationStartCarriages;
+        DISINTEGRATION_FADE_BLOCKS = pair.getLeft().disintegrationFadeBlocks;
+        DISINTEGRATION_CORE_BLOCKS = pair.getLeft().disintegrationCoreBlocks;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -79,9 +105,34 @@ public final class DungeonTrainCommonConfig {
                         "false = classic Dungeon Train terrain. Applies to NEW worlds only; existing worlds keep the terrain",
                         "they were created with. The matching terrain mod must also be installed for any visible change.")
                 .define("defaultCompatibleTerrain", DEFAULT_COMPATIBLE_TERRAIN);
+
+        ModConfigSpec.BooleanValue disintegrationEnabled = b
+                .comment("World disintegration band. When true (default), the world progressively breaks apart into",
+                        "void past a carriage count, reaches a fully-void core where only the floating track remains,",
+                        "then reassembles into normal terrain — one dramatic gap crossed once per run. The train rides",
+                        "level the whole way (its bed + rails are preserved); the surrounding world and the track's",
+                        "support pillars erode away. Set false to disable entirely.")
+                .define("disintegrationEnabled", DEFAULT_DISINTEGRATION_ENABLED);
+        ModConfigSpec.IntValue disintegrationStartCarriages = b
+                .comment("Carriages of forward travel (from the X=0 spawn line) before the world begins breaking apart.",
+                        "Maps to a world-X line at startCarriages × carriageLength. Lower this (e.g. 10) for testing.",
+                        "Changing it only affects chunks generated afterwards — already-generated terrain keeps its state.")
+                .defineInRange("disintegrationStartCarriages", DEFAULT_DISINTEGRATION_START_CARRIAGES,
+                        MIN_DISINTEGRATION_START_CARRIAGES, MAX_DISINTEGRATION_START_CARRIAGES);
+        ModConfigSpec.IntValue disintegrationFadeBlocks = b
+                .comment("Blocks over which terrain fades from solid to fully void at each edge of the band (in and out).",
+                        "Larger = a more gradual, cinematic break-apart. Default 100.")
+                .defineInRange("disintegrationFadeBlocks", DEFAULT_DISINTEGRATION_FADE_BLOCKS,
+                        MIN_DISINTEGRATION_FADE_BLOCKS, MAX_DISINTEGRATION_FADE_BLOCKS);
+        ModConfigSpec.IntValue disintegrationCoreBlocks = b
+                .comment("Blocks of fully-void core (only the floating track survives) between the fade-in and fade-out.",
+                        "Total band width on X = 2 × fade + core. Default 60.")
+                .defineInRange("disintegrationCoreBlocks", DEFAULT_DISINTEGRATION_CORE_BLOCKS,
+                        MIN_DISINTEGRATION_CORE_BLOCKS, MAX_DISINTEGRATION_CORE_BLOCKS);
         b.pop();
 
-        return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain);
+        return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
+                disintegrationEnabled, disintegrationStartCarriages, disintegrationFadeBlocks, disintegrationCoreBlocks);
     }
 
     /**
@@ -129,7 +180,31 @@ public final class DungeonTrainCommonConfig {
         COMPATIBLE_TERRAIN.save();
     }
 
+    /** Whether the world disintegration band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isDisintegrationEnabled() {
+        return isLoaded() ? DISINTEGRATION_ENABLED.get() : DEFAULT_DISINTEGRATION_ENABLED;
+    }
+
+    /** Carriages of forward travel before the band begins; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationStartCarriages() {
+        return isLoaded() ? DISINTEGRATION_START_CARRIAGES.get() : DEFAULT_DISINTEGRATION_START_CARRIAGES;
+    }
+
+    /** Fade-in/out span (blocks) at each band edge; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationFadeBlocks() {
+        return isLoaded() ? DISINTEGRATION_FADE_BLOCKS.get() : DEFAULT_DISINTEGRATION_FADE_BLOCKS;
+    }
+
+    /** Fully-void core span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationCoreBlocks() {
+        return isLoaded() ? DISINTEGRATION_CORE_BLOCKS.get() : DEFAULT_DISINTEGRATION_CORE_BLOCKS;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
-                          ModConfigSpec.BooleanValue compatibleTerrain) {}
+                          ModConfigSpec.BooleanValue compatibleTerrain,
+                          ModConfigSpec.BooleanValue disintegrationEnabled,
+                          ModConfigSpec.IntValue disintegrationStartCarriages,
+                          ModConfigSpec.IntValue disintegrationFadeBlocks,
+                          ModConfigSpec.IntValue disintegrationCoreBlocks) {}
 }
