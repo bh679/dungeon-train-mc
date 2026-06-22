@@ -105,6 +105,25 @@ public final class Disintegration {
     }
 
     /**
+     * True iff EVERY column of the 16-wide chunk starting at {@code chunkMinX} is fully eroded
+     * ({@link #middleRamp} ≥ 1) — i.e. the overworld terrain there would be 100% removed by the
+     * post-process erosion, so generating it is pure waste and the noise fill can be skipped
+     * entirely. This covers the void holds, the End core, and the void↔End transitions (all held at
+     * {@code middleRamp == 1}). A chunk with any fade column ({@code middleRamp < 1}) returns false
+     * and keeps real overworld terrain so the erosion gradient stays smooth.
+     *
+     * <p>Used by both the {@code fillFromNoise} short-circuit (skip noise generation) and
+     * {@code TrackBedFeature} (skip support pillars — on empty terrain the ground probe would build
+     * full-height pillars to bedrock, and they'd be fully eroded anyway). Pure / unit-testable.</p>
+     */
+    public static boolean isChunkFullyEroded(int chunkMinX, long startX, int fade, int voidHold, int endHold, int owHold) {
+        for (int dx = 0; dx < 16; dx++) {
+            if (middleRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold) < 1.0) return false;
+        }
+        return true;
+    }
+
+    /**
      * End ramp {@code E ∈ [0,1]}, evaluated on the repeating cycle: 0 through the
      * overworld + void holds, linear 0→1 as the void fades into End world-gen, flat 1
      * across the End core, linear 1→0 back to void. Drives End-stone island fill.

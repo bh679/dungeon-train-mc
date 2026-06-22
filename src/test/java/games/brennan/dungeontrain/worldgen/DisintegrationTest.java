@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -82,6 +83,38 @@ final class DisintegrationTest {
     void void_holds_are_pure_void() {
         assertEquals(1.0, Disintegration.middleRamp(1200, START_X, F, VH, EH, OW), EPS); // dd=120
         assertEquals(0.0, Disintegration.endRamp(1200, START_X, F, VH, EH, OW), EPS);
+    }
+
+    // ---- chunk-level fully-eroded classifier (fillFromNoise short-circuit gate) ----
+
+    @Test
+    @DisplayName("isChunkFullyEroded: true only when all 16 columns of a chunk sit at middleRamp==1")
+    void chunkFullyEroded() {
+        // middleRamp == 1 for worldX in [1180, 1660] this cycle (after OW=80 + fade=100, held to
+        // bandLength-fade = 580 → worldX 1080+580=1660). A 16-wide chunk fully inside that is eroded.
+        assertTrue(Disintegration.isChunkFullyEroded(1184, START_X, F, VH, EH, OW));  // 1184..1199 void hold
+        assertTrue(Disintegration.isChunkFullyEroded(1392, START_X, F, VH, EH, OW));  // 1392..1407 End core
+
+        // Overworld phase and before the anchor: nothing eroded.
+        assertFalse(Disintegration.isChunkFullyEroded(1024, START_X, F, VH, EH, OW)); // overworld phase
+        assertFalse(Disintegration.isChunkFullyEroded(0, START_X, F, VH, EH, OW));    // before the anchor
+
+        // Straddling the fade↔hold edges: one fade column (<1) disqualifies the whole chunk so the
+        // gradient keeps real terrain to erode.
+        assertFalse(Disintegration.isChunkFullyEroded(1168, START_X, F, VH, EH, OW)); // 1168..1183 fade-in tail
+        assertFalse(Disintegration.isChunkFullyEroded(1648, START_X, F, VH, EH, OW)); // 1648..1663 fade-out head
+
+        // Disabled band (startX == DisintegrationBand.OFF == Long.MAX_VALUE) never short-circuits.
+        assertFalse(Disintegration.isChunkFullyEroded(1392, Long.MAX_VALUE, F, VH, EH, OW));
+    }
+
+    @Test
+    @DisplayName("isChunkFullyEroded repeats with the cycle period")
+    void chunkFullyEroded_periodic() {
+        assertEquals(
+                Disintegration.isChunkFullyEroded(1392, START_X, F, VH, EH, OW),
+                Disintegration.isChunkFullyEroded(1392 + PERIOD, START_X, F, VH, EH, OW));
+        assertTrue(Disintegration.isChunkFullyEroded(1392 + PERIOD, START_X, F, VH, EH, OW));
     }
 
     @Test
