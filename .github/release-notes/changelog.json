@@ -1704,6 +1704,22 @@
       "released_at": "2026-06-21T06:13:26Z"
     },
     {
+      "id": "short-abandon-no-public-feed",
+      "version": "0.344.0",
+      "type": "feat",
+      "title": "Short abandoned runs stay off the public death feed",
+      "summary": "Bailing out of a run early no longer broadcasts it. If you hit \"Abandon This Run\" before reaching 20 carriages, your run is kept out of the public death feed \u2014 only runs that actually went somewhere get posted. Your own run summary and death recap are unchanged.",
+      "highlights": [
+        "Abandoned runs under 20 carriages are no longer posted to the public feed",
+        "Longer abandoned runs and all normal deaths still post as before"
+      ],
+      "pr": 522,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "echo-story-public-channel",
       "version": "0.344.0",
       "type": "fix",

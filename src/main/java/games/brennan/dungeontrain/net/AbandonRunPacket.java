@@ -67,6 +67,18 @@ public record AbandonRunPacket() implements CustomPacketPayload {
         return TYPE;
     }
 
+    /**
+     * True when {@code source} is one of the pause-menu "abandon run" damage types
+     * ({@link #ABANDON_CAUSES}). Lets death-report handlers treat an abandoned run
+     * differently from a genuine in-run death without duplicating the cause list.
+     */
+    public static boolean isAbandonCause(DamageSource source) {
+        for (ResourceKey<DamageType> key : ABANDON_CAUSES) {
+            if (source.is(key)) return true;
+        }
+        return false;
+    }
+
     public static void handle(AbandonRunPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;

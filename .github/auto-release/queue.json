@@ -1,5 +1,244 @@
 {
-  "pending": [],
+  "pending": [
+    {
+      "id": "della-l1-a",
+      "label": "Della - Letter 1 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Letter One"
+      },
+      "variant": "I fell asleep holding her hand.\n\nI woke up holding nothing.\n\nThe seat beside me was still warm.\n\nSo I haven't been asleep long. So she can't have gone far.\n\n\nThat's what I keep telling myself.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 1 variant A"
+    },
+    {
+      "id": "della-l1-b",
+      "label": "Della - Letter 1 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 1,
+        "label": "Letter One"
+      },
+      "variant": "Philippa.\n\nYou fell asleep on my shoulder with the orange book still in your bag. I felt the corner of it against my arm.\n\nThen the train hit a bump. Just one.\n\n\nAnd you were gone, and the book was gone, and the warmth stayed.\n\nI'm going to walk every carriage until it gives you back.\n\nYou can read this. I taught you that.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 1 variant B"
+    },
+    {
+      "id": "della-l2-a",
+      "label": "Della - Letter 2 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Letter Two"
+      },
+      "variant": "I've stopped crying. Crying is for when nothing can be done. Plenty can be done.\n\nI have a notebook. I number the carriages and mark the ones I've searched.\n\n\nI'll find my girl the same way.\n\nAnd her father, if he made it aboard.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 2 variant A"
+    },
+    {
+      "id": "della-l2-b",
+      "label": "Della - Letter 2 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 2,
+        "label": "Letter Two"
+      },
+      "variant": "Philippa,\n\nYour father went ahead to the train weeks ago, to find us a way through. Then the raiders came, and it was only us.\n\nWe ran. We came here to find him.\n\n\nSo I'm looking for two faces now. Yours, and his.\n\nTwo is not harder than one. It is twice the reason to keep my eyes open.\n\nI cross out the carriages. I don't cross out the days.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 2 variant B"
+    },
+    {
+      "id": "della-l3-a",
+      "label": "Della - Letter 3 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Letter Three"
+      },
+      "variant": "I found a paper today.\n\nThree words in a child's hand, and I knew them before I read them. I taught that hand its letters.\n\n\nIt was hers. Pip's. It said she is looking for me.\n\nSo she is alive. She is awake. She is moving, and she is looking, same as I am.\n\n\nThe paper was not fresh. She passed through before me. I am behind her.\n\nBut behind is not lost. Behind, I can follow.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 3 variant A"
+    },
+    {
+      "id": "della-l3-b",
+      "label": "Della - Letter 3 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 3,
+        "label": "Letter Three"
+      },
+      "variant": "Philippa. I found your note.\n\nYou wrote that you are looking for me. I have read it forty times. I have it in my coat.\n\n\nYou are out there, and you are still you — still looking, still walking, not sitting down to wait. That is my girl.\n\n\nSo here is what we do now. You leave your papers. I follow them. I am closer than I was yesterday, even if the train says otherwise.\n\nKeep writing, Pip. I am reading every word.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 3 variant B"
+    },
+    {
+      "id": "della-l4-a",
+      "label": "Della - Letter 4 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Letter Four"
+      },
+      "variant": "There is a man on this train who wears a yellow coat.\n\nI have seen men like him before — after long marches, after sieges. The train is only a longer siege.\n\n\nHe told me the train does not stop. He has stopped, though, in every way that counts. He mostly sleeps now.\n\nBut he looked at me when I described her. And he nodded.\n\n\nHe saw her. A small girl, he said, asking everyone for her mother. Would not sit, would not stay.\n\nThat is twice now the train has told me she is alive. I will not get tired of hearing it.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 4 variant A"
+    },
+    {
+      "id": "della-l4-b",
+      "label": "Della - Letter 4 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 4,
+        "label": "Letter Four"
+      },
+      "variant": "Philippa, today I met a man in a yellow coat.\n\nHe has ridden this train longer than a person should. The train has worn him thin. But there is still kindness in him.\n\n\nHe remembered you. A girl asking after her mother, he said, who would not sit down. He smiled when he said it. The first time I have seen this train make anyone smile.\n\n\nI asked him about your father too. About Tomas. He shook his head. Nothing.\n\nThe train will give me back one of you. I refuse to believe it cannot be both.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 4 variant B"
+    },
+    {
+      "id": "della-l5-a",
+      "label": "Della - Letter 5 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Letter Five"
+      },
+      "variant": "I have a friend now. Her name is Soren.\n\nI had forgotten what it costs to do this alone, until I stopped having to.\n\n\nShe has been on the train longer than I have years. She knows its moods. She gives away food she cannot spare and calls it nothing.\n\nWe search together now. Two sets of eyes.\n\n\nShe thinks I push too hard. I think she has stopped pushing at all.\n\nFor now that is a thing we can laugh about. For now we walk the same direction.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 5 variant A"
+    },
+    {
+      "id": "della-l5-b",
+      "label": "Della - Letter 5 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 5,
+        "label": "Letter Five"
+      },
+      "variant": "Philippa, I want you to know about Soren.\n\nShe found me at a low hour and did not leave. She is the first good thing this train has handed me.\n\n\nShe has been aboard longer than anyone I have met. She talks about a door that leads off the train. She wants me to want it.\n\nI tell her I want only one thing, and it has your name.\n\n\nWhen I find you, you will meet her. You will like her, I think. She knows where to find the most delicious apples.\n\nHold on to that, Pip. There are good people even here.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 5 variant B"
+    },
+    {
+      "id": "della-l6-a",
+      "label": "Della - Letter 6 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 6,
+        "label": "Letter Six"
+      },
+      "variant": "Pip's papers led into a dark stretch. The kind even Soren would not enter.\n\nShe told me to turn back. I told her the trail goes forward, so I go forward.\n\n\nWe said hard things. Then the floor gave way beneath me, and I went down into the dark between the carriages. The last thing I heard was Soren screaming my name.\n\n\nBut I survived. I caught a rail and climbed back up, bruised and breathing.\n\nNot three carriages back, where I fell. With the train moving, surely not ahead.\n\nSomewhere I had yet to travel.\n\n\nI can't get back to her. The dark does not give second chances.\n\nWhatever she believes became of me down there, I'll never get the chance to tell her otherwise.\n\nThe trail goes forward. So do I.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 6 variant A"
+    },
+    {
+      "id": "della-l6-b",
+      "label": "Della - Letter 6 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 6,
+        "label": "Letter Six"
+      },
+      "variant": "Philippa,\n\nYour trail led into a dark stretch. She begged me not to follow it. I followed it. You were at the end of it, or might be.\n\n\nWe argued. The last word I gave her was a sharp one. Then the floor opened under me and I fell into the dark between the carriages, with her screaming above me.\n\n\nI lived, Pip. I caught hold and climbed back, far down the train. Soren saw none of it — only me dropping into the black and not coming back.\n\nShe likely thinks I'm dead, and I can't tell her she's wrong.\n\n\nIf I do not meet her again, at least there is another set of eyes looking for you now.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 6 variant B"
+    },
+    {
+      "id": "della-l7-a",
+      "label": "Della - Letter 7 variant A",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 7,
+        "label": "Letter Seven"
+      },
+      "variant": "I've stopped counting days. Not because I gave up — because the number stopped mattering and the looking did not.\n\n\nTomas's trail went cold a long way back. No papers. No word. I keep his name in my mouth so it doesn't get lost too.\n\nPip's trail I still have. Faint, but mine to follow.\n\n\nI know now there may be no end to this train, and no end to the walking. I've made my peace with that. I have not made peace with stopping.\n\nSo I won't stop.\n\n\nI leave my own papers now, in the carriages everyone passes. If I can't catch her, she can catch me.\n\n\nA mother and a daughter, walking the same endless train, leaving each other words.\n\nWe will cross. I have decided it.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 7 variant A"
+    },
+    {
+      "id": "della-l7-b",
+      "label": "Della - Letter 7 variant B",
+      "type": "add_variant",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
+      "story_meta": {
+        "id": "della_aaro_the_searching_mother",
+        "character": "Della Aaro",
+        "story": "The Searching Mother"
+      },
+      "letter": {
+        "index": 7,
+        "label": "Letter Seven"
+      },
+      "variant": "Philippa, I'm leaving this where everyone passes — the way you taught me, without knowing you taught me.\n\n\nI'm still behind you. I've read your papers. You're still walking, still you, and that's all I need to keep walking too.\n\nYour father I have not found. Hold his name with me. Tomas.\n\n\nI don't know how long this train is. I've decided it doesn't matter. I'll walk it as long as it takes, and longer. I am closer than it wants me to be.\n\n\nYou wrote once that mums find things.\n\nYou were right. Keep writing, Pip — I am reading every word.\n\nI will find you.\n\nDella",
+      "commit_message": "content(narrative): Della Letter 7 variant B"
+    }
+  ],
   "applied": [
     {
       "id": "faulthursts-asides-i",
