@@ -262,4 +262,84 @@ final class TrainCarriageAppenderTest {
         Set<UUID> target = TrainCarriageAppender.backmostForceLoadTargets(trailing(3, -7, 2, -1), 1);
         assertEquals(Set.of(slId(-7)), target);
     }
+
+    // ---- Option 2: registry-edge reference resolution ----
+    //
+    // decideEdgeAction is the pure decision core: given whether the registry
+    // edge sub-level is visible / held / a live registry wrapper, choose
+    // SPAWN (place against it), RELOAD_DEFER (reload from holding, defer), or
+    // DEFER (not yet surfaced). subLevelDeltaFor proves the placement invariant
+    // that makes the void impossible: delta is always ±1 because the reference
+    // IS the registry edge.
+
+    @Test
+    @DisplayName("decideEdgeAction: visible-and-live → SPAWN")
+    void decide_visible_spawns() {
+        assertEquals(TrainCarriageAppender.EdgeAction.SPAWN,
+            TrainCarriageAppender.decideEdgeAction(true, false, false));
+        // Visible always wins regardless of the other flags.
+        assertEquals(TrainCarriageAppender.EdgeAction.SPAWN,
+            TrainCarriageAppender.decideEdgeAction(true, true, true));
+    }
+
+    @Test
+    @DisplayName("decideEdgeAction: culled-to-holding → RELOAD_DEFER")
+    void decide_held_reloadDefers() {
+        assertEquals(TrainCarriageAppender.EdgeAction.RELOAD_DEFER,
+            TrainCarriageAppender.decideEdgeAction(false, true, false));
+    }
+
+    @Test
+    @DisplayName("decideEdgeAction: live registry wrapper (transient findAll dropout) → SPAWN")
+    void decide_registryResident_spawns() {
+        assertEquals(TrainCarriageAppender.EdgeAction.SPAWN,
+            TrainCarriageAppender.decideEdgeAction(false, false, true));
+    }
+
+    @Test
+    @DisplayName("decideEdgeAction: not visible, not held, no live AABB → DEFER")
+    void decide_absent_defers() {
+        assertEquals(TrainCarriageAppender.EdgeAction.DEFER,
+            TrainCarriageAppender.decideEdgeAction(false, false, false));
+    }
+
+    @Test
+    @DisplayName("decideEdgeAction: held takes precedence over a stale registry AABB (no void)")
+    void decide_heldBeatsStaleRegistryAabb() {
+        // A held edge's registry wrapper can still report a non-zero (stale)
+        // AABB. held MUST win so we reload rather than place against a stale pose.
+        assertEquals(TrainCarriageAppender.EdgeAction.RELOAD_DEFER,
+            TrainCarriageAppender.decideEdgeAction(false, true, true));
+    }
+
+    @Test
+    @DisplayName("subLevelDeltaFor: backward spawn against the registry edge is always -1")
+    void subLevelDelta_backwardIsMinusOne() {
+        for (int groupSize : new int[] { 1, 3, 16 }) {
+            for (int edge : new int[] { 0, -6, 7, -105 }) {
+                int newAnchor = edge - groupSize; // backwardAnchor
+                assertEquals(-1, TrainCarriageAppender.subLevelDeltaFor(newAnchor, edge, groupSize),
+                    "groupSize=" + groupSize + " edge=" + edge);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("subLevelDeltaFor: forward spawn against the registry edge is always +1")
+    void subLevelDelta_forwardIsPlusOne() {
+        for (int groupSize : new int[] { 1, 3, 16 }) {
+            for (int edge : new int[] { 0, -6, 7, 105 }) {
+                int newAnchor = edge + groupSize; // forwardAnchor
+                assertEquals(1, TrainCarriageAppender.subLevelDeltaFor(newAnchor, edge, groupSize),
+                    "groupSize=" + groupSize + " edge=" + edge);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("subLevelDeltaFor: groupSize=0 throws (defensive)")
+    void subLevelDelta_groupSizeZeroThrows() {
+        assertThrows(IllegalArgumentException.class,
+            () -> TrainCarriageAppender.subLevelDeltaFor(-3, 0, 0));
+    }
 }

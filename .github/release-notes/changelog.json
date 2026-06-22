@@ -1787,9 +1787,54 @@
       "highlights": [],
       "pr": 529,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
+    },
+    {
+      "id": "curseforge-changelog-carry-forward",
+      "version": "0.346.0",
+      "type": "fix",
+      "title": "CurseForge changelogs now show real release notes",
+      "summary": "CurseForge pages for the mod and modpack now display each update's real release notes instead of a bare GitHub link or a generic placeholder. CurseForge only shows the newest file's changelog, and the steady stream of automated bundle updates kept pushing the real notes out of view \u2014 they're now carried forward so they stay visible.",
+      "highlights": [
+        "Curated release notes now appear on the CurseForge mod and modpack Changelog tab"
+      ],
+      "pr": 530,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
+    },
+    {
+      "id": "world-join-discord-info",
+      "version": "0.346.0",
+      "type": "feat",
+      "title": "Discord integration update",
+      "summary": "Behind-the-scenes update to the Discord join message.",
+      "highlights": [],
+      "pr": 531,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
+    },
+    {
+      "id": "backward-train-seamless",
+      "version": "0.346.0",
+      "type": "fix",
+      "title": "Seamless train when you travel toward the back",
+      "summary": "Walking toward the rear of a moving train no longer opens permanent gaps between carriages or hits a dead-end where the train just stops \u2014 carriages now keep generating smoothly behind you, the same way they do ahead. Also fixes a rare crash (and save corruption) that could happen as far-back carriages were unloaded and reloaded.",
+      "highlights": [
+        "No more permanent voids between carriages when riding toward the tail.",
+        "The train no longer dead-ends behind you \u2014 backward carriages keep coming.",
+        "Fixed a rare crash / save corruption from carriage unload-and-reload."
+      ],
+      "pr": 532,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.346.0",
+      "released_at": "2026-06-22T12:30:00Z"
     }
   ]
 }

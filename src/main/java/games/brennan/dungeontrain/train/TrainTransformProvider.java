@@ -598,6 +598,21 @@ public final class TrainTransformProvider implements KinematicDriver {
             JITTER_LOGGER.info(
                 "[baseline] pIdx={} groupSize={} trainId={} forced identity lockedRotation; spawnWorldPos={} spawnGameTick={} lockedPositionInModel={}",
                 pIdx, groupSize, trainId, fmt(spawnWorldPos), spawnGameTick, fmt(lockedPositionInModel));
+
+            // [capture-lag] diagnostic (opt-in, off by default). spawnGameTick
+            // is pre-seeded at assembly; spawnWorldPos is captured HERE on the
+            // first physics tick. A non-zero lagTicks means this carriage's
+            // world baseline was sampled lagTicks after assembly — bounds H4
+            // (the lazy-capture offset of velocity*lag). Cross-reference deltaX
+            // against the matching [bwd-place] idealX for this pIdx; H4 is ruled
+            // out as the GROWING cause unless |deltaX| rises with backward pIdx.
+            if (TrainCarriageAppender.isSeamGapTraceEnabled()) {
+                long lagTicks = currentGameTick - spawnGameTick;
+                JITTER_LOGGER.info(
+                    "[capture-lag] pIdx={} trainId={} spawnGameTick={} captureGameTick={} lagTicks={} spawnWorldPosX={} velocityX={}",
+                    pIdx, trainId, spawnGameTick, currentGameTick, lagTicks,
+                    String.format("%.4f", spawnWorldPos.x), String.format("%.4f", targetVelocity.x()));
+            }
         }
 
         // Deterministic position formula:

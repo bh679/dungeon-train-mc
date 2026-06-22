@@ -183,6 +183,60 @@ public final class SableShipyard implements Shipyard {
         }
     }
 
+    @Override
+    public boolean isHeld(java.util.UUID subLevelId) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        return holding != null && holding.getHoldingSubLevel(subLevelId) != null;
+    }
+
+    @Override
+    public boolean reloadFromHolding(java.util.UUID subLevelId) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        if (holding == null) return false;
+        // Sable does NOT snatch-from-holding for a force-load ticket at runtime
+        // (the only such path, ServerSubLevelContainer.loadForceLoadedSubLevels(),
+        // runs solely at container.initialize()). The public runtime reload is
+        // snatchAndLoad(pointer, uuid) — this is what Sable itself uses.
+        //
+        // IMPORTANT: use snatchAndLoad, NOT a bare loadHoldingSubLevel. A held
+        // sub-level lives in BOTH the global allHoldingSubLevels map (what
+        // getHoldingSubLevel reads) AND its SubLevelHoldingChunk's
+        // loadedHoldingSubLevels. loadHoldingSubLevel only removes it from the
+        // global map; the chunk entry survives, so the very next
+        // container.tick() → processChanges() → collectReadySubLevels() loads
+        // the SAME sub-level AGAIN. The second fullyLoad returns null and Sable
+        // NPEs in its unguarded reportSubLevelLoadFailure(pointer) if the
+        // pointer is null — crashing the server and corrupting the save.
+        // snatchAndLoad first removes the entry from the chunk (chunk.snatch),
+        // then loads it, so there is no double-load.
+        dev.ryanhcode.sable.sublevel.storage.HoldingSubLevel held =
+            holding.getHoldingSubLevel(subLevelId);
+        if (held == null) return false; // not in holding (still live, or genuinely gone)
+        dev.ryanhcode.sable.sublevel.storage.holding.GlobalSavedSubLevelPointer pointer = held.pointer();
+        if (pointer == null) {
+            // No serialization pointer ⇒ Sable can't locate its holding chunk:
+            // snatchAndLoad would NPE and a bare load would leave a chunk entry
+            // (double-load crash). Leave it held; the appender simply keeps the
+            // edge deferred (no void) rather than crash. Rare — only a sub-level
+            // culled before it was ever serialized.
+            LOGGER.warn("[Sable] reloadFromHolding: held sub-level {} has a null serialization pointer — leaving it held (cannot safely snatch)", subLevelId);
+            return false;
+        }
+        try {
+            holding.snatchAndLoad(pointer, subLevelId);
+            return true;
+        } catch (Throwable t) {
+            LOGGER.warn("[Sable] reloadFromHolding failed for sub-level {}: {}", subLevelId, t.toString());
+            return false;
+        }
+    }
+
     /** Centre of the block set's integer AABB, rounded down to a {@link BlockPos}. */
     private static BlockPos computeAnchor(Set<BlockPos> blocks) {
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
