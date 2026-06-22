@@ -1805,6 +1805,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "world-join-discord-info",
+      "version": "0.346.0",
+      "type": "feat",
+      "title": "Discord integration update",
+      "summary": "Behind-the-scenes update to the Discord join message.",
+      "highlights": [],
+      "pr": 531,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

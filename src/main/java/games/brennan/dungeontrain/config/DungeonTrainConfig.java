@@ -73,6 +73,8 @@ public final class DungeonTrainConfig {
 
     public static final boolean DEFAULT_ECHO_ENCOUNTER_TO_DISCORD = true;
 
+    public static final boolean DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD = true;
+
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_ENABLED = true;
     public static final int MIN_INTRO_DURATION_TICKS = 20;
@@ -100,6 +102,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue DEATH_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
 
@@ -127,6 +130,7 @@ public final class DungeonTrainConfig {
         DEATH_REPORT_TO_DISCORD = pair.getLeft().deathReportToDiscord;
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
+        WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
     }
@@ -215,6 +219,13 @@ public final class DungeonTrainConfig {
                         "interacted with it (met, traded, fought, shoved off the train, killed…). Posts top-level under the",
                         "player's name; requires a webhookUrl in config/discordpresence-server.toml. Local echoes never post.")
                 .define("echoEncounterToDiscord", DEFAULT_ECHO_ENCOUNTER_TO_DISCORD);
+        ModConfigSpec.BooleanValue worldJoinReportToDiscord = b
+                .comment("Append a one-time world-info block to the player-join Discord message: the Dungeon Train",
+                        "version, the train generation seed plus the data needed to regenerate the same train, and a",
+                        "collapsed (spoiler) list of installed mods + versions. Fires once per world, into the joining",
+                        "player's Discord thread — useful for reproducing and debugging a player's run. Requires the",
+                        "bundled Discord Presence mod with a webhookUrl configured in config/discordpresence-server.toml.")
+                .define("worldJoinReportToDiscord", DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD);
         b.pop();
         b.push("intro");
         ModConfigSpec.BooleanValue introCinematicEnabled = b
@@ -231,7 +242,8 @@ public final class DungeonTrainConfig {
                 difficultyEnabled, carriagesPerTier, difficultyAffectsBabyMobs, progressionLevelDelay,
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
-                freePlayNoticeToDiscord, echoEncounterToDiscord, introCinematicEnabled, introCinematicDurationTicks);
+                freePlayNoticeToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
+                introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -333,6 +345,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? ECHO_ENCOUNTER_TO_DISCORD.get() : DEFAULT_ECHO_ENCOUNTER_TO_DISCORD;
     }
 
+    /** Whether to append the world-info block (DT version + train seed + mods) to the player-join Discord message. */
+    public static boolean isWorldJoinReportToDiscord() {
+        return isLoaded() ? WORLD_JOIN_REPORT_TO_DISCORD.get() : DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD;
+    }
+
     /** Whether the fly-up spawn cinematic plays the first time a player enters a world. */
     public static boolean isIntroCinematicEnabled() {
         return isLoaded() ? INTRO_CINEMATIC_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_ENABLED;
@@ -430,6 +447,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue deathReportToDiscord,
             ModConfigSpec.BooleanValue freePlayNoticeToDiscord,
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
+            ModConfigSpec.BooleanValue worldJoinReportToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks
     ) {}
