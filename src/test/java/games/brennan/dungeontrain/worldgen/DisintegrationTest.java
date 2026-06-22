@@ -103,23 +103,18 @@ final class DisintegrationTest {
         assertEquals(1.0, Disintegration.removalProbability(1300, 64, 64, START_X, F, VH, EH), EPS); // M=1 at bed
     }
 
-    // ---- End-island slab thickness (from real End density × band ramp) ------
+    // ---- End-island density threshold (band fade for real End terrain) ------
 
     @Test
-    @DisplayName("island half-thickness scales with End density and end-ramp; 0 when either is 0")
-    void islandHalfThickness_scaling() {
-        // Peak density (ISLAND_DENSITY_MAX) at full End intensity → max half-thickness.
-        assertEquals(Disintegration.ISLAND_MAX_HALF_THICKNESS,
-                Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 1.0));
-        // No island where density ≤ 0 (void) or end-ramp = 0 (outside the End core).
-        assertEquals(0, Disintegration.islandHalfThickness(0.0, 1.0));
-        assertEquals(0, Disintegration.islandHalfThickness(-0.3, 1.0));
-        assertEquals(0, Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 0.0));
-        // Half intensity → roughly half the thickness; denser islands are thicker.
-        int half = Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 0.5);
-        assertTrue(half > 0 && half < Disintegration.ISLAND_MAX_HALF_THICKNESS);
-        assertTrue(Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 1.0)
-                >= Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX / 2.0, 1.0));
+    @DisplayName("island density threshold is 0 in the End core and rises toward the void edges")
+    void islandDensityThreshold_fade() {
+        // Full End intensity → threshold 0: any solid End density (>0) becomes an island.
+        assertEquals(0.0, Disintegration.islandDensityThreshold(1.0), EPS);
+        // Fading out → only denser island cores survive.
+        assertEquals(Disintegration.ISLAND_EDGE_DENSITY, Disintegration.islandDensityThreshold(0.0), EPS);
+        assertEquals(Disintegration.ISLAND_EDGE_DENSITY / 2.0, Disintegration.islandDensityThreshold(0.5), EPS);
+        // Monotonic: lower End intensity ⇒ higher threshold ⇒ less End terrain.
+        assertTrue(Disintegration.islandDensityThreshold(0.25) > Disintegration.islandDensityThreshold(0.75));
     }
 
     // ---- band geometry helpers ----------------------------------------------

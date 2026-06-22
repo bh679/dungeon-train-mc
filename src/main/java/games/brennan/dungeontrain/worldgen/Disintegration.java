@@ -53,13 +53,6 @@ public final class Disintegration {
     /** Fine erosion-noise cell (blocks) — ragged edges on the clumps. */
     private static final int NOISE_CELL_FINE = 3;
 
-    /** Max value of the real End island density function ({@code DensityFunctions.endIslands}). */
-    static final double ISLAND_DENSITY_MAX = 0.5625;
-    /** Half-thickness (blocks) of an End island slab at peak density and full End intensity. */
-    static final int ISLAND_MAX_HALF_THICKNESS = 8;
-    /** Vertical wander (blocks) of island centres around track level, so islands float at varied heights. */
-    public static final int ISLAND_VERTICAL_SPREAD = 16;
-
     private Disintegration() {}
 
     /** World-X line where the band begins: {@code startCarriages × carriageLength}. */
@@ -135,17 +128,19 @@ public final class Disintegration {
     }
 
     /**
-     * Half-thickness (blocks) of the End-island slab to stamp at a column, from the
-     * <em>real</em> End island density ({@code DensityFunctions.endIslands(0L).compute}
-     * at the sampled column) and the band {@code endRamp}: thicker at island centres
-     * (high density), fading to nothing at the band edges (low {@code endRamp}). Pure
-     * so the band shaping is unit-testable; the density itself comes from vanilla code.
+     * Minimum real-End-density value required to place an island block at the given
+     * band {@code endRamp}: 0 in the End core ({@code endRamp == 1}, full islands),
+     * rising toward {@link #ISLAND_EDGE_DENSITY} as the End fades into the void holds
+     * ({@code endRamp → 0}), so only the densest island cores survive at the edges and
+     * the End terrain dissolves smoothly into void. Pure so it is unit-testable; the
+     * density itself comes from the real End noise router.
      */
-    public static int islandHalfThickness(double endIslandDensity, double endRamp) {
-        if (endRamp <= 0.0 || endIslandDensity <= 0.0) return 0;
-        double frac = clamp01(endIslandDensity / ISLAND_DENSITY_MAX);
-        return (int) Math.round(frac * ISLAND_MAX_HALF_THICKNESS * endRamp);
+    public static double islandDensityThreshold(double endRamp) {
+        return (1.0 - clamp01(endRamp)) * ISLAND_EDGE_DENSITY;
     }
+
+    /** Density threshold at the very edge of the End band (endRamp → 0) — only dense cores remain. */
+    public static final double ISLAND_EDGE_DENSITY = 0.15;
 
     /** Deterministic, clumpy erosion noise in {@code [0,1)} (two octaves), seeded from the world seed. */
     public static double coherentNoise(long seed, int x, int y, int z) {
