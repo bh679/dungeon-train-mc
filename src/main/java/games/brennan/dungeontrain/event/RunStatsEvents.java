@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.DeathManifestFormat;
 import games.brennan.dungeontrain.discord.DeathReportFormat;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
+import games.brennan.dungeontrain.net.AbandonRunPacket;
 import games.brennan.dungeontrain.net.DeathNarrative;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -91,6 +92,13 @@ public final class RunStatsEvents {
      * other absurd magnitude so the damage stat can't blow out to ~3.4e38.
      */
     private static final float MAX_TRACKED_DAMAGE = 1_000_000.0f;
+    /**
+     * An abandoned run (pause-menu "Abandon This Run") that reached fewer than this many
+     * carriages is kept OFF the public death feed — a player who steps off after a handful
+     * of carriages shouldn't broadcast a trivial "Run Ended" manifest. See
+     * {@link #suppressPublicAbandon(boolean, int)}.
+     */
+    private static final int MIN_CARRIAGES_FOR_PUBLIC_ABANDON = 20;
 
     private RunStatsEvents() {}
 
@@ -266,7 +274,17 @@ public final class RunStatsEvents {
         // RELEASE builds, Free Play (cheated) runs are EXCLUDED from the public feed — they still get
         // the basic threaded report above. Dev/test builds DO post Free Play runs (to the dev channel)
         // so the report stays testable in creative — see DungeonTrain.isDevBuild().
-        if (!cheated || DungeonTrain.isDevBuild()) {
+        //
+        // Short abandoned runs are ALSO withheld from the public feed: a player who taps "Abandon This
+        // Run" before reaching MIN_CARRIAGES_FOR_PUBLIC_ABANDON carriages shouldn't broadcast a trivial
+        // manifest. The threaded report above still posts. Applies on dev + release — noise in either.
+        boolean shortAbandon = suppressPublicAbandon(
+                AbandonRunPacket.isAbandonCause(source), packet.cartsTravelled());
+        if (shortAbandon) {
+            LOGGER.debug("[DungeonTrain] {} abandoned at {} carriages (< {}) — skipping public death feed",
+                    player.getGameProfile().getName(), packet.cartsTravelled(), MIN_CARRIAGES_FOR_PUBLIC_ABANDON);
+        }
+        if ((!cheated || DungeonTrain.isDevBuild()) && !shortAbandon) {
             List<String> advTitles = resolveAdvancementTitles(player, packet.earnedAdvancements());
             String manifestTitle = DeathManifestFormat.title(
                     player.getGameProfile().getName(), packet.cartsTravelled());
@@ -283,6 +301,17 @@ public final class RunStatsEvents {
             DeathReportBuffer.await(player, manifestTitle, manifestDesc, manifestFields, icons,
                     DungeonTrain.manifestWebhookOverride());
         }
+    }
+
+    /**
+     * Whether this run's public ("manifest") death report should be withheld because it was a
+     * <em>short abandoned run</em>: the player ended it via the pause-menu "Abandon This Run"
+     * ({@code abandoned}) before reaching {@link #MIN_CARRIAGES_FOR_PUBLIC_ABANDON} carriages.
+     * Pure (no Minecraft types) so it is unit-testable; the threaded per-player report is
+     * unaffected — only the public feed gates on this.
+     */
+    static boolean suppressPublicAbandon(boolean abandoned, int cartsTravelled) {
+        return abandoned && cartsTravelled < MIN_CARRIAGES_FOR_PUBLIC_ABANDON;
     }
 
     /**
