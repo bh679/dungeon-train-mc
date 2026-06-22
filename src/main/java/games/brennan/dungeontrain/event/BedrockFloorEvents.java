@@ -68,8 +68,9 @@ public final class BedrockFloorEvents {
         // event ordering vs the erosion handler.
         long bandStartX = DisintegrationBand.startX(level);
         boolean maybeBand = chunkMinX + 15 >= bandStartX;
-        int fade = 0, voidHold = 0, endHold = 0, owHold = 0;
+        int phaseShift = 0, fade = 0, voidHold = 0, endHold = 0, owHold = 0;
         if (maybeBand) {
+            phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
             fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
             voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
             endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
@@ -84,7 +85,7 @@ public final class BedrockFloorEvents {
         BlockState bedrock = Blocks.BEDROCK.defaultBlockState();
         for (int dx = 0; dx < 16; dx++) {
             boolean voidColumn = maybeBand
-                    && Disintegration.middleRamp(chunkMinX + dx, bandStartX, fade, voidHold, endHold, owHold) > 0.0;
+                    && Disintegration.middleRamp(chunkMinX + dx, bandStartX, phaseShift, fade, voidHold, endHold, owHold) > 0.0;
             if (voidColumn) continue;
             for (int dz = 0; dz < 16; dz++) {
                 section.setBlockState(dx, localY, dz, bedrock, false);

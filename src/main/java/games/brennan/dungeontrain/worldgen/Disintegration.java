@@ -72,16 +72,19 @@ public final class Disintegration {
     /**
      * Offset into the current cycle for a world-X (measured in blocks from {@code startX},
      * which is a fixed block distance from spawn — not a train metric): {@code (worldX −
-     * startX) mod period}, or {@code -1} before {@code startX}. Each cycle is
+     * startX + phaseShift) mod period}, or {@code -1} before {@code startX}. Each cycle is
      * {@code [0, owHold)} = the overworld phase, then {@code [owHold, period)} = the
-     * active band (void → End → void). The pattern therefore starts every cycle in the
-     * overworld, so the player spawns in normal terrain.
+     * active band (void → End → void). With {@code phaseShift = 0} the pattern starts every
+     * cycle in the overworld at {@code startX}; a positive {@code phaseShift} lands {@code
+     * startX} that many blocks into the cycle, so the first overworld stretch past the anchor
+     * is shorter (the player spawns partway through it). The {@code worldX < startX} region is
+     * always pure overworld regardless of the shift.
      */
-    private static long cycleOffset(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
+    private static long cycleOffset(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
         if (worldX < startX) return -1L;
         long period = cyclePeriod(fade, voidHold, endHold, owHold);
         if (period <= 0L) return -1L;
-        return Math.floorMod((long) worldX - startX, period);
+        return Math.floorMod((long) worldX - startX + phaseShift, period);
     }
 
     /**
@@ -91,7 +94,12 @@ public final class Disintegration {
      * erosion intensity and the End sky/fog blend. Repeats forever from {@code startX}.
      */
     public static double middleRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
-        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        return middleRamp(worldX, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #middleRamp(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static double middleRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
@@ -117,10 +125,55 @@ public final class Disintegration {
      * full-height pillars to bedrock, and they'd be fully eroded anyway). Pure / unit-testable.</p>
      */
     public static boolean isChunkFullyEroded(int chunkMinX, long startX, int fade, int voidHold, int endHold, int owHold) {
+        return isChunkFullyEroded(chunkMinX, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #isChunkFullyEroded(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static boolean isChunkFullyEroded(int chunkMinX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
         for (int dx = 0; dx < 16; dx++) {
-            if (middleRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold) < 1.0) return false;
+            if (middleRamp(chunkMinX + dx, startX, phaseShift, fade, voidHold, endHold, owHold) < 1.0) return false;
         }
         return true;
+    }
+
+    /**
+     * Sky ramp {@code S ∈ [0,1]} — the {@link #middleRamp} shape but with both fades
+     * pushed inward toward the void core by {@code skyOffset} blocks, so the End sky/fog
+     * lags the terrain erosion: the fade-in is delayed past the overworld→void crumble,
+     * and the fade-out finishes before the void→overworld terrain has fully reformed.
+     * Drives only the client sky/fog/cloud look — terrain erosion still uses
+     * {@link #middleRamp}.
+     *
+     * <p>Structure over the active-band offset {@code dd}, with effective offset {@code o}:
+     * 0 across {@code [0, o)}, linear 0→1 over {@code [o, o+fade)}, flat 1 across the
+     * middle, linear 1→0 over {@code [band−fade−o, band−o)}, then 0 again across the last
+     * {@code o}. {@code skyOffset} is clamped to {@code (band − 2·fade) / 2} so the flat
+     * hold can shrink to zero but never invert; {@code skyOffset == 0} reproduces
+     * {@link #middleRamp} exactly.</p>
+     */
+    public static double skyRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold, int skyOffset) {
+        return skyRamp(worldX, startX, 0, fade, voidHold, endHold, owHold, skyOffset);
+    }
+
+    /** {@link #skyRamp(int, long, int, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static double skyRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold, int skyOffset) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
+        if (d < 0L) return 0.0;
+        int oh = Math.max(0, owHold);
+        if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
+        long dd = d - oh;                                  // offset within the active band
+        long band = bandLength(fade, voidHold, endHold);
+        int f = Math.max(0, fade);
+        long maxOffset = Math.max(0L, (band - 2L * f) / 2L);
+        long o = Math.min(Math.max(0, skyOffset), maxOffset);
+        if (dd < o) return 0.0;                            // delayed: still overworld while ground erodes
+        long riseEnd = o + f;
+        if (dd < riseEnd) return f == 0 ? 1.0 : (double) (dd - o) / f;   // overworld → void (delayed)
+        long fallStart = band - f - o;
+        if (dd < fallStart) return 1.0;                     // void + End + void
+        long fallEnd = band - o;
+        if (dd < fallEnd) return f == 0 ? 0.0 : 1.0 - (double) (dd - fallStart) / f; // void → overworld (early)
+        return 0.0;                                         // returned to overworld before band end
     }
 
     /**
@@ -129,7 +182,12 @@ public final class Disintegration {
      * across the End core, linear 1→0 back to void. Drives End-stone island fill.
      */
     public static double endRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
-        long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
+        return endRamp(worldX, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #endRamp(int, long, int, int, int, int)} with a {@code phaseShift} into the cycle (see {@link #cycleOffset}). */
+    public static double endRamp(int worldX, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        long d = cycleOffset(worldX, startX, phaseShift, fade, voidHold, endHold, owHold);
         if (d < 0L) return 0.0;
         int oh = Math.max(0, owHold);
         if (d < oh) return 0.0;                            // overworld phase
@@ -149,7 +207,12 @@ public final class Disintegration {
 
     /** Removal probability at {@code (worldX, y)}; derives the column middle-ramp internally (test convenience). */
     public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int voidHold, int endHold, int owHold) {
-        return removalProbabilityFromRamp(middleRamp(worldX, startX, fade, voidHold, endHold, owHold), y, bedY);
+        return removalProbability(worldX, y, bedY, startX, 0, fade, voidHold, endHold, owHold);
+    }
+
+    /** {@link #removalProbability(int, int, int, long, int, int, int, int)} with a {@code phaseShift} into the cycle. */
+    public static double removalProbability(int worldX, int y, int bedY, long startX, int phaseShift, int fade, int voidHold, int endHold, int owHold) {
+        return removalProbabilityFromRamp(middleRamp(worldX, startX, phaseShift, fade, voidHold, endHold, owHold), y, bedY);
     }
 
     /**
