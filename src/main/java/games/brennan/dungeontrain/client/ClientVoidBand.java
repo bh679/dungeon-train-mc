@@ -53,11 +53,12 @@ public final class ClientVoidBand {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
         long startX = DungeonTrainCommonConfig.getDisintegrationStartBlocks();
+        int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
         int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
         int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
         int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
         int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
         int skyOffset = DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks();
-        return Disintegration.skyRamp((int) Math.floor(worldX), startX, fade, voidHold, endHold, owHold, skyOffset);
+        return Disintegration.skyRamp((int) Math.floor(worldX), startX, phaseShift, fade, voidHold, endHold, owHold, skyOffset);
     }
 }
