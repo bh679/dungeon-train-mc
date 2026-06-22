@@ -54,4 +54,23 @@ public final class ClientVoidBand {
         int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
         return Disintegration.middleRamp((int) Math.floor(worldX), startX, fade, voidHold, endHold, owHold);
     }
+
+    /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */
+    public static final double MUSIC_CROSSOVER = 0.5;
+
+    /**
+     * Position-driven music volume factor in {@code [0, 1]} at a world-X — a V-curve over the
+     * band's End-sky intensity {@code t}: {@code 1} in the Overworld ({@code t=0}) and across the
+     * End core ({@code t=1}), dipping to {@code 0} at the {@link #MUSIC_CROSSOVER} ({@code t=0.5}).
+     *
+     * <p>Combined with the track flip at the crossover, this fades the outgoing track down to
+     * silence as the player approaches the handoff and the incoming track back up afterwards —
+     * Overworld→End on the way in, End→Overworld on the way out. {@code 1.0} outside any band, so
+     * scaling music volume by it is a no-op away from the disintegration.</p>
+     */
+    public static double musicVolumeFactor(double worldX) {
+        double t = endSkyIntensityAt(worldX);
+        if (t <= 0.0) return 1.0;
+        return Math.abs(2.0 * t - 1.0);
+    }
 }
