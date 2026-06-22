@@ -258,6 +258,13 @@ public class DungeonTrain {
             @Override public void onSurveyCompleted(UUID playerId, String playerName) {
                 SurveyAdvancement.onSurveyCompleted(playerId);
             }
+            // Ping Brennan in the community feed on EVERY submitted feedback-survey answer, so incoming
+            // feedback never goes unseen. DP adds the id to the survey post's content + trusted
+            // allowed_mentions.users (same notify path as the @dev chat triggers), so it actually
+            // notifies. Same BRENNAN_DISCORD_ID used by gameRelayMentions / presenceTrackUserIds.
+            @Override public List<String> surveyPingUserIds() {
+                return List.of(BRENNAN_DISCORD_ID);
+            }
         });
 
         // One-line dev-vs-live routing signal at startup: states which Discord channel this build
