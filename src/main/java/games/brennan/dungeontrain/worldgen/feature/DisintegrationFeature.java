@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -121,15 +120,10 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             int bedY = g.bedY();
             int zMin = g.trackZMin();
             int zMax = g.trackZMax();
-            int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-            int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
-            int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
-            int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
-
             double[] endRamp = new double[16];
             boolean anyEnd = false;
             for (int dx = 0; dx < 16; dx++) {
-                endRamp[dx] = Disintegration.endRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold);
+                endRamp[dx] = DisintegrationBand.endIslandRampAt(overworld, chunkMinX + dx);
                 if (endRamp[dx] > 0.0) anyEnd = true;
             }
             if (!anyEnd) return false;

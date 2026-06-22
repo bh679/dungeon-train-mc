@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.worldgen.Disintegration;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
  * Client-side cache of the per-world data needed to evaluate the disintegration
@@ -47,11 +47,6 @@ public final class ClientVoidBand {
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
-        long startX = DungeonTrainCommonConfig.getDisintegrationStartBlocks();
-        int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-        int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
-        int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
-        int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
-        return Disintegration.middleRamp((int) Math.floor(worldX), startX, fade, voidHold, endHold, owHold);
+        return WorldGenCycle.fromConfig().endMiddleRamp((int) Math.floor(worldX));
     }
 }

@@ -1,7 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.worldgen.NetherTransition;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
  * Client-side cache for the <b>Nether transition band</b>'s atmosphere, mirroring
@@ -39,12 +39,6 @@ public final class ClientNetherBand {
     public static double netherIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isNetherTransitionEnabled()) return 0.0;
-        long startX = DungeonTrainCommonConfig.getNetherStartBlocks();
-        int fade = DungeonTrainCommonConfig.getNetherFadeBlocks();
-        int mtnHold = DungeonTrainCommonConfig.getNetherMountainHoldBlocks();
-        int coreFade = DungeonTrainCommonConfig.getNetherCoreFadeBlocks();
-        int coreHold = DungeonTrainCommonConfig.getNetherCoreHoldBlocks();
-        int owHold = DungeonTrainCommonConfig.getNetherOverworldHoldBlocks();
-        return NetherTransition.netherRamp((int) Math.floor(worldX), startX, fade, mtnHold, coreFade, coreHold, owHold);
+        return WorldGenCycle.fromConfig().netherRamp((int) Math.floor(worldX));
     }
 }

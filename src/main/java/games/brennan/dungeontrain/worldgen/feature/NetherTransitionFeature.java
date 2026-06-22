@@ -104,11 +104,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int chunkMinX = cp.getMinBlockX();
             if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
 
-            int fade = DungeonTrainCommonConfig.getNetherFadeBlocks();
-            int mtnHold = DungeonTrainCommonConfig.getNetherMountainHoldBlocks();
-            int coreFade = DungeonTrainCommonConfig.getNetherCoreFadeBlocks();
-            int coreHold = DungeonTrainCommonConfig.getNetherCoreHoldBlocks();
-            int owHold = DungeonTrainCommonConfig.getNetherOverworldHoldBlocks();
             int maxHeight = DungeonTrainCommonConfig.getNetherMaxHeight();
 
             double[] heightRamp = new double[16];
@@ -116,8 +111,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             boolean anyHeight = false;
             for (int dx = 0; dx < 16; dx++) {
                 int worldX = chunkMinX + dx;
-                heightRamp[dx] = NetherTransition.heightRamp(worldX, startX, fade, mtnHold, coreFade, coreHold, owHold);
-                netherRamp[dx] = NetherTransition.netherRamp(worldX, startX, fade, mtnHold, coreFade, coreHold, owHold);
+                heightRamp[dx] = NetherBand.heightRampAt(overworld, worldX);
+                netherRamp[dx] = NetherBand.netherRampAt(overworld, worldX);
                 if (heightRamp[dx] > 0.0) anyHeight = true;
             }
             if (!anyHeight) return false;

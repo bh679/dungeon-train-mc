@@ -19,35 +19,31 @@ public final class DisintegrationBand {
     private DisintegrationBand() {}
 
     /**
-     * World-X where the very first band begins (and the repeating cycle is anchored),
-     * or {@link #OFF} if disintegration is disabled or this world has no train. Past
-     * this X the cycle repeats forever; before it is plain overworld.
+     * World-X where the cycle is anchored (shared with the nether phase via
+     * {@link WorldGenCycle}), or {@link #OFF} if disintegration is disabled or this world
+     * has no train. Past this X the cycle repeats forever; before it is plain overworld.
      */
     public static long startX(ServerLevel overworld) {
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return OFF;
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         if (!data.startsWithTrain()) return OFF;
-        if (Disintegration.cyclePeriod(
-                DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks()) <= 0L) {
-            return OFF;
-        }
-        return DungeonTrainCommonConfig.getDisintegrationStartBlocks();
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (cycle.period() <= 0L || cycle.endLen() <= 0L) return OFF;
+        return cycle.startX();
     }
 
     /**
-     * Middle ramp (erosion / End-sky intensity) at a single world-X for this overworld,
-     * reading the live config spans. 0 in overworld stretches and before the band.
+     * Middle ramp (erosion / End-sky intensity) at a single world-X for this overworld.
+     * 0 in overworld stretches, before the cycle, and across the nether segment.
      */
     public static double middleRampAt(ServerLevel overworld, int worldX) {
-        long sx = startX(overworld);
-        if (sx == OFF) return 0.0;
-        return Disintegration.middleRamp(worldX, sx,
-                DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks());
+        if (startX(overworld) == OFF) return 0.0;
+        return WorldGenCycle.fromConfig().endMiddleRamp(worldX);
+    }
+
+    /** End-island fill ramp at a single world-X; 0 outside the End segment. */
+    public static double endIslandRampAt(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return 0.0;
+        return WorldGenCycle.fromConfig().endIslandRamp(worldX);
     }
 }

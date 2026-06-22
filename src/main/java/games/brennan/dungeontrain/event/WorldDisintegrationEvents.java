@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -67,15 +66,11 @@ public final class WorldDisintegrationEvents {
         int zMin = g.trackZMin();
         int zMax = g.trackZMax();
         long seed = data.getGenerationSeed();
-        int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-        int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
-        int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
-        int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
 
         double[] middle = new double[16];
         boolean anyMiddle = false;
         for (int dx = 0; dx < 16; dx++) {
-            middle[dx] = Disintegration.middleRamp(chunkMinX + dx, startX, fade, voidHold, endHold, owHold);
+            middle[dx] = DisintegrationBand.middleRampAt(level, chunkMinX + dx);
             if (middle[dx] > 0.0) anyMiddle = true;
         }
         if (!anyMiddle) return;
