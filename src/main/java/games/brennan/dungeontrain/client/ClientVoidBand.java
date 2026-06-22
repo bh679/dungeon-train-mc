@@ -38,17 +38,20 @@ public final class ClientVoidBand {
     }
 
     /**
-     * Void intensity {@code t} in {@code [0, 1]} at a world-X: 0 outside the band
+     * End-sky intensity {@code t} in {@code [0, 1]} at a world-X: 0 outside the band
      * (or when disintegration is disabled / this world has no train), ramping to 1
-     * in the fully-void core. Used to drive the sky crossfade and fog darkening.
+     * across the whole void+End+void middle. Drives the sky crossfade, the fog
+     * darkening, and cloud suppression — i.e. the End atmosphere is up the entire
+     * time the world is broken apart, not only inside the End core.
      */
-    public static double voidAt(double worldX) {
+    public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
         long startX = Disintegration.bandStartX(
                 DungeonTrainCommonConfig.getDisintegrationStartCarriages(), carriageLength);
         int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-        int core = DungeonTrainCommonConfig.getDisintegrationCoreBlocks();
-        return Disintegration.voidRamp((int) Math.floor(worldX), startX, fade, core);
+        int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
+        int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
+        return Disintegration.middleRamp((int) Math.floor(worldX), startX, fade, voidHold, endHold);
     }
 }

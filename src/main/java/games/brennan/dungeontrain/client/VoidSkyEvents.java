@@ -29,7 +29,7 @@ public final class VoidSkyEvents {
     public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        double t = ClientVoidBand.voidAt(event.getCamera().getPosition().x);
+        double t = ClientVoidBand.endSkyIntensityAt(event.getCamera().getPosition().x);
         if (t <= 0.0) return;
         float f = (float) (1.0 - 0.85 * Math.min(1.0, t)); // → ~0.15× at full void (End fog)
         event.setRed(event.getRed() * f);

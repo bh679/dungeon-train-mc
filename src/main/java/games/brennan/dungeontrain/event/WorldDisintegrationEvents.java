@@ -19,31 +19,27 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 
 /**
- * Carves the <b>world disintegration band</b> into freshly-generated Dungeon
- * Train overworld chunks: past a carriage-count line the terrain (and the track's
- * support pillars) progressively erode into void, leaving a fully-void core where
- * only the floating track survives, then reassemble into normal terrain. See
- * {@link Disintegration} for the band math.
+ * Carves the <b>world disintegration band</b> into freshly-generated Dungeon Train
+ * overworld chunks: past a carriage-count line the run crosses
+ * Overworld → Void → End world-gen → Void → Overworld. See {@link Disintegration}
+ * for the band math (a {@code middleRamp} M drives erosion, an {@code endRamp} E
+ * drives floating End-stone island fill).
  *
  * <p>Runs from {@link ChunkEvent.Load} gated on {@link ChunkEvent.Load#isNewChunk()}
- * — so it fires <b>once at first generation</b>, never on reload. That is what
- * keeps player builds inside the void from being wiped every time the chunk
- * reloads, and it runs after all worldgen (including
- * {@code TrackBedFeature}) so the bed + rails already exist and we simply preserve
- * them while eroding everything else.</p>
+ * — fires <b>once at first generation</b>, never on reload, so player builds inside
+ * the band survive. It runs after all worldgen (including {@code TrackBedFeature}),
+ * so the bed + rails already exist and are simply preserved.</p>
  *
- * <p>Erosion writes go through {@link LevelChunkSection#setBlockState} (raw
- * section stamp), exactly as {@link BedrockFloorEvents} does and for the same
- * reason: {@code LevelChunk.setBlockState} is mixed into by Sable to update its
- * physics neighbourhood, which livelocks when called from the chunk-load
- * completion handler while neighbours are still mid-generation. Section writes
- * skip every level-side hook (block updates, light, physics, drops); we mark the
- * chunk unsaved so the change persists.</p>
+ * <p>Block writes go through {@link LevelChunkSection#setBlockState} (raw section
+ * stamp), as {@link BedrockFloorEvents} does and for the same reason: vanilla
+ * {@code LevelChunk.setBlockState} is mixed into by Sable and livelocks when called
+ * from the chunk-load handler. Section writes skip every level-side hook.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldDisintegrationEvents {
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    private static final BlockState END_STONE = Blocks.END_STONE.defaultBlockState();
 
     private WorldDisintegrationEvents() {}
 
@@ -61,7 +57,8 @@ public final class WorldDisintegrationEvents {
                 DungeonTrainCommonConfig.getDisintegrationStartCarriages(), length);
         long bandLen = Disintegration.bandLength(
                 DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationCoreBlocks());
+                DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks());
         if (bandLen <= 0) return null;
         return new long[] { startX, startX + bandLen };
     }
@@ -80,9 +77,7 @@ public final class WorldDisintegrationEvents {
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
-        int chunkMaxX = chunkMinX + 15;
-        // Fast reject — the ~all chunks outside the forward band do zero work.
-        if (!Disintegration.chunkInBand(chunkMinX, chunkMaxX, startX, bandLen)) return;
+        if (!Disintegration.chunkInBand(chunkMinX, chunkMinX + 15, startX, bandLen)) return;
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
@@ -93,47 +88,86 @@ public final class WorldDisintegrationEvents {
         int zMax = g.trackZMax();
         long seed = data.getGenerationSeed();
         int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-        int core = DungeonTrainCommonConfig.getDisintegrationCoreBlocks();
+        int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
+        int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
 
-        // Per-column void ramp — identical for every section, so compute once.
-        double[] colRamp = new double[16];
-        boolean anyColumn = false;
+        // Per-column ramps — identical for every section, so compute once.
+        double[] middle = new double[16];
+        double[] end = new double[16];
+        boolean anyMiddle = false;
+        boolean anyEnd = false;
         for (int dx = 0; dx < 16; dx++) {
-            double r = Disintegration.voidRamp(chunkMinX + dx, startX, fade, core);
-            colRamp[dx] = r;
-            if (r > 0.0) anyColumn = true;
+            int worldX = chunkMinX + dx;
+            double m = Disintegration.middleRamp(worldX, startX, fade, voidHold, endHold);
+            double e = Disintegration.endRamp(worldX, startX, fade, voidHold, endHold);
+            middle[dx] = m;
+            end[dx] = e;
+            if (m > 0.0) anyMiddle = true;
+            if (e > 0.0) anyEnd = true;
         }
-        if (!anyColumn) return; // chunk straddles the band edge but no column is inside
+        if (!anyMiddle && !anyEnd) return; // chunk straddles a band edge but no column is inside
 
         int chunkMinZ = pos.getMinBlockZ();
         boolean changed = false;
 
-        for (int sIdx = 0; sIdx < chunk.getSectionsCount(); sIdx++) {
-            LevelChunkSection section = chunk.getSection(sIdx);
-            if (section.hasOnlyAir()) continue; // nothing to erode in empty sky/void sections
-            int sectionBaseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
-
-            for (int dx = 0; dx < 16; dx++) {
-                double ramp = colRamp[dx];
-                if (ramp <= 0.0) continue;
-                int worldX = chunkMinX + dx;
-                for (int dz = 0; dz < 16; dz++) {
-                    int worldZ = chunkMinZ + dz;
-                    boolean corridorZ = worldZ >= zMin && worldZ <= zMax;
-                    for (int ly = 0; ly < 16; ly++) {
-                        int y = sectionBaseY + ly;
-                        // Never erode the track the train rides on.
-                        if (corridorZ && (y == bedY || y == railY)) continue;
-                        double p = Disintegration.removalProbabilityFromRamp(ramp, y, bedY);
-                        if (p <= 0.0) continue;
-                        if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) continue;
-                        if (section.getBlockState(dx, ly, dz).isAir()) continue;
-                        section.setBlockState(dx, ly, dz, AIR, false);
-                        changed = true;
+        // Pass 1 — erosion: dissolve overworld (and any prior) terrain to void per M.
+        if (anyMiddle) {
+            for (int sIdx = 0; sIdx < chunk.getSectionsCount(); sIdx++) {
+                LevelChunkSection section = chunk.getSection(sIdx);
+                if (section.hasOnlyAir()) continue;
+                int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+                for (int dx = 0; dx < 16; dx++) {
+                    double ramp = middle[dx];
+                    if (ramp <= 0.0) continue;
+                    int worldX = chunkMinX + dx;
+                    for (int dz = 0; dz < 16; dz++) {
+                        int worldZ = chunkMinZ + dz;
+                        boolean corridorZ = worldZ >= zMin && worldZ <= zMax;
+                        for (int ly = 0; ly < 16; ly++) {
+                            int y = baseY + ly;
+                            if (corridorZ && (y == bedY || y == railY)) continue;
+                            double p = Disintegration.removalProbabilityFromRamp(ramp, y, bedY);
+                            if (p <= 0.0) continue;
+                            if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) continue;
+                            if (section.getBlockState(dx, ly, dz).isAir()) continue;
+                            section.setBlockState(dx, ly, dz, AIR, false);
+                            changed = true;
+                        }
                     }
                 }
             }
         }
+
+        // Pass 2 — End world-gen: place floating End-stone islands around track level per E.
+        if (anyEnd) {
+            int yMin = Math.max(level.getMinBuildHeight(), bedY - Disintegration.ISLAND_VERTICAL_RADIUS);
+            int yMax = Math.min(level.getMaxBuildHeight() - 1, bedY + Disintegration.ISLAND_VERTICAL_RADIUS);
+            for (int sIdx = 0; sIdx < chunk.getSectionsCount(); sIdx++) {
+                int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+                if (baseY + 15 < yMin || baseY > yMax) continue; // section outside island band
+                LevelChunkSection section = chunk.getSection(sIdx);
+                for (int dx = 0; dx < 16; dx++) {
+                    double e = end[dx];
+                    if (e <= 0.0) continue;
+                    int worldX = chunkMinX + dx;
+                    for (int dz = 0; dz < 16; dz++) {
+                        int worldZ = chunkMinZ + dz;
+                        boolean corridorZ = worldZ >= zMin && worldZ <= zMax;
+                        for (int ly = 0; ly < 16; ly++) {
+                            int y = baseY + ly;
+                            if (y < yMin || y > yMax) continue;
+                            if (corridorZ && (y == bedY || y == railY)) continue;
+                            double p = Disintegration.endFillProbabilityFromRamp(e, y, bedY);
+                            if (p <= 0.0) continue;
+                            if (Disintegration.islandNoise(seed, worldX, y, worldZ) >= p) continue;
+                            section.setBlockState(dx, ly, dz, END_STONE, false);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
         if (changed) chunk.setUnsaved(true);
     }
 }

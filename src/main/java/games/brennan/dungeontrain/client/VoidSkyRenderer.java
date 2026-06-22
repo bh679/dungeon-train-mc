@@ -41,7 +41,7 @@ public final class VoidSkyRenderer {
         if (isFoggy) return; // underwater / blindness — vanilla skipped the sky; skip ours too
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        double t = ClientVoidBand.voidAt(camera.getPosition().x);
+        double t = ClientVoidBand.endSkyIntensityAt(camera.getPosition().x);
         if (t <= 0.0) return;
         draw(frustumMatrix, (float) Math.min(1.0, t));
     }

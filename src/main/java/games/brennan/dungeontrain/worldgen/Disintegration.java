@@ -1,54 +1,66 @@
 package games.brennan.dungeontrain.worldgen;
 
 /**
- * Pure math for the <b>world disintegration band</b> — the stretch of a Dungeon
- * Train run where the world progressively breaks apart into void, reaches a
- * fully-void core where only the floating track survives, then reassembles into
- * normal terrain. Crossed once per run.
+ * Pure math for the <b>world disintegration band</b> — a once-per-run journey the
+ * train crosses where the overworld breaks apart and reforms as the End and back:
+ *
+ * <pre>
+ *   Overworld → Void → End world-gen → Void → Overworld
+ * </pre>
  *
  * <p>The train origin is world {@code X = 0, Z = 0} and a carriage spans
  * {@code dims.length()} blocks on X, so a carriage count maps to a world-X line:
  * {@code startX = startCarriages × carriageLength}. The band runs forward (+X)
- * only; everything at {@code X < startX} (and all backward / negative X) is
- * untouched.</p>
+ * only.</p>
  *
- * <p>Band layout along +X ({@code fade} = fade span, {@code core} = full-void
- * plateau):</p>
+ * <p>Two trapezoidal ramps drive everything, both over {@code offset d = X − startX}
+ * with spans {@code F} (fade), {@code Vh} (void hold) and {@code Eh} (End hold):</p>
  * <pre>
- *      startX        startX+fade   startX+fade+core  startX+2·fade+core
- *  ......|  0 → 1      |     1       |    1 → 0      |......
- *  normal| breaks apart| only tracks | reassembles  | normal resumes
+ *   | F  | Vh |  F  |   Eh    |  F  | Vh | F  |
+ *   |OW→V| V  |V→End|  End    |End→V| V  |V→OW|
+ *   middleRamp M:  /‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾\        (erosion intensity + End-sky/fog)
+ *   endRamp    E:        /‾‾‾‾‾‾‾‾‾‾\               (End-terrain fill intensity)
  * </pre>
  *
- * <p>This class is deliberately free of any Minecraft type so it can be unit
- * tested without a NeoForge bootstrap — same convention as
- * {@code DifficultyProgression}. The {@code ChunkEvent.Load} consumer
- * ({@code WorldDisintegrationEvents}) supplies world coordinates and applies the
- * erosion via raw chunk-section writes.</p>
+ * <ul>
+ *   <li>{@link #middleRamp} ramps 0→1 over the first fade, holds 1 across the whole
+ *       void+End+void middle, ramps 1→0 over the last fade. It drives how much
+ *       overworld/End terrain is eroded <i>and</i> how far the sky/fog fade to the
+ *       End look.</li>
+ *   <li>{@link #endRamp} is 0 in the void holds, ramps 0→1 as the void fades into
+ *       End world-gen, holds 1 across the End core, ramps back to 0. It drives how
+ *       much floating End-stone island terrain is placed.</li>
+ * </ul>
+ *
+ * <p>No Minecraft types here, so it is unit tested without a NeoForge bootstrap —
+ * same convention as {@code DifficultyProgression}.</p>
  */
 public final class Disintegration {
 
     /**
-     * Depth below the track bed (in blocks) over which the downward erosion bias
-     * ramps from none to full {@link #DEPTH_WEIGHT}. Lower blocks dissolve first,
-     * so the track's support pillars "break apart as they get lower" into the void.
-     * Larger = pillars fade more slowly with depth (they survive deeper down).
+     * Depth below the track bed (blocks) over which the downward erosion bias ramps
+     * from none to full {@link #DEPTH_WEIGHT}. Lower blocks dissolve first, so the
+     * track's support pillars break apart as they descend. Larger = pillars fade
+     * more slowly with depth.
      */
     static final double VERTICAL_SPAN = 96.0;
 
-    /**
-     * How much the per-block removal probability is boosted at maximum depth
-     * (≥ {@link #VERTICAL_SPAN} below the bed): {@code p = ramp × (1 + DEPTH_WEIGHT)}
-     * clamped to 1. With 1.0, blocks a full span below the bed erode at 2× the
-     * surface rate — a gentle gradient so the pillars fade gradually rather than
-     * snapping off just under the bed.
-     */
+    /** Max extra erosion at depth: {@code p = ramp × (1 + DEPTH_WEIGHT)} clamped to 1. */
     static final double DEPTH_WEIGHT = 1.0;
 
-    /** Coarse octave cell size (blocks) — large clumps breaking off. */
+    /** Coarse erosion-noise cell (blocks) — large clumps breaking off. */
     private static final int NOISE_CELL_COARSE = 8;
-    /** Fine octave cell size (blocks) — ragged edges on the clumps. */
+    /** Fine erosion-noise cell (blocks) — ragged edges on the clumps. */
     private static final int NOISE_CELL_FINE = 3;
+
+    /** Vertical radius (blocks) around the bed over which End islands cluster. */
+    public static final int ISLAND_VERTICAL_RADIUS = 40;
+    /** Peak fraction of island volume filled with End stone at full End intensity. */
+    static final double ISLAND_DENSITY = 0.62;
+    /** Coarse island-noise cell — island bodies. */
+    private static final int ISLAND_CELL_COARSE = 14;
+    /** Fine island-noise cell — island edges. */
+    private static final int ISLAND_CELL_FINE = 6;
 
     private Disintegration() {}
 
@@ -57,76 +69,100 @@ public final class Disintegration {
         return (long) startCarriages * (long) carriageLength;
     }
 
-    /** Total band width on X: {@code 2·fade + core} (fade-in + core + fade-out). */
-    public static long bandLength(int fade, int core) {
-        return 2L * Math.max(0, fade) + Math.max(0, core);
+    /** Total band width on X: {@code 4·fade + 2·voidHold + endHold}. */
+    public static long bandLength(int fade, int voidHold, int endHold) {
+        return 4L * Math.max(0, fade) + 2L * Math.max(0, voidHold) + Math.max(0, endHold);
     }
 
-    /**
-     * True if a chunk's X span {@code [chunkMinX, chunkMaxX]} intersects the band
-     * {@code [startX, startX + bandLen)}. Used as the per-chunk fast reject.
-     */
+    /** True if a chunk's X span {@code [chunkMinX, chunkMaxX]} intersects {@code [startX, startX+bandLen)}. */
     public static boolean chunkInBand(int chunkMinX, int chunkMaxX, long startX, long bandLen) {
         return chunkMaxX >= startX && chunkMinX < startX + bandLen;
     }
 
     /**
-     * Void intensity at a world-X column, in {@code [0, 1]}: 0 before the band,
-     * a linear 0→1 ramp across the fade-in, a flat 1 across the core, a linear
-     * 1→0 ramp across the fade-out, and 0 after the band. Robust to
-     * {@code fade == 0} (instant edges) and {@code core == 0} (no plateau).
+     * Middle ramp {@code M ∈ [0,1]}: 0 before the band, linear 0→1 across the first
+     * fade, flat 1 across the entire void+End+void middle, linear 1→0 across the
+     * last fade, 0 after. Drives erosion intensity and the End sky/fog blend.
      */
-    public static double voidRamp(int worldX, long startX, int fade, int core) {
+    public static double middleRamp(int worldX, long startX, int fade, int voidHold, int endHold) {
         if (worldX < startX) return 0.0;
         int f = Math.max(0, fade);
-        int c = Math.max(0, core);
+        long band = bandLength(fade, voidHold, endHold);
         long d = (long) worldX - startX;
-        if (d < f) return (double) d / f;                 // fade-in 0 → 1 (f>0 here)
-        if (d < (long) f + c) return 1.0;                 // full-void core
-        long e = d - ((long) f + c);
-        if (e < f) return 1.0 - (double) e / f;           // fade-out 1 → 0 (f>0 here)
-        return 0.0;                                       // past the band — normal terrain
+        if (d >= band) return 0.0;
+        if (d < f) return (double) d / f;                 // fade-in (f>0 here)
+        long holdEnd = band - f;                          // start of the fade-out
+        if (d < holdEnd) return 1.0;                       // void+End+void plateau
+        return 1.0 - (double) (d - holdEnd) / f;          // fade-out (f>0 here)
     }
 
     /**
-     * Removal probability for a block at {@code (worldX, y)} given the bed Y,
-     * deriving the column ramp internally. Convenience for tests; the runtime
-     * path uses {@link #removalProbabilityFromRamp} with a precomputed ramp.
+     * End ramp {@code E ∈ [0,1]}: 0 through the void holds, linear 0→1 as the void
+     * fades into End world-gen, flat 1 across the End core, linear 1→0 back to void.
+     * Drives how much floating End-stone island terrain is placed.
      */
-    public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int core) {
-        return removalProbabilityFromRamp(voidRamp(worldX, startX, fade, core), y, bedY);
+    public static double endRamp(int worldX, long startX, int fade, int voidHold, int endHold) {
+        if (worldX < startX) return 0.0;
+        int f = Math.max(0, fade);
+        int vh = Math.max(0, voidHold);
+        int eh = Math.max(0, endHold);
+        long d = (long) worldX - startX;
+        long a2 = (long) f + vh;          // void→End begins
+        long a3 = 2L * f + vh;            // End core begins
+        long a4 = 2L * f + vh + eh;       // End core ends
+        long a5 = 3L * f + vh + eh;       // End→void ends
+        if (d < a2 || d >= a5) return 0.0;
+        if (d < a3) return (double) (d - a2) / f;         // ramp up (f>0 here)
+        if (d < a4) return 1.0;                            // End core
+        return 1.0 - (double) (d - a4) / f;               // ramp down (f>0 here)
+    }
+
+    /** Removal probability at {@code (worldX, y)}; derives the column middle-ramp internally (test convenience). */
+    public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int voidHold, int endHold) {
+        return removalProbabilityFromRamp(middleRamp(worldX, startX, fade, voidHold, endHold), y, bedY);
     }
 
     /**
-     * Removal probability from an already-computed column {@code ramp} and the
-     * block's depth below the bed. {@code ramp × (1 + depthBoost)} clamped to 1,
-     * where {@code depthBoost} grows from 0 at bed level to {@link #DEPTH_WEIGHT}
-     * at {@link #VERTICAL_SPAN} blocks below. Blocks above the bed get no boost.
+     * Removal probability from an already-computed column middle-ramp and the block's
+     * depth below the bed: {@code ramp × (1 + depthBoost)} clamped to 1, where
+     * {@code depthBoost} grows 0→{@link #DEPTH_WEIGHT} over {@link #VERTICAL_SPAN}
+     * blocks of depth. Blocks above the bed get no boost.
      */
     public static double removalProbabilityFromRamp(double ramp, int y, int bedY) {
         if (ramp <= 0.0) return 0.0;
-        int depth = bedY - y; // positive below the bed
+        int depth = bedY - y;
         double depthBoost = clamp01((double) depth / VERTICAL_SPAN) * DEPTH_WEIGHT;
         double p = ramp * (1.0 + depthBoost);
         return p > 1.0 ? 1.0 : p;
     }
 
     /**
-     * Deterministic, spatially-coherent erosion noise in {@code [0, 1)} for a
-     * world position, seeded from the world's generation seed so it is stable
-     * across reloads. Two value-noise octaves (coarse + fine) so the world breaks
-     * off in clumps with ragged edges rather than salt-and-pepper. A block is
-     * removed when this value is below its removal probability.
+     * End-island fill probability from an already-computed column end-ramp and the
+     * block's distance from the bed: {@code E × verticalFalloff × ISLAND_DENSITY},
+     * so islands cluster around track level and thin out above and below.
      */
+    public static double endFillProbabilityFromRamp(double endRamp, int y, int bedY) {
+        if (endRamp <= 0.0) return 0.0;
+        double vfall = clamp01(1.0 - Math.abs(y - bedY) / (double) ISLAND_VERTICAL_RADIUS);
+        return endRamp * vfall * ISLAND_DENSITY;
+    }
+
+    /** Deterministic, clumpy erosion noise in {@code [0,1)} (two octaves), seeded from the world seed. */
     public static double coherentNoise(long seed, int x, int y, int z) {
         double coarse = valueNoise(seed, x, y, z, NOISE_CELL_COARSE);
         double fine = valueNoise(seed ^ 0x5DEECE66DL, x, y, z, NOISE_CELL_FINE);
         return 0.6 * coarse + 0.4 * fine;
     }
 
+    /** Deterministic island-shape noise in {@code [0,1)} (larger cells than {@link #coherentNoise} for blobby islands). */
+    public static double islandNoise(long seed, int x, int y, int z) {
+        double coarse = valueNoise(seed ^ 0x9E3779B97F4A7C15L, x, y, z, ISLAND_CELL_COARSE);
+        double fine = valueNoise(seed ^ 0x632BE59BD9B4E019L, x, y, z, ISLAND_CELL_FINE);
+        return 0.65 * coarse + 0.35 * fine;
+    }
+
     // ---- internals ----------------------------------------------------------
 
-    /** Trilinearly-interpolated value noise over a lattice of {@code cell}-sized cubes. */
     private static double valueNoise(long seed, int x, int y, int z, int cell) {
         int cx = Math.floorDiv(x, cell);
         int cy = Math.floorDiv(y, cell);
@@ -153,7 +189,6 @@ public final class Disintegration {
         return lerp(y0, y1, tz);
     }
 
-    /** SplitMix64-style hash of a seed + lattice point → {@code [0, 1)}. */
     private static double hash01(long seed, int xi, int yi, int zi) {
         long h = seed + 0x9E3779B97F4A7C15L;
         h ^= (long) xi * 0xC2B2AE3D27D4EB4FL;
@@ -162,7 +197,7 @@ public final class Disintegration {
         h = (h ^ (h >>> 27)) * 0x94D049BB133111EBL;
         h ^= (long) zi * 0xD6E8FEB86659FD93L;
         h ^= (h >>> 31);
-        return (h >>> 11) * 0x1.0p-53; // top 53 bits → [0, 1)
+        return (h >>> 11) * 0x1.0p-53;
     }
 
     private static double smooth(double t) {

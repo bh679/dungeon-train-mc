@@ -52,10 +52,14 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_DISINTEGRATION_FADE_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_FADE_BLOCKS = 10_000;
     public static final int DEFAULT_DISINTEGRATION_FADE_BLOCKS = 120;
-    /** Blocks of fully-void core (only the floating track) between the two fades. */
-    public static final int MIN_DISINTEGRATION_CORE_BLOCKS = 0;
-    public static final int MAX_DISINTEGRATION_CORE_BLOCKS = 100_000;
-    public static final int DEFAULT_DISINTEGRATION_CORE_BLOCKS = 240;
+    /** Blocks of pure-void buffer between the overworld fade and the End on each side. */
+    public static final int MIN_DISINTEGRATION_VOID_HOLD_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_VOID_HOLD_BLOCKS = 100_000;
+    public static final int DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS = 48;
+    /** Blocks of End world-gen (floating End-stone islands) at the centre of the band. */
+    public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000;
+    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 240;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -64,7 +68,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
     public static final ModConfigSpec.IntValue DISINTEGRATION_START_CARRIAGES;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FADE_BLOCKS;
-    public static final ModConfigSpec.IntValue DISINTEGRATION_CORE_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_VOID_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -76,7 +81,8 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
         DISINTEGRATION_START_CARRIAGES = pair.getLeft().disintegrationStartCarriages;
         DISINTEGRATION_FADE_BLOCKS = pair.getLeft().disintegrationFadeBlocks;
-        DISINTEGRATION_CORE_BLOCKS = pair.getLeft().disintegrationCoreBlocks;
+        DISINTEGRATION_VOID_HOLD_BLOCKS = pair.getLeft().disintegrationVoidHoldBlocks;
+        DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -107,11 +113,11 @@ public final class DungeonTrainCommonConfig {
                 .define("defaultCompatibleTerrain", DEFAULT_COMPATIBLE_TERRAIN);
 
         ModConfigSpec.BooleanValue disintegrationEnabled = b
-                .comment("World disintegration band. When true (default), the world progressively breaks apart into",
-                        "void past a carriage count, reaches a fully-void core where only the floating track remains,",
-                        "then reassembles into normal terrain — one dramatic gap crossed once per run. The train rides",
-                        "level the whole way (its bed + rails are preserved); the surrounding world and the track's",
-                        "support pillars erode away. Set false to disable entirely.")
+                .comment("World disintegration band. When true (default), past a carriage count the world breaks apart",
+                        "and the run crosses a once-per-run gap: Overworld → Void → End world-gen (floating End-stone",
+                        "islands under the End sky) → Void → Overworld. The train rides level the whole way (its bed +",
+                        "rails are preserved); the surrounding world and the track's support pillars erode away. Set",
+                        "false to disable entirely.")
                 .define("disintegrationEnabled", DEFAULT_DISINTEGRATION_ENABLED);
         ModConfigSpec.IntValue disintegrationStartCarriages = b
                 .comment("Carriages of forward travel (from the X=0 spawn line) before the world begins breaking apart.",
@@ -120,19 +126,25 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("disintegrationStartCarriages", DEFAULT_DISINTEGRATION_START_CARRIAGES,
                         MIN_DISINTEGRATION_START_CARRIAGES, MAX_DISINTEGRATION_START_CARRIAGES);
         ModConfigSpec.IntValue disintegrationFadeBlocks = b
-                .comment("Blocks over which terrain fades from solid to fully void at each edge of the band (in and out).",
-                        "Larger = a more gradual, cinematic break-apart. Default 120.")
+                .comment("Blocks over which each transition fades (overworld↔void and void↔End). Larger = more gradual,",
+                        "cinematic transitions. Default 120.")
                 .defineInRange("disintegrationFadeBlocks", DEFAULT_DISINTEGRATION_FADE_BLOCKS,
                         MIN_DISINTEGRATION_FADE_BLOCKS, MAX_DISINTEGRATION_FADE_BLOCKS);
-        ModConfigSpec.IntValue disintegrationCoreBlocks = b
-                .comment("Blocks of fully-void core (only the floating track survives) between the fade-in and fade-out.",
-                        "Total band width on X = 2 × fade + core. Default 240.")
-                .defineInRange("disintegrationCoreBlocks", DEFAULT_DISINTEGRATION_CORE_BLOCKS,
-                        MIN_DISINTEGRATION_CORE_BLOCKS, MAX_DISINTEGRATION_CORE_BLOCKS);
+        ModConfigSpec.IntValue disintegrationVoidHoldBlocks = b
+                .comment("Blocks of pure-void buffer between the overworld fade and the End on each side of the band.",
+                        "Default 48.")
+                .defineInRange("disintegrationVoidHoldBlocks", DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS,
+                        MIN_DISINTEGRATION_VOID_HOLD_BLOCKS, MAX_DISINTEGRATION_VOID_HOLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationEndHoldBlocks = b
+                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band.",
+                        "Total band width on X = 4 × fade + 2 × voidHold + endHold. Default 240.")
+                .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
+                        MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
-                disintegrationEnabled, disintegrationStartCarriages, disintegrationFadeBlocks, disintegrationCoreBlocks);
+                disintegrationEnabled, disintegrationStartCarriages, disintegrationFadeBlocks,
+                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks);
     }
 
     /**
@@ -195,9 +207,14 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_FADE_BLOCKS.get() : DEFAULT_DISINTEGRATION_FADE_BLOCKS;
     }
 
-    /** Fully-void core span (blocks); falls back to the hardcoded default pre-load. */
-    public static int getDisintegrationCoreBlocks() {
-        return isLoaded() ? DISINTEGRATION_CORE_BLOCKS.get() : DEFAULT_DISINTEGRATION_CORE_BLOCKS;
+    /** Pure-void buffer span (blocks) on each side of the End; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationVoidHoldBlocks() {
+        return isLoaded() ? DISINTEGRATION_VOID_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS;
+    }
+
+    /** End world-gen core span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationEndHoldBlocks() {
+        return isLoaded() ? DISINTEGRATION_END_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS;
     }
 
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
@@ -206,5 +223,6 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue disintegrationEnabled,
                           ModConfigSpec.IntValue disintegrationStartCarriages,
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
-                          ModConfigSpec.IntValue disintegrationCoreBlocks) {}
+                          ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
+                          ModConfigSpec.IntValue disintegrationEndHoldBlocks) {}
 }
