@@ -1,6 +1,9 @@
 {
   "type": "neoforge:add_features",
   "biomes": "#minecraft:is_overworld",
-  "features": "dungeontrain:track_bed",
+  "features": [
+    "dungeontrain:track_bed",
+    "dungeontrain:disintegration"
+  ],
   "step": "top_layer_modification"
 }

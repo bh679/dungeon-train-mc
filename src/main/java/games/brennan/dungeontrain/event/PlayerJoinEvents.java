@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.VoidBandSyncPacket;
 import games.brennan.dungeontrain.net.PrefabRegistrySyncPacket;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
 import games.brennan.dungeontrain.ship.ManagedShip;
@@ -188,6 +189,10 @@ public final class PlayerJoinEvents {
         // Seed debug flags so the in-world Debug menu's Toggle states render
         // the correct value the first time it's opened on this client.
         DebugFlags.sendSnapshotTo(player);
+        // Sync the disintegration-band geometry (per-world carriage length + train
+        // flag) so the client can fade the sky/fog toward the End across the band.
+        DungeonTrainWorldData bandData = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld());
+        DungeonTrainNet.sendTo(player, new VoidBandSyncPacket(bandData.dims().length(), bandData.startsWithTrain()));
         PENDING.put(player.getUUID(), 0);
     }
 

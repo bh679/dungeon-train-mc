@@ -1835,6 +1835,23 @@
       "released": true,
       "released_in": "v0.346.0",
       "released_at": "2026-06-22T12:30:00Z"
+    },
+    {
+      "id": "world-disintegration-band",
+      "version": "0.346.0",
+      "type": "feat",
+      "title": "The world breaks apart \u2014 repeating Void and End-island bands",
+      "summary": "As your train rolls on, the world starts coming apart. Solid ground crumbles into empty void, then reforms as floating End islands \u2014 chorus plants and all \u2014 before dissolving back to void and rebuilding into normal terrain. The whole cycle repeats forever down the line. Over the broken stretches the sky fades to the End's starfield and the fog goes dark, only endermen roam, and the train rides straight through on its tracks.",
+      "highlights": [
+        "The world now breaks apart into repeating Void \u2192 End-island \u2192 Void bands as you travel",
+        "Real floating End islands with chorus plants drift in the void; the sky, fog and clouds turn to the End",
+        "Only endermen spawn in the broken bands \u2014 the train keeps rolling on its rails the whole way"
+      ],
+      "pr": 533,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

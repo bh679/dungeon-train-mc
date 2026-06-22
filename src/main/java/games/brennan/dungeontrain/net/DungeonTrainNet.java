@@ -105,6 +105,11 @@ public final class DungeonTrainNet {
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
         registrar.playToClient(CaptureEchoPacket.TYPE, CaptureEchoPacket.STREAM_CODEC, CaptureEchoPacket::handle);
         registrar.playToServer(EchoPhotoPacket.TYPE, EchoPhotoPacket.STREAM_CODEC, EchoPhotoPacket::handle);
+
+        // World disintegration band: server → joining player with the per-world
+        // carriage length + train flag, so the client can fade the sky/fog toward
+        // the End look across the band.
+        registrar.playToClient(VoidBandSyncPacket.TYPE, VoidBandSyncPacket.STREAM_CODEC, VoidBandSyncPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */
