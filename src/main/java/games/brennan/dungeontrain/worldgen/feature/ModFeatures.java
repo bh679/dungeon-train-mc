@@ -33,6 +33,11 @@ public final class ModFeatures {
         TrackBedFeature::new
     );
 
+    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> DISINTEGRATION = FEATURES.register(
+        "disintegration",
+        DisintegrationFeature::new
+    );
+
     private ModFeatures() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */

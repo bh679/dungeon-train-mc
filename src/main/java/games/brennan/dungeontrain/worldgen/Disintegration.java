@@ -53,14 +53,12 @@ public final class Disintegration {
     /** Fine erosion-noise cell (blocks) — ragged edges on the clumps. */
     private static final int NOISE_CELL_FINE = 3;
 
-    /** Vertical radius (blocks) around the bed over which End islands cluster. */
-    public static final int ISLAND_VERTICAL_RADIUS = 40;
-    /** Peak fraction of island volume filled with End stone at full End intensity. */
-    static final double ISLAND_DENSITY = 0.62;
-    /** Coarse island-noise cell — island bodies. */
-    private static final int ISLAND_CELL_COARSE = 14;
-    /** Fine island-noise cell — island edges. */
-    private static final int ISLAND_CELL_FINE = 6;
+    /** Max value of the real End island density function ({@code DensityFunctions.endIslands}). */
+    static final double ISLAND_DENSITY_MAX = 0.5625;
+    /** Half-thickness (blocks) of an End island slab at peak density and full End intensity. */
+    static final int ISLAND_MAX_HALF_THICKNESS = 8;
+    /** Vertical wander (blocks) of island centres around track level, so islands float at varied heights. */
+    public static final int ISLAND_VERTICAL_SPREAD = 16;
 
     private Disintegration() {}
 
@@ -137,14 +135,16 @@ public final class Disintegration {
     }
 
     /**
-     * End-island fill probability from an already-computed column end-ramp and the
-     * block's distance from the bed: {@code E × verticalFalloff × ISLAND_DENSITY},
-     * so islands cluster around track level and thin out above and below.
+     * Half-thickness (blocks) of the End-island slab to stamp at a column, from the
+     * <em>real</em> End island density ({@code DensityFunctions.endIslands(0L).compute}
+     * at the sampled column) and the band {@code endRamp}: thicker at island centres
+     * (high density), fading to nothing at the band edges (low {@code endRamp}). Pure
+     * so the band shaping is unit-testable; the density itself comes from vanilla code.
      */
-    public static double endFillProbabilityFromRamp(double endRamp, int y, int bedY) {
-        if (endRamp <= 0.0) return 0.0;
-        double vfall = clamp01(1.0 - Math.abs(y - bedY) / (double) ISLAND_VERTICAL_RADIUS);
-        return endRamp * vfall * ISLAND_DENSITY;
+    public static int islandHalfThickness(double endIslandDensity, double endRamp) {
+        if (endRamp <= 0.0 || endIslandDensity <= 0.0) return 0;
+        double frac = clamp01(endIslandDensity / ISLAND_DENSITY_MAX);
+        return (int) Math.round(frac * ISLAND_MAX_HALF_THICKNESS * endRamp);
     }
 
     /** Deterministic, clumpy erosion noise in {@code [0,1)} (two octaves), seeded from the world seed. */
@@ -152,13 +152,6 @@ public final class Disintegration {
         double coarse = valueNoise(seed, x, y, z, NOISE_CELL_COARSE);
         double fine = valueNoise(seed ^ 0x5DEECE66DL, x, y, z, NOISE_CELL_FINE);
         return 0.6 * coarse + 0.4 * fine;
-    }
-
-    /** Deterministic island-shape noise in {@code [0,1)} (larger cells than {@link #coherentNoise} for blobby islands). */
-    public static double islandNoise(long seed, int x, int y, int z) {
-        double coarse = valueNoise(seed ^ 0x9E3779B97F4A7C15L, x, y, z, ISLAND_CELL_COARSE);
-        double fine = valueNoise(seed ^ 0x632BE59BD9B4E019L, x, y, z, ISLAND_CELL_FINE);
-        return 0.65 * coarse + 0.35 * fine;
     }
 
     // ---- internals ----------------------------------------------------------

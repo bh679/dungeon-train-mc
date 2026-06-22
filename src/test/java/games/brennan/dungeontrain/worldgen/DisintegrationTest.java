@@ -103,18 +103,23 @@ final class DisintegrationTest {
         assertEquals(1.0, Disintegration.removalProbability(1300, 64, 64, START_X, F, VH, EH), EPS); // M=1 at bed
     }
 
-    // ---- End-island fill probability ----------------------------------------
+    // ---- End-island slab thickness (from real End density × band ramp) ------
 
     @Test
-    @DisplayName("End fill peaks at the bed and falls off to 0 at the island vertical radius")
-    void endFill_verticalFalloff() {
-        int bedY = 64;
-        int r = Disintegration.ISLAND_VERTICAL_RADIUS;
-        assertEquals(Disintegration.ISLAND_DENSITY, Disintegration.endFillProbabilityFromRamp(1.0, bedY, bedY), EPS);
-        assertEquals(0.0, Disintegration.endFillProbabilityFromRamp(1.0, bedY - r, bedY), EPS);
-        assertEquals(0.0, Disintegration.endFillProbabilityFromRamp(1.0, bedY + r, bedY), EPS);
-        assertEquals(0.0, Disintegration.endFillProbabilityFromRamp(0.0, bedY, bedY), EPS); // no End → no fill
-        assertTrue(Disintegration.endFillProbabilityFromRamp(1.0, bedY - r / 2, bedY) > 0.0);
+    @DisplayName("island half-thickness scales with End density and end-ramp; 0 when either is 0")
+    void islandHalfThickness_scaling() {
+        // Peak density (ISLAND_DENSITY_MAX) at full End intensity → max half-thickness.
+        assertEquals(Disintegration.ISLAND_MAX_HALF_THICKNESS,
+                Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 1.0));
+        // No island where density ≤ 0 (void) or end-ramp = 0 (outside the End core).
+        assertEquals(0, Disintegration.islandHalfThickness(0.0, 1.0));
+        assertEquals(0, Disintegration.islandHalfThickness(-0.3, 1.0));
+        assertEquals(0, Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 0.0));
+        // Half intensity → roughly half the thickness; denser islands are thicker.
+        int half = Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 0.5);
+        assertTrue(half > 0 && half < Disintegration.ISLAND_MAX_HALF_THICKNESS);
+        assertTrue(Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX, 1.0)
+                >= Disintegration.islandHalfThickness(Disintegration.ISLAND_DENSITY_MAX / 2.0, 1.0));
     }
 
     // ---- band geometry helpers ----------------------------------------------
@@ -141,28 +146,20 @@ final class DisintegrationTest {
     // ---- noise ---------------------------------------------------------------
 
     @Test
-    @DisplayName("erosion + island noise stay in [0,1), are deterministic, and vary with position")
+    @DisplayName("erosion noise stays in [0,1), is deterministic, and varies with position")
     void noise_rangeAndDeterminism() {
         long seed = 123456789L;
         assertEquals(Disintegration.coherentNoise(seed, 10, 40, -3),
                 Disintegration.coherentNoise(seed, 10, 40, -3), 0.0);
-        assertEquals(Disintegration.islandNoise(seed, 10, 40, -3),
-                Disintegration.islandNoise(seed, 10, 40, -3), 0.0);
-        boolean variedErosion = false;
-        boolean variedIsland = false;
+        boolean varied = false;
         double e0 = Disintegration.coherentNoise(seed, 0, 30, 0);
-        double i0 = Disintegration.islandNoise(seed, 0, 30, 0);
         for (int x = 0; x < 64; x++) {
             for (int y = 30; y < 40; y++) {
                 double e = Disintegration.coherentNoise(seed, x, y, 0);
-                double i = Disintegration.islandNoise(seed, x, y, 0);
                 assertTrue(e >= 0.0 && e < 1.0, "erosion noise out of [0,1): " + e);
-                assertTrue(i >= 0.0 && i < 1.0, "island noise out of [0,1): " + i);
-                if (Math.abs(e - e0) > 1e-6) variedErosion = true;
-                if (Math.abs(i - i0) > 1e-6) variedIsland = true;
+                if (Math.abs(e - e0) > 1e-6) varied = true;
             }
         }
-        assertTrue(variedErosion, "erosion noise should vary across positions");
-        assertTrue(variedIsland, "island noise should vary across positions");
+        assertTrue(varied, "erosion noise should vary across positions");
     }
 }

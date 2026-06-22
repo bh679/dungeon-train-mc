@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.core.SectionPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -59,7 +60,7 @@ public final class BedrockFloorEvents {
         ChunkAccess chunk = event.getChunk();
 
         // No bedrock floor inside the disintegration band — the void has no floor.
-        long[] band = WorldDisintegrationEvents.bandRange(level);
+        long[] band = DisintegrationBand.range(level);
         if (band != null) {
             int cMinX = chunk.getPos().getMinBlockX();
             if (cMinX + 15 >= band[0] && cMinX < band[1]) return;
