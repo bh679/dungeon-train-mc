@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.WorldJoinReport;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -245,6 +246,13 @@ public class DungeonTrain {
             // deliberately silly reassurance that sets the positive features apart from the absurd.
             @Override public List<String> networkConsentNonFeatures() {
                 return List.of("Harvest your soul");
+            }
+            // Append a one-time world-info block (DT version + train regeneration data + installed-mods
+            // list) under the first player-join message in each world, into the joining player's Discord
+            // thread. WorldJoinReport gates it to once per world and is no-throw, so a hiccup can't disrupt
+            // the join. Useful for reproducing/debugging a player's run (the train is seed-deterministic).
+            @Override public String joinMessageSuffix(UUID playerId, String playerName) {
+                return WorldJoinReport.suffixFor(playerId, playerName);
             }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
             // outside the embed): the carriage # the player earned it in + their difficulty level — the
