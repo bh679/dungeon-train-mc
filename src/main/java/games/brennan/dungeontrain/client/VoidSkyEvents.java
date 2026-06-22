@@ -2,7 +2,8 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
-import net.minecraft.sounds.Musics;
+import net.minecraft.sounds.Music;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -37,6 +38,17 @@ public final class VoidSkyEvents {
      */
     private static final double END_MUSIC_THRESHOLD = 0.5;
 
+    /**
+     * The vanilla End music ({@code minecraft:music.end}), but with short min/max delays so
+     * it actually plays across the band. Vanilla {@code Musics.END} carries a 6000-tick
+     * (5-minute) min delay: when {@code MusicManager} swaps to a {@code replaceCurrentMusic}
+     * track it stops the current song immediately, then waits that delay before the next —
+     * which left the void silent for minutes. Short delays (1s start, ≤10s gaps) make the End
+     * track come in promptly and recur for the whole crossing. {@code replaceCurrentMusic=true}
+     * cuts the Overworld track the moment the world breaks apart.
+     */
+    private static final Music END_MUSIC = new Music(SoundEvents.MUSIC_END, 20, 200, true);
+
     private VoidSkyEvents() {}
 
     @SubscribeEvent
@@ -60,7 +72,7 @@ public final class VoidSkyEvents {
         if (mc.screen != null && mc.screen.getBackgroundMusic() != null) return;
         double t = ClientVoidBand.endSkyIntensityAt(mc.player.getX());
         if (t > END_MUSIC_THRESHOLD) {
-            event.setMusic(Musics.END);
+            event.setMusic(END_MUSIC);
         }
     }
 
