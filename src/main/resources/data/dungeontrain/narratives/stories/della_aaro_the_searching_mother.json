@@ -1,0 +1,14 @@
+{
+  "id": "della_aaro_the_searching_mother",
+  "character": "Della Aaro",
+  "story": "The Searching Mother",
+  "letters": [
+    {
+      "index": 1,
+      "label": "Letter One",
+      "variants": [
+        "I fell asleep holding her hand.\n\nI woke up holding nothing.\n\nThe seat beside me was still warm.\n\nSo I haven't been asleep long. So she can't have gone far.\n\n\nThat's what I keep telling myself.\n\nDella"
+      ]
+    }
+  ]
+}
