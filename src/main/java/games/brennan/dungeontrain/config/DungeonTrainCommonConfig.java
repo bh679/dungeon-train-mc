@@ -51,11 +51,11 @@ public final class DungeonTrainCommonConfig {
     /** Blocks over which terrain fades in/out of void at each band edge. */
     public static final int MIN_DISINTEGRATION_FADE_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_FADE_BLOCKS = 10_000;
-    public static final int DEFAULT_DISINTEGRATION_FADE_BLOCKS = 100;
+    public static final int DEFAULT_DISINTEGRATION_FADE_BLOCKS = 120;
     /** Blocks of fully-void core (only the floating track) between the two fades. */
     public static final int MIN_DISINTEGRATION_CORE_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_CORE_BLOCKS = 100_000;
-    public static final int DEFAULT_DISINTEGRATION_CORE_BLOCKS = 60;
+    public static final int DEFAULT_DISINTEGRATION_CORE_BLOCKS = 240;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -121,12 +121,12 @@ public final class DungeonTrainCommonConfig {
                         MIN_DISINTEGRATION_START_CARRIAGES, MAX_DISINTEGRATION_START_CARRIAGES);
         ModConfigSpec.IntValue disintegrationFadeBlocks = b
                 .comment("Blocks over which terrain fades from solid to fully void at each edge of the band (in and out).",
-                        "Larger = a more gradual, cinematic break-apart. Default 100.")
+                        "Larger = a more gradual, cinematic break-apart. Default 120.")
                 .defineInRange("disintegrationFadeBlocks", DEFAULT_DISINTEGRATION_FADE_BLOCKS,
                         MIN_DISINTEGRATION_FADE_BLOCKS, MAX_DISINTEGRATION_FADE_BLOCKS);
         ModConfigSpec.IntValue disintegrationCoreBlocks = b
                 .comment("Blocks of fully-void core (only the floating track survives) between the fade-in and fade-out.",
-                        "Total band width on X = 2 × fade + core. Default 60.")
+                        "Total band width on X = 2 × fade + core. Default 240.")
                 .defineInRange("disintegrationCoreBlocks", DEFAULT_DISINTEGRATION_CORE_BLOCKS,
                         MIN_DISINTEGRATION_CORE_BLOCKS, MAX_DISINTEGRATION_CORE_BLOCKS);
         b.pop();

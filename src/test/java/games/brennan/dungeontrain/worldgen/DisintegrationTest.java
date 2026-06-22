@@ -78,8 +78,9 @@ final class DisintegrationTest {
     @DisplayName("deeper blocks erode at a higher probability than blocks at the bed")
     void removal_depthBias() {
         int bedY = 64;
+        int span = (int) Disintegration.VERTICAL_SPAN;
         double atBed = Disintegration.removalProbabilityFromRamp(0.3, bedY, bedY);
-        double deep = Disintegration.removalProbabilityFromRamp(0.3, bedY - 48, bedY);
+        double deep = Disintegration.removalProbabilityFromRamp(0.3, bedY - span, bedY); // full depth boost
         assertEquals(0.3, atBed, EPS);                 // no boost at bed level
         assertTrue(deep > atBed, "deep block should erode more than bed-level block");
         assertEquals(0.3 * (1.0 + Disintegration.DEPTH_WEIGHT), deep, EPS);
@@ -89,8 +90,9 @@ final class DisintegrationTest {
     @DisplayName("blocks above the bed get no depth boost; probability never exceeds 1")
     void removal_aboveBedAndClamp() {
         int bedY = 64;
+        int span = (int) Disintegration.VERTICAL_SPAN;
         assertEquals(0.4, Disintegration.removalProbabilityFromRamp(0.4, bedY + 20, bedY), EPS);
-        assertEquals(1.0, Disintegration.removalProbabilityFromRamp(1.0, bedY - 48, bedY), EPS); // clamped
+        assertEquals(1.0, Disintegration.removalProbabilityFromRamp(1.0, bedY - span, bedY), EPS); // clamped
     }
 
     // ---- band geometry helpers ----------------------------------------------

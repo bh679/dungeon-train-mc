@@ -32,16 +32,18 @@ public final class Disintegration {
      * Depth below the track bed (in blocks) over which the downward erosion bias
      * ramps from none to full {@link #DEPTH_WEIGHT}. Lower blocks dissolve first,
      * so the track's support pillars "break apart as they get lower" into the void.
+     * Larger = pillars fade more slowly with depth (they survive deeper down).
      */
-    static final double VERTICAL_SPAN = 48.0;
+    static final double VERTICAL_SPAN = 96.0;
 
     /**
      * How much the per-block removal probability is boosted at maximum depth
      * (≥ {@link #VERTICAL_SPAN} below the bed): {@code p = ramp × (1 + DEPTH_WEIGHT)}
-     * clamped to 1. With 1.5, blocks a full span below the bed erode at 2.5× the
-     * surface rate, so deep structure has vanished well before the surface does.
+     * clamped to 1. With 1.0, blocks a full span below the bed erode at 2× the
+     * surface rate — a gentle gradient so the pillars fade gradually rather than
+     * snapping off just under the bed.
      */
-    static final double DEPTH_WEIGHT = 1.5;
+    static final double DEPTH_WEIGHT = 1.0;
 
     /** Coarse octave cell size (blocks) — large clumps breaking off. */
     private static final int NOISE_CELL_COARSE = 8;
