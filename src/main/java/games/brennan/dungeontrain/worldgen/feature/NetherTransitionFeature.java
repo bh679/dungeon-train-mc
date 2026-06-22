@@ -9,7 +9,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
-import games.brennan.dungeontrain.worldgen.NetherTransition;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.tags.BlockTags;
@@ -65,8 +65,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     /** Mega-mountain peaks above this world-Y get a snow cap (jagged-peak look). */
     private static final int SNOW_LINE_Y = 200;
-    /** Blocks of clear airspace kept above the bed for the train to tunnel through. */
+    /** Blocks of clear airspace kept above the bed for the train to pass through. */
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
+    /** Mountains taller than this fraction of max height roof the corridor (a real tunnel); shorter ones leave it open (a canyon, so the player SEES the peaks rise). */
+    private static final double MEGA_ROOF_FRACTION = 0.8;
     /** Extra Z clearance on each side of the tunnel wall span. */
     private static final int CORRIDOR_MARGIN = 1;
     /** Guaranteed solid causeway depth below the bed in the Nether core (a netherrack bridge over lava). */
@@ -80,8 +82,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             Heightmap.Types.OCEAN_FLOOR_WG,
             Heightmap.Types.WORLD_SURFACE_WG);
 
-    private static final BlockState STONE = Blocks.STONE.defaultBlockState();
-    private static final BlockState SNOW = Blocks.SNOW_BLOCK.defaultBlockState();
     private static final BlockState NETHERRACK = Blocks.NETHERRACK.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
@@ -105,14 +105,17 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (chunkMinX + 15 < startX) return false; // before the first band (or disabled)
 
             int maxHeight = DungeonTrainCommonConfig.getNetherMaxHeight();
+            int baseHeight = DungeonTrainCommonConfig.getNetherMountainBaseHeight();
+            int normalHold = DungeonTrainCommonConfig.getNetherNormalHoldBlocks();
+            WorldGenCycle cycle = WorldGenCycle.fromConfig();
 
             double[] heightRamp = new double[16];
             double[] netherRamp = new double[16];
             boolean anyHeight = false;
             for (int dx = 0; dx < 16; dx++) {
                 int worldX = chunkMinX + dx;
-                heightRamp[dx] = NetherBand.heightRampAt(overworld, worldX);
-                netherRamp[dx] = NetherBand.netherRampAt(overworld, worldX);
+                heightRamp[dx] = cycle.netherHeightRamp(worldX);
+                netherRamp[dx] = cycle.netherRamp(worldX);
                 if (heightRamp[dx] > 0.0) anyHeight = true;
             }
             if (!anyHeight) return false;
@@ -126,6 +129,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int zMin = g.trackZMin();
             int zMax = g.trackZMax();
             long seed = data.getGenerationSeed();
+            MountainPalette palette = MountainPalette.fromSeed(seed);
 
             int minY = level.getMinBuildHeight();
             int worldTop = level.getMaxBuildHeight() - 1;
@@ -158,12 +162,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 // Precedence: the End band always wins — skip columns it owns.
                 if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) continue;
 
-                double h = heightRamp[dx];
                 double n = netherRamp[dx];
-                int worldMountainTop = NetherTransition.mountainTopY(h, bedY, maxHeight, worldTop);
+                int worldMountainTop = cycle.netherMountainTopY(worldX, bedY, maxHeight, baseHeight, normalHold, worldTop);
                 // Mountain tapers down toward the open-Nether height as the core approaches.
                 int columnTop = (int) Math.round(worldMountainTop * (1.0 - n) + netherTopApprox * n);
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
+                // Roof the corridor (a tunnel) only for the mega-mountain / nether approach; leave the
+                // lower approach peaks open to the sky (a canyon) so the rising mountains are visible.
+                boolean roof = n > 0.0 || columnTop >= bedY + (int) Math.round(MEGA_ROOF_FRACTION * maxHeight);
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
                 for (int dz = 0; dz < 16; dz++) {
@@ -174,7 +180,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
                     } else {
                         colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, columnTop, n, seed);
+                                minY, columnTop, n, seed, palette, roof);
                     }
                     changed |= colChanged;
                 }
@@ -198,30 +204,34 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      */
     private boolean fillMountainColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                        int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                       int minY, int columnTop, double n, long seed) {
+                                       int minY, int columnTop, double n, long seed, MountainPalette palette,
+                                       boolean roof) {
         int base = Math.max(minY, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz));
         if (base > columnTop) return false;
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         for (int y = base; y <= columnTop; y++) {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
-            if (inCorridorClearZone(worldZ, y, bedY, tg)) continue; // keep the tunnel open
+            if (inCorridorLane(worldZ, tg)) {
+                if (y > bedY && y <= bedY + TUNNEL_CLEAR_HEIGHT) continue; // train clearance — always open
+                if (!roof && y > bedY + TUNNEL_CLEAR_HEIGHT) continue;     // open canyon over the lower peaks
+            }
             // ADD into air; also bury any tree/foliage so the mountain isn't pierced by stray trees.
             if (!w.isReplaceable(dx, y, dz)) continue;
-            w.set(dx, y, dz, mountainMaterial(y, columnTop, n, seed, worldX, worldZ));
+            w.set(dx, y, dz, mountainMaterial(palette, y, columnTop, n, seed, worldX, worldZ));
             changed = true;
         }
         return changed;
     }
 
-    private static BlockState mountainMaterial(int y, int columnTop, double n, long seed, int worldX, int worldZ) {
-        if (n <= 0.0) {
-            if (columnTop > SNOW_LINE_Y && y >= columnTop - 2) return SNOW;
-            return STONE;
-        }
-        // Clumpy stone↔netherrack crossfade: deterministic noise threshold rising with n.
-        double noise = Disintegration.coherentNoise(seed, worldX, y, worldZ);
-        return noise < n ? NETHERRACK : STONE;
+    private static BlockState mountainMaterial(MountainPalette palette, int y, int columnTop, double n,
+                                               long seed, int worldX, int worldZ) {
+        double accent = Disintegration.coherentNoise(seed, worldX, y, worldZ);
+        BlockState rock = palette.surfaceBlock(columnTop - y, columnTop > SNOW_LINE_Y, accent);
+        if (n <= 0.0) return rock;                 // stages 1–3: the chosen vanilla mountain look
+        // stage 4: clumpy crossfade of the mountain rock → netherrack, rising with n.
+        double dither = Disintegration.coherentNoise(seed ^ 0x9E3779B97F4A7C15L, worldX, y, worldZ);
+        return dither < n ? NETHERRACK : rock;
     }
 
     /**
@@ -303,10 +313,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return y == railY && (worldZ == tg.railZMin() || worldZ == tg.railZMax());
     }
 
-    /** The clear tube the train rides through: the tunnel wall span (+margin), from just above the bed to the clear height. */
+    /** The train's Z corridor (tunnel wall span + margin) — kept clear so the train always has a path. */
+    private static boolean inCorridorLane(int worldZ, TunnelGeometry tg) {
+        return worldZ >= tg.wallMinZ() - CORRIDOR_MARGIN && worldZ <= tg.wallMaxZ() + CORRIDOR_MARGIN;
+    }
+
+    /** The clear tube the train rides through: the corridor lane, from just above the bed to the clear height. */
     private static boolean inCorridorClearZone(int worldZ, int y, int bedY, TunnelGeometry tg) {
-        boolean inLane = worldZ >= tg.wallMinZ() - CORRIDOR_MARGIN && worldZ <= tg.wallMaxZ() + CORRIDOR_MARGIN;
-        return inLane && y > bedY && y <= bedY + TUNNEL_CLEAR_HEIGHT;
+        return inCorridorLane(worldZ, tg) && y > bedY && y <= bedY + TUNNEL_CLEAR_HEIGHT;
     }
 
     /**

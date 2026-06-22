@@ -69,6 +69,20 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("mountain top holds at normal height (stage 1) then climbs to the world top, 0 outside the segment")
+    void shapedMountainHeight() {
+        int bedY = 76, maxHeight = 250, baseHeight = 100, normalHold = 64, worldTop = 319;
+        // before the rise reaches normal: bedY (offset 300 = nether start)
+        assertEquals(76, C.netherMountainTopY(1300, bedY, maxHeight, baseHeight, normalHold, worldTop));
+        // stage-1 normal-height hold (offset 340 → ln 40, inside the hold): bedY + baseHeight
+        assertEquals(176, C.netherMountainTopY(1340, bedY, maxHeight, baseHeight, normalHold, worldTop));
+        // interior mega-mountain (offset 600): clamped to the world top
+        assertEquals(319, C.netherMountainTopY(1600, bedY, maxHeight, baseHeight, normalHold, worldTop));
+        // outside the nether segment (in the End region): no mountain
+        assertEquals(76, C.netherMountainTopY(2320, bedY, maxHeight, baseHeight, normalHold, worldTop));
+    }
+
+    @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
         WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, 0, 0, 0, 100, 40, 200);

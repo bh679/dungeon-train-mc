@@ -96,6 +96,60 @@ public record WorldGenCycle(long startX, int owGap,
         return NetherTransition.netherRamp((int) ln, 0L, nFade, nMtn, nCoreFade, nCore, 0);
     }
 
+    /** Portion of the rise (after reaching normal height) spent climbing back up to full height. */
+    private static final double RISE_TO_NORMAL_FRAC = 0.4;
+
+    /**
+     * Stamped mountain top-Y for a world-X column. The rise holds at a <em>normal</em>
+     * vanilla-mountain height ({@code bedY + baseHeight}) for {@code normalHold} blocks
+     * (stage 1, the real-biome look) before climbing to the world-height mega-mountain
+     * (stages 2–3); the interior holds at full height and the exit mirrors the rise.
+     * Returns {@code bedY} outside the nether segment.
+     */
+    public int netherMountainTopY(int worldX, int bedY, int maxHeight, int baseHeight, int normalHold, int worldTop) {
+        long o = offset(worldX);
+        if (o < 0L) return bedY;
+        long ln = o - netherStart();
+        long band = netherLen();
+        if (ln < 0L || ln >= band) return bedY;
+        double baseFrac = maxHeight <= 0 ? 0.0 : clamp01((double) baseHeight / maxHeight);
+        double h = shapedRiseFraction(ln, band, nFade, normalHold, baseFrac);
+        int top = bedY + (int) Math.round(h * Math.max(0, maxHeight));
+        return Math.min(worldTop, top);
+    }
+
+    /**
+     * Height fraction {@code [0,1]} of the shaped mountain envelope at band-offset {@code ln}:
+     * 0→baseFrac, hold baseFrac for {@code normalHold}, baseFrac→1 over the rest of the
+     * leading fade; flat 1 across the interior; mirrored fall.
+     */
+    private static double shapedRiseFraction(long ln, long band, int fade, int normalHold, double baseFrac) {
+        int f = Math.max(0, fade);
+        if (f == 0) return 1.0;                                   // no fade → full height immediately
+        if (ln < f) return riseShape(ln, f, normalHold, baseFrac);
+        if (ln < band - f) return 1.0;                            // interior mega-mountain
+        long df = ln - (band - f);                                 // 0..f into the fall
+        return riseShape(f - df, f, normalHold, baseFrac);        // mirror the rise
+    }
+
+    /** The rise curve over {@code [0,f]}: ramp to baseFrac, hold, ramp to 1. */
+    private static double riseShape(long x, int f, int normalHold, double baseFrac) {
+        if (x <= 0L) return 0.0;
+        if (x >= f) return 1.0;
+        int nh = Math.max(0, Math.min(normalHold, f));
+        double remaining = f - nh;
+        double a = remaining * RISE_TO_NORMAL_FRAC;               // blocks spent rising 0→baseFrac
+        if (a > 0.0 && x < a) return baseFrac * (x / a);          // rise to normal
+        if (x < a + nh) return baseFrac;                          // hold normal (stage 1)
+        double climb = f - (a + nh);                              // blocks spent rising baseFrac→1
+        if (climb <= 0.0) return 1.0;
+        return baseFrac + (1.0 - baseFrac) * (x - (a + nh)) / climb;
+    }
+
+    private static double clamp01(double v) {
+        return v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
+    }
+
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */
     public double endMiddleRamp(int worldX) {
         long o = offset(worldX);

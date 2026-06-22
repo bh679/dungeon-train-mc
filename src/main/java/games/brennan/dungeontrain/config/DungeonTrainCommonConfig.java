@@ -88,6 +88,14 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 400;
+    /** Normal vanilla-mountain height (blocks above the bed) the rise holds at during stage 1. */
+    public static final int MIN_NETHER_MOUNTAIN_BASE_HEIGHT = 0;
+    public static final int MAX_NETHER_MOUNTAIN_BASE_HEIGHT = 512;
+    public static final int DEFAULT_NETHER_MOUNTAIN_BASE_HEIGHT = 100;
+    /** Blocks the rise holds at the normal mountain height (stage 1 — the vanilla mountain biome look). */
+    public static final int MIN_NETHER_NORMAL_HOLD_BLOCKS = 0;
+    public static final int MAX_NETHER_NORMAL_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_NETHER_NORMAL_HOLD_BLOCKS = 64;
     /** Blocks the mega-mountain reaches above the track bed at full height (clamped to world top). */
     public static final int MIN_NETHER_MAX_HEIGHT = 0;
     public static final int MAX_NETHER_MAX_HEIGHT = 512;
@@ -108,6 +116,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_BASE_HEIGHT;
+    public static final ModConfigSpec.IntValue NETHER_NORMAL_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_MAX_HEIGHT;
 
     static {
@@ -128,6 +138,8 @@ public final class DungeonTrainCommonConfig {
         NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
+        NETHER_MOUNTAIN_BASE_HEIGHT = pair.getLeft().netherMountainBaseHeight;
+        NETHER_NORMAL_HOLD_BLOCKS = pair.getLeft().netherNormalHoldBlocks;
         NETHER_MAX_HEIGHT = pair.getLeft().netherMaxHeight;
     }
 
@@ -222,6 +234,17 @@ public final class DungeonTrainCommonConfig {
                         "band. Default 400.")
                 .defineInRange("netherCoreHoldBlocks", DEFAULT_NETHER_CORE_HOLD_BLOCKS,
                         MIN_NETHER_CORE_HOLD_BLOCKS, MAX_NETHER_CORE_HOLD_BLOCKS);
+        ModConfigSpec.IntValue netherMountainBaseHeight = b
+                .comment("Normal vanilla-mountain height (blocks above the track bed) the rise holds at during",
+                        "stage 1 — the opening stretch that reads as a real mountain biome before it exaggerates.",
+                        "Default 100.")
+                .defineInRange("netherMountainBaseHeight", DEFAULT_NETHER_MOUNTAIN_BASE_HEIGHT,
+                        MIN_NETHER_MOUNTAIN_BASE_HEIGHT, MAX_NETHER_MOUNTAIN_BASE_HEIGHT);
+        ModConfigSpec.IntValue netherNormalHoldBlocks = b
+                .comment("Blocks the rise holds at the normal mountain height (stage 1) before climbing taller.",
+                        "~64 = 4 chunks of recognisable vanilla mountain biome. Default 64.")
+                .defineInRange("netherNormalHoldBlocks", DEFAULT_NETHER_NORMAL_HOLD_BLOCKS,
+                        MIN_NETHER_NORMAL_HOLD_BLOCKS, MAX_NETHER_NORMAL_HOLD_BLOCKS);
         ModConfigSpec.IntValue netherMaxHeight = b
                 .comment("Blocks the mega-mountain reaches ABOVE the track bed at full height. The result is clamped",
                         "to the world top, so a value past the ceiling simply means 'to world height'. Default 250.")
@@ -233,7 +256,8 @@ public final class DungeonTrainCommonConfig {
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherFadeBlocks, netherMountainHoldBlocks,
-                netherCoreFadeBlocks, netherCoreHoldBlocks, netherMaxHeight);
+                netherCoreFadeBlocks, netherCoreHoldBlocks, netherMountainBaseHeight,
+                netherNormalHoldBlocks, netherMaxHeight);
     }
 
     /**
@@ -336,6 +360,16 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 
+    /** Normal mountain height (blocks above the bed) for stage 1; falls back to the hardcoded default pre-load. */
+    public static int getNetherMountainBaseHeight() {
+        return isLoaded() ? NETHER_MOUNTAIN_BASE_HEIGHT.get() : DEFAULT_NETHER_MOUNTAIN_BASE_HEIGHT;
+    }
+
+    /** Stage-1 normal-height hold span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getNetherNormalHoldBlocks() {
+        return isLoaded() ? NETHER_NORMAL_HOLD_BLOCKS.get() : DEFAULT_NETHER_NORMAL_HOLD_BLOCKS;
+    }
+
     /** Mega-mountain height (blocks above the bed) at full ramp; falls back to the hardcoded default pre-load. */
     public static int getNetherMaxHeight() {
         return isLoaded() ? NETHER_MAX_HEIGHT.get() : DEFAULT_NETHER_MAX_HEIGHT;
@@ -355,5 +389,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue netherMountainHoldBlocks,
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks,
+                          ModConfigSpec.IntValue netherMountainBaseHeight,
+                          ModConfigSpec.IntValue netherNormalHoldBlocks,
                           ModConfigSpec.IntValue netherMaxHeight) {}
 }
