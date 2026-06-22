@@ -125,6 +125,14 @@ public final class DebugCommand {
             .then(Commands.literal("loot-rolls")
                 .then(Commands.literal("on").executes(ctx -> setLogLootRolls(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setLogLootRolls(ctx.getSource(), false))))
+            // /dungeontrain debug seamgap-trace on|off — opt-in backward-seam-gap
+            // diagnostic probes ([seamgap]/[bwd-place]/[anchor-div]/[capture-lag]).
+            // Off by default; turn on for a backward-ride session to capture the
+            // per-seam world-gap-vs-pIdx time series that diagnoses the growing
+            // backward-gap regression. Server-side logging only.
+            .then(Commands.literal("seamgap-trace")
+                .then(Commands.literal("on").executes(ctx -> setSeamGapTrace(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setSeamGapTrace(ctx.getSource(), false))))
             // /dungeontrain debug reroll <prefabId> — scan every loaded ship's
             // bounding box for blocks whose state matches the prefab's source
             // block, then re-roll their NBT through the current pool. Fixes
@@ -235,6 +243,16 @@ public final class DebugCommand {
         DebugFlags.setLogLootRolls(source.getServer(), enabled);
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Loot-roll logging " + (enabled ? "ON" : "OFF")
+        ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int setSeamGapTrace(CommandSourceStack source, boolean enabled) {
+        games.brennan.dungeontrain.train.TrainCarriageAppender.setSeamGapTraceEnabled(enabled);
+        LOGGER.info("[DungeonTrain] seamgap-trace diagnostic {}", enabled ? "ENABLED" : "DISABLED");
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Seam-gap trace " + (enabled ? "ON" : "OFF")
+                + (enabled ? " — grep [seamgap]/[bwd-place]/[anchor-div]/[capture-lag] in latest.log" : "")
         ).withStyle(enabled ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
         return 1;
     }

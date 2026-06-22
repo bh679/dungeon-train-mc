@@ -133,6 +133,27 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Boolean> CULL_CLEARED_BACKWARD = new ConcurrentHashMap<>();
 
     /**
+     * Per-train, per-direction (option 2): the game tick at which the
+     * registry-edge reference first failed to resolve in this direction (it was
+     * neither visible, held-and-being-reloaded, nor a live registry wrapper).
+     * Cleared the moment the edge resolves to a spawnable reference. Drives the
+     * throttled {@link #EDGE_UNRESOLVED_WARN_TICKS} WARN below — purely
+     * diagnostic, never gates behaviour (resolution self-heals as the edge
+     * surfaces / reloads).
+     */
+    private static final Map<UUID, Long> EDGE_UNRESOLVED_SINCE_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> EDGE_UNRESOLVED_SINCE_BACKWARD = new ConcurrentHashMap<>();
+    /** One-shot WARN latch per direction; reset alongside {@code EDGE_UNRESOLVED_SINCE_*}. */
+    private static final Map<UUID, Boolean> EDGE_UNRESOLVED_WARNED_FORWARD = new ConcurrentHashMap<>();
+    private static final Map<UUID, Boolean> EDGE_UNRESOLVED_WARNED_BACKWARD = new ConcurrentHashMap<>();
+    /**
+     * Ticks a registry edge may stay unresolved before one WARN fires. 200 ≈
+     * 10 s — comfortably past the few-tick {@code findAll} surfacing lag and the
+     * holding-reload round-trip, so only a genuinely stuck edge trips it.
+     */
+    private static final long EDGE_UNRESOLVED_WARN_TICKS = 200L;
+
+    /**
      * Per-train set of sub-level IDs that Dungeon Train currently force-loads
      * (the trailing-segment window). Maintained each tick by
      * {@link #maintainTrailingForceLoadWindow} via add/release reconciliation,
@@ -160,6 +181,36 @@ public final class TrainCarriageAppender {
      * broadcast).
      */
     private static volatile boolean STALL_DETECTION_ENABLED = false;
+
+    /**
+     * Opt-in master switch for the backward-seam-gap diagnostic probes
+     * ({@code [seamgap]} / {@code [bwd-place]} / {@code [anchor-div]} /
+     * {@code [capture-lag]}). Off by default — flip via
+     * {@code /dungeontrain debug seamgap-trace on} during a backward-ride
+     * test session to capture the per-seam world-gap-vs-pIdx time series used
+     * to diagnose the post-#519 growing-gap regression. When off, every probe
+     * is a no-op (no extra {@link Trains#byTrainId} scan, no log lines), so the
+     * spawn loop runs bit-identical to the non-instrumented build.
+     */
+    private static volatile boolean SEAMGAP_TRACE_ENABLED = false;
+
+    /** @see #SEAMGAP_TRACE_ENABLED */
+    public static boolean isSeamGapTraceEnabled() {
+        return SEAMGAP_TRACE_ENABLED;
+    }
+
+    /** Toggle the backward-seam-gap diagnostic probes. Server thread only. */
+    public static void setSeamGapTraceEnabled(boolean enabled) {
+        SEAMGAP_TRACE_ENABLED = enabled;
+    }
+
+    /**
+     * Sample cadence for the periodic {@code [seamgap]} and {@code [anchor-div]}
+     * probes: once every 20 game ticks (≈1 s at 20 Hz) when
+     * {@link #SEAMGAP_TRACE_ENABLED} is on. Keeps the log readable over a
+     * multi-minute ride while still resolving how the gap grows over time.
+     */
+    private static final int SEAMGAP_SAMPLE_PERIOD_TICKS = 20;
 
 
     /**
@@ -820,6 +871,9 @@ public final class TrainCarriageAppender {
         Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
         for (ManagedShip ship : registry.values()) {
             if (!seen.add(ship.id())) continue;
+            // Skip culled registry-only siblings — a stale cull-time AABB would
+            // give a bogus "too-far" gap and pull a settling carriage off true.
+            if (!ship.isResident()) continue;
             AABBdc o = ship.worldAABB();
             if (isZeroAabb(o)) continue;
             double g = facingGapBetween(
@@ -939,6 +993,14 @@ public final class TrainCarriageAppender {
             for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
                 ManagedShip ship = e.getValue();
                 if (!seen.add(ship.id())) continue;
+                // Registry-only (non-visible) sibling: its worldAABB is frozen
+                // at the stale cull-time position. With the option-2 registry-
+                // edge reference + the keep-frontier-resident hold, every real
+                // neighbour is VISIBLE (checked above), so a registry-only box
+                // here is a culled ghost. Letting the placement tracker shove a
+                // settling carriage off it grows a permanent void (the −63/−60
+                // 21-block seam). Skip it — visible siblings are authoritative.
+                if (!ship.isResident()) continue;
                 AABBdc aabb = ship.worldAABB();
                 if (isZeroAabb(aabb)) continue;
                 if (maxX > aabb.minX() && minX < aabb.maxX()
@@ -989,11 +1051,61 @@ public final class TrainCarriageAppender {
         STALL_WARNED_BACKWARD.clear();
         CULL_CLEARED_FORWARD.clear();
         CULL_CLEARED_BACKWARD.clear();
+        EDGE_UNRESOLVED_SINCE_FORWARD.clear();
+        EDGE_UNRESOLVED_SINCE_BACKWARD.clear();
+        EDGE_UNRESOLVED_WARNED_FORWARD.clear();
+        EDGE_UNRESOLVED_WARNED_BACKWARD.clear();
         // Force-load window tracking. The live Sable tickets themselves are
         // swept separately via Shipyard.releaseAllForceLoads() on the
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
         // level handle; here we only drop our in-memory mirror.
         FORCELOADED_BY_TRAIN.clear();
+    }
+
+    /**
+     * Backward-seam-gap diagnostic probe ({@code [seamgap]}). For every loaded
+     * train, walks carriages in ascending pIdx order and logs the world-X gap
+     * between each adjacent pair — {@code distance = nextAabb.minX − thisAabb.maxX},
+     * the identical metric {@link CarriageGroupGap#compute} feeds the gap-line
+     * overlay — together with each side's force-load and placement-settle state.
+     *
+     * <p>Pivoting {@code distanceBlocks} by {@code thisPIdx} across a backward
+     * ride is the recorded proof of whether per-seam gaps GROW with backward
+     * distance (rising slope toward more-negative pIdx ⇒ H1 reference/anchor
+     * mismatch) or merely scatter inside the settle dead-band (flat ⇒ H2). The
+     * force-load / placed flags show whether a gapping seam is still settling
+     * or has frozen. Gated by {@link #SEAMGAP_TRACE_ENABLED}; sampled every
+     * {@link #SEAMGAP_SAMPLE_PERIOD_TICKS} ticks by {@link #onLevelTick}.</p>
+     */
+    private static void logBackwardSeamGaps(ServerLevel level) {
+        long now = level.getGameTime();
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : trains.entrySet()) {
+            UUID trainId = entry.getKey();
+            List<Trains.Carriage> train = entry.getValue();
+            if (train.size() < 2) continue;
+            List<Trains.Carriage> sorted = new ArrayList<>(train);
+            sorted.sort(Comparator.comparingInt(c -> c.provider().getPIdx()));
+            Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.getOrDefault(trainId, Set.of());
+            for (int i = 0; i < sorted.size() - 1; i++) {
+                Trains.Carriage thisGroup = sorted.get(i);
+                Trains.Carriage nextGroup = sorted.get(i + 1);
+                AABBdc thisAabb = thisGroup.ship().worldAABB();
+                AABBdc nextAabb = nextGroup.ship().worldAABB();
+                if (isZeroAabb(thisAabb) || isZeroAabb(nextAabb)) continue;
+                double distance = nextAabb.minX() - thisAabb.maxX();
+                LOGGER.info("[DungeonTrain][seamgap] gameTick={} trainId={} thisPIdx={} nextPIdx={} distanceBlocks={} thisMaxX={} nextMinX={} thisForceLoaded={} nextForceLoaded={} thisPlaced={} nextPlaced={}",
+                    now, trainId,
+                    thisGroup.provider().getPIdx(), nextGroup.provider().getPIdx(),
+                    String.format("%.4f", distance),
+                    String.format("%.4f", thisAabb.maxX()),
+                    String.format("%.4f", nextAabb.minX()),
+                    forceLoaded.contains(thisGroup.ship().subLevelId()),
+                    forceLoaded.contains(nextGroup.ship().subLevelId()),
+                    thisGroup.provider().isPlacedSuccessfully(),
+                    nextGroup.provider().isPlacedSuccessfully());
+            }
+        }
     }
 
     /**
@@ -1236,6 +1348,15 @@ public final class TrainCarriageAppender {
         // post-spawn displacement (vanilla ejection vs Sable lazy-bind race).
         tickEntityDriftTracking(level);
 
+        // Backward-seam-gap diagnostic (opt-in, off by default). Periodic
+        // per-seam world-X gap-vs-pIdx snapshot used to diagnose the growing
+        // backward-gap regression. Self-gated on the sample cadence; no-op
+        // (and no Trains.byTrainId scan) unless seamgap-trace is on.
+        if (SEAMGAP_TRACE_ENABLED
+            && Math.floorMod(level.getGameTime(), SEAMGAP_SAMPLE_PERIOD_TICKS) == 0) {
+            logBackwardSeamGaps(level);
+        }
+
         // Manual mode: spawn cycles fire only when a J-press has set
         // MANUAL_SPAWN_REQUESTED. The flag is NOT consumed at the top of
         // the tick — it's consumed only after a spawn actually happens
@@ -1274,6 +1395,10 @@ public final class TrainCarriageAppender {
         STALL_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         CULL_CLEARED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
         CULL_CLEARED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        EDGE_UNRESOLVED_SINCE_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        EDGE_UNRESOLVED_SINCE_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
+        EDGE_UNRESOLVED_WARNED_FORWARD.keySet().retainAll(trainsTouchedThisTick);
+        EDGE_UNRESOLVED_WARNED_BACKWARD.keySet().retainAll(trainsTouchedThisTick);
         clearDropouts(level, seenThisTick);
     }
 
@@ -1472,6 +1597,27 @@ public final class TrainCarriageAppender {
             }
         }
 
+        // Backward-anchor-divergence diagnostic ([anchor-div], opt-in, off by
+        // default). Tracks whether the REGISTRY-min anchor (used to derive the
+        // backward spawn anchor) falls below the VISIBLE tail pIdx (the spawn
+        // reference) as the player rides backward — the precondition for the
+        // H1 reference/anchor mismatch. A span that grows over the ride
+        // confirms H1 is possible; span ≈ 0 throughout rules H1 out and points
+        // at the settle dead-band (H2). registryCount − visibleCount = the
+        // count of culled-but-registered ghosts feeding H3.
+        if (SEAMGAP_TRACE_ENABLED
+            && Math.floorMod(level.getGameTime(), SEAMGAP_SAMPLE_PERIOD_TICKS) == 0) {
+            int visibleTailPIdx = tail.provider().getPIdx();
+            Set<UUID> fl = FORCELOADED_BY_TRAIN.get(trainId);
+            LOGGER.info("[DungeonTrain][anchor-div] gameTick={} trainId={} registryMin={} registryMax={} visibleTailPIdx={} visibleLeadPIdx={} registryCount={} visibleCount={} forceLoadedCount={} span={}",
+                level.getGameTime(), trainId,
+                trainMinAnchor, trainMaxAnchor,
+                visibleTailPIdx, leadAnchorPIdx,
+                knownAnchors.size(), train.size(),
+                (fl == null) ? 0 : fl.size(),
+                visibleTailPIdx - trainMinAnchor);
+        }
+
         // Independent per-direction spawn decision. Forward and backward
         // are evaluated as two SEPARATE spawn lanes — each has its own
         // preview slot ({@code NEXT_PLANNED_SPAWNS_FORWARD/BACKWARD}),
@@ -1524,12 +1670,38 @@ public final class TrainCarriageAppender {
             needsBackward = false;
         }
 
+        // ---- Option 2: registry-edge reference resolution -------------------
+        // Place each new group against the REGISTRY-edge carriage's LIVE pose
+        // (not the visible tail/lead), so planSpawnPlacement's subLevelDelta is
+        // ±1 BY CONSTRUCTION (newAnchor = edgeAnchor ∓ groupSize, refAnchor =
+        // edgeAnchor) — the gapless-stride void can't form. When the registry
+        // edge has been culled to Sable holding, reload it and defer this tick;
+        // when it's only transiently absent from findAll, fall back to the live
+        // registry-wrapper pose; otherwise defer until it surfaces. A deferred
+        // direction simply doesn't spawn this tick — never a hard stall.
+        boolean backwardExtensionWanted = needsBackward;
+        Trains.Carriage forwardRef = lead;
+        Trains.Carriage backwardRef = tail;
+        if (needsForward) {
+            EdgeReference er = resolveEdgeReference(level, trainId, train, trainMaxAnchor, true, lead);
+            if (er.reference() == null) needsForward = false;
+            else forwardRef = er.reference();
+        }
+        if (needsBackward) {
+            EdgeReference er = resolveEdgeReference(level, trainId, train, trainMinAnchor, false, tail);
+            if (er.reference() == null) needsBackward = false;
+            else backwardRef = er.reference();
+        }
+        // ---------------------------------------------------------------------
+
         // Maintain the trailing force-load window every tick — placed BEFORE
         // the no-spawn early return below so tickets are also released when
         // backward generation goes idle, not only refreshed while it's active.
         // A backward carriage spawned later this tick is force-loaded directly
-        // at its spawn site (it isn't in `train` yet this tick).
-        maintainTrailingForceLoadWindow(level, trainId, train, needsBackward);
+        // at its spawn site (it isn't in `train` yet this tick). Pass the
+        // PRE-defer backward intent so a one-tick reference defer never drops the
+        // window (which is what would let Sable re-cull a just-reloaded edge).
+        maintainTrailingForceLoadWindow(level, trainId, train, backwardExtensionWanted);
 
         if (!needsForward && !needsBackward) return false;
 
@@ -1567,10 +1739,10 @@ public final class TrainCarriageAppender {
         // previews — one at each end. {@code trainsTouchedThisTick.add(
         // trainId)} already happened at the top of this method.
         if (needsForward) {
-            Plan plan = planSpawnPlacement(lead, forwardAnchor, groupSize, dims, train);
+            Plan plan = planSpawnPlacement(forwardRef, forwardAnchor, groupSize, dims, train);
             NEXT_PLANNED_SPAWNS_FORWARD.put(trainId, new PlannedSpawn(
                 trainId,
-                lead.ship().subLevelId(),
+                forwardRef.ship().subLevelId(),
                 plan.origin,
                 plan.subLevelStride,
                 plan.sizeY,
@@ -1580,10 +1752,10 @@ public final class TrainCarriageAppender {
             NEXT_PLANNED_SPAWNS_FORWARD.remove(trainId);
         }
         if (needsBackward) {
-            Plan plan = planSpawnPlacement(tail, backwardAnchor, groupSize, dims, train);
+            Plan plan = planSpawnPlacement(backwardRef, backwardAnchor, groupSize, dims, train);
             NEXT_PLANNED_SPAWNS_BACKWARD.put(trainId, new PlannedSpawn(
                 trainId,
-                tail.ship().subLevelId(),
+                backwardRef.ship().subLevelId(),
                 plan.origin,
                 plan.subLevelStride,
                 plan.sizeY,
@@ -1614,19 +1786,24 @@ public final class TrainCarriageAppender {
         boolean didBackwardSpawn = false;
 
         if (needsForward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_FORWARD, LAST_SPAWNED_TICK_FORWARD, CULL_CLEARED_FORWARD, trainId, train, now, true)) {
-            ManagedShip newShip = spawnNewGroup(level, lead, forwardAnchor, groupSize, dims, velocity, trainId, train);
+            ManagedShip newShip = spawnNewGroup(level, forwardRef, forwardAnchor, groupSize, dims, velocity, trainId, train);
             if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
                 newProvider.setSpawnedBackward(false);
             }
             LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
             LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
             recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
+            // NB: forward auto-spawns are intentionally NOT held-resident — they
+            // sit ahead of the player and reload naturally on approach, and
+            // holding every one until autosave would balloon memory on a long
+            // forward ride. Bootstrap forward groups ARE held (their cull is the
+            // ghost source); the backward lane below holds its spawns.
             announceSpawn(level, forwardAnchor);
             didForwardSpawn = true;
         }
 
         if (needsBackward && isLanePlacementGateClear(LAST_SPAWNED_SHIP_BACKWARD, LAST_SPAWNED_TICK_BACKWARD, CULL_CLEARED_BACKWARD, trainId, train, now, false)) {
-            ManagedShip newShip = spawnNewGroup(level, tail, backwardAnchor, groupSize, dims, velocity, trainId, train);
+            ManagedShip newShip = spawnNewGroup(level, backwardRef, backwardAnchor, groupSize, dims, velocity, trainId, train);
             if (newShip.getKinematicDriver() instanceof TrainTransformProvider newProvider) {
                 newProvider.setSpawnedBackward(true);
             }
@@ -1735,6 +1912,160 @@ public final class TrainCarriageAppender {
         lane.remove(trainId);
         cullClearedFlags.remove(trainId);
         return true;
+    }
+
+    // ---- Option 2: registry-edge reference resolution -------------------------
+    //
+    // The backward-gap root cause was a reference/anchor mismatch:
+    // planSpawnPlacement extrapolated idealX from the VISIBLE tail's pose but
+    // newAnchor came from the REGISTRY min, so when the visible edge lagged the
+    // registry edge subLevelDelta went to ±N and a gapless stride dropped the
+    // accumulated seam gaps → a frozen void. Option 2 removes the mismatch at
+    // the source: resolve the reference to the registry-EDGE carriage's live
+    // pose, so subLevelDelta is ±1 by construction.
+
+    /** What to do with one extension edge this tick (output of {@link #decideEdgeAction}). */
+    enum EdgeAction { SPAWN, RELOAD_DEFER, DEFER }
+
+    /**
+     * Resolved reference for an extension edge. {@code reference == null} means
+     * "defer this direction this tick" (RELOAD_DEFER or DEFER); a non-null
+     * reference is the {@link Trains.Carriage} to place the new group against.
+     */
+    private record EdgeReference(EdgeAction action, Trains.Carriage reference) {}
+
+    /**
+     * Pure decision core for registry-edge resolution. ORDER MATTERS: a held
+     * edge's stale registry wrapper can still report a non-zero AABB, so
+     * {@code held} is checked BEFORE trusting {@code registryResidentLiveAabb}.
+     *
+     * <ul>
+     *   <li>{@code visibleLive} — the edge sub-level is in the visible train;
+     *       use that fresh wrapper. → SPAWN</li>
+     *   <li>{@code held} — culled to Sable holding; reload it, defer a tick.
+     *       → RELOAD_DEFER</li>
+     *   <li>{@code registryResidentLiveAabb} — a live (non-removed) registry
+     *       wrapper with a non-zero AABB, i.e. a transient findAll dropout of a
+     *       never-culled sub-level; use its live pose directly. → SPAWN</li>
+     *   <li>otherwise — freshly spawned, not yet surfaced. → DEFER</li>
+     * </ul>
+     */
+    static EdgeAction decideEdgeAction(boolean visibleLive, boolean held, boolean registryResidentLiveAabb) {
+        if (visibleLive) return EdgeAction.SPAWN;
+        if (held) return EdgeAction.RELOAD_DEFER;
+        if (registryResidentLiveAabb) return EdgeAction.SPAWN;
+        return EdgeAction.DEFER;
+    }
+
+    /**
+     * The sub-level stride delta between a new anchor and its reference anchor.
+     * Pure; package-private for the option-2 invariant test. With option 2 the
+     * reference is always the registry edge and {@code newAnchor = edgeAnchor ∓
+     * groupSize}, so this is {@code ∓1} on every spawn — the property the
+     * {@code [bwd-place]} probe verifies in-game.
+     */
+    static int subLevelDeltaFor(int newAnchor, int refAnchor, int groupSize) {
+        if (groupSize <= 0) throw new IllegalArgumentException("groupSize must be > 0, got " + groupSize);
+        return (newAnchor - refAnchor) / groupSize;
+    }
+
+    /**
+     * Resolve the placement reference for one extension edge to the
+     * registry-edge carriage's live pose. Returns a spawnable
+     * {@link EdgeReference} or a defer signal ({@code reference == null}).
+     * Handles the RELOAD_DEFER side effect (reload-from-holding) and the
+     * throttled unresolved-edge WARN. Server thread only.
+     *
+     * @param edgeAnchor      the registry extremum anchor for this direction
+     *                        ({@code trainMaxAnchor} forward, {@code trainMinAnchor}
+     *                        backward)
+     * @param forward         true for the +X (lead) edge, false for the −X (tail) edge
+     * @param visibleFallback the visible lead/tail, used only if the registry has
+     *                        no entry for {@code edgeAnchor} (defensive)
+     */
+    private static EdgeReference resolveEdgeReference(
+        ServerLevel level, UUID trainId, List<Trains.Carriage> train,
+        int edgeAnchor, boolean forward, Trains.Carriage visibleFallback
+    ) {
+        ManagedShip registryShip = Trains.knownGroups(trainId).get(edgeAnchor);
+        if (registryShip == null) {
+            // Registry edge should always be registered; if not, fall back to
+            // the visible edge (pre-option-2 behaviour) so we never hard-stall.
+            clearEdgeUnresolved(trainId, forward);
+            return new EdgeReference(EdgeAction.SPAWN, visibleFallback);
+        }
+        UUID uuid = registryShip.subLevelId();
+
+        // Visible & live: prefer the FRESH visible wrapper (correct pose even
+        // after a cull+reload, where the registry handle is stale).
+        Trains.Carriage visible = null;
+        for (Trains.Carriage c : train) {
+            if (c.ship().subLevelId().equals(uuid)) { visible = c; break; }
+        }
+        boolean visibleLive = visible != null;
+
+        Shipyard shipyard = Shipyards.of(level);
+        boolean held = !visibleLive && shipyard.isHeld(uuid);
+        boolean registryResidentLiveAabb = !visibleLive && !held
+            && registryShip.isResident() && !isZeroAabb(registryShip.worldAABB());
+
+        EdgeAction action = decideEdgeAction(visibleLive, held, registryResidentLiveAabb);
+        switch (action) {
+            case SPAWN -> {
+                clearEdgeUnresolved(trainId, forward);
+                if (visibleLive) return new EdgeReference(action, visible);
+                // Registry-wrapper-resident path (transient findAll dropout):
+                // build a Carriage from the live handle + its UUID-pinned provider.
+                if (registryShip.getKinematicDriver() instanceof TrainTransformProvider provider) {
+                    return new EdgeReference(action, new Trains.Carriage(registryShip, provider));
+                }
+                // No provider (shouldn't happen) — fall back to the visible edge.
+                return new EdgeReference(EdgeAction.SPAWN, visibleFallback);
+            }
+            case RELOAD_DEFER -> {
+                // Actively bring the culled edge back from Sable holding (a
+                // force-load ticket CANNOT — Sable snatch-loads only at world
+                // load). It surfaces in findAll within a few ticks; the sticky
+                // trailing force-load window (engaged via backwardExtensionWanted)
+                // then keeps it resident so it can't be re-culled before the
+                // next group places one stride behind its live pose.
+                boolean reloaded = shipyard.reloadFromHolding(uuid);
+                if (reloaded) {
+                    LOGGER.debug("[DungeonTrain] Reloaded held registry-edge group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
+                        edgeAnchor, uuid, trainId, forward ? "forward" : "backward");
+                }
+                warnEdgeUnresolvedIfStuck(trainId, forward, edgeAnchor, uuid, level.getGameTime(), "held→reload");
+                return new EdgeReference(action, null);
+            }
+            default -> { // DEFER
+                warnEdgeUnresolvedIfStuck(trainId, forward, edgeAnchor, uuid, level.getGameTime(), "absent(not-yet-surfaced)");
+                return new EdgeReference(action, null);
+            }
+        }
+    }
+
+    /** Clear the unresolved-edge tracking + WARN latch for one direction. */
+    private static void clearEdgeUnresolved(UUID trainId, boolean forward) {
+        (forward ? EDGE_UNRESOLVED_SINCE_FORWARD : EDGE_UNRESOLVED_SINCE_BACKWARD).remove(trainId);
+        (forward ? EDGE_UNRESOLVED_WARNED_FORWARD : EDGE_UNRESOLVED_WARNED_BACKWARD).remove(trainId);
+    }
+
+    /**
+     * Emit at most one WARN once a registry edge has stayed unresolved past
+     * {@link #EDGE_UNRESOLVED_WARN_TICKS}. Diagnostic only — resolution
+     * self-heals as the edge surfaces / finishes reloading, so this never
+     * changes behaviour.
+     */
+    private static void warnEdgeUnresolvedIfStuck(
+        UUID trainId, boolean forward, int edgeAnchor, UUID uuid, long now, String why
+    ) {
+        Map<UUID, Long> since = forward ? EDGE_UNRESOLVED_SINCE_FORWARD : EDGE_UNRESOLVED_SINCE_BACKWARD;
+        Map<UUID, Boolean> warned = forward ? EDGE_UNRESOLVED_WARNED_FORWARD : EDGE_UNRESOLVED_WARNED_BACKWARD;
+        long elapsed = now - since.computeIfAbsent(trainId, k -> now);
+        if (elapsed >= EDGE_UNRESOLVED_WARN_TICKS && warned.putIfAbsent(trainId, Boolean.TRUE) == null) {
+            LOGGER.warn("[DungeonTrain] Registry {} edge unresolved for {} ticks ({}) anchor={} subLevelId={} trainId={} — extension paused until it surfaces (no void, no delete)",
+                forward ? "forward" : "backward", elapsed, why, edgeAnchor, uuid, trainId);
+        }
     }
 
     // ---- Trailing-segment force-load window (backward-generation-stall fix) ----
@@ -1848,6 +2179,13 @@ public final class TrainCarriageAppender {
             // overlap it forever (the placement-collision stall). Once settled
             // it becomes releasable here as the window slides.
             if (!c.provider().isPlacedSuccessfully()) continue;
+            // Option-2 "keep frontier resident" policy: never release a group
+            // until it has been serialized at least once. A cull before first
+            // serialization yields a null-pointer holding entry that can't be
+            // revived (snatchAndLoad needs the pointer), so it becomes an
+            // unrecoverable ghost that silently dead-ends backward generation.
+            // Holding until reloadable guarantees every cull is recoverable.
+            if (!c.ship().hasSerializationPointer()) continue;
             shipyard.releaseForceLoad(c.ship());
             it.remove();
             released++;
@@ -1879,8 +2217,48 @@ public final class TrainCarriageAppender {
      * like any other trailing carriage.
      */
     private static void forceLoadSpawnedBackward(ServerLevel level, UUID trainId, ManagedShip newShip) {
-        Shipyards.of(level).forceLoad(newShip);
-        FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(newShip.subLevelId());
+        holdGroupResident(level, trainId, newShip);
+    }
+
+    /**
+     * Force-load a freshly-created group and track it in
+     * {@link #FORCELOADED_BY_TRAIN}. The "keep frontier resident" half of the
+     * option-2 fix: a held group is not released by {@link #reconcileForceLoads}
+     * until it has gained a serialization pointer
+     * ({@link ManagedShip#hasSerializationPointer()}), so a later cull always
+     * lands in <em>reloadable</em> holding rather than as an unrecoverable
+     * null-pointer ghost that silently dead-ends train extension. Called at
+     * every group birth — bootstrap eager-fill and both auto-spawn lanes.
+     */
+    private static void holdGroupResident(ServerLevel level, UUID trainId, ManagedShip ship) {
+        Shipyards.of(level).forceLoad(ship);
+        FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(ship.subLevelId());
+    }
+
+    /** The registry handle ({@link ManagedShip}) for a sub-level UUID in this train, or null. */
+    private static ManagedShip findRegistryShipByUuid(UUID trainId, UUID subLevelId) {
+        for (ManagedShip ship : Trains.knownGroups(trainId).values()) {
+            if (ship.subLevelId().equals(subLevelId)) return ship;
+        }
+        return null;
+    }
+
+    /**
+     * Release one force-load ticket by sub-level UUID, preferring the live
+     * visible wrapper but falling back to the {@link Trains#knownGroups} registry
+     * handle. Sable keys force-load tickets by sub-level UUID, so the registry
+     * handle releases the live ticket even when the visible wrapper is gone —
+     * this is the leak fix for a ticket whose carriage hasn't (or no longer)
+     * surfaced in the visible train. Returns true iff a handle was found.
+     */
+    private static boolean releaseForceLoadByUuid(
+        Shipyard shipyard, UUID trainId, UUID subLevelId, Map<UUID, Trains.Carriage> byId
+    ) {
+        Trains.Carriage c = (byId == null) ? null : byId.get(subLevelId);
+        ManagedShip ship = (c != null) ? c.ship() : findRegistryShipByUuid(trainId, subLevelId);
+        if (ship == null) return false;
+        shipyard.releaseForceLoad(ship);
+        return true;
     }
 
     /**
@@ -1889,6 +2267,11 @@ public final class TrainCarriageAppender {
      * {@link #reconcileForceLoads} (which deliberately keeps unsettled carriages
      * loaded) because the player is gone: there is nothing left to settle, so
      * the whole window can drop and Sable can cull the train normally.
+     *
+     * <p>UUID-keyed (option 2): a tracked ticket whose carriage isn't in the
+     * visible train (e.g. a just-spawned backward group force-loaded via
+     * {@link #forceLoadSpawnedBackward}, or a reloaded edge that hasn't surfaced)
+     * is released through the registry handle so no Sable ticket leaks.</p>
      */
     private static void releaseTrainForceLoads(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
         Set<UUID> current = FORCELOADED_BY_TRAIN.remove(trainId);
@@ -1898,11 +2281,7 @@ public final class TrainCarriageAppender {
         for (Trains.Carriage c : train) byId.put(c.ship().subLevelId(), c);
         int released = 0;
         for (UUID id : current) {
-            Trains.Carriage c = byId.get(id);
-            if (c != null) {
-                shipyard.releaseForceLoad(c.ship());
-                released++;
-            }
+            if (releaseForceLoadByUuid(shipyard, trainId, id, byId)) released++;
         }
         if (released > 0) {
             LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s) (player left vicinity)",
@@ -1937,6 +2316,14 @@ public final class TrainCarriageAppender {
      * <p>Returns {@code true} if at least one anchor was removed so the
      * caller can recompute {@code trainMin/MaxAnchor} from the updated
      * registry before proceeding with the spawn decision.</p>
+     *
+     * <p>Option 2: a culled-but-HELD (recoverable) anchor is NEVER deleted —
+     * deleting it then respawning at the same anchor is the historic
+     * delete-then-respawn DUPLICATE race, and option-2 resolution would just
+     * reload it from holding anyway. Only truly-gone anchors (not held, not
+     * visible) are dropped. Any force-load ticket on a dropped anchor is
+     * released through the registry handle BEFORE delete so the DT mirror and
+     * the live Sable ticket tear down together (no leak).</p>
      */
     private static boolean cleanupGhostAnchors(
         ServerLevel level,
@@ -1963,22 +2350,50 @@ public final class TrainCarriageAppender {
         }
         if (toRemove.isEmpty()) return false;
         Shipyard shipyard = Shipyards.of(level);
+        Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.get(trainId);
+        java.util.List<Integer> removedAnchors = new java.util.ArrayList<>();
         int deletedSableShips = 0;
+        int skippedHeld = 0;
         for (int a : toRemove) {
+            ManagedShip registryShip = Trains.knownGroups(trainId).get(a);
+            UUID subId = (registryShip != null) ? registryShip.subLevelId() : null;
+            // Recoverable (held / mid-reload) — keep it registered; option-2
+            // resolution reloads it on demand. Deleting + respawning here is the
+            // duplicate-on-top race.
+            if (subId != null && shipyard.isHeld(subId)) {
+                skippedHeld++;
+                continue;
+            }
             ManagedShip ship = Trains.unregisterGroup(trainId, a);
             if (ship != null) {
+                UUID shipId = ship.subLevelId();
+                // Tear down any force-load ticket on this anchor (mirror + Sable
+                // ticket together) before deleting it.
+                if (forceLoaded != null && forceLoaded.remove(shipId)) {
+                    shipyard.releaseForceLoad(ship);
+                }
                 shipyard.delete(ship);
                 deletedSableShips++;
+                removedAnchors.add(a);
             }
         }
+        if (forceLoaded != null && forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
+        if (removedAnchors.isEmpty()) {
+            if (skippedHeld > 0) {
+                LOGGER.debug("[DungeonTrain] cleanupGhostAnchors: {} candidate anchor(s) past visible {}={} all held/recoverable — none deleted (trainId={})",
+                    skippedHeld, forward ? "max" : "min", forward ? visibleMax : visibleMin, trainId);
+            }
+            return false;
+        }
         LOGGER.info(
-            "[DungeonTrain] Cleaned up {} ghost anchor(s) past visible {}={} for trainId={} — anchors={}, sableShipsDeleted={}",
-            toRemove.size(),
+            "[DungeonTrain] Cleaned up {} ghost anchor(s) past visible {}={} for trainId={} — anchors={}, sableShipsDeleted={}, heldSkipped={}",
+            removedAnchors.size(),
             forward ? "max" : "min",
             forward ? visibleMax : visibleMin,
             trainId,
-            toRemove,
-            deletedSableShips);
+            removedAnchors,
+            deletedSableShips,
+            skippedHeld);
         return true;
     }
 
@@ -2347,6 +2762,11 @@ public final class TrainCarriageAppender {
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, forwardAnchor, groupSize, dims, trainId);
                 markEagerFilledPlaced(newShip);
+                // Keep resident until serialized — bootstrap groups are the
+                // source of the unrecoverable null-pointer ghosts that dead-end
+                // backward generation (they cull before any save). Held here so
+                // a later cull stays reloadable.
+                holdGroupResident(level, trainId, newShip);
                 BootstrapProgress.advance(groupSize);
                 forwardRefX = placeX;
                 trainMax = forwardAnchor;
@@ -2363,6 +2783,7 @@ public final class TrainCarriageAppender {
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, backwardAnchor, groupSize, dims, trainId);
                 markEagerFilledPlaced(newShip);
+                holdGroupResident(level, trainId, newShip); // keep resident until serialized (see forward branch)
                 BootstrapProgress.advance(groupSize);
                 backwardRefX = placeX;
                 trainMin = backwardAnchor;
@@ -2544,6 +2965,31 @@ public final class TrainCarriageAppender {
             plan.subLevelStride,
             plan.collisionAdjustments);
 
+        // [bwd-place] diagnostic (opt-in, backward spawns only). Decomposes the
+        // idealX placement math so a growing seam gap can be attributed: H1 is
+        // confirmed iff subLevelDelta is consistently NOT -1 (refAnchor diverged
+        // from registryMin); H5 iff refShipToWorldX and refWorldAabbMaxX disagree
+        // by more than a tick-step; H3 iff offenderRegistryOnly=true on an
+        // inflated seam.
+        if (SEAMGAP_TRACE_ENABLED && !plan.forward) {
+            int registryMin = Integer.MAX_VALUE;
+            int registryMax = Integer.MIN_VALUE;
+            for (int a : Trains.knownAnchors(trainId)) {
+                if (a < registryMin) registryMin = a;
+                if (a > registryMax) registryMax = a;
+            }
+            AABBdc refAabb = reference.ship().worldAABB();
+            double refWorldAabbMaxX = isZeroAabb(refAabb) ? Double.NaN : refAabb.maxX();
+            LOGGER.info("[DungeonTrain][bwd-place] gameTick={} trainId={} newAnchor={} refAnchor={} registryMin={} registryMax={} subLevelDelta={} subLevelStride={} refShipToWorldX={} refWorldAabbMaxX={} idealX={} initialPlaceX={} adjustedPlaceX={} collisionAdjustments={} offenderPIdx={} offenderRegistryOnly={}",
+                level.getGameTime(), trainId, newAnchor, plan.refAnchor,
+                registryMin, registryMax, plan.subLevelDelta, plan.subLevelStride,
+                String.format("%.4f", plan.refShipToWorldX),
+                String.format("%.4f", refWorldAabbMaxX),
+                String.format("%.4f", plan.idealX),
+                plan.initialPlaceX, plan.adjustedPlaceX, plan.collisionAdjustments,
+                plan.lastOffenderPIdx, plan.lastOffenderRegistryOnly);
+        }
+
         markCollidingNeighbours(level, newShip, newAnchor, train);
         return newShip;
     }
@@ -2593,8 +3039,9 @@ public final class TrainCarriageAppender {
         int placeY = (int) Math.round(idealY);
         int placeZ = (int) Math.round(idealZ);
 
-        int adjustedPlaceX = adjustForCollisions(
+        CollisionAdjustResult adjusted = adjustForCollisions(
             initialPlaceX, placeY, placeZ, subLevelStride, dims, train, refTrainId, forward, newAnchor);
+        int adjustedPlaceX = adjusted.placeX();
 
         BlockPos origin = new BlockPos(adjustedPlaceX, placeY, placeZ);
         double gap = forward ? (adjustedPlaceX - idealX) : (idealX - adjustedPlaceX);
@@ -2607,7 +3054,14 @@ public final class TrainCarriageAppender {
             idealX,
             gap,
             forward,
-            adjustedPlaceX - initialPlaceX);
+            adjustedPlaceX - initialPlaceX,
+            refAnchor,
+            refWorldOriginVec.x,
+            subLevelDelta,
+            initialPlaceX,
+            adjustedPlaceX,
+            adjusted.lastOffenderPIdx(),
+            adjusted.lastOffenderRegistryOnly());
     }
 
     private record Plan(
@@ -2618,7 +3072,33 @@ public final class TrainCarriageAppender {
         double idealX,
         double gap,
         boolean forward,
-        int collisionAdjustments
+        int collisionAdjustments,
+        // Diagnostic-only fields consumed by the [bwd-place] probe — they
+        // record the inputs to the idealX placement math so a growing gap can
+        // be attributed to the reference/anchor mismatch (H1) rather than the
+        // settle dead-band (H2). Carry no behaviour.
+        int refAnchor,
+        double refShipToWorldX,
+        int subLevelDelta,
+        int initialPlaceX,
+        int adjustedPlaceX,
+        int lastOffenderPIdx,
+        boolean lastOffenderRegistryOnly
+    ) {}
+
+    /**
+     * Result of {@link #adjustForCollisions}: the resolved {@code placeX} plus
+     * the last collision offender encountered (sentinel {@link Integer#MIN_VALUE}
+     * for {@code lastOffenderPIdx} when the initial placement never overlapped a
+     * sibling). {@code lastOffenderRegistryOnly} is {@code true} when that
+     * offender was a culled/ghost carriage present in the spawn registry but
+     * NOT in the visible train — the H3 diagnostic signal that a stale registry
+     * AABB drove the shift.
+     */
+    private record CollisionAdjustResult(
+        int placeX,
+        int lastOffenderPIdx,
+        boolean lastOffenderRegistryOnly
     ) {}
 
     /**
@@ -2633,7 +3113,7 @@ public final class TrainCarriageAppender {
      * time we get here, the previous spawn's {@code worldAABB} is
      * non-zero and the collision pass can see it.</p>
      */
-    private static int adjustForCollisions(
+    private static CollisionAdjustResult adjustForCollisions(
         int placeX,
         int placeY,
         int placeZ,
@@ -2646,6 +3126,11 @@ public final class TrainCarriageAppender {
     ) {
         int height = dims.height();
         int width = dims.width();
+        // siblingsForLog entry: { shipId, pIdx, registryOnly(0|1) }. The third
+        // slot flags a sibling present in the spawn registry but NOT in the
+        // visible train (a culled/ghost carriage) — surfaced to the [bwd-place]
+        // probe as the H3 signal when such a stale box becomes the collision
+        // offender.
         List<long[]> siblingsForLog = new ArrayList<>();
         List<AABBdc> siblings = new ArrayList<>();
         Set<Long> seen = new HashSet<>();
@@ -2655,18 +3140,26 @@ public final class TrainCarriageAppender {
             AABBdc aabb = other.ship().worldAABB();
             if (isZeroAabb(aabb)) continue;
             siblings.add(aabb);
-            siblingsForLog.add(new long[] { id, other.provider().getPIdx() });
+            siblingsForLog.add(new long[] { id, other.provider().getPIdx(), 0L });
         }
         Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
         for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
             ManagedShip ship = e.getValue();
             long id = ship.id();
             if (!seen.add(id)) continue;
+            // Skip registry-only ships that have been culled (isRemoved): their
+            // worldAABB is frozen at the stale cull-time pose. Shoving a new
+            // spawn off such a box opens a permanent void. Resident in-flight
+            // siblings (not yet in the visible list) are still honoured.
+            if (!ship.isResident()) continue;
             AABBdc aabb = ship.worldAABB();
             if (isZeroAabb(aabb)) continue;
             siblings.add(aabb);
-            siblingsForLog.add(new long[] { id, e.getKey() });
+            siblingsForLog.add(new long[] { id, e.getKey(), 1L });
         }
+
+        int lastOffenderPIdx = Integer.MIN_VALUE;
+        boolean lastOffenderRegistryOnly = false;
 
         for (int iter = 0; iter < COLLISION_ADJUST_SAFETY_LIMIT; iter++) {
             double candMinX = placeX;
@@ -2678,6 +3171,7 @@ public final class TrainCarriageAppender {
 
             AABBdc colliding = null;
             int collidingPIdx = 0;
+            boolean collidingRegistryOnly = false;
             for (int i = 0; i < siblings.size(); i++) {
                 AABBdc o = siblings.get(i);
                 if (candMaxX > o.minX() && candMinX < o.maxX()
@@ -2685,6 +3179,7 @@ public final class TrainCarriageAppender {
                     && candMaxZ > o.minZ() && candMinZ < o.maxZ()) {
                     colliding = o;
                     collidingPIdx = (int) siblingsForLog.get(i)[1];
+                    collidingRegistryOnly = siblingsForLog.get(i)[2] == 1L;
                     break;
                 }
             }
@@ -2693,8 +3188,10 @@ public final class TrainCarriageAppender {
                     LOGGER.info("[DungeonTrain] Pre-spawn collision adjust resolved for newAnchor={} after {} iter(s); finalPlaceX={}",
                         newAnchor, iter, placeX);
                 }
-                return placeX;
+                return new CollisionAdjustResult(placeX, lastOffenderPIdx, lastOffenderRegistryOnly);
             }
+            lastOffenderPIdx = collidingPIdx;
+            lastOffenderRegistryOnly = collidingRegistryOnly;
 
             int newPlaceX;
             if (forward) {
@@ -2707,7 +3204,7 @@ public final class TrainCarriageAppender {
                     newAnchor, forward, placeX, collidingPIdx,
                     String.format("%.3f", colliding.minX()),
                     String.format("%.3f", colliding.maxX()));
-                return placeX;
+                return new CollisionAdjustResult(placeX, lastOffenderPIdx, lastOffenderRegistryOnly);
             }
             LOGGER.debug("[DungeonTrain] Pre-spawn collision adjust iter={} newAnchor={}: shifted placeX {} → {} (offender pIdx={} offenderEdgeX={})",
                 iter, newAnchor, placeX, newPlaceX, collidingPIdx,
@@ -2716,7 +3213,7 @@ public final class TrainCarriageAppender {
         }
         LOGGER.warn("[DungeonTrain] Pre-spawn collision adjust hit safety cap ({}) for newAnchor={} (forward={}); proceeding with placeX={}",
             COLLISION_ADJUST_SAFETY_LIMIT, newAnchor, forward, placeX);
-        return placeX;
+        return new CollisionAdjustResult(placeX, lastOffenderPIdx, lastOffenderRegistryOnly);
     }
 
     private static boolean isZeroAabb(AABBdc aabb) {
@@ -2846,6 +3343,7 @@ public final class TrainCarriageAppender {
             for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
                 ManagedShip ship = e.getValue();
                 if (!seen.add(ship.id())) continue;
+                if (!ship.isResident()) continue; // ignore stale culled-ghost AABBs
                 AABBdc aabb = ship.worldAABB();
                 if (isZeroAabb(aabb)) continue;
                 if (checkMaxX > aabb.minX() && checkMinX < aabb.maxX()

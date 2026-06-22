@@ -70,6 +70,39 @@ public interface ManagedShip {
     /** Total world-space AABB covering every voxel claimed by the ship. */
     AABBdc worldAABB();
 
+    /**
+     * Whether the underlying physics object is still live in the active
+     * simulation — i.e. not removed/disposed. A wrapper retained in a
+     * registry can outlive its sub-level (Sable culls a sub-level to holding
+     * or removes it entirely); such a stale wrapper may still report a
+     * non-zero {@link #worldAABB()} from its last pose, so callers that intend
+     * to read a <em>live</em> pose off a registry handle must gate on this.
+     *
+     * <p>Default {@code true} for implementations whose handles can't go
+     * stale. Sable overrides it with {@code !subLevel.isRemoved()}.</p>
+     */
+    default boolean isResident() {
+        return true;
+    }
+
+    /**
+     * Whether the underlying physics object has been serialized to disk at
+     * least once and therefore carries a stable on-disk pointer — i.e. if it
+     * is later culled to holding it can be revived by the holding-reload path
+     * ({@link Shipyard#reloadFromHolding}). A sub-level culled <em>before</em>
+     * its first serialization has no pointer and becomes an unrecoverable
+     * "ghost" (revivable only by chance proximity), which silently dead-ends
+     * train extension. DT therefore keeps a freshly-spawned group force-loaded
+     * until this turns {@code true}, so every cull stays recoverable.
+     *
+     * <p>Default {@code true} for implementations without an on-disk holding
+     * store (nothing to protect against). Sable overrides it with
+     * {@code subLevel.getLastSerializationPointer() != null}.</p>
+     */
+    default boolean hasSerializationPointer() {
+        return true;
+    }
+
     /** Currently-assigned kinematic driver, or {@code null} if none. */
     @Nullable
     KinematicDriver getKinematicDriver();

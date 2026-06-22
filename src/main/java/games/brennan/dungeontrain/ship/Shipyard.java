@@ -77,4 +77,35 @@ public interface Shipyard {
      * here guarantees a clean slate.</p>
      */
     void releaseAllForceLoads();
+
+    /**
+     * True iff the physics mod is currently holding (culled-but-retained) a
+     * sub-level with this stable id in its holding storage — i.e. it was
+     * unloaded from the active simulation but NOT removed, so it can be
+     * reloaded at runtime via {@link #reloadFromHolding}. Distinct from
+     * {@link #findAll} membership (a held sub-level is absent from {@code findAll}
+     * but still recoverable). Default {@code false} for implementations without
+     * a holding store.
+     */
+    default boolean isHeld(java.util.UUID subLevelId) {
+        return false;
+    }
+
+    /**
+     * Actively bring a culled sub-level back from the physics mod's holding
+     * store into the live simulation, keyed by its stable id. Returns
+     * {@code true} iff a held sub-level was found and reloaded.
+     *
+     * <p>This is the runtime complement to {@link #forceLoad}: force-loading
+     * only keeps an <em>already-live</em> sub-level resident and cannot revive
+     * one already moved to holding (the underlying mod's snatch-from-holding
+     * path may run only at world load). When a backward/forward edge carriage
+     * has been culled to holding and must be re-extended, the appender calls
+     * this to surface it (it then re-enters {@code findAll} and the normal
+     * force-load window keeps it resident). Default {@code false} for
+     * implementations without a holding store.</p>
+     */
+    default boolean reloadFromHolding(java.util.UUID subLevelId) {
+        return false;
+    }
 }
