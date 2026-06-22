@@ -153,6 +153,7 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
         int chunkMinX = chunkPos.getMinBlockX();
         if (chunkMinX + 15 < startX) return false;
         return Disintegration.isChunkFullyEroded(chunkMinX, startX,
+                DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),

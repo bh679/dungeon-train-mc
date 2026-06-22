@@ -61,11 +61,12 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             int chunkMinX = centerChunk.getPos().getMinBlockX();
             if (chunkMinX + 15 < startX) return; // entirely before the first band
 
+            int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
             int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
             int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
             int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
             int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
-            if (!Disintegration.isChunkFullyEroded(chunkMinX, startX, fade, voidHold, endHold, owHold)) {
+            if (!Disintegration.isChunkFullyEroded(chunkMinX, startX, phaseShift, fade, voidHold, endHold, owHold)) {
                 return; // any fade/overworld column → keep real terrain, let vanilla run
             }
 
