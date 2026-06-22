@@ -131,18 +131,18 @@ public final class Disintegration {
      * Minimum real-End-density value required to place an island block at the given
      * band {@code endRamp}: {@link #ISLAND_CORE_DENSITY} in the End core
      * ({@code endRamp == 1}), rising toward {@link #ISLAND_EDGE_DENSITY} as the End
-     * fades into the void holds ({@code endRamp → 0}). The non-zero core threshold
-     * trims the thin low-density skirts of each island (which read as "too thick"
-     * without the real generator's noise-cell interpolation), so islands stay
-     * compact with void between them. Pure / unit-testable; the density itself comes
-     * from the real End noise router.
+     * fades into the void holds ({@code endRamp → 0}). The core value is 0 — i.e. the
+     * exact End surface ({@code density > 0}), since the caller trilinearly
+     * interpolates the density like the real generator — and only ramps up at the band
+     * edges so the End terrain dissolves smoothly into void. Pure / unit-testable; the
+     * density itself comes from the real End noise router.
      */
     public static double islandDensityThreshold(double endRamp) {
         return ISLAND_CORE_DENSITY + (1.0 - clamp01(endRamp)) * (ISLAND_EDGE_DENSITY - ISLAND_CORE_DENSITY);
     }
 
-    /** Density threshold in the End core — trims thin island skirts so islands aren't over-thick. */
-    public static final double ISLAND_CORE_DENSITY = 0.06;
+    /** Density threshold in the End core — 0 = the exact real-End surface. */
+    public static final double ISLAND_CORE_DENSITY = 0.0;
     /** Density threshold at the very edge of the End band (endRamp → 0) — only dense cores remain. */
     public static final double ISLAND_EDGE_DENSITY = 0.18;
 

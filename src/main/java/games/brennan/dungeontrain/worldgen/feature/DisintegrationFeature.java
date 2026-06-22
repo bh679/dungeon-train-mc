@@ -97,10 +97,18 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             int chunkMinX = cp.getMinBlockX();
             if (!Disintegration.chunkInBand(chunkMinX, chunkMinX + 15, startX, bandLen)) return false;
 
-            // Real End terrain density (2D islands + BASE_3D_NOISE_END + End slide).
+            // Real End terrain density (2D islands + BASE_3D_NOISE_END + End slide) and the End's
+            // noise-cell size, so we can trilinearly interpolate exactly like the End's NoiseChunk.
             ServerLevel end = server.getLevel(Level.END);
             if (end == null) return false;
             DensityFunction endDensity = end.getChunkSource().randomState().router().finalDensity();
+            int cellW = 8;
+            int cellH = 4;
+            if (end.getChunkSource().getGenerator() instanceof net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator nbg) {
+                net.minecraft.world.level.levelgen.NoiseSettings ns = nbg.generatorSettings().value().noiseSettings();
+                cellW = ns.getCellWidth();
+                cellH = ns.getCellHeight();
+            }
 
             DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
             CarriageDims dims = data.dims();
@@ -129,26 +137,56 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             java.util.Arrays.fill(islandTop, Integer.MIN_VALUE);
             boolean changed = false;
 
-            // Stamp real-End-shaped islands per column where the End density is solid.
+            // Stamp real-End-shaped islands. For each column we sample the End density at the
+            // noise-cell corners (cellW × cellH grid, world-anchored — same as the End's NoiseChunk)
+            // and trilinearly interpolate per block, so island edges taper exactly like the real End.
+            int yLo = Math.max(minY, bedY - ISLAND_Y_RADIUS);
+            int yHi = Math.min(maxY, bedY + ISLAND_Y_RADIUS);
+            int endYLo = END_ISLAND_CENTER_Y + (yLo - bedY);
+            int cellRowBase = Math.floorDiv(endYLo, cellH);
+            int rows = Math.floorDiv(END_ISLAND_CENTER_Y + (yHi - bedY), cellH) - cellRowBase + 2;
+            double[] c00 = new double[rows];
+            double[] c10 = new double[rows];
+            double[] c01 = new double[rows];
+            double[] c11 = new double[rows];
+
             for (int dx = 0; dx < 16; dx++) {
                 double e = endRamp[dx];
                 if (e <= 0.0) continue;
-                int worldX = chunkMinX + dx;
-                int sampleX = worldX + ISLAND_SAMPLE_OFFSET_X;
+                int sampleX = chunkMinX + dx + ISLAND_SAMPLE_OFFSET_X;
+                int x0 = Math.floorDiv(sampleX, cellW) * cellW;
+                int x1 = x0 + cellW;
+                double fx = (double) (sampleX - x0) / cellW;
                 double threshold = Disintegration.islandDensityThreshold(e);
                 for (int dz = 0; dz < 16; dz++) {
                     int worldZ = chunkMinZ + dz;
                     if (worldZ >= zMin - CORRIDOR_ISLAND_MARGIN && worldZ <= zMax + CORRIDOR_ISLAND_MARGIN) continue;
-                    // Cheap 2D prefilter — skip deep End void columns before the 3D sampling.
-                    double island2d = END_ISLANDS_2D.compute(new DensityFunction.SinglePointContext(sampleX, 0, worldZ));
-                    if (island2d < ISLAND_2D_PREFILTER) continue;
+                    // Cheap 2D prefilter — skip deep End void columns before the costly 3D sampling.
+                    if (END_ISLANDS_2D.compute(new DensityFunction.SinglePointContext(sampleX, 0, worldZ)) < ISLAND_2D_PREFILTER) {
+                        continue;
+                    }
+                    int z0 = Math.floorDiv(worldZ, cellW) * cellW;
+                    int z1 = z0 + cellW;
+                    double fz = (double) (worldZ - z0) / cellW;
+
+                    // Density at the four XZ cell corners for every cell-Y boundary spanning the island band.
+                    for (int r = 0; r < rows; r++) {
+                        int by = (cellRowBase + r) * cellH;
+                        c00[r] = endDensity.compute(new DensityFunction.SinglePointContext(x0, by, z0));
+                        c10[r] = endDensity.compute(new DensityFunction.SinglePointContext(x1, by, z0));
+                        c01[r] = endDensity.compute(new DensityFunction.SinglePointContext(x0, by, z1));
+                        c11[r] = endDensity.compute(new DensityFunction.SinglePointContext(x1, by, z1));
+                    }
 
                     int top = Integer.MIN_VALUE;
-                    for (int myY = Math.max(minY, bedY - ISLAND_Y_RADIUS);
-                         myY <= Math.min(maxY, bedY + ISLAND_Y_RADIUS); myY++) {
+                    for (int myY = yLo; myY <= yHi; myY++) {
                         int endY = END_ISLAND_CENTER_Y + (myY - bedY);
                         if (endY < 0 || endY > 127) continue;
-                        double d = endDensity.compute(new DensityFunction.SinglePointContext(sampleX, endY, worldZ));
+                        int r = Math.floorDiv(endY, cellH) - cellRowBase;
+                        double fy = (double) (endY - (cellRowBase + r) * cellH) / cellH;
+                        double bot = bilerp(c00[r], c10[r], c01[r], c11[r], fx, fz);
+                        double topD = bilerp(c00[r + 1], c10[r + 1], c01[r + 1], c11[r + 1], fx, fz);
+                        double d = bot + (topD - bot) * fy;
                         if (d <= threshold) continue;
                         setRaw(chunk, dx, myY, dz, Blocks.END_STONE.defaultBlockState());
                         top = myY;
@@ -191,6 +229,13 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             LOGGER.error("[DungeonTrain] DisintegrationFeature.place failed at chunk {}", ctx.origin(), t);
             return false;
         }
+    }
+
+    /** Bilinear blend of the four XZ cell corners (d at x0z0, x1z0, x0z1, x1z1). */
+    private static double bilerp(double x0z0, double x1z0, double x0z1, double x1z1, double fx, double fz) {
+        double z0 = x0z0 + (x1z0 - x0z0) * fx;
+        double z1 = x0z1 + (x1z1 - x0z1) * fx;
+        return z0 + (z1 - z0) * fz;
     }
 
     /** Raw block stamp into the section owning {@code y} (no level-side hooks; heightmaps re-primed after). */
