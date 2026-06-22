@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "della-l1-b",
-      "label": "Della - Letter 1 variant B",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
-      "story_meta": {
-        "id": "della_aaro_the_searching_mother",
-        "character": "Della Aaro",
-        "story": "The Searching Mother"
-      },
-      "letter": {
-        "index": 1,
-        "label": "Letter One"
-      },
-      "variant": "Philippa.\n\nYou fell asleep on my shoulder with the orange book still in your bag. I felt the corner of it against my arm.\n\nThen the train hit a bump. Just one.\n\n\nAnd you were gone, and the book was gone, and the warmth stayed.\n\nI'm going to walk every carriage until it gives you back.\n\nYou can read this. I taught you that.\n\nDella",
-      "commit_message": "content(narrative): Della Letter 1 variant B"
-    },
-    {
       "id": "della-l2-a",
       "label": "Della - Letter 2 variant A",
       "type": "add_variant",
@@ -1011,6 +994,11 @@
     {
       "id": "della-l1-a",
       "applied_at": "2026-06-22T02:38:51Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json"
+    },
+    {
+      "id": "della-l1-b",
+      "applied_at": "2026-06-22T03:35:07Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json"
     }
   ]
