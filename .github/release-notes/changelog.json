@@ -1935,6 +1935,22 @@
       "released": true,
       "released_in": "v0.349.0",
       "released_at": "2026-06-22T14:56:00Z"
+    },
+    {
+      "id": "disintegration-band-decoration-skip",
+      "version": "0.350.0",
+      "type": "perf",
+      "title": "Leaner void/End band generation",
+      "summary": "A follow-up to the smoother disintegration band: the empty void and floating-End stretches no longer run the full overworld decoration and structure pass just to have it erased, so those chunks generate a little leaner still.",
+      "highlights": [
+        "Void/End core chunks skip the wasted tree/ore/structure pass",
+        "Builds on the earlier disintegration-band generation speedup"
+      ],
+      "pr": 539,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
