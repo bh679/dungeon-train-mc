@@ -1805,6 +1805,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "world-join-discord-info",
+      "version": "0.346.0",
+      "type": "feat",
+      "title": "World-info card in your Discord thread when you join a new world",
+      "summary": "The first time you enter a new world, Dungeon Train now drops a short world-info card into your Discord thread: your mod version, the train's seed plus the settings needed to regenerate the exact same train, and a tucked-away (click-to-expand) list of your installed mods. Handy for sharing a seed, recreating a run, or attaching full context to a bug report. It posts just once per world, and server owners can switch it off.",
+      "highlights": [
+        "Includes the train seed + generation settings, so the same train can be rebuilt for testing or sharing",
+        "Installed-mod list is collapsed behind a Discord spoiler \u2014 click to expand",
+        "Posts once per world; toggle with the worldJoinReportToDiscord server setting"
+      ],
+      "pr": 531,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
