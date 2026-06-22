@@ -1849,25 +1849,25 @@
       ],
       "pr": 533,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.348.0",
+      "released_at": "2026-06-22T14:12:14Z"
     },
     {
-      "id": "void-sky-fade-lag",
-      "version": "0.347.0",
-      "type": "feat",
-      "title": "Smoother void sky transitions",
-      "summary": "As the world breaks apart into the void, the sky now holds onto its overworld look a little longer before fading to the End \u2014 and on the way out, the sky clears back to normal before solid ground returns beneath you.",
+      "id": "aaro-stories-complete",
+      "version": "0.348.0",
+      "type": "content",
+      "title": "Complete Della and Soren Aaro stories",
+      "summary": "Ships 'The Searching Mother' (Pip's Mum) and 'The Keeper of the Door' (Soren) in full. All three Aaro family stories \u2014 Pip, Della, and Tomas \u2014 are now complete.",
       "highlights": [
-        "Sky fade lags the crumbling terrain on both edges for a less abrupt transition",
-        "Tunable via the disintegrationSkyFadeOffsetBlocks config (0 = old synced behaviour)"
+        "Della Aaro's 'The Searching Mother' \u2014 all 7 letters",
+        "Soren's 'The Keeper of the Door' \u2014 all 7 letters",
+        "Tomas Aaro's 'The Walking Father' was already shipped in v0.347.0"
       ],
-      "pr": 536,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.348.0",
+      "released_at": "2026-06-22T14:12:14Z"
     }
   ]
 }
