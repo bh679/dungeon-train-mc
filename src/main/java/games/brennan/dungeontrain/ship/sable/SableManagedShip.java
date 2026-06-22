@@ -109,6 +109,14 @@ public final class SableManagedShip implements ManagedShip {
     }
 
     @Override
+    public boolean isResident() {
+        // A removed sub-level may still answer boundingBox()/logicalPose() with
+        // a stale last-known pose, so registry-edge reference resolution must
+        // treat it as non-resident and reload from holding instead.
+        return !subLevel.isRemoved();
+    }
+
+    @Override
     @Nullable
     public KinematicDriver getKinematicDriver() {
         UUID id = subLevel.getUniqueId();

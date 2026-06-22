@@ -70,6 +70,21 @@ public interface ManagedShip {
     /** Total world-space AABB covering every voxel claimed by the ship. */
     AABBdc worldAABB();
 
+    /**
+     * Whether the underlying physics object is still live in the active
+     * simulation — i.e. not removed/disposed. A wrapper retained in a
+     * registry can outlive its sub-level (Sable culls a sub-level to holding
+     * or removes it entirely); such a stale wrapper may still report a
+     * non-zero {@link #worldAABB()} from its last pose, so callers that intend
+     * to read a <em>live</em> pose off a registry handle must gate on this.
+     *
+     * <p>Default {@code true} for implementations whose handles can't go
+     * stale. Sable overrides it with {@code !subLevel.isRemoved()}.</p>
+     */
+    default boolean isResident() {
+        return true;
+    }
+
     /** Currently-assigned kinematic driver, or {@code null} if none. */
     @Nullable
     KinematicDriver getKinematicDriver();
