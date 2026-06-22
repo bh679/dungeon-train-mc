@@ -80,28 +80,34 @@ public final class WorldJoinReport {
         // Seed + mode + groupSize as one record; the rest of the regen inputs from the world data.
         var cfg = data.getGenerationConfig();
         var dims = data.dims();
-
-        StringBuilder header = new StringBuilder()
-                .append("🚂 **Dungeon Train v").append(modVersion()).append("** — world info\n")
-                .append("**Train seed:** `").append(cfg.seed()).append("`")
-                .append(" · mode ").append(cfg.mode())
-                .append(" · group ").append(cfg.groupSize())
-                .append(" · dims ").append(dims.length()).append('×').append(dims.width()).append('×').append(dims.height())
-                .append(" · Y ").append(data.getTrainY())
-                .append(" · ").append(data.startingDimension())
-                .append('\n');
-
-        return header.append(modsSpoiler(header.length())).toString();
+        String regenLine = "**Train seed:** `" + cfg.seed() + "`"
+                + " · mode " + cfg.mode()
+                + " · group " + cfg.groupSize()
+                + " · dims " + dims.length() + "×" + dims.width() + "×" + dims.height()
+                + " · Y " + data.getTrainY()
+                + " · " + data.startingDimension();
+        return buildSuffix(modVersion(), regenLine, installedMods());
     }
 
     /**
-     * The installed-mods line: {@code **Mods (N):** ||modid vX … +K more||}, alphabetised and
-     * truncated so the whole suffix stays under {@link #MAX_SUFFIX_CHARS}.
+     * Pure assembly of the suffix from its parts — package-private so the formatting + truncation can
+     * be unit-tested without a running server. The header is the version banner plus the regen line;
+     * the installed mods follow as a collapsed spoiler, truncated to keep the whole suffix under
+     * {@link #MAX_SUFFIX_CHARS}.
+     */
+    static String buildSuffix(String version, String regenLine, List<String> mods) {
+        String header = "🚂 **Dungeon Train v" + version + "** — world info\n" + regenLine + "\n";
+        return header + modsSpoiler(header.length(), mods);
+    }
+
+    /**
+     * The installed-mods line: {@code **Mods (N):** ||modid vX … +K more||}, truncated so the whole
+     * suffix stays under {@link #MAX_SUFFIX_CHARS}.
      *
      * @param headerLen chars already consumed by the header, so the mod list fits the remaining budget
+     * @param mods      pre-sorted {@code modid vVersion} entries
      */
-    private static String modsSpoiler(int headerLen) {
-        List<String> mods = installedMods();
+    private static String modsSpoiler(int headerLen, List<String> mods) {
         String label = "**Mods (" + mods.size() + "):** ";
         // Remaining room minus the label, the two `||` spoiler wrappers, and a tail allowance for "+K more".
         int budget = MAX_SUFFIX_CHARS - headerLen - label.length() - 4;
