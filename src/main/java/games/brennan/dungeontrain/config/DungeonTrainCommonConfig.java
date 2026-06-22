@@ -65,6 +65,42 @@ public final class DungeonTrainCommonConfig {
     public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
 
+    /**
+     * Nether transition band — a second, independent looping phase (parallel to the
+     * disintegration/End band). Terrain swells into a world-height mountain the train
+     * tunnels through, the far side is real Nether terrain, then it mirrors back. The
+     * End band always wins any overlap (the nether band yields those columns).
+     */
+    public static final boolean DEFAULT_NETHER_TRANSITION_ENABLED = true;
+    /** Blocks from spawn (world X=0) where the nether band pattern is anchored. */
+    public static final int MIN_NETHER_START_BLOCKS = 0;
+    public static final int MAX_NETHER_START_BLOCKS = 100_000_000;
+    public static final int DEFAULT_NETHER_START_BLOCKS = 10_000;
+    /** Blocks over which the mountain rises/falls at each band edge (the height ramp). */
+    public static final int MIN_NETHER_FADE_BLOCKS = 0;
+    public static final int MAX_NETHER_FADE_BLOCKS = 10_000;
+    public static final int DEFAULT_NETHER_FADE_BLOCKS = 150;
+    /** Blocks of full-height mega-mountain plateau on each side of the nether core (the tunnel zone). */
+    public static final int MIN_NETHER_MOUNTAIN_HOLD_BLOCKS = 0;
+    public static final int MAX_NETHER_MOUNTAIN_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_NETHER_MOUNTAIN_HOLD_BLOCKS = 80;
+    /** Blocks over which the mountain rock crossfades to netherrack on each side of the core. */
+    public static final int MIN_NETHER_CORE_FADE_BLOCKS = 0;
+    public static final int MAX_NETHER_CORE_FADE_BLOCKS = 10_000;
+    public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 120;
+    /** Blocks of real Nether world-gen at the centre of the band. */
+    public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
+    public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 400;
+    /** Blocks of normal overworld between repeats of the nether band. */
+    public static final int MIN_NETHER_OVERWORLD_HOLD_BLOCKS = 0;
+    public static final int MAX_NETHER_OVERWORLD_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_NETHER_OVERWORLD_HOLD_BLOCKS = 6_000;
+    /** Blocks the mega-mountain reaches above the track bed at full height (clamped to world top). */
+    public static final int MIN_NETHER_MAX_HEIGHT = 0;
+    public static final int MAX_NETHER_MAX_HEIGHT = 512;
+    public static final int DEFAULT_NETHER_MAX_HEIGHT = 250;
+
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
@@ -75,6 +111,14 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DISINTEGRATION_VOID_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
+    public static final ModConfigSpec.BooleanValue NETHER_TRANSITION_ENABLED;
+    public static final ModConfigSpec.IntValue NETHER_START_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_OVERWORLD_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_MAX_HEIGHT;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -89,6 +133,14 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_VOID_HOLD_BLOCKS = pair.getLeft().disintegrationVoidHoldBlocks;
         DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
         DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = pair.getLeft().disintegrationOverworldHoldBlocks;
+        NETHER_TRANSITION_ENABLED = pair.getLeft().netherTransitionEnabled;
+        NETHER_START_BLOCKS = pair.getLeft().netherStartBlocks;
+        NETHER_FADE_BLOCKS = pair.getLeft().netherFadeBlocks;
+        NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
+        NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
+        NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
+        NETHER_OVERWORLD_HOLD_BLOCKS = pair.getLeft().netherOverworldHoldBlocks;
+        NETHER_MAX_HEIGHT = pair.getLeft().netherMaxHeight;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -152,11 +204,58 @@ public final class DungeonTrainCommonConfig {
                         "One cycle = overworldHold + 4 × fade + 2 × voidHold + endHold. Default 500.")
                 .defineInRange("disintegrationOverworldHoldBlocks", DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS, MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS);
+
+        ModConfigSpec.BooleanValue netherTransitionEnabled = b
+                .comment("Nether transition band — a SECOND, independent looping phase (parallel to the",
+                        "disintegration/End band). Along +X the overworld swells into a world-height mountain the",
+                        "train tunnels through, the far side is real Nether world-gen, then it mirrors back: Overworld",
+                        "→ taller mountains → mega-mountain (tunnel) → netherrack → Nether → … → Overworld. The End",
+                        "band always wins any overlap. Set false to disable entirely.")
+                .define("netherTransitionEnabled", DEFAULT_NETHER_TRANSITION_ENABLED);
+        ModConfigSpec.IntValue netherStartBlocks = b
+                .comment("Blocks from spawn (world X=0) where the nether band pattern is anchored. Default 10000 — far",
+                        "enough out that early game is undisturbed. Measured in blocks from spawn; changing it only",
+                        "affects chunks generated afterwards.")
+                .defineInRange("netherStartBlocks", DEFAULT_NETHER_START_BLOCKS,
+                        MIN_NETHER_START_BLOCKS, MAX_NETHER_START_BLOCKS);
+        ModConfigSpec.IntValue netherFadeBlocks = b
+                .comment("Blocks over which the mountain rises from normal terrain to full world height (and falls back)",
+                        "at each band edge. Larger = a longer, more gradual climb. Default 150.")
+                .defineInRange("netherFadeBlocks", DEFAULT_NETHER_FADE_BLOCKS,
+                        MIN_NETHER_FADE_BLOCKS, MAX_NETHER_FADE_BLOCKS);
+        ModConfigSpec.IntValue netherMountainHoldBlocks = b
+                .comment("Blocks of full-height mega-mountain on each side of the nether core — the stretch the train",
+                        "tunnels through before the world turns to nether. Default 80.")
+                .defineInRange("netherMountainHoldBlocks", DEFAULT_NETHER_MOUNTAIN_HOLD_BLOCKS,
+                        MIN_NETHER_MOUNTAIN_HOLD_BLOCKS, MAX_NETHER_MOUNTAIN_HOLD_BLOCKS);
+        ModConfigSpec.IntValue netherCoreFadeBlocks = b
+                .comment("Blocks over which the mountain rock crossfades to netherrack on each side of the core (the",
+                        "'netherrack' transition stage). Default 120.")
+                .defineInRange("netherCoreFadeBlocks", DEFAULT_NETHER_CORE_FADE_BLOCKS,
+                        MIN_NETHER_CORE_FADE_BLOCKS, MAX_NETHER_CORE_FADE_BLOCKS);
+        ModConfigSpec.IntValue netherCoreHoldBlocks = b
+                .comment("Blocks of real Nether world-gen (sampled from the Nether dimension) at the centre of the",
+                        "band. Default 400.")
+                .defineInRange("netherCoreHoldBlocks", DEFAULT_NETHER_CORE_HOLD_BLOCKS,
+                        MIN_NETHER_CORE_HOLD_BLOCKS, MAX_NETHER_CORE_HOLD_BLOCKS);
+        ModConfigSpec.IntValue netherOverworldHoldBlocks = b
+                .comment("Blocks of normal overworld between repeats of the nether band. One cycle =",
+                        "overworldHold + 2 × fade + 2 × mountainHold + 2 × coreFade + coreHold. Default 6000 — the",
+                        "nether massif reads as an occasional landmark, not a constant wall.")
+                .defineInRange("netherOverworldHoldBlocks", DEFAULT_NETHER_OVERWORLD_HOLD_BLOCKS,
+                        MIN_NETHER_OVERWORLD_HOLD_BLOCKS, MAX_NETHER_OVERWORLD_HOLD_BLOCKS);
+        ModConfigSpec.IntValue netherMaxHeight = b
+                .comment("Blocks the mega-mountain reaches ABOVE the track bed at full height. The result is clamped",
+                        "to the world top, so a value past the ceiling simply means 'to world height'. Default 250.")
+                .defineInRange("netherMaxHeight", DEFAULT_NETHER_MAX_HEIGHT,
+                        MIN_NETHER_MAX_HEIGHT, MAX_NETHER_MAX_HEIGHT);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
-                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks);
+                disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
+                netherTransitionEnabled, netherStartBlocks, netherFadeBlocks, netherMountainHoldBlocks,
+                netherCoreFadeBlocks, netherCoreHoldBlocks, netherOverworldHoldBlocks, netherMaxHeight);
     }
 
     /**
@@ -234,6 +333,46 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_OVERWORLD_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     }
 
+    /** Whether the nether transition band is active; falls back to the hardcoded default pre-load. */
+    public static boolean isNetherTransitionEnabled() {
+        return isLoaded() ? NETHER_TRANSITION_ENABLED.get() : DEFAULT_NETHER_TRANSITION_ENABLED;
+    }
+
+    /** Blocks from spawn where the nether band pattern is anchored; falls back to the hardcoded default pre-load. */
+    public static int getNetherStartBlocks() {
+        return isLoaded() ? NETHER_START_BLOCKS.get() : DEFAULT_NETHER_START_BLOCKS;
+    }
+
+    /** Mountain rise/fall span (blocks) at each band edge; falls back to the hardcoded default pre-load. */
+    public static int getNetherFadeBlocks() {
+        return isLoaded() ? NETHER_FADE_BLOCKS.get() : DEFAULT_NETHER_FADE_BLOCKS;
+    }
+
+    /** Full-height mega-mountain plateau span (blocks) on each side of the core; falls back pre-load. */
+    public static int getNetherMountainHoldBlocks() {
+        return isLoaded() ? NETHER_MOUNTAIN_HOLD_BLOCKS.get() : DEFAULT_NETHER_MOUNTAIN_HOLD_BLOCKS;
+    }
+
+    /** Mountain→netherrack crossfade span (blocks) on each side of the core; falls back pre-load. */
+    public static int getNetherCoreFadeBlocks() {
+        return isLoaded() ? NETHER_CORE_FADE_BLOCKS.get() : DEFAULT_NETHER_CORE_FADE_BLOCKS;
+    }
+
+    /** Real-Nether core span (blocks); falls back to the hardcoded default pre-load. */
+    public static int getNetherCoreHoldBlocks() {
+        return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
+    }
+
+    /** Overworld stretch (blocks) between nether band repeats; falls back to the hardcoded default pre-load. */
+    public static int getNetherOverworldHoldBlocks() {
+        return isLoaded() ? NETHER_OVERWORLD_HOLD_BLOCKS.get() : DEFAULT_NETHER_OVERWORLD_HOLD_BLOCKS;
+    }
+
+    /** Mega-mountain height (blocks above the bed) at full ramp; falls back to the hardcoded default pre-load. */
+    public static int getNetherMaxHeight() {
+        return isLoaded() ? NETHER_MAX_HEIGHT.get() : DEFAULT_NETHER_MAX_HEIGHT;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -242,5 +381,13 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
                           ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
                           ModConfigSpec.IntValue disintegrationEndHoldBlocks,
-                          ModConfigSpec.IntValue disintegrationOverworldHoldBlocks) {}
+                          ModConfigSpec.IntValue disintegrationOverworldHoldBlocks,
+                          ModConfigSpec.BooleanValue netherTransitionEnabled,
+                          ModConfigSpec.IntValue netherStartBlocks,
+                          ModConfigSpec.IntValue netherFadeBlocks,
+                          ModConfigSpec.IntValue netherMountainHoldBlocks,
+                          ModConfigSpec.IntValue netherCoreFadeBlocks,
+                          ModConfigSpec.IntValue netherCoreHoldBlocks,
+                          ModConfigSpec.IntValue netherOverworldHoldBlocks,
+                          ModConfigSpec.IntValue netherMaxHeight) {}
 }

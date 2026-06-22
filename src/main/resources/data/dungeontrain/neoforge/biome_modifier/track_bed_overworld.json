@@ -3,7 +3,8 @@
   "biomes": "#minecraft:is_overworld",
   "features": [
     "dungeontrain:track_bed",
-    "dungeontrain:disintegration"
+    "dungeontrain:disintegration",
+    "dungeontrain:nether_transition"
   ],
   "step": "top_layer_modification"
 }

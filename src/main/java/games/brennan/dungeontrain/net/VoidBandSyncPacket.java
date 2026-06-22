@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -35,6 +36,9 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain) im
     }
 
     public static void handle(VoidBandSyncPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain));
+        ctx.enqueueWork(() -> {
+            ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain);
+            ClientNetherBand.update(packet.startsWithTrain);
+        });
     }
 }

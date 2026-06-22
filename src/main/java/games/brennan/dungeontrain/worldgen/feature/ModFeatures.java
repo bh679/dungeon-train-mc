@@ -38,6 +38,11 @@ public final class ModFeatures {
         DisintegrationFeature::new
     );
 
+    public static final DeferredHolder<Feature<?>, Feature<NoneFeatureConfiguration>> NETHER_TRANSITION = FEATURES.register(
+        "nether_transition",
+        NetherTransitionFeature::new
+    );
+
     private ModFeatures() {}
 
     /** Call from the mod constructor to attach the {@link DeferredRegister} to the mod-event bus. */
