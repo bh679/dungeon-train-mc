@@ -1,23 +1,6 @@
 {
   "pending": [
     {
-      "id": "della-l3-a",
-      "label": "Della - Letter 3 variant A",
-      "type": "add_variant",
-      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json",
-      "story_meta": {
-        "id": "della_aaro_the_searching_mother",
-        "character": "Della Aaro",
-        "story": "The Searching Mother"
-      },
-      "letter": {
-        "index": 3,
-        "label": "Letter Three"
-      },
-      "variant": "I found a paper today.\n\nThree words in a child's hand, and I knew them before I read them. I taught that hand its letters.\n\n\nIt was hers. Pip's. It said she is looking for me.\n\nSo she is alive. She is awake. She is moving, and she is looking, same as I am.\n\n\nThe paper was not fresh. She passed through before me. I am behind her.\n\nBut behind is not lost. Behind, I can follow.\n\nDella",
-      "commit_message": "content(narrative): Della Letter 3 variant A"
-    },
-    {
       "id": "della-l3-b",
       "label": "Della - Letter 3 variant B",
       "type": "add_variant",
@@ -1213,6 +1196,11 @@
     {
       "id": "della-l2-b",
       "applied_at": "2026-06-22T06:33:02Z",
+      "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json"
+    },
+    {
+      "id": "della-l3-a",
+      "applied_at": "2026-06-22T13:03:48Z",
       "target": "src/main/resources/data/dungeontrain/narratives/stories/della_aaro_the_searching_mother.json"
     }
   ]
