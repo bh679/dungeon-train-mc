@@ -116,7 +116,7 @@ public final class WorldJoinReport {
         StringBuilder list = new StringBuilder();
         int shown = 0;
         for (String mod : mods) {
-            String line = (list.length() == 0 ? "" : "\n") + mod;
+            String line = (list.length() == 0 ? "" : ", ") + mod;
             if (budget - list.length() - line.length() < tailReserve && shown < mods.size()) {
                 break; // out of room — remaining mods summarised below
             }
@@ -124,7 +124,7 @@ public final class WorldJoinReport {
             shown++;
         }
         if (shown < mods.size()) {
-            list.append("\n… +").append(mods.size() - shown).append(" more");
+            list.append(" … +").append(mods.size() - shown).append(" more");
         }
         return label + "||" + list + "||";
     }

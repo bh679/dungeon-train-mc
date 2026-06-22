@@ -20,14 +20,15 @@ class WorldJoinReportTest {
     private static final int MAX_SUFFIX_CHARS = 1800;
 
     @Test
-    @DisplayName("short mod list: full list inside a spoiler, no truncation note")
+    @DisplayName("short mod list: full list on one line inside a spoiler, no truncation note")
     void shortListFitsWholeInsideSpoiler() {
         String out = WorldJoinReport.buildSuffix(
                 "1.2.3", "**Train seed:** `42`", List.of("alpha v1.0", "beta v2.0"));
 
         assertTrue(out.contains("Dungeon Train v1.2.3"), out);
         assertTrue(out.contains("**Train seed:** `42`"), out);
-        assertTrue(out.contains("||alpha v1.0\nbeta v2.0||"), out);
+        assertTrue(out.contains("||alpha v1.0, beta v2.0||"), out);
+        assertFalse(out.indexOf('\n', out.indexOf("||")) >= 0, "mods must be on a single line: " + out);
         assertFalse(out.contains("more"), "no truncation expected: " + out);
         assertTrue(out.length() <= MAX_SUFFIX_CHARS);
     }
