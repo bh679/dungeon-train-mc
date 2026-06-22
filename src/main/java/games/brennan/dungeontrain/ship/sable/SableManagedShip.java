@@ -117,6 +117,15 @@ public final class SableManagedShip implements ManagedShip {
     }
 
     @Override
+    public boolean hasSerializationPointer() {
+        // Sable sets this only once the sub-level has been written to disk (an
+        // autosave / chunk save). Until then a cull yields a null-pointer
+        // holding entry that snatchAndLoad can't revive — so DT holds the group
+        // force-loaded until this is non-null. See ManagedShip#hasSerializationPointer.
+        return subLevel.getLastSerializationPointer() != null;
+    }
+
+    @Override
     @Nullable
     public KinematicDriver getKinematicDriver() {
         UUID id = subLevel.getUniqueId();

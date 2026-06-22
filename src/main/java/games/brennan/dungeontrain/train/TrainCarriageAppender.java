@@ -1782,6 +1782,11 @@ public final class TrainCarriageAppender {
             LAST_SPAWNED_SHIP_FORWARD.put(trainId, newShip);
             LAST_SPAWNED_TICK_FORWARD.put(trainId, now);
             recordPostSpawnCollisionCheck(trainId, newShip, forwardAnchor, train);
+            // NB: forward auto-spawns are intentionally NOT held-resident — they
+            // sit ahead of the player and reload naturally on approach, and
+            // holding every one until autosave would balloon memory on a long
+            // forward ride. Bootstrap forward groups ARE held (their cull is the
+            // ghost source); the backward lane below holds its spawns.
             announceSpawn(level, forwardAnchor);
             didForwardSpawn = true;
         }
@@ -2163,6 +2168,13 @@ public final class TrainCarriageAppender {
             // overlap it forever (the placement-collision stall). Once settled
             // it becomes releasable here as the window slides.
             if (!c.provider().isPlacedSuccessfully()) continue;
+            // Option-2 "keep frontier resident" policy: never release a group
+            // until it has been serialized at least once. A cull before first
+            // serialization yields a null-pointer holding entry that can't be
+            // revived (snatchAndLoad needs the pointer), so it becomes an
+            // unrecoverable ghost that silently dead-ends backward generation.
+            // Holding until reloadable guarantees every cull is recoverable.
+            if (!c.ship().hasSerializationPointer()) continue;
             shipyard.releaseForceLoad(c.ship());
             it.remove();
             released++;
@@ -2194,8 +2206,22 @@ public final class TrainCarriageAppender {
      * like any other trailing carriage.
      */
     private static void forceLoadSpawnedBackward(ServerLevel level, UUID trainId, ManagedShip newShip) {
-        Shipyards.of(level).forceLoad(newShip);
-        FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(newShip.subLevelId());
+        holdGroupResident(level, trainId, newShip);
+    }
+
+    /**
+     * Force-load a freshly-created group and track it in
+     * {@link #FORCELOADED_BY_TRAIN}. The "keep frontier resident" half of the
+     * option-2 fix: a held group is not released by {@link #reconcileForceLoads}
+     * until it has gained a serialization pointer
+     * ({@link ManagedShip#hasSerializationPointer()}), so a later cull always
+     * lands in <em>reloadable</em> holding rather than as an unrecoverable
+     * null-pointer ghost that silently dead-ends train extension. Called at
+     * every group birth — bootstrap eager-fill and both auto-spawn lanes.
+     */
+    private static void holdGroupResident(ServerLevel level, UUID trainId, ManagedShip ship) {
+        Shipyards.of(level).forceLoad(ship);
+        FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(ship.subLevelId());
     }
 
     /** The registry handle ({@link ManagedShip}) for a sub-level UUID in this train, or null. */
@@ -2725,6 +2751,11 @@ public final class TrainCarriageAppender {
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, forwardAnchor, groupSize, dims, trainId);
                 markEagerFilledPlaced(newShip);
+                // Keep resident until serialized — bootstrap groups are the
+                // source of the unrecoverable null-pointer ghosts that dead-end
+                // backward generation (they cull before any save). Held here so
+                // a later cull stays reloadable.
+                holdGroupResident(level, trainId, newShip);
                 BootstrapProgress.advance(groupSize);
                 forwardRefX = placeX;
                 trainMax = forwardAnchor;
@@ -2741,6 +2772,7 @@ public final class TrainCarriageAppender {
                 BlockPos newOrigin = new BlockPos(placeX, placeY, placeZ);
                 ManagedShip newShip = TrainAssembler.spawnGroup(level, newOrigin, velocity, backwardAnchor, groupSize, dims, trainId);
                 markEagerFilledPlaced(newShip);
+                holdGroupResident(level, trainId, newShip); // keep resident until serialized (see forward branch)
                 BootstrapProgress.advance(groupSize);
                 backwardRefX = placeX;
                 trainMin = backwardAnchor;
