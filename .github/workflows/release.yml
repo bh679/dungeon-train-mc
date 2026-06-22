@@ -110,6 +110,40 @@ jobs:
           cat release-notes.md
           echo "::endgroup::"
 
+      # CurseForge's "Changelog" tab shows only the LATEST file's changelog, and the latest
+      # file is perpetually an auto-release cascade tick (which has no curated notes of its own).
+      # So on cascade ticks we carry forward the last real release's curated notes — verbatim —
+      # keeping that view meaningful. Real (operator-curated) releases use their own notes.
+      # CurseForge ONLY: Modrinth shows full version history (release-notes.md, unchanged) and the
+      # GitHub Release keeps its compare-link on cascade ticks. The modpack changelogs (header +
+      # platform-appropriate notes) mirror this: CurseForge modpack carries the carry-forward
+      # notes; Modrinth modpack mirrors the mod's Modrinth notes.
+      - name: Compose CurseForge + modpack changelogs
+        env:
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          CHANGELOG_INPUT: ${{ inputs.changelog }}
+        run: |
+          if [ -n "$CHANGELOG_INPUT" ]; then
+            cp release-notes.md curseforge-notes.md
+          else
+            LAST=$(python3 scripts/release-notes/render-last-released.py)
+            if [ -n "$LAST" ]; then
+              printf '%s\n' "$LAST" > curseforge-notes.md
+            else
+              cp release-notes.md curseforge-notes.md
+            fi
+          fi
+          echo "::group::CurseForge mod changelog"; cat curseforge-notes.md; echo "::endgroup::"
+
+          MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
+          HEADER="Dungeon Train modpack ${RELEASE_TAG} — bundles Dungeon Train ${RELEASE_TAG} + Sable for NeoForge ${MC_VERSION}."
+          { printf '%s\n\n---\n\n' "$HEADER"; cat curseforge-notes.md; } > modpack-cf-notes.md
+          { printf '%s\n\n---\n\n' "$HEADER"; cat release-notes.md;    } > modpack-mr-notes.md
+          echo "::group::Modpack changelogs"
+          echo '[CurseForge]'; cat modpack-cf-notes.md
+          echo; echo '[Modrinth]'; cat modpack-mr-notes.md
+          echo "::endgroup::"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -176,6 +210,11 @@ jobs:
           version: ${{ env.RELEASE_TAG }}
           version-type: ${{ steps.release_type.outputs.type }}
           changelog-file: release-notes.md
+          # CurseForge-only override (target-specific input — same mechanism as curseforge-id).
+          # On cascade ticks this is the carried-forward last-real-release notes so CurseForge's
+          # latest-file Changelog tab stays meaningful; on real releases it equals release-notes.md.
+          # If unsupported, mc-publish falls back to changelog-file — i.e. today's behavior.
+          curseforge-changelog-file: curseforge-notes.md
           loaders: neoforge
           game-versions: 1.21.1
           dependencies: |
@@ -234,7 +273,8 @@ jobs:
           gh workflow run release-modpack.yml \
             -f tag="$RELEASE_TAG" \
             -f dt_file_id="$DT_FILE_ID" \
-            -f auto="$IS_AUTO"
+            -f auto="$IS_AUTO" \
+            -f changelog="$(cat modpack-cf-notes.md)"
 
       # Mirror every mod release into the Modrinth modpack too. Dispatches
       # release-modpack-modrinth.yml (the Modrinth sibling — no approval wait), which builds +
@@ -255,7 +295,8 @@ jobs:
           gh workflow run release-modpack-modrinth.yml \
             -f tag="$RELEASE_TAG" \
             -f dt_modrinth_version="$DT_MODRINTH_VERSION" \
-            -f auto="$IS_AUTO"
+            -f auto="$IS_AUTO" \
+            -f changelog="$(cat modpack-mr-notes.md)"
 
       # After a successful real release (auto=false), mark the shipped changelog
       # entries released so the next release's "unreleased" set starts clean.
