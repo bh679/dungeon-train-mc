@@ -1742,9 +1742,9 @@
       "summary": "Two new enemy carriage types join the train: a spider carriage and a husk/skeleton carriage, adding more variety to the enemies you'll face.",
       "highlights": [],
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.345.0",
+      "released_at": "2026-06-22T05:19:07Z"
     },
     {
       "id": "tomas-aaro-the-walking-father",
@@ -1758,9 +1758,9 @@
       ],
       "pr": 527,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.345.0",
+      "released_at": "2026-06-22T05:19:07Z"
     },
     {
       "id": "survey-second-question-plea",
@@ -1774,9 +1774,9 @@
       ],
       "pr": 528,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.345.0",
+      "released_at": "2026-06-22T05:19:07Z"
     }
   ]
 }
