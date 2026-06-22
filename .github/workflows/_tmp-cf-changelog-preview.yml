@@ -51,12 +51,15 @@ jobs:
           [ -n "$CHANGELOG" ] || { echo "::error::render-last-released.py produced no notes"; exit 1; }
           echo "::group::Changelog to publish"; printf '%s\n' "$CHANGELOG"; echo "::endgroup::"
 
-          METADATA=$(jq -nc --argjson fileID "$FILE_ID" --arg cl "$CHANGELOG" \
-            '{fileID: $fileID, changelog: $cl, changelogType: "markdown"}')
+          jq -nc --argjson fileID "$FILE_ID" --arg cl "$CHANGELOG" \
+            '{fileID: $fileID, changelog: $cl, changelogType: "markdown"}' > metadata.json
+          echo "metadata.json bytes: $(wc -c < metadata.json)"
 
+          # Send metadata as a typed application/json part (mirrors publish-modrinth.sh's
+          # working `data=<file;type=...` form). The inline plain-field form 500'd.
           RESP=$(curl -sS -w $'\n%{http_code}' \
             -H "X-Api-Token: $CURSEFORGE_TOKEN" \
-            -F "metadata=$METADATA" \
+            -F "metadata=<metadata.json;type=application/json" \
             "https://minecraft.curseforge.com/api/projects/${CURSEFORGE_PROJECT_ID}/update-file")
           CODE=$(printf '%s' "$RESP" | tail -n1)
           BODY=$(printf '%s' "$RESP" | sed '$d')
