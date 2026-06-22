@@ -1852,6 +1852,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "aaro-stories-complete",
+      "version": "0.348.0",
+      "type": "content",
+      "title": "Complete Della and Soren Aaro stories",
+      "summary": "Ships 'The Searching Mother' (Pip's Mum) and 'The Keeper of the Door' (Soren) in full. All three Aaro family stories \u2014 Pip, Della, and Tomas \u2014 are now complete.",
+      "highlights": [
+        "Della Aaro's 'The Searching Mother' \u2014 all 7 letters",
+        "Soren's 'The Keeper of the Door' \u2014 all 7 letters",
+        "Tomas Aaro's 'The Walking Father' was already shipped in v0.347.0"
+      ],
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
