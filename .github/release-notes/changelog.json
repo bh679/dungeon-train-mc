@@ -1881,9 +1881,9 @@
       ],
       "pr": 536,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
     },
     {
       "id": "disintegration-longer-phases",
@@ -1899,9 +1899,9 @@
       ],
       "pr": 534,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
     },
     {
       "id": "void-band-end-soundtrack",
@@ -1915,9 +1915,9 @@
       ],
       "pr": 537,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
     },
     {
       "id": "disintegration-band-perf",
@@ -1932,9 +1932,9 @@
       ],
       "pr": 538,
       "date": "2026-06-22",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
     }
   ]
 }
