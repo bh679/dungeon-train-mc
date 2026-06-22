@@ -36,6 +36,11 @@ on:
         required: false
         type: boolean
         default: false
+      changelog:
+        description: "Markdown changelog for the modpack upload. Empty → templated boilerplate."
+        required: false
+        type: string
+        default: ""
 
 # Dedupe re-dispatches of the SAME tag (a re-run supersedes the in-flight one), but let
 # different releases publish independently — every release gets its own modpack version.
@@ -92,6 +97,9 @@ jobs:
           CURSEFORGE_MODPACK_PROJECT_ID: ${{ vars.CURSEFORGE_MODPACK_PROJECT_ID }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           TAG: ${{ inputs.tag }}
+          # Pass via env (not raw ${{ }} in the script) so multi-line markdown can't break/inject
+          # the shell. Empty → publish-curseforge.sh falls back to its templated boilerplate.
+          CHANGELOG: ${{ inputs.changelog }}
         run: |
           if [ -z "${CURSEFORGE_MODPACK_PROJECT_ID:-}" ]; then
             echo "::error::CURSEFORGE_MODPACK_PROJECT_ID variable is not set — cannot publish the modpack."
@@ -101,4 +109,4 @@ jobs:
             echo "::error::CURSEFORGE_TOKEN secret is not set — cannot publish the modpack."
             exit 1
           fi
-          bash scripts/modpack/publish-curseforge.sh --manifest manifest.json --tag "$TAG"
+          bash scripts/modpack/publish-curseforge.sh --manifest manifest.json --tag "$TAG" --changelog "$CHANGELOG"
