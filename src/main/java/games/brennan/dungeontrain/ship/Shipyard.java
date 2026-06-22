@@ -108,4 +108,23 @@ public interface Shipyard {
     default boolean reloadFromHolding(java.util.UUID subLevelId) {
         return false;
     }
+
+    /**
+     * True iff a sub-level with this stable id is currently held AND can be
+     * brought back via {@link #reloadFromHolding} — i.e. {@link #isHeld} is true
+     * <em>and</em> the physics mod retains a serialization pointer for it.
+     *
+     * <p>This is the recoverable subset of {@link #isHeld}. A sub-level culled to
+     * holding <em>before it was ever serialized</em> has a null pointer: it is
+     * held but NOT reloadable, because {@code reloadFromHolding}'s snatch path
+     * needs the pointer to locate its holding chunk (see
+     * {@code SableShipyard.reloadFromHolding}). The appender uses this to tell a
+     * recoverable held edge (reload + defer) apart from a stuck null-pointer
+     * ghost (drop it, so the registry stays honest and backward generation can
+     * resume). Default {@code false} for implementations without a holding
+     * store.</p>
+     */
+    default boolean isReloadable(java.util.UUID subLevelId) {
+        return false;
+    }
 }

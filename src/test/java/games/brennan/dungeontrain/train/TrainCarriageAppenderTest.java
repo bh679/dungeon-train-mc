@@ -342,4 +342,61 @@ final class TrainCarriageAppenderTest {
         assertThrows(IllegalArgumentException.class,
             () -> TrainCarriageAppender.subLevelDeltaFor(-3, 0, 0));
     }
+
+    // ---- Approach 2: stuck-ghost classification ----
+    //
+    // classifyAnchor decides what a registry anchor is so the frontier logic can
+    // compute the spawnable extent (VISIBLE ∪ RELOADABLE) and drop unrecoverable
+    // STUCK ghosts. The precedence (visible → reloadable → held → residentAabb)
+    // mirrors decideEdgeAction: held is checked before a (possibly stale) resident
+    // AABB so a held-but-not-reloadable null-pointer ghost is correctly STUCK.
+
+    @Test
+    @DisplayName("classifyAnchor: visible → VISIBLE (wins over every other flag)")
+    void classify_visible_wins() {
+        assertEquals(TrainCarriageAppender.AnchorClass.VISIBLE,
+            TrainCarriageAppender.classifyAnchor(true, false, false, false));
+        assertEquals(TrainCarriageAppender.AnchorClass.VISIBLE,
+            TrainCarriageAppender.classifyAnchor(true, true, true, true));
+    }
+
+    @Test
+    @DisplayName("classifyAnchor: held WITH pointer (reloadable) → RELOADABLE (in the extent)")
+    void classify_reloadable() {
+        assertEquals(TrainCarriageAppender.AnchorClass.RELOADABLE,
+            TrainCarriageAppender.classifyAnchor(false, true, false, false));
+        // reloadable wins over held (a reloadable sub-level is also held).
+        assertEquals(TrainCarriageAppender.AnchorClass.RELOADABLE,
+            TrainCarriageAppender.classifyAnchor(false, true, true, false));
+    }
+
+    @Test
+    @DisplayName("classifyAnchor: held but NOT reloadable (null-pointer ghost) → STUCK")
+    void classify_heldNullPointer_stuck() {
+        assertEquals(TrainCarriageAppender.AnchorClass.STUCK,
+            TrainCarriageAppender.classifyAnchor(false, false, true, false));
+    }
+
+    @Test
+    @DisplayName("classifyAnchor: held beats a stale resident AABB → STUCK (no respawn-against-stale-pose)")
+    void classify_heldBeatsStaleResidentAabb() {
+        // A held ghost's registry wrapper can still report a non-zero AABB. held
+        // MUST win so it's dropped, not treated as a live resident dropout.
+        assertEquals(TrainCarriageAppender.AnchorClass.STUCK,
+            TrainCarriageAppender.classifyAnchor(false, false, true, true));
+    }
+
+    @Test
+    @DisplayName("classifyAnchor: not held, resident with a live AABB → RESIDENT_LIVE (transient dropout)")
+    void classify_residentLive() {
+        assertEquals(TrainCarriageAppender.AnchorClass.RESIDENT_LIVE,
+            TrainCarriageAppender.classifyAnchor(false, false, false, true));
+    }
+
+    @Test
+    @DisplayName("classifyAnchor: not visible, not reloadable, not held, no live AABB → STUCK (gone)")
+    void classify_gone_stuck() {
+        assertEquals(TrainCarriageAppender.AnchorClass.STUCK,
+            TrainCarriageAppender.classifyAnchor(false, false, false, false));
+    }
 }

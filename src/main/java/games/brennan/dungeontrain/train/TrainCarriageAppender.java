@@ -163,6 +163,36 @@ public final class TrainCarriageAppender {
     private static final Map<UUID, Set<UUID>> FORCELOADED_BY_TRAIN = new ConcurrentHashMap<>();
 
     /**
+     * Approach 2: per-sub-level game tick at which a registry group was first
+     * observed STUCK (held-but-not-reloadable null-pointer ghost, or genuinely
+     * gone) past the visible frontier. Keyed by Sable sub-level id. Drives the
+     * grace-gated drop in {@link #dropMaturedStuckGhosts}: an anchor is only
+     * deleted once it has been continuously stuck longer than
+     * {@link #STUCK_GHOST_GRACE_TICKS}, so a merely-transient cull that Sable will
+     * resurrect on its own (via {@code collectReadySubLevels}) is never deleted
+     * prematurely — the duplicate hazard of this approach.
+     *
+     * <p>An entry is cleared the moment its sub-level stops classifying STUCK (it
+     * surfaced, became reloadable, or is a transient resident dropout), when its
+     * ghost is dropped (here or by {@link #cleanupGhostAnchors}), and wholesale in
+     * {@link #clearSettleTracker} on server stop / train wipe.</p>
+     */
+    private static final Map<UUID, Long> STUCK_GHOST_SINCE = new ConcurrentHashMap<>();
+
+    /**
+     * How long (game ticks) a registry anchor must stay continuously STUCK before
+     * {@link #dropMaturedStuckGhosts} deletes it. 100 ≈ 5 s — well past the
+     * few-tick {@code findAll} surfacing lag and the holding-reload round-trip, so
+     * a transient cull that would resurrect on proximity is given time to do so
+     * before we forget it, while a genuinely-unrecoverable null-pointer ghost (the
+     * premature-dead-end cause) still clears quickly. In the real dead-end
+     * scenario the player has long since ridden away from these ghosts, so they
+     * are already stuck for far more than the grace by the time the player rides
+     * back and needs the frontier — the drop then fires immediately.
+     */
+    private static final long STUCK_GHOST_GRACE_TICKS = 100L;
+
+    /**
      * Stall threshold: 600 ticks = 30 s at 20 Hz. Comfortably past the
      * 60-tick {@link #CLEAN_TICKS_FOR_SUCCESS} settle window so a normally
      * operating train (which blocks for ~60-100 ticks between spawns)
@@ -1044,6 +1074,7 @@ public final class TrainCarriageAppender {
         EDGE_UNRESOLVED_SINCE_BACKWARD.clear();
         EDGE_UNRESOLVED_WARNED_FORWARD.clear();
         EDGE_UNRESOLVED_WARNED_BACKWARD.clear();
+        STUCK_GHOST_SINCE.clear();
         // Force-load window tracking. The live Sable tickets themselves are
         // swept separately via Shipyard.releaseAllForceLoads() on the
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
@@ -1524,24 +1555,22 @@ public final class TrainCarriageAppender {
         // (often returning just one or two of the four bootstrap groups).
         // Without this guard, the appender requests anchors that already
         // exist and stacks duplicate sub-levels at the same world position.
+        // Approach 2: first drop any STUCK null-pointer ghosts past the visible
+        // frontier (grace-gated) so the registry stays honest, then compute
+        // trainMin/MaxAnchor over only the recoverable (VISIBLE ∪ RELOADABLE)
+        // anchors via {@link #computeSpawnableExtent}. STUCK ghosts (held with a
+        // null serialization pointer, hence unrecoverable) no longer pin the
+        // extent past the visible tail, so needsBackward/needsForward can fire and
+        // the frontier retreats to the resident edge. The duplicate guard further
+        // below reads {@code knownAnchors} AFTER the drop, so a just-freed anchor
+        // is refillable this tick; while a stuck ghost is still within its grace
+        // window the guard keeps its anchor reserved (no respawn-on-top).
+        dropMaturedStuckGhosts(level, trainId, train, level.getGameTime());
+        SpawnableExtent extent = computeSpawnableExtent(
+            level, trainId, train, leadAnchorPIdx, tail.provider().getPIdx());
+        int trainMaxAnchor = extent.maxAnchor();
+        int trainMinAnchor = extent.minAnchor();
         Set<Integer> knownAnchors = Trains.knownAnchors(trainId);
-        int trainMaxAnchor;
-        int trainMinAnchor;
-        if (knownAnchors.isEmpty()) {
-            // Defensive — should never happen since the visible train has
-            // at least one carriage and the spawn path always registers.
-            trainMaxAnchor = leadAnchorPIdx;
-            trainMinAnchor = tail.provider().getPIdx();
-        } else {
-            int maxA = Integer.MIN_VALUE;
-            int minA = Integer.MAX_VALUE;
-            for (int a : knownAnchors) {
-                if (a > maxA) maxA = a;
-                if (a < minA) minA = a;
-            }
-            trainMaxAnchor = maxA;
-            trainMinAnchor = minA;
-        }
 
         // Proximity-based latch reset: if any near player's pIdx is past
         // the registry's end in a direction, clear that direction's
@@ -1573,17 +1602,14 @@ public final class TrainCarriageAppender {
             }
         }
         if (refreshedAnchors) {
+            // Re-read the (now cleaned) registry for the duplicate guard, and
+            // recompute the spawnable extent over the same VISIBLE ∪ RELOADABLE
+            // basis as the initial computation above.
             knownAnchors = Trains.knownAnchors(trainId);
-            if (!knownAnchors.isEmpty()) {
-                int maxA = Integer.MIN_VALUE;
-                int minA = Integer.MAX_VALUE;
-                for (int a : knownAnchors) {
-                    if (a > maxA) maxA = a;
-                    if (a < minA) minA = a;
-                }
-                trainMaxAnchor = maxA;
-                trainMinAnchor = minA;
-            }
+            SpawnableExtent re = computeSpawnableExtent(
+                level, trainId, train, leadAnchorPIdx, tail.provider().getPIdx());
+            trainMaxAnchor = re.maxAnchor();
+            trainMinAnchor = re.minAnchor();
         }
 
         // Backward-anchor-divergence diagnostic ([anchor-div], opt-in, off by
@@ -1598,12 +1624,25 @@ public final class TrainCarriageAppender {
             && Math.floorMod(level.getGameTime(), SEAMGAP_SAMPLE_PERIOD_TICKS) == 0) {
             int visibleTailPIdx = tail.provider().getPIdx();
             Set<UUID> fl = FORCELOADED_BY_TRAIN.get(trainId);
-            LOGGER.info("[DungeonTrain][anchor-div] gameTick={} trainId={} registryMin={} registryMax={} visibleTailPIdx={} visibleLeadPIdx={} registryCount={} visibleCount={} forceLoadedCount={} span={}",
+            // Approach 2: spawnableMin/Max is the extent over VISIBLE ∪ RELOADABLE
+            // anchors (what drives needs*); rawRegistryMin/Max is the unfiltered
+            // registry. While stuck ghosts sit in their grace window rawRegistryMin
+            // lags below spawnableMin; after they drop the two converge — the
+            // visible signature of the frontier retreat.
+            int rawRegistryMin = Integer.MAX_VALUE;
+            int rawRegistryMax = Integer.MIN_VALUE;
+            for (int a : knownAnchors) {
+                if (a < rawRegistryMin) rawRegistryMin = a;
+                if (a > rawRegistryMax) rawRegistryMax = a;
+            }
+            LOGGER.info("[DungeonTrain][anchor-div] gameTick={} trainId={} spawnableMin={} spawnableMax={} rawRegistryMin={} rawRegistryMax={} visibleTailPIdx={} visibleLeadPIdx={} registryCount={} visibleCount={} forceLoadedCount={} stuckGhostsTracked={} span={}",
                 level.getGameTime(), trainId,
                 trainMinAnchor, trainMaxAnchor,
+                rawRegistryMin, rawRegistryMax,
                 visibleTailPIdx, leadAnchorPIdx,
                 knownAnchors.size(), train.size(),
                 (fl == null) ? 0 : fl.size(),
+                STUCK_GHOST_SINCE.size(),
                 visibleTailPIdx - trainMinAnchor);
         }
 
@@ -1953,6 +1992,187 @@ public final class TrainCarriageAppender {
         return (newAnchor - refAnchor) / groupSize;
     }
 
+    // ---- Approach 2: stuck-ghost classification + frontier retreat ------------
+    //
+    // The option-2 registry-edge reference kills the VOID, but a second failure
+    // mode remains: a backward group culled to Sable holding BEFORE it was ever
+    // serialized has a null HoldingSubLevel.pointer(), so reloadFromHolding can't
+    // revive it. Such a ghost still occupies a registry anchor, so the raw
+    // registry min/max keeps trainMinAnchor pinned past the visible tail and
+    // needsBackward stays false — the train dead-ends with invisible
+    // unrecoverable ghosts below. Approach 2 makes the registry honest: classify
+    // each anchor, compute the train extent over only the recoverable
+    // (VISIBLE ∪ RELOADABLE) anchors, and DROP the stuck ghosts past the frontier
+    // (after a grace window) so the frontier retreats and normal backward
+    // generation refills from the visible edge with subLevelDelta = -1.
+
+    /**
+     * Classification of one registry anchor for the approach-2 frontier logic.
+     * <ul>
+     *   <li>{@code VISIBLE} — its sub-level is in the live visible train.</li>
+     *   <li>{@code RELOADABLE} — culled to holding but recoverable
+     *       ({@link Shipyard#isReloadable}: held with a serialization pointer).</li>
+     *   <li>{@code RESIDENT_LIVE} — a transient {@code findAll} dropout of a
+     *       never-culled, still-resident sub-level; self-heals to VISIBLE.</li>
+     *   <li>{@code STUCK} — held-but-not-reloadable (null-pointer ghost) or
+     *       genuinely gone. The unrecoverable case the frontier must drop.</li>
+     * </ul>
+     * VISIBLE and RELOADABLE define the spawnable extent; STUCK past the frontier
+     * is dropped; RESIDENT_LIVE is left alone.
+     */
+    enum AnchorClass { VISIBLE, RELOADABLE, RESIDENT_LIVE, STUCK }
+
+    /**
+     * Pure classification core (package-private for unit tests). ORDER MATTERS,
+     * matching {@link #decideEdgeAction}: a held edge's stale registry wrapper can
+     * still report a non-zero AABB, so {@code held} is checked BEFORE
+     * {@code residentAabb}. A held-but-not-reloadable anchor (null-pointer ghost)
+     * therefore classifies STUCK even when its wrapper still answers a stale pose —
+     * the property that makes the dead-end cause detectable.
+     *
+     * @param visible      sub-level id is in the visible train
+     * @param reloadable   {@link Shipyard#isReloadable} — held with a pointer
+     * @param held         {@link Shipyard#isHeld} — culled to holding (any pointer)
+     * @param residentAabb the registry wrapper is non-removed and reports a
+     *                     non-zero AABB (only meaningful when {@code !held})
+     */
+    static AnchorClass classifyAnchor(boolean visible, boolean reloadable, boolean held, boolean residentAabb) {
+        if (visible) return AnchorClass.VISIBLE;
+        if (reloadable) return AnchorClass.RELOADABLE;
+        if (held) return AnchorClass.STUCK;          // held-but-not-reloadable = null-pointer ghost
+        if (residentAabb) return AnchorClass.RESIDENT_LIVE; // transient findAll dropout — self-heals
+        return AnchorClass.STUCK;                    // genuinely gone
+    }
+
+    /** The train's spawnable anchor extent — min/max over VISIBLE ∪ RELOADABLE groups (approach 2). */
+    private record SpawnableExtent(int minAnchor, int maxAnchor) {}
+
+    /**
+     * Compute the train's SPAWNABLE extent: the min/max group anchor over only the
+     * registry groups currently classifying VISIBLE or RELOADABLE. STUCK ghosts
+     * and not-yet-resurfaced transient dropouts are excluded so they cannot
+     * inflate {@code trainMin/MaxAnchor} and suppress {@code needsBackward}/
+     * {@code needsForward}.
+     *
+     * <p>Falls back to the visible frontier ({@code visibleMin/MaxFallback}) only
+     * if the registry is empty or no anchor classifies recoverable — both
+     * defensive, since the visible train is non-empty here and every visible
+     * carriage's anchor is registered.</p>
+     */
+    private static SpawnableExtent computeSpawnableExtent(
+        ServerLevel level, UUID trainId, List<Trains.Carriage> train,
+        int visibleMaxFallback, int visibleMinFallback
+    ) {
+        Map<Integer, ManagedShip> groups = Trains.knownGroups(trainId);
+        if (groups.isEmpty()) return new SpawnableExtent(visibleMinFallback, visibleMaxFallback);
+        Set<UUID> visibleIds = new HashSet<>(train.size());
+        for (Trains.Carriage c : train) visibleIds.add(c.ship().subLevelId());
+        Shipyard shipyard = Shipyards.of(level);
+        int extMax = Integer.MIN_VALUE;
+        int extMin = Integer.MAX_VALUE;
+        for (Map.Entry<Integer, ManagedShip> e : groups.entrySet()) {
+            UUID id = e.getValue().subLevelId();
+            boolean visible = visibleIds.contains(id);
+            boolean reloadable = !visible && shipyard.isReloadable(id);
+            if (!(visible || reloadable)) continue;
+            int a = e.getKey();
+            if (a > extMax) extMax = a;
+            if (a < extMin) extMin = a;
+        }
+        if (extMin == Integer.MAX_VALUE) {
+            return new SpawnableExtent(visibleMinFallback, visibleMaxFallback);
+        }
+        return new SpawnableExtent(extMin, extMax);
+    }
+
+    /**
+     * Approach-2 per-tick stuck-ghost sweep. Classify every registry group; for
+     * each STUCK anchor PAST the visible frontier, track how long it has been
+     * stuck and DROP it once it exceeds {@link #STUCK_GHOST_GRACE_TICKS}.
+     *
+     * <p>Drop = release any force-load ticket (via the registry handle) →
+     * {@link Trains#unregisterGroup} → {@link Shipyard#delete} (Sable
+     * {@code markRemoved} → {@code REMOVED}, which evicts the sub-level from
+     * holding so {@code collectReadySubLevels} can't resurrect it into the anchor
+     * we're about to refill). The grace window is the duplicate guard: a cull that
+     * will resurrect on its own is given time to do so (it then reclassifies
+     * non-STUCK and its timer clears) before we forget it. Non-STUCK anchors clear
+     * their timer here.</p>
+     *
+     * <p>Iterates the {@link Trains#knownGroups} defensive copy while mutating the
+     * underlying registry via {@code unregisterGroup} — safe (separate map).
+     * Returns {@code true} iff at least one anchor was dropped, so the caller can
+     * recompute the spawnable extent.</p>
+     */
+    private static boolean dropMaturedStuckGhosts(
+        ServerLevel level, UUID trainId, List<Trains.Carriage> train, long now
+    ) {
+        Map<Integer, ManagedShip> groups = Trains.knownGroups(trainId);
+        if (groups.isEmpty()) return false;
+        Set<UUID> visibleIds = new HashSet<>(train.size());
+        int visibleMin = Integer.MAX_VALUE;
+        int visibleMax = Integer.MIN_VALUE;
+        for (Trains.Carriage c : train) {
+            visibleIds.add(c.ship().subLevelId());
+            int p = c.provider().getPIdx();
+            if (p < visibleMin) visibleMin = p;
+            if (p > visibleMax) visibleMax = p;
+        }
+        if (visibleMax == Integer.MIN_VALUE) return false; // no visible carriages (defensive)
+
+        Shipyard shipyard = Shipyards.of(level);
+        Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.get(trainId);
+        List<Integer> dropped = new ArrayList<>();
+
+        for (Map.Entry<Integer, ManagedShip> e : groups.entrySet()) {
+            int anchor = e.getKey();
+            ManagedShip ship = e.getValue();
+            UUID id = ship.subLevelId();
+            boolean visible = visibleIds.contains(id);
+            boolean reloadable = !visible && shipyard.isReloadable(id);
+            boolean held = !visible && !reloadable && shipyard.isHeld(id);
+            boolean residentAabb = !visible && !reloadable && !held
+                && ship.isResident() && !isZeroAabb(ship.worldAABB());
+            AnchorClass cls = classifyAnchor(visible, reloadable, held, residentAabb);
+
+            if (cls != AnchorClass.STUCK) {
+                STUCK_GHOST_SINCE.remove(id); // recoverable / present — reset timer
+                continue;
+            }
+            // STUCK. Only a drop candidate past the visible frontier — a stuck
+            // ghost between live carriages (shouldn't happen on a contiguous
+            // train) is left alone.
+            boolean past = (anchor < visibleMin) || (anchor > visibleMax);
+            if (!past) { STUCK_GHOST_SINCE.remove(id); continue; }
+            long since = STUCK_GHOST_SINCE.computeIfAbsent(id, k -> now);
+            long ticksStuck = now - since;
+            if (ticksStuck < STUCK_GHOST_GRACE_TICKS) continue; // still in grace
+
+            ManagedShip removed = Trains.unregisterGroup(trainId, anchor);
+            STUCK_GHOST_SINCE.remove(id);
+            if (removed != null) {
+                UUID removedId = removed.subLevelId();
+                // Tear down any force-load ticket (DT mirror + live Sable ticket)
+                // before deleting, so nothing leaks.
+                if (forceLoaded != null && forceLoaded.remove(removedId)) {
+                    shipyard.releaseForceLoad(removed);
+                }
+                shipyard.delete(removed); // markRemoved → REMOVED → evicted from holding
+                dropped.add(anchor);
+                if (SEAMGAP_TRACE_ENABLED) {
+                    LOGGER.info("[DungeonTrain][ghost-drop] gameTick={} trainId={} anchor={} subLevelId={} ticksStuck={} visibleMin={} visibleMax={} — stuck null-pointer ghost deleted (frontier honest, anchor free to refill)",
+                        now, trainId, anchor, removedId, ticksStuck, visibleMin, visibleMax);
+                }
+            }
+        }
+        if (forceLoaded != null && forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
+        if (!dropped.isEmpty()) {
+            LOGGER.info("[DungeonTrain] approach-2: dropped {} stuck ghost anchor(s) past visible frontier for trainId={} — anchors={}",
+                dropped.size(), trainId, dropped);
+        }
+        return !dropped.isEmpty();
+    }
+
     /**
      * Resolve the placement reference for one extension edge to the
      * registry-edge carriage's live pose. Returns a spawnable
@@ -2280,13 +2500,18 @@ public final class TrainCarriageAppender {
      * caller can recompute {@code trainMin/MaxAnchor} from the updated
      * registry before proceeding with the spawn decision.</p>
      *
-     * <p>Option 2: a culled-but-HELD (recoverable) anchor is NEVER deleted —
-     * deleting it then respawning at the same anchor is the historic
-     * delete-then-respawn DUPLICATE race, and option-2 resolution would just
-     * reload it from holding anyway. Only truly-gone anchors (not held, not
-     * visible) are dropped. Any force-load ticket on a dropped anchor is
-     * released through the registry handle BEFORE delete so the DT mirror and
-     * the live Sable ticket tear down together (no leak).</p>
+     * <p>Approach 2: a RELOADABLE held anchor (held with a serialization pointer,
+     * {@link Shipyard#isReloadable}) is NEVER deleted — deleting then respawning a
+     * recoverable edge is the historic delete-then-respawn DUPLICATE race, and
+     * option-2 resolution would just reload it from holding anyway. A STUCK held
+     * anchor (held with a NULL pointer — unrecoverable, since
+     * {@link Shipyard#reloadFromHolding} can never revive it) IS dropped here,
+     * along with truly-gone anchors: leaving it registered is exactly what
+     * dead-ends the frontier. Any force-load ticket on a dropped anchor is
+     * released through the registry handle BEFORE delete so the DT mirror and the
+     * live Sable ticket tear down together (no leak), and {@code delete}
+     * ({@code markRemoved} → {@code REMOVED}) evicts it from holding so it can't
+     * resurrect into the freed anchor.</p>
      */
     private static boolean cleanupGhostAnchors(
         ServerLevel level,
@@ -2316,20 +2541,24 @@ public final class TrainCarriageAppender {
         Set<UUID> forceLoaded = FORCELOADED_BY_TRAIN.get(trainId);
         java.util.List<Integer> removedAnchors = new java.util.ArrayList<>();
         int deletedSableShips = 0;
-        int skippedHeld = 0;
+        int skippedReloadable = 0;
         for (int a : toRemove) {
             ManagedShip registryShip = Trains.knownGroups(trainId).get(a);
             UUID subId = (registryShip != null) ? registryShip.subLevelId() : null;
-            // Recoverable (held / mid-reload) — keep it registered; option-2
-            // resolution reloads it on demand. Deleting + respawning here is the
-            // duplicate-on-top race.
-            if (subId != null && shipyard.isHeld(subId)) {
-                skippedHeld++;
+            // RELOADABLE (held WITH a serialization pointer) — keep it registered;
+            // option-2 resolution reloads it on demand. Deleting + respawning a
+            // reloadable edge is the duplicate-on-top race. Approach 2: a STUCK
+            // held anchor (null pointer, unrecoverable) is NOT skipped — it falls
+            // through and is dropped below, since reloadFromHolding can never
+            // revive it and leaving it registered dead-ends the frontier.
+            if (subId != null && shipyard.isReloadable(subId)) {
+                skippedReloadable++;
                 continue;
             }
             ManagedShip ship = Trains.unregisterGroup(trainId, a);
             if (ship != null) {
                 UUID shipId = ship.subLevelId();
+                STUCK_GHOST_SINCE.remove(shipId);
                 // Tear down any force-load ticket on this anchor (mirror + Sable
                 // ticket together) before deleting it.
                 if (forceLoaded != null && forceLoaded.remove(shipId)) {
@@ -2342,21 +2571,21 @@ public final class TrainCarriageAppender {
         }
         if (forceLoaded != null && forceLoaded.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
         if (removedAnchors.isEmpty()) {
-            if (skippedHeld > 0) {
-                LOGGER.debug("[DungeonTrain] cleanupGhostAnchors: {} candidate anchor(s) past visible {}={} all held/recoverable — none deleted (trainId={})",
-                    skippedHeld, forward ? "max" : "min", forward ? visibleMax : visibleMin, trainId);
+            if (skippedReloadable > 0) {
+                LOGGER.debug("[DungeonTrain] cleanupGhostAnchors: {} candidate anchor(s) past visible {}={} all reloadable/recoverable — none deleted (trainId={})",
+                    skippedReloadable, forward ? "max" : "min", forward ? visibleMax : visibleMin, trainId);
             }
             return false;
         }
         LOGGER.info(
-            "[DungeonTrain] Cleaned up {} ghost anchor(s) past visible {}={} for trainId={} — anchors={}, sableShipsDeleted={}, heldSkipped={}",
+            "[DungeonTrain] Cleaned up {} ghost anchor(s) past visible {}={} for trainId={} — anchors={}, sableShipsDeleted={}, reloadableSkipped={}",
             removedAnchors.size(),
             forward ? "max" : "min",
             forward ? visibleMax : visibleMin,
             trainId,
             removedAnchors,
             deletedSableShips,
-            skippedHeld);
+            skippedReloadable);
         return true;
     }
 

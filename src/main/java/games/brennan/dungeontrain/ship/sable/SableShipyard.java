@@ -193,6 +193,22 @@ public final class SableShipyard implements Shipyard {
     }
 
     @Override
+    public boolean isReloadable(java.util.UUID subLevelId) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        if (holding == null) return false;
+        // Recoverable iff held AND it carries a serialization pointer — exactly
+        // the precondition reloadFromHolding's snatchAndLoad path needs (a held
+        // sub-level culled before it was ever serialized has a null pointer and
+        // cannot be revived). Mirrors the null-pointer guard in reloadFromHolding.
+        dev.ryanhcode.sable.sublevel.storage.HoldingSubLevel held =
+            holding.getHoldingSubLevel(subLevelId);
+        return held != null && held.pointer() != null;
+    }
+
+    @Override
     public boolean reloadFromHolding(java.util.UUID subLevelId) {
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return false;
