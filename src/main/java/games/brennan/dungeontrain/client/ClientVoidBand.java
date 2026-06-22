@@ -47,8 +47,7 @@ public final class ClientVoidBand {
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
-        long startX = Disintegration.bandStartX(
-                DungeonTrainCommonConfig.getDisintegrationStartCarriages(), carriageLength);
+        long startX = DungeonTrainCommonConfig.getDisintegrationStartBlocks();
         int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
         int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
         int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();

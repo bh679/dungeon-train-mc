@@ -57,10 +57,12 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
     /** End-space Y that maps onto the track's bed Y (the End's islands cluster around here). */
     private static final int END_ISLAND_CENTER_Y = 56;
     /**
-     * Vertical reach (blocks) around the bed within which islands may form. Wide enough to contain
-     * a whole island's natural taper so its top/bottom aren't sliced flat (which read as sharp edges).
+     * End-space Y range to sample — the whole slid End island band. We translate the entire band
+     * onto track level rather than clipping it to a fixed window, so islands keep their full natural
+     * taper (a fixed window sliced taller islands flat, reading as "huge chunks missing").
      */
-    private static final int ISLAND_Y_RADIUS = 28;
+    private static final int END_Y_SAMPLE_MIN = 8;
+    private static final int END_Y_SAMPLE_MAX = 120;
     /**
      * Skip columns whose 2D island value is below this before the costly 3D sampling. Kept very low
      * (near the function's −0.84 minimum) so it only rejects deep void, never clips an island fringe
@@ -144,8 +146,8 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // Stamp real-End-shaped islands. For each column we sample the End density at the
             // noise-cell corners (cellW × cellH grid, world-anchored — same as the End's NoiseChunk)
             // and trilinearly interpolate per block, so island edges taper exactly like the real End.
-            int yLo = Math.max(minY, bedY - ISLAND_Y_RADIUS);
-            int yHi = Math.min(maxY, bedY + ISLAND_Y_RADIUS);
+            int yLo = Math.max(minY, bedY + (END_Y_SAMPLE_MIN - END_ISLAND_CENTER_Y));
+            int yHi = Math.min(maxY, bedY + (END_Y_SAMPLE_MAX - END_ISLAND_CENTER_Y));
             int endYLo = END_ISLAND_CENTER_Y + (yLo - bedY);
             int cellRowBase = Math.floorDiv(endYLo, cellH);
             int rows = Math.floorDiv(END_ISLAND_CENTER_Y + (yHi - bedY), cellH) - cellRowBase + 2;
@@ -255,6 +257,11 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
         if (sIdx < 0 || sIdx >= chunk.getSectionsCount()) return;
         LevelChunkSection section = chunk.getSection(sIdx);
         int ly = y - SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+        // Drop any orphaned block entity (e.g. a structure chest) before overwriting the block,
+        // otherwise the chunk logs "Invalid block entity ... got air/end_stone" on load.
+        if (section.getBlockState(dx, ly, dz).hasBlockEntity()) {
+            chunk.removeBlockEntity(new BlockPos(chunk.getPos().getMinBlockX() + dx, y, chunk.getPos().getMinBlockZ() + dz));
+        }
         section.setBlockState(dx, ly, dz, state, false);
     }
 }

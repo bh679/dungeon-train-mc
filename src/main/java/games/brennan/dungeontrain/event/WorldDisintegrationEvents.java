@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -101,6 +102,9 @@ public final class WorldDisintegrationEvents {
                         if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) continue;
                         BlockState cur = section.getBlockState(dx, ly, dz);
                         if (cur.isAir() || isPreservedEndBlock(cur)) continue;
+                        if (cur.hasBlockEntity()) {
+                            chunk.removeBlockEntity(new BlockPos(worldX, y, worldZ));
+                        }
                         section.setBlockState(dx, ly, dz, AIR, false);
                         changed = true;
                     }

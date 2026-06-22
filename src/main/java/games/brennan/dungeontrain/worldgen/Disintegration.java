@@ -55,11 +55,6 @@ public final class Disintegration {
 
     private Disintegration() {}
 
-    /** World-X line where the band begins: {@code startCarriages × carriageLength}. */
-    public static long bandStartX(int startCarriages, int carriageLength) {
-        return (long) startCarriages * (long) carriageLength;
-    }
-
     /** Width of one active band (the void+End+void with its fades): {@code 4·fade + 2·voidHold + endHold}. */
     public static long bandLength(int fade, int voidHold, int endHold) {
         return 4L * Math.max(0, fade) + 2L * Math.max(0, voidHold) + Math.max(0, endHold);
@@ -75,10 +70,12 @@ public final class Disintegration {
     }
 
     /**
-     * Offset into the current cycle for a world-X: {@code (worldX − startX) mod period},
-     * or {@code -1} before {@code startX} (the initial overworld). Each cycle is
-     * {@code [0, bandLength)} = the active band (void/End), then
-     * {@code [bandLength, period)} = the overworld stretch.
+     * Offset into the current cycle for a world-X (measured in blocks from {@code startX},
+     * which is a fixed block distance from spawn — not a train metric): {@code (worldX −
+     * startX) mod period}, or {@code -1} before {@code startX}. Each cycle is
+     * {@code [0, owHold)} = the overworld phase, then {@code [owHold, period)} = the
+     * active band (void → End → void). The pattern therefore starts every cycle in the
+     * overworld, so the player spawns in normal terrain.
      */
     private static long cycleOffset(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
         if (worldX < startX) return -1L;
@@ -88,21 +85,23 @@ public final class Disintegration {
     }
 
     /**
-     * Middle ramp {@code M ∈ [0,1]}, evaluated on the repeating cycle: 0 in the
-     * overworld stretch, linear 0→1 across the first fade, flat 1 across the whole
-     * void+End+void middle, linear 1→0 across the last fade. Drives erosion intensity
-     * and the End sky/fog blend. Repeats every cycle forever from {@code startX}.
+     * Middle ramp {@code M ∈ [0,1]}, evaluated on the repeating cycle: 0 across the
+     * overworld phase, linear 0→1 as the overworld fades into void, flat 1 across the
+     * whole void+End+void middle, linear 1→0 as void fades back to overworld. Drives
+     * erosion intensity and the End sky/fog blend. Repeats forever from {@code startX}.
      */
     public static double middleRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
         long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
         if (d < 0L) return 0.0;
+        int oh = Math.max(0, owHold);
+        if (d < oh) return 0.0;                            // overworld phase (start of each cycle)
+        long dd = d - oh;                                  // offset within the active band
         long band = bandLength(fade, voidHold, endHold);
-        if (d >= band) return 0.0;                         // overworld stretch of the cycle
         int f = Math.max(0, fade);
-        if (d < f) return (double) d / f;                  // fade-in (f>0 here)
-        long holdEnd = band - f;                           // start of the fade-out
-        if (d < holdEnd) return 1.0;                        // void+End+void plateau
-        return 1.0 - (double) (d - holdEnd) / f;           // fade-out (f>0 here)
+        if (dd < f) return (double) dd / f;                // overworld → void
+        long holdEnd = band - f;
+        if (dd < holdEnd) return 1.0;                       // void + End + void
+        return 1.0 - (double) (dd - holdEnd) / f;          // void → overworld
     }
 
     /**
@@ -113,6 +112,9 @@ public final class Disintegration {
     public static double endRamp(int worldX, long startX, int fade, int voidHold, int endHold, int owHold) {
         long d = cycleOffset(worldX, startX, fade, voidHold, endHold, owHold);
         if (d < 0L) return 0.0;
+        int oh = Math.max(0, owHold);
+        if (d < oh) return 0.0;                            // overworld phase
+        long dd = d - oh;                                  // offset within the active band
         int f = Math.max(0, fade);
         int vh = Math.max(0, voidHold);
         int eh = Math.max(0, endHold);
@@ -120,10 +122,10 @@ public final class Disintegration {
         long a3 = 2L * f + vh;            // End core begins
         long a4 = 2L * f + vh + eh;       // End core ends
         long a5 = 3L * f + vh + eh;       // End→void ends
-        if (d < a2 || d >= a5) return 0.0;
-        if (d < a3) return (double) (d - a2) / f;         // ramp up (f>0 here)
-        if (d < a4) return 1.0;                            // End core
-        return 1.0 - (double) (d - a4) / f;               // ramp down (f>0 here)
+        if (dd < a2 || dd >= a5) return 0.0;
+        if (dd < a3) return (double) (dd - a2) / f;       // ramp up (f>0 here)
+        if (dd < a4) return 1.0;                           // End core
+        return 1.0 - (double) (dd - a4) / f;              // ramp down (f>0 here)
     }
 
     /** Removal probability at {@code (worldX, y)}; derives the column middle-ramp internally (test convenience). */

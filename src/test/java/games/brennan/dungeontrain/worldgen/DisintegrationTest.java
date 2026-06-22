@@ -8,13 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Pure-math unit tests for the disintegration band ({@link Disintegration}) — the
- * Overworld → Void → End → Void → Overworld cycle that <b>repeats forever</b>. No
- * NeoForge bootstrap.
+ * Overworld → Void → End → Void cycle that <b>repeats forever</b>, anchored to a block
+ * distance from spawn. No NeoForge bootstrap.
  *
- * <p>Test geometry: {@code startX=1000}, fade {@code F=100}, voidHold {@code VH=40},
- * endHold {@code EH=200}, overworldHold {@code OW=80}. Active band {@code 4F+2VH+EH=680};
- * full cycle period {@code 680+80=760}. Within a cycle: void holds at offset [100,140)
- * and [540,580); End core at [240,440); overworld stretch at [680,760).</p>
+ * <p>Test geometry: {@code startX=1000} (blocks from spawn), fade {@code F=100},
+ * voidHold {@code VH=40}, endHold {@code EH=200}, overworldHold {@code OW=80}. Each
+ * cycle starts with the overworld phase {@code [0,80)}, then the active band
+ * {@code 4F+2VH+EH=680}; full period {@code 80+680=760}.</p>
  */
 final class DisintegrationTest {
 
@@ -29,74 +29,68 @@ final class DisintegrationTest {
     // ---- middleRamp (erosion + End sky/fog) ---------------------------------
 
     @Test
-    @DisplayName("middleRamp is 0 before the band and for backward (negative) X")
-    void middle_zeroBeforeBand() {
-        assertEquals(0.0, Disintegration.middleRamp(999, START_X, F, VH, EH, OW), EPS);
-        assertEquals(0.0, Disintegration.middleRamp(0, START_X, F, VH, EH, OW), EPS);
+    @DisplayName("middleRamp is 0 before the anchor and across the overworld phase that starts each cycle")
+    void middle_overworldPhase() {
+        assertEquals(0.0, Disintegration.middleRamp(999, START_X, F, VH, EH, OW), EPS);  // before anchor
         assertEquals(0.0, Disintegration.middleRamp(-5000, START_X, F, VH, EH, OW), EPS);
+        assertEquals(0.0, Disintegration.middleRamp(1000, START_X, F, VH, EH, OW), EPS); // d=0 overworld
+        assertEquals(0.0, Disintegration.middleRamp(1079, START_X, F, VH, EH, OW), EPS); // d=79 overworld
     }
 
     @Test
-    @DisplayName("middleRamp ramps 0→1, holds 1 across the void+End+void middle, 1→0, then 0 in the overworld stretch")
-    void middle_trapezoidAndOverworld() {
-        assertEquals(0.0, Disintegration.middleRamp(1000, START_X, F, VH, EH, OW), EPS); // d=0
-        assertEquals(0.5, Disintegration.middleRamp(1050, START_X, F, VH, EH, OW), EPS); // d=50
-        assertEquals(1.0, Disintegration.middleRamp(1100, START_X, F, VH, EH, OW), EPS); // d=100 hold start
-        assertEquals(1.0, Disintegration.middleRamp(1300, START_X, F, VH, EH, OW), EPS); // mid (End core)
-        assertEquals(1.0, Disintegration.middleRamp(1580, START_X, F, VH, EH, OW), EPS); // d=580 fade-out start
-        assertEquals(0.5, Disintegration.middleRamp(1630, START_X, F, VH, EH, OW), EPS); // d=630
-        assertEquals(0.0, Disintegration.middleRamp(1680, START_X, F, VH, EH, OW), EPS); // d=680 overworld stretch
-        assertEquals(0.0, Disintegration.middleRamp(1730, START_X, F, VH, EH, OW), EPS); // d=730 overworld
+    @DisplayName("after the overworld phase: 0→1 fade, flat 1 across void+End+void, 1→0 fade")
+    void middle_band() {
+        assertEquals(0.0, Disintegration.middleRamp(1080, START_X, F, VH, EH, OW), EPS); // dd=0
+        assertEquals(0.5, Disintegration.middleRamp(1130, START_X, F, VH, EH, OW), EPS); // dd=50
+        assertEquals(1.0, Disintegration.middleRamp(1180, START_X, F, VH, EH, OW), EPS); // dd=100 hold start
+        assertEquals(1.0, Disintegration.middleRamp(1400, START_X, F, VH, EH, OW), EPS); // End core
+        assertEquals(1.0, Disintegration.middleRamp(1660, START_X, F, VH, EH, OW), EPS); // dd=580 fade-out start
+        assertEquals(0.5, Disintegration.middleRamp(1710, START_X, F, VH, EH, OW), EPS); // dd=630
     }
 
     @Test
-    @DisplayName("the cycle repeats forever: ramps are periodic with period 4F+2VH+EH+OW")
+    @DisplayName("the cycle repeats forever: ramps are periodic with period OW + 4F + 2VH + EH")
     void cycle_repeatsForever() {
         assertEquals(PERIOD, Disintegration.cyclePeriod(F, VH, EH, OW));
-        // middleRamp repeats every period.
-        for (int d : new int[] {0, 50, 100, 300, 630, 700}) {
+        for (int d : new int[] {0, 50, 90, 130, 400, 710}) {
             assertEquals(Disintegration.middleRamp((int) START_X + d, START_X, F, VH, EH, OW),
                     Disintegration.middleRamp((int) START_X + d + PERIOD, START_X, F, VH, EH, OW), EPS,
                     "middleRamp not periodic at offset " + d);
         }
-        // endRamp repeats every period.
-        assertEquals(Disintegration.endRamp(1240, START_X, F, VH, EH, OW),
-                Disintegration.endRamp(1240 + PERIOD, START_X, F, VH, EH, OW), EPS);
-        // Second cycle's End core is solid again.
-        assertEquals(1.0, Disintegration.endRamp(1240 + PERIOD, START_X, F, VH, EH, OW), EPS);
-        assertEquals(1.0, Disintegration.middleRamp(1300 + PERIOD, START_X, F, VH, EH, OW), EPS);
+        assertEquals(Disintegration.endRamp(1400, START_X, F, VH, EH, OW),
+                Disintegration.endRamp(1400 + PERIOD, START_X, F, VH, EH, OW), EPS);
+        assertEquals(1.0, Disintegration.endRamp(1400 + PERIOD, START_X, F, VH, EH, OW), EPS); // End core again
+        assertEquals(0.0, Disintegration.middleRamp(1000 + PERIOD, START_X, F, VH, EH, OW), EPS); // overworld again
     }
 
     // ---- endRamp (End-island fill) ------------------------------------------
 
     @Test
-    @DisplayName("endRamp is 0 through void/overworld, 0→1 into the End, holds 1, 1→0 back to void")
+    @DisplayName("endRamp is 0 through overworld/void, 0→1 into the End, holds 1, 1→0 back to void")
     void end_trapezoid() {
-        assertEquals(0.0, Disintegration.endRamp(1100, START_X, F, VH, EH, OW), EPS); // d=100 (void hold V1)
-        assertEquals(0.0, Disintegration.endRamp(1140, START_X, F, VH, EH, OW), EPS); // d=140 void→End start
-        assertEquals(0.5, Disintegration.endRamp(1190, START_X, F, VH, EH, OW), EPS); // d=190
-        assertEquals(1.0, Disintegration.endRamp(1240, START_X, F, VH, EH, OW), EPS); // d=240 End core
-        assertEquals(1.0, Disintegration.endRamp(1440, START_X, F, VH, EH, OW), EPS); // d=440 End→void start
-        assertEquals(0.5, Disintegration.endRamp(1490, START_X, F, VH, EH, OW), EPS); // d=490
-        assertEquals(0.0, Disintegration.endRamp(1540, START_X, F, VH, EH, OW), EPS); // d=540 (void hold V2)
-        assertEquals(0.0, Disintegration.endRamp(1700, START_X, F, VH, EH, OW), EPS); // d=700 overworld stretch
+        assertEquals(0.0, Disintegration.endRamp(1050, START_X, F, VH, EH, OW), EPS); // overworld phase
+        assertEquals(0.0, Disintegration.endRamp(1200, START_X, F, VH, EH, OW), EPS); // dd=120 void hold V1
+        assertEquals(0.5, Disintegration.endRamp(1270, START_X, F, VH, EH, OW), EPS); // dd=190 void→End
+        assertEquals(1.0, Disintegration.endRamp(1320, START_X, F, VH, EH, OW), EPS); // dd=240 End core
+        assertEquals(1.0, Disintegration.endRamp(1520, START_X, F, VH, EH, OW), EPS); // dd=440 End→void
+        assertEquals(0.5, Disintegration.endRamp(1570, START_X, F, VH, EH, OW), EPS); // dd=490
+        assertEquals(0.0, Disintegration.endRamp(1640, START_X, F, VH, EH, OW), EPS); // dd=560 void hold V2
     }
 
     @Test
     @DisplayName("void holds: middleRamp = 1 (full erosion) while endRamp = 0 (no End terrain)")
     void void_holds_are_pure_void() {
-        assertEquals(1.0, Disintegration.middleRamp(1120, START_X, F, VH, EH, OW), EPS);
-        assertEquals(0.0, Disintegration.endRamp(1120, START_X, F, VH, EH, OW), EPS);
+        assertEquals(1.0, Disintegration.middleRamp(1200, START_X, F, VH, EH, OW), EPS); // dd=120
+        assertEquals(0.0, Disintegration.endRamp(1200, START_X, F, VH, EH, OW), EPS);
     }
 
     @Test
     @DisplayName("ramps survive fade=0 (hard edges) without dividing by zero")
     void degenerate_fade() {
-        assertEquals(0.0, Disintegration.middleRamp(999, START_X, 0, VH, EH, OW), EPS);
-        assertEquals(1.0, Disintegration.middleRamp(1000, START_X, 0, VH, EH, OW), EPS);
-        long band = Disintegration.bandLength(0, VH, EH); // 280
-        assertEquals(0.0, Disintegration.middleRamp((int) (START_X + band), START_X, 0, VH, EH, OW), EPS); // overworld
-        assertEquals(1.0, Disintegration.endRamp((int) (START_X + VH), START_X, 0, VH, EH, OW), EPS); // End core
+        assertEquals(0.0, Disintegration.middleRamp(999, START_X, 0, VH, EH, OW), EPS);          // before anchor
+        assertEquals(0.0, Disintegration.middleRamp(1000, START_X, 0, VH, EH, OW), EPS);         // overworld phase
+        assertEquals(1.0, Disintegration.middleRamp(1000 + OW, START_X, 0, VH, EH, OW), EPS);    // band start, M=1
+        assertEquals(1.0, Disintegration.endRamp(1000 + OW + VH, START_X, 0, VH, EH, OW), EPS);  // End core
     }
 
     // ---- removal probability (depth bias) -----------------------------------
@@ -114,10 +108,10 @@ final class DisintegrationTest {
     }
 
     @Test
-    @DisplayName("removalProbability via worldX: 0 before the band, full erosion in the void/End middle")
+    @DisplayName("removalProbability via worldX: 0 in the overworld phase, full erosion in the void/End middle")
     void removal_byWorldX() {
-        assertEquals(0.0, Disintegration.removalProbability(500, 64, 64, START_X, F, VH, EH, OW), EPS);
-        assertEquals(1.0, Disintegration.removalProbability(1300, 64, 64, START_X, F, VH, EH, OW), EPS); // M=1 at bed
+        assertEquals(0.0, Disintegration.removalProbability(1050, 64, 64, START_X, F, VH, EH, OW), EPS); // overworld
+        assertEquals(1.0, Disintegration.removalProbability(1400, 64, 64, START_X, F, VH, EH, OW), EPS); // M=1 at bed
     }
 
     // ---- End-island density threshold (band fade for real End terrain) ------
@@ -135,10 +129,8 @@ final class DisintegrationTest {
     // ---- band geometry helpers ----------------------------------------------
 
     @Test
-    @DisplayName("bandStartX = startCarriages × carriageLength; bandLength = 4·fade + 2·voidHold + endHold")
+    @DisplayName("bandLength = 4·fade + 2·voidHold + endHold; cyclePeriod adds the overworld hold")
     void bandGeometry() {
-        assertEquals(2250L, Disintegration.bandStartX(250, 9));
-        assertEquals(90L, Disintegration.bandStartX(10, 9));
         assertEquals(680L, Disintegration.bandLength(F, VH, EH));
         assertEquals(760L, Disintegration.cyclePeriod(F, VH, EH, OW));
     }

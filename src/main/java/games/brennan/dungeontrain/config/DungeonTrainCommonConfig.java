@@ -44,33 +44,33 @@ public final class DungeonTrainCommonConfig {
      * count, then reassembles. Always-on core mechanic with a kill switch.
      */
     public static final boolean DEFAULT_DISINTEGRATION_ENABLED = true;
-    /** Carriages of forward travel before the world starts breaking apart. */
-    public static final int MIN_DISINTEGRATION_START_CARRIAGES = 0;
-    public static final int MAX_DISINTEGRATION_START_CARRIAGES = 1_000_000;
-    public static final int DEFAULT_DISINTEGRATION_START_CARRIAGES = 250;
+    /** Blocks from spawn (world X=0) before the first band begins — the pattern is anchored here. */
+    public static final int MIN_DISINTEGRATION_START_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_START_BLOCKS = 100_000_000;
+    public static final int DEFAULT_DISINTEGRATION_START_BLOCKS = 0;
     /** Blocks over which terrain fades in/out of void at each band edge. */
     public static final int MIN_DISINTEGRATION_FADE_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_FADE_BLOCKS = 10_000;
     public static final int DEFAULT_DISINTEGRATION_FADE_BLOCKS = 120;
     /** Blocks of pure-void buffer between the overworld fade and the End on each side. */
     public static final int MIN_DISINTEGRATION_VOID_HOLD_BLOCKS = 0;
-    public static final int MAX_DISINTEGRATION_VOID_HOLD_BLOCKS = 100_000;
-    public static final int DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS = 256;
+    public static final int MAX_DISINTEGRATION_VOID_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS = 500;
     /** Blocks of End world-gen (floating End-stone islands) at the centre of the band. */
     public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
-    public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000;
-    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 240;
+    public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 500;
     /** Blocks of normal overworld between repeats of the band (the cycle repeats forever). */
     public static final int MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 0;
-    public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 10_000_000;
-    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 256;
+    public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_BEHIND_SPAWN;
     public static final ModConfigSpec.BooleanValue COMPATIBLE_TERRAIN;
     public static final ModConfigSpec.BooleanValue DISINTEGRATION_ENABLED;
-    public static final ModConfigSpec.IntValue DISINTEGRATION_START_CARRIAGES;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_START_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_VOID_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
@@ -84,7 +84,7 @@ public final class DungeonTrainCommonConfig {
         DEFAULT_PLAYER_MOB_BEHIND_SPAWN = pair.getLeft().defaultPlayerMobBehindSpawnPercent;
         COMPATIBLE_TERRAIN = pair.getLeft().compatibleTerrain;
         DISINTEGRATION_ENABLED = pair.getLeft().disintegrationEnabled;
-        DISINTEGRATION_START_CARRIAGES = pair.getLeft().disintegrationStartCarriages;
+        DISINTEGRATION_START_BLOCKS = pair.getLeft().disintegrationStartBlocks;
         DISINTEGRATION_FADE_BLOCKS = pair.getLeft().disintegrationFadeBlocks;
         DISINTEGRATION_VOID_HOLD_BLOCKS = pair.getLeft().disintegrationVoidHoldBlocks;
         DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
@@ -125,12 +125,13 @@ public final class DungeonTrainCommonConfig {
                         "rails are preserved); the surrounding world and the track's support pillars erode away. Set",
                         "false to disable entirely.")
                 .define("disintegrationEnabled", DEFAULT_DISINTEGRATION_ENABLED);
-        ModConfigSpec.IntValue disintegrationStartCarriages = b
-                .comment("Carriages of forward travel (from the X=0 spawn line) before the world begins breaking apart.",
-                        "Maps to a world-X line at startCarriages × carriageLength. Lower this (e.g. 10) for testing.",
-                        "Changing it only affects chunks generated afterwards — already-generated terrain keeps its state.")
-                .defineInRange("disintegrationStartCarriages", DEFAULT_DISINTEGRATION_START_CARRIAGES,
-                        MIN_DISINTEGRATION_START_CARRIAGES, MAX_DISINTEGRATION_START_CARRIAGES);
+        ModConfigSpec.IntValue disintegrationStartBlocks = b
+                .comment("Blocks from spawn (world X=0) where the repeating band pattern is anchored. The cycle",
+                        "starts in the overworld, so the first overworldHold blocks past this point are normal terrain.",
+                        "Measured in blocks from spawn — independent of carriage size or train position.",
+                        "Changing it only affects chunks generated afterwards.")
+                .defineInRange("disintegrationStartBlocks", DEFAULT_DISINTEGRATION_START_BLOCKS,
+                        MIN_DISINTEGRATION_START_BLOCKS, MAX_DISINTEGRATION_START_BLOCKS);
         ModConfigSpec.IntValue disintegrationFadeBlocks = b
                 .comment("Blocks over which each transition fades (overworld↔void and void↔End). Larger = more gradual,",
                         "cinematic transitions. Default 120.")
@@ -138,23 +139,23 @@ public final class DungeonTrainCommonConfig {
                         MIN_DISINTEGRATION_FADE_BLOCKS, MAX_DISINTEGRATION_FADE_BLOCKS);
         ModConfigSpec.IntValue disintegrationVoidHoldBlocks = b
                 .comment("Blocks of pure, empty void on each side of the End — the clear 'Void' phase between the",
-                        "overworld and the End islands. Make this bigger for more void before the islands. Default 256.")
+                        "overworld and the End islands. Make this bigger for more void before the islands. Default 500.")
                 .defineInRange("disintegrationVoidHoldBlocks", DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_VOID_HOLD_BLOCKS, MAX_DISINTEGRATION_VOID_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationEndHoldBlocks = b
-                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 240.")
+                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 500.")
                 .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationOverworldHoldBlocks = b
-                .comment("Blocks of normal overworld between repeats of the band. The whole cycle —",
-                        "overworld → void → End islands → void → overworld → (repeat) — tiles forever along +X.",
-                        "One cycle = 4 × fade + 2 × voidHold + endHold + overworldHold. Default 256.")
+                .comment("Blocks of normal overworld at the start of each cycle. The whole cycle —",
+                        "overworld → void → End islands → void → (repeat) — tiles forever along +X from startBlocks.",
+                        "One cycle = overworldHold + 4 × fade + 2 × voidHold + endHold. Default 500.")
                 .defineInRange("disintegrationOverworldHoldBlocks", DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS, MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS);
         b.pop();
 
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
-                disintegrationEnabled, disintegrationStartCarriages, disintegrationFadeBlocks,
+                disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks);
     }
 
@@ -208,9 +209,9 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_ENABLED.get() : DEFAULT_DISINTEGRATION_ENABLED;
     }
 
-    /** Carriages of forward travel before the band begins; falls back to the hardcoded default pre-load. */
-    public static int getDisintegrationStartCarriages() {
-        return isLoaded() ? DISINTEGRATION_START_CARRIAGES.get() : DEFAULT_DISINTEGRATION_START_CARRIAGES;
+    /** Blocks from spawn where the band pattern is anchored; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationStartBlocks() {
+        return isLoaded() ? DISINTEGRATION_START_BLOCKS.get() : DEFAULT_DISINTEGRATION_START_BLOCKS;
     }
 
     /** Fade-in/out span (blocks) at each band edge; falls back to the hardcoded default pre-load. */
@@ -237,7 +238,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
                           ModConfigSpec.BooleanValue disintegrationEnabled,
-                          ModConfigSpec.IntValue disintegrationStartCarriages,
+                          ModConfigSpec.IntValue disintegrationStartBlocks,
                           ModConfigSpec.IntValue disintegrationFadeBlocks,
                           ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
                           ModConfigSpec.IntValue disintegrationEndHoldBlocks,

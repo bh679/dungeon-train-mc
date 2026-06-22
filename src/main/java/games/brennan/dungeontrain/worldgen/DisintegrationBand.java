@@ -27,7 +27,6 @@ public final class DisintegrationBand {
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return OFF;
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
         if (!data.startsWithTrain()) return OFF;
-        int length = data.dims().length();
         if (Disintegration.cyclePeriod(
                 DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
@@ -35,7 +34,7 @@ public final class DisintegrationBand {
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks()) <= 0L) {
             return OFF;
         }
-        return Disintegration.bandStartX(DungeonTrainCommonConfig.getDisintegrationStartCarriages(), length);
+        return DungeonTrainCommonConfig.getDisintegrationStartBlocks();
     }
 
     /**
