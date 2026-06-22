@@ -871,6 +871,9 @@ public final class TrainCarriageAppender {
         Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
         for (ManagedShip ship : registry.values()) {
             if (!seen.add(ship.id())) continue;
+            // Skip culled registry-only siblings — a stale cull-time AABB would
+            // give a bogus "too-far" gap and pull a settling carriage off true.
+            if (!ship.isResident()) continue;
             AABBdc o = ship.worldAABB();
             if (isZeroAabb(o)) continue;
             double g = facingGapBetween(
@@ -990,6 +993,14 @@ public final class TrainCarriageAppender {
             for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
                 ManagedShip ship = e.getValue();
                 if (!seen.add(ship.id())) continue;
+                // Registry-only (non-visible) sibling: its worldAABB is frozen
+                // at the stale cull-time position. With the option-2 registry-
+                // edge reference + the keep-frontier-resident hold, every real
+                // neighbour is VISIBLE (checked above), so a registry-only box
+                // here is a culled ghost. Letting the placement tracker shove a
+                // settling carriage off it grows a permanent void (the −63/−60
+                // 21-block seam). Skip it — visible siblings are authoritative.
+                if (!ship.isResident()) continue;
                 AABBdc aabb = ship.worldAABB();
                 if (isZeroAabb(aabb)) continue;
                 if (maxX > aabb.minX() && minX < aabb.maxX()
@@ -3136,6 +3147,11 @@ public final class TrainCarriageAppender {
             ManagedShip ship = e.getValue();
             long id = ship.id();
             if (!seen.add(id)) continue;
+            // Skip registry-only ships that have been culled (isRemoved): their
+            // worldAABB is frozen at the stale cull-time pose. Shoving a new
+            // spawn off such a box opens a permanent void. Resident in-flight
+            // siblings (not yet in the visible list) are still honoured.
+            if (!ship.isResident()) continue;
             AABBdc aabb = ship.worldAABB();
             if (isZeroAabb(aabb)) continue;
             siblings.add(aabb);
@@ -3327,6 +3343,7 @@ public final class TrainCarriageAppender {
             for (Map.Entry<Integer, ManagedShip> e : registry.entrySet()) {
                 ManagedShip ship = e.getValue();
                 if (!seen.add(ship.id())) continue;
+                if (!ship.isResident()) continue; // ignore stale culled-ghost AABBs
                 AABBdc aabb = ship.worldAABB();
                 if (isZeroAabb(aabb)) continue;
                 if (checkMaxX > aabb.minX() && checkMinX < aabb.maxX()
