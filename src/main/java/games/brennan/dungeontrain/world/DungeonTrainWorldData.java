@@ -44,6 +44,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_STARTING_DIMENSION = "startingDimension";
     private static final String TAG_PLAYER_MOB_SPAWN_OVERRIDE = "playerMobSpawnOneInOverride";
     private static final String TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE = "playerMobBehindSpawnPercentOverride";
+    private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -54,6 +55,8 @@ public final class DungeonTrainWorldData extends SavedData {
     private Integer playerMobSpawnOneInOverride;
     /** Per-world override of the behind-the-player PlayerMob spawn percent chance; null = global COMMON default. */
     private Integer playerMobBehindSpawnPercentOverride;
+    /** Per-world one-shot: true once the join-info report (DT version + train seed + mods) has been posted to Discord. */
+    private boolean joinReportPosted;
 
     private DungeonTrainWorldData(int trainY, boolean startsWithTrain, CarriageDims dims, long generationSeed, StartingDimension startingDimension) {
         this.trainY = trainY;
@@ -121,6 +124,10 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE)) {
             data.playerMobBehindSpawnPercentOverride = tag.getInt(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE);
         }
+        // Absent on legacy worlds → false → the join-info report fires once on the next join.
+        if (tag.contains(TAG_JOIN_REPORT_POSTED)) {
+            data.joinReportPosted = tag.getBoolean(TAG_JOIN_REPORT_POSTED);
+        }
         return data;
     }
 
@@ -140,6 +147,7 @@ public final class DungeonTrainWorldData extends SavedData {
         if (playerMobBehindSpawnPercentOverride != null) {
             tag.putInt(TAG_PLAYER_MOB_BEHIND_SPAWN_OVERRIDE, playerMobBehindSpawnPercentOverride);
         }
+        tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         return tag;
     }
 
@@ -255,6 +263,22 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     public void setGenerationSeed(long seed) {
         this.generationSeed = seed;
+        setDirty();
+    }
+
+    /**
+     * True once the per-world join-info report (Dungeon Train version + train regeneration data +
+     * installed-mods list) has been appended to a player-join Discord message for this world.
+     * One-shot per world so the data — which never changes for a world's lifetime — posts only once.
+     */
+    public boolean joinReportPosted() {
+        return joinReportPosted;
+    }
+
+    /** Mark the per-world join-info report as posted so it never fires again for this world. */
+    public void markJoinReportPosted() {
+        if (joinReportPosted) return;
+        joinReportPosted = true;
         setDirty();
     }
 

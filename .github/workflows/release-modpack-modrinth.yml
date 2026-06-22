@@ -32,6 +32,11 @@ on:
         required: false
         type: boolean
         default: false
+      changelog:
+        description: "Markdown changelog for the modpack version. Empty → templated boilerplate."
+        required: false
+        type: string
+        default: ""
 
 # Dedupe re-dispatches of the SAME tag (a re-run supersedes the in-flight one), but let
 # different releases publish independently — every release gets its own modpack version.
@@ -78,6 +83,9 @@ jobs:
           MODRINTH_MODPACK_PROJECT_ID: ${{ vars.MODRINTH_MODPACK_PROJECT_ID }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
           TAG: ${{ inputs.tag }}
+          # Pass via env (not raw ${{ }} in the script) so multi-line markdown can't break/inject
+          # the shell. Empty → publish-modrinth.sh falls back to its templated boilerplate.
+          CHANGELOG: ${{ inputs.changelog }}
         run: |
           if [ -z "${MODRINTH_MODPACK_PROJECT_ID:-}" ]; then
             echo "::error::MODRINTH_MODPACK_PROJECT_ID variable is not set — cannot publish the modpack."
@@ -87,4 +95,4 @@ jobs:
             echo "::error::MODRINTH_TOKEN secret is not set — cannot publish the modpack."
             exit 1
           fi
-          bash scripts/modpack/publish-modrinth.sh --index modrinth.index.json --tag "$TAG"
+          bash scripts/modpack/publish-modrinth.sh --index modrinth.index.json --tag "$TAG" --changelog "$CHANGELOG"

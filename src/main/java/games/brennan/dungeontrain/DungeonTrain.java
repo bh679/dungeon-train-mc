@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.WorldJoinReport;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -246,6 +247,13 @@ public class DungeonTrain {
             @Override public List<String> networkConsentNonFeatures() {
                 return List.of("Harvest your soul");
             }
+            // Append a one-time world-info block (DT version + train regeneration data + installed-mods
+            // list) under the first player-join message in each world, into the joining player's Discord
+            // thread. WorldJoinReport gates it to once per world and is no-throw, so a hiccup can't disrupt
+            // the join. Useful for reproducing/debugging a player's run (the train is seed-deterministic).
+            @Override public String joinMessageSuffix(UUID playerId, String playerName) {
+                return WorldJoinReport.suffixFor(playerId, playerName);
+            }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
             // outside the embed): the carriage # the player earned it in + their difficulty level — the
             // same values the in-game HUD shows. Computed on the server thread via the compat helper.
@@ -257,6 +265,13 @@ public class DungeonTrain {
             // question; SurveyAdvancement resolves the player and grants it directly (no-throw).
             @Override public void onSurveyCompleted(UUID playerId, String playerName) {
                 SurveyAdvancement.onSurveyCompleted(playerId);
+            }
+            // Ping Brennan in the community feed on EVERY submitted feedback-survey answer, so incoming
+            // feedback never goes unseen. DP adds the id to the survey post's content + trusted
+            // allowed_mentions.users (same notify path as the @dev chat triggers), so it actually
+            // notifies. Same BRENNAN_DISCORD_ID used by gameRelayMentions / presenceTrackUserIds.
+            @Override public List<String> surveyPingUserIds() {
+                return List.of(BRENNAN_DISCORD_ID);
             }
         });
 

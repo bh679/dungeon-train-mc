@@ -1777,6 +1777,47 @@
       "released": true,
       "released_in": "v0.345.0",
       "released_at": "2026-06-22T05:19:07Z"
+    },
+    {
+      "id": "survey-submission-dev-ping",
+      "version": "0.346.0",
+      "type": "feat",
+      "title": "Feedback reaches the developer instantly",
+      "summary": "Every feedback-survey answer you submit now pings the developer privately in Discord, so your suggestions are seen right away. The Free Play notice no longer pings.",
+      "highlights": [],
+      "pr": 529,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "curseforge-changelog-carry-forward",
+      "version": "0.346.0",
+      "type": "fix",
+      "title": "CurseForge changelogs now show real release notes",
+      "summary": "CurseForge pages for the mod and modpack now display each update's real release notes instead of a bare GitHub link or a generic placeholder. CurseForge only shows the newest file's changelog, and the steady stream of automated bundle updates kept pushing the real notes out of view \u2014 they're now carried forward so they stay visible.",
+      "highlights": [
+        "Curated release notes now appear on the CurseForge mod and modpack Changelog tab"
+      ],
+      "pr": 530,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "world-join-discord-info",
+      "version": "0.346.0",
+      "type": "feat",
+      "title": "Discord integration update",
+      "summary": "Behind-the-scenes update to the Discord join message.",
+      "highlights": [],
+      "pr": 531,
+      "date": "2026-06-22",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -16,6 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(HERE))
 APPEND = os.path.join(HERE, "append-entry.py")
 RENDER = os.path.join(HERE, "render-unreleased.py")
+RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
 SCHEMA_FILE = os.path.join(
     REPO_ROOT, ".github/release-notes/schema/changelog.schema.json"
@@ -213,6 +214,79 @@ def test_render_empty_when_nothing_unreleased() -> None:
 
 
 # ---------------------------------------------------------------------------
+# render-last-released.py
+# ---------------------------------------------------------------------------
+
+def test_render_last_picks_highest_released_in() -> None:
+    # Two real releases on the ledger; carry-forward must pick the newest tag's
+    # entries and ignore the older release's entries.
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        {"id": "old", "version": "0.289.0", "type": "feat", "title": "Old",
+         "summary": "Old release.", "highlights": [], "date": "2026-06-01",
+         "released": True, "released_in": "v0.289.0", "released_at": "2026-06-01T00:00:00Z"},
+        {"id": "new", "version": "0.291.0", "type": "feat", "title": "New",
+         "summary": "New release.", "highlights": ["shiny"], "date": "2026-06-10",
+         "released": True, "released_in": "v0.291.0", "released_at": "2026-06-10T00:00:00Z"},
+    ]})
+    r = run(RENDER_LAST, ws)
+    assert r.returncode == 0, r.stderr
+    assert "### 0.291.0" in r.stdout and "**New**" in r.stdout
+    assert "shiny" in r.stdout
+    assert "### 0.289.0" not in r.stdout and "Old" not in r.stdout
+
+
+def test_render_last_groups_multiple_versions_in_one_release() -> None:
+    # A single real release can ship entries tagged with different `version`
+    # values (back-to-back Gate-3 merges sharing an X.Y.0). All share the same
+    # released_in and must render together, newest version first.
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        {"id": "a", "version": "0.290.0", "type": "feat", "title": "Aaa",
+         "summary": "From the same release.", "highlights": [], "date": "2026-06-09",
+         "released": True, "released_in": "v0.291.0", "released_at": "2026-06-10T00:00:00Z"},
+        {"id": "b", "version": "0.291.0", "type": "feat", "title": "Bbb",
+         "summary": "Also same release.", "highlights": [], "date": "2026-06-10",
+         "released": True, "released_in": "v0.291.0", "released_at": "2026-06-10T00:00:00Z"},
+    ]})
+    r = run(RENDER_LAST, ws)
+    assert r.returncode == 0, r.stderr
+    assert "### 0.291.0" in r.stdout and "### 0.290.0" in r.stdout
+    assert r.stdout.index("### 0.291.0") < r.stdout.index("### 0.290.0")
+
+
+def test_render_last_ignores_unreleased() -> None:
+    # Unreleased entries (e.g. a freshly merged feature) must not leak into the
+    # carry-forward — only the last *real* release's notes.
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        {"id": "shipped", "version": "0.289.0", "type": "feat", "title": "Shipped",
+         "summary": "Out.", "highlights": [], "date": "2026-06-01",
+         "released": True, "released_in": "v0.289.0", "released_at": "2026-06-01T00:00:00Z"},
+        {"id": "pending", "version": "0.290.0", "type": "feat", "title": "Pending",
+         "summary": "Not yet.", "highlights": [], "date": "2026-06-10",
+         "released": False, "released_in": None, "released_at": None},
+    ]})
+    r = run(RENDER_LAST, ws)
+    assert r.returncode == 0, r.stderr
+    assert "Shipped" in r.stdout and "### 0.289.0" in r.stdout
+    assert "Pending" not in r.stdout
+
+
+def test_render_last_empty_when_nothing_released() -> None:
+    ws = make_workspace()
+    write_changelog(ws, {"entries": [
+        {"id": "pending", "version": "0.290.0", "type": "feat", "title": "Pending",
+         "summary": "Not yet.", "highlights": [], "date": "2026-06-10",
+         "released": False, "released_in": None, "released_at": None},
+    ]})
+    r = run(RENDER_LAST, ws)
+    assert r.returncode == 0, r.stderr
+    assert r.stdout == ""
+    assert "No released" in r.stderr
+
+
+# ---------------------------------------------------------------------------
 # mark-released.py
 # ---------------------------------------------------------------------------
 
@@ -321,6 +395,10 @@ def main() -> int:
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
         test_render_empty_when_nothing_unreleased,
+        test_render_last_picks_highest_released_in,
+        test_render_last_groups_multiple_versions_in_one_release,
+        test_render_last_ignores_unreleased,
+        test_render_last_empty_when_nothing_released,
         test_mark_flips_and_stamps,
         test_mark_noop_when_nothing_unreleased,
         test_mark_leaves_already_released_alone,
