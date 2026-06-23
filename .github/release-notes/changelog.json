@@ -2161,6 +2161,22 @@
       "released_at": null
     },
     {
+      "id": "nether-core-pillars-over-lava",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The Nether core bridges lava on pillars",
+      "summary": "Crossing the real-Nether core, the train no longer rides through a solid netherrack tunnel the whole way. It now tunnels through the netherrack masses and rides out on open pillars across the lava lakes and caverns between them, just as it tunnels and bridges across the End islands. The tunnels and the train deck are kept clear of stray netherrack and stone, so the way ahead is always open.",
+      "highlights": [
+        "The train bridges the Nether core's lava lakes on open pillars",
+        "Tunnels through netherrack masses, with the ride space kept clear of stray blocks"
+      ],
+      "pr": 557,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "nether-ghast-collision-check",
       "version": "0.354.0",
       "type": "fix",
