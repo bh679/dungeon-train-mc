@@ -87,10 +87,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final double CORE_THRESHOLD = 0.999;
 
     // --- Shore (ocean-entry beach): a gentle natural ramp from the ocean floor up to the mountains. ---
-    /** Low-amplitude jitter (± blocks) on the shore surface so the ramp isn't dead flat. */
-    private static final double SHORE_JITTER_BLOCKS = 1.5;
-    /** Salt mixed into the seed for the shore's gentle value noise (distinct from the mountain noise). */
-    private static final long SHORE_JITTER_SALT = 0x5EA5A11DBEA1L;
     /** Minimum solid-sand body depth below the shore surface (extends down to the natural seabed when deeper). */
     private static final int SHORE_BODY_DEPTH = 8;
     /** Blocks above sea level the beach sand climbs onto the feathered mountain over an ocean entrance. */
@@ -311,13 +307,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                     int minY, int worldTop, int seaLevel, long seed, double progress) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
         // Smooth ramp from the natural ocean floor here (progress 0 → submerged, shallows above) up to
-        // sea level at the inland edge (progress 1) — a natural beach to the waterline. The noise
-        // mountains now grow inland from sea level (feathered by WorldGenCycle#netherMountainFeather, 0
-        // at the gate), so handing off at sea level keeps the shore and the mountains continuous with no
-        // step/notch. Plus gentle jitter so the beach isn't dead flat.
-        int mountainTop = seaLevel;
-        double jitter = (MountainNoise.height01(seed ^ SHORE_JITTER_SALT, worldX, worldZ) - 0.5) * (2.0 * SHORE_JITTER_BLOCKS);
-        int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress + jitter);
+        // the inland edge (progress 1), where it hands off to the feathered mountains. The feather is 0 at
+        // the band gate, so the density mountain's first solid block there lands at seaLevel-1 (the raise
+        // crosses 0 at seaLevel); handing the beach off at exactly that height keeps the seam flush —
+        // beach seaLevel-1 → gate column seaLevel-1 → mountains rising — with no 1-block trench. A flat
+        // waterline beach (no jitter) so the seam can't develop ±1 holes either.
+        int mountainTop = seaLevel - 1;
+        int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress);
         columnTop = Math.max(minY + 1, Math.min(worldTop, columnTop));
         // A shore is low, so it never qualifies as a tunnel — its corridor lane stays open for the train.
         boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
