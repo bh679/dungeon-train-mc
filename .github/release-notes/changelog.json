@@ -2030,6 +2030,34 @@
       "released": true,
       "released_in": "v0.353.0",
       "released_at": "2026-06-23T01:59:36Z"
+    },
+    {
+      "id": "soren-letter-two-opener",
+      "version": "0.353.0",
+      "type": "content",
+      "title": "Soren: excited opener on Letter Two",
+      "summary": "Soren's second letter now opens with a burst of excitement as she realises the door is truly real.",
+      "highlights": [],
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "pause-resume-train-rider",
+      "version": "0.353.0",
+      "type": "fix",
+      "title": "Trains stay put when you pause and resume",
+      "summary": "Pausing mid-ride (the singleplayer Esc menu) no longer strands you far behind with the train gone when you unpause. On resume you're set back on the train deck and it keeps rolling on.",
+      "highlights": [
+        "Esc-pausing while riding \u2014 even for several minutes \u2014 keeps you aboard the train.",
+        "The train no longer drifts off and vanishes after a long pause."
+      ],
+      "pr": 548,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
