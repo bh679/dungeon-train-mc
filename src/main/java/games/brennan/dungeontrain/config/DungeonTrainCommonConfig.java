@@ -61,10 +61,30 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 5000;
-    /** Blocks of normal overworld between repeats of the band (the cycle repeats forever). */
+    /**
+     * Blocks of normal overworld BEFORE the Nether band (the Void→Nether gap — the longer of the
+     * two alternating overworld stretches). The before-End gap is {@code …BeforeEndBlocks}.
+     */
     public static final int MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 10000;
+    /**
+     * Blocks of normal overworld BEFORE the End band (the Nether→Void gap — the shorter of the two
+     * alternating overworld stretches). Reuses the overworld-hold bounds.
+     */
+    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS = 5000;
+    /**
+     * Per-period growth multiplier applied to the scaled segments (Nether core, void hold,
+     * End-islands core, and both overworld gaps): period 0 uses the configured base lengths,
+     * period 1 multiplies them by this factor, period 2 by {@code factor²}, and so on — so the
+     * journey escalates the further out you travel. 1 = no growth (uniform cycle, classic
+     * behaviour). The transition fades (mountain rise/fall, netherrack/void↔End crossfades) do
+     * NOT scale. Read on every build (dev and release); the geometric growth is bounded in
+     * practice by the world border.
+     */
+    public static final int MIN_DISINTEGRATION_PERIOD_GROWTH_FACTOR = 1;
+    public static final int MAX_DISINTEGRATION_PERIOD_GROWTH_FACTOR = 16;
+    public static final int DEFAULT_DISINTEGRATION_PERIOD_GROWTH_FACTOR = 2;
     /**
      * Blocks of overworld before the very FIRST void band (measured from startBlocks). Lets the
      * player spawn partway through an overworld stretch so the first leg is shorter than the
@@ -94,6 +114,8 @@ public final class DungeonTrainCommonConfig {
     public static final int DEVTEST_DISINTEGRATION_VOID_HOLD_BLOCKS = 500;
     public static final int DEVTEST_DISINTEGRATION_END_HOLD_BLOCKS = 500;
     public static final int DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
+    /** Dev-test before-End (Nether→Void) gap — shorter than the before-Nether 500 so the alternation is visible in dev. */
+    public static final int DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS = 250;
     public static final int DEVTEST_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 500;
 
     /**
@@ -125,10 +147,10 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_CORE_FADE_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_FADE_BLOCKS = 10_000;
     public static final int DEFAULT_NETHER_CORE_FADE_BLOCKS = 120;
-    /** Blocks of real Nether world-gen at the centre of the band. */
+    /** Blocks of real Nether world-gen at the centre of the band (matches the End-islands core). */
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 400;
+    public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 5000;
     /**
      * Dev-test preset for the real-Nether core span — expanded to 2000 blocks (vs the 400-block release
      * default) so the full sweep of Nether biomes is fast to walk through in-game. Used automatically on
@@ -147,6 +169,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DISINTEGRATION_VOID_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_END_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_PERIOD_GROWTH_FACTOR;
     public static final ModConfigSpec.BooleanValue NETHER_TRANSITION_ENABLED;
     public static final ModConfigSpec.IntValue NETHER_STAGE_BLOCKS;
     public static final ModConfigSpec.ConfigValue<String> NETHER_STAGE_MULTIPLIERS;
@@ -171,6 +195,8 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_VOID_HOLD_BLOCKS = pair.getLeft().disintegrationVoidHoldBlocks;
         DISINTEGRATION_END_HOLD_BLOCKS = pair.getLeft().disintegrationEndHoldBlocks;
         DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = pair.getLeft().disintegrationOverworldHoldBlocks;
+        DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS = pair.getLeft().disintegrationOverworldHoldBeforeEndBlocks;
+        DISINTEGRATION_PERIOD_GROWTH_FACTOR = pair.getLeft().disintegrationPeriodGrowthFactor;
         NETHER_TRANSITION_ENABLED = pair.getLeft().netherTransitionEnabled;
         NETHER_STAGE_BLOCKS = pair.getLeft().netherStageBlocks;
         NETHER_STAGE_MULTIPLIERS = pair.getLeft().netherStageMultipliers;
@@ -239,12 +265,25 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationOverworldHoldBlocks = b
-                .comment("Blocks of normal overworld BEFORE each special phase (used twice per cycle: before the",
-                        "Nether phase and before the End phase). The single cycle tiles forever along +X from",
-                        "startBlocks: OW → Nether transition → Nether → Nether transition → OW → Void → End islands",
-                        "→ Void → (repeat). Default 10000.")
+                .comment("Blocks of normal overworld BEFORE the Nether phase (the Void→Nether gap). The cycle tiles",
+                        "forever along +X from startBlocks: OW → Nether transition → Nether → Nether transition → OW",
+                        "→ Void → End islands → Void → (repeat). The before-End gap is overworldHoldBeforeEnd (they",
+                        "alternate). Both scale by periodGrowthFactor each period. Default 10000.")
                 .defineInRange("disintegrationOverworldHoldBlocks", DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS, MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationOverworldHoldBeforeEndBlocks = b
+                .comment("Blocks of normal overworld BEFORE the End phase (the Nether→Void gap) — the shorter of the",
+                        "two alternating overworld stretches. Default 5000.")
+                .defineInRange("disintegrationOverworldHoldBeforeEndBlocks",
+                        DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS,
+                        MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS, MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationPeriodGrowthFactor = b
+                .comment("Per-period growth multiplier. Period 0 uses the base lengths; each later period multiplies",
+                        "the Nether core, void hold, End-islands core, and BOTH overworld gaps by this factor (period",
+                        "1 ×factor, period 2 ×factor², …), so the journey escalates the further out you travel. The",
+                        "transition fades stay fixed. 1 = no growth (classic uniform cycle). Default 2 (doubling).")
+                .defineInRange("disintegrationPeriodGrowthFactor", DEFAULT_DISINTEGRATION_PERIOD_GROWTH_FACTOR,
+                        MIN_DISINTEGRATION_PERIOD_GROWTH_FACTOR, MAX_DISINTEGRATION_PERIOD_GROWTH_FACTOR);
         ModConfigSpec.IntValue disintegrationFirstOverworldBlocks = b
                 .comment("Blocks of overworld before the very FIRST void band, measured from startBlocks. Lets the player",
                         "spawn partway through an overworld stretch so the first leg to the void is shorter than the",
@@ -307,7 +346,8 @@ public final class DungeonTrainCommonConfig {
                         MIN_NETHER_CORE_FADE_BLOCKS, MAX_NETHER_CORE_FADE_BLOCKS);
         ModConfigSpec.IntValue netherCoreHoldBlocks = b
                 .comment("Blocks of real Nether world-gen (sampled from the Nether dimension) at the centre of the",
-                        "band. Default 400.")
+                        "band — matches the End-islands core so both 'destinations' are the same size. Scales by",
+                        "periodGrowthFactor each period. Default 5000.")
                 .defineInRange("netherCoreHoldBlocks", DEFAULT_NETHER_CORE_HOLD_BLOCKS,
                         MIN_NETHER_CORE_HOLD_BLOCKS, MAX_NETHER_CORE_HOLD_BLOCKS);
         b.pop();
@@ -315,6 +355,7 @@ public final class DungeonTrainCommonConfig {
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
+                disintegrationOverworldHoldBeforeEndBlocks, disintegrationPeriodGrowthFactor,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks);
@@ -413,10 +454,26 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_END_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS;
     }
 
-    /** Overworld stretch (blocks) between band repeats; dev-test preset on branch builds, else config. */
+    /** Before-Nether (Void→Nether) overworld gap, base/period-0 length; dev-test preset on branch builds, else config. */
     public static int getDisintegrationOverworldHoldBlocks() {
         if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_OVERWORLD_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
+    }
+
+    /** Before-End (Nether→Void) overworld gap, base/period-0 length; dev-test preset on branch builds, else config. */
+    public static int getDisintegrationOverworldHoldBeforeEndBlocks() {
+        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS;
+        return isLoaded() ? DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS.get()
+                : DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BEFORE_END_BLOCKS;
+    }
+
+    /**
+     * Per-period growth multiplier for the scaled segments (Nether core, void hold, End core, both
+     * overworld gaps). 1 = uniform cycle. Read on every build (not dev-test-overridden), so growth
+     * shows in dev as well as release; falls back to the hardcoded default pre-load.
+     */
+    public static int getDisintegrationPeriodGrowthFactor() {
+        return isLoaded() ? DISINTEGRATION_PERIOD_GROWTH_FACTOR.get() : DEFAULT_DISINTEGRATION_PERIOD_GROWTH_FACTOR;
     }
 
     /** Whether the nether transition band is active; falls back to the hardcoded default pre-load. */
@@ -509,6 +566,8 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue disintegrationVoidHoldBlocks,
                           ModConfigSpec.IntValue disintegrationEndHoldBlocks,
                           ModConfigSpec.IntValue disintegrationOverworldHoldBlocks,
+                          ModConfigSpec.IntValue disintegrationOverworldHoldBeforeEndBlocks,
+                          ModConfigSpec.IntValue disintegrationPeriodGrowthFactor,
                           ModConfigSpec.BooleanValue netherTransitionEnabled,
                           ModConfigSpec.IntValue netherStageBlocks,
                           ModConfigSpec.ConfigValue<String> netherStageMultipliers,
