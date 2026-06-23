@@ -4,13 +4,16 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
+import games.brennan.dungeontrain.worldgen.NetherBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,6 +51,19 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * are tree trunks that legitimately stand inside the corridor's
  * horizontal footprint above the carriage roof, and the train doesn't
  * physically interact with them anyway.</p>
+ *
+ * <p><b>Nether-band clutter sweep.</b> Inside the overworld Nether transition band's core
+ * ({@link NetherBand#isInNetherBiome}) the corridor additionally collects basalt / blackstone /
+ * magma / nylium / wart-block etc. that the real Nether decoration features
+ * ({@code NetherTransitionFeature.decorateCoreChunkWithNetherFeatures}) spill across chunk
+ * boundaries — a basalt column rooted in chunk X+1 writes into chunk X's tunnel <em>after</em>
+ * worldgen's in-chunk {@code clearCorridorClearance} + {@code track_bed} carve already ran, the
+ * same late-spillover path foliage takes. For those columns we widen the sweep to the full tunnel
+ * airspace ({@code TunnelGeometry.airMinZ..airMaxZ}, {@code bedY+1..ceilingY-1}, matching the
+ * worldgen clearance envelope) and remove {@link #isNetherClutter Nether terrain/decoration}.
+ * Fluids stay excluded (the cascade hazard above); worldgen-placed water is drained at generation
+ * time by {@code NetherTransitionFeature} instead. The stone-brick walls sit outside
+ * {@code airMinZ..airMaxZ} and the bed/rails aren't Nether blocks, so the track is never touched.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CorridorCleanupEvents {
@@ -148,20 +164,106 @@ public final class CorridorCleanupEvents {
         int trainY = g.bedY() + 2;
         int minY = Math.max(level.getMinBuildHeight(), g.bedY());
         int maxY = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
-        if (maxY < minY) return;
 
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int x = chunkMinX; x <= chunkMaxX; x++) {
-            for (int z = zLo; z <= zHi; z++) {
-                for (int y = minY; y <= maxY; y++) {
-                    cursor.set(x, y, z);
-                    BlockState state = level.getBlockState(cursor);
-                    if (state.isAir()) continue;
-                    if (!isFoliage(state)) continue;
-                    level.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
+        if (maxY >= minY) {
+            for (int x = chunkMinX; x <= chunkMaxX; x++) {
+                for (int z = zLo; z <= zHi; z++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        cursor.set(x, y, z);
+                        BlockState state = level.getBlockState(cursor);
+                        if (state.isAir()) continue;
+                        if (!isFoliage(state)) continue;
+                        level.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
+                    }
                 }
             }
         }
+
+        // Nether-band core only: also clear cross-chunk Nether-decoration spillover
+        // (basalt etc.) from the tunnel cross-section. The band is an overworld-dimension
+        // construct, so this no-ops when the corridor runs through another dimension.
+        if (level.dimension().equals(Level.OVERWORLD)) {
+            cleanNetherClutter(level, cursor, chunkMinX, chunkMaxX, chunkMinZ, chunkMaxZ, g);
+        }
+    }
+
+    /**
+     * Inside the overworld Nether band core, remove Nether terrain/decoration clutter
+     * ({@link #isNetherClutter}) that spilled across chunk boundaries into the tunnel's airspace.
+     * Bounds mirror the worldgen {@code NetherTransitionFeature.clearCorridorClearance}: Z
+     * {@code airMinZ..airMaxZ} (strictly inside the stone-brick walls) and Y
+     * {@code bedY+1..ceilingY-1} (the tunnel interior, above the bed and below the ceiling), so the
+     * walls, bed and rails are never touched. Per-column band gate; a cheap whole-chunk early-out
+     * skips worlds with the band disabled / no train.
+     */
+    private static void cleanNetherClutter(
+        ServerLevel overworld, BlockPos.MutableBlockPos cursor,
+        int chunkMinX, int chunkMaxX, int chunkMinZ, int chunkMaxZ, TrackGeometry g
+    ) {
+        if (NetherBand.startX(overworld) == NetherBand.OFF) return;     // band off / trainless world
+        TunnelGeometry tg = TunnelGeometry.from(g);
+        int zLo = Math.max(tg.airMinZ(), chunkMinZ);
+        int zHi = Math.min(tg.airMaxZ(), chunkMaxZ);
+        if (zLo > zHi) return;                                          // corridor not in this chunk's Z span
+        int minY = Math.max(overworld.getMinBuildHeight(), g.bedY() + 1);
+        int maxY = Math.min(overworld.getMaxBuildHeight() - 1, tg.ceilingY() - 1);
+        if (maxY < minY) return;
+
+        for (int x = chunkMinX; x <= chunkMaxX; x++) {
+            if (!NetherBand.isInNetherBiome(overworld, x)) continue;    // core columns only
+            for (int z = zLo; z <= zHi; z++) {
+                for (int y = minY; y <= maxY; y++) {
+                    cursor.set(x, y, z);
+                    BlockState state = overworld.getBlockState(cursor);
+                    if (state.isAir()) continue;
+                    if (!isNetherClutter(state)) continue;
+                    overworld.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+    }
+
+    /**
+     * Nether terrain / decoration that the real-Nether feature pass spills into the tunnel —
+     * bulk rock (netherrack / basalt / blackstone / smooth basalt / gilded blackstone / magma),
+     * nylium + wart blocks, and the crimson/warped/soul-sand-valley decoration (stems, hyphae,
+     * roots, fungi, sprouts, vines, fire). Direct {@code Blocks.X} checks (basalt first — the
+     * common offender) so the set is unit-testable; the trailing tag checks are a defensive
+     * fallback that also catches modded Nether blocks. <b>Fluids are deliberately excluded</b> —
+     * removing lava/water at runtime cascades neighbour fluid updates (the documented hang);
+     * worldgen-placed water is drained at generation time by {@code NetherTransitionFeature}.
+     */
+    static boolean isNetherClutter(BlockState state) {
+        if (state.is(Blocks.NETHERRACK)) return true;
+        if (state.is(Blocks.BASALT)) return true;
+        if (state.is(Blocks.SMOOTH_BASALT)) return true;
+        if (state.is(Blocks.BLACKSTONE)) return true;
+        if (state.is(Blocks.GILDED_BLACKSTONE)) return true;
+        if (state.is(Blocks.MAGMA_BLOCK)) return true;
+        if (state.is(Blocks.GLOWSTONE)) return true;
+        if (state.is(Blocks.SHROOMLIGHT)) return true;
+        if (state.is(Blocks.BONE_BLOCK)) return true;
+        if (state.is(Blocks.SOUL_SAND)) return true;
+        if (state.is(Blocks.SOUL_SOIL)) return true;
+        if (state.is(Blocks.CRIMSON_NYLIUM) || state.is(Blocks.WARPED_NYLIUM)) return true;
+        if (state.is(Blocks.NETHER_WART_BLOCK) || state.is(Blocks.WARPED_WART_BLOCK)) return true;
+        if (state.is(Blocks.CRIMSON_STEM) || state.is(Blocks.WARPED_STEM)) return true;
+        if (state.is(Blocks.CRIMSON_HYPHAE) || state.is(Blocks.WARPED_HYPHAE)) return true;
+        if (state.is(Blocks.CRIMSON_ROOTS) || state.is(Blocks.WARPED_ROOTS)) return true;
+        if (state.is(Blocks.CRIMSON_FUNGUS) || state.is(Blocks.WARPED_FUNGUS)) return true;
+        if (state.is(Blocks.NETHER_SPROUTS)) return true;
+        if (state.is(Blocks.WEEPING_VINES) || state.is(Blocks.WEEPING_VINES_PLANT)) return true;
+        if (state.is(Blocks.TWISTING_VINES) || state.is(Blocks.TWISTING_VINES_PLANT)) return true;
+        if (state.is(Blocks.FIRE) || state.is(Blocks.SOUL_FIRE)) return true;
+        // Falling blocks (Nether ore_gravel deltas) — settled cross-chunk spillover resting in the
+        // lane; ones that actually fall onto the rails are stopped by NetherBandBehaviourEvents.
+        if (state.is(Blocks.GRAVEL) || state.is(Blocks.SAND) || state.is(Blocks.RED_SAND)) return true;
+        // Defensive tag fallbacks (also catch modded Nether terrain/decoration).
+        if (state.is(BlockTags.BASE_STONE_NETHER)) return true;        // netherrack, basalt, blackstone
+        if (state.is(BlockTags.NYLIUM)) return true;                   // crimson/warped nylium
+        if (state.is(BlockTags.WART_BLOCKS)) return true;              // nether/warped wart blocks
+        return false;
     }
 
     /**
