@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 final class WorldGenCycleTest {
 
-    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 60, 50, 200, 100, 40, 200);
+    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200);
     private static final int PERIOD = 1940;
     private static final double EPS = 1e-9;
 
@@ -68,7 +68,7 @@ final class WorldGenCycleTest {
     @DisplayName("an arbitrary N-stage multiplier list ramps smoothly through each stage (1,2,4,8,15)")
     void fiveStageMultipliers() {
         // anchor 0, owGap 0 → nether starts at offset 0; stageBlocks 40, 5 stages → riseLen 200.
-        WorldGenCycle d = new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 60, 50, 200, 0, 0, 0);
+        WorldGenCycle d = new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 0, 60, 50, 200, 0, 0, 0);
         assertEquals(200, d.riseLen());
         assertEquals(1.0, d.netherMountainMultiplier(0), EPS);    // stage 1 start
         assertEquals(1.0, d.netherMountainMultiplier(40), EPS);   // → stage 2 start (held ×1 through stage 1)
@@ -101,9 +101,21 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("a leading beach span lengthens the rise, reads as base ×1, and reports the band entrance")
+    void beachStage() {
+        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200);
+        assertEquals(160, b.riseLen());                                       // 40 beach + 3×40 stages
+        org.junit.jupiter.api.Assertions.assertTrue(b.isNetherBeachStage(1320));  // ln 20 — inside the beach span
+        assertEquals(1.0, b.netherMountainMultiplier(1320), EPS);            // beach base multiplier (feature boosts over ocean)
+        org.junit.jupiter.api.Assertions.assertFalse(b.isNetherBeachStage(1360)); // ln 60 — past the beach, in the mountains
+        assertEquals(1300L, b.netherBandEntranceX(1320));                    // band rise begins at the anchor + owGap
+        org.junit.jupiter.api.Assertions.assertFalse(b.isNetherBeachStage(2000)); // outside the nether segment entirely
+    }
+
+    @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
-        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 100, 40, 200);
+        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200);
         assertEquals(0L, endOnly.netherLen());
         assertEquals(680L, endOnly.endLen());
         assertEquals(2L * 300 + 680, endOnly.period());

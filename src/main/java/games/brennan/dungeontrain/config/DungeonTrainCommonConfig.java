@@ -82,6 +82,14 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_BASE_RELIEF_BLOCKS = 0;
     public static final int MAX_NETHER_BASE_RELIEF_BLOCKS = 1000;
     public static final int DEFAULT_NETHER_BASE_RELIEF_BLOCKS = 16;
+    /** Leading beach/cliff stage length (blocks) — only rendered when the band entrance is over ocean. */
+    public static final int MIN_NETHER_BEACH_BLOCKS = 0;
+    public static final int MAX_NETHER_BEACH_BLOCKS = 100_000_000;
+    public static final int DEFAULT_NETHER_BEACH_BLOCKS = 64;
+    /** Heightmap multiplier for the ocean beach/cliff stage (gives the coast relief instead of a flat shelf). */
+    public static final int MIN_NETHER_BEACH_MULTIPLIER = 1;
+    public static final int MAX_NETHER_BEACH_MULTIPLIER = 1000;
+    public static final int DEFAULT_NETHER_BEACH_MULTIPLIER = 4;
     /** Blocks of full-height mega-mountain plateau on each side of the nether core (the tunnel zone). */
     public static final int MIN_NETHER_MOUNTAIN_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_MOUNTAIN_HOLD_BLOCKS = 100_000_000;
@@ -109,6 +117,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue NETHER_STAGE_BLOCKS;
     public static final ModConfigSpec.ConfigValue<String> NETHER_STAGE_MULTIPLIERS;
     public static final ModConfigSpec.IntValue NETHER_BASE_RELIEF_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_BEACH_BLOCKS;
+    public static final ModConfigSpec.IntValue NETHER_BEACH_MULTIPLIER;
     public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
@@ -130,6 +140,8 @@ public final class DungeonTrainCommonConfig {
         NETHER_STAGE_BLOCKS = pair.getLeft().netherStageBlocks;
         NETHER_STAGE_MULTIPLIERS = pair.getLeft().netherStageMultipliers;
         NETHER_BASE_RELIEF_BLOCKS = pair.getLeft().netherBaseReliefBlocks;
+        NETHER_BEACH_BLOCKS = pair.getLeft().netherBeachBlocks;
+        NETHER_BEACH_MULTIPLIER = pair.getLeft().netherBeachMultiplier;
         NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
@@ -225,6 +237,17 @@ public final class DungeonTrainCommonConfig {
                         "flat tops clamped at the world ceiling. Default 16 (×15 → ~240).")
                 .defineInRange("netherBaseReliefBlocks", DEFAULT_NETHER_BASE_RELIEF_BLOCKS,
                         MIN_NETHER_BASE_RELIEF_BLOCKS, MAX_NETHER_BASE_RELIEF_BLOCKS);
+        ModConfigSpec.IntValue netherBeachBlocks = b
+                .comment("Length (blocks) of a leading beach/cliff stage rendered ONLY when the band entrance is over",
+                        "ocean — sand + sandstone cliffs rising from the water before the mountains, so the coast isn't a",
+                        "flat shelf. Over non-ocean entrances this span is just a gentle natural lead-in. Default 64.")
+                .defineInRange("netherBeachBlocks", DEFAULT_NETHER_BEACH_BLOCKS,
+                        MIN_NETHER_BEACH_BLOCKS, MAX_NETHER_BEACH_BLOCKS);
+        ModConfigSpec.IntValue netherBeachMultiplier = b
+                .comment("Heightmap multiplier for the ocean beach/cliff stage — gives the coast real relief (sandy",
+                        "cliffs) instead of a flat platform over the otherwise relief-less ocean. Default 4.")
+                .defineInRange("netherBeachMultiplier", DEFAULT_NETHER_BEACH_MULTIPLIER,
+                        MIN_NETHER_BEACH_MULTIPLIER, MAX_NETHER_BEACH_MULTIPLIER);
         ModConfigSpec.IntValue netherMountainHoldBlocks = b
                 .comment("Blocks of full-strength mega-mountain (stage-3 multiplier held) on each side of the nether",
                         "core — the stretch the train tunnels through before the world turns to nether. Default 48.")
@@ -246,6 +269,7 @@ public final class DungeonTrainCommonConfig {
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
+                netherBeachBlocks, netherBeachMultiplier,
                 netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks);
     }
 
@@ -339,6 +363,16 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_BASE_RELIEF_BLOCKS.get() : DEFAULT_NETHER_BASE_RELIEF_BLOCKS;
     }
 
+    /** Leading beach/cliff stage length (blocks); falls back to the hardcoded default pre-load. */
+    public static int getNetherBeachBlocks() {
+        return isLoaded() ? NETHER_BEACH_BLOCKS.get() : DEFAULT_NETHER_BEACH_BLOCKS;
+    }
+
+    /** Beach/cliff stage heightmap multiplier; falls back to the hardcoded default pre-load. */
+    public static int getNetherBeachMultiplier() {
+        return isLoaded() ? NETHER_BEACH_MULTIPLIER.get() : DEFAULT_NETHER_BEACH_MULTIPLIER;
+    }
+
     /** Per-stage heightmap multipliers (parsed, each ≥ 1); falls back to the default on empty/garbage. */
     public static int[] getNetherStageMultipliers() {
         String raw = isLoaded() ? NETHER_STAGE_MULTIPLIERS.get() : DEFAULT_NETHER_STAGE_MULTIPLIERS;
@@ -390,6 +424,8 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue netherStageBlocks,
                           ModConfigSpec.ConfigValue<String> netherStageMultipliers,
                           ModConfigSpec.IntValue netherBaseReliefBlocks,
+                          ModConfigSpec.IntValue netherBeachBlocks,
+                          ModConfigSpec.IntValue netherBeachMultiplier,
                           ModConfigSpec.IntValue netherMountainHoldBlocks,
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks) {}

@@ -21,9 +21,11 @@ import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.feature.Feature;
@@ -109,6 +111,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
             int seaLevel = overworld.getSeaLevel();
             int baseRelief = DungeonTrainCommonConfig.getNetherBaseReliefBlocks();
+            int beachMult = DungeonTrainCommonConfig.getNetherBeachMultiplier();
 
             double[] heightRamp = new double[16];
             double[] netherRamp = new double[16];
@@ -131,6 +134,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int zMax = g.trackZMax();
             long seed = data.getGenerationSeed();
             MountainPalette palette = MountainPalette.fromSeed(seed);
+
+            // Is THIS band's entrance over ocean? (Computed once per chunk from the natural surface at the band
+            // start.) If so, the leading beach span is rendered as sandy cliffs instead of a flat shelf.
+            boolean oceanEntrance = isOceanEntrance(overworld, cycle.netherBandEntranceX(chunkMinX + 8),
+                    g.trackCenterZ(), seaLevel);
 
             int minY = level.getMinBuildHeight();
             int worldTop = level.getMaxBuildHeight() - 1;
@@ -164,8 +172,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) continue;
 
                 double n = netherRamp[dx];
-                double mult = cycle.netherMountainMultiplier(worldX);
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
+                // Beach span over an ocean entrance: boosted relief (sandy cliffs) instead of a flat shelf.
+                boolean beach = !core && oceanEntrance && cycle.isNetherBeachStage(worldX);
+                double mult = beach ? beachMult : cycle.netherMountainMultiplier(worldX);
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
                 for (int dz = 0; dz < 16; dz++) {
@@ -176,7 +186,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
                     } else {
                         colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette);
+                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette, beach);
                     }
                     changed |= colChanged;
                 }
@@ -208,7 +218,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private boolean fillMountainColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                        int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
                                        int minY, int worldTop, int seaLevel, int baseRelief, double mult, double n,
-                                       int netherTopApprox, long seed, MountainPalette palette) {
+                                       int netherTopApprox, long seed, MountainPalette palette, boolean beach) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
         // Mountain relief = a synthetic ridged heightmap (so flat terrain still gets mountains) blended with
         // the natural terrain, scaled by the stage multiplier. Bounded so high stages don't clamp flat.
@@ -230,7 +240,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
             if (!lanesTunnel && y > bedY && inCorridorLane(worldZ, tg)) continue; // keep low-mound lane clear
             int depth = columnTop - y;
-            BlockState block = mountainMaterial(palette, depth, columnTop, n, seed, worldX, y, worldZ);
+            BlockState block = beach
+                    ? BeachPalette.surfaceBlock(depth, Disintegration.coherentNoise(seed, worldX, y, worldZ))
+                    : mountainMaterial(palette, depth, columnTop, n, seed, worldX, y, worldZ);
             if (y > surfaceY) {
                 // added mountain body — fill air/foliage only (preserve ores etc. below the surface).
                 if (!w.isReplaceable(dx, y, dz)) continue;
@@ -334,6 +346,19 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /** The train's Z corridor (tunnel wall span + margin) that track_bed will carve. */
     private static boolean inCorridorLane(int worldZ, TunnelGeometry tg) {
         return worldZ >= tg.wallMinZ() - CORRIDOR_MARGIN && worldZ <= tg.wallMaxZ() + CORRIDOR_MARGIN;
+    }
+
+    /** Whether the band entrance's natural surface is below sea level (so it rises out of the ocean). */
+    private static boolean isOceanEntrance(ServerLevel overworld, long entranceX, int trackZ, int seaLevel) {
+        if (entranceX == Long.MIN_VALUE) return false;
+        try {
+            ChunkGenerator gen = overworld.getChunkSource().getGenerator();
+            RandomState rs = overworld.getChunkSource().randomState();
+            int surface = gen.getBaseHeight((int) entranceX, trackZ, Heightmap.Types.OCEAN_FLOOR_WG, overworld, rs);
+            return surface < seaLevel;
+        } catch (Throwable t) {
+            return false; // never block worldgen on the ocean probe
+        }
     }
 
     /**

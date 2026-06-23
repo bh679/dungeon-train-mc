@@ -29,6 +29,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param owGap      overworld blocks before each special band (two gaps per period)
  * @param stageBlocks length of EACH mountain stage
  * @param stageMultipliers heightmap multiplier per stage (stage 1 = first value, 1 = natural)
+ * @param beachBlocks leading beach/cliff span (rendered as beach only over ocean; base multiplier 1)
  * @param megaHold   full-strength mega-mountain plateau on each side of the core
  * @param coreFade   mountain→netherrack crossfade span (each side)
  * @param coreHold   real-Nether core span
@@ -37,7 +38,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param eEnd       End-island core span
  */
 public record WorldGenCycle(long startX, int owGap,
-                            int stageBlocks, int[] stageMultipliers, int megaHold,
+                            int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd) {
 
@@ -50,6 +51,7 @@ public record WorldGenCycle(long startX, int owGap,
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
                 nether ? DungeonTrainCommonConfig.getNetherStageBlocks() : 0,
                 DungeonTrainCommonConfig.getNetherStageMultipliers(),
+                nether ? DungeonTrainCommonConfig.getNetherBeachBlocks() : 0,
                 nether ? DungeonTrainCommonConfig.getNetherMountainHoldBlocks() : 0,
                 nether ? DungeonTrainCommonConfig.getNetherCoreFadeBlocks() : 0,
                 nether ? DungeonTrainCommonConfig.getNetherCoreHoldBlocks() : 0,
@@ -68,9 +70,9 @@ public record WorldGenCycle(long startX, int owGap,
         return Math.max(1, stageMultipliers[idx]);
     }
 
-    /** Combined length of all mountain stages (the heightRamp's rise/fall span). */
+    /** Combined length of the leading beach span + all mountain stages (the heightRamp's rise/fall span). */
     public int riseLen() {
-        return stageCount() * Math.max(0, stageBlocks);
+        return Math.max(0, beachBlocks) + stageCount() * Math.max(0, stageBlocks);
     }
 
     public long netherLen() {
@@ -140,20 +142,37 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Stage curve over the rise: each stage ramps from the previous multiplier to its own
-     * (stage 1 ramps from the natural ×1), so the mountains grow smoothly stage by stage;
+     * Stage curve over the rise: the leading beach span holds the natural ×1 (the feature
+     * boosts it over ocean), then each mountain stage ramps from the previous multiplier
+     * to its own (stage 1 ramps from ×1), so the mountains grow smoothly stage by stage;
      * the final multiplier is held across the mega plateau.
      */
     private double riseMult(long d, int rise) {
         int n = stageCount();
         if (d >= rise) return stageMult(n - 1);                    // mega plateau
+        int beach = Math.max(0, beachBlocks);
+        if (d < beach) return 1.0;                                 // beach span — base ×1 (feature overrides over ocean)
+        long md = d - beach;                                       // offset into the mountain stages
         int s = Math.max(1, stageBlocks);
-        int idx = (int) (d / s);
+        int idx = (int) (md / s);
         if (idx >= n) return stageMult(n - 1);
         double from = (idx == 0) ? 1.0 : stageMult(idx - 1);
         double to = stageMult(idx);
-        double within = (double) (d - (long) idx * s) / s;
+        double within = (double) (md - (long) idx * s) / s;
         return from + (to - from) * within;
+    }
+
+    /** True if {@code worldX} lies in the leading beach span of a nether band (the ocean-entry stretch). */
+    public boolean isNetherBeachStage(int worldX) {
+        long ln = netherOffset(worldX);
+        return ln >= 0 && ln < Math.max(0, beachBlocks);
+    }
+
+    /** World-X where the current nether band's rise begins (for ocean detection), or {@code Long.MIN_VALUE}. */
+    public long netherBandEntranceX(int worldX) {
+        long o = offset(worldX);
+        if (o < 0L) return Long.MIN_VALUE;
+        return (long) worldX - o + netherStart();
     }
 
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */
