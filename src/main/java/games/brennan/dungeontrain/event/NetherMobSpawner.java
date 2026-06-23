@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
@@ -12,6 +13,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -32,6 +35,15 @@ import java.util.List;
  *
  * <p>Regular piglins are deliberately omitted (they zombify in the overworld dimension);
  * zombified piglins, magma cubes and ghasts all behave correctly outside the Nether.</p>
+ *
+ * <p>The ground roster + ghast frequency follow the <b>biome</b> at the spawn column (the core now
+ * cycles through all five Nether biomes), so each biome reads right: skeletons in soul sand valleys,
+ * endermen in warped forests, magma cubes in basalt deltas, piglins + hoglins in crimson forests.
+ * Piglins and hoglins normally zombify (piglin) / become zoglins (hoglin) in the overworld, but
+ * {@link NetherBandZombificationGuard} grants them Nether-immunity throughout the band core
+ * ({@link NetherBand#isInNetherBiome}, the same {@code netherRamp ≥ 0.5} zone this spawner uses), so
+ * they survive intact. Every other roster mob (zombified piglins, magma cubes, skeletons, endermen,
+ * ghasts) already behaves correctly outside the Nether.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherMobSpawner {
@@ -55,12 +67,44 @@ public final class NetherMobSpawner {
     /** Tag for accounting only (NOT the carriage-contents prefix, so kill-ahead/confinement ignore it). */
     private static final String NETHER_MOB_TAG = "dungeontrain_nether_band_mob";
 
+    // Per-biome ground rosters — only mobs that DON'T convert outside the Nether (no piglins/hoglins).
     @SuppressWarnings("unchecked")
     private static final EntityType<? extends Mob>[] GROUND_MOBS = new EntityType[] {
-            EntityType.ZOMBIFIED_PIGLIN, EntityType.MAGMA_CUBE
+            EntityType.ZOMBIFIED_PIGLIN, EntityType.MAGMA_CUBE        // nether_wastes (default)
+    };
+    @SuppressWarnings("unchecked")
+    private static final EntityType<? extends Mob>[] SOUL_SAND_MOBS = new EntityType[] {
+            EntityType.SKELETON                                       // soul sand valley
+    };
+    @SuppressWarnings("unchecked")
+    private static final EntityType<? extends Mob>[] WARPED_MOBS = new EntityType[] {
+            EntityType.ENDERMAN                                       // warped forest
+    };
+    @SuppressWarnings("unchecked")
+    private static final EntityType<? extends Mob>[] CRIMSON_MOBS = new EntityType[] {
+            // crimson forest's real roster — kept un-zombified in-core by NetherBandZombificationGuard
+            EntityType.PIGLIN, EntityType.HOGLIN, EntityType.ZOMBIFIED_PIGLIN
+    };
+    @SuppressWarnings("unchecked")
+    private static final EntityType<? extends Mob>[] BASALT_MOBS = new EntityType[] {
+            EntityType.MAGMA_CUBE                                     // basalt deltas
     };
 
     private NetherMobSpawner() {}
+
+    /** Ground roster for the Nether biome at the spawn column (non-converting mobs only). */
+    private static EntityType<? extends Mob>[] groundMobsFor(Holder<Biome> biome) {
+        if (biome.is(Biomes.SOUL_SAND_VALLEY)) return SOUL_SAND_MOBS;
+        if (biome.is(Biomes.WARPED_FOREST)) return WARPED_MOBS;
+        if (biome.is(Biomes.CRIMSON_FOREST)) return CRIMSON_MOBS;
+        if (biome.is(Biomes.BASALT_DELTAS)) return BASALT_MOBS;
+        return GROUND_MOBS; // nether_wastes / anything else
+    }
+
+    /** Ghast spawn odds (1-in-N) — denser in the biomes vanilla fills with ghasts. */
+    private static int ghastChanceDenom(Holder<Biome> biome) {
+        return (biome.is(Biomes.SOUL_SAND_VALLEY) || biome.is(Biomes.BASALT_DELTAS)) ? 3 : 6;
+    }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
@@ -113,7 +157,10 @@ public final class NetherMobSpawner {
         BlockPos probe = new BlockPos(wx, player.getBlockY(), wz);
         if (!level.isLoaded(probe)) return;
 
-        boolean ghast = rng.nextInt(6) == 0;
+        // Biome at the spawn column drives the roster + ghast frequency (the core cycles all 5 Nether biomes).
+        Holder<Biome> biome = level.getBiome(probe);
+
+        boolean ghast = rng.nextInt(ghastChanceDenom(biome)) == 0;
         if (ghast) {
             // Open-air pocket above the player level.
             BlockPos air = new BlockPos(wx, player.getBlockY() + 4 + rng.nextInt(8), wz);
@@ -123,11 +170,12 @@ public final class NetherMobSpawner {
         }
 
         // Ground mob: find a solid floor with 2 air above, near the player's Y.
+        EntityType<? extends Mob>[] roster = groundMobsFor(biome);
         for (int y = player.getBlockY() + FLOOR_SEARCH_UP; y >= player.getBlockY() - FLOOR_SEARCH_DOWN; y--) {
             BlockPos feet = new BlockPos(wx, y, wz);
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
-            EntityType<? extends Mob> type = GROUND_MOBS[rng.nextInt(GROUND_MOBS.length)];
+            EntityType<? extends Mob> type = roster[rng.nextInt(roster.length)];
             spawn(level, type, feet, rng);
             return;
         }

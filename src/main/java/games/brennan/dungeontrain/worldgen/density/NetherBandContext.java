@@ -1,8 +1,6 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
-import net.minecraft.core.Holder;
-import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 
 /**
@@ -29,13 +27,14 @@ import net.minecraft.world.level.biome.BiomeSource;
  * @param overworldBiomeSource the overworld's biome source — identity gate so the biome-source mixin
  *                       only forces highland biomes on the overworld (the Nether also uses multi_noise)
  * @param highlandBiomes the resolved highland biome palette forced onto band mountain columns
- * @param netherCoreBiome the real {@code minecraft:nether_wastes} biome holder forced onto core columns
- *                       (Nether fog/ambient/music + makes vanilla Nether decoration's biome filter pass)
+ * @param netherCoreBiomes samples the real Nether biome (all five) for core columns the way the Nether
+ *                       does — drives Nether fog/ambient/music, per-biome decoration + surface skin, and
+ *                       makes the vanilla Nether decoration's biome filter pass
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
                                 int netherTop, int baseRelief, WorldGenCycle cycle,
                                 BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes,
-                                Holder<Biome> netherCoreBiome) {
+                                NetherCoreBiomes netherCoreBiomes) {
 
     private static volatile NetherBandContext current;
 
