@@ -134,6 +134,19 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * netherRamp at/above which a column is the real-Nether <b>core</b> (full netherrack/lava sampling,
+     * not the netherrack crossfade). Shared by {@code NetherTransitionFeature} (which REPLACES core
+     * columns with sampled Nether terrain) and the biome-source mixin (which tags core columns as the
+     * real {@code nether_wastes} biome).
+     */
+    public static final double NETHER_CORE_THRESHOLD = 0.999;
+
+    /** True if {@code worldX} is a real-Nether core column ({@link #netherRamp} ≥ {@link #NETHER_CORE_THRESHOLD}). */
+    public boolean isNetherCore(int worldX) {
+        return netherRamp(worldX) >= NETHER_CORE_THRESHOLD;
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and

@@ -53,6 +53,16 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("isNetherCore is true only in the real-Nether core, not the netherrack crossfade or mountains")
+    void netherCore() {
+        org.junit.jupiter.api.Assertions.assertTrue(C.isNetherCore(1530));  // ln 230 — core start (netherRamp 1.0)
+        org.junit.jupiter.api.Assertions.assertTrue(C.isNetherCore(1630));  // ln 330 — deep in the core
+        org.junit.jupiter.api.Assertions.assertFalse(C.isNetherCore(1505)); // ln 205 — netherrack crossfade (~0.5)
+        org.junit.jupiter.api.Assertions.assertFalse(C.isNetherCore(1380)); // ln 80  — mountain (netherRamp 0)
+        org.junit.jupiter.api.Assertions.assertFalse(C.isNetherCore(2000)); // overworld gap
+    }
+
+    @Test
     @DisplayName("heightmap multiplier ramps ×1 (stage 1) → ×5 (stage 2) → ×20 (stage 3), held across the mega + core")
     void mountainMultiplier() {
         assertEquals(1.0, C.netherMountainMultiplier(1320), EPS);  // ln 20  — stage 1 (×1)

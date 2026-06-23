@@ -2075,6 +2075,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-decoration",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The Nether core looks and feels like the real Nether",
+      "summary": "The real-Nether stretch the train crosses is now dressed with the game's own Nether world-gen instead of bare red rock: fire, glowstone, lava springs, mushrooms and mineable Nether ores (quartz, gold and ancient debris) generate through it, and it carries the Nether's red fog, ambient cave sounds and music.",
+      "highlights": [
+        "Fire, glowstone, lava springs and mushrooms generate across the Nether core",
+        "Mine real Nether ores in the core \u2014 quartz, gold and ancient debris",
+        "The core now has the Nether's red fog, ambient sounds and music"
+      ],
+      "pr": 551,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
