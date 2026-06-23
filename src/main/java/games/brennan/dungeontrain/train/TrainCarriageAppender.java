@@ -74,6 +74,16 @@ public final class TrainCarriageAppender {
     }
 
     /**
+     * Suppress the "player left vicinity" force-load release for {@code trainId} until
+     * {@code nowTick + graceTicks}. Called by {@code ResumeWatchdog} the moment it detects a
+     * singleplayer pause/resume, so the trailing carriages stay resident while the flung-off
+     * rider is re-anchored onto the deck (#547). Server-thread only.
+     */
+    public static void grantResumeGrace(UUID trainId, long nowTick, int graceTicks) {
+        RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + graceTicks);
+    }
+
+    /**
      * Per-train, per-direction: the most recently spawned {@link ManagedShip}
      * for that direction. Read by the wait-for-placement-success gate in
      * {@link #updateTrain} — auto-spawn for a given direction defers until
@@ -161,6 +171,16 @@ public final class TrainCarriageAppender {
      * {@link #clearSettleTracker}; an entry is removed when its set empties.
      */
     private static final Map<UUID, Set<UUID>> FORCELOADED_BY_TRAIN = new ConcurrentHashMap<>();
+
+    /**
+     * trainId → game-tick (inclusive) until which the "player left vicinity" walk-away
+     * release is suppressed after a singleplayer pause/resume. Set by
+     * {@link #grantResumeGrace} (called from {@code ResumeWatchdog} on a detected resume);
+     * consulted in {@link #updateTrain}'s empty-near-players bail so a momentarily flung-off
+     * rider can't lose the train to a Sable cull before re-anchoring (#547). Entries
+     * self-expire; cleared in {@link #clearSettleTracker}.
+     */
+    private static final Map<UUID, Long> RESUME_GRACE_UNTIL_TICK = new ConcurrentHashMap<>();
 
     /**
      * Stall threshold: 600 ticks = 30 s at 20 Hz. Comfortably past the
@@ -1060,6 +1080,7 @@ public final class TrainCarriageAppender {
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
         // level handle; here we only drop our in-memory mirror.
         FORCELOADED_BY_TRAIN.clear();
+        RESUME_GRACE_UNTIL_TICK.clear();
     }
 
     /**
@@ -1522,6 +1543,19 @@ public final class TrainCarriageAppender {
             // so Sable can cull the now-unneeded train normally. The train
             // stays iterable (and thus releasable) until released, because the
             // force-load is the only thing keeping it resident.
+            //
+            // EXCEPTION (#547): just after a singleplayer pause/resume the rider is
+            // momentarily flung off the moving train (Sable carry hasn't re-grabbed
+            // them), so they read as "not near" for a few ticks. ResumeWatchdog grants
+            // a short grace window during which we HOLD the force-loads instead of
+            // releasing, so the train can't be culled out from under the player before
+            // they re-anchor. A genuine walk-away (no pause) never sets a grace deadline,
+            // so it still releases here as before.
+            Long graceUntil = RESUME_GRACE_UNTIL_TICK.get(trainId);
+            if (graceUntil != null && level.getGameTime() <= graceUntil) {
+                return false; // resume grace active — hold the window, do not release
+            }
+            RESUME_GRACE_UNTIL_TICK.remove(trainId); // expired (or never set) — normal cull
             releaseTrainForceLoads(level, trainId, train);
             return false;
         }
