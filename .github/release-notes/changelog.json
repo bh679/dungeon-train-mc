@@ -2190,6 +2190,19 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-behaviours",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The Nether band's core now plays by Nether rules",
+      "summary": "The red-fog netherrack core of the Nether transition band now behaves like the real Nether, not just looks like it. Water you pour boils away in a hiss of steam, beds explode if you try to sleep in them, and wet sponges dry out the instant you place them. The sky over the core stays clear too \u2014 no rain, no clouds and no lightning, even in a thunderstorm. Step back out into the normal overworld and water, beds and weather all work exactly as usual again.",
+      "highlights": [],
+      "pr": 558,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
