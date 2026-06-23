@@ -1,8 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
@@ -61,13 +59,8 @@ public abstract class NoiseBasedChunkGeneratorMixin {
             int chunkMinX = centerChunk.getPos().getMinBlockX();
             if (chunkMinX + 15 < startX) return; // entirely before the first band
 
-            int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
-            int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-            int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
-            int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
-            int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
-            if (!Disintegration.isChunkFullyEroded(chunkMinX, startX, phaseShift, fade, voidHold, endHold, owHold)) {
-                return; // any fade/overworld column → keep real terrain, let vanilla run
+            if (!DisintegrationBand.isChunkFullyEroded(level, chunkMinX)) {
+                return; // any fade/overworld/nether column → keep real terrain, let vanilla run
             }
 
             // Fully eroded: hand back an empty chunk. Sections are already air (pre-allocated by the

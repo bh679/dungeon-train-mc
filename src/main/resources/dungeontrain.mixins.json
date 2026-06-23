@@ -9,8 +9,11 @@
     "LightningBoltVisualOnlyMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "ChunkAccessAccessor",
+    "ChunkMapMixin",
+    "MultiNoiseBiomeSourceMixin",
     "NoiseBasedChunkGeneratorMixin",
-    "ChunkGeneratorDecorationMixin"
+    "ChunkGeneratorDecorationMixin",
+    "RandomStateMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",
@@ -30,6 +33,7 @@
     "client.GameRendererSnapshotMixin",
     "client.LevelRendererVoidSkyMixin",
     "client.LightTextureEndBandMixin",
+    "client.LightTextureNetherBandMixin",
     "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],

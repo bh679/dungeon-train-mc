@@ -179,11 +179,18 @@ public final class TunnelPlacer {
      * {@code (railY, railZMin|railZMax)} — they're already placed by
      * {@code TrackGenerator} and the template will re-stamp them anyway.</p>
      *
+     * <p>A second pass clears the <b>arched-roof interior</b> ({@code ceilingY+1 .. ceilingY+ARCH_TIERS},
+     * z narrowing one block per tier) but ONLY of leaked <em>underground material</em>. A densely
+     * pre-filled corridor — the Nether-transition mountains fill the lane solid so {@code track_bed}
+     * qualifies it as a tunnel — leaves bulk terrain inside the arch that {@code placeInWorld} doesn't
+     * reliably overwrite, which read as stone inside the tunnel. The stone-brick arch shell / stair
+     * smoothers / apex cap and any (sea-)lanterns are NOT underground material, so they survive untouched.</p>
+     *
      * <p>Crucially does NOT touch:
      * <ul>
      *   <li>The floor row at {@code floorY} — template re-stamps stone-brick floor.</li>
-     *   <li>The arched roof tiers above {@code ceilingY} — template paints walls + stair smoothers + apex cap.</li>
-     *   <li>The corner wedges (at apex Y, z OUTSIDE {@code airMinZ..airMaxZ}) — those are intentional STRUCTURE_VOID cells in the saved template so overworld terrain blends naturally with the arch corners. Pre-erasing them would create visible voids in overworld tunnels.</li>
+     *   <li>The stone-brick arch shell + stair smoothers + apex cap — preserved by the underground-material filter on the arch pass.</li>
+     *   <li>The corner wedges (at apex Y, z OUTSIDE {@code airMinZ..airMaxZ}) — intentional STRUCTURE_VOID cells so overworld terrain blends naturally with the arch corners. Both passes stay within {@code airMinZ..airMaxZ} (the arch pass insets further per tier), so the wedges and the mountain beside the arch are never touched.</li>
      * </ul></p>
      *
      * <p>Uses {@code origin} (canonical, unshifted) — the airspace geometry
@@ -203,11 +210,27 @@ public final class TunnelPlacer {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int dx = 0; dx < LENGTH; dx++) {
             int worldX = originX + dx;
+            // Flat interior (floorY+1 .. ceilingY): clear everything (rails excepted).
             for (int y = floorY + 1; y <= ceilingY; y++) {
                 for (int z = airMinZ; z <= airMaxZ; z++) {
                     if (y == railY && (z == railZMin || z == railZMax)) continue;
                     pos.set(worldX, y, z);
                     if (level.getBlockState(pos).isAir()) continue;
+                    level.setBlock(pos, AIR, Block.UPDATE_CLIENTS);
+                }
+            }
+            // Arched-roof interior (ceilingY+1 .. ceilingY+ARCH_TIERS): clear ONLY leaked underground
+            // material — a pre-filled corridor (the Nether-transition mountains) leaves bulk terrain the
+            // template doesn't reliably carve. The stone-brick shell / apex / lanterns aren't underground
+            // material so they survive; the per-tier inset keeps the clear inside the arch (never the
+            // corner wedges or the mountain beside it).
+            for (int tier = 1; tier <= LegacyTunnelPaint.ARCH_TIERS; tier++) {
+                int y = ceilingY + tier;
+                int zLo = airMinZ + (tier - 1);
+                int zHi = airMaxZ - (tier - 1);
+                for (int z = zLo; z <= zHi; z++) {
+                    pos.set(worldX, y, z);
+                    if (!TunnelPalette.isUndergroundMaterial(level.getBlockState(pos))) continue;
                     level.setBlock(pos, AIR, Block.UPDATE_CLIENTS);
                 }
             }

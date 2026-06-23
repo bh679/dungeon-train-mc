@@ -2,7 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
-import games.brennan.dungeontrain.worldgen.Disintegration;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
 /**
  * Client-side cache of the per-world data needed to evaluate the disintegration
@@ -44,7 +44,7 @@ public final class ClientVoidBand {
      * atmosphere returns each time the world breaks apart. Drives the sky crossfade,
      * the fog darkening, and cloud suppression.
      *
-     * <p>Uses {@link Disintegration#skyRamp} (not {@code middleRamp}), so the sky lags the
+     * <p>Uses {@link WorldGenCycle#endSkyRamp} (not {@code endMiddleRamp}), so the sky lags the
      * terrain by {@code disintegrationSkyFadeOffsetBlocks} on each edge: it stays overworld
      * while the ground first crumbles on entry and returns to overworld before the terrain
      * has fully reformed on exit. Offset 0 reproduces the terrain-synced behaviour.</p>
@@ -52,14 +52,8 @@ public final class ClientVoidBand {
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
-        long startX = DungeonTrainCommonConfig.getDisintegrationStartBlocks();
-        int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
-        int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
-        int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
-        int endHold = DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks();
-        int owHold = DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks();
-        int skyOffset = DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks();
-        return Disintegration.skyRamp((int) Math.floor(worldX), startX, phaseShift, fade, voidHold, endHold, owHold, skyOffset);
+        return WorldGenCycle.fromConfig().endSkyRamp(
+                (int) Math.floor(worldX), DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks());
     }
 
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */

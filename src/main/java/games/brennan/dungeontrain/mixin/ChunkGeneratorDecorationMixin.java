@@ -1,8 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import net.minecraft.core.BlockPos;
@@ -99,12 +97,7 @@ public abstract class ChunkGeneratorDecorationMixin {
             if (startX == DisintegrationBand.OFF) return false;
             int chunkMinX = chunk.getPos().getMinBlockX();
             if (chunkMinX + 15 < startX) return false;
-            return Disintegration.isChunkFullyEroded(chunkMinX, startX,
-                    DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks(),
-                    DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
-                    DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
-                    DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),
-                    DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks());
+            return DisintegrationBand.isChunkFullyEroded(serverLevel, chunkMinX);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] decoration-skip resolve failed at {}; running vanilla decoration",
                     chunk.getPos(), t);

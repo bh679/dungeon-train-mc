@@ -1,0 +1,6 @@
+{
+  "feature": "dungeontrain:nether_transition",
+  "placement": [
+    { "type": "minecraft:count", "count": 1 }
+  ]
+}

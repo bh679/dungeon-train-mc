@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
 import net.minecraft.client.Camera;
@@ -48,7 +49,8 @@ public abstract class LevelRendererVoidSkyMixin {
                                                double camX, double camY, double camZ, CallbackInfo ci) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
-        if (ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+        if (ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
+                || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
             ci.cancel();
         }
     }
