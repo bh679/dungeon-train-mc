@@ -1,0 +1,108 @@
+name: Push Blog Post to Wiki
+
+on:
+  workflow_dispatch:
+    inputs:
+      blog_filename:
+        description: 'Blog post filename (inside .github/wiki-content/)'
+        required: true
+        default: 'Blog-2026-06-23-Nether-Arrives.md'
+      blog_title:
+        description: 'Blog post title for index entry'
+        required: true
+        default: '2026-06-23 — The Nether Arrives'
+      blog_page:
+        description: 'Wiki page name (no extension)'
+        required: true
+        default: 'Blog-2026-06-23-Nether-Arrives'
+      year:
+        description: 'Year heading to add entry under in Blog.md'
+        required: true
+        default: '2026'
+
+jobs:
+  push-to-wiki:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout main repo
+        uses: actions/checkout@v4
+
+      - name: Clone wiki
+        run: |
+          git clone \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" \
+            /tmp/wiki
+
+      - name: Copy blog post
+        run: |
+          cp ".github/wiki-content/${{ inputs.blog_filename }}" \
+             "/tmp/wiki/${{ inputs.blog_filename }}"
+
+      - name: Update Blog index
+        shell: python3 {0}
+        run: |
+          import os, re
+
+          wiki_dir = "/tmp/wiki"
+          blog_md  = os.path.join(wiki_dir, "Blog.md")
+          year     = "${{ inputs.year }}"
+          page     = "${{ inputs.blog_page }}"
+          title    = "${{ inputs.blog_title }}"
+          entry    = f"- [{title}]({page})"
+
+          if not os.path.exists(blog_md):
+              content = f"""[Home](Home) > Blog
+
+# Dev Blog
+
+Updates from the Dungeon Train development team.
+
+## {year}
+
+{entry}
+"""
+          else:
+              content = open(blog_md).read()
+              if entry in content:
+                  print("Entry already present, skipping index update.")
+              else:
+                  year_heading = f"## {year}"
+                  if year_heading in content:
+                      # Insert immediately after the heading line
+                      content = content.replace(
+                          year_heading + "\n",
+                          year_heading + "\n" + entry + "\n",
+                          1,
+                      )
+                  else:
+                      # Prepend a new year section before the first ## heading
+                      first_h2 = re.search(r'^## ', content, re.MULTILINE)
+                      if first_h2:
+                          pos = first_h2.start()
+                          content = (
+                              content[:pos]
+                              + f"## {year}\n\n{entry}\n\n"
+                              + content[pos:]
+                          )
+                      else:
+                          content += f"\n## {year}\n\n{entry}\n"
+
+          with open(blog_md, "w") as f:
+              f.write(content)
+
+      - name: Commit and push
+        run: |
+          cd /tmp/wiki
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --staged --quiet; then
+            echo "Nothing to commit — wiki already up to date."
+          else
+            git commit -m "docs: blog post ${{ inputs.blog_page }}"
+            git push
+            echo "Wiki updated successfully."
+          fi
