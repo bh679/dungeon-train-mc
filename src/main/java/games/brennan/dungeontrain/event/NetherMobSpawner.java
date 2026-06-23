@@ -63,6 +63,8 @@ public final class NetherMobSpawner {
     /** Vertical search window around the player for a valid floor. */
     private static final int FLOOR_SEARCH_UP = 5;
     private static final int FLOOR_SEARCH_DOWN = 10;
+    /** How high above the player to scan for an open-air pocket a ghast's 4×4×4 body fits in. */
+    private static final int GHAST_POCKET_CEILING = 18;
 
     /** Tag for accounting only (NOT the carriage-contents prefix, so kill-ahead/confinement ignore it). */
     private static final String NETHER_MOB_TAG = "dungeontrain_nether_band_mob";
@@ -162,11 +164,17 @@ public final class NetherMobSpawner {
 
         boolean ghast = rng.nextInt(ghastChanceDenom(biome)) == 0;
         if (ghast) {
-            // Open-air pocket above the player level.
-            BlockPos air = new BlockPos(wx, player.getBlockY() + 4 + rng.nextInt(8), wz);
-            if (!level.getBlockState(air).isAir() || !level.getBlockState(air.above()).isAir()) return;
-            spawn(level, EntityType.GHAST, air, rng);
-            return;
+            // A ghast is 4×4×4 — scan up from the (randomised) start height for the first pocket
+            // its whole body actually fits in, so it never materialises inside terrain and suffocates.
+            int startY = player.getBlockY() + 4 + rng.nextInt(8);
+            for (int y = startY; y <= player.getBlockY() + GHAST_POCKET_CEILING; y++) {
+                BlockPos air = new BlockPos(wx, y, wz);
+                if (hasRoomFor(level, EntityType.GHAST, air)) {
+                    spawn(level, EntityType.GHAST, air, rng);
+                    return;
+                }
+            }
+            return; // no open pocket this attempt — TRIES gives more chances
         }
 
         // Ground mob: find a solid floor with 2 air above, near the player's Y.
@@ -179,6 +187,16 @@ public final class NetherMobSpawner {
             spawn(level, type, feet, rng);
             return;
         }
+    }
+
+    /**
+     * True when {@code type}'s full bounding box, spawned centred on {@code pos}, clears all block
+     * collision. Uses the same position {@link #spawn} hands to {@link Mob#moveTo} (centre of the
+     * column, feet at {@code pos.getY()}), so the test matches where the mob actually lands.
+     */
+    private static boolean hasRoomFor(ServerLevel level, EntityType<?> type, BlockPos pos) {
+        AABB box = type.getDimensions().makeBoundingBox(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        return level.noCollision(box);
     }
 
     private static void spawn(ServerLevel level, EntityType<? extends Mob> type, BlockPos pos, RandomSource rng) {
