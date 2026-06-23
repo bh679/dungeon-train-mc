@@ -1999,6 +1999,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "zombie-cure-narrative",
+      "version": "0.353.0",
+      "type": "content",
+      "title": "\"Weakness, Then Gold\" \u2014 a zombie's-cure story",
+      "summary": "A new book rides the train: seven letters by a zombie hunting its own cure \u2014 a Potion of Weakness from a witch, then a Golden Apple. The writing climbs from groans to human speech as the cure takes, and the last letter leaves the recipe for the next lost soul.",
+      "highlights": [
+        "New 7-letter narrative book written from a zombie's point of view",
+        "Built on the real cure: a Potion of Weakness, then a Golden Apple"
+      ],
+      "pr": 543,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
