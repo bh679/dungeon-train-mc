@@ -113,15 +113,4 @@ public final class NetherTransition {
         if (dd < n2) return 1.0;                                    // real-Nether core
         return 1.0 - (double) (dd - n2) / cf;                      // netherrack → mountain (cf>0 here)
     }
-
-    /**
-     * World-Y the stamped mountain reaches for a column's {@link #heightRamp} value:
-     * {@code bedY + round(H · maxHeight)}, clamped to {@code worldTop}. Pure so the
-     * height curve is unit-testable alongside the ramps.
-     */
-    public static int mountainTopY(double heightRamp, int bedY, int maxHeight, int worldTop) {
-        double h = heightRamp < 0.0 ? 0.0 : (heightRamp > 1.0 ? 1.0 : heightRamp);
-        int top = bedY + (int) Math.round(h * Math.max(0, maxHeight));
-        return Math.min(worldTop, top);
-    }
 }

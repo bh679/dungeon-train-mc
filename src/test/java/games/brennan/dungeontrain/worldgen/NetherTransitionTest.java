@@ -121,15 +121,4 @@ final class NetherTransitionTest {
         assertEquals(0.0, NetherTransition.netherRamp(1000 + OW, START_X, F, MH, 0, CH, OW), EPS);         // rising mountain, N=0
     }
 
-    // ---- mountain top height -------------------------------------------------
-
-    @Test
-    @DisplayName("mountainTopY scales bedY by the height ramp and clamps to the world top")
-    void mountainTop_scaleAndClamp() {
-        int bedY = 76, maxHeight = 250, worldTop = 319;
-        assertEquals(76, NetherTransition.mountainTopY(0.0, bedY, maxHeight, worldTop));   // no mountain
-        assertEquals(201, NetherTransition.mountainTopY(0.5, bedY, maxHeight, worldTop));  // half height
-        assertEquals(319, NetherTransition.mountainTopY(1.0, bedY, maxHeight, worldTop));  // 76+250=326 → clamped
-        assertEquals(319, NetherTransition.mountainTopY(2.0, bedY, maxHeight, worldTop));  // ramp clamped to 1 first
-    }
 }
