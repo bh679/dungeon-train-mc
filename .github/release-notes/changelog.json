@@ -2175,6 +2175,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-ghast-collision-check",
+      "version": "0.354.0",
+      "type": "fix",
+      "title": "Ghasts stop spawning trapped inside blocks in the Nether",
+      "summary": "Ghasts in the overworld Nether stretch sometimes spawned stuck inside the terrain and died instantly. They now only appear where there's real open air for their whole 4-block-wide body, so they float free and stick around to menace the train.",
+      "highlights": [
+        "Ghasts no longer spawn embedded in blocks and die on the spot"
+      ],
+      "pr": 556,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
