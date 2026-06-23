@@ -2109,6 +2109,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-piglins-dont-zombify",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Piglins keep their cool in the Nether band",
+      "summary": "Piglins, piglin brutes, and hoglins no longer shiver and convert when they're standing in the overworld's Nether biome. Inside the red-fog netherrack core of the Nether transition band they now behave exactly like they would in the real Nether \u2014 no zombification, no trembling. Step back out into the normal overworld and they go back to converting as usual.",
+      "highlights": [
+        "Piglins & brutes no longer zombify in the Nether band's core",
+        "Hoglins no longer turn into zoglins there",
+        "No more trembling \u2014 behaviour reverts once they leave the Nether core"
+      ],
+      "pr": 553,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
