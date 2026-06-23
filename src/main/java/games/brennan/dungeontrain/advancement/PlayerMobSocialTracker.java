@@ -96,6 +96,9 @@ public final class PlayerMobSocialTracker {
         Entity mob = player.serverLevel().getEntity(mobUuid);
         if (EchoIdentity.isOwnEcho(mob, player.getUUID())) {
             ModAdvancementTriggers.BEFRIENDED_ECHO.get().trigger(player);
+        } else if (EchoIdentity.sourcePlayer(mob).isPresent()) {
+            // Someone else's echo — the remote counterpart to "Old Friends, New Life".
+            ModAdvancementTriggers.ECHO_FEAT.get().trigger(player, "remote_befriend");
         }
     }
 

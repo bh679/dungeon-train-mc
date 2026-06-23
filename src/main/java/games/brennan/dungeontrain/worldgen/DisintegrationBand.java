@@ -51,4 +51,28 @@ public final class DisintegrationBand {
                 DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks());
     }
+
+    /**
+     * End ramp (End-island fill intensity) at a single world-X for this overworld, reading the
+     * live config spans. 0 in the void holds, the overworld stretches, and before the band.
+     */
+    public static double endRampAt(ServerLevel overworld, int worldX) {
+        long sx = startX(overworld);
+        if (sx == OFF) return 0.0;
+        return Disintegration.endRamp(worldX, sx,
+                DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationFadeBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks());
+    }
+
+    /**
+     * Which band ({@link Disintegration.Zone}) the column at {@code worldX} sits in for this
+     * overworld. Returns {@link Disintegration.Zone#OVERWORLD} when disintegration is off (both
+     * ramps are 0). Drives the reach-the-void / End-islands / overworld-again advancements.
+     */
+    public static Disintegration.Zone zoneAt(ServerLevel overworld, int worldX) {
+        return Disintegration.zoneOf(middleRampAt(overworld, worldX), endRampAt(overworld, worldX));
+    }
 }

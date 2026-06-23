@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/remote_echo_encounter",
+  "display": {
+    "icon": { "id": "minecraft:emerald" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.remote_echo_befriend.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.remote_echo_befriend.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "befriended": {
+      "trigger": "dungeontrain:echo_feat",
+      "conditions": { "feat": "remote_befriend" }
+    }
+  },
+  "requirements": [["befriended"]]
+}

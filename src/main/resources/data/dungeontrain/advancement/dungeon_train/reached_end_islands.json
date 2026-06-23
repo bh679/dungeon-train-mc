@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_void",
+  "display": {
+    "icon": { "id": "minecraft:end_stone" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_end_islands.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_end_islands.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_end_islands" }
+    }
+  },
+  "requirements": [["reached"]]
+}
