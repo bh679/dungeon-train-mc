@@ -2236,6 +2236,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-tunnel-cleanup",
+      "version": "0.354.0",
+      "type": "fix",
+      "title": "Nether train tunnel stays clean and dry",
+      "summary": "The train tunnel through the Nether no longer fills with stray basalt, the Nether stretch is now dry like the real Nether, and gravel can no longer tumble onto the rails as you ride through it.",
+      "highlights": [
+        "Basalt and other Nether decoration no longer intrude into the train tunnel",
+        "The Nether stretch is dry \u2014 worldgen water in the netherrack mountains is cleared",
+        "Gravel no longer falls onto the tracks in the Nether"
+      ],
+      "pr": 562,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
