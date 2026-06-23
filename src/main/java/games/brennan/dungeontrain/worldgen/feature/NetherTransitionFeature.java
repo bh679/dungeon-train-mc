@@ -54,7 +54,7 @@ import java.util.Set;
 
 /**
  * Worldgen feature for the <b>Nether transition band</b> (overworld, runs at
- * {@code top_layer_modification} after {@code track_bed}). The band's mountain BODY is no longer
+ * {@code top_layer_modification} before {@code track_bed}). The band's mountain BODY is no longer
  * stamped here — it is raised directly in the chunk generator's density router (see
  * {@code worldgen.density.NetherBandTerrainDensityFunction}), so vanilla surface rules
  * (grass/dirt/snow), trees, and structures land on it naturally. This post-process feature now only
@@ -92,7 +92,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /** X offset into the Nether so successive bands sample different (but continuous) terrain. */
     private static final int NETHER_SAMPLE_OFFSET_X = 12_000;
 
-    /** Nether-core corridor envelope height above the bed (kept solid netherrack so track_bed tunnels it). */
+    /** Height above the bed at which a shore column is tall enough that {@code track_bed} will tunnel it,
+     *  so the shore ramp need not hold its own train lane open (the only remaining user of this constant). */
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
     /** Depth of the surface skin recoloured to netherrack across the crossfade. */
     private static final int SURFACE_SKIN_DEPTH = 4;
@@ -102,8 +103,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final long CROSSFADE_DITHER_SALT = 0x9E3779B97F4A7C15L;
     /** Extra Z clearance on each side of the tunnel wall span. */
     private static final int CORRIDOR_MARGIN = 1;
-    /** Guaranteed solid causeway depth below the bed in the Nether core (a netherrack bridge over lava). */
-    private static final int CORE_CAUSEWAY_DEPTH = 3;
     /** netherRamp at/above this is the real-Nether core (REPLACE); below it is the netherrack crossfade.
      *  Shared with the biome-source mixin via {@link WorldGenCycle#NETHER_CORE_THRESHOLD}. */
     private static final double CORE_THRESHOLD = WorldGenCycle.NETHER_CORE_THRESHOLD;
@@ -441,8 +440,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /**
      * Stage 5: REPLACE the column with real Nether terrain sampled (trilinearly, like the
      * End feature) from the Nether dimension's density router — netherrack where the
-     * density is solid, lava below the Nether sea, air for caverns. A guaranteed
-     * netherrack causeway carries the track over the lava, and the tunnel stays clear.
+     * density is solid, lava below the Nether sea, air for caverns. The corridor lane gets the
+     * same natural terrain as everywhere else (no forced causeway/envelope): the later
+     * {@code track_bed} feature then tunnels through the solid netherrack and rides pillars
+     * across the open lava lakes / caverns, exactly as it does over the End band's islands/void.
      */
     private boolean fillNetherColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                      int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
@@ -478,29 +479,24 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean changed = false;
         for (int y = yLo; y <= yHi; y++) {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
-            // Keep the whole corridor envelope solid netherrack (causeway under the bed + walls/roof through
-            // the tunnel height) so the later track_bed feature reliably carves a clean, walled tunnel through
-            // the nether — never leaving the train exposed over a lava cavern.
-            boolean envelope = inCorridorLane(worldZ, tg)
-                    && y >= bedY - CORE_CAUSEWAY_DEPTH && y <= bedY + TUNNEL_CLEAR_HEIGHT;
+            // Fill the corridor lane with the same natural Nether terrain as every other column — no forced
+            // solid envelope. track_bed runs after this and tunnels through the solid netherrack while
+            // pillaring across the open lava lakes / caverns: its ground probe treats lava as passable and
+            // rests pillars on the netherrack floor, and the tunnel only qualifies where rock sits above the bed.
+            int netherY = NETHER_CENTER_Y + (y - bedY);
+            int r = Math.floorDiv(netherY, cellH) - cellRowBase;
+            if (r < 0 || r + 1 >= rows) continue;
+            double fy = (double) (netherY - (cellRowBase + r) * cellH) / cellH;
+            double bot = bilerp(c00[r], c10[r], c01[r], c11[r], fx, fz);
+            double top = bilerp(c00[r + 1], c10[r + 1], c01[r + 1], c11[r + 1], fx, fz);
+            double d = bot + (top - bot) * fy;
             BlockState target;
-            if (envelope) {
+            if (d > 0.0) {
                 target = NETHERRACK;
+            } else if (netherY < netherSeaLevel) {
+                target = Blocks.LAVA.defaultBlockState();
             } else {
-                int netherY = NETHER_CENTER_Y + (y - bedY);
-                int r = Math.floorDiv(netherY, cellH) - cellRowBase;
-                if (r < 0 || r + 1 >= rows) continue;
-                double fy = (double) (netherY - (cellRowBase + r) * cellH) / cellH;
-                double bot = bilerp(c00[r], c10[r], c01[r], c11[r], fx, fz);
-                double top = bilerp(c00[r + 1], c10[r + 1], c01[r + 1], c11[r + 1], fx, fz);
-                double d = bot + (top - bot) * fy;
-                if (d > 0.0) {
-                    target = NETHERRACK;
-                } else if (netherY < netherSeaLevel) {
-                    target = Blocks.LAVA.defaultBlockState();
-                } else {
-                    target = AIR;
-                }
+                target = AIR;
             }
             if (w.isSame(dx, y, dz, target)) continue;
             w.set(dx, y, dz, target);
