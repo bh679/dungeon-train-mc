@@ -235,24 +235,78 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 }
             }
 
-            if (!changed) return false;
-            Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
+            // Prime heightmaps before decoration so the vanilla nether features see the real surface.
+            if (changed) Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
 
             // Decorate the real-Nether core with the actual vanilla Nether features (fire, glowstone,
             // springs, ores, mushrooms). Only chunks whose every column is core get it — the core biome
             // is nether_wastes there (so each feature's biome filter passes) and the terrain is netherrack
-            // (so the features land correctly). Heightmaps are already primed, so the features see the
-            // real surface. track_bed runs after this and carves the tunnel, clearing the corridor lane.
+            // (so the features land correctly).
             if (isFullCoreChunk(overworld, cycle, netherDensity, chunkMinX)) {
                 decorateCoreChunkWithNetherFeatures(level, ctx.chunkGenerator(), server, cp, bedY);
             }
 
+            // Clearance guarantee (runs LAST, for every in-band corridor column — including the
+            // pure-mountain chunks the terrain loop skipped, and after decoration so a feature dropped
+            // into the lane is removed too): clears the train's airspace of any solid netherrack/stone the
+            // later track_bed wouldn't carve, so the tunnel/viaduct ride space is never blocked.
+            changed |= clearCorridorClearance(chunk, overworld, chunkMinX, chunkMinZ, heightRamp,
+                    bedY, railY, zMin, zMax, tg, minY, worldTop);
+
+            if (!changed) return false;
+            Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
             chunk.setUnsaved(true);
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] NetherTransitionFeature.place failed at chunk {}", ctx.origin(), t);
             return false;
         }
+    }
+
+    /**
+     * Clearance guarantee for the train's ride space across the whole Nether-band corridor.
+     *
+     * <p>{@code track_bed}'s tunnel carve only acts on columns that qualify as "underground"
+     * ({@link games.brennan.dungeontrain.tunnel.TunnelGenerator#isColumnUndergroundWorldgen} probes
+     * at {@code ceilingY+1}; extended mode only reaches {@code bedY+7}). A column whose terrain pokes
+     * into the lower clearance ({@code bedY+1..bedY+6}, where the train body sits) but is open above
+     * is never carved, leaving a netherrack (core) / stone (mountain transition) stub in the train's
+     * path. This pass removes those stubs.</p>
+     *
+     * <p>Bounded to {@code bedY+1 .. ceilingY-1} — strictly below the {@code ceilingY+1} qualification
+     * probe, so it never suppresses a genuine tunnel — and to the airspace Z span
+     * ({@code airMinZ..airMaxZ}), so the tunnel walls ({@code wallMinZ/wallMaxZ}) survive: a real
+     * tunnel keeps its walls while a lava viaduct stays open. Only solid cells are cleared
+     * ({@link ColumnWriter#isSolidGround}); air and lava (which sits well below the bed) are left
+     * alone, and the bed/rails are preserved. Returns whether any block was cleared.</p>
+     */
+    private boolean clearCorridorClearance(ChunkAccess chunk, ServerLevel overworld, int chunkMinX,
+                                           int chunkMinZ, double[] heightRamp, int bedY, int railY,
+                                           int zMin, int zMax, TunnelGeometry tg, int minY, int worldTop) {
+        int zClearMin = Math.max(chunkMinZ, tg.airMinZ());
+        int zClearMax = Math.min(chunkMinZ + 15, tg.airMaxZ());
+        if (zClearMin > zClearMax) return false;                  // corridor not in this chunk's Z span
+        int yBot = Math.max(minY, bedY + 1);
+        int yTop = Math.min(worldTop, tg.ceilingY() - 1);         // below the bedY+10 qualification probe
+        if (yBot > yTop) return false;
+
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        for (int dx = 0; dx < 16; dx++) {
+            if (heightRamp[dx] <= 0.0) continue;
+            int worldX = chunkMinX + dx;
+            if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) continue; // End owns this column
+            for (int worldZ = zClearMin; worldZ <= zClearMax; worldZ++) {
+                int dz = worldZ - chunkMinZ;
+                for (int y = yBot; y <= yTop; y++) {
+                    if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
+                    if (!w.isSolidGround(dx, y, dz)) continue;    // leave air / lava; clear solid stubs only
+                    w.set(dx, y, dz, AIR);
+                    changed = true;
+                }
+            }
+        }
+        return changed;
     }
 
     /**
