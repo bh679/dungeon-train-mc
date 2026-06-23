@@ -2058,6 +2058,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-transition-band",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The train climbs real mountains into the Nether",
+      "summary": "A new world-gen band sends the train climbing through towering overworld mountains, tunnelling through the peaks, then crossing a real Nether core before easing back to the overworld. The mountains are full living terrain \u2014 grass, forests, flowers and snow-capped peaks grow on them, villages and other structures appear on their slopes, and the climb passes through highland biomes (groves, meadows, snowy slopes and jagged peaks). Bands that begin over ocean get a natural sand shore, and the Nether core glows with a warm, dim light.",
+      "highlights": [
+        "Towering mountain ranges the train tunnels through on the way to the Nether",
+        "Mountains are real terrain: grass, trees, flowers, snow caps and structures generate on them",
+        "Altitude-graded highland biomes \u2014 forested base, spruce groves, snowy peaks",
+        "A real Nether core with warm dim lighting; ocean entrances get a sand shore"
+      ],
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
