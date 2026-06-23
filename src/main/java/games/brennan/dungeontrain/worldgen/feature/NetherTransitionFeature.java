@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -135,14 +136,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
             int seaLevel = overworld.getSeaLevel();
 
-            double[] heightRamp = new double[16];
-            double[] netherRamp = new double[16];
+            // The band front is edge-waved (NetherMountainTerrain#wavyX) per column, so a chunk within one
+            // wave-shift of the band can have in-band columns; test the X range expanded by that margin.
             boolean anyHeight = false;
-            for (int dx = 0; dx < 16; dx++) {
-                int worldX = chunkMinX + dx;
-                heightRamp[dx] = cycle.netherHeightRamp(worldX);
-                netherRamp[dx] = cycle.netherRamp(worldX);
-                if (heightRamp[dx] > 0.0) anyHeight = true;
+            int margin = NetherMountainTerrain.maxEdgeShift();
+            for (int x = chunkMinX - margin; x <= chunkMinX + 15 + margin && !anyHeight; x++) {
+                if (cycle.netherHeightRamp(x) > 0.0) anyHeight = true;
             }
             if (!anyHeight) return false;
 
@@ -187,32 +186,35 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
             boolean changed = false;
             for (int dx = 0; dx < 16; dx++) {
-                if (heightRamp[dx] <= 0.0) continue;
                 int worldX = chunkMinX + dx;
-                // Precedence: the End band always wins — skip columns it owns.
-                if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) continue;
-
-                double n = netherRamp[dx];
-                boolean core = n >= CORE_THRESHOLD && netherDensity != null;
-                boolean inBeachSpan = !core && cycle.isNetherBeachStage(worldX);
-                // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
-                // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
-                if (inBeachSpan && !oceanEntrance) continue;
-                // Pure mountain-stage columns (n == 0, not the beach) are now built entirely by the terrain-noise
-                // density wrapper — nothing to post-process here, so skip them (this is what lets grass/trees/
-                // structures survive on the mountain instead of being re-buried by a rock stamp).
-                boolean crossfade = !core && !inBeachSpan && n > 0.0;
-                // Over an ocean entrance the feathered mountain rises out of sea level across the entry/exit
-                // fade, leaving a stony shoreline; recolour that low surface to beach sand. Only the fade
-                // zone (feather < 1) can be near sea level — the high interior + all land bands are skipped.
-                boolean shoreSkin = !core && !inBeachSpan && !crossfade
-                        && oceanEntrance && cycle.netherMountainFeather(worldX) < 1.0;
-                if (!core && !inBeachSpan && !crossfade && !shoreSkin) continue;
-                double beachProgress = inBeachSpan ? cycle.netherBeachProgress(worldX) : 0.0;
-                int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
-
                 for (int dz = 0; dz < 16; dz++) {
                     int worldZ = chunkMinZ + dz;
+                    // Evaluate the band at the edge-waved X (matched to the density router + biome source) so
+                    // the leading/trailing front, the beach span and the crossfade all undulate together.
+                    int wx = NetherMountainTerrain.wavyX(seed, worldX, worldZ);
+                    if (cycle.netherHeightRamp(wx) <= 0.0) continue;
+                    // Precedence: the End band always wins — skip columns it owns.
+                    if (DisintegrationBand.middleRampAt(overworld, wx) > 0.0) continue;
+
+                    double n = cycle.netherRamp(wx);
+                    boolean core = n >= CORE_THRESHOLD && netherDensity != null;
+                    boolean inBeachSpan = !core && cycle.isNetherBeachStage(wx);
+                    // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
+                    // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
+                    if (inBeachSpan && !oceanEntrance) continue;
+                    // Pure mountain-stage columns (n == 0, not the beach) are built entirely by the terrain-noise
+                    // density wrapper — nothing to post-process here (so grass/trees/structures survive), EXCEPT
+                    // the ocean shore-skin below.
+                    boolean crossfade = !core && !inBeachSpan && n > 0.0;
+                    // Over an ocean entrance the feathered mountain rises out of sea level across the entry/exit
+                    // fade, leaving a stony shoreline; recolour that low surface to beach sand. Only the fade
+                    // zone (feather < 1) can be near sea level — the high interior + all land bands are skipped.
+                    boolean shoreSkin = !core && !inBeachSpan && !crossfade
+                            && oceanEntrance && cycle.netherMountainFeather(wx) < 1.0;
+                    if (!core && !inBeachSpan && !crossfade && !shoreSkin) continue;
+                    double beachProgress = inBeachSpan ? cycle.netherBeachProgress(wx) : 0.0;
+                    int sampleX = wx + NETHER_SAMPLE_OFFSET_X;
+
                     boolean colChanged;
                     if (core) {
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,

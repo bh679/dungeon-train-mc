@@ -39,7 +39,9 @@ public abstract class MultiNoiseBiomeSourceMixin {
             int blockY = y << 2;
             int blockZ = z << 2;
             if (blockY < ctx.seaLevel()) return original;                 // natural cave biomes below sea
-            if (!NetherMountainTerrain.raises(ctx.cycle(), blockX)) return original; // not a band mountain column
+            // Match the density router's edge-waved front so the forced-biome boundary undulates with the terrain.
+            int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), blockX, blockZ);
+            if (!NetherMountainTerrain.raises(ctx.cycle(), wx)) return original; // not a band mountain column
             return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
         } catch (Throwable t) {
             return original;
