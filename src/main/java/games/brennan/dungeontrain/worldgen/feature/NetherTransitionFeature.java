@@ -316,7 +316,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 if (!w.isAir(dx, y, dz)) { w.set(dx, y, dz, AIR); changed = true; } // keep the train lane clear
                 continue;
             }
-            BlockState want = y <= seaLevel ? WATER : AIR;
+            // Vanilla ocean water tops out at seaLevel-1 (y=seaLevel is the first air); match it so the
+            // shallows sit flush with the surrounding sea rather than one block proud.
+            BlockState want = y < seaLevel ? WATER : AIR;
             if (!w.isSame(dx, y, dz, want)) { w.set(dx, y, dz, want); changed = true; }
         }
 
