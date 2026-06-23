@@ -27,9 +27,8 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *
  * @param startX     world-X the cycle is anchored at (before it: plain overworld)
  * @param owGap      overworld blocks before each special band (two gaps per period)
- * @param stageBlocks length of each of the 3 mountain stages
- * @param stage2Mult heightmap multiplier reached by stage 2
- * @param stage3Mult heightmap multiplier reached by stage 3 (the mega-mountain)
+ * @param stageBlocks length of EACH mountain stage
+ * @param stageMultipliers heightmap multiplier per stage (stage 1 = first value, 1 = natural)
  * @param megaHold   full-strength mega-mountain plateau on each side of the core
  * @param coreFade   mountain→netherrack crossfade span (each side)
  * @param coreHold   real-Nether core span
@@ -38,7 +37,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param eEnd       End-island core span
  */
 public record WorldGenCycle(long startX, int owGap,
-                            int stageBlocks, int stage2Mult, int stage3Mult, int megaHold,
+                            int stageBlocks, int[] stageMultipliers, int megaHold,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd) {
 
@@ -50,8 +49,7 @@ public record WorldGenCycle(long startX, int owGap,
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
                 DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
                 nether ? DungeonTrainCommonConfig.getNetherStageBlocks() : 0,
-                DungeonTrainCommonConfig.getNetherStage2Multiplier(),
-                DungeonTrainCommonConfig.getNetherStage3Multiplier(),
+                DungeonTrainCommonConfig.getNetherStageMultipliers(),
                 nether ? DungeonTrainCommonConfig.getNetherMountainHoldBlocks() : 0,
                 nether ? DungeonTrainCommonConfig.getNetherCoreFadeBlocks() : 0,
                 nether ? DungeonTrainCommonConfig.getNetherCoreHoldBlocks() : 0,
@@ -60,9 +58,19 @@ public record WorldGenCycle(long startX, int owGap,
                 end ? DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks() : 0);
     }
 
-    /** Combined length of the 3 mountain stages (the heightRamp's rise/fall span). */
+    private int stageCount() {
+        return (stageMultipliers == null || stageMultipliers.length == 0) ? 1 : stageMultipliers.length;
+    }
+
+    private double stageMult(int i) {
+        if (stageMultipliers == null || stageMultipliers.length == 0) return 1.0;
+        int idx = Math.max(0, Math.min(i, stageMultipliers.length - 1));
+        return Math.max(1, stageMultipliers[idx]);
+    }
+
+    /** Combined length of all mountain stages (the heightRamp's rise/fall span). */
     public int riseLen() {
-        return 3 * Math.max(0, stageBlocks);
+        return stageCount() * Math.max(0, stageBlocks);
     }
 
     public long netherLen() {
@@ -128,18 +136,24 @@ public record WorldGenCycle(long startX, int owGap,
         long edge = rise + Math.max(0, megaHold);
         if (ln < edge) return riseMult(ln, rise);
         if (ln >= band - edge) return riseMult(band - ln, rise);
-        return Math.max(1, stage3Mult);                            // core region: mega held
+        return stageMult(stageCount() - 1);                        // core region: last (mega) held
     }
 
-    /** Stage curve over the rise: ×1 (stage 1), ramp to ×stage2Mult (stage 2), to ×stage3Mult (stage 3), then held. */
+    /**
+     * Stage curve over the rise: each stage ramps from the previous multiplier to its own
+     * (stage 1 ramps from the natural ×1), so the mountains grow smoothly stage by stage;
+     * the final multiplier is held across the mega plateau.
+     */
     private double riseMult(long d, int rise) {
-        if (d >= rise) return Math.max(1, stage3Mult);             // mega plateau
+        int n = stageCount();
+        if (d >= rise) return stageMult(n - 1);                    // mega plateau
         int s = Math.max(1, stageBlocks);
-        double m2 = Math.max(1, stage2Mult);
-        double m3 = Math.max(1, stage3Mult);
-        if (d < s) return 1.0;                                     // stage 1 — natural height
-        if (d < 2L * s) return 1.0 + (m2 - 1.0) * (d - s) / s;     // stage 2 — climb to ×m2
-        return m2 + (m3 - m2) * (d - 2L * s) / s;                  // stage 3 — climb to ×m3
+        int idx = (int) (d / s);
+        if (idx >= n) return stageMult(n - 1);
+        double from = (idx == 0) ? 1.0 : stageMult(idx - 1);
+        double to = stageMult(idx);
+        double within = (double) (d - (long) idx * s) / s;
+        return from + (to - from) * within;
     }
 
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */

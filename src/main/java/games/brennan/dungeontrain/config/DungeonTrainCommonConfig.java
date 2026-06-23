@@ -76,14 +76,8 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_STAGE_BLOCKS = 0;
     public static final int MAX_NETHER_STAGE_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_STAGE_BLOCKS = 80;
-    /** Stage-2 heightmap multiplier — the natural terrain height (above sea) is scaled by this. */
-    public static final int MIN_NETHER_STAGE2_MULTIPLIER = 1;
-    public static final int MAX_NETHER_STAGE2_MULTIPLIER = 1000;
-    public static final int DEFAULT_NETHER_STAGE2_MULTIPLIER = 5;
-    /** Stage-3 heightmap multiplier (the mega-mountain). */
-    public static final int MIN_NETHER_STAGE3_MULTIPLIER = 1;
-    public static final int MAX_NETHER_STAGE3_MULTIPLIER = 1000;
-    public static final int DEFAULT_NETHER_STAGE3_MULTIPLIER = 20;
+    /** Comma-separated heightmap multipliers, one per mountain stage (stage 1 = the first value, 1 = natural). */
+    public static final String DEFAULT_NETHER_STAGE_MULTIPLIERS = "1,2,4,8,15";
     /** Blocks of full-height mega-mountain plateau on each side of the nether core (the tunnel zone). */
     public static final int MIN_NETHER_MOUNTAIN_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_MOUNTAIN_HOLD_BLOCKS = 100_000_000;
@@ -109,8 +103,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     public static final ModConfigSpec.BooleanValue NETHER_TRANSITION_ENABLED;
     public static final ModConfigSpec.IntValue NETHER_STAGE_BLOCKS;
-    public static final ModConfigSpec.IntValue NETHER_STAGE2_MULTIPLIER;
-    public static final ModConfigSpec.IntValue NETHER_STAGE3_MULTIPLIER;
+    public static final ModConfigSpec.ConfigValue<String> NETHER_STAGE_MULTIPLIERS;
     public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
@@ -130,8 +123,7 @@ public final class DungeonTrainCommonConfig {
         DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = pair.getLeft().disintegrationOverworldHoldBlocks;
         NETHER_TRANSITION_ENABLED = pair.getLeft().netherTransitionEnabled;
         NETHER_STAGE_BLOCKS = pair.getLeft().netherStageBlocks;
-        NETHER_STAGE2_MULTIPLIER = pair.getLeft().netherStage2Multiplier;
-        NETHER_STAGE3_MULTIPLIER = pair.getLeft().netherStage3Multiplier;
+        NETHER_STAGE_MULTIPLIERS = pair.getLeft().netherStageMultipliers;
         NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
@@ -214,15 +206,12 @@ public final class DungeonTrainCommonConfig {
                         "stage 3 ×stage3Multiplier (the mega-mountain). ~80 = 5 chunks each. Default 80.")
                 .defineInRange("netherStageBlocks", DEFAULT_NETHER_STAGE_BLOCKS,
                         MIN_NETHER_STAGE_BLOCKS, MAX_NETHER_STAGE_BLOCKS);
-        ModConfigSpec.IntValue netherStage2Multiplier = b
-                .comment("Stage-2 heightmap multiplier — natural terrain height above sea level is scaled by this, so",
-                        "the same mountains read much taller. Default 5.")
-                .defineInRange("netherStage2Multiplier", DEFAULT_NETHER_STAGE2_MULTIPLIER,
-                        MIN_NETHER_STAGE2_MULTIPLIER, MAX_NETHER_STAGE2_MULTIPLIER);
-        ModConfigSpec.IntValue netherStage3Multiplier = b
-                .comment("Stage-3 heightmap multiplier (the mega-mountain the train tunnels through). Default 20.")
-                .defineInRange("netherStage3Multiplier", DEFAULT_NETHER_STAGE3_MULTIPLIER,
-                        MIN_NETHER_STAGE3_MULTIPLIER, MAX_NETHER_STAGE3_MULTIPLIER);
+        ModConfigSpec.ConfigValue<String> netherStageMultipliers = b
+                .comment("Comma-separated heightmap multipliers, one per mountain stage (each netherStageBlocks long).",
+                        "Stage 1 is the first value (1 = the natural terrain). The natural height above sea level is",
+                        "scaled toward each successive multiplier, so the mountains grow taller stage by stage; the",
+                        "last value is then held across the mega-mountain. Default 1,2,4,8,15.")
+                .define("netherStageMultipliers", DEFAULT_NETHER_STAGE_MULTIPLIERS);
         ModConfigSpec.IntValue netherMountainHoldBlocks = b
                 .comment("Blocks of full-strength mega-mountain (stage-3 multiplier held) on each side of the nether",
                         "core — the stretch the train tunnels through before the world turns to nether. Default 48.")
@@ -243,7 +232,7 @@ public final class DungeonTrainCommonConfig {
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
-                netherTransitionEnabled, netherStageBlocks, netherStage2Multiplier, netherStage3Multiplier,
+                netherTransitionEnabled, netherStageBlocks, netherStageMultipliers,
                 netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks);
     }
 
@@ -332,14 +321,27 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_STAGE_BLOCKS.get() : DEFAULT_NETHER_STAGE_BLOCKS;
     }
 
-    /** Stage-2 heightmap multiplier; falls back to the hardcoded default pre-load. */
-    public static int getNetherStage2Multiplier() {
-        return isLoaded() ? NETHER_STAGE2_MULTIPLIER.get() : DEFAULT_NETHER_STAGE2_MULTIPLIER;
+    /** Per-stage heightmap multipliers (parsed, each ≥ 1); falls back to the default on empty/garbage. */
+    public static int[] getNetherStageMultipliers() {
+        String raw = isLoaded() ? NETHER_STAGE_MULTIPLIERS.get() : DEFAULT_NETHER_STAGE_MULTIPLIERS;
+        int[] parsed = parseMultipliers(raw);
+        return parsed != null ? parsed : parseMultipliers(DEFAULT_NETHER_STAGE_MULTIPLIERS);
     }
 
-    /** Stage-3 (mega-mountain) heightmap multiplier; falls back to the hardcoded default pre-load. */
-    public static int getNetherStage3Multiplier() {
-        return isLoaded() ? NETHER_STAGE3_MULTIPLIER.get() : DEFAULT_NETHER_STAGE3_MULTIPLIER;
+    private static int[] parseMultipliers(String raw) {
+        if (raw == null) return null;
+        java.util.List<Integer> vals = new java.util.ArrayList<>();
+        for (String part : raw.split(",")) {
+            try {
+                vals.add(Math.max(1, Integer.parseInt(part.trim())));
+            } catch (NumberFormatException ignored) {
+                // skip non-numeric entries
+            }
+        }
+        if (vals.isEmpty()) return null;
+        int[] arr = new int[vals.size()];
+        for (int i = 0; i < arr.length; i++) arr[i] = vals.get(i);
+        return arr;
     }
 
     /** Full-strength mega-mountain plateau span (blocks) on each side of the core; falls back pre-load. */
@@ -368,8 +370,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue disintegrationOverworldHoldBlocks,
                           ModConfigSpec.BooleanValue netherTransitionEnabled,
                           ModConfigSpec.IntValue netherStageBlocks,
-                          ModConfigSpec.IntValue netherStage2Multiplier,
-                          ModConfigSpec.IntValue netherStage3Multiplier,
+                          ModConfigSpec.ConfigValue<String> netherStageMultipliers,
                           ModConfigSpec.IntValue netherMountainHoldBlocks,
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks) {}

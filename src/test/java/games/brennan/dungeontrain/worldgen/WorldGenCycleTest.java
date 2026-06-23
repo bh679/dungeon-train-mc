@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 final class WorldGenCycleTest {
 
-    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, 5, 20, 60, 50, 200, 100, 40, 200);
+    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 60, 50, 200, 100, 40, 200);
     private static final int PERIOD = 1940;
     private static final double EPS = 1e-9;
 
@@ -65,6 +65,21 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("an arbitrary N-stage multiplier list ramps smoothly through each stage (1,2,4,8,15)")
+    void fiveStageMultipliers() {
+        // anchor 0, owGap 0 → nether starts at offset 0; stageBlocks 40, 5 stages → riseLen 200.
+        WorldGenCycle d = new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 60, 50, 200, 0, 0, 0);
+        assertEquals(200, d.riseLen());
+        assertEquals(1.0, d.netherMountainMultiplier(0), EPS);    // stage 1 start
+        assertEquals(1.0, d.netherMountainMultiplier(40), EPS);   // → stage 2 start (held ×1 through stage 1)
+        assertEquals(2.0, d.netherMountainMultiplier(80), EPS);   // → stage 3 start
+        assertEquals(4.0, d.netherMountainMultiplier(120), EPS);  // → stage 4 start
+        assertEquals(8.0, d.netherMountainMultiplier(160), EPS);  // → stage 5 start
+        assertEquals(15.0, d.netherMountainMultiplier(200), EPS); // mega plateau (last value held)
+        assertEquals(1.5, d.netherMountainMultiplier(60), EPS);   // stage 2 midpoint (1→2)
+    }
+
+    @Test
     @DisplayName("the End segment comes after: void/island ramps active, Nether silent there")
     void endSegment() {
         assertEquals(1.0, C.endMiddleRamp(2360), EPS);    // offset 1360 → End hold
@@ -88,7 +103,7 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
-        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, 5, 20, 0, 0, 0, 100, 40, 200);
+        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 100, 40, 200);
         assertEquals(0L, endOnly.netherLen());
         assertEquals(680L, endOnly.endLen());
         assertEquals(2L * 300 + 680, endOnly.period());
