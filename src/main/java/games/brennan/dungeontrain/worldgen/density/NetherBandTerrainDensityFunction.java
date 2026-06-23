@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import com.mojang.serialization.MapCodec;
+import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
@@ -12,73 +13,57 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  * a post-process stamp (the old {@code NetherTransitionFeature.fillMountainColumn} behaviour).
  *
  * <p>It applies one transform — {@code max(child, k·(T − y))} — to a wrapped density: a downward
- * linear ramp that crosses 0 at the per-column target top {@code T}, so the column reads solid
- * below {@code T} and air above. {@code max} (never lowers the child) keeps natural caves/ores
- * below the original surface and only ADDS the mountain on top.</p>
+ * linear ramp that crosses 0 at the per-column target top {@code T} ({@link NetherMountainTerrain#targetTop}),
+ * so the column reads solid below {@code T} and air above. {@code max} (never lowers the child)
+ * keeps natural caves/ores below the original surface and lets naturally-higher ground show
+ * through, so the mountain is layered onto real terrain rather than replacing it.</p>
  *
  * <p>The mixin installs it over <b>both</b> router densities that drive the surface:</p>
  * <ul>
- *   <li>{@code finalDensity} — the terrain solidity used by {@code fillFromNoise} (blocks) and
- *       {@code getBaseHeight} (structure placement). Raising it lifts the actual terrain top.</li>
+ *   <li>{@code finalDensity} — terrain solidity for {@code fillFromNoise} (blocks) and
+ *       {@code getBaseHeight} (structure placement).</li>
  *   <li>{@code initialDensityWithoutJaggedness} — from which {@code NoiseChunk} derives the
- *       <em>preliminary surface level</em> (the first Y where it exceeds {@code 0.390625}) that the
- *       {@code minecraft:above_preliminary_surface} surface-rule gate keys off. Raising it the same
- *       way lifts that gate to the new top, so the mountain paints grass/dirt instead of bare rock
- *       (and avoids aquifer water pockets mid-mountain). Without this the fix would be incomplete.</li>
+ *       preliminary surface level the {@code minecraft:above_preliminary_surface} surface-rule gate
+ *       keys off. Raising it the same way lifts that gate to the new top, so the mountain paints
+ *       grass/dirt (not bare rock) and avoids aquifer water pockets mid-mountain.</li>
  * </ul>
  *
- * <p>Installed at runtime by {@code RandomStateMixin} (gated to the overworld via
- * {@link NetherBandHooks#CONSTRUCTING_OVERWORLD}); never serialized. Determinism comes from the
- * pure {@link WorldGenCycle} layout math (snapshotted once at construction).</p>
- *
- * <p><b>M1 prototype:</b> {@code T} is a fixed plateau height gated only on
- * {@link WorldGenCycle#netherHeightRamp} {@code > 0}. M2 replaces {@link #targetTop} with the real
- * {@code MountainNoise}-driven ramp and the per-world enable/seed gate.</p>
+ * <p>Per-world shaping (seed, sea level, ceiling, nether-core height, the layout {@link WorldGenCycle})
+ * is read <em>lazily</em> from {@link NetherBandContext} — which is published at server start, after
+ * the router is built. A {@code null} / disabled context, or a column outside the band
+ * ({@link NetherMountainTerrain#raises}), makes this a pass-through. Installed at runtime by
+ * {@code RandomStateMixin} (gated to the overworld via {@link NetherBandHooks}); never serialized.</p>
  */
 public final class NetherBandTerrainDensityFunction implements DensityFunction {
 
-    // --- M1 prototype constants (replaced by the real ramp in M2) -----------------------------
-    /** Fixed plateau top (world-Y) the band raises terrain to in the prototype. */
-    private static final double PROTOTYPE_TARGET_TOP = 150.0;
     /** Slope {@code k} of the {@code k·(T − y)} ramp — small; only the sign at the surface matters
      *  and the 4×16 interpolation cell softens the step (a large k buys nothing). */
     private static final double RAISE_SLOPE = 0.08;
-    /** Generous lower world-Y bound used only to bound {@link #maxValue()} (err high, never low). */
-    private static final int RAISE_MAX_Y_FLOOR = -64;
+    /** Generous bounds (world-Y) used only to bound {@link #maxValue()} across all Y-variants
+     *  (err high — a too-high bound only disables a per-cell skip optimisation; too low is a bug). */
+    private static final double MAX_TARGET_TOP_BOUND = 512.0;
+    private static final double MIN_Y_BOUND = -64.0;
 
     private final DensityFunction wrapped;
-    private final WorldGenCycle cycle;
 
     public NetherBandTerrainDensityFunction(DensityFunction wrapped) {
-        this(wrapped, WorldGenCycle.fromConfig());
-    }
-
-    private NetherBandTerrainDensityFunction(DensityFunction wrapped, WorldGenCycle cycle) {
         this.wrapped = wrapped;
-        this.cycle = cycle;
     }
 
-    /** True where the nether band raises terrain at this world-X (overworld gating is done at install time). */
-    private boolean bandActive(int worldX) {
-        return cycle.netherHeightRamp(worldX) > 0.0;
-    }
-
-    /** Per-column mountain target top (world-Y). M1: a fixed plateau; M2: the real ramp. */
-    private double targetTop(int worldX, int worldZ) {
-        return PROTOTYPE_TARGET_TOP;
-    }
-
-    private double raised(int worldX, int worldZ, int worldY, double base) {
-        double t = targetTop(worldX, worldZ);
+    /** Apply the mountain raise at this position, or return {@code base} unchanged when out of band. */
+    private double raisedOrBase(int worldX, int worldZ, int worldY, double base) {
+        NetherBandContext ctx = NetherBandContext.current();
+        if (ctx == null || !ctx.enabled()) return base;
+        WorldGenCycle cycle = ctx.cycle();
+        if (!NetherMountainTerrain.raises(cycle, worldX)) return base;
+        double t = NetherMountainTerrain.targetTop(cycle, ctx.generationSeed(), worldX, worldZ,
+                ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief());
         return Math.max(base, RAISE_SLOPE * (t - worldY));
     }
 
     @Override
     public double compute(FunctionContext ctx) {
-        double base = wrapped.compute(ctx);
-        int x = ctx.blockX();
-        if (!bandActive(x)) return base;
-        return raised(x, ctx.blockZ(), ctx.blockY(), base);
+        return raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), wrapped.compute(ctx));
     }
 
     @Override
@@ -86,15 +71,13 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         wrapped.fillArray(values, contextProvider);
         for (int i = 0; i < values.length; i++) {
             FunctionContext ctx = contextProvider.forIndex(i);
-            int x = ctx.blockX();
-            if (!bandActive(x)) continue;
-            values[i] = raised(x, ctx.blockZ(), ctx.blockY(), values[i]);
+            values[i] = raisedOrBase(ctx.blockX(), ctx.blockZ(), ctx.blockY(), values[i]);
         }
     }
 
     @Override
     public DensityFunction mapAll(Visitor visitor) {
-        return visitor.apply(new NetherBandTerrainDensityFunction(wrapped.mapAll(visitor), cycle));
+        return visitor.apply(new NetherBandTerrainDensityFunction(wrapped.mapAll(visitor)));
     }
 
     @Override
@@ -105,9 +88,7 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
 
     @Override
     public double maxValue() {
-        // The ramp peaks at the lowest sampled Y; bound generously (err high — a too-high bound is
-        // safe, it only disables a per-cell skip optimisation; a too-low bound would be a bug).
-        double raiseMax = RAISE_SLOPE * (PROTOTYPE_TARGET_TOP - RAISE_MAX_Y_FLOOR);
+        double raiseMax = RAISE_SLOPE * (MAX_TARGET_TOP_BOUND - MIN_Y_BOUND);
         return Math.max(wrapped.maxValue(), raiseMax);
     }
 

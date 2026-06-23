@@ -42,20 +42,25 @@ import java.util.Set;
 
 /**
  * Worldgen feature for the <b>Nether transition band</b> (overworld, runs at
- * {@code top_layer_modification} after {@code track_bed}). Along +X it stamps a
- * world-height mountain the train tunnels through, crossfades it to netherrack, and at
- * the core replaces the column with <em>real</em> Nether terrain sampled from the
- * Nether dimension's density router — mirroring how {@link DisintegrationFeature}
- * samples the real End. The {@link games.brennan.dungeontrain.worldgen.NetherBand}
- * cycle drives two ramps: {@link NetherTransition#heightRamp} (mountain height) and
- * {@link NetherTransition#netherRamp} (netherrack → real Nether intensity).
+ * {@code top_layer_modification} after {@code track_bed}). The band's mountain BODY is no longer
+ * stamped here — it is raised directly in the chunk generator's density router (see
+ * {@code worldgen.density.NetherBandTerrainDensityFunction}), so vanilla surface rules
+ * (grass/dirt/snow), trees, and structures land on it naturally. This post-process feature now only
+ * does the two things that <em>cannot</em> be plain terrain noise:
+ * <ul>
+ *   <li>the netherrack <b>crossfade</b> — dithering the (real, noise-built) mountain surface to
+ *       netherrack as the real-Nether core approaches ({@link NetherTransition#netherRamp});</li>
+ *   <li>the real-Nether <b>core</b> — replacing the column with terrain sampled from the Nether
+ *       dimension's density router, mirroring how {@link DisintegrationFeature} samples the real
+ *       End; and the ocean-entry <b>shore</b> ({@link #fillShoreColumn}).</li>
+ * </ul>
+ * Pure mountain-stage columns ({@code netherRamp == 0}) are left untouched — the noise built them.
  *
- * <p>Where the {@link DisintegrationBand} End band is active the End wins — those
- * columns are skipped, so the two bands never double-stamp.</p>
+ * <p>Where the {@link DisintegrationBand} End band is active the End wins — those columns are
+ * skipped (the density wrapper also yields there), so the two bands never double-stamp.</p>
  *
  * <p>All terrain writes go through the raw section path (the Sable-safe pattern, see
- * {@link DisintegrationFeature#place}); the train's corridor (the tunnel airspace) is
- * kept clear so the mountain forms walls + roof around it.</p>
+ * {@link DisintegrationFeature#place}).</p>
  */
 public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -69,14 +74,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /** X offset into the Nether so successive bands sample different (but continuous) terrain. */
     private static final int NETHER_SAMPLE_OFFSET_X = 12_000;
 
-    /** Mega-mountain peaks above this world-Y get a snow cap (jagged-peak look). */
-    private static final int SNOW_LINE_Y = 110;
-    /** Tunnel envelope height above the bed — columns reaching this fill the lane solid so track_bed tunnels them. */
+    /** Nether-core corridor envelope height above the bed (kept solid netherrack so track_bed tunnels it). */
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
-    /** Top blocks of a low column re-skinned with the mountain palette (where little was added above the surface). */
+    /** Depth of the surface skin recoloured to netherrack across the crossfade. */
     private static final int SURFACE_SKIN_DEPTH = 4;
-    /** Natural relief (blocks above sea) that contributes a full +1 to the [0,1] mountain relief. */
+    /** Natural relief (blocks above sea) that contributes a full +1 to the [0,1] shore relief. */
     private static final int NATURAL_RELIEF_NORM = 96;
+    /** Salt for the crossfade rock→netherrack dither (matches the old mountainMaterial dither). */
+    private static final long CROSSFADE_DITHER_SALT = 0x9E3779B97F4A7C15L;
     /** Extra Z clearance on each side of the tunnel wall span. */
     private static final int CORRIDOR_MARGIN = 1;
     /** Guaranteed solid causeway depth below the bed in the Nether core (a netherrack bridge over lava). */
@@ -145,17 +150,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             int zMin = g.trackZMin();
             int zMax = g.trackZMax();
             long seed = data.getGenerationSeed();
-            MountainPalette palette = MountainPalette.fromSeed(seed);
 
             // Is THIS band's entrance over ocean? (Computed once per chunk from the natural surface at the band
             // start.) If so, the leading beach span is rendered as a gentle sand shore — a ramp out of the
-            // shallows up to the mountains — instead of the synthetic mountain heightmap.
+            // shallows up to the mountains — instead of staying natural overworld.
             boolean oceanEntrance = isOceanEntrance(overworld, cycle.netherBandEntranceX(chunkMinX + 8),
                     g.trackCenterZ(), seaLevel);
 
             int minY = level.getMinBuildHeight();
             int worldTop = level.getMaxBuildHeight() - 1;
-            int netherTopApprox = bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
 
             ChunkAccess chunk = level.getChunk(cp.x, cp.z);
             int chunkMinZ = cp.getMinBlockZ();
@@ -188,10 +191,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
                 boolean inBeachSpan = !core && cycle.isNetherBeachStage(worldX);
                 // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
-                // SKIPPED — those columns stay natural overworld and the mountains pick up after the span.
+                // SKIPPED — those columns stay natural overworld and the noise mountains pick up after the span.
                 if (inBeachSpan && !oceanEntrance) continue;
+                // Pure mountain-stage columns (n == 0, not the beach) are now built entirely by the terrain-noise
+                // density wrapper — nothing to post-process here, so skip them (this is what lets grass/trees/
+                // structures survive on the mountain instead of being re-buried by a rock stamp).
+                boolean crossfade = !core && !inBeachSpan && n > 0.0;
+                if (!core && !inBeachSpan && !crossfade) continue;
                 double beachProgress = inBeachSpan ? cycle.netherBeachProgress(worldX) : 0.0;
-                double mult = cycle.netherMountainMultiplier(worldX);
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
                 for (int dz = 0; dz < 16; dz++) {
@@ -204,8 +211,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, baseRelief, seed, beachProgress);
                     } else {
-                        colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette);
+                        colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed);
                     }
                     changed |= colChanged;
                 }
@@ -222,52 +228,25 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
-     * Stages 1–4: amplify the natural overworld heightmap. The column's natural height
-     * above sea level is scaled by {@code mult} (×1 stage 1 → mega), preserving the real
-     * terrain SHAPE, and dressed with the chosen mountain palette. The crossfade
-     * ({@code 0<n<1}) dithers the rock → netherrack and tapers toward the open-Nether
-     * height.
-     *
-     * <p>The mountain fills SOLID across the train corridor when it's tall enough to
-     * become a real tunnel ({@code columnTop ≥ bedY + TUNNEL_CLEAR_HEIGHT}) — the
-     * later-running {@code track_bed} feature then carves that tunnel. Low mounds keep the
-     * corridor lane clear so the train rides open (track_bed adds pillars), avoiding a
-     * mid-height mound that would block the train without qualifying as a tunnel.</p>
+     * Crossfade ({@code 0 < n < 1}): the mountain body is already real terrain (built by the density
+     * wrapper) with vanilla grass/dirt/stone on top, so this only DITHERS the existing surface skin to
+     * netherrack as the real-Nether core approaches — turning the green mountain increasingly red over
+     * the {@code coreFade} span. It reads the actual chunk heightmap top (which already reflects the
+     * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
+     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone,
+     * and no terrain is added or removed. No {@code MountainNoise}/palette recompute is needed.
      */
-    private boolean fillMountainColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
-                                       int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                       int minY, int worldTop, int seaLevel, int baseRelief, double mult, double n,
-                                       int netherTopApprox, long seed, MountainPalette palette) {
-        int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
-        // Mountain relief = a synthetic ridged heightmap (so flat terrain still gets mountains) blended with
-        // the natural terrain, scaled by the stage multiplier. Bounded so high stages don't clamp flat.
-        double natural01 = Math.max(0, surfaceY - seaLevel) / (double) NATURAL_RELIEF_NORM;
-        double relief01 = Math.min(1.0, MountainNoise.height01(seed, worldX, worldZ) + natural01);
-        int amplified = seaLevel + (int) Math.round(relief01 * baseRelief * mult);
-        amplified = Math.max(surfaceY, Math.min(worldTop, amplified));
-        // Taper toward the open-Nether height as the core approaches.
-        int columnTop = (int) Math.round(amplified * (1.0 - n) + netherTopApprox * n);
-        columnTop = Math.max(surfaceY, Math.min(worldTop, columnTop));
-        // A column tall enough for track_bed to carve a real tunnel fills the lane solid; a low mound
-        // leaves the lane clear so the train rides open (track_bed pillars it) rather than jamming.
-        boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
-
+    private boolean recolorCrossfadeColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                           int minY, int worldTop, double n, long seed) {
+        int top = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
-        int floor = Math.max(minY, surfaceY - SURFACE_SKIN_DEPTH + 1);
-        for (int y = columnTop; y >= floor; y--) {
-            if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
-            if (!lanesTunnel && y > bedY && inCorridorLane(worldZ, tg)) continue; // keep low-mound lane clear
-            int depth = columnTop - y;
-            BlockState block = mountainMaterial(palette, depth, columnTop, n, seed, worldX, y, worldZ);
-            if (y > surfaceY) {
-                // added mountain body — fill air/foliage only (preserve ores etc. below the surface).
-                if (!w.isReplaceable(dx, y, dz)) continue;
-            } else if (depth >= SURFACE_SKIN_DEPTH) {
-                continue; // deeper natural ground — leave it
-            }
-            // else (y <= surfaceY && depth < SKIN): re-skin the natural surface (matters at ×1) — overwrite.
-            w.set(dx, y, dz, block);
+        int floor = Math.max(minY, top - SURFACE_SKIN_DEPTH + 1);
+        for (int y = top; y >= floor; y--) {
+            double dither = Disintegration.coherentNoise(seed ^ CROSSFADE_DITHER_SALT, worldX, y, worldZ);
+            if (dither >= n) continue;                 // keep the natural mountain surface in this cell
+            if (!w.isSolidGround(dx, y, dz)) continue; // only recolour existing solid ground (never air/fluid)
+            w.set(dx, y, dz, NETHERRACK);
             changed = true;
         }
         return changed;
@@ -331,16 +310,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (!w.isSame(dx, y, dz, block)) { w.set(dx, y, dz, block); changed = true; }
         }
         return changed;
-    }
-
-    private static BlockState mountainMaterial(MountainPalette palette, int depth, int columnTop, double n,
-                                               long seed, int worldX, int y, int worldZ) {
-        double accent = Disintegration.coherentNoise(seed, worldX, y, worldZ);
-        BlockState rock = palette.surfaceBlock(depth, columnTop > SNOW_LINE_Y, accent);
-        if (n <= 0.0) return rock;                 // stages 1–3: the chosen vanilla mountain look
-        // stage 4: clumpy crossfade of the mountain rock → netherrack, rising with n.
-        double dither = Disintegration.coherentNoise(seed ^ 0x9E3779B97F4A7C15L, worldX, y, worldZ);
-        return dither < n ? NETHERRACK : rock;
     }
 
     /**
@@ -491,11 +460,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             return true;
         }
 
-        /** Air or surface foliage — the cells the mountain fill may take over. */
-        boolean isReplaceable(int dx, int y, int dz) {
+        /** Solid ground (not air, not a fluid) — the surface cells the crossfade may recolour to netherrack. */
+        boolean isSolidGround(int dx, int y, int dz) {
             if (!ensure(y)) return false;
             BlockState cur = section.getBlockState(dx, y - baseY, dz);
-            return cur.isAir() || isStrippableFoliage(cur);
+            return !cur.isAir() && cur.getFluidState().isEmpty();
         }
 
         boolean isSame(int dx, int y, int dz, BlockState state) {
