@@ -42,4 +42,22 @@ public final class NetherBand {
         if (startX(overworld) == OFF) return 0.0;
         return WorldGenCycle.fromConfig().netherRamp(worldX);
     }
+
+    /**
+     * Nether intensity at/above which the band reads as the Nether core (netherrack + real
+     * Nether). Mirrors {@code NetherMobSpawner.SPAWN_INTENSITY_THRESHOLD} so "where Nether mobs
+     * belong" is one shared notion.
+     */
+    public static final double NETHER_CORE_RAMP = 0.5;
+
+    /**
+     * True when world-X sits inside the band's Nether core <b>and</b> the End band doesn't own
+     * that column — i.e. the column the player reads as the Nether biome. Used to decide where
+     * piglins/hoglins should behave as if in the real Nether (no zombification).
+     */
+    public static boolean isInNetherBiome(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false; // End band wins
+        return netherRampAt(overworld, worldX) >= NETHER_CORE_RAMP;
+    }
 }
