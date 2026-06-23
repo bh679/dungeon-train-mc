@@ -280,7 +280,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // pure-mountain chunks the terrain loop skipped, and after decoration so a feature dropped
             // into the lane is removed too): clears the train's airspace of any solid netherrack/stone the
             // later track_bed wouldn't carve, so the tunnel/viaduct ride space is never blocked.
-            changed |= clearCorridorClearance(chunk, overworld, chunkMinX, chunkMinZ, heightRamp,
+            changed |= clearCorridorClearance(chunk, overworld, cycle, seed, chunkMinX, chunkMinZ,
                     bedY, railY, zMin, zMax, tg, minY, worldTop);
 
             if (!changed) return false;
@@ -310,8 +310,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * ({@link ColumnWriter#isSolidGround}); air and lava (which sits well below the bed) are left
      * alone, and the bed/rails are preserved. Returns whether any block was cleared.</p>
      */
-    private boolean clearCorridorClearance(ChunkAccess chunk, ServerLevel overworld, int chunkMinX,
-                                           int chunkMinZ, double[] heightRamp, int bedY, int railY,
+    private boolean clearCorridorClearance(ChunkAccess chunk, ServerLevel overworld, WorldGenCycle cycle,
+                                           long seed, int chunkMinX, int chunkMinZ, int bedY, int railY,
                                            int zMin, int zMax, TunnelGeometry tg, int minY, int worldTop) {
         int zClearMin = Math.max(chunkMinZ, tg.airMinZ());
         int zClearMax = Math.min(chunkMinZ + 15, tg.airMaxZ());
@@ -323,11 +323,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         for (int dx = 0; dx < 16; dx++) {
-            if (heightRamp[dx] <= 0.0) continue;
             int worldX = chunkMinX + dx;
-            if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) continue; // End owns this column
             for (int worldZ = zClearMin; worldZ <= zClearMax; worldZ++) {
                 int dz = worldZ - chunkMinZ;
+                // Band membership is edge-waved per column (matched to place()'s main loop), so resolve the
+                // waved X here too before testing in-band / End-precedence.
+                int wx = NetherMountainTerrain.wavyX(seed, worldX, worldZ);
+                if (cycle.netherHeightRamp(wx) <= 0.0) continue;            // not in the band at this column
+                if (DisintegrationBand.middleRampAt(overworld, wx) > 0.0) continue; // End owns this column
                 for (int y = yBot; y <= yTop; y++) {
                     if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
                     if (!w.isSolidGround(dx, y, dz)) continue;    // leave air / lava; clear solid stubs only
