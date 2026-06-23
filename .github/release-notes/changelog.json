@@ -2220,6 +2220,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-external-fluid-barrier",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Train stays dry \u2014 external water & lava kept out",
+      "summary": "Water and lava from the outside world no longer flow into or through the train. External fluid is stopped at the carriage edge and cleared from inside the train's footprint each tick, so decks and interiors stay dry even as the train crosses rivers, lakes and oceans.",
+      "highlights": [
+        "External water & lava no longer flood the train's deck or interior",
+        "The train stays dry while crossing water"
+      ],
+      "pr": 560,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
