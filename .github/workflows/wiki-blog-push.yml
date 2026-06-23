@@ -1,6 +1,11 @@
 name: Push Blog Post to Wiki
 
 on:
+  push:
+    branches:
+      - 'claude/amazing-goodall-0r5jok'
+    paths:
+      - '.github/wiki-content/*.md'
   workflow_dispatch:
     inputs:
       blog_filename:
@@ -20,6 +25,12 @@ on:
         required: true
         default: '2026'
 
+env:
+  BLOG_FILENAME: ${{ inputs.blog_filename || 'Blog-2026-06-23-Nether-Arrives.md' }}
+  BLOG_TITLE: ${{ inputs.blog_title || '2026-06-23 — The Nether Arrives' }}
+  BLOG_PAGE: ${{ inputs.blog_page || 'Blog-2026-06-23-Nether-Arrives' }}
+  YEAR: ${{ inputs.year || '2026' }}
+
 jobs:
   push-to-wiki:
     runs-on: ubuntu-latest
@@ -38,8 +49,8 @@ jobs:
 
       - name: Copy blog post
         run: |
-          cp ".github/wiki-content/${{ inputs.blog_filename }}" \
-             "/tmp/wiki/${{ inputs.blog_filename }}"
+          cp ".github/wiki-content/${{ env.BLOG_FILENAME }}" \
+             "/tmp/wiki/${{ env.BLOG_FILENAME }}"
 
       - name: Update Blog index
         shell: python3 {0}
@@ -48,9 +59,9 @@ jobs:
 
           wiki_dir = "/tmp/wiki"
           blog_md  = os.path.join(wiki_dir, "Blog.md")
-          year     = "${{ inputs.year }}"
-          page     = "${{ inputs.blog_page }}"
-          title    = "${{ inputs.blog_title }}"
+          year     = os.environ["YEAR"]
+          page     = os.environ["BLOG_PAGE"]
+          title    = os.environ["BLOG_TITLE"]
           entry    = f"- [{title}]({page})"
 
           if not os.path.exists(blog_md):
@@ -71,14 +82,12 @@ Updates from the Dungeon Train development team.
               else:
                   year_heading = f"## {year}"
                   if year_heading in content:
-                      # Insert immediately after the heading line
                       content = content.replace(
                           year_heading + "\n",
                           year_heading + "\n" + entry + "\n",
                           1,
                       )
                   else:
-                      # Prepend a new year section before the first ## heading
                       first_h2 = re.search(r'^## ', content, re.MULTILINE)
                       if first_h2:
                           pos = first_h2.start()
@@ -94,6 +103,9 @@ Updates from the Dungeon Train development team.
               f.write(content)
 
       - name: Commit and push
+        env:
+          YEAR: ${{ env.YEAR }}
+          BLOG_PAGE: ${{ env.BLOG_PAGE }}
         run: |
           cd /tmp/wiki
           git config user.name  "github-actions[bot]"
@@ -102,7 +114,7 @@ Updates from the Dungeon Train development team.
           if git diff --staged --quiet; then
             echo "Nothing to commit — wiki already up to date."
           else
-            git commit -m "docs: blog post ${{ inputs.blog_page }}"
+            git commit -m "docs: blog post ${BLOG_PAGE}"
             git push
             echo "Wiki updated successfully."
           fi
