@@ -8,11 +8,12 @@ on:
       - '.github/wiki-content/*.md'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   push-to-wiki:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout main repo
@@ -30,24 +31,13 @@ jobs:
              /tmp/wiki/Blog-2026-06-23-Nether-Arrives.md
 
       - name: Update Blog index
-        shell: python3 {0}
         run: |
+          python3 - << 'PYEOF'
           import os, re
-
           blog_md = "/tmp/wiki/Blog.md"
           entry   = "- [2026-06-23 — The Nether Arrives](Blog-2026-06-23-Nether-Arrives)"
-
           if not os.path.exists(blog_md):
-              content = """\
-[Home](Home) > Blog
-
-# Dev Blog
-
-Updates from the Dungeon Train development team.
-
-## 2026
-
-""" + entry + "\n"
+              content = "[Home](Home) > Blog\n\n# Dev Blog\n\nUpdates from the Dungeon Train development team.\n\n## 2026\n\n" + entry + "\n"
           else:
               content = open(blog_md).read()
               if entry in content:
@@ -55,14 +45,13 @@ Updates from the Dungeon Train development team.
               elif "## 2026" in content:
                   content = content.replace("## 2026\n", "## 2026\n" + entry + "\n", 1)
               else:
-                  m = re.search(r'^## ', content, re.MULTILINE)
+                  m = re.search(r"^## ", content, re.MULTILINE)
                   if m:
                       content = content[:m.start()] + "## 2026\n\n" + entry + "\n\n" + content[m.start():]
                   else:
                       content += "\n## 2026\n\n" + entry + "\n"
-
-          with open(blog_md, "w") as f:
-              f.write(content)
+          open(blog_md, "w").write(content)
+          PYEOF
 
       - name: Commit and push
         run: |
