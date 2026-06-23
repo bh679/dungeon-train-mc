@@ -11,13 +11,17 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.QuartPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -80,11 +84,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /** netherRamp at/above this is the real-Nether core (REPLACE); below it is the netherrack crossfade. */
     private static final double CORE_THRESHOLD = 0.999;
 
-    // --- Shore (ocean-entry beach): a gentle natural ramp climbing out of the water, NOT a mountain ridge. ---
-    /** Blocks the shore's seaward edge starts below sea level (it climbs to {@code seaLevel + SHORE_INLAND_RISE}). */
-    private static final int SHORE_SUBSEA_DEPTH = 6;
-    /** Blocks the shore rises above sea level at the inland edge where it meets the mountains. */
-    private static final int SHORE_INLAND_RISE = 2;
+    // --- Shore (ocean-entry beach): a gentle natural ramp from the ocean floor up to the mountains. ---
     /** Low-amplitude jitter (± blocks) on the shore surface so the ramp isn't dead flat. */
     private static final double SHORE_JITTER_BLOCKS = 1.5;
     /** Salt mixed into the seed for the shore's gentle value noise (distinct from the mountain noise). */
@@ -186,9 +186,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
                 double n = netherRamp[dx];
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
-                // Beach span over an ocean entrance: a gentle sand shore (shallows water + ramp) before the mountains.
-                boolean beach = !core && oceanEntrance && cycle.isNetherBeachStage(worldX);
-                double beachProgress = beach ? cycle.netherBeachProgress(worldX) : 0.0;
+                boolean inBeachSpan = !core && cycle.isNetherBeachStage(worldX);
+                // The beach stage exists ONLY where the band emerges from an ocean biome; otherwise it is
+                // SKIPPED — those columns stay natural overworld and the mountains pick up after the span.
+                if (inBeachSpan && !oceanEntrance) continue;
+                double beachProgress = inBeachSpan ? cycle.netherBeachProgress(worldX) : 0.0;
                 double mult = cycle.netherMountainMultiplier(worldX);
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
@@ -198,9 +200,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     if (core) {
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
-                    } else if (beach) {
+                    } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, seed, beachProgress);
+                                minY, worldTop, seaLevel, baseRelief, seed, beachProgress);
                     } else {
                         colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette);
@@ -272,14 +274,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /**
-     * Leading <b>shore</b> column over an ocean entrance: a gentle sand ramp climbing out of the
-     * water — below sea level at the seaward edge ({@code seaLevel − SHORE_SUBSEA_DEPTH}) up to
-     * {@code seaLevel + SHORE_INLAND_RISE} where it meets the mountains, shaped by low-amplitude
-     * value noise (a couple of blocks of jitter), NOT the dramatic ridged mountain heightmap. Below
-     * the sand surface is solid {@link BeachPalette} (sand → sandstone → stone, extended down to the
-     * natural seabed); where the surface sits below sea level, shallows water fills from the sand up
-     * to sea level — so the column reads submerged sand → waterline → dry sand → mountains. Natural
-     * seabed poking above the ramp is cleared to water/air so the ramp is the true surface.
+     * Leading <b>shore</b> column where the band emerges from an ocean biome: a gentle sand ramp that
+     * climbs smoothly from the natural ocean floor at the seaward edge ({@code progress 0}, submerged)
+     * up to the height the first mountain stage needs at the inland edge ({@code progress 1}), so the
+     * shore meets BOTH the seabed and the mountains with no step. Shaped by low-amplitude value noise
+     * (a couple of blocks of jitter), NOT the dramatic ridged mountain heightmap. Below the sand
+     * surface is solid {@link BeachPalette} (sand → sandstone → stone, extended down to the seabed);
+     * where the surface sits below sea level, shallows water fills from the sand up to sea level — so
+     * the column reads submerged sand → waterline → dry sand → mountains. Seabed poking above the ramp
+     * is cleared to water/air so the ramp is the true surface.
      *
      * <p>{@code progress} is {@link WorldGenCycle#netherBeachProgress} (0 seaward → 1 inland). Raw,
      * Sable-safe section writes via {@link ColumnWriter}; the track + (low-mound) corridor lane stay
@@ -287,13 +290,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      */
     private boolean fillShoreColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                     int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                    int minY, int worldTop, int seaLevel, long seed, double progress) {
+                                    int minY, int worldTop, int seaLevel, int baseRelief, long seed, double progress) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
-        // Gentle ramp: seaward (progress 0) below sea, inland (progress 1) just above — plus a little jitter.
+        // Smooth ramp from the natural ocean floor here (progress 0 → submerged, shallows above) up to the
+        // height the first mountain stage (×1) needs here (progress 1) — the SAME relief math as
+        // fillMountainColumn at mult ×1, so the shore and the mountains meet seamlessly. Plus gentle jitter.
+        double natural01 = Math.max(0, surfaceY - seaLevel) / (double) NATURAL_RELIEF_NORM;
+        double relief01 = Math.min(1.0, MountainNoise.height01(seed, worldX, worldZ) + natural01);
+        int mountainTop = seaLevel + (int) Math.round(relief01 * baseRelief);
         double jitter = (MountainNoise.height01(seed ^ SHORE_JITTER_SALT, worldX, worldZ) - 0.5) * (2.0 * SHORE_JITTER_BLOCKS);
-        double seaward = seaLevel - SHORE_SUBSEA_DEPTH;
-        double inland = seaLevel + SHORE_INLAND_RISE;
-        int columnTop = (int) Math.round(seaward + (inland - seaward) * progress + jitter);
+        int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress + jitter);
         columnTop = Math.max(minY + 1, Math.min(worldTop, columnTop));
         // A shore is low, so it never qualifies as a tunnel — its corridor lane stays open for the train.
         boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
@@ -417,16 +423,22 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return worldZ >= tg.wallMinZ() - CORRIDOR_MARGIN && worldZ <= tg.wallMaxZ() + CORRIDOR_MARGIN;
     }
 
-    /** Whether the band entrance's natural surface is below sea level (so it rises out of the ocean). */
+    /**
+     * Whether the band emerges from an <b>ocean biome</b> — sampled from the overworld biome source at the
+     * band entrance (the seaward edge of the beach). Only ocean entrances get the leading sand shore; over
+     * any other biome the beach stage is skipped. Rivers/lakes are excluded ({@code #minecraft:is_ocean}).
+     */
     private static boolean isOceanEntrance(ServerLevel overworld, long entranceX, int trackZ, int seaLevel) {
         if (entranceX == Long.MIN_VALUE) return false;
         try {
             ChunkGenerator gen = overworld.getChunkSource().getGenerator();
             RandomState rs = overworld.getChunkSource().randomState();
-            int surface = gen.getBaseHeight((int) entranceX, trackZ, Heightmap.Types.OCEAN_FLOOR_WG, overworld, rs);
-            return surface < seaLevel;
+            Holder<Biome> biome = gen.getBiomeSource().getNoiseBiome(
+                    QuartPos.fromBlock((int) entranceX), QuartPos.fromBlock(seaLevel), QuartPos.fromBlock(trackZ),
+                    rs.sampler());
+            return biome.is(BiomeTags.IS_OCEAN);
         } catch (Throwable t) {
-            return false; // never block worldgen on the ocean probe
+            return false; // never block worldgen on the biome probe
         }
     }
 
