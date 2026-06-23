@@ -1996,9 +1996,9 @@
       ],
       "pr": 542,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.353.0",
+      "released_at": "2026-06-23T01:59:36Z"
     },
     {
       "id": "zombie-cure-narrative",
@@ -2012,9 +2012,9 @@
       ],
       "pr": 543,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.353.0",
+      "released_at": "2026-06-23T01:59:36Z"
     },
     {
       "id": "endisland-band-chunk-holes",
@@ -2027,9 +2027,9 @@
       ],
       "pr": 544,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.353.0",
+      "released_at": "2026-06-23T01:59:36Z"
     }
   ]
 }
