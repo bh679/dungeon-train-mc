@@ -7,17 +7,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Pure-math tests for the combined {@link WorldGenCycle} — the single repeating sequence
- * {@code OW → Nether → OW → End → (repeat)}. Built via the record constructor (no config),
- * so no NeoForge bootstrap.
+ * {@code OW → Nether → OW → End → (repeat)} with asymmetric overworld gaps and optional
+ * per-period growth. Built via the record constructor (no config), so no NeoForge bootstrap.
  *
- * <p>Geometry: anchor 1000, owGap 300; nether (stageBlocks 40 → riseLen 120, mult2 5,
- * mult3 20, megaHold 60, coreFade 50, coreHold 200) → netherLen 660; end (fade 100,
- * void 40, end 200) → endLen 680; period {@code 2·300 + 660 + 680 = 1940}. Layout offset
- * from 1000: OW [0,300), Nether [300,960), OW [960,1260), End [1260,1940).</p>
+ * <p>Geometry of {@code C}: anchor 1000, both gaps 300, growthFactor 1 (uniform); nether
+ * (stageBlocks 40 → riseLen 120, mults 1,5,20, megaHold 60, coreFade 50, coreHold 200) →
+ * netherLen 660; end (fade 100, void 40, end 200) → endLen 680; period {@code 300 + 660 + 300
+ * + 680 = 1940}. Layout offset from 1000: OW [0,300), Nether [300,960), OW [960,1260), End
+ * [1260,1940).</p>
  */
 final class WorldGenCycleTest {
 
-    private static final WorldGenCycle C = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0);
+    // startX, gapBeforeNether, gapBeforeEnd, growthFactor, stageBlocks, mults, beach, megaHold,
+    // coreFade, coreHold, eFade, eVoid, eEnd, phaseShift
+    private static final WorldGenCycle C =
+            new WorldGenCycle(1000L, 300, 300, 1, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0);
     private static final int PERIOD = 1940;
     private static final double EPS = 1e-9;
 
@@ -77,8 +81,9 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("an arbitrary N-stage multiplier list ramps smoothly through each stage (1,2,4,8,15)")
     void fiveStageMultipliers() {
-        // anchor 0, owGap 0 → nether starts at offset 0; stageBlocks 40, 5 stages → riseLen 200.
-        WorldGenCycle d = new WorldGenCycle(0L, 0, 40, new int[] {1, 2, 4, 8, 15}, 0, 60, 50, 200, 0, 0, 0, 0);
+        // anchor 0, both gaps 0 → nether starts at offset 0; stageBlocks 40, 5 stages → riseLen 200.
+        WorldGenCycle d =
+                new WorldGenCycle(0L, 0, 0, 1, 40, new int[] {1, 2, 4, 8, 15}, 0, 60, 50, 200, 0, 0, 0, 0);
         assertEquals(200, d.riseLen());
         assertEquals(1.0, d.netherMountainMultiplier(0), EPS);    // stage 1 start
         assertEquals(1.0, d.netherMountainMultiplier(40), EPS);   // → stage 2 start (held ×1 through stage 1)
@@ -100,7 +105,7 @@ final class WorldGenCycleTest {
     }
 
     @Test
-    @DisplayName("the whole sequence repeats forever with the combined period")
+    @DisplayName("the whole sequence repeats forever with the combined period (growthFactor 1)")
     void repeats() {
         for (int off : new int[] {320, 380, 530, 1360, 1500, 100, 1000}) {
             int wx = 1000 + off;
@@ -113,7 +118,8 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("a leading beach span lengthens the rise, reads as base ×1, and reports the band entrance")
     void beachStage() {
-        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle b =
+                new WorldGenCycle(1000L, 300, 300, 1, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
         assertEquals(160, b.riseLen());                                       // 40 beach + 3×40 stages
         org.junit.jupiter.api.Assertions.assertTrue(b.isNetherBeachStage(1320));  // ln 20 — inside the beach span
         assertEquals(1.0, b.netherMountainMultiplier(1320), EPS);            // beach base multiplier (feature boosts over ocean)
@@ -125,7 +131,8 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("beach progress ramps 0 (seaward waterline) → 1 (inland, meeting the mountains)")
     void beachProgress() {
-        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle b =
+                new WorldGenCycle(1000L, 300, 300, 1, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
         assertEquals(0.0, b.netherBeachProgress(1300), EPS);   // ln 0  — seaward entrance edge (the waterline)
         assertEquals(0.5, b.netherBeachProgress(1320), EPS);   // ln 20 — halfway up the shore
         org.junit.jupiter.api.Assertions.assertTrue(b.netherBeachProgress(1339) > 0.9); // ln 39 — almost at the mountains
@@ -135,7 +142,8 @@ final class WorldGenCycleTest {
     @DisplayName("edge feather: 0 at the leading + trailing gates, smoothstep to 1 over one stage, 1 across the interior")
     void mountainEdgeFeather() {
         // beach 40, stageBlocks 40 → fade 40; riseLen 160, netherLen 740; ln == worldX − 1300; leading gate ln=40.
-        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle b =
+                new WorldGenCycle(1000L, 300, 300, 1, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
         assertEquals(740L, b.netherLen());
         assertEquals(0.0, b.netherMountainFeather(1340), EPS);   // ln 40  — leading gate (added height starts at 0)
         assertEquals(0.5, b.netherMountainFeather(1360), EPS);   // ln 60  — fade midpoint (smoothstep 0.5)
@@ -158,7 +166,7 @@ final class WorldGenCycleTest {
     void featherNoStages() {
         // beach 0, stageBlocks 0 (fade 0) but a real-Nether core 200 → netherLen 200, so the column is
         // inside the band yet the fade==0 guard makes the feather a pure no-op (no div-by-zero).
-        WorldGenCycle coreOnly = new WorldGenCycle(0L, 0, 0, new int[] {1}, 0, 0, 0, 200, 0, 0, 0, 0);
+        WorldGenCycle coreOnly = new WorldGenCycle(0L, 0, 0, 1, 0, new int[] {1}, 0, 0, 0, 200, 0, 0, 0, 0);
         assertEquals(200L, coreOnly.netherLen());
         assertEquals(1.0, coreOnly.netherMountainFeather(100), EPS); // ln 100, fade 0 → 1.0
     }
@@ -167,7 +175,8 @@ final class WorldGenCycleTest {
     @DisplayName("phaseShift slides the whole cycle so the first nether band arrives earlier")
     void phaseShift() {
         // Same geometry as C but shifted 100 blocks into the cycle.
-        WorldGenCycle p = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 100);
+        WorldGenCycle p =
+                new WorldGenCycle(1000L, 300, 300, 1, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 100);
         assertEquals(0.0, C.netherHeightRamp(1260), EPS);  // unshifted (C): still overworld at cycle offset 260
         org.junit.jupiter.api.Assertions.assertTrue(p.netherHeightRamp(1260) > 0.0); // shifted: the nether band has begun
         assertEquals(p.netherHeightRamp(1260), p.netherHeightRamp(1260 + PERIOD), EPS); // shift is constant across cycles
@@ -176,11 +185,68 @@ final class WorldGenCycleTest {
     @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
-        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0);
+        WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 300, 1, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0);
         assertEquals(0L, endOnly.netherLen());
         assertEquals(680L, endOnly.endLen());
         assertEquals(2L * 300 + 680, endOnly.period());
         assertEquals(0.0, endOnly.netherHeightRamp(500), EPS);
         assertEquals(1.0, endOnly.netherMountainMultiplier(500), EPS);
+    }
+
+    /**
+     * Asymmetric overworld gaps: gapBeforeNether 100 (Void→Nether, the longer), gapBeforeEnd 50
+     * (Nether→Void, the shorter), growthFactor 1. Layout from anchor 0: Nether [100,760), OW gap
+     * [760,810) (50), End [810,1490), period 1490; next Nether at 1490+100 = 1590.
+     */
+    @Test
+    @DisplayName("the two overworld gaps differ: 50 after the Nether band, 100 before it")
+    void asymmetricGaps() {
+        WorldGenCycle u =
+                new WorldGenCycle(0L, 100, 50, 1, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0);
+        assertEquals(1490L, u.period());
+        org.junit.jupiter.api.Assertions.assertTrue(u.netherHeightRamp(160) > 0.0); // ln 60 — nether rise
+        // 50-block gap between the Nether band (ends 760) and the End band (starts 810).
+        assertEquals(0.0, u.netherHeightRamp(780), EPS);
+        assertEquals(0.0, u.endMiddleRamp(780), EPS);
+        assertEquals(1.0, u.endMiddleRamp(1010), EPS);   // End hold (offset 810 + 200)
+        // 100-block gap before the NEXT Nether band: at 1560 we'd be in-band if the gap were only 50.
+        assertEquals(0.0, u.netherHeightRamp(1560), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(u.netherHeightRamp(1595) > 0.0); // period-1 nether rise
+        assertEquals(1590L, u.netherBandEntranceX(1595));
+    }
+
+    /**
+     * Per-period doubling (growthFactor 2): the scaled segments (Nether core, void hold, End core,
+     * both gaps) double each period; the fades stay fixed. Same base geometry as {@link #asymmetricGaps}.
+     * Period 0 occupies [0,1490); period 1 (×2) occupies [1490,3610) — gapBeforeNether 200, nether
+     * core 400, gapBeforeEnd 100, End core 400 — so period-1 bands sit at the accumulated offsets and
+     * the cores are twice as long. {@code u} (growthFactor 1) is the no-growth control.
+     */
+    @Test
+    @DisplayName("growthFactor 2 doubles the scaled segments each period; growthFactor 1 stays uniform")
+    void perPeriodDoubling() {
+        WorldGenCycle g =
+                new WorldGenCycle(0L, 100, 50, 2, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0);
+        WorldGenCycle u = // identical but no growth
+                new WorldGenCycle(0L, 100, 50, 1, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 0);
+
+        // Period 0 is identical for both (growth only affects period ≥ 1).
+        assertEquals(u.netherHeightRamp(160), g.netherHeightRamp(160), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(g.isNetherCore(400));  // period-0 core (ln 300) unchanged
+
+        // Period 1 leading gap doubled to 200: nether starts at 1690, not 1590.
+        // At 1650 the no-growth control is already in the rise (>0); the doubling cycle is still in the gap (0).
+        org.junit.jupiter.api.Assertions.assertTrue(u.netherHeightRamp(1650) > 0.0);
+        assertEquals(0.0, g.netherHeightRamp(1650), EPS);
+        org.junit.jupiter.api.Assertions.assertTrue(g.netherHeightRamp(1750) > 0.0); // ln 60 into the doubled-position nether
+
+        // Period-1 Nether core doubled to 400 (ln 230..630): a column at ln 500 is core only because it grew.
+        org.junit.jupiter.api.Assertions.assertTrue(g.isNetherCore(2190));   // 1690 + 500 → still core
+        org.junit.jupiter.api.Assertions.assertFalse(g.isNetherCore(2330));  // 1690 + 640 → past the (doubled) core
+
+        // Period-1 End band sits at 2650 with a doubled core (eEnd 400, le 280..680).
+        assertEquals(1.0, g.endMiddleRamp(3130), EPS);   // 2650 + 480 → End hold
+        assertEquals(1.0, g.endIslandRamp(3130), EPS);   // 2650 + 480 → End core
+        assertEquals(1.0, g.endIslandRamp(3250), EPS);   // 2650 + 600 → core only because endHold doubled to 400
     }
 }

@@ -10,41 +10,59 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  *   OW → Nether transition → Nether → Nether transition → OW → Void → End islands → Void → (repeat)
  * </pre>
  *
- * i.e. per period: {@code [owGap] [nether band] [owGap] [end band]}. The two sub-bands
- * reuse the existing ramp math ({@link NetherTransition} and {@link Disintegration})
- * evaluated at a <em>local</em> offset with {@code owHold = 0}, so this class only owns
- * the layout/positioning.
+ * i.e. per period: {@code [owGapBeforeNether] [nether band] [owGapBeforeEnd] [end band]}. The two
+ * overworld gaps differ — {@code owGapBeforeNether} (Void→Nether, the longer) and
+ * {@code owGapBeforeEnd} (Nether→Void, the shorter) alternate. The two sub-bands reuse the existing
+ * ramp math ({@link NetherTransition} and {@link Disintegration}) evaluated at a <em>local</em>
+ * offset with {@code owHold = 0}, so this class only owns the layout/positioning.
  *
- * <p>The nether mountain runs in three stages that progressively amplify the <em>natural
- * overworld heightmap</em>: stage 1 ×1 (a real-looking vanilla mountain biome), stage 2
- * ×{@code stage2Mult}, stage 3 ×{@code stage3Mult} (the mega-mountain). The per-X
- * multiplier is {@link #netherMountainMultiplier}; the feature multiplies each column's
- * natural height (above sea level) by it.</p>
+ * <h2>Per-period growth</h2>
+ * <p>Each successive period is larger: period 0 uses the configured base lengths, and every later
+ * period multiplies the <b>scaled</b> segments — the Nether core ({@code coreHold}), void hold
+ * ({@code eVoid}), End-islands core ({@code eEnd}), and BOTH overworld gaps — by {@code growthFactor}
+ * (period 1 ×{@code growthFactor}, period 2 ×{@code growthFactor²}, …). The transition <b>fades</b>
+ * (mountain rise/fall {@link #riseLen()}, mega plateau {@code megaHold}, netherrack crossfade
+ * {@code coreFade}, void↔End fade {@code eFade}) stay fixed at every period. {@code growthFactor == 1}
+ * reproduces the classic uniform cycle. Growth is geometric but bounded in practice by the world
+ * border (and hard-clamped so scaled spans never overflow {@code int}).</p>
  *
- * <p>Pure (no Minecraft types) so the layout is unit-testable; {@link #fromConfig()} is
- * the one runtime convenience that reads COMMON config. The per-world
- * {@code startsWithTrain} gate lives in the callers.</p>
+ * <p>The nether mountain runs in stages that progressively amplify the <em>natural overworld
+ * heightmap</em>: stage 1 ×1 (a real-looking vanilla mountain biome), then each successive stage
+ * ramps to its multiplier, the last held across the mega-mountain. The per-X multiplier is
+ * {@link #netherMountainMultiplier}; the feature multiplies each column's natural height (above sea
+ * level) by it.</p>
  *
- * @param startX     world-X the cycle is anchored at (before it: plain overworld)
- * @param owGap      overworld blocks before each special band (two gaps per period)
- * @param stageBlocks length of EACH mountain stage
- * @param stageMultipliers heightmap multiplier per stage (stage 1 = first value, 1 = natural)
- * @param beachBlocks leading beach/cliff span (rendered as beach only over ocean; base multiplier 1)
- * @param megaHold   full-strength mega-mountain plateau on each side of the core
- * @param coreFade   mountain→netherrack crossfade span (each side)
- * @param coreHold   real-Nether core span
- * @param eFade      End fade span
- * @param eVoid      End void-hold span (each side)
- * @param eEnd       End-island core span
- * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
- *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
- *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
- *                   disintegration phase-shift so both layouts stay in lock-step.
+ * <p>Pure (no Minecraft types) so the layout is unit-testable; {@link #fromConfig()} is the one
+ * runtime convenience that reads COMMON config. The per-world {@code startsWithTrain} gate lives in
+ * the callers.</p>
+ *
+ * @param startX            world-X the cycle is anchored at (before it: plain overworld)
+ * @param owGapBeforeNether overworld blocks before the Nether band (Void→Nether gap); scales per period
+ * @param owGapBeforeEnd    overworld blocks before the End band (Nether→Void gap); scales per period
+ * @param growthFactor      per-period multiplier for the scaled segments (1 = no growth)
+ * @param stageBlocks       length of EACH mountain stage (fixed)
+ * @param stageMultipliers  heightmap multiplier per stage (stage 1 = first value, 1 = natural)
+ * @param beachBlocks       leading beach/cliff span (rendered as beach only over ocean; base multiplier 1)
+ * @param megaHold          full-strength mega-mountain plateau on each side of the core (fixed)
+ * @param coreFade          mountain→netherrack crossfade span (each side; fixed)
+ * @param coreHold          real-Nether core span (scales per period)
+ * @param eFade             End fade span (fixed)
+ * @param eVoid             End void-hold span (each side; scales per period)
+ * @param eEnd              End-island core span (scales per period)
+ * @param phaseShift        blocks the cycle is shifted at {@code startX} so the FIRST overworld gap
+ *                          (to the nether band) is shorter than the recurring {@code owGapBeforeNether};
+ *                          {@code max(0, owGapBeforeNether − firstOverworld)}, 0 = no shift. Applied to
+ *                          period 0 only (the spawn leg).
  */
-public record WorldGenCycle(long startX, int owGap,
+public record WorldGenCycle(long startX, int owGapBeforeNether, int owGapBeforeEnd, int growthFactor,
                             int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd, int phaseShift) {
+
+    /** Loop-safety bound on the period locator (far beyond any reachable world-X). */
+    private static final int MAX_PERIODS = 64;
+    /** Scale ceiling so scaled spans/positions never approach overflow; ~1M periods out, past the border. */
+    private static final long MAX_SCALE = 1L << 20;
 
     /** Build from live COMMON config; a disabled phase collapses to zero length (just overworld). */
     public static WorldGenCycle fromConfig() {
@@ -52,7 +70,9 @@ public record WorldGenCycle(long startX, int owGap,
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
         return new WorldGenCycle(
                 DungeonTrainCommonConfig.getDisintegrationStartBlocks(),
-                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),
+                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBlocks(),          // before Nether (g1)
+                DungeonTrainCommonConfig.getDisintegrationOverworldHoldBeforeEndBlocks(), // before End (g2)
+                DungeonTrainCommonConfig.getDisintegrationPeriodGrowthFactor(),
                 nether ? DungeonTrainCommonConfig.getNetherStageBlocks() : 0,
                 DungeonTrainCommonConfig.getNetherStageMultipliers(),
                 nether ? DungeonTrainCommonConfig.getNetherBeachBlocks() : 0,
@@ -80,57 +100,132 @@ public record WorldGenCycle(long startX, int owGap,
         return Math.max(0, beachBlocks) + stageCount() * Math.max(0, stageBlocks);
     }
 
+    private int growth() {
+        return Math.max(1, growthFactor);
+    }
+
+    /** A scaled hold span, clamped so band sums and band-local offsets stay within {@code int}. */
+    private static int scaledHold(int base, long scale) {
+        long v = (long) Math.max(0, base) * Math.max(1L, scale);
+        return (int) Math.min(v, (long) Integer.MAX_VALUE / 8L);
+    }
+
+    /** Nether band length at a given period scale: only {@code coreHold} grows; the fades are fixed. */
+    private long netherLenAt(long scale) {
+        return NetherTransition.bandLength(riseLen(), megaHold, coreFade, scaledHold(coreHold, scale));
+    }
+
+    /** End band length at a given period scale: {@code eVoid} and {@code eEnd} grow; {@code eFade} is fixed. */
+    private long endLenAt(long scale) {
+        return Disintegration.bandLength(eFade, scaledHold(eVoid, scale), scaledHold(eEnd, scale));
+    }
+
+    private long gapBeforeNether(long scale) {
+        return (long) Math.max(0, owGapBeforeNether) * Math.max(1L, scale);
+    }
+
+    private long gapBeforeEnd(long scale) {
+        return (long) Math.max(0, owGapBeforeEnd) * Math.max(1L, scale);
+    }
+
+    /** Full length of the period at a given scale: {@code g1 + nether + g2 + end} (all scaled as applicable). */
+    private long periodLenAt(long scale) {
+        return gapBeforeNether(scale) + netherLenAt(scale) + gapBeforeEnd(scale) + endLenAt(scale);
+    }
+
+    /** Base (period-0) Nether band length — also the in-band guard used by {@code NetherBand}. */
     public long netherLen() {
-        return NetherTransition.bandLength(riseLen(), megaHold, coreFade, coreHold);
+        return netherLenAt(1L);
     }
 
+    /** Base (period-0) End band length — also the in-band guard used by {@code DisintegrationBand}. */
     public long endLen() {
-        return Disintegration.bandLength(eFade, eVoid, eEnd);
-    }
-
-    /** {@code 2·owGap + netherLen + endLen}; 0 if everything collapses (nothing to generate). */
-    public long period() {
-        return 2L * Math.max(0, owGap) + netherLen() + endLen();
+        return endLenAt(1L);
     }
 
     /**
-     * Offset into the current cycle, or {@code -1} before the anchor / when the cycle is empty.
-     * {@code phaseShift} lands {@code startX} that many blocks into the cycle (applied after the
-     * before-anchor guard), so the first overworld gap to the nether band is shortened by it.
+     * Base (period-0) period length; {@code 0} if everything collapses (nothing to generate). Later
+     * periods grow by {@code growthFactor}; this base value is only used as a {@code > 0} enable-guard
+     * and by the unit tests.
      */
-    private long offset(int worldX) {
-        long p = period();
-        if (p <= 0L || worldX < startX) return -1L;
-        return Math.floorMod((long) worldX - startX + phaseShift, p);
+    public long period() {
+        return periodLenAt(1L);
     }
 
-    private long netherStart() {
-        return Math.max(0, owGap);
+    /** A located column: which period (scale), the offset within it, and that period's band boundaries. */
+    private record Loc(long scale, long local, long netherStart, long netherLen, long endStart, long endLen) {}
+
+    /**
+     * Locate {@code worldX} within the (possibly growing) cycle: {@code null} before the anchor or when
+     * the cycle is empty. {@code phaseShift} lands the anchor that many blocks into period 0, so the
+     * first overworld gap to the nether band is shortened by it. With {@code growthFactor == 1} the
+     * cycle is uniform (O(1) {@code floorMod}); otherwise periods grow geometrically and the locator
+     * walks them (≤ {@link #MAX_PERIODS} steps for any reachable world-X).
+     */
+    private Loc locate(int worldX) {
+        long base = periodLenAt(1L);
+        if (base <= 0L || worldX < startX) return null;
+        long d = (long) worldX - startX + Math.max(0, phaseShift);
+        if (d < 0L) return null;
+
+        int gf = growth();
+        if (gf == 1) {
+            return locFor(1L, Math.floorMod(d, base));
+        }
+        long cursor = 0L;
+        long scale = 1L;
+        for (int k = 0; k < MAX_PERIODS; k++) {
+            long plen = periodLenAt(scale);
+            if (plen <= 0L) return null;
+            if (d < cursor + plen) {
+                return locFor(scale, d - cursor);
+            }
+            cursor += plen;
+            scale = Math.min(scale * gf, MAX_SCALE);
+        }
+        return null; // unreachable for any in-bounds world-X
     }
 
-    private long endStart() {
-        return 2L * Math.max(0, owGap) + netherLen();
+    private Loc locFor(long scale, long local) {
+        long g1 = gapBeforeNether(scale);
+        long nlen = netherLenAt(scale);
+        long g2 = gapBeforeEnd(scale);
+        long elen = endLenAt(scale);
+        long netherStart = g1;
+        long endStart = g1 + nlen + g2;
+        return new Loc(scale, local, netherStart, nlen, endStart, elen);
     }
 
-    private long netherOffset(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return -1L;
-        long ln = o - netherStart();
-        return (ln < 0L || ln >= netherLen()) ? -1L : ln;
+    /** Band-local offset into the nether band, or {@code -1} if {@code worldX} isn't in it. */
+    private static long netherBandOffset(Loc l) {
+        if (l == null) return -1L;
+        long ln = l.local() - l.netherStart();
+        return (ln < 0L || ln >= l.netherLen()) ? -1L : ln;
+    }
+
+    /** Band-local offset into the End band, or {@code -1} if {@code worldX} isn't in it. */
+    private static long endBandOffset(Loc l) {
+        if (l == null) return -1L;
+        long le = l.local() - l.endStart();
+        return (le < 0L || le >= l.endLen()) ? -1L : le;
     }
 
     /** Nether band-presence ramp (0 outside the nether segment) — drives in-band gating. */
     public double netherHeightRamp(int worldX) {
-        long ln = netherOffset(worldX);
+        Loc l = locate(worldX);
+        long ln = netherBandOffset(l);
         if (ln < 0L) return 0.0;
-        return NetherTransition.heightRamp((int) ln, 0L, riseLen(), megaHold, coreFade, coreHold, 0);
+        return NetherTransition.heightRamp((int) ln, 0L, riseLen(), megaHold, coreFade,
+                scaledHold(coreHold, l.scale()), 0);
     }
 
     /** Nether intensity ramp (netherrack → real Nether) at a world-X (0 outside the nether segment). */
     public double netherRamp(int worldX) {
-        long ln = netherOffset(worldX);
+        Loc l = locate(worldX);
+        long ln = netherBandOffset(l);
         if (ln < 0L) return 0.0;
-        return NetherTransition.netherRamp((int) ln, 0L, riseLen(), megaHold, coreFade, coreHold, 0);
+        return NetherTransition.netherRamp((int) ln, 0L, riseLen(), megaHold, coreFade,
+                scaledHold(coreHold, l.scale()), 0);
     }
 
     /**
@@ -147,15 +242,16 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
-     * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
-     * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and
-     * mirrored on the exit.
+     * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across stage 1, ramping
+     * stage by stage to the final multiplier, then held at that multiplier across the mega plateau + the
+     * (scaled) core, and mirrored on the exit. The rise/edge math is unaffected by the period scale —
+     * only the held core in the middle grows longer.
      */
     public double netherMountainMultiplier(int worldX) {
-        long ln = netherOffset(worldX);
+        Loc l = locate(worldX);
+        long ln = netherBandOffset(l);
         if (ln < 0L) return 1.0;
-        long band = netherLen();
+        long band = l.netherLen();
         int rise = riseLen();
         long edge = rise + Math.max(0, megaHold);
         if (ln < edge) return riseMult(ln, rise);
@@ -164,10 +260,10 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
-     * Stage curve over the rise: the leading beach span holds the natural ×1 (the feature
-     * boosts it over ocean), then each mountain stage ramps from the previous multiplier
-     * to its own (stage 1 ramps from ×1), so the mountains grow smoothly stage by stage;
-     * the final multiplier is held across the mega plateau.
+     * Stage curve over the rise: the leading beach span holds the natural ×1 (the feature boosts it over
+     * ocean), then each mountain stage ramps from the previous multiplier to its own (stage 1 ramps from
+     * ×1), so the mountains grow smoothly stage by stage; the final multiplier is held across the mega
+     * plateau.
      */
     private double riseMult(long d, int rise) {
         int n = stageCount();
@@ -188,23 +284,25 @@ public record WorldGenCycle(long startX, int owGap,
      * Edge feather {@code 0..1} for the mountain raise, used to scale the above-sea mountain height:
      * {@code 0} exactly at the leading gate boundary (the inland edge of the beach span, where
      * {@link games.brennan.dungeontrain.worldgen.NetherMountainTerrain#raises} first turns on) and at
-     * the symmetric trailing gate, smoothstep up to {@code 1} over one mountain stage on each side,
-     * and {@code 1} across the whole interior. Scaling the added height by this makes it start at 0 at
-     * each band edge, so the mountains grow out of the natural terrain instead of stepping up as a
-     * vertical cliff. {@code 1} (a no-op) outside the nether segment or when the band has no stages.
+     * the symmetric trailing gate, smoothstep up to {@code 1} over one mountain stage on each side, and
+     * {@code 1} across the whole interior. Scaling the added height by this makes it start at 0 at each
+     * band edge, so the mountains grow out of the natural terrain instead of stepping up as a vertical
+     * cliff. {@code 1} (a no-op) outside the nether segment or when the band has no stages.
      *
      * <p>The fade length is one mountain stage ({@code stageBlocks}); the feather therefore reaches
-     * {@code 1} well before the netherrack crossfade/core begin, leaving them untouched. {@code min}
-     * of the two edge distances keeps it symmetric and self-protecting if the band is too short to
-     * reach full height. Pure (deterministic, seed-independent) like the rest of this class.</p>
+     * {@code 1} well before the netherrack crossfade/core begin, leaving them untouched. {@code min} of
+     * the two edge distances keeps it symmetric and self-protecting if the band is too short to reach
+     * full height. The trailing distance uses the <em>scaled</em> band length, so a longer core just
+     * extends the {@code 1} interior. Pure (deterministic, seed-independent) like the rest of this class.</p>
      */
     public double netherMountainFeather(int worldX) {
-        long ln = netherOffset(worldX);
+        Loc l = locate(worldX);
+        long ln = netherBandOffset(l);
         if (ln < 0L) return 1.0;                                    // outside the nether segment
         int fade = Math.max(0, stageBlocks);                        // ease in over the first stage
         if (fade == 0) return 1.0;
         long lead = ln - Math.max(0, beachBlocks);                 // blocks past the leading gate
-        long trail = netherLen() - ln;                             // blocks to the trailing gate
+        long trail = l.netherLen() - ln;                           // blocks to the trailing gate
         double e = Math.min(lead, trail) / (double) fade;
         if (e <= 0.0) return 0.0;
         if (e >= 1.0) return 1.0;
@@ -213,61 +311,66 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** True if {@code worldX} lies in the leading beach span of a nether band (the ocean-entry stretch). */
     public boolean isNetherBeachStage(int worldX) {
-        long ln = netherOffset(worldX);
+        Loc l = locate(worldX);
+        if (l == null) return false;
+        long ln = l.local() - l.netherStart();
         return ln >= 0 && ln < Math.max(0, beachBlocks);
     }
 
     /**
-     * Progress {@code 0..1} across the leading nether beach span: {@code 0} at the seaward entrance
-     * edge (the ocean waterline) climbing to {@code 1} at the inland edge where the beach meets the
-     * mountains — so a shore ramp can be drawn across it. Clamped to {@code [0,1]}; outside the beach
-     * span the value is meaningless, so callers must gate on {@link #isNetherBeachStage}.
+     * Progress {@code 0..1} across the leading nether beach span: {@code 0} at the seaward entrance edge
+     * (the ocean waterline) climbing to {@code 1} at the inland edge where the beach meets the mountains
+     * — so a shore ramp can be drawn across it. Clamped to {@code [0,1]}; outside the beach span the
+     * value is meaningless, so callers must gate on {@link #isNetherBeachStage}.
      */
     public double netherBeachProgress(int worldX) {
         int beach = Math.max(0, beachBlocks);
         if (beach == 0) return 0.0;
-        long ln = netherOffset(worldX);
+        Loc l = locate(worldX);
+        if (l == null) return 0.0;
+        long ln = l.local() - l.netherStart();
         if (ln <= 0L) return 0.0;
         double p = (double) ln / beach;
         return p < 0.0 ? 0.0 : (p > 1.0 ? 1.0 : p);
     }
 
-    /** World-X where the current nether band's rise begins (for ocean detection), or {@code Long.MIN_VALUE}. */
+    /** World-X where the current period's nether band rise begins (for ocean detection), or {@code Long.MIN_VALUE}. */
     public long netherBandEntranceX(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return Long.MIN_VALUE;
-        return (long) worldX - o + netherStart();
+        Loc l = locate(worldX);
+        if (l == null) return Long.MIN_VALUE;
+        long ln = l.local() - l.netherStart();
+        return (long) worldX - ln;
     }
 
     /** End erosion / sky ramp at a world-X (0 outside the End segment). */
     public double endMiddleRamp(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return 0.0;
-        long le = o - endStart();
-        if (le < 0L || le >= endLen()) return 0.0;
-        return Disintegration.middleRamp((int) le, 0L, eFade, eVoid, eEnd, 0);
+        Loc l = locate(worldX);
+        long le = endBandOffset(l);
+        if (le < 0L) return 0.0;
+        return Disintegration.middleRamp((int) le, 0L, eFade,
+                scaledHold(eVoid, l.scale()), scaledHold(eEnd, l.scale()), 0);
     }
 
     /** End-island fill ramp at a world-X (0 outside the End segment). */
     public double endIslandRamp(int worldX) {
-        long o = offset(worldX);
-        if (o < 0L) return 0.0;
-        long le = o - endStart();
-        if (le < 0L || le >= endLen()) return 0.0;
-        return Disintegration.endRamp((int) le, 0L, eFade, eVoid, eEnd, 0);
+        Loc l = locate(worldX);
+        long le = endBandOffset(l);
+        if (le < 0L) return 0.0;
+        return Disintegration.endRamp((int) le, 0L, eFade,
+                scaledHold(eVoid, l.scale()), scaledHold(eEnd, l.scale()), 0);
     }
 
     /**
      * End sky/fog ramp at a world-X — like {@link #endMiddleRamp} but with both fades pushed
-     * {@code skyOffset} blocks toward the void core, so the End sky lags the terrain erosion
-     * (delayed fade-in on entry, early fade-out on exit). 0 outside the End segment;
-     * {@code skyOffset == 0} reproduces {@link #endMiddleRamp} exactly.
+     * {@code skyOffset} blocks toward the void core, so the End sky lags the terrain erosion (delayed
+     * fade-in on entry, early fade-out on exit). 0 outside the End segment; {@code skyOffset == 0}
+     * reproduces {@link #endMiddleRamp} exactly.
      */
     public double endSkyRamp(int worldX, int skyOffset) {
-        long o = offset(worldX);
-        if (o < 0L) return 0.0;
-        long le = o - endStart();
-        if (le < 0L || le >= endLen()) return 0.0;
-        return Disintegration.skyRamp((int) le, 0L, eFade, eVoid, eEnd, 0, skyOffset);
+        Loc l = locate(worldX);
+        long le = endBandOffset(l);
+        if (le < 0L) return 0.0;
+        return Disintegration.skyRamp((int) le, 0L, eFade,
+                scaledHold(eVoid, l.scale()), scaledHold(eEnd, l.scale()), 0, skyOffset);
     }
 }
