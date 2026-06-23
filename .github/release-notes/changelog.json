@@ -2039,9 +2039,9 @@
       "summary": "Soren's second letter now opens with a burst of excitement as she realises the door is truly real.",
       "highlights": [],
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "pause-resume-train-rider",
@@ -2055,9 +2055,9 @@
       ],
       "pr": 548,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-transition-band",
@@ -2072,9 +2072,9 @@
         "A real Nether core with warm dim lighting; ocean entrances get a sand shore"
       ],
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-core-decoration",
@@ -2089,9 +2089,9 @@
       ],
       "pr": 551,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-band-natural-coastline",
@@ -2106,9 +2106,9 @@
       ],
       "pr": 552,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-piglins-dont-zombify",
@@ -2123,9 +2123,9 @@
       ],
       "pr": 553,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-core-multi-biome",
@@ -2140,9 +2140,9 @@
       ],
       "pr": 554,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-band-music-crossfade",
@@ -2156,9 +2156,9 @@
       ],
       "pr": 555,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-core-pillars-over-lava",
@@ -2172,9 +2172,9 @@
       ],
       "pr": 557,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-ghast-collision-check",
@@ -2187,9 +2187,9 @@
       ],
       "pr": 556,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-core-behaviours",
@@ -2200,9 +2200,9 @@
       "highlights": [],
       "pr": 558,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-band-skybox",
@@ -2217,9 +2217,9 @@
       ],
       "pr": 559,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "train-external-fluid-barrier",
@@ -2233,9 +2233,9 @@
       ],
       "pr": 560,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     },
     {
       "id": "nether-tunnel-cleanup",
@@ -2250,9 +2250,9 @@
       ],
       "pr": 562,
       "date": "2026-06-23",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:19Z"
     }
   ]
 }
