@@ -18,17 +18,20 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 
 /**
- * Cleans overworld foliage (trees/leaves/flowers spilling in from neighbouring chunks)
- * off the stamped Nether-transition terrain. The {@code NetherTransitionFeature} buries
- * foliage it can see at generation, but a neighbour chunk decorated <i>after</i> this
- * chunk's feature ran can drop a tree across the seam — this pass, on
- * {@link ChunkEvent.Load} gated on {@link ChunkEvent.Load#isNewChunk()} (so it runs once
- * at generation, after all decoration, never on reload), strips those stragglers.
+ * Keeps overworld foliage (trees/leaves/flowers) out of the <b>netherrack crossfade + Nether
+ * core</b> of the transition band, where green vegetation on netherrack would look wrong. The
+ * mountain STAGES are now real, vegetated terrain (the band's height lives in the density router,
+ * with highland biomes forced on top) — so foliage is KEPT there; only the netherrack zone
+ * ({@link NetherBand#netherRampAt} {@code > 0}) is stripped.
  *
- * <p>Only touches columns inside a nether band ({@link NetherBand#heightRampAt} {@code >
- * 0}) that the End band does not own ({@link DisintegrationBand#middleRampAt} {@code ==
- * 0}). Writes go through raw {@link LevelChunkSection#setBlockState}, the Sable-safe path
- * (mirroring {@code WorldDisintegrationEvents}).</p>
+ * <p>Runs on {@link ChunkEvent.Load} gated on {@link ChunkEvent.Load#isNewChunk()} (once at
+ * generation, after all decoration, never on reload). Only touches columns the End band does not
+ * own ({@link DisintegrationBand#middleRampAt} {@code == 0}). Writes go through raw
+ * {@link LevelChunkSection#setBlockState}, the Sable-safe path (mirroring {@code WorldDisintegrationEvents}).</p>
+ *
+ * <p><b>History:</b> this previously stripped foliage across the WHOLE band ({@code heightRampAt > 0})
+ * to keep the old bare stamped mountains clean — which also deleted the trees/flowers the new
+ * real-terrain mountains are meant to have. Scoped to the netherrack zone so mountains stay forested.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherTransitionEvents {
@@ -55,8 +58,9 @@ public final class NetherTransitionEvents {
         boolean any = false;
         for (int dx = 0; dx < 16; dx++) {
             int worldX = chunkMinX + dx;
-            // In a nether band, and not a column the End band owns (End wins).
-            band[dx] = NetherBand.heightRampAt(level, worldX) > 0.0
+            // Only the netherrack crossfade + Nether core (netherRamp > 0) — NOT the vegetated
+            // mountain stages — and never a column the End band owns (End wins).
+            band[dx] = NetherBand.netherRampAt(level, worldX) > 0.0
                     && DisintegrationBand.middleRampAt(level, worldX) <= 0.0;
             if (band[dx]) any = true;
         }
