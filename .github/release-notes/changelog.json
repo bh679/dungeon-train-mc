@@ -2205,6 +2205,23 @@
       "released_at": null
     },
     {
+      "id": "nether-band-skybox",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The sky turns to the Nether's in the transition band",
+      "summary": "Crossing into the Nether band, the overworld sky now fades away \u2014 sun, moon, stars and blue gradient give way to the skyless red glow of the real Nether overhead, then fade back to a normal sky on the way out. The sky takes on whichever Nether biome you're passing through (crimson red, warped teal, soul-sand blue, basalt grey or wastes red), so the sky and the fog are one.",
+      "highlights": [
+        "Sun, moon, stars and blue sky fade out as you enter the Nether core",
+        "The sky's colour matches the Nether biome you're in \u2014 and the fog",
+        "Smoothly crossfades in and out, with no pop at the band edges"
+      ],
+      "pr": 559,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "train-external-fluid-barrier",
       "version": "0.354.0",
       "type": "feat",

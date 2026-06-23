@@ -72,25 +72,40 @@ public final class NetherFogEvents {
         if (n <= 0.0) return;
         float t = (float) Math.min(1.0, n);
 
-        // Target colour: in the real-Nether core, the biome's own fog colour (the biome the biome-source
-        // mixin forced + vanilla synced to the client); elsewhere (the crossfade's highland biome) the
-        // fixed nether_wastes red. Any read error falls back to the fixed red.
-        float fr = NETHER_FOG_R, fg = NETHER_FOG_G, fb = NETHER_FOG_B;
-        try {
-            Holder<Biome> biome = mc.level.getBiome(event.getCamera().getBlockPosition());
-            if (isNetherBiome(biome)) {
-                int fog = biome.value().getFogColor();
-                fr = ((fog >> 16) & 0xFF) / 255.0f;
-                fg = ((fog >> 8) & 0xFF) / 255.0f;
-                fb = (fog & 0xFF) / 255.0f;
-            }
-        } catch (Throwable ignored) {
-            // keep the fixed nether_wastes red
-        }
+        // Target colour: in the real-Nether core, the biome's own fog colour; elsewhere (the
+        // crossfade's highland biome) the fixed nether_wastes red. Shared with NetherSkyRenderer
+        // so the sky dome and the fog stay the same colour.
+        int target = netherTargetColor(mc.level, event.getCamera().getBlockPosition());
+        float fr = ((target >> 16) & 0xFF) / 255.0f;
+        float fg = ((target >> 8) & 0xFF) / 255.0f;
+        float fb = (target & 0xFF) / 255.0f;
 
         event.setRed(lerp(event.getRed(), fr, t));
         event.setGreen(lerp(event.getGreen(), fg, t));
         event.setBlue(lerp(event.getBlue(), fb, t));
+    }
+
+    /**
+     * The Nether atmosphere's target colour (packed {@code 0xRRGGBB}) at {@code pos}: the biome's
+     * own fog colour when the camera is in one of the five real-Nether biomes (so warped teal,
+     * crimson red, soul-sand blue, basalt grey and wastes red each match their biome), otherwise
+     * the fixed {@code nether_wastes} red {@code 0x330808} — also the fallback on any read error.
+     *
+     * <p>Used by both the fog blend above and {@link NetherSkyRenderer} so the sky dome the player
+     * sees and the fog they look through are painted the same colour.</p>
+     */
+    static int netherTargetColor(Level level, net.minecraft.core.BlockPos pos) {
+        try {
+            Holder<Biome> biome = level.getBiome(pos);
+            if (isNetherBiome(biome)) {
+                return biome.value().getFogColor() & 0xFFFFFF;
+            }
+        } catch (Throwable ignored) {
+            // fall through to the fixed nether_wastes red
+        }
+        return ((int) (NETHER_FOG_R * 255.0f) << 16)
+                | ((int) (NETHER_FOG_G * 255.0f) << 8)
+                | (int) (NETHER_FOG_B * 255.0f);
     }
 
     /** True for the five vanilla Nether biomes (the only ones the core labels columns with). */

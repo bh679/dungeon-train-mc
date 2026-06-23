@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.ClientNetherBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
+import games.brennan.dungeontrain.client.NetherSkyRenderer;
 import games.brennan.dungeontrain.client.VoidSkyRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -14,14 +15,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Void/Nether band atmosphere hooks on {@code LevelRenderer}:
+ * Train-band atmosphere hooks on {@code LevelRenderer}:
  * <ul>
- *   <li>{@code renderSky} TAIL → overlay the End skybox at the band opacity, after
- *       vanilla has drawn the overworld sky (clean crossfade, no pop). See
- *       {@link VoidSkyRenderer}.</li>
- *   <li>{@code renderClouds} HEAD → cancel cloud rendering once the End sky has
- *       mostly faded in (or over the Nether core), so clouds disappear over the
- *       void/End/Nether rather than floating incongruously above it.</li>
+ *   <li>{@code renderSky} TAIL → overlay the band skybox at its opacity, after vanilla has
+ *       drawn the overworld sky (clean crossfade, no pop): the End starfield
+ *       ({@link VoidSkyRenderer}) and the Nether fog-colour fill ({@link NetherSkyRenderer}).
+ *       The two bands never overlap in world-X, so at most one paints.</li>
+ *   <li>{@code renderClouds} HEAD → cancel cloud rendering once the End or Nether sky has
+ *       mostly faded in, so clouds disappear over the void/End/Nether rather than floating
+ *       incongruously above it.</li>
  *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether
  *       core, so storms don't rain on the hellscape (the Nether has no weather).</li>
  * </ul>
@@ -36,9 +38,10 @@ public abstract class LevelRendererVoidSkyMixin {
             method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
             at = @At("TAIL")
     )
-    private void dungeontrain$voidSkyOverlay(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick,
+    private void dungeontrain$bandSkyOverlay(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick,
                                              Camera camera, boolean isFoggy, Runnable skyFogSetup, CallbackInfo ci) {
         VoidSkyRenderer.renderOverlay(frustumMatrix, camera, isFoggy);
+        NetherSkyRenderer.renderOverlay(frustumMatrix, camera, isFoggy);
     }
 
     @Inject(
