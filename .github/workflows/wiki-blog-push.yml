@@ -7,29 +7,6 @@ on:
     paths:
       - '.github/wiki-content/*.md'
   workflow_dispatch:
-    inputs:
-      blog_filename:
-        description: 'Blog post filename (inside .github/wiki-content/)'
-        required: true
-        default: 'Blog-2026-06-23-Nether-Arrives.md'
-      blog_title:
-        description: 'Blog post title for index entry'
-        required: true
-        default: '2026-06-23 — The Nether Arrives'
-      blog_page:
-        description: 'Wiki page name (no extension)'
-        required: true
-        default: 'Blog-2026-06-23-Nether-Arrives'
-      year:
-        description: 'Year heading to add entry under in Blog.md'
-        required: true
-        default: '2026'
-
-env:
-  BLOG_FILENAME: ${{ inputs.blog_filename || 'Blog-2026-06-23-Nether-Arrives.md' }}
-  BLOG_TITLE: ${{ inputs.blog_title || '2026-06-23 — The Nether Arrives' }}
-  BLOG_PAGE: ${{ inputs.blog_page || 'Blog-2026-06-23-Nether-Arrives' }}
-  YEAR: ${{ inputs.year || '2026' }}
 
 jobs:
   push-to-wiki:
@@ -49,72 +26,54 @@ jobs:
 
       - name: Copy blog post
         run: |
-          cp ".github/wiki-content/${{ env.BLOG_FILENAME }}" \
-             "/tmp/wiki/${{ env.BLOG_FILENAME }}"
+          cp .github/wiki-content/Blog-2026-06-23-Nether-Arrives.md \
+             /tmp/wiki/Blog-2026-06-23-Nether-Arrives.md
 
       - name: Update Blog index
         shell: python3 {0}
         run: |
           import os, re
 
-          wiki_dir = "/tmp/wiki"
-          blog_md  = os.path.join(wiki_dir, "Blog.md")
-          year     = os.environ["YEAR"]
-          page     = os.environ["BLOG_PAGE"]
-          title    = os.environ["BLOG_TITLE"]
-          entry    = f"- [{title}]({page})"
+          blog_md = "/tmp/wiki/Blog.md"
+          entry   = "- [2026-06-23 — The Nether Arrives](Blog-2026-06-23-Nether-Arrives)"
 
           if not os.path.exists(blog_md):
-              content = f"""[Home](Home) > Blog
+              content = """\
+[Home](Home) > Blog
 
 # Dev Blog
 
 Updates from the Dungeon Train development team.
 
-## {year}
+## 2026
 
-{entry}
-"""
+""" + entry + "\n"
           else:
               content = open(blog_md).read()
               if entry in content:
-                  print("Entry already present, skipping index update.")
+                  print("Entry already present.")
+              elif "## 2026" in content:
+                  content = content.replace("## 2026\n", "## 2026\n" + entry + "\n", 1)
               else:
-                  year_heading = f"## {year}"
-                  if year_heading in content:
-                      content = content.replace(
-                          year_heading + "\n",
-                          year_heading + "\n" + entry + "\n",
-                          1,
-                      )
+                  m = re.search(r'^## ', content, re.MULTILINE)
+                  if m:
+                      content = content[:m.start()] + "## 2026\n\n" + entry + "\n\n" + content[m.start():]
                   else:
-                      first_h2 = re.search(r'^## ', content, re.MULTILINE)
-                      if first_h2:
-                          pos = first_h2.start()
-                          content = (
-                              content[:pos]
-                              + f"## {year}\n\n{entry}\n\n"
-                              + content[pos:]
-                          )
-                      else:
-                          content += f"\n## {year}\n\n{entry}\n"
+                      content += "\n## 2026\n\n" + entry + "\n"
 
           with open(blog_md, "w") as f:
               f.write(content)
 
       - name: Commit and push
-        env:
-          YEAR: ${{ env.YEAR }}
-          BLOG_PAGE: ${{ env.BLOG_PAGE }}
         run: |
           cd /tmp/wiki
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
           if git diff --staged --quiet; then
-            echo "Nothing to commit — wiki already up to date."
+            echo "Nothing to commit."
           else
-            git commit -m "docs: blog post ${BLOG_PAGE}"
+            git commit -m "docs: blog post 2026-06-23 — The Nether Arrives"
             git push
-            echo "Wiki updated successfully."
+            echo "Wiki updated."
           fi
