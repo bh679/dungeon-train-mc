@@ -93,6 +93,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final long SHORE_JITTER_SALT = 0x5EA5A11DBEA1L;
     /** Minimum solid-sand body depth below the shore surface (extends down to the natural seabed when deeper). */
     private static final int SHORE_BODY_DEPTH = 8;
+    /** Blocks above sea level the beach sand climbs onto the feathered mountain over an ocean entrance. */
+    private static final int SHORE_SKIN_BAND = 6;
+    /** Salt for the shore-skin sand→grass dither (distinct from the crossfade + jitter salts). */
+    private static final long SHORE_SKIN_SALT = 0xC2B2AE3D27D4EB4FL;
 
     private static final Set<Heightmap.Types> WG_HEIGHTMAPS = EnumSet.of(
             Heightmap.Types.MOTION_BLOCKING,
@@ -193,7 +197,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 // density wrapper — nothing to post-process here, so skip them (this is what lets grass/trees/
                 // structures survive on the mountain instead of being re-buried by a rock stamp).
                 boolean crossfade = !core && !inBeachSpan && n > 0.0;
-                if (!core && !inBeachSpan && !crossfade) continue;
+                // Over an ocean entrance the feathered mountain rises out of sea level across the entry/exit
+                // fade, leaving a stony shoreline; recolour that low surface to beach sand. Only the fade
+                // zone (feather < 1) can be near sea level — the high interior + all land bands are skipped.
+                boolean shoreSkin = !core && !inBeachSpan && !crossfade
+                        && oceanEntrance && cycle.netherMountainFeather(worldX) < 1.0;
+                if (!core && !inBeachSpan && !crossfade && !shoreSkin) continue;
                 double beachProgress = inBeachSpan ? cycle.netherBeachProgress(worldX) : 0.0;
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
@@ -206,8 +215,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, seaLevel, seed, beachProgress);
-                    } else {
+                    } else if (crossfade) {
                         colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed);
+                    } else {
+                        colChanged = recolorShoreSkinColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
+                                minY, worldTop, seaLevel, seed);
                     }
                     changed |= colChanged;
                 }
@@ -244,6 +256,35 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (!w.isSolidGround(dx, y, dz)) continue; // only recolour existing solid ground (never air/fluid)
             w.set(dx, y, dz, NETHERRACK);
             changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * Shore skin ({@code n == 0}, ocean entrance, in the entry/exit fade): the feathered mountains rise
+     * out of sea level over former ocean, and vanilla paints that near-waterline surface as a stony/gravel
+     * shore in the forced highland biome — a STONE BAND between the sand beach and the green mountain. This
+     * recolours the top {@link #SURFACE_SKIN_DEPTH} solid blocks to {@link BeachPalette} sand where the
+     * surface sits within {@link #SHORE_SKIN_BAND} blocks of sea level, with a coherent dither so the
+     * sand→grass line is irregular — extending the beach up onto the mountain. Columns above the band keep
+     * their natural grass; no terrain is added or removed (no notch) and the track/corridor is preserved.
+     */
+    private boolean recolorShoreSkinColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                           int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
+                                           int minY, int worldTop, int seaLevel, long seed) {
+        int top = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
+        if (top > seaLevel + SHORE_SKIN_BAND) return false;          // a normal grassy mountain up here
+        // 1 at/below sea level, fading to 0 at the top of the band → an irregular, natural sand line.
+        double sandiness = (double) (seaLevel + SHORE_SKIN_BAND - top) / SHORE_SKIN_BAND;
+        if (MountainNoise.height01(seed ^ SHORE_SKIN_SALT, worldX, worldZ) >= sandiness) return false;
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        int floor = Math.max(minY, top - SURFACE_SKIN_DEPTH + 1);
+        for (int y = top; y >= floor; y--) {
+            if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
+            if (!w.isSolidGround(dx, y, dz)) continue;               // only recolour solid ground, never air/water
+            BlockState block = BeachPalette.surfaceBlock(top - y, Disintegration.coherentNoise(seed, worldX, y, worldZ));
+            if (!w.isSame(dx, y, dz, block)) { w.set(dx, y, dz, block); changed = true; }
         }
         return changed;
     }
