@@ -38,9 +38,12 @@ import java.util.List;
  *
  * <p>The ground roster + ghast frequency follow the <b>biome</b> at the spawn column (the core now
  * cycles through all five Nether biomes), so each biome reads right: skeletons in soul sand valleys,
- * endermen in warped forests, magma cubes in basalt deltas, etc. Only mobs that behave correctly
- * outside the Nether are used — piglins and hoglins are avoided everywhere because they convert
- * (zombified piglin / zoglin) in the overworld dimension.</p>
+ * endermen in warped forests, magma cubes in basalt deltas, piglins + hoglins in crimson forests.
+ * Piglins and hoglins normally zombify (piglin) / become zoglins (hoglin) in the overworld, but
+ * {@link NetherBandZombificationGuard} grants them Nether-immunity throughout the band core
+ * ({@link NetherBand#isInNetherBiome}, the same {@code netherRamp ≥ 0.5} zone this spawner uses), so
+ * they survive intact. Every other roster mob (zombified piglins, magma cubes, skeletons, endermen,
+ * ghasts) already behaves correctly outside the Nether.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class NetherMobSpawner {
@@ -79,7 +82,8 @@ public final class NetherMobSpawner {
     };
     @SuppressWarnings("unchecked")
     private static final EntityType<? extends Mob>[] CRIMSON_MOBS = new EntityType[] {
-            EntityType.ZOMBIFIED_PIGLIN                               // crimson (its piglins/hoglins convert)
+            // crimson forest's real roster — kept un-zombified in-core by NetherBandZombificationGuard
+            EntityType.PIGLIN, EntityType.HOGLIN, EntityType.ZOMBIFIED_PIGLIN
     };
     @SuppressWarnings("unchecked")
     private static final EntityType<? extends Mob>[] BASALT_MOBS = new EntityType[] {
