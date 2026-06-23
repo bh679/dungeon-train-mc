@@ -29,6 +29,7 @@
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
     "client.LevelRendererVoidSkyMixin",
+    "client.LightTextureEndBandMixin",
     "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],

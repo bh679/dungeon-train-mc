@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/reached_end_islands",
+  "display": {
+    "icon": { "id": "minecraft:grass_block" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_overworld_again.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_overworld_again.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_overworld_again" }
+    }
+  },
+  "requirements": [["reached"]]
+}

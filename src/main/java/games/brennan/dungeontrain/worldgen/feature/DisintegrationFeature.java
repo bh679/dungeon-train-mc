@@ -60,8 +60,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
     private static final int END_Y_SAMPLE_MIN = 8;
     private static final int END_Y_SAMPLE_MAX = 120;
 
-    /** Blocks of clearance kept island-free on each side of the track lane (so the train has a clear path). */
-    private static final int CORRIDOR_ISLAND_MARGIN = 2;
     /** Air pocket (blocks) cleared above an island top so a chorus plant can grow there. */
     private static final int CHORUS_POCKET = 10;
     /** Max chorus attempts per chunk — vanilla {@code CountPlacement.of(UniformInt.of(0, 4))}. */
@@ -109,8 +107,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             CarriageDims dims = data.dims();
             TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
             int bedY = g.bedY();
-            int zMin = g.trackZMin();
-            int zMax = g.trackZMax();
             int phaseShift = DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks();
             int fade = DungeonTrainCommonConfig.getDisintegrationFadeBlocks();
             int voidHold = DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks();
@@ -137,13 +133,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
             // Stamp real-End-shaped islands. For each column we sample the End density at the
             // noise-cell corners (cellW × cellH grid, world-anchored — same as the End's NoiseChunk)
             // and trilinearly interpolate per block, so island edges taper exactly like the real End.
-            //
-            // Every non-corridor column is evaluated against the real (world-seeded) 3D End density —
-            // do NOT reintroduce a 2D `DensityFunctions.endIslands` prefilter here. A fixed-seed-0 2D
-            // prefilter samples a different island layout than this world-seeded density and rejected
-            // whole chunks the 3D density actually fills, leaving clean, chunk-aligned, seed-independent
-            // holes in the islands. The per-chunk corner memo below keeps the full-resolution sampling
-            // cheap, so no prefilter is needed.
             int yLo = Math.max(minY, bedY + (END_Y_SAMPLE_MIN - END_ISLAND_CENTER_Y));
             int yHi = Math.min(maxY, bedY + (END_Y_SAMPLE_MAX - END_ISLAND_CENTER_Y));
             int endYLo = END_ISLAND_CENTER_Y + (yLo - bedY);
@@ -167,7 +156,16 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                 double threshold = Disintegration.islandDensityThreshold(e);
                 for (int dz = 0; dz < 16; dz++) {
                     int worldZ = chunkMinZ + dz;
-                    if (worldZ >= zMin - CORRIDOR_ISLAND_MARGIN && worldZ <= zMax + CORRIDOR_ISLAND_MARGIN) continue;
+                    // Islands are stamped across the whole band, INCLUDING the track lane, so the
+                    // track feature (which now runs AFTER this one — see track_bed_overworld.json)
+                    // can tunnel/pillar through them. The bed/rail + envelope carve clears the lane.
+                    //
+                    // Every column is evaluated against the real (world-seeded) 3D End density — do NOT
+                    // reintroduce a 2D `DensityFunctions.endIslands` prefilter here. A fixed-seed-0 2D
+                    // prefilter samples a different island layout than this world-seeded density and
+                    // rejected whole chunks the 3D density actually fills, leaving clean, chunk-aligned,
+                    // seed-independent holes in the islands. The per-chunk corner memo below keeps the
+                    // full-resolution sampling cheap, so no prefilter is needed.
                     int z0 = Math.floorDiv(worldZ, cellW) * cellW;
                     int z1 = z0 + cellW;
                     double fz = (double) (worldZ - z0) / cellW;

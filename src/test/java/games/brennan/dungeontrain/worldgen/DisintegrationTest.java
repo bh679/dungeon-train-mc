@@ -178,6 +178,39 @@ final class DisintegrationTest {
         assertEquals(0.0, Disintegration.endRamp(1200, START_X, F, VH, EH, OW), EPS);
     }
 
+    // ---- zone classification (reach-the-void / End-islands / overworld-again advancements) ----
+
+    /** Classify a world-X using the test band geometry, mirroring {@code DisintegrationBand.zoneAt}. */
+    private static Disintegration.Zone zoneAtX(int worldX) {
+        return Disintegration.zoneOf(
+                Disintegration.middleRamp(worldX, START_X, F, VH, EH, OW),
+                Disintegration.endRamp(worldX, START_X, F, VH, EH, OW));
+    }
+
+    @Test
+    @DisplayName("zoneOf: endRamp wins (End core), full middle is void, fades + flat overworld are overworld")
+    void zoneOf_classification() {
+        assertEquals(Disintegration.Zone.OVERWORLD, Disintegration.zoneOf(0.0, 0.0));
+        assertEquals(Disintegration.Zone.OVERWORLD, Disintegration.zoneOf(0.5, 0.0));   // OW↔void fade
+        assertEquals(Disintegration.Zone.OVERWORLD, Disintegration.zoneOf(0.998, 0.0)); // just below void threshold
+        assertEquals(Disintegration.Zone.VOID, Disintegration.zoneOf(0.999, 0.0));      // void threshold
+        assertEquals(Disintegration.Zone.VOID, Disintegration.zoneOf(1.0, 0.0));        // pure void hold
+        assertEquals(Disintegration.Zone.END_ISLANDS, Disintegration.zoneOf(1.0, 0.5)); // any End fill wins
+        assertEquals(Disintegration.Zone.END_ISLANDS, Disintegration.zoneOf(1.0, 1.0)); // End core
+    }
+
+    @Test
+    @DisplayName("zone across one band: OW → (fade) → VOID → END → VOID → OW, repeating with the cycle")
+    void zone_acrossBand() {
+        assertEquals(Disintegration.Zone.OVERWORLD, zoneAtX(1050));            // overworld phase
+        assertEquals(Disintegration.Zone.OVERWORLD, zoneAtX(1130));            // dd=50 OW→void fade (still ground)
+        assertEquals(Disintegration.Zone.VOID, zoneAtX(1200));                 // dd=120 void hold V1
+        assertEquals(Disintegration.Zone.END_ISLANDS, zoneAtX(1320));          // dd=240 End core
+        assertEquals(Disintegration.Zone.VOID, zoneAtX(1640));                 // dd=560 void hold V2
+        assertEquals(Disintegration.Zone.OVERWORLD, zoneAtX(1000 + PERIOD));   // overworld again, next cycle
+        assertEquals(Disintegration.Zone.END_ISLANDS, zoneAtX(1320 + PERIOD)); // End core repeats
+    }
+
     // ---- chunk-level fully-eroded classifier (fillFromNoise short-circuit gate) ----
 
     @Test

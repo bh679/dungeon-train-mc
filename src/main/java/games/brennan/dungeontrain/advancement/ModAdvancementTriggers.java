@@ -103,6 +103,14 @@ public final class ModAdvancementTriggers {
     public static final Supplier<KilledEchoTrigger> KILLED_ECHO =
         TRIGGERS.register("killed_echo", KilledEchoTrigger::new);
 
+    /**
+     * Parameterised marker for the remaining echo feats — your own echo pushed into the void plus
+     * the full someone-else's-echo set (encounter / befriend / kill / void push). See
+     * {@link EchoFeatTrigger} for the {@code feat} ids.
+     */
+    public static final Supplier<EchoFeatTrigger> ECHO_FEAT =
+        TRIGGERS.register("echo_feat", EchoFeatTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {

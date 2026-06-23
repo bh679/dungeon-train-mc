@@ -205,6 +205,29 @@ public final class Disintegration {
         return 1.0 - (double) (dd - a4) / f;              // ramp down (f>0 here)
     }
 
+    /**
+     * Minimum {@link #middleRamp} that counts as the genuine void: the flat void holds sit at
+     * exactly {@code 1.0}, kept just below 1 for float safety. The OW↔void fades
+     * ({@code middleRamp < 1}) read as overworld, so "reached the void" means truly out over
+     * nothing — not merely on crumbling ground.
+     */
+    public static final double VOID_RAMP_MIN = 0.999;
+
+    /** Which band a column belongs to, classified from its two ramps. */
+    public enum Zone { OVERWORLD, VOID, END_ISLANDS }
+
+    /**
+     * Classify a column from its {@link #middleRamp} and {@link #endRamp}: any End-island fill ⇒
+     * {@link Zone#END_ISLANDS}; otherwise a fully-held middle ramp ⇒ {@link Zone#VOID} (no
+     * ground); else {@link Zone#OVERWORLD} (including the fades). Order matters — the End core also
+     * holds {@code middleRamp == 1}, so {@code endRamp} is tested first. Pure / unit-testable.
+     */
+    public static Zone zoneOf(double middleRamp, double endRamp) {
+        if (endRamp > 0.0) return Zone.END_ISLANDS;
+        if (middleRamp >= VOID_RAMP_MIN) return Zone.VOID;
+        return Zone.OVERWORLD;
+    }
+
     /** Removal probability at {@code (worldX, y)}; derives the column middle-ramp internally (test convenience). */
     public static double removalProbability(int worldX, int y, int bedY, long startX, int fade, int voidHold, int endHold, int owHold) {
         return removalProbability(worldX, y, bedY, startX, 0, fade, voidHold, endHold, owHold);

@@ -1951,6 +1951,70 @@
       "released": true,
       "released_in": "v0.350.0",
       "released_at": "2026-06-22T15:32:48Z"
+    },
+    {
+      "id": "end-islands-tunnel-through",
+      "version": "0.351.0",
+      "type": "feat",
+      "title": "The train carves through the End islands",
+      "summary": "In the disintegration band \u2014 where the world dissolves into floating End islands \u2014 the train no longer skirts a cleared lane around the islands. It now bores tunnels straight through the islands in its path and rides out across the gaps on pillars, the same way it tunnels through hills and bridges ravines back in the overworld.",
+      "highlights": [
+        "Tunnels are carved through End islands that block the track",
+        "Pillars rise from island tops; the track bridges the open void between islands"
+      ],
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.351.0",
+      "released_at": "2026-06-22T23:25:41Z"
+    },
+    {
+      "id": "lit-end-islands",
+      "version": "0.352.0",
+      "type": "feat",
+      "title": "End islands stay lit like the End",
+      "summary": "The floating End-stone islands that drift through the world's broken-apart stretches now stay lit even at night. Their surfaces no longer fall dark when the sun goes down, so those End zones keep their otherworldly glow around the clock to match the End sky already overhead.",
+      "highlights": [
+        "End-stone islands no longer darken at night",
+        "Their glow fades in and out smoothly with the End sky as you cross each zone"
+      ],
+      "pr": 541,
+      "date": "2026-06-23",
+      "released": true,
+      "released_in": "v0.352.0",
+      "released_at": "2026-06-23T00:58:39Z"
+    },
+    {
+      "id": "void-end-overworld-echo-advancements",
+      "version": "0.352.0",
+      "type": "content",
+      "title": "New advancements: the void journey and echoes of other players",
+      "summary": "Eight new advancements. Ride the train far enough and the world itself disintegrates \u2014 earn your way out to the void, across the floating End islands, and back to the overworld again. Plus a full set for echoes: meet, befriend, kill, or shove another player's echo (and your own) off the train into the void.",
+      "highlights": [
+        "Voided Warranty, Tastes like Cheese?, Re-Over-World \u2014 reach the void, the End islands, then the overworld again",
+        "Repressed Memory \u2014 shove your own echo into the void",
+        "A Stranger's Ghost / Befriending the Dead / Not Your Ghost to Keep / Erased \u2014 encounter, befriend, kill, or void-shove another player's echo"
+      ],
+      "pr": 542,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "zombie-cure-narrative",
+      "version": "0.353.0",
+      "type": "content",
+      "title": "\"Weakness, Then Gold\" \u2014 a zombie's-cure story",
+      "summary": "A new book rides the train: seven letters by a zombie hunting its own cure \u2014 a Potion of Weakness from a witch, then a Golden Apple. The writing climbs from groans to human speech as the cure takes, and the last letter leaves the recipe for the next lost soul.",
+      "highlights": [
+        "New 7-letter narrative book written from a zombie's point of view",
+        "Built on the real cure: a Potion of Weakness, then a Golden Apple"
+      ],
+      "pr": 543,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
