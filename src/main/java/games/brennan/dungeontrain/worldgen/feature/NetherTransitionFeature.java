@@ -111,7 +111,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
             int seaLevel = overworld.getSeaLevel();
             int baseRelief = DungeonTrainCommonConfig.getNetherBaseReliefBlocks();
-            int beachMult = DungeonTrainCommonConfig.getNetherBeachMultiplier();
 
             double[] heightRamp = new double[16];
             double[] netherRamp = new double[16];
@@ -173,9 +172,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
                 double n = netherRamp[dx];
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
-                // Beach span over an ocean entrance: boosted relief (sandy cliffs) instead of a flat shelf.
+                // Beach span over an ocean entrance: natural-height SAND (not amplified) before the mountains.
                 boolean beach = !core && oceanEntrance && cycle.isNetherBeachStage(worldX);
-                double mult = beach ? beachMult : cycle.netherMountainMultiplier(worldX);
+                double mult = cycle.netherMountainMultiplier(worldX);
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
                 for (int dz = 0; dz < 16; dz++) {
