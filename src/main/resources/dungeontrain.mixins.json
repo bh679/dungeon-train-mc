@@ -7,7 +7,10 @@
   "mixins": [
     "PlayerFudgeSpawnMixin",
     "LightningBoltVisualOnlyMixin",
-    "AdvancementVisibilityEvaluatorMixin"
+    "AdvancementVisibilityEvaluatorMixin",
+    "ChunkAccessAccessor",
+    "NoiseBasedChunkGeneratorMixin",
+    "ChunkGeneratorDecorationMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",
@@ -25,7 +28,9 @@
     "client.DeathScreenMoveTextMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
-    "client.LevelRendererVoidSkyMixin"
+    "client.LevelRendererVoidSkyMixin",
+    "client.LightTextureEndBandMixin",
+    "client.SoundEngineMusicFadeMixin"
   ],
   "server": [],
   "injectors": {

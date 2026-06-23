@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
@@ -65,6 +66,15 @@ public final class WorldDisintegrationEvents {
         int railY = g.railY();
         int zMin = g.trackZMin();
         int zMax = g.trackZMax();
+        // Tunnel footprint Z-span (wall to wall) — the widest DT corridor structure (pillars and
+        // down-stairs sit inside it). In the fully-eroded band core this whole span is preserved
+        // below, so the bed/rails, pillars, and the tunnels/cuttings the track now carves THROUGH
+        // the End islands survive the void erosion. End islands only exist where the band is fully
+        // eroded (middleRamp == 1), so this protects exactly the new structures without touching
+        // the fade zones (which keep their existing partial-erosion look).
+        TunnelGeometry tg = TunnelGeometry.from(g);
+        int preserveZMin = tg.wallMinZ();
+        int preserveZMax = tg.wallMaxZ();
         long seed = data.getGenerationSeed();
 
         double[] middle = new double[16];
@@ -88,6 +98,10 @@ public final class WorldDisintegrationEvents {
                 int worldX = chunkMinX + dx;
                 for (int dz = 0; dz < 16; dz++) {
                     int worldZ = chunkMinZ + dz;
+                    // Fully-eroded core (ramp == 1): keep the whole corridor structure footprint —
+                    // bed, rails, pillars, and the tunnel/cutting carved through the island —
+                    // intact instead of dissolving it to void.
+                    if (ramp >= 1.0 && worldZ >= preserveZMin && worldZ <= preserveZMax) continue;
                     boolean corridorZ = worldZ >= zMin && worldZ <= zMax;
                     for (int ly = 0; ly < 16; ly++) {
                         int y = baseY + ly;

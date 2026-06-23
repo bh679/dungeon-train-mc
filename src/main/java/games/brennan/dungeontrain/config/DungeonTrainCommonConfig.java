@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -59,11 +60,41 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of End world-gen (floating End-stone islands) at the centre of the band. */
     public static final int MIN_DISINTEGRATION_END_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_END_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 500;
+    public static final int DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS = 5000;
     /** Blocks of normal overworld between repeats of the band (the cycle repeats forever). */
     public static final int MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 0;
     public static final int MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
+    public static final int DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 10000;
+    /**
+     * Blocks of overworld before the very FIRST void band (measured from startBlocks). Lets the
+     * player spawn partway through an overworld stretch so the first leg is shorter than the
+     * repeating overworldHold; when ≥ overworldHold there is no early shift (classic behaviour).
+     */
+    public static final int MIN_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 100_000_000;
+    public static final int DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 5000;
+    /**
+     * Blocks the End sky/fog fade lags the terrain on each edge (sky-only; pushed toward
+     * the void core). Delays the fade-in on entry and advances the fade-out on exit, so the
+     * sky stays overworld while the ground first crumbles and returns to overworld before
+     * the terrain has fully reformed. 0 = synced with terrain erosion.
+     */
+    public static final int MIN_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 0;
+    public static final int MAX_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 10_000;
+    public static final int DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = 120;
+
+    /**
+     * Dev-test preset for the disintegration band — the old compact 500-block journey, used
+     * automatically whenever the build is running from a branch (any non-{@code main}/non-release
+     * build, see {@link #isDisintegrationDevTestMode()}). Keeps the long player-facing journey on
+     * release builds while making in-game iteration fast: first void at ~500 blocks, full cycle
+     * ~2,480 blocks. firstOverworld == overworldHold ⇒ no phase shift (the pre-tuning journey).
+     */
+    public static final int DEVTEST_DISINTEGRATION_FADE_BLOCKS = 120;
+    public static final int DEVTEST_DISINTEGRATION_VOID_HOLD_BLOCKS = 500;
+    public static final int DEVTEST_DISINTEGRATION_END_HOLD_BLOCKS = 500;
+    public static final int DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS = 500;
+    public static final int DEVTEST_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = 500;
 
     /**
      * Nether transition band — a second, independent looping phase (parallel to the
@@ -117,6 +148,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
+    public static final ModConfigSpec.IntValue DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -139,6 +172,8 @@ public final class DungeonTrainCommonConfig {
         NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
+        DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = pair.getLeft().disintegrationFirstOverworldBlocks;
+        DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = pair.getLeft().disintegrationSkyFadeOffsetBlocks;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -193,16 +228,30 @@ public final class DungeonTrainCommonConfig {
                 .defineInRange("disintegrationVoidHoldBlocks", DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_VOID_HOLD_BLOCKS, MAX_DISINTEGRATION_VOID_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationEndHoldBlocks = b
-                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 500.")
+                .comment("Blocks of End world-gen (floating End-stone islands) at the centre of the band. Default 5000.")
                 .defineInRange("disintegrationEndHoldBlocks", DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_END_HOLD_BLOCKS, MAX_DISINTEGRATION_END_HOLD_BLOCKS);
         ModConfigSpec.IntValue disintegrationOverworldHoldBlocks = b
                 .comment("Blocks of normal overworld BEFORE each special phase (used twice per cycle: before the",
                         "Nether phase and before the End phase). The single cycle tiles forever along +X from",
                         "startBlocks: OW → Nether transition → Nether → Nether transition → OW → Void → End islands",
-                        "→ Void → (repeat). Default 500.")
+                        "→ Void → (repeat). Default 10000.")
                 .defineInRange("disintegrationOverworldHoldBlocks", DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS,
                         MIN_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS, MAX_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationFirstOverworldBlocks = b
+                .comment("Blocks of overworld before the very FIRST void band, measured from startBlocks. Lets the player",
+                        "spawn partway through an overworld stretch so the first leg to the void is shorter than the",
+                        "repeating overworldHold (every later overworld stretch is the full overworldHold). When this is",
+                        "≥ overworldHold there is no early shift and the classic behaviour applies. Default 5000.")
+                .defineInRange("disintegrationFirstOverworldBlocks", DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS,
+                        MIN_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS, MAX_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS);
+        ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks = b
+                .comment("Blocks the End sky/fog fade lags the terrain on each edge (sky-only; toward the void core).",
+                        "Delays the sky fade-in on entry and advances the fade-out on exit, so the sky stays overworld",
+                        "while the ground first crumbles and returns to overworld before the terrain has fully reformed.",
+                        "Does not affect terrain erosion. 0 = synced with terrain. Default 120.")
+                .defineInRange("disintegrationSkyFadeOffsetBlocks", DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS,
+                        MIN_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS, MAX_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS);
 
         ModConfigSpec.BooleanValue netherTransitionEnabled = b
                 .comment("Nether transition phase — part of the single repeating world-gen cycle (alongside the End",
@@ -260,7 +309,8 @@ public final class DungeonTrainCommonConfig {
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
-                netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks);
+                netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
+                disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks);
     }
 
     /**
@@ -313,28 +363,42 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISINTEGRATION_ENABLED.get() : DEFAULT_DISINTEGRATION_ENABLED;
     }
 
+    /**
+     * Whether the disintegration band runs in <b>dev-test mode</b> — the old compact 500-block
+     * journey — which is on automatically whenever the build is running from a branch (any
+     * non-{@code main}/non-release build). Single source of truth is {@link DungeonTrain#isDevBuild()}
+     * (the baked git branch). On a release build this is false and the configured long journey is used.
+     */
+    public static boolean isDisintegrationDevTestMode() {
+        return DungeonTrain.isDevBuild();
+    }
+
     /** Blocks from spawn where the band pattern is anchored; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationStartBlocks() {
         return isLoaded() ? DISINTEGRATION_START_BLOCKS.get() : DEFAULT_DISINTEGRATION_START_BLOCKS;
     }
 
-    /** Fade-in/out span (blocks) at each band edge; falls back to the hardcoded default pre-load. */
+    /** Fade-in/out span (blocks) at each band edge; dev-test preset on branch builds, else config. */
     public static int getDisintegrationFadeBlocks() {
+        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_FADE_BLOCKS;
         return isLoaded() ? DISINTEGRATION_FADE_BLOCKS.get() : DEFAULT_DISINTEGRATION_FADE_BLOCKS;
     }
 
-    /** Pure-void buffer span (blocks) on each side of the End; falls back to the hardcoded default pre-load. */
+    /** Pure-void buffer span (blocks) on each side of the End; dev-test preset on branch builds, else config. */
     public static int getDisintegrationVoidHoldBlocks() {
+        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_VOID_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_VOID_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_VOID_HOLD_BLOCKS;
     }
 
-    /** End world-gen core span (blocks); falls back to the hardcoded default pre-load. */
+    /** End world-gen core span (blocks); dev-test preset on branch builds, else config. */
     public static int getDisintegrationEndHoldBlocks() {
+        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_END_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_END_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_END_HOLD_BLOCKS;
     }
 
-    /** Overworld stretch (blocks) between band repeats; falls back to the hardcoded default pre-load. */
+    /** Overworld stretch (blocks) between band repeats; dev-test preset on branch builds, else config. */
     public static int getDisintegrationOverworldHoldBlocks() {
+        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
         return isLoaded() ? DISINTEGRATION_OVERWORLD_HOLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_OVERWORLD_HOLD_BLOCKS;
     }
 
@@ -396,6 +460,28 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 
+    /** Overworld stretch (blocks) before the first band; dev-test preset on branch builds, else config. */
+    public static int getDisintegrationFirstOverworldBlocks() {
+        if (isDisintegrationDevTestMode()) return DEVTEST_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
+        return isLoaded() ? DISINTEGRATION_FIRST_OVERWORLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
+    }
+
+    /**
+     * Phase shift (blocks) into the repeating cycle at {@code startBlocks}, so the first overworld
+     * stretch is {@code firstOverworldBlocks} rather than the full {@code overworldHold}: the single
+     * source of truth shared by the worldgen, erosion, mob-spawn, and client-sky paths. Equals
+     * {@code max(0, overworldHold − firstOverworld)} — 0 (no shift) when {@code firstOverworld ≥
+     * overworldHold}, so the classic "first stretch ≥ recurring" behaviour is preserved.
+     */
+    public static int getDisintegrationPhaseShiftBlocks() {
+        return Math.max(0, getDisintegrationOverworldHoldBlocks() - getDisintegrationFirstOverworldBlocks());
+    }
+
+    /** Sky/fog fade lag (blocks) behind the terrain on each band edge; falls back to the hardcoded default pre-load. */
+    public static int getDisintegrationSkyFadeOffsetBlocks() {
+        return isLoaded() ? DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS.get() : DEFAULT_DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
+    }
+
     private record Holder(ModConfigSpec.IntValue defaultPlayerMobSpawnOneIn,
                           ModConfigSpec.IntValue defaultPlayerMobBehindSpawnPercent,
                           ModConfigSpec.BooleanValue compatibleTerrain,
@@ -412,5 +498,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue netherBeachBlocks,
                           ModConfigSpec.IntValue netherMountainHoldBlocks,
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
-                          ModConfigSpec.IntValue netherCoreHoldBlocks) {}
+                          ModConfigSpec.IntValue netherCoreHoldBlocks,
+                          ModConfigSpec.IntValue disintegrationFirstOverworldBlocks,
+                          ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks) {}
 }

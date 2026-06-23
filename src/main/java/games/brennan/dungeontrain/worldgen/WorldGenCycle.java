@@ -36,11 +36,15 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
  * @param eFade      End fade span
  * @param eVoid      End void-hold span (each side)
  * @param eEnd       End-island core span
+ * @param phaseShift blocks the whole cycle is shifted at {@code startX} so the FIRST overworld gap
+ *                   (to the nether band) is shorter than the recurring {@code owGap}; {@code
+ *                   max(0, owGap − firstOverworld)}, 0 = no shift. Shared with the End band's
+ *                   disintegration phase-shift so both layouts stay in lock-step.
  */
 public record WorldGenCycle(long startX, int owGap,
                             int stageBlocks, int[] stageMultipliers, int beachBlocks, int megaHold,
                             int coreFade, int coreHold,
-                            int eFade, int eVoid, int eEnd) {
+                            int eFade, int eVoid, int eEnd, int phaseShift) {
 
     /** Build from live COMMON config; a disabled phase collapses to zero length (just overworld). */
     public static WorldGenCycle fromConfig() {
@@ -57,7 +61,8 @@ public record WorldGenCycle(long startX, int owGap,
                 nether ? DungeonTrainCommonConfig.getNetherCoreHoldBlocks() : 0,
                 end ? DungeonTrainCommonConfig.getDisintegrationFadeBlocks() : 0,
                 end ? DungeonTrainCommonConfig.getDisintegrationVoidHoldBlocks() : 0,
-                end ? DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks() : 0);
+                end ? DungeonTrainCommonConfig.getDisintegrationEndHoldBlocks() : 0,
+                DungeonTrainCommonConfig.getDisintegrationPhaseShiftBlocks());
     }
 
     private int stageCount() {
@@ -88,11 +93,15 @@ public record WorldGenCycle(long startX, int owGap,
         return 2L * Math.max(0, owGap) + netherLen() + endLen();
     }
 
-    /** Offset into the current cycle, or {@code -1} before the anchor / when the cycle is empty. */
+    /**
+     * Offset into the current cycle, or {@code -1} before the anchor / when the cycle is empty.
+     * {@code phaseShift} lands {@code startX} that many blocks into the cycle (applied after the
+     * before-anchor guard), so the first overworld gap to the nether band is shortened by it.
+     */
     private long offset(int worldX) {
         long p = period();
         if (p <= 0L || worldX < startX) return -1L;
-        return Math.floorMod((long) worldX - startX, p);
+        return Math.floorMod((long) worldX - startX + phaseShift, p);
     }
 
     private long netherStart() {
@@ -191,5 +200,19 @@ public record WorldGenCycle(long startX, int owGap,
         long le = o - endStart();
         if (le < 0L || le >= endLen()) return 0.0;
         return Disintegration.endRamp((int) le, 0L, eFade, eVoid, eEnd, 0);
+    }
+
+    /**
+     * End sky/fog ramp at a world-X — like {@link #endMiddleRamp} but with both fades pushed
+     * {@code skyOffset} blocks toward the void core, so the End sky lags the terrain erosion
+     * (delayed fade-in on entry, early fade-out on exit). 0 outside the End segment;
+     * {@code skyOffset == 0} reproduces {@link #endMiddleRamp} exactly.
+     */
+    public double endSkyRamp(int worldX, int skyOffset) {
+        long o = offset(worldX);
+        if (o < 0L) return 0.0;
+        long le = o - endStart();
+        if (le < 0L || le >= endLen()) return 0.0;
+        return Disintegration.skyRamp((int) le, 0L, eFade, eVoid, eEnd, 0, skyOffset);
     }
 }

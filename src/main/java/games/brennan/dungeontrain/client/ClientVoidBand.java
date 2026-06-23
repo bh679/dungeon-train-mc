@@ -43,10 +43,35 @@ public final class ClientVoidBand {
      * 1 across the whole void+End+void middle. Repeats every cycle, so the End
      * atmosphere returns each time the world breaks apart. Drives the sky crossfade,
      * the fog darkening, and cloud suppression.
+     *
+     * <p>Uses {@link WorldGenCycle#endSkyRamp} (not {@code endMiddleRamp}), so the sky lags the
+     * terrain by {@code disintegrationSkyFadeOffsetBlocks} on each edge: it stays overworld
+     * while the ground first crumbles on entry and returns to overworld before the terrain
+     * has fully reformed on exit. Offset 0 reproduces the terrain-synced behaviour.</p>
      */
     public static double endSkyIntensityAt(double worldX) {
         if (!startsWithTrain) return 0.0;
         if (!DungeonTrainCommonConfig.isDisintegrationEnabled()) return 0.0;
-        return WorldGenCycle.fromConfig().endMiddleRamp((int) Math.floor(worldX));
+        return WorldGenCycle.fromConfig().endSkyRamp(
+                (int) Math.floor(worldX), DungeonTrainCommonConfig.getDisintegrationSkyFadeOffsetBlocks());
+    }
+
+    /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */
+    public static final double MUSIC_CROSSOVER = 0.5;
+
+    /**
+     * Position-driven music volume factor in {@code [0, 1]} at a world-X — a V-curve over the
+     * band's End-sky intensity {@code t}: {@code 1} in the Overworld ({@code t=0}) and across the
+     * End core ({@code t=1}), dipping to {@code 0} at the {@link #MUSIC_CROSSOVER} ({@code t=0.5}).
+     *
+     * <p>Combined with the track flip at the crossover, this fades the outgoing track down to
+     * silence as the player approaches the handoff and the incoming track back up afterwards —
+     * Overworld→End on the way in, End→Overworld on the way out. {@code 1.0} outside any band, so
+     * scaling music volume by it is a no-op away from the disintegration.</p>
+     */
+    public static double musicVolumeFactor(double worldX) {
+        double t = endSkyIntensityAt(worldX);
+        if (t <= 0.0) return 1.0;
+        return Math.abs(2.0 * t - 1.0);
     }
 }

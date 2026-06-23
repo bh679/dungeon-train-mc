@@ -97,6 +97,13 @@ public class TrackBedFeature extends Feature<NoneFeatureConfiguration> {
             // Pillars first — the ground probe reads raw terrain at probeZ,
             // which becomes opaque (bed/rail) as soon as placeTracksForChunk
             // runs. Order matters.
+            //
+            // In the disintegration band the End islands are now stamped BEFORE this feature
+            // (see track_bed_overworld.json feature order), so the ground probe rests pillars on
+            // island tops; genuine-void columns are skipped by the void sentinel
+            // (probeGroundYWorldgen). No eroded-core skip is needed any more — pillars (and the
+            // tunnels carved through islands) are preserved from the void-erosion pass by the
+            // corridor-footprint skip in WorldDisintegrationEvents.
             TrackGenerator.placePillarsAtWorldgen(level, serverLevel, dims, chunkPos.x, chunkPos.z, g);
             // Down-stairs precompute — must run BEFORE
             // placeTunnelSpaceAtWorldgen because the underground

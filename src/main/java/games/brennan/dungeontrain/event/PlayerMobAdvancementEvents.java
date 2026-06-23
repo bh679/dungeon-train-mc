@@ -9,8 +9,10 @@ import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -30,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -82,8 +85,14 @@ public final class PlayerMobAdvancementEvents {
     /** "Within 2 blocks" range (centre-to-centre) for the {@code Echo Encounter} advancement. */
     private static final double ECHO_NEAR_RADIUS = 2.0;
 
+    /** How long after a shove an echo's out-of-world death still counts as a deliberate void push. */
+    private static final long VOID_PUSH_WINDOW_TICKS = 300L;
+
     /** mob UUID → most recent player strike. */
     private static final Map<UUID, ReboarderHit> RECENT_HITS = new HashMap<>();
+
+    /** echo UUID → most recent player strike, for crediting a void shove on its out-of-world death. */
+    private static final Map<UUID, EchoStrike> ECHO_STRIKES = new HashMap<>();
 
     private PlayerMobAdvancementEvents() {}
 
@@ -106,6 +115,12 @@ public final class PlayerMobAdvancementEvents {
 
     /** A decision plus the hit state to persist when the decision is {@code KEEP}. */
     record ReboarderStep(ReboarderDecision decision, ReboarderHit next) {}
+
+    /**
+     * A player strike on an echo plus whether the echo was on the train at strike time. Consumed
+     * when the echo dies out of the world to credit a deliberate void shove (own vs remote).
+     */
+    record EchoStrike(UUID playerUuid, long tick, boolean onTrain) {}
 
     // ---------------- The Denamed ----------------
 
@@ -136,15 +151,22 @@ public final class PlayerMobAdvancementEvents {
         boolean onTrain = CarriageDeck.isOnTrainFootprint(Trains.allCarriages(level), target);
         RECENT_HITS.put(target.getUUID(), new ReboarderHit(
             player.getUUID(), level.getGameTime(), onTrain, true, 0));
+        // Echoes additionally feed the void-push advancements: remember the strike so an
+        // out-of-world death within the window credits a deliberate shove (see onEchoFellToVoid).
+        if (EchoIdentity.sourcePlayer(target).isPresent()) {
+            ECHO_STRIKES.put(target.getUUID(),
+                new EchoStrike(player.getUUID(), level.getGameTime(), onTrain));
+        }
     }
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
+        long now = level.getGameTime();
+        pruneEchoStrikes(now);
         if (RECENT_HITS.isEmpty()) return;
 
-        long now = level.getGameTime();
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         // Snapshot so we can mutate the map while iterating.
         for (Map.Entry<UUID, ReboarderHit> entry : new ArrayList<>(RECENT_HITS.entrySet())) {
@@ -248,12 +270,13 @@ public final class PlayerMobAdvancementEvents {
     // ---------------- Echo Encounter ----------------
 
     /**
-     * Periodic scan: grant <em>Echo Encounter</em> when a player comes within
-     * {@link #ECHO_NEAR_RADIUS} blocks of {@linkplain EchoIdentity#isOwnEcho
-     * their own echo} — a PlayerMob reincarnated from one of <em>that</em>
-     * player's past lives. Cheap: one padded-AABB entity query per player on a
-     * {@link #ECHO_SCAN_PERIOD_TICKS} cadence, narrowed by a centre-to-centre
-     * distance check. Re-firing for an already-granted player is a vanilla no-op.
+     * Periodic scan: grant the echo-proximity advancements when a player comes within
+     * {@link #ECHO_NEAR_RADIUS} blocks of an echo. The source identity routes it — {@linkplain
+     * EchoIdentity#isOwnEcho the player's own echo} grants <em>Hello, Old Soul</em>
+     * ({@code encountered_echo}); any other player's echo grants the remote counterpart
+     * ({@code echo_feat:remote_encounter}). Cheap: one padded-AABB entity query per player on a
+     * {@link #ECHO_SCAN_PERIOD_TICKS} cadence, narrowed by a centre-to-centre distance check.
+     * Re-firing for an already-granted player is a vanilla no-op.
      */
     @SubscribeEvent
     public static void onEchoProximityScan(LevelTickEvent.Post event) {
@@ -266,12 +289,21 @@ public final class PlayerMobAdvancementEvents {
         for (ServerPlayer player : players) {
             if (player.isSpectator()) continue;
             AABB near = player.getBoundingBox().inflate(ECHO_NEAR_RADIUS);
+            boolean firedOwn = false;
+            boolean firedRemote = false;
             for (PlayerMobEntity echo : level.getEntitiesOfClass(
-                    PlayerMobEntity.class, near, mob -> EchoIdentity.isOwnEcho(mob, player.getUUID()))) {
-                if (player.distanceToSqr(echo) <= maxDistSq) {
-                    ModAdvancementTriggers.ENCOUNTERED_ECHO.get().trigger(player);
-                    break;
+                    PlayerMobEntity.class, near, mob -> EchoIdentity.sourcePlayer(mob).isPresent())) {
+                if (player.distanceToSqr(echo) > maxDistSq) continue;
+                if (EchoIdentity.isOwnEcho(echo, player.getUUID())) {
+                    if (!firedOwn) {
+                        ModAdvancementTriggers.ENCOUNTERED_ECHO.get().trigger(player);
+                        firedOwn = true;
+                    }
+                } else if (!firedRemote) {
+                    ModAdvancementTriggers.ECHO_FEAT.get().trigger(player, "remote_encounter");
+                    firedRemote = true;
                 }
+                if (firedOwn && firedRemote) break;
             }
         }
     }
@@ -291,7 +323,45 @@ public final class PlayerMobAdvancementEvents {
         if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
         if (EchoIdentity.isOwnEcho(victim, player.getUUID())) {
             ModAdvancementTriggers.KILLED_ECHO.get().trigger(player);
+        } else if (EchoIdentity.sourcePlayer(victim).isPresent()) {
+            // Someone else's echo — the remote counterpart to "Lay to Rest".
+            ModAdvancementTriggers.ECHO_FEAT.get().trigger(player, "remote_kill");
         }
+    }
+
+    // ---------------- Into the Void (push an echo to its death) ----------------
+
+    /**
+     * Fires when an echo the player recently shoved off the train falls to its death in the void
+     * ({@code FELL_OUT_OF_WORLD}). A void death carries no killer entity, so {@link #onEchoKilled}
+     * never sees it — this handler bridges the gap. The strike is captured in
+     * {@link #onAttackEntity} (with whether the echo was aboard at the time); a death within
+     * {@link #VOID_PUSH_WINDOW_TICKS} of an on-train strike reads as a deliberate shove and credits
+     * {@code own_void_push} or {@code remote_void_push} per the echo's source identity.
+     */
+    @SubscribeEvent
+    public static void onEchoFellToVoid(LivingDeathEvent event) {
+        LivingEntity victim = event.getEntity();
+        if (victim.level().isClientSide) return;
+        if (!event.getSource().is(DamageTypes.FELL_OUT_OF_WORLD)) return;
+        Optional<UUID> source = EchoIdentity.sourcePlayer(victim);
+        if (source.isEmpty()) return;                                  // not an echo
+        EchoStrike strike = ECHO_STRIKES.remove(victim.getUUID());
+        if (strike == null || !strike.onTrain()) return;              // no shove, or not aboard when struck
+        if (victim.level().getGameTime() - strike.tick() > VOID_PUSH_WINDOW_TICKS) return;
+        MinecraftServer server = victim.getServer();
+        if (server == null) return;
+        ServerPlayer striker = server.getPlayerList().getPlayer(strike.playerUuid());
+        if (striker == null) return;                                  // shover offline
+        boolean ownEcho = source.get().equals(strike.playerUuid());
+        ModAdvancementTriggers.ECHO_FEAT.get()
+            .trigger(striker, ownEcho ? "own_void_push" : "remote_void_push");
+    }
+
+    /** Drop echo strikes older than the void-push window so the map can't grow unbounded. */
+    private static void pruneEchoStrikes(long now) {
+        if (ECHO_STRIKES.isEmpty()) return;
+        ECHO_STRIKES.values().removeIf(s -> now - s.tick() > VOID_PUSH_WINDOW_TICKS);
     }
 
     // ---------------- Logout cleanup ----------------

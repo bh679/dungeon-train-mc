@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -63,6 +64,99 @@ final class DisintegrationTest {
         assertEquals(0.0, Disintegration.middleRamp(1000 + PERIOD, START_X, F, VH, EH, OW), EPS); // overworld again
     }
 
+    // ---- phase shift (shorter first overworld) ------------------------------
+
+    @Test
+    @DisplayName("phaseShift shortens the FIRST overworld (5k) while the recurring one stays full (10k); later phases unshifted")
+    void phaseShift_firstOverworldShorter() {
+        // Production-shaped geometry, anchored at spawn: OW 10000, fade 120, void 500, End 5000.
+        long sx = 0L;
+        int f = 120, vh = 500, eh = 5000, ow = 10000;
+        int shift = 5000;                                            // = ow − firstOverworld(5000)
+        int period = (int) Disintegration.cyclePeriod(f, vh, eh, ow); // 16480
+
+        // First overworld is only 5000 blocks: the void fade begins at X≈5000, not X=10000.
+        assertEquals(0.0, Disintegration.middleRamp(0, sx, shift, f, vh, eh, ow), EPS);     // spawn = overworld
+        assertEquals(0.0, Disintegration.middleRamp(4999, sx, shift, f, vh, eh, ow), EPS);  // still overworld
+        assertEquals(0.5, Disintegration.middleRamp(5060, sx, shift, f, vh, eh, ow), EPS);  // mid OW→void fade
+        assertEquals(1.0, Disintegration.middleRamp(5120, sx, shift, f, vh, eh, ow), EPS);  // first void reached
+        // With no shift the same X is still overworld — proves the shift is what shortens the first leg.
+        assertEquals(0.0, Disintegration.middleRamp(5060, sx, 0, f, vh, eh, ow), EPS);
+
+        // End islands fill across the core (endRamp == 1) through the middle of the band.
+        assertEquals(1.0, Disintegration.endRamp(5740, sx, shift, f, vh, eh, ow), EPS);
+        assertEquals(1.0, Disintegration.endRamp(10000, sx, shift, f, vh, eh, ow), EPS);
+
+        // Overworld resumes at X=11480 and runs a FULL 10000 before the next void fade (~21540).
+        assertEquals(0.0, Disintegration.middleRamp(11480, sx, shift, f, vh, eh, ow), EPS); // recurring OW start
+        assertEquals(0.0, Disintegration.middleRamp(21479, sx, shift, f, vh, eh, ow), EPS); // still OW 9999 blocks later
+        assertEquals(0.5, Disintegration.middleRamp(21540, sx, shift, f, vh, eh, ow), EPS); // next void fade, a period on
+
+        // Ramps remain periodic under the shift.
+        assertEquals(Disintegration.middleRamp(5060, sx, shift, f, vh, eh, ow),
+                Disintegration.middleRamp(5060 + period, sx, shift, f, vh, eh, ow), EPS);
+    }
+
+    // ---- skyRamp (End sky/fog, lagged behind the terrain) -------------------
+
+    @Test
+    @DisplayName("skyRamp with offset 0 is identical to middleRamp across the cycle")
+    void sky_offsetZero_matchesMiddle() {
+        for (int d : new int[] {-50, 0, 50, 79, 80, 130, 180, 400, 660, 710, 759, 760}) {
+            int x = (int) START_X + d;
+            assertEquals(Disintegration.middleRamp(x, START_X, F, VH, EH, OW),
+                    Disintegration.skyRamp(x, START_X, F, VH, EH, OW, 0), EPS,
+                    "skyRamp(offset=0) should equal middleRamp at offset " + d);
+        }
+    }
+
+    @Test
+    @DisplayName("skyRamp delays the entry fade: stays 0 across the terrain crumble, reaches 1 offset+fade in")
+    void sky_entry_delayed() {
+        int o = 60; // active band dd = worldX - (START_X + OW) = worldX - 1080
+        assertEquals(0.0, Disintegration.skyRamp(1080, START_X, F, VH, EH, OW, o), EPS); // dd=0
+        assertEquals(0.0, Disintegration.skyRamp(1139, START_X, F, VH, EH, OW, o), EPS); // dd=59, still overworld sky
+        assertEquals(0.0, Disintegration.skyRamp(1140, START_X, F, VH, EH, OW, o), EPS); // dd=60, fade begins
+        assertEquals(0.5, Disintegration.skyRamp(1190, START_X, F, VH, EH, OW, o), EPS); // dd=110
+        assertEquals(1.0, Disintegration.skyRamp(1240, START_X, F, VH, EH, OW, o), EPS); // dd=160 = o+fade, full End
+        // ...while the terrain (middleRamp) was already mid-crumble at dd=0..60:
+        assertTrue(Disintegration.middleRamp(1100, START_X, F, VH, EH, OW) > 0.0,
+                "terrain should already be eroding while the sky is still overworld");
+    }
+
+    @Test
+    @DisplayName("skyRamp advances the exit fade: returns to 0 before the terrain finishes reforming")
+    void sky_exit_early() {
+        int o = 60; // band=680: fall over dd [520,620), reaches 0 at dd=620
+        assertEquals(1.0, Disintegration.skyRamp(1600, START_X, F, VH, EH, OW, o), EPS); // dd=520 fade-out start
+        assertEquals(0.5, Disintegration.skyRamp(1650, START_X, F, VH, EH, OW, o), EPS); // dd=570
+        assertEquals(0.0, Disintegration.skyRamp(1700, START_X, F, VH, EH, OW, o), EPS); // dd=620, sky back to overworld
+        // ...while the terrain (middleRamp) is still > 0 there (its fade-out runs dd [580,680)):
+        assertTrue(Disintegration.middleRamp(1700, START_X, F, VH, EH, OW) > 0.0,
+                "sky should return to overworld while the terrain is still reforming");
+    }
+
+    @Test
+    @DisplayName("skyRamp clamps a huge offset so the hold collapses but never inverts; stays in [0,1]")
+    void sky_largeOffset_clamped() {
+        // band=680, fade=100 → maxOffset=(680-2·100)/2=240; a triangle peaking at dd=340.
+        int o = 100_000;
+        assertEquals(1.0, Disintegration.skyRamp(1420, START_X, F, VH, EH, OW, o), EPS); // dd=340 peak
+        assertEquals(0.5, Disintegration.skyRamp(1370, START_X, F, VH, EH, OW, o), EPS); // dd=290 rising
+        assertEquals(0.5, Disintegration.skyRamp(1470, START_X, F, VH, EH, OW, o), EPS); // dd=390 falling
+        for (int dd = 0; dd <= 680; dd++) {
+            double s = Disintegration.skyRamp(1080 + dd, START_X, F, VH, EH, OW, o);
+            assertTrue(s >= 0.0 && s <= 1.0, "skyRamp out of [0,1] at dd=" + dd + ": " + s);
+        }
+    }
+
+    @Test
+    @DisplayName("skyRamp survives fade=0 (hard edges) without dividing by zero")
+    void sky_degenerate_fade() {
+        assertEquals(0.0, Disintegration.skyRamp(1000, START_X, 0, VH, EH, OW, 30), EPS);       // overworld phase
+        assertEquals(1.0, Disintegration.skyRamp(1000 + OW, START_X, 0, VH, EH, OW, 0), EPS);   // band start, offset 0
+    }
+
     // ---- endRamp (End-island fill) ------------------------------------------
 
     @Test
@@ -82,6 +176,71 @@ final class DisintegrationTest {
     void void_holds_are_pure_void() {
         assertEquals(1.0, Disintegration.middleRamp(1200, START_X, F, VH, EH, OW), EPS); // dd=120
         assertEquals(0.0, Disintegration.endRamp(1200, START_X, F, VH, EH, OW), EPS);
+    }
+
+    // ---- zone classification (reach-the-void / End-islands / overworld-again advancements) ----
+
+    /** Classify a world-X using the test band geometry, mirroring {@code DisintegrationBand.zoneAt}. */
+    private static Disintegration.Zone zoneAtX(int worldX) {
+        return Disintegration.zoneOf(
+                Disintegration.middleRamp(worldX, START_X, F, VH, EH, OW),
+                Disintegration.endRamp(worldX, START_X, F, VH, EH, OW));
+    }
+
+    @Test
+    @DisplayName("zoneOf: endRamp wins (End core), full middle is void, fades + flat overworld are overworld")
+    void zoneOf_classification() {
+        assertEquals(Disintegration.Zone.OVERWORLD, Disintegration.zoneOf(0.0, 0.0));
+        assertEquals(Disintegration.Zone.OVERWORLD, Disintegration.zoneOf(0.5, 0.0));   // OW↔void fade
+        assertEquals(Disintegration.Zone.OVERWORLD, Disintegration.zoneOf(0.998, 0.0)); // just below void threshold
+        assertEquals(Disintegration.Zone.VOID, Disintegration.zoneOf(0.999, 0.0));      // void threshold
+        assertEquals(Disintegration.Zone.VOID, Disintegration.zoneOf(1.0, 0.0));        // pure void hold
+        assertEquals(Disintegration.Zone.END_ISLANDS, Disintegration.zoneOf(1.0, 0.5)); // any End fill wins
+        assertEquals(Disintegration.Zone.END_ISLANDS, Disintegration.zoneOf(1.0, 1.0)); // End core
+    }
+
+    @Test
+    @DisplayName("zone across one band: OW → (fade) → VOID → END → VOID → OW, repeating with the cycle")
+    void zone_acrossBand() {
+        assertEquals(Disintegration.Zone.OVERWORLD, zoneAtX(1050));            // overworld phase
+        assertEquals(Disintegration.Zone.OVERWORLD, zoneAtX(1130));            // dd=50 OW→void fade (still ground)
+        assertEquals(Disintegration.Zone.VOID, zoneAtX(1200));                 // dd=120 void hold V1
+        assertEquals(Disintegration.Zone.END_ISLANDS, zoneAtX(1320));          // dd=240 End core
+        assertEquals(Disintegration.Zone.VOID, zoneAtX(1640));                 // dd=560 void hold V2
+        assertEquals(Disintegration.Zone.OVERWORLD, zoneAtX(1000 + PERIOD));   // overworld again, next cycle
+        assertEquals(Disintegration.Zone.END_ISLANDS, zoneAtX(1320 + PERIOD)); // End core repeats
+    }
+
+    // ---- chunk-level fully-eroded classifier (fillFromNoise short-circuit gate) ----
+
+    @Test
+    @DisplayName("isChunkFullyEroded: true only when all 16 columns of a chunk sit at middleRamp==1")
+    void chunkFullyEroded() {
+        // middleRamp == 1 for worldX in [1180, 1660] this cycle (after OW=80 + fade=100, held to
+        // bandLength-fade = 580 → worldX 1080+580=1660). A 16-wide chunk fully inside that is eroded.
+        assertTrue(Disintegration.isChunkFullyEroded(1184, START_X, F, VH, EH, OW));  // 1184..1199 void hold
+        assertTrue(Disintegration.isChunkFullyEroded(1392, START_X, F, VH, EH, OW));  // 1392..1407 End core
+
+        // Overworld phase and before the anchor: nothing eroded.
+        assertFalse(Disintegration.isChunkFullyEroded(1024, START_X, F, VH, EH, OW)); // overworld phase
+        assertFalse(Disintegration.isChunkFullyEroded(0, START_X, F, VH, EH, OW));    // before the anchor
+
+        // Straddling the fade↔hold edges: one fade column (<1) disqualifies the whole chunk so the
+        // gradient keeps real terrain to erode.
+        assertFalse(Disintegration.isChunkFullyEroded(1168, START_X, F, VH, EH, OW)); // 1168..1183 fade-in tail
+        assertFalse(Disintegration.isChunkFullyEroded(1648, START_X, F, VH, EH, OW)); // 1648..1663 fade-out head
+
+        // Disabled band (startX == DisintegrationBand.OFF == Long.MAX_VALUE) never short-circuits.
+        assertFalse(Disintegration.isChunkFullyEroded(1392, Long.MAX_VALUE, F, VH, EH, OW));
+    }
+
+    @Test
+    @DisplayName("isChunkFullyEroded repeats with the cycle period")
+    void chunkFullyEroded_periodic() {
+        assertEquals(
+                Disintegration.isChunkFullyEroded(1392, START_X, F, VH, EH, OW),
+                Disintegration.isChunkFullyEroded(1392 + PERIOD, START_X, F, VH, EH, OW));
+        assertTrue(Disintegration.isChunkFullyEroded(1392 + PERIOD, START_X, F, VH, EH, OW));
     }
 
     @Test

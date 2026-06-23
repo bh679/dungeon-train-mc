@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/echo_encounter",
+  "display": {
+    "icon": { "id": "minecraft:echo_shard" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.remote_echo_encounter.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.remote_echo_encounter.description" },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "encountered": {
+      "trigger": "dungeontrain:echo_feat",
+      "conditions": { "feat": "remote_encounter" }
+    }
+  },
+  "requirements": [["encountered"]]
+}

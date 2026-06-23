@@ -1849,6 +1849,169 @@
       ],
       "pr": 533,
       "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.348.0",
+      "released_at": "2026-06-22T14:12:14Z"
+    },
+    {
+      "id": "aaro-stories-complete",
+      "version": "0.348.0",
+      "type": "content",
+      "title": "Complete Della and Soren Aaro stories",
+      "summary": "Ships 'The Searching Mother' (Pip's Mum) and 'The Keeper of the Door' (Soren) in full. All three Aaro family stories \u2014 Pip, Della, and Tomas \u2014 are now complete.",
+      "highlights": [
+        "Della Aaro's 'The Searching Mother' \u2014 all 7 letters",
+        "Soren's 'The Keeper of the Door' \u2014 all 7 letters",
+        "Tomas Aaro's 'The Walking Father' was already shipped in v0.347.0"
+      ],
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.348.0",
+      "released_at": "2026-06-22T14:12:14Z"
+    },
+    {
+      "id": "void-sky-fade-lag",
+      "version": "0.348.0",
+      "type": "feat",
+      "title": "Smoother void sky transitions",
+      "summary": "As the world breaks apart into the void, the sky now holds onto its overworld look a little longer before fading to the End \u2014 and on the way out, the sky clears back to normal before solid ground returns beneath you.",
+      "highlights": [
+        "Sky fade lags the crumbling terrain on both edges for a less abrupt transition",
+        "Tunable via the disintegrationSkyFadeOffsetBlocks config (0 = old synced behaviour)"
+      ],
+      "pr": 536,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
+    },
+    {
+      "id": "disintegration-longer-phases",
+      "version": "0.348.0",
+      "type": "feat",
+      "title": "A longer, more dramatic disintegration journey",
+      "summary": "The stretch where the world falls apart now runs much further before it reforms. You travel roughly 5,000 blocks of normal overworld before the ground erodes into a void, cross floating End islands stretching about 5,000 blocks under the End sky, fall back through void, and then ride a full 10,000 blocks of overworld before the whole cycle begins again.",
+      "highlights": [
+        "~5,000 blocks of overworld before the first void (previously 500)",
+        "~5,000 blocks of floating End islands at the heart of the band (previously 500)",
+        "10,000 blocks of overworld between repeats of the band (previously 500)",
+        "All phase lengths are configurable, including a new setting for how long the first overworld lasts"
+      ],
+      "pr": 534,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
+    },
+    {
+      "id": "void-band-end-soundtrack",
+      "version": "0.348.0",
+      "type": "feat",
+      "title": "The End's soundtrack across the disintegration void",
+      "summary": "When the world breaks apart into the void and End islands, the music now crossfades to the End's theme to match the End sky overhead \u2014 the normal soundtrack fades out as you approach the void, the End theme plays across the void and floating islands, and it fades back as the world reforms on the far side.",
+      "highlights": [
+        "End music now plays across the void/End disintegration band",
+        "Smooth crossfade in and out, tied to your position so it matches the End-sky fade"
+      ],
+      "pr": 537,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
+    },
+    {
+      "id": "disintegration-band-perf",
+      "version": "0.348.0",
+      "type": "perf",
+      "title": "Smoother world-disintegration band",
+      "summary": "Crossing the band where the world breaks into the void and reforms as the End now generates much more smoothly. The empty void stretches are no longer built as full terrain and then immediately erased, and the floating End islands generate far faster \u2014 so there's noticeably less chunk-loading hitch as you travel through the band.",
+      "highlights": [
+        "Void stretches no longer build terrain just to delete it",
+        "Floating End islands generate much faster",
+        "Less stutter crossing the disintegration band"
+      ],
+      "pr": 538,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.349.0",
+      "released_at": "2026-06-22T14:56:00Z"
+    },
+    {
+      "id": "disintegration-band-decoration-skip",
+      "version": "0.350.0",
+      "type": "perf",
+      "title": "Leaner void/End band generation",
+      "summary": "A follow-up to the smoother disintegration band: the empty void and floating-End stretches no longer run the full overworld decoration and structure pass just to have it erased, so those chunks generate a little leaner still.",
+      "highlights": [
+        "Void/End core chunks skip the wasted tree/ore/structure pass",
+        "Builds on the earlier disintegration-band generation speedup"
+      ],
+      "pr": 539,
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.350.0",
+      "released_at": "2026-06-22T15:32:48Z"
+    },
+    {
+      "id": "end-islands-tunnel-through",
+      "version": "0.351.0",
+      "type": "feat",
+      "title": "The train carves through the End islands",
+      "summary": "In the disintegration band \u2014 where the world dissolves into floating End islands \u2014 the train no longer skirts a cleared lane around the islands. It now bores tunnels straight through the islands in its path and rides out across the gaps on pillars, the same way it tunnels through hills and bridges ravines back in the overworld.",
+      "highlights": [
+        "Tunnels are carved through End islands that block the track",
+        "Pillars rise from island tops; the track bridges the open void between islands"
+      ],
+      "date": "2026-06-22",
+      "released": true,
+      "released_in": "v0.351.0",
+      "released_at": "2026-06-22T23:25:41Z"
+    },
+    {
+      "id": "lit-end-islands",
+      "version": "0.352.0",
+      "type": "feat",
+      "title": "End islands stay lit like the End",
+      "summary": "The floating End-stone islands that drift through the world's broken-apart stretches now stay lit even at night. Their surfaces no longer fall dark when the sun goes down, so those End zones keep their otherworldly glow around the clock to match the End sky already overhead.",
+      "highlights": [
+        "End-stone islands no longer darken at night",
+        "Their glow fades in and out smoothly with the End sky as you cross each zone"
+      ],
+      "pr": 541,
+      "date": "2026-06-23",
+      "released": true,
+      "released_in": "v0.352.0",
+      "released_at": "2026-06-23T00:58:39Z"
+    },
+    {
+      "id": "void-end-overworld-echo-advancements",
+      "version": "0.352.0",
+      "type": "content",
+      "title": "New advancements: the void journey and echoes of other players",
+      "summary": "Eight new advancements. Ride the train far enough and the world itself disintegrates \u2014 earn your way out to the void, across the floating End islands, and back to the overworld again. Plus a full set for echoes: meet, befriend, kill, or shove another player's echo (and your own) off the train into the void.",
+      "highlights": [
+        "Voided Warranty, Tastes like Cheese?, Re-Over-World \u2014 reach the void, the End islands, then the overworld again",
+        "Repressed Memory \u2014 shove your own echo into the void",
+        "A Stranger's Ghost / Befriending the Dead / Not Your Ghost to Keep / Erased \u2014 encounter, befriend, kill, or void-shove another player's echo"
+      ],
+      "pr": 542,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "zombie-cure-narrative",
+      "version": "0.353.0",
+      "type": "content",
+      "title": "\"Weakness, Then Gold\" \u2014 a zombie's-cure story",
+      "summary": "A new book rides the train: seven letters by a zombie hunting its own cure \u2014 a Potion of Weakness from a witch, then a Golden Apple. The writing climbs from groans to human speech as the cure takes, and the last letter leaves the recipe for the next lost soul.",
+      "highlights": [
+        "New 7-letter narrative book written from a zombie's point of view",
+        "Built on the real cure: a Potion of Weakness, then a Golden Apple"
+      ],
+      "pr": 543,
+      "date": "2026-06-23",
       "released": false,
       "released_in": null,
       "released_at": null
