@@ -65,10 +65,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     /** Mega-mountain peaks above this world-Y get a snow cap (jagged-peak look). */
     private static final int SNOW_LINE_Y = 110;
-    /** Blocks of clear airspace kept above the bed for the train to pass through. */
+    /** Tunnel envelope height above the bed — columns reaching this fill the lane solid so track_bed tunnels them. */
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
-    /** At/above this heightmap multiplier the corridor is roofed (a real tunnel); lower stages stay open (a canyon, so the player SEES the peaks rise). */
-    private static final double MEGA_ROOF_MULTIPLIER = 10.0;
     /** Top blocks of a low column re-skinned with the mountain palette (where little was added above the surface). */
     private static final int SURFACE_SKIN_DEPTH = 4;
     /** Natural relief (blocks above sea) that contributes a full +1 to the [0,1] mountain relief. */
@@ -168,9 +166,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 double n = netherRamp[dx];
                 double mult = cycle.netherMountainMultiplier(worldX);
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
-                // Roof the corridor (a tunnel) only for the mega-mountain (high multiplier) / nether approach;
-                // leave the lower stages open to the sky (a canyon) so the rising mountains are visible.
-                boolean roof = n > 0.0 || mult >= MEGA_ROOF_MULTIPLIER;
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
                 for (int dz = 0; dz < 16; dz++) {
@@ -181,7 +176,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
                     } else {
                         colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette, roof);
+                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette);
                     }
                     changed |= colChanged;
                 }
@@ -199,16 +194,21 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     /**
      * Stages 1–4: amplify the natural overworld heightmap. The column's natural height
-     * above sea level is scaled by {@code mult} (×1 stage 1 → ×stage3 mega), preserving
-     * the real terrain SHAPE, and the result is dressed with the chosen mountain palette
-     * (the ×1 stage re-skins the natural surface so it still reads as that biome). The
-     * crossfade ({@code 0<n<1}) dithers the rock → netherrack and tapers toward the
-     * open-Nether height. The corridor stays clear (open canyon, or roofed tunnel).
+     * above sea level is scaled by {@code mult} (×1 stage 1 → mega), preserving the real
+     * terrain SHAPE, and dressed with the chosen mountain palette. The crossfade
+     * ({@code 0<n<1}) dithers the rock → netherrack and tapers toward the open-Nether
+     * height.
+     *
+     * <p>The mountain fills SOLID across the train corridor when it's tall enough to
+     * become a real tunnel ({@code columnTop ≥ bedY + TUNNEL_CLEAR_HEIGHT}) — the
+     * later-running {@code track_bed} feature then carves that tunnel. Low mounds keep the
+     * corridor lane clear so the train rides open (track_bed adds pillars), avoiding a
+     * mid-height mound that would block the train without qualifying as a tunnel.</p>
      */
     private boolean fillMountainColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                        int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
                                        int minY, int worldTop, int seaLevel, int baseRelief, double mult, double n,
-                                       int netherTopApprox, long seed, MountainPalette palette, boolean roof) {
+                                       int netherTopApprox, long seed, MountainPalette palette) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
         // Mountain relief = a synthetic ridged heightmap (so flat terrain still gets mountains) blended with
         // the natural terrain, scaled by the stage multiplier. Bounded so high stages don't clamp flat.
@@ -219,16 +219,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         // Taper toward the open-Nether height as the core approaches.
         int columnTop = (int) Math.round(amplified * (1.0 - n) + netherTopApprox * n);
         columnTop = Math.max(surfaceY, Math.min(worldTop, columnTop));
+        // A column tall enough for track_bed to carve a real tunnel fills the lane solid; a low mound
+        // leaves the lane clear so the train rides open (track_bed pillars it) rather than jamming.
+        boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
 
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         int floor = Math.max(minY, surfaceY - SURFACE_SKIN_DEPTH + 1);
         for (int y = columnTop; y >= floor; y--) {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
-            if (inCorridorLane(worldZ, tg)) {
-                if (y > bedY && y <= bedY + TUNNEL_CLEAR_HEIGHT) continue; // train clearance — always open
-                if (!roof && y > bedY + TUNNEL_CLEAR_HEIGHT) continue;     // open canyon over the lower stages
-            }
+            if (!lanesTunnel && y > bedY && inCorridorLane(worldZ, tg)) continue; // keep low-mound lane clear
             int depth = columnTop - y;
             BlockState block = mountainMaterial(palette, depth, columnTop, n, seed, worldX, y, worldZ);
             if (y > surfaceY) {
@@ -294,15 +294,13 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean changed = false;
         for (int y = yLo; y <= yHi; y++) {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
-            if (inCorridorClearZone(worldZ, y, bedY, tg)) {
-                if (!w.isAir(dx, y, dz)) { w.set(dx, y, dz, AIR); changed = true; } // carve the tunnel clear
-                continue;
-            }
-            // Guaranteed netherrack causeway just under the track so the train rides over the lava.
-            boolean underTrack = worldZ >= tg.wallMinZ() - CORRIDOR_MARGIN && worldZ <= tg.wallMaxZ() + CORRIDOR_MARGIN
-                    && y >= bedY - CORE_CAUSEWAY_DEPTH && y <= bedY;
+            // Keep the whole corridor envelope solid netherrack (causeway under the bed + walls/roof through
+            // the tunnel height) so the later track_bed feature reliably carves a clean, walled tunnel through
+            // the nether — never leaving the train exposed over a lava cavern.
+            boolean envelope = inCorridorLane(worldZ, tg)
+                    && y >= bedY - CORE_CAUSEWAY_DEPTH && y <= bedY + TUNNEL_CLEAR_HEIGHT;
             BlockState target;
-            if (underTrack) {
+            if (envelope) {
                 target = NETHERRACK;
             } else {
                 int netherY = NETHER_CENTER_Y + (y - bedY);
@@ -333,14 +331,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return y == railY && (worldZ == tg.railZMin() || worldZ == tg.railZMax());
     }
 
-    /** The train's Z corridor (tunnel wall span + margin) — kept clear so the train always has a path. */
+    /** The train's Z corridor (tunnel wall span + margin) that track_bed will carve. */
     private static boolean inCorridorLane(int worldZ, TunnelGeometry tg) {
         return worldZ >= tg.wallMinZ() - CORRIDOR_MARGIN && worldZ <= tg.wallMaxZ() + CORRIDOR_MARGIN;
-    }
-
-    /** The clear tube the train rides through: the corridor lane, from just above the bed to the clear height. */
-    private static boolean inCorridorClearZone(int worldZ, int y, int bedY, TunnelGeometry tg) {
-        return inCorridorLane(worldZ, tg) && y > bedY && y <= bedY + TUNNEL_CLEAR_HEIGHT;
     }
 
     /**
@@ -388,11 +381,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(idx));
             }
             return true;
-        }
-
-        boolean isAir(int dx, int y, int dz) {
-            if (!ensure(y)) return false;
-            return section.getBlockState(dx, y - baseY, dz).isAir();
         }
 
         /** Air or surface foliage — the cells the mountain fill may take over. */
