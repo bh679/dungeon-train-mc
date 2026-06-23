@@ -21,6 +21,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -492,8 +493,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      * netherrack as the real-Nether core approaches — turning the green mountain increasingly red over
      * the {@code coreFade} span. It reads the actual chunk heightmap top (which already reflects the
      * raised terrain at {@code top_layer_modification}) and recolours the top {@link #SURFACE_SKIN_DEPTH}
-     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone,
-     * and no terrain is added or removed. No {@code MountainNoise}/palette recompute is needed.
+     * solid blocks where the coherent dither falls under {@code n}; everything below stays natural stone.
+     * No {@code MountainNoise}/palette recompute is needed.
+     *
+     * <p>It also <b>drains worldgen water</b> from the column (aquifer pools, springs, surface lakes):
+     * the recoloured skin is only the top few blocks, so the mountain body underneath is still overworld
+     * terrain and {@code aquifers_enabled} can leave water in it. The real Nether is bone-dry, so any
+     * water in the netherrack crossfade is replaced with air. This runs during chunk generation (no
+     * fluid-cascade hazard) and only for crossfade columns — overworld gaps, the green approach mountains,
+     * the ocean beach/shore and the End band all keep their water. The Nether core needs no drain: its
+     * whole band is already overwritten with netherrack/lava/air by {@link #fillNetherColumn}.</p>
      */
     private boolean recolorCrossfadeColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                            int minY, int worldTop, double n, long seed) {
@@ -506,6 +515,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (dither >= n) continue;                 // keep the natural mountain surface in this cell
             if (!w.isSolidGround(dx, y, dz)) continue; // only recolour existing solid ground (never air/fluid)
             w.set(dx, y, dz, NETHERRACK);
+            changed = true;
+        }
+        // Drain any worldgen water in the column. Scan from the motion-blocking surface (the top of any
+        // water) down to the build floor; only water cells are cleared, so solid terrain is untouched.
+        int waterTop = Math.min(worldTop, chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, dx, dz));
+        for (int y = waterTop; y >= minY; y--) {
+            if (!w.isWater(dx, y, dz)) continue;
+            w.set(dx, y, dz, AIR);
             changed = true;
         }
         return changed;
@@ -813,6 +830,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean isAir(int dx, int y, int dz) {
             if (!ensure(y)) return false;
             return section.getBlockState(dx, y - baseY, dz).isAir();
+        }
+
+        /** Water (source, flowing, or waterlogged) — the cells the crossfade drains to air. */
+        boolean isWater(int dx, int y, int dz) {
+            if (!ensure(y)) return false;
+            return section.getBlockState(dx, y - baseY, dz).getFluidState().is(FluidTags.WATER);
         }
 
         void set(int dx, int y, int dz, BlockState state) {
