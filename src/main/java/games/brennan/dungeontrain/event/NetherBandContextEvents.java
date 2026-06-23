@@ -7,8 +7,11 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -54,8 +57,14 @@ public final class NetherBandContextEvents {
             int bedY = TrackGeometry.from(data.dims(), data.getTrainY()).bedY();
             int netherTop = bedY + NETHER_TOP_ABOVE_BED;
 
+            // Overworld biome source (identity gate) + resolved highland palette for the biome-source mixin.
+            BiomeSource overworldBiomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
+            NetherBandBiomeSet highlandBiomes = NetherBandBiomeSet.resolve(
+                    overworld.registryAccess().lookupOrThrow(Registries.BIOME), data.getGenerationSeed());
+
             NetherBandContext.publish(new NetherBandContext(
-                    enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle));
+                    enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
+                    overworldBiomeSource, highlandBiomes));
             LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
                     enabled, seaLevel, worldCeiling, netherTop, baseRelief);
         } catch (Throwable t) {

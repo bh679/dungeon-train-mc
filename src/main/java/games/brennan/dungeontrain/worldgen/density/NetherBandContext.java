@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.density;
 
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.world.level.biome.BiomeSource;
 
 /**
  * Per-world snapshot the {@link NetherBandTerrainDensityFunction} reads <em>lazily</em> at
@@ -23,9 +24,13 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
  * @param netherTop      world-Y the mountain tapers down to across the real-Nether core
  * @param baseRelief     blocks of relief a full ({@code relief01 == 1}) stage-1 mountain adds
  * @param cycle          the frozen {@link WorldGenCycle} layout (snapshotted at server start)
+ * @param overworldBiomeSource the overworld's biome source — identity gate so the biome-source mixin
+ *                       only forces highland biomes on the overworld (the Nether also uses multi_noise)
+ * @param highlandBiomes the resolved highland biome palette forced onto band mountain columns
  */
 public record NetherBandContext(boolean enabled, long generationSeed, int seaLevel, int worldCeiling,
-                                int netherTop, int baseRelief, WorldGenCycle cycle) {
+                                int netherTop, int baseRelief, WorldGenCycle cycle,
+                                BiomeSource overworldBiomeSource, NetherBandBiomeSet highlandBiomes) {
 
     private static volatile NetherBandContext current;
 
