@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/echo_encounter",
+  "display": {
+    "icon": { "id": "minecraft:obsidian" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.echo_void.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.echo_void.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "pushed": {
+      "trigger": "dungeontrain:echo_feat",
+      "conditions": { "feat": "own_void_push" }
+    }
+  },
+  "requirements": [["pushed"]]
+}
