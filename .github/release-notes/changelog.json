@@ -2075,6 +2075,40 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-decoration",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The Nether core looks and feels like the real Nether",
+      "summary": "The real-Nether stretch the train crosses is now dressed with the game's own Nether world-gen instead of bare red rock: fire, glowstone, lava springs, mushrooms and mineable Nether ores (quartz, gold and ancient debris) generate through it, and it carries the Nether's red fog, ambient cave sounds and music.",
+      "highlights": [
+        "Fire, glowstone, lava springs and mushrooms generate across the Nether core",
+        "Mine real Nether ores in the core \u2014 quartz, gold and ancient debris",
+        "The core now has the Nether's red fog, ambient sounds and music"
+      ],
+      "pr": 551,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-band-natural-coastline",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Nether-transition mountains ease into the world",
+      "summary": "The giant mountains that mark the Nether transition now grow out of the surrounding landscape gradually instead of rising as a sharp vertical wall, and their front weaves naturally across the terrain rather than running in a dead-straight line. Where the band meets the sea you now get real sandy beaches with soft dunes leading up into the slopes.",
+      "highlights": [
+        "Mountains rise and fall smoothly from the natural terrain at both edges of the band \u2014 no more sudden cliff",
+        "The mountain front undulates across the landscape for a natural, non-straight edge",
+        "Ocean entrances form natural sand beaches that blend up into the hills"
+      ],
+      "pr": 552,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

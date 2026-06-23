@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.worldgen.feature.MountainNoise;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -109,5 +110,30 @@ final class NetherMountainTerrainTest {
             if (Math.abs(t - lowCeiling) < EPS) clampHit = true;
         }
         assertTrue(clampHit, "a high-relief mega column should clamp to worldCeiling");
+    }
+
+    @Test
+    @DisplayName("the leading edge feathers in: added height is 0 at the band gate and eases up over the entry fade")
+    void entryFeather() {
+        // Leading gate is x=20 (beach 20); stage 1 is ×1, so n==0 and mult==1 across the fade [20,60) —
+        // the feathered top is exactly seaLevel + relief·baseRelief·feather.
+        for (int x : new int[] {20, 30, 45, 59}) {
+            for (int z : new int[] {-7, 0, 13, 100}) {
+                double relief = MountainNoise.height01(SEED, x, z);
+                double feather = C.netherMountainFeather(x);
+                double expected = SEA + relief * BASE_RELIEF * feather;
+                assertEquals(expected, top(x, z), EPS, "feathered top at x=" + x + " z=" + z);
+            }
+        }
+        // Exactly at the gate the feather is 0, so the mountain sits at sea level for EVERY column (no cliff).
+        assertEquals(0.0, C.netherMountainFeather(20), EPS);
+        for (int z = -40; z <= 40; z += 17) {
+            assertEquals(SEA, top(20, z), EPS, "added height must be 0 at the leading gate (z=" + z + ")");
+        }
+        // Past the fade the feather is 1 — full relief returns (a relief-bearing column is taller than at the gate).
+        assertEquals(1.0, C.netherMountainFeather(120), EPS);
+        int z = 0;
+        while (z < 400 && top(120, z) <= SEA + EPS) z++;
+        assertTrue(top(120, z) > top(20, z), "the mountain must be taller past the fade than at the gate");
     }
 }

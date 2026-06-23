@@ -53,6 +53,16 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("isNetherCore is true only in the real-Nether core, not the netherrack crossfade or mountains")
+    void netherCore() {
+        org.junit.jupiter.api.Assertions.assertTrue(C.isNetherCore(1530));  // ln 230 — core start (netherRamp 1.0)
+        org.junit.jupiter.api.Assertions.assertTrue(C.isNetherCore(1630));  // ln 330 — deep in the core
+        org.junit.jupiter.api.Assertions.assertFalse(C.isNetherCore(1505)); // ln 205 — netherrack crossfade (~0.5)
+        org.junit.jupiter.api.Assertions.assertFalse(C.isNetherCore(1380)); // ln 80  — mountain (netherRamp 0)
+        org.junit.jupiter.api.Assertions.assertFalse(C.isNetherCore(2000)); // overworld gap
+    }
+
+    @Test
     @DisplayName("heightmap multiplier ramps ×1 (stage 1) → ×5 (stage 2) → ×20 (stage 3), held across the mega + core")
     void mountainMultiplier() {
         assertEquals(1.0, C.netherMountainMultiplier(1320), EPS);  // ln 20  — stage 1 (×1)
@@ -119,6 +129,38 @@ final class WorldGenCycleTest {
         assertEquals(0.0, b.netherBeachProgress(1300), EPS);   // ln 0  — seaward entrance edge (the waterline)
         assertEquals(0.5, b.netherBeachProgress(1320), EPS);   // ln 20 — halfway up the shore
         org.junit.jupiter.api.Assertions.assertTrue(b.netherBeachProgress(1339) > 0.9); // ln 39 — almost at the mountains
+    }
+
+    @Test
+    @DisplayName("edge feather: 0 at the leading + trailing gates, smoothstep to 1 over one stage, 1 across the interior")
+    void mountainEdgeFeather() {
+        // beach 40, stageBlocks 40 → fade 40; riseLen 160, netherLen 740; ln == worldX − 1300; leading gate ln=40.
+        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        assertEquals(740L, b.netherLen());
+        assertEquals(0.0, b.netherMountainFeather(1340), EPS);   // ln 40  — leading gate (added height starts at 0)
+        assertEquals(0.5, b.netherMountainFeather(1360), EPS);   // ln 60  — fade midpoint (smoothstep 0.5)
+        assertEquals(1.0, b.netherMountainFeather(1380), EPS);   // ln 80  — fade end (full height)
+        assertEquals(1.0, b.netherMountainFeather(1670), EPS);   // ln 370 — deep interior
+        assertEquals(1.0, b.netherMountainFeather(2000), EPS);   // ln 700 — one stage before the trailing gate
+        org.junit.jupiter.api.Assertions.assertTrue(b.netherMountainFeather(2039) < 0.05); // ln 739 — just inside trailing gate
+        assertEquals(1.0, b.netherMountainFeather(2500), EPS);   // outside the nether segment → no-op
+        // Non-decreasing across the whole leading fade (symmetric on the trailing side via min()).
+        double prev = -1.0;
+        for (int wx = 1340; wx <= 1380; wx++) {
+            double f = b.netherMountainFeather(wx);
+            org.junit.jupiter.api.Assertions.assertTrue(f + EPS >= prev, "feather must be non-decreasing across the fade at wx=" + wx);
+            prev = f;
+        }
+    }
+
+    @Test
+    @DisplayName("edge feather is a no-op (1.0) when the band has length but no mountain stages")
+    void featherNoStages() {
+        // beach 0, stageBlocks 0 (fade 0) but a real-Nether core 200 → netherLen 200, so the column is
+        // inside the band yet the fade==0 guard makes the feather a pure no-op (no div-by-zero).
+        WorldGenCycle coreOnly = new WorldGenCycle(0L, 0, 0, new int[] {1}, 0, 0, 0, 200, 0, 0, 0, 0);
+        assertEquals(200L, coreOnly.netherLen());
+        assertEquals(1.0, coreOnly.netherMountainFeather(100), EPS); // ln 100, fade 0 → 1.0
     }
 
     @Test

@@ -16,7 +16,33 @@ import games.brennan.dungeontrain.worldgen.feature.MountainNoise;
  */
 public final class NetherMountainTerrain {
 
+    /** Salt for the band-front edge wave (distinct from the relief + shore salts). */
+    private static final long EDGE_WAVE_SALT = 0x9E3779B97F4A7C15L;
+    /** Horizontal wander (± blocks) of the band's overworld leading/trailing front. */
+    private static final double EDGE_WAVE_BLOCKS = 9.0;
+    /** Frequency multiplier for the edge wave along Z (≈96/2.4 = 40-block wavelength). */
+    private static final double EDGE_WAVE_FREQ = 2.4;
+
     private NetherMountainTerrain() {}
+
+    /** Max blocks the edge wave can shift the front (for callers' chunk-overlap margins). */
+    public static int maxEdgeShift() {
+        return (int) Math.ceil(EDGE_WAVE_BLOCKS);
+    }
+
+    /**
+     * World-X shifted by a coherent, deterministic <b>edge wave</b> that varies along Z, so the band's
+     * overworld leading/trailing mountain front undulates instead of starting at one ruler-straight X
+     * (which read as a sharp wall — especially where the natural terrain sits below sea level and the
+     * raise floor steps it up). Callers feed this into {@link #raises}/{@link #targetTop}/
+     * {@link WorldGenCycle#netherMountainFeather} so the terrain, biome and post-process boundaries all
+     * undulate together. Depends only on Z (the whole band shifts rigidly per Z), so the band keeps its
+     * width and internal structure — just its front waves. Pure / seed-driven.
+     */
+    public static int wavyX(long seed, int worldX, int worldZ) {
+        double n = MountainNoise.height01(seed ^ EDGE_WAVE_SALT, worldZ * EDGE_WAVE_FREQ, 0.0); // [0,1], coherent in Z
+        return worldX + (int) Math.round((n - 0.5) * 2.0 * EDGE_WAVE_BLOCKS);
+    }
 
     /**
      * True where the terrain-noise raise applies at this world-X: inside the nether band's
@@ -40,6 +66,10 @@ public final class NetherMountainTerrain {
      * <p>Natural terrain isn't added in here (the old {@code natural01} term): the density wrapper
      * {@code max}es this raise against the real terrain, so naturally-higher ground shows through
      * for free without a heightmap probe.</p>
+     *
+     * <p>The above-sea height is finally scaled by {@link WorldGenCycle#netherMountainFeather} so the
+     * added height eases from 0 at each band edge — the mountains grow out of the natural world
+     * gradually instead of stepping up as a cliff.</p>
      */
     public static double targetTop(WorldGenCycle cycle, long seed, int worldX, int worldZ,
                                    int seaLevel, int worldCeiling, int netherTop, int baseRelief) {
@@ -48,6 +78,12 @@ public final class NetherMountainTerrain {
         double amplified = seaLevel + relief01 * baseRelief * mult;
         double n = cycle.netherRamp(worldX);                              // 0..1 toward the nether core
         double top = amplified * (1.0 - n) + netherTop * n;
+        // Feather the ADDED (above-sea) height to 0 exactly at each band edge so the mountain grows
+        // out of the natural terrain instead of stepping up as a cliff: at the edge top == seaLevel,
+        // so the density wrapper's max() keeps the natural surface (over land) and the ocean shore's
+        // sea-level handoff (over water); 1 across the interior leaves the core/crossfade untouched.
+        double feather = cycle.netherMountainFeather(worldX);
+        top = seaLevel + (top - seaLevel) * feather;
         if (top < seaLevel) return seaLevel;
         if (top > worldCeiling) return worldCeiling;
         return top;

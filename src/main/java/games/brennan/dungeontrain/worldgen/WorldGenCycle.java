@@ -134,6 +134,19 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * netherRamp at/above which a column is the real-Nether <b>core</b> (full netherrack/lava sampling,
+     * not the netherrack crossfade). Shared by {@code NetherTransitionFeature} (which REPLACES core
+     * columns with sampled Nether terrain) and the biome-source mixin (which tags core columns as the
+     * real {@code nether_wastes} biome).
+     */
+    public static final double NETHER_CORE_THRESHOLD = 0.999;
+
+    /** True if {@code worldX} is a real-Nether core column ({@link #netherRamp} ≥ {@link #NETHER_CORE_THRESHOLD}). */
+    public boolean isNetherCore(int worldX) {
+        return netherRamp(worldX) >= NETHER_CORE_THRESHOLD;
+    }
+
+    /**
      * Heightmap multiplier at a world-X: 1 outside the nether segment, {@code 1} across
      * stage 1, ramping {@code 1→stage2Mult} across stage 2, {@code stage2Mult→stage3Mult}
      * across stage 3, then held at {@code stage3Mult} across the mega plateau + core, and
@@ -169,6 +182,33 @@ public record WorldGenCycle(long startX, int owGap,
         double to = stageMult(idx);
         double within = (double) (md - (long) idx * s) / s;
         return from + (to - from) * within;
+    }
+
+    /**
+     * Edge feather {@code 0..1} for the mountain raise, used to scale the above-sea mountain height:
+     * {@code 0} exactly at the leading gate boundary (the inland edge of the beach span, where
+     * {@link games.brennan.dungeontrain.worldgen.NetherMountainTerrain#raises} first turns on) and at
+     * the symmetric trailing gate, smoothstep up to {@code 1} over one mountain stage on each side,
+     * and {@code 1} across the whole interior. Scaling the added height by this makes it start at 0 at
+     * each band edge, so the mountains grow out of the natural terrain instead of stepping up as a
+     * vertical cliff. {@code 1} (a no-op) outside the nether segment or when the band has no stages.
+     *
+     * <p>The fade length is one mountain stage ({@code stageBlocks}); the feather therefore reaches
+     * {@code 1} well before the netherrack crossfade/core begin, leaving them untouched. {@code min}
+     * of the two edge distances keeps it symmetric and self-protecting if the band is too short to
+     * reach full height. Pure (deterministic, seed-independent) like the rest of this class.</p>
+     */
+    public double netherMountainFeather(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return 1.0;                                    // outside the nether segment
+        int fade = Math.max(0, stageBlocks);                        // ease in over the first stage
+        if (fade == 0) return 1.0;
+        long lead = ln - Math.max(0, beachBlocks);                 // blocks past the leading gate
+        long trail = netherLen() - ln;                             // blocks to the trailing gate
+        double e = Math.min(lead, trail) / (double) fade;
+        if (e <= 0.0) return 0.0;
+        if (e >= 1.0) return 1.0;
+        return e * e * (3.0 - 2.0 * e);                            // smoothstep
     }
 
     /** True if {@code worldX} lies in the leading beach span of a nether band (the ocean-entry stretch). */
