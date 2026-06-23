@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
@@ -78,8 +77,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
     /** Depth of the surface skin recoloured to netherrack across the crossfade. */
     private static final int SURFACE_SKIN_DEPTH = 4;
-    /** Natural relief (blocks above sea) that contributes a full +1 to the [0,1] shore relief. */
-    private static final int NATURAL_RELIEF_NORM = 96;
     /** Salt for the crossfade rock→netherrack dither (matches the old mountainMaterial dither). */
     private static final long CROSSFADE_DITHER_SALT = 0x9E3779B97F4A7C15L;
     /** Extra Z clearance on each side of the tunnel wall span. */
@@ -128,7 +125,6 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
             int seaLevel = overworld.getSeaLevel();
-            int baseRelief = DungeonTrainCommonConfig.getNetherBaseReliefBlocks();
 
             double[] heightRamp = new double[16];
             double[] netherRamp = new double[16];
@@ -209,7 +205,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
                     } else if (inBeachSpan) {
                         colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, baseRelief, seed, beachProgress);
+                                minY, worldTop, seaLevel, seed, beachProgress);
                     } else {
                         colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed);
                     }
@@ -255,9 +251,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /**
      * Leading <b>shore</b> column where the band emerges from an ocean biome: a gentle sand ramp that
      * climbs smoothly from the natural ocean floor at the seaward edge ({@code progress 0}, submerged)
-     * up to the height the first mountain stage needs at the inland edge ({@code progress 1}), so the
-     * shore meets BOTH the seabed and the mountains with no step. Shaped by low-amplitude value noise
-     * (a couple of blocks of jitter), NOT the dramatic ridged mountain heightmap. Below the sand
+     * up to sea level at the inland edge ({@code progress 1}) — a natural beach to the waterline. The
+     * noise mountains grow inland from sea level (feathered to 0 at the band gate by
+     * {@link WorldGenCycle#netherMountainFeather}), so the shore meets BOTH the seabed and the mountains
+     * with no step/notch. Shaped by low-amplitude value noise (a couple of blocks of jitter), NOT the
+     * dramatic ridged mountain heightmap. Below the sand
      * surface is solid {@link BeachPalette} (sand → sandstone → stone, extended down to the seabed);
      * where the surface sits below sea level, shallows water fills from the sand up to sea level — so
      * the column reads submerged sand → waterline → dry sand → mountains. Seabed poking above the ramp
@@ -269,14 +267,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      */
     private boolean fillShoreColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                     int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                    int minY, int worldTop, int seaLevel, int baseRelief, long seed, double progress) {
+                                    int minY, int worldTop, int seaLevel, long seed, double progress) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
-        // Smooth ramp from the natural ocean floor here (progress 0 → submerged, shallows above) up to the
-        // height the first mountain stage (×1) needs here (progress 1) — the SAME relief math as
-        // fillMountainColumn at mult ×1, so the shore and the mountains meet seamlessly. Plus gentle jitter.
-        double natural01 = Math.max(0, surfaceY - seaLevel) / (double) NATURAL_RELIEF_NORM;
-        double relief01 = Math.min(1.0, MountainNoise.height01(seed, worldX, worldZ) + natural01);
-        int mountainTop = seaLevel + (int) Math.round(relief01 * baseRelief);
+        // Smooth ramp from the natural ocean floor here (progress 0 → submerged, shallows above) up to
+        // sea level at the inland edge (progress 1) — a natural beach to the waterline. The noise
+        // mountains now grow inland from sea level (feathered by WorldGenCycle#netherMountainFeather, 0
+        // at the gate), so handing off at sea level keeps the shore and the mountains continuous with no
+        // step/notch. Plus gentle jitter so the beach isn't dead flat.
+        int mountainTop = seaLevel;
         double jitter = (MountainNoise.height01(seed ^ SHORE_JITTER_SALT, worldX, worldZ) - 0.5) * (2.0 * SHORE_JITTER_BLOCKS);
         int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress + jitter);
         columnTop = Math.max(minY + 1, Math.min(worldTop, columnTop));

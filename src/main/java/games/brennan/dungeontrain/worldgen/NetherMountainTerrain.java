@@ -40,6 +40,10 @@ public final class NetherMountainTerrain {
      * <p>Natural terrain isn't added in here (the old {@code natural01} term): the density wrapper
      * {@code max}es this raise against the real terrain, so naturally-higher ground shows through
      * for free without a heightmap probe.</p>
+     *
+     * <p>The above-sea height is finally scaled by {@link WorldGenCycle#netherMountainFeather} so the
+     * added height eases from 0 at each band edge — the mountains grow out of the natural world
+     * gradually instead of stepping up as a cliff.</p>
      */
     public static double targetTop(WorldGenCycle cycle, long seed, int worldX, int worldZ,
                                    int seaLevel, int worldCeiling, int netherTop, int baseRelief) {
@@ -48,6 +52,12 @@ public final class NetherMountainTerrain {
         double amplified = seaLevel + relief01 * baseRelief * mult;
         double n = cycle.netherRamp(worldX);                              // 0..1 toward the nether core
         double top = amplified * (1.0 - n) + netherTop * n;
+        // Feather the ADDED (above-sea) height to 0 exactly at each band edge so the mountain grows
+        // out of the natural terrain instead of stepping up as a cliff: at the edge top == seaLevel,
+        // so the density wrapper's max() keeps the natural surface (over land) and the ocean shore's
+        // sea-level handoff (over water); 1 across the interior leaves the core/crossfade untouched.
+        double feather = cycle.netherMountainFeather(worldX);
+        top = seaLevel + (top - seaLevel) * feather;
         if (top < seaLevel) return seaLevel;
         if (top > worldCeiling) return worldCeiling;
         return top;
