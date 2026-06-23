@@ -2015,6 +2015,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endisland-band-chunk-holes",
+      "version": "0.353.0",
+      "type": "fix",
+      "title": "End islands no longer missing whole chunks",
+      "summary": "Fixed the floating End-stone islands in the world-disintegration band sometimes dropping whole chunks \u2014 clean square gaps with full islands all around them. Islands now generate complete across the whole band.",
+      "highlights": [
+        "Floating End islands in the disintegration band no longer have chunk-shaped holes punched out of them"
+      ],
+      "pr": 544,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

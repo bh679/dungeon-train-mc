@@ -20,7 +20,6 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.DensityFunction;
-import net.minecraft.world.level.levelgen.DensityFunctions;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
@@ -49,9 +48,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** 2D End island function (vanilla, fixed seed 0) — cheap per-column prefilter. */
-    private static final DensityFunction END_ISLANDS_2D = DensityFunctions.endIslands(0L);
-
     /** X offset into the outer End (past the ~1024-block inner void ring) so we sample real scattered islands. */
     private static final int ISLAND_SAMPLE_OFFSET_X = 16_000;
     /** End-space Y that maps onto the track's bed Y (the End's islands cluster around here). */
@@ -63,12 +59,6 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
      */
     private static final int END_Y_SAMPLE_MIN = 8;
     private static final int END_Y_SAMPLE_MAX = 120;
-    /**
-     * Skip columns whose 2D island value is below this before the costly 3D sampling. Kept very low
-     * (near the function's −0.84 minimum) so it only rejects deep void, never clips an island fringe
-     * that the 3D noise would have filled.
-     */
-    private static final double ISLAND_2D_PREFILTER = -0.8;
 
     /** Air pocket (blocks) cleared above an island top so a chorus plant can grow there. */
     private static final int CHORUS_POCKET = 10;
@@ -169,10 +159,13 @@ public class DisintegrationFeature extends Feature<NoneFeatureConfiguration> {
                     // Islands are stamped across the whole band, INCLUDING the track lane, so the
                     // track feature (which now runs AFTER this one — see track_bed_overworld.json)
                     // can tunnel/pillar through them. The bed/rail + envelope carve clears the lane.
-                    // Cheap 2D prefilter — skip deep End void columns before the costly 3D sampling.
-                    if (END_ISLANDS_2D.compute(new DensityFunction.SinglePointContext(sampleX, 0, worldZ)) < ISLAND_2D_PREFILTER) {
-                        continue;
-                    }
+                    //
+                    // Every column is evaluated against the real (world-seeded) 3D End density — do NOT
+                    // reintroduce a 2D `DensityFunctions.endIslands` prefilter here. A fixed-seed-0 2D
+                    // prefilter samples a different island layout than this world-seeded density and
+                    // rejected whole chunks the 3D density actually fills, leaving clean, chunk-aligned,
+                    // seed-independent holes in the islands. The per-chunk corner memo below keeps the
+                    // full-resolution sampling cheap, so no prefilter is needed.
                     int z0 = Math.floorDiv(worldZ, cellW) * cellW;
                     int z1 = z0 + cellW;
                     double fz = (double) (worldZ - z0) / cellW;
