@@ -38,6 +38,28 @@ public final class MountainNoise {
         return v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
     }
 
+    /**
+     * Smooth (non-ridged) fractal value noise in {@code [0,1]} — gentle rolling hills rather than the
+     * sharp ridges of {@link #height01}. Same octaves and base wavelength, but without the ridge
+     * transform, so it reads as soft dunes/swells. Used for the ocean-shore beach dunes.
+     */
+    public static double smooth01(long seed, double x, double z) {
+        double freq = 1.0 / BASE_WAVELENGTH;
+        double amp = 1.0;
+        double sum = 0.0;
+        double max = 0.0;
+        long s = seed;
+        for (int o = 0; o < OCTAVES; o++) {
+            sum += amp * valueNoise(s, x * freq, z * freq);
+            max += amp;
+            amp *= 0.5;
+            freq *= 2.0;
+            s = s * 6364136223846793005L + 1442695040888963407L;
+        }
+        double v = sum / max;
+        return v < 0.0 ? 0.0 : (v > 1.0 ? 1.0 : v);
+    }
+
     // ---- internals ----------------------------------------------------------
 
     private static double valueNoise(long seed, double x, double z) {

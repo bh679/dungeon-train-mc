@@ -92,10 +92,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int SHORE_BODY_DEPTH = 8;
     /** Upward dune noise (blocks): broad swell over the base ~96-block feature size. */
     private static final double SHORE_NOISE_BROAD = 2.0;
-    /** Upward ripple noise (blocks): finer ~16-block features that break up the ramp's flat terraces. */
-    private static final double SHORE_NOISE_FINE = 2.5;
-    /** Frequency multiplier for the fine ripple octave (≈96/6 = 16-block features). */
-    private static final double SHORE_NOISE_FINE_SCALE = 6.0;
+    /** Upward ripple noise (blocks): finer features that break up the ramp's flat terraces (kept gentle). */
+    private static final double SHORE_NOISE_FINE = 1.25;
+    /** Frequency multiplier for the fine ripple octave (≈96/4 = 24-block features). */
+    private static final double SHORE_NOISE_FINE_SCALE = 4.0;
     /** Salts for the two shore-dune octaves (distinct from the mountain + shore-skin salts). */
     private static final long SHORE_NOISE_SALT = 0x5EA5A11DBEA1L;
     private static final long SHORE_NOISE_FINE_SALT = 0x27D4EB2F165667C5L;
@@ -268,10 +268,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     }
 
     /** Upward beach-dune height (blocks) at a column: broad swell + finer ripples, the SAME coherent field
-     *  the shore ramp and the shore skin both add to their base, so the two stay continuous at the seam. */
+     *  the shore ramp and the shore skin both add to their base, so the two stay continuous at the seam.
+     *  Uses SMOOTH (non-ridged) noise so the dunes are soft rolling mounds, not sharp ridges. */
     private static double shoreDuneHeight(long seed, int worldX, int worldZ) {
-        double broad = MountainNoise.height01(seed ^ SHORE_NOISE_SALT, worldX, worldZ);                 // [0,1]
-        double fine = MountainNoise.height01(seed ^ SHORE_NOISE_FINE_SALT,
+        double broad = MountainNoise.smooth01(seed ^ SHORE_NOISE_SALT, worldX, worldZ);                 // [0,1]
+        double fine = MountainNoise.smooth01(seed ^ SHORE_NOISE_FINE_SALT,
                 worldX * SHORE_NOISE_FINE_SCALE, worldZ * SHORE_NOISE_FINE_SCALE);                       // [0,1]
         return broad * SHORE_NOISE_BROAD + fine * SHORE_NOISE_FINE;                                      // [0, BROAD+FINE]
     }
