@@ -2236,6 +2236,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "growing-worldgen-cycle",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The train's journey now grows the further you ride",
+      "summary": "The repeating world the Dungeon Train crosses now escalates with distance. The real-Nether stretch in the middle of each Nether crossing is far longer, the overworld stretches before the Nether and before the Void are no longer the same length, and every time the full cycle repeats the Nether, the Void, the End islands, and the overworld gaps all double in size \u2014 so each loop is a bigger spectacle than the one before.",
+      "highlights": [
+        "Far longer real-Nether stretch to cross in each Nether band",
+        "Every loop of the world doubles in scale \u2014 Nether, Void, End islands and overworld all grow",
+        "Different-length overworld stretches before the Nether and before the Void"
+      ],
+      "pr": 561,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
