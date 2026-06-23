@@ -2030,6 +2030,18 @@
       "released": true,
       "released_in": "v0.353.0",
       "released_at": "2026-06-23T01:59:36Z"
+    },
+    {
+      "id": "soren-letter-two-opener",
+      "version": "0.353.0",
+      "type": "content",
+      "title": "Soren: excited opener on Letter Two",
+      "summary": "Soren's second letter now opens with a burst of excitement as she realises the door is truly real.",
+      "highlights": [],
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
