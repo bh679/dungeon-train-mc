@@ -1982,6 +1982,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "void-end-overworld-echo-advancements",
+      "version": "0.352.0",
+      "type": "content",
+      "title": "New advancements: the void journey and echoes of other players",
+      "summary": "Eight new advancements. Ride the train far enough and the world itself disintegrates \u2014 earn your way out to the void, across the floating End islands, and back to the overworld again. Plus a full set for echoes: meet, befriend, kill, or shove another player's echo (and your own) off the train into the void.",
+      "highlights": [
+        "Voided Warranty, Tastes like Cheese?, Re-Over-World \u2014 reach the void, the End islands, then the overworld again",
+        "Repressed Memory \u2014 shove your own echo into the void",
+        "A Stranger's Ghost / Befriending the Dead / Not Your Ghost to Keep / Erased \u2014 encounter, befriend, kill, or void-shove another player's echo"
+      ],
+      "pr": 542,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
