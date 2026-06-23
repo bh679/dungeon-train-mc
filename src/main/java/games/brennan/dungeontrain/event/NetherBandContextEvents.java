@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import games.brennan.dungeontrain.worldgen.density.NetherCoreBiomes;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
@@ -64,14 +65,17 @@ public final class NetherBandContextEvents {
             BiomeSource overworldBiomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
             NetherBandBiomeSet highlandBiomes = NetherBandBiomeSet.resolve(
                     overworld.registryAccess().lookupOrThrow(Registries.BIOME), data.getGenerationSeed());
-            // The real Nether biome forced onto core columns (red fog/ambient/music + lets the vanilla
-            // Nether decoration features' own biome filter pass so they actually place).
-            Holder<Biome> netherCoreBiome = overworld.registryAccess()
+            // Core columns sample ALL five real Nether biomes the way the Nether does (red/teal/blue/grey
+            // fog + per-biome decoration & surface skin, and the vanilla Nether decoration's biome filter
+            // passes). Captures the live Nether dimension's biome source + climate sampler; falls back to
+            // nether_wastes if this world has no Nether.
+            Holder<Biome> netherFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
+            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(event.getServer(), netherFallback);
 
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
-                    overworldBiomeSource, highlandBiomes, netherCoreBiome));
+                    overworldBiomeSource, highlandBiomes, netherCoreBiomes));
             LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
                     enabled, seaLevel, worldCeiling, netherTop, baseRelief);
         } catch (Throwable t) {

@@ -2111,6 +2111,40 @@
       "released_at": null
     },
     {
+      "id": "nether-piglins-dont-zombify",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Piglins keep their cool in the Nether band",
+      "summary": "Piglins, piglin brutes, and hoglins no longer shiver and convert when they're standing in the overworld's Nether biome. Inside the red-fog netherrack core of the Nether transition band they now behave exactly like they would in the real Nether \u2014 no zombification, no trembling. Step back out into the normal overworld and they go back to converting as usual.",
+      "highlights": [
+        "Piglins & brutes no longer zombify in the Nether band's core",
+        "Hoglins no longer turn into zoglins there",
+        "No more trembling \u2014 behaviour reverts once they leave the Nether core"
+      ],
+      "pr": 553,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-core-multi-biome",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Nether core now spans all five Nether biomes",
+      "summary": "The stretch of real Nether the train crosses no longer looks the same the whole way through. It now flows through all five Nether biomes the way the Nether itself generates them: crimson and warped forests with their fungi and nylium, soul sand valleys with soul fire and skeletons, basalt deltas with pillars and magma cubes, and the classic nether wastes. The ground, decoration, fog colour and mobs all change with the biome you're in.",
+      "highlights": [
+        "All five Nether biomes generate across the Nether core",
+        "Per-biome ground, decoration, fog tint and mobs",
+        "Crimson forests bring piglins and hoglins (kept from zombifying in the band)"
+      ],
+      "pr": 554,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "nether-band-music-crossfade",
       "version": "0.354.0",
       "type": "feat",
@@ -2120,6 +2154,7 @@
         "Vanilla nether_wastes music now plays as you cross the netherrack core of the Nether transition band.",
         "The track crossfades smoothly with your position \u2014 overworld music out on the way in, back in on the way out."
       ],
+      "pr": 555,
       "date": "2026-06-23",
       "released": false,
       "released_in": null,
