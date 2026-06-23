@@ -89,6 +89,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     // --- Shore (ocean-entry beach): a gentle natural ramp from the ocean floor up to the mountains. ---
     /** Minimum solid-sand body depth below the shore surface (extends down to the natural seabed when deeper). */
     private static final int SHORE_BODY_DEPTH = 8;
+    /** Upward dune noise (blocks): broad swell over the base ~96-block feature size. */
+    private static final double SHORE_NOISE_BROAD = 2.0;
+    /** Upward ripple noise (blocks): finer ~16-block features that break up the ramp's flat terraces. */
+    private static final double SHORE_NOISE_FINE = 2.5;
+    /** Frequency multiplier for the fine ripple octave (≈96/6 = 16-block features). */
+    private static final double SHORE_NOISE_FINE_SCALE = 6.0;
+    /** Salts for the two shore-dune octaves (distinct from the mountain + shore-skin salts). */
+    private static final long SHORE_NOISE_SALT = 0x5EA5A11DBEA1L;
+    private static final long SHORE_NOISE_FINE_SALT = 0x27D4EB2F165667C5L;
     /** Blocks above sea level the beach sand climbs onto the feathered mountain over an ocean entrance. */
     private static final int SHORE_SKIN_BAND = 6;
     /** Salt for the shore-skin sand→grass dither (distinct from the crossfade + jitter salts). */
@@ -256,14 +265,24 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         return changed;
     }
 
+    /** Upward beach-dune height (blocks) at a column: broad swell + finer ripples, the SAME coherent field
+     *  the shore ramp and the shore skin both add to their base, so the two stay continuous at the seam. */
+    private static double shoreDuneHeight(long seed, int worldX, int worldZ) {
+        double broad = MountainNoise.height01(seed ^ SHORE_NOISE_SALT, worldX, worldZ);                 // [0,1]
+        double fine = MountainNoise.height01(seed ^ SHORE_NOISE_FINE_SALT,
+                worldX * SHORE_NOISE_FINE_SCALE, worldZ * SHORE_NOISE_FINE_SCALE);                       // [0,1]
+        return broad * SHORE_NOISE_BROAD + fine * SHORE_NOISE_FINE;                                      // [0, BROAD+FINE]
+    }
+
     /**
      * Shore skin ({@code n == 0}, ocean entrance, in the entry/exit fade): the feathered mountains rise
      * out of sea level over former ocean, and vanilla paints that near-waterline surface as a stony/gravel
      * shore in the forced highland biome — a STONE BAND between the sand beach and the green mountain. This
-     * recolours the top {@link #SURFACE_SKIN_DEPTH} solid blocks to {@link BeachPalette} sand where the
-     * surface sits within {@link #SHORE_SKIN_BAND} blocks of sea level, with a coherent dither so the
-     * sand→grass line is irregular — extending the beach up onto the mountain. Columns above the band keep
-     * their natural grass; no terrain is added or removed (no notch) and the track/corridor is preserved.
+     * recolours the near-sea-level surface to {@link BeachPalette} sand (within {@link #SHORE_SKIN_BAND}
+     * blocks of sea level, with a coherent dither for an irregular sand→grass line) AND adds the same
+     * upward {@link #shoreDuneHeight} dunes the shore ramp uses, so the low mountain isn't flat terraces and
+     * stays continuous with the beach. Upward-only (never digs), skips the train lane, leaves grass above
+     * the band — geometry elsewhere is untouched.
      */
     private boolean recolorShoreSkinColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                            int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
@@ -275,11 +294,21 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         if (MountainNoise.height01(seed ^ SHORE_SKIN_SALT, worldX, worldZ) >= sandiness) return false;
         ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
+        // Pile up sand dunes (same coherent field as the shore ramp) to break the flat low-relief terraces.
+        int duneTop = Math.min(worldTop, top + (int) Math.round(shoreDuneHeight(seed, worldX, worldZ)));
+        for (int y = top + 1; y <= duneTop; y++) {
+            if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
+            if (y > bedY && inCorridorLane(worldZ, tg)) continue;     // keep the train lane clear
+            if (!w.isAir(dx, y, dz)) continue;                        // only build into open air above the surface
+            w.set(dx, y, dz, BeachPalette.surfaceBlock(duneTop - y, Disintegration.coherentNoise(seed, worldX, y, worldZ)));
+            changed = true;
+        }
+        // Recolour the surface skin (dune + the original top) to sand so nothing stony shows through.
         int floor = Math.max(minY, top - SURFACE_SKIN_DEPTH + 1);
-        for (int y = top; y >= floor; y--) {
+        for (int y = duneTop; y >= floor; y--) {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
             if (!w.isSolidGround(dx, y, dz)) continue;               // only recolour solid ground, never air/water
-            BlockState block = BeachPalette.surfaceBlock(top - y, Disintegration.coherentNoise(seed, worldX, y, worldZ));
+            BlockState block = BeachPalette.surfaceBlock(duneTop - y, Disintegration.coherentNoise(seed, worldX, y, worldZ));
             if (!w.isSame(dx, y, dz, block)) { w.set(dx, y, dz, block); changed = true; }
         }
         return changed;
@@ -306,14 +335,18 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                     int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
                                     int minY, int worldTop, int seaLevel, long seed, double progress) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
-        // Smooth ramp from the natural ocean floor here (progress 0 → submerged, shallows above) up to
-        // the inland edge (progress 1), where it hands off to the feathered mountains. The feather is 0 at
-        // the band gate, so the density mountain's first solid block there lands at seaLevel-1 (the raise
-        // crosses 0 at seaLevel); handing the beach off at exactly that height keeps the seam flush —
-        // beach seaLevel-1 → gate column seaLevel-1 → mountains rising — with no 1-block trench. A flat
-        // waterline beach (no jitter) so the seam can't develop ±1 holes either.
+        // Ramp from the natural ocean floor (progress 0 → submerged) up to the inland edge (progress 1),
+        // where it hands off to the feathered mountains. The feather is 0 at the band gate, so the density
+        // mountain's first solid block there lands at seaLevel-1 (the raise crosses 0 at seaLevel); the
+        // ramp's base targets exactly that so the seam is flush.
         int mountainTop = seaLevel - 1;
-        int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress);
+        // Upward two-octave coherent dunes (broad swell + finer ripples) so the sub-sea ramp + waterline
+        // read as a natural, wavy coastline rather than flat terraces along Z. Upward-only (added to the
+        // ramp base) so the surface never dips below its base — no dry pits — and the SAME dune field is
+        // added to the feathered low mountain in recolorShoreSkinColumn, so beach and mountain stay
+        // continuous across the seam (both = their base + the same dune at the join).
+        int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress
+                + shoreDuneHeight(seed, worldX, worldZ));
         columnTop = Math.max(minY + 1, Math.min(worldTop, columnTop));
         // A shore is low, so it never qualifies as a tunnel — its corridor lane stays open for the train.
         boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
