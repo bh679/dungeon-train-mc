@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen.feature;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
@@ -63,13 +64,15 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int NETHER_SAMPLE_OFFSET_X = 12_000;
 
     /** Mega-mountain peaks above this world-Y get a snow cap (jagged-peak look). */
-    private static final int SNOW_LINE_Y = 200;
+    private static final int SNOW_LINE_Y = 110;
     /** Blocks of clear airspace kept above the bed for the train to pass through. */
     private static final int TUNNEL_CLEAR_HEIGHT = 14;
     /** At/above this heightmap multiplier the corridor is roofed (a real tunnel); lower stages stay open (a canyon, so the player SEES the peaks rise). */
     private static final double MEGA_ROOF_MULTIPLIER = 10.0;
-    /** Top blocks of a natural-height (×1) column re-skinned with the mountain palette. */
+    /** Top blocks of a low column re-skinned with the mountain palette (where little was added above the surface). */
     private static final int SURFACE_SKIN_DEPTH = 4;
+    /** Natural relief (blocks above sea) that contributes a full +1 to the [0,1] mountain relief. */
+    private static final int NATURAL_RELIEF_NORM = 96;
     /** Extra Z clearance on each side of the tunnel wall span. */
     private static final int CORRIDOR_MARGIN = 1;
     /** Guaranteed solid causeway depth below the bed in the Nether core (a netherrack bridge over lava). */
@@ -107,6 +110,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
             WorldGenCycle cycle = WorldGenCycle.fromConfig();
             int seaLevel = overworld.getSeaLevel();
+            int baseRelief = DungeonTrainCommonConfig.getNetherBaseReliefBlocks();
 
             double[] heightRamp = new double[16];
             double[] netherRamp = new double[16];
@@ -177,7 +181,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
                     } else {
                         colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, mult, n, netherTopApprox, seed, palette, roof);
+                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette, roof);
                     }
                     changed |= colChanged;
                 }
@@ -203,10 +207,14 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
      */
     private boolean fillMountainColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                        int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
-                                       int minY, int worldTop, int seaLevel, double mult, double n,
+                                       int minY, int worldTop, int seaLevel, int baseRelief, double mult, double n,
                                        int netherTopApprox, long seed, MountainPalette palette, boolean roof) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
-        int amplified = seaLevel + (int) Math.round(Math.max(0, surfaceY - seaLevel) * mult);
+        // Mountain relief = a synthetic ridged heightmap (so flat terrain still gets mountains) blended with
+        // the natural terrain, scaled by the stage multiplier. Bounded so high stages don't clamp flat.
+        double natural01 = Math.max(0, surfaceY - seaLevel) / (double) NATURAL_RELIEF_NORM;
+        double relief01 = Math.min(1.0, MountainNoise.height01(seed, worldX, worldZ) + natural01);
+        int amplified = seaLevel + (int) Math.round(relief01 * baseRelief * mult);
         amplified = Math.max(surfaceY, Math.min(worldTop, amplified));
         // Taper toward the open-Nether height as the core approaches.
         int columnTop = (int) Math.round(amplified * (1.0 - n) + netherTopApprox * n);

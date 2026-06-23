@@ -78,6 +78,10 @@ public final class DungeonTrainCommonConfig {
     public static final int DEFAULT_NETHER_STAGE_BLOCKS = 80;
     /** Comma-separated heightmap multipliers, one per mountain stage (stage 1 = the first value, 1 = natural). */
     public static final String DEFAULT_NETHER_STAGE_MULTIPLIERS = "1,2,4,8,15";
+    /** Mountain relief amplitude (blocks) at ×1 — scaled by the stage multiplier for the peak height. */
+    public static final int MIN_NETHER_BASE_RELIEF_BLOCKS = 0;
+    public static final int MAX_NETHER_BASE_RELIEF_BLOCKS = 1000;
+    public static final int DEFAULT_NETHER_BASE_RELIEF_BLOCKS = 16;
     /** Blocks of full-height mega-mountain plateau on each side of the nether core (the tunnel zone). */
     public static final int MIN_NETHER_MOUNTAIN_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_MOUNTAIN_HOLD_BLOCKS = 100_000_000;
@@ -104,6 +108,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.BooleanValue NETHER_TRANSITION_ENABLED;
     public static final ModConfigSpec.IntValue NETHER_STAGE_BLOCKS;
     public static final ModConfigSpec.ConfigValue<String> NETHER_STAGE_MULTIPLIERS;
+    public static final ModConfigSpec.IntValue NETHER_BASE_RELIEF_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_MOUNTAIN_HOLD_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
@@ -124,6 +129,7 @@ public final class DungeonTrainCommonConfig {
         NETHER_TRANSITION_ENABLED = pair.getLeft().netherTransitionEnabled;
         NETHER_STAGE_BLOCKS = pair.getLeft().netherStageBlocks;
         NETHER_STAGE_MULTIPLIERS = pair.getLeft().netherStageMultipliers;
+        NETHER_BASE_RELIEF_BLOCKS = pair.getLeft().netherBaseReliefBlocks;
         NETHER_MOUNTAIN_HOLD_BLOCKS = pair.getLeft().netherMountainHoldBlocks;
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
@@ -212,6 +218,13 @@ public final class DungeonTrainCommonConfig {
                         "scaled toward each successive multiplier, so the mountains grow taller stage by stage; the",
                         "last value is then held across the mega-mountain. Default 1,2,4,8,15.")
                 .define("netherStageMultipliers", DEFAULT_NETHER_STAGE_MULTIPLIERS);
+        ModConfigSpec.IntValue netherBaseReliefBlocks = b
+                .comment("Mountain relief amplitude (blocks) at ×1. A synthetic ridged heightmap (blended with the",
+                        "natural terrain) is scaled by this × the stage multiplier, so the tallest stage reaches about",
+                        "baseRelief × (largest multiplier) blocks above sea level. Keep that product under ~250 to avoid",
+                        "flat tops clamped at the world ceiling. Default 16 (×15 → ~240).")
+                .defineInRange("netherBaseReliefBlocks", DEFAULT_NETHER_BASE_RELIEF_BLOCKS,
+                        MIN_NETHER_BASE_RELIEF_BLOCKS, MAX_NETHER_BASE_RELIEF_BLOCKS);
         ModConfigSpec.IntValue netherMountainHoldBlocks = b
                 .comment("Blocks of full-strength mega-mountain (stage-3 multiplier held) on each side of the nether",
                         "core — the stretch the train tunnels through before the world turns to nether. Default 48.")
@@ -232,7 +245,7 @@ public final class DungeonTrainCommonConfig {
         return new Holder(defaultPlayerMobSpawnOneIn, defaultPlayerMobBehindSpawnPercent, compatibleTerrain,
                 disintegrationEnabled, disintegrationStartBlocks, disintegrationFadeBlocks,
                 disintegrationVoidHoldBlocks, disintegrationEndHoldBlocks, disintegrationOverworldHoldBlocks,
-                netherTransitionEnabled, netherStageBlocks, netherStageMultipliers,
+                netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
                 netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks);
     }
 
@@ -321,6 +334,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_STAGE_BLOCKS.get() : DEFAULT_NETHER_STAGE_BLOCKS;
     }
 
+    /** Mountain relief amplitude (blocks) at ×1; falls back to the hardcoded default pre-load. */
+    public static int getNetherBaseReliefBlocks() {
+        return isLoaded() ? NETHER_BASE_RELIEF_BLOCKS.get() : DEFAULT_NETHER_BASE_RELIEF_BLOCKS;
+    }
+
     /** Per-stage heightmap multipliers (parsed, each ≥ 1); falls back to the default on empty/garbage. */
     public static int[] getNetherStageMultipliers() {
         String raw = isLoaded() ? NETHER_STAGE_MULTIPLIERS.get() : DEFAULT_NETHER_STAGE_MULTIPLIERS;
@@ -371,6 +389,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue netherTransitionEnabled,
                           ModConfigSpec.IntValue netherStageBlocks,
                           ModConfigSpec.ConfigValue<String> netherStageMultipliers,
+                          ModConfigSpec.IntValue netherBaseReliefBlocks,
                           ModConfigSpec.IntValue netherMountainHoldBlocks,
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks) {}
