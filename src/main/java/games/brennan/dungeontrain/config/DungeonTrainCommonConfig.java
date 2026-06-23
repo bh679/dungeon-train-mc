@@ -129,6 +129,13 @@ public final class DungeonTrainCommonConfig {
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
     public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 400;
+    /**
+     * Dev-test preset for the real-Nether core span — expanded to 2000 blocks (vs the 400-block release
+     * default) so the full sweep of Nether biomes is fast to walk through in-game. Used automatically on
+     * any non-{@code main}/non-release build (see {@link #isNetherDevTestMode()}); release builds keep the
+     * configured value. The multi-biome core itself ships to release — only this length is dev-gated.
+     */
+    public static final int DEVTEST_NETHER_CORE_HOLD_BLOCKS = 2000;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -373,6 +380,16 @@ public final class DungeonTrainCommonConfig {
         return DungeonTrain.isDevBuild();
     }
 
+    /**
+     * Whether the Nether band runs in <b>dev-test mode</b> — the real-Nether core expanded to
+     * {@link #DEVTEST_NETHER_CORE_HOLD_BLOCKS} so the biome variety is fast to traverse — on automatically
+     * for any non-{@code main}/non-release build. Same single source of truth as the disintegration band:
+     * {@link DungeonTrain#isDevBuild()} (the baked git branch). Release builds keep the configured length.
+     */
+    public static boolean isNetherDevTestMode() {
+        return DungeonTrain.isDevBuild();
+    }
+
     /** Blocks from spawn where the band pattern is anchored; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationStartBlocks() {
         return isLoaded() ? DISINTEGRATION_START_BLOCKS.get() : DEFAULT_DISINTEGRATION_START_BLOCKS;
@@ -455,8 +472,9 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_FADE_BLOCKS.get() : DEFAULT_NETHER_CORE_FADE_BLOCKS;
     }
 
-    /** Real-Nether core span (blocks); falls back to the hardcoded default pre-load. */
+    /** Real-Nether core span (blocks); dev-test preset (2000) on branch builds, else config. */
     public static int getNetherCoreHoldBlocks() {
+        if (isNetherDevTestMode()) return DEVTEST_NETHER_CORE_HOLD_BLOCKS;
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;
     }
 

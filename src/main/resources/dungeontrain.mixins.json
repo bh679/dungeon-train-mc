@@ -9,6 +9,8 @@
     "LightningBoltVisualOnlyMixin",
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
+    "BedBlockMixin",
+    "BucketItemMixin",
     "ChunkAccessAccessor",
     "ChunkMapMixin",
     "MultiNoiseBiomeSourceMixin",

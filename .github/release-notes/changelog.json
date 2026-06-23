@@ -2126,6 +2126,83 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-multi-biome",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Nether core now spans all five Nether biomes",
+      "summary": "The stretch of real Nether the train crosses no longer looks the same the whole way through. It now flows through all five Nether biomes the way the Nether itself generates them: crimson and warped forests with their fungi and nylium, soul sand valleys with soul fire and skeletons, basalt deltas with pillars and magma cubes, and the classic nether wastes. The ground, decoration, fog colour and mobs all change with the biome you're in.",
+      "highlights": [
+        "All five Nether biomes generate across the Nether core",
+        "Per-biome ground, decoration, fog tint and mobs",
+        "Crimson forests bring piglins and hoglins (kept from zombifying in the band)"
+      ],
+      "pr": 554,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-band-music-crossfade",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Nether music across the transition band",
+      "summary": "The soundtrack now follows the world as your train crosses the Nether transition band: the overworld music fades away, and vanilla Nether music rises with the red glow of the netherrack core \u2014 then fades back to normal as you ride out the far side. It mirrors the End band, which already swaps to End music across the void.",
+      "highlights": [
+        "Vanilla nether_wastes music now plays as you cross the netherrack core of the Nether transition band.",
+        "The track crossfades smoothly with your position \u2014 overworld music out on the way in, back in on the way out."
+      ],
+      "pr": 555,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-core-pillars-over-lava",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The Nether core bridges lava on pillars",
+      "summary": "Crossing the real-Nether core, the train no longer rides through a solid netherrack tunnel the whole way. It now tunnels through the netherrack masses and rides out on open pillars across the lava lakes and caverns between them, just as it tunnels and bridges across the End islands. The tunnels and the train deck are kept clear of stray netherrack and stone, so the way ahead is always open.",
+      "highlights": [
+        "The train bridges the Nether core's lava lakes on open pillars",
+        "Tunnels through netherrack masses, with the ride space kept clear of stray blocks"
+      ],
+      "pr": 557,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-ghast-collision-check",
+      "version": "0.354.0",
+      "type": "fix",
+      "title": "Ghasts stop spawning trapped inside blocks in the Nether",
+      "summary": "Ghasts in the overworld Nether stretch sometimes spawned stuck inside the terrain and died instantly. They now only appear where there's real open air for their whole 4-block-wide body, so they float free and stick around to menace the train.",
+      "highlights": [
+        "Ghasts no longer spawn embedded in blocks and die on the spot"
+      ],
+      "pr": 556,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-core-behaviours",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "The Nether band's core now plays by Nether rules",
+      "summary": "The red-fog netherrack core of the Nether transition band now behaves like the real Nether, not just looks like it. Water you pour boils away in a hiss of steam, beds explode if you try to sleep in them, and wet sponges dry out the instant you place them. The sky over the core stays clear too \u2014 no rain, no clouds and no lightning, even in a thunderstorm. Step back out into the normal overworld and water, beds and weather all work exactly as usual again.",
+      "highlights": [],
+      "pr": 558,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
