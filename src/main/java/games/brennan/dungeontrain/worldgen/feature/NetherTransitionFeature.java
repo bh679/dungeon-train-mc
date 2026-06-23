@@ -317,11 +317,10 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /**
      * Leading <b>shore</b> column where the band emerges from an ocean biome: a gentle sand ramp that
      * climbs smoothly from the natural ocean floor at the seaward edge ({@code progress 0}, submerged)
-     * up to sea level at the inland edge ({@code progress 1}) — a natural beach to the waterline. The
-     * noise mountains grow inland from sea level (feathered to 0 at the band gate by
-     * {@link WorldGenCycle#netherMountainFeather}), so the shore meets BOTH the seabed and the mountains
-     * with no step/notch. Shaped by low-amplitude value noise (a couple of blocks of jitter), NOT the
-     * dramatic ridged mountain heightmap. Below the sand
+     * up to the waterline at the inland edge ({@code progress 1}, base {@code seaLevel-1}) — a natural
+     * beach. The feathered noise mountains grow inland from that same {@code seaLevel-1} gate column, and
+     * both add the same upward {@link #shoreDuneHeight} dunes with identical rounding, so the shore meets
+     * BOTH the seabed and the mountains with no step/notch. Below the sand
      * surface is solid {@link BeachPalette} (sand → sandstone → stone, extended down to the seabed);
      * where the surface sits below sea level, shallows water fills from the sand up to sea level — so
      * the column reads submerged sand → waterline → dry sand → mountains. Seabed poking above the ramp
@@ -341,12 +340,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         // ramp's base targets exactly that so the seam is flush.
         int mountainTop = seaLevel - 1;
         // Upward two-octave coherent dunes (broad swell + finer ripples) so the sub-sea ramp + waterline
-        // read as a natural, wavy coastline rather than flat terraces along Z. Upward-only (added to the
-        // ramp base) so the surface never dips below its base — no dry pits — and the SAME dune field is
-        // added to the feathered low mountain in recolorShoreSkinColumn, so beach and mountain stay
-        // continuous across the seam (both = their base + the same dune at the join).
-        int columnTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress
-                + shoreDuneHeight(seed, worldX, worldZ));
+        // read as a natural, wavy coastline rather than flat terraces along Z. The ramp and the dune are
+        // rounded SEPARATELY — exactly like recolorShoreSkinColumn does (integer base + round(dune)) — so
+        // at the inland edge both reduce to (seaLevel-1) + round(dune), identical to the feathered mountain's
+        // gate column, and the seam is flush (combined rounding drifted ±1 when the dune fraction crossed .5).
+        int rampTop = (int) Math.round(surfaceY + (mountainTop - surfaceY) * progress);
+        int columnTop = rampTop + (int) Math.round(shoreDuneHeight(seed, worldX, worldZ));
         columnTop = Math.max(minY + 1, Math.min(worldTop, columnTop));
         // A shore is low, so it never qualifies as a tunnel — its corridor lane stays open for the train.
         boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
