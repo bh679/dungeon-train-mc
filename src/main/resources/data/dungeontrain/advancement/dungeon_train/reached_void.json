@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/carts_100",
   "display": {
     "icon": { "id": "minecraft:obsidian" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_void.title" },
