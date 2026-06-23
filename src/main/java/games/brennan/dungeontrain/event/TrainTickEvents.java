@@ -3,22 +3,31 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageFootprint;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import games.brennan.dungeontrain.train.Trains;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import org.joml.Vector3dc;
+import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,6 +123,20 @@ public final class TrainTickEvents {
         }
         long tAfterKill = System.nanoTime();
 
+        // Displace external fluid from inside each carriage's footprint. The
+        // FlowingFluidExternalWaterMixin veto blocks fluid from *flowing into*
+        // a carriage AABB, but it cannot remove fluid already in a cell — and
+        // a moving train sweeps forward over world cells that may hold water
+        // (a track corridor flooded from an adjacent ocean/river, or a water
+        // crossing). Clearing those cells each tick keeps the train dry, like
+        // a hull pushing water aside; the veto then holds the cell against
+        // re-inflow. Together: no fluid into/through the train, water flows
+        // around it (see TrainFluidBarrier / plans/snazzy-churning-snowglobe.md).
+        for (List<Trains.Carriage> train : trainsById.values()) {
+            displaceFluidInFootprint(level, train);
+        }
+        long tAfterFluid = System.nanoTime();
+
         // ShipyardShifter intentionally NOT invoked on the per-carriage
         // architecture: it would shift each carriage's pivot independently
         // and cause inter-carriage drift. Sable has no 128-chunk shipyard
@@ -145,17 +168,87 @@ public final class TrainTickEvents {
             int totalCarriages = 0;
             for (List<Trains.Carriage> train : trainsById.values()) totalCarriages += train.size();
             JITTER_LOGGER.debug(
-                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms tracks={}ms tunnels={}ms trains={} carriages={}",
+                "[stuck.timing] tick={} total={}ms appender={}ms overlay={}ms find={}ms kill={}ms fluid={}ms tracks={}ms tunnels={}ms trains={} carriages={}",
                 level.getGameTime(), totalMs,
                 (tAfterAppender - t0) / 1_000_000,
                 (tAfterOverlay - tAfterAppender) / 1_000_000,
                 (tAfterFindTrains - tAfterOverlay) / 1_000_000,
                 (tAfterKill - tAfterFindTrains) / 1_000_000,
-                (tAfterTracks - tAfterKill) / 1_000_000,
+                (tAfterFluid - tAfterKill) / 1_000_000,
+                (tAfterTracks - tAfterFluid) / 1_000_000,
                 (tAfterTunnels - tAfterTracks) / 1_000_000,
                 trainsById.size(), totalCarriages);
         }
         tickCounter++;
+    }
+
+    /**
+     * Clear external world fluid from inside every resident carriage's
+     * footprint, so a moving train stays dry instead of dragging the water it
+     * sweeps over (see {@code TrainTickEvents#onLevelTick} call site and
+     * {@link games.brennan.dungeontrain.ship.TrainFluidBarrier}).
+     *
+     * <p>Uses each carriage's own {@link ManagedShip#worldAABB()} (not the
+     * train union) so the kept-dry region matches the
+     * {@code FlowingFluidExternalWaterMixin} veto exactly — gaps <em>between</em>
+     * carriages stay water-permeable and surrounding water flows around the
+     * train. Culled carriages are skipped: a stale wrapper reports a frozen
+     * last-known AABB (see {@code project_stale_ghost_aabb_collision}).</p>
+     *
+     * <p>Cost is dominated by the {@link ServerLevel#getFluidState} scan
+     * (~441 cells/carriage); the {@code setBlock} only fires the first tick a
+     * cell is enveloped, because the veto then keeps it air. Clears are
+     * neighbour-notifying (not via {@code SilentBlockOps}, which suppresses
+     * neighbour updates) so the wake refills with water once a cell exits the
+     * AABB behind the train; fluids drop nothing, so drop-suppression is moot.</p>
+     */
+    private static void displaceFluidInFootprint(ServerLevel level, List<Trains.Carriage> train) {
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        for (Trains.Carriage carriage : train) {
+            ManagedShip ship = carriage.ship();
+            if (!ship.isResident()) continue;
+
+            AABBdc box = ship.worldAABB();
+            int minX = Mth.floor(box.minX());
+            int minY = Mth.floor(box.minY());
+            int minZ = Mth.floor(box.minZ());
+            int maxX = Mth.floor(box.maxX());
+            int maxY = Mth.floor(box.maxY());
+            int maxZ = Mth.floor(box.maxZ());
+
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        // Match the veto's predicate: a cell belongs to the
+                        // carriage iff its centre is inside the AABB.
+                        if (!box.containsPoint(x + 0.5, y + 0.5, z + 0.5)) continue;
+                        cursor.set(x, y, z);
+                        if (!level.hasChunkAt(cursor)) continue; // never force-load
+                        BlockState state = level.getBlockState(cursor);
+                        if (state.getFluidState().isEmpty()) continue;
+                        clearFluid(level, cursor, state);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Remove the fluid at {@code pos}: a pure liquid block becomes air; a
+     * waterlogged solid is de-waterlogged in place (never deleted — e.g. a
+     * waterloggable track-bed block must keep its block). Neighbour-notifying
+     * so adjacent fluid re-evaluates (wake refill).
+     */
+    private static void clearFluid(ServerLevel level, BlockPos pos, BlockState state) {
+        BlockPos immut = pos.immutable();
+        if (state.getBlock() instanceof LiquidBlock) {
+            level.setBlock(immut, Blocks.AIR.defaultBlockState(),
+                Block.UPDATE_CLIENTS | Block.UPDATE_NEIGHBORS);
+        } else if (state.hasProperty(BlockStateProperties.WATERLOGGED)
+            && state.getValue(BlockStateProperties.WATERLOGGED)) {
+            level.setBlock(immut, state.setValue(BlockStateProperties.WATERLOGGED, Boolean.FALSE),
+                Block.UPDATE_CLIENTS | Block.UPDATE_NEIGHBORS);
+        }
     }
 
     /**
