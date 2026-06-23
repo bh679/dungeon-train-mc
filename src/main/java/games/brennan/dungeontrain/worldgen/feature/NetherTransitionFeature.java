@@ -12,8 +12,10 @@ import games.brennan.dungeontrain.worldgen.NetherMountainTerrain;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.SectionPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.server.MinecraftServer;
@@ -22,6 +24,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -32,12 +35,21 @@ import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.NoiseSettings;
+import net.minecraft.world.level.levelgen.VerticalAnchor;
+import net.minecraft.world.level.levelgen.WorldgenRandom;
+import net.minecraft.world.level.levelgen.XoroshiroRandomSource;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
+import net.minecraft.world.level.levelgen.placement.BiomeFilter;
+import net.minecraft.world.level.levelgen.placement.HeightRangePlacement;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
+import net.minecraft.world.level.levelgen.placement.PlacementModifier;
 import org.slf4j.Logger;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -55,6 +67,12 @@ import java.util.Set;
  *       End; and the ocean-entry <b>shore</b> ({@link #fillShoreColumn}).</li>
  * </ul>
  * Pure mountain-stage columns ({@code netherRamp == 0}) are left untouched — the noise built them.
+ *
+ * <p>On chunks that are <b>entirely core</b>, after the netherrack/lava is stamped, the actual vanilla
+ * {@code nether_wastes} configured features (fire, glowstone, springs, ores, mushrooms) are run over the
+ * chunk ({@link #decorateCoreChunkWithNetherFeatures}, with the per-feature placement adapted to the
+ * core by {@link #remapForCore}) so the core decorates exactly like the real Nether. Those columns are
+ * also tagged {@code nether_wastes} by the biome-source mixin for Nether fog/ambient/music.</p>
  *
  * <p>Where the {@link DisintegrationBand} End band is active the End wins — those columns are
  * skipped (the density wrapper also yields there), so the two bands never double-stamp.</p>
@@ -84,8 +102,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private static final int CORRIDOR_MARGIN = 1;
     /** Guaranteed solid causeway depth below the bed in the Nether core (a netherrack bridge over lava). */
     private static final int CORE_CAUSEWAY_DEPTH = 3;
-    /** netherRamp at/above this is the real-Nether core (REPLACE); below it is the netherrack crossfade. */
-    private static final double CORE_THRESHOLD = 0.999;
+    /** netherRamp at/above this is the real-Nether core (REPLACE); below it is the netherrack crossfade.
+     *  Shared with the biome-source mixin via {@link WorldGenCycle#NETHER_CORE_THRESHOLD}. */
+    private static final double CORE_THRESHOLD = WorldGenCycle.NETHER_CORE_THRESHOLD;
 
     // --- Shore (ocean-entry beach): a gentle natural ramp from the ocean floor up to the mountains. ---
     /** Minimum solid-sand body depth below the shore surface (extends down to the natural seabed when deeper). */
@@ -234,12 +253,122 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
             if (!changed) return false;
             Heightmap.primeHeightmaps(chunk, WG_HEIGHTMAPS);
+
+            // Decorate the real-Nether core with the actual vanilla Nether features (fire, glowstone,
+            // springs, ores, mushrooms). Only chunks whose every column is core get it — the core biome
+            // is nether_wastes there (so each feature's biome filter passes) and the terrain is netherrack
+            // (so the features land correctly). Heightmaps are already primed, so the features see the
+            // real surface. track_bed runs after this and carves the tunnel, clearing the corridor lane.
+            if (isFullCoreChunk(overworld, cycle, netherDensity, chunkMinX)) {
+                decorateCoreChunkWithNetherFeatures(level, ctx.chunkGenerator(), server, cp, bedY);
+            }
+
             chunk.setUnsaved(true);
             return true;
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] NetherTransitionFeature.place failed at chunk {}", ctx.origin(), t);
             return false;
         }
+    }
+
+    /**
+     * True when every column of this chunk is a real-Nether core column (and the Nether router is
+     * available to have stamped it) — and none is owned by the End band. Only such chunks get the
+     * vanilla Nether feature pass, so decoration never bleeds onto the netherrack crossfade or the
+     * green mountains flanking the core.
+     */
+    private static boolean isFullCoreChunk(ServerLevel overworld, WorldGenCycle cycle,
+                                           DensityFunction netherDensity, int chunkMinX) {
+        if (netherDensity == null) return false;
+        // The core boundary is edge-waved per Z (NetherMountainTerrain#wavyX, ±maxEdgeShift), so require the
+        // core to extend a wave-margin past the chunk on both X sides — then EVERY column's waved X is core,
+        // and the vanilla Nether decoration never bleeds onto the crossfade/mountains.
+        int margin = NetherMountainTerrain.maxEdgeShift();
+        for (int worldX = chunkMinX - margin; worldX <= chunkMinX + 15 + margin; worldX++) {
+            if (!cycle.isNetherCore(worldX)) return false;
+            if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Run the real {@code minecraft:nether_wastes} decoration features over this (fully-core) chunk —
+     * the exact vanilla configured features that decorate the real Nether (fire, glowstone, springs,
+     * ores, mushrooms). We resolve the biome's
+     * {@link net.minecraft.world.level.biome.BiomeGenerationSettings#features() per-step placed-feature
+     * lists} and place each one ourselves (mirroring {@code ChunkGenerator.applyBiomeDecoration}'s
+     * seeding via {@link WorldgenRandom#setDecorationSeed}/{@link WorldgenRandom#setFeatureSeed}). Two
+     * adaptations are needed because we run the Nether's features inside an Overworld chunk — see
+     * {@link #remapForCore}. Same invoke-a-vanilla-feature technique as {@link DisintegrationFeature}'s
+     * {@code Feature.CHORUS_PLANT.place}. Each feature is isolated in a try/catch so one bad placement
+     * can never abort worldgen.
+     */
+    private void decorateCoreChunkWithNetherFeatures(WorldGenLevel level, ChunkGenerator generator,
+                                                     MinecraftServer server, ChunkPos cp, int bedY) {
+        Holder<Biome> netherBiome;
+        try {
+            netherBiome = server.registryAccess().lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
+        } catch (Throwable t) {
+            return; // no nether_wastes biome (data pack stripped?) — skip decoration, never fail worldgen
+        }
+        // The sampled core terrain occupies this world-Y band (same mapping fillNetherColumn uses);
+        // retarget the Nether features' (y0..128-calibrated) height ranges onto it so they hit the rock.
+        int coreBottom = bedY + (NETHER_SAMPLE_Y_MIN - NETHER_CENTER_Y);
+        int coreTop = bedY + (NETHER_SAMPLE_Y_MAX - NETHER_CENTER_Y);
+        List<HolderSet<PlacedFeature>> steps = netherBiome.value().getGenerationSettings().features();
+        BlockPos origin = cp.getWorldPosition(); // chunk min corner; placement modifiers spread/raise from here
+        WorldgenRandom random = new WorldgenRandom(new XoroshiroRandomSource(level.getSeed()));
+        long decoSeed = random.setDecorationSeed(level.getSeed(), origin.getX(), origin.getZ());
+        int featureIndex = 0;
+        int placed = 0;
+        for (int step = 0; step < steps.size(); step++) {
+            for (Holder<PlacedFeature> holder : steps.get(step)) {
+                random.setFeatureSeed(decoSeed, featureIndex++, step);
+                try {
+                    if (remapForCore(holder.value(), coreBottom, coreTop).place(level, generator, random, origin)) {
+                        placed++;
+                    }
+                } catch (Throwable t) {
+                    LOGGER.error("[DungeonTrain] Nether-core feature placement failed at chunk {}", cp, t);
+                }
+            }
+        }
+        LOGGER.debug("[DungeonTrain] Decorated Nether core chunk {} with vanilla nether_wastes features ({}/{} placed, band y{}..{})",
+                cp, placed, featureIndex, coreBottom, coreTop);
+    }
+
+    /**
+     * Adapt a vanilla {@code nether_wastes} {@link PlacedFeature} so it actually decorates our
+     * Overworld-embedded core:
+     * <ol>
+     *   <li>drop the {@code minecraft:biome} ({@link BiomeFilter}) modifier — it is the one modifier
+     *       that requires a registered "top feature" and would otherwise throw
+     *       ({@code IllegalStateException: Tried to biome check an unregistered feature}) under the
+     *       no-biome-check {@link PlacedFeature#place} path; without it the feature places
+     *       unconditionally on whatever its block predicate accepts (netherrack);</li>
+     *   <li>retarget any {@link HeightRangePlacement} to the core's real world-Y band — the Nether's
+     *       native ranges are calibrated for the Nether's {@code y0..128}, so left alone they scatter
+     *       across the whole Overworld column ({@code y-64..255}) and miss the thin core, leaving it
+     *       bare. The features' own block predicates still pick valid spots within the band (fire on
+     *       floors, glowstone on ceilings, ores in rock).</li>
+     * </ol>
+     * Returns the original feature unchanged if it has neither modifier.
+     */
+    private static PlacedFeature remapForCore(PlacedFeature pf, int coreBottom, int coreTop) {
+        List<PlacementModifier> out = new ArrayList<>(pf.placement().size());
+        boolean changed = false;
+        for (PlacementModifier m : pf.placement()) {
+            if (m instanceof BiomeFilter) {
+                changed = true;                                  // drop the biome gate
+            } else if (m instanceof HeightRangePlacement) {
+                out.add(HeightRangePlacement.uniform(
+                        VerticalAnchor.absolute(coreBottom), VerticalAnchor.absolute(coreTop)));
+                changed = true;                                  // retarget onto the core band
+            } else {
+                out.add(m);
+            }
+        }
+        return changed ? new PlacedFeature(pf.feature(), out) : pf;
     }
 
     /**
