@@ -9,8 +9,10 @@
     "LightningBoltVisualOnlyMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "ChunkAccessAccessor",
+    "ChunkMapMixin",
     "NoiseBasedChunkGeneratorMixin",
-    "ChunkGeneratorDecorationMixin"
+    "ChunkGeneratorDecorationMixin",
+    "RandomStateMixin"
   ],
   "client": [
     "CreateWorldScreenAccessor",
