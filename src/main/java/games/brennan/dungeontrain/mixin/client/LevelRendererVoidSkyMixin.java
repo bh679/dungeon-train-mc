@@ -24,6 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *   <li>{@code renderClouds} HEAD → cancel cloud rendering once the End or Nether sky has
  *       mostly faded in, so clouds disappear over the void/End/Nether rather than floating
  *       incongruously above it.</li>
+ *   <li>{@code renderSnowAndRain} HEAD → cancel falling rain/snow over the Nether
+ *       core, so storms don't rain on the hellscape (the Nether has no weather).</li>
  * </ul>
  */
 @Mixin(LevelRenderer.class)
@@ -54,6 +56,21 @@ public abstract class LevelRendererVoidSkyMixin {
         if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
         if (ClientVoidBand.endSkyIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD
                 || ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(
+            method = "renderSnowAndRain(Lnet/minecraft/client/renderer/LightTexture;FDDD)V",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void dungeontrain$hideWeatherInNether(net.minecraft.client.renderer.LightTexture lightTexture,
+                                                  float partialTick, double camX, double camY, double camZ,
+                                                  CallbackInfo ci) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || !mc.level.dimension().equals(Level.OVERWORLD)) return;
+        if (ClientNetherBand.netherIntensityAt(camX) > DUNGEONTRAIN_CLOUD_HIDE_THRESHOLD) {
             ci.cancel();
         }
     }

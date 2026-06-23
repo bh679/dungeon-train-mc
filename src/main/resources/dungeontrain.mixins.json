@@ -8,6 +8,8 @@
     "PlayerFudgeSpawnMixin",
     "LightningBoltVisualOnlyMixin",
     "AdvancementVisibilityEvaluatorMixin",
+    "BedBlockMixin",
+    "BucketItemMixin",
     "ChunkAccessAccessor",
     "ChunkMapMixin",
     "MultiNoiseBiomeSourceMixin",
