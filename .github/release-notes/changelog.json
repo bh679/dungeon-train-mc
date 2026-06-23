@@ -2126,6 +2126,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-multi-biome",
+      "version": "0.354.0",
+      "type": "feat",
+      "title": "Nether core now spans all five Nether biomes",
+      "summary": "The stretch of real Nether the train crosses no longer looks the same the whole way through. It now flows through all five Nether biomes the way the Nether itself generates them: crimson and warped forests with their fungi and nylium, soul sand valleys with soul fire and skeletons, basalt deltas with pillars and magma cubes, and the classic nether wastes. The ground, decoration, fog colour and mobs all change with the biome you're in.",
+      "highlights": [
+        "All five Nether biomes generate across the Nether core",
+        "Per-biome ground, decoration, fog tint and mobs",
+        "Crimson forests bring piglins and hoglins (kept from zombifying in the band)"
+      ],
+      "pr": 554,
+      "date": "2026-06-23",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
