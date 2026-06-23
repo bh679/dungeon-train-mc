@@ -39,13 +39,16 @@ public abstract class MultiNoiseBiomeSourceMixin {
             int blockY = y << 2;
             int blockZ = z << 2;
             if (blockY < ctx.seaLevel()) return original;                 // natural cave biomes below sea
+            // Match the density router's edge-waved front so the forced-biome boundary undulates with the
+            // terrain (the whole band — core included — is evaluated at the same waved X).
+            int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), blockX, blockZ);
             // Real-Nether core columns become the real nether_wastes biome (checked before the highland
             // pick — the core is also a "raising" mountain column): red fog/ambient/music, and the
             // vanilla Nether decoration features' own biome filter passes so they place in NetherTransitionFeature.
-            if (ctx.netherCoreBiome() != null && ctx.cycle() != null && ctx.cycle().isNetherCore(blockX)) {
+            if (ctx.netherCoreBiome() != null && ctx.cycle() != null && ctx.cycle().isNetherCore(wx)) {
                 return ctx.netherCoreBiome();
             }
-            if (!NetherMountainTerrain.raises(ctx.cycle(), blockX)) return original; // not a band mountain column
+            if (!NetherMountainTerrain.raises(ctx.cycle(), wx)) return original; // not a band mountain column
             return ctx.highlandBiomes().biomeFor(blockX, blockY, blockZ);
         } catch (Throwable t) {
             return original;

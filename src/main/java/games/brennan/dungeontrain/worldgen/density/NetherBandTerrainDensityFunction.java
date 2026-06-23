@@ -55,8 +55,11 @@ public final class NetherBandTerrainDensityFunction implements DensityFunction {
         NetherBandContext ctx = NetherBandContext.current();
         if (ctx == null || !ctx.enabled()) return base;
         WorldGenCycle cycle = ctx.cycle();
-        if (!NetherMountainTerrain.raises(cycle, worldX)) return base;
-        double t = NetherMountainTerrain.targetTop(cycle, ctx.generationSeed(), worldX, worldZ,
+        // Evaluate the band at the edge-waved X so the leading/trailing front undulates across Z rather
+        // than starting at one straight X (matched in the biome source + post-process feature).
+        int wx = NetherMountainTerrain.wavyX(ctx.generationSeed(), worldX, worldZ);
+        if (!NetherMountainTerrain.raises(cycle, wx)) return base;
+        double t = NetherMountainTerrain.targetTop(cycle, ctx.generationSeed(), wx, worldZ,
                 ctx.seaLevel(), ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief());
         return Math.max(base, RAISE_SLOPE * (t - worldY));
     }
