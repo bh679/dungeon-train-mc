@@ -7,6 +7,7 @@
   "mixins": [
     "PlayerFudgeSpawnMixin",
     "LightningBoltVisualOnlyMixin",
+    "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
     "ChunkAccessAccessor",
     "ChunkMapMixin",
