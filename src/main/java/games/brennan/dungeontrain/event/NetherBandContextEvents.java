@@ -9,8 +9,11 @@ import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.density.NetherBandBiomeSet;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -61,10 +64,14 @@ public final class NetherBandContextEvents {
             BiomeSource overworldBiomeSource = overworld.getChunkSource().getGenerator().getBiomeSource();
             NetherBandBiomeSet highlandBiomes = NetherBandBiomeSet.resolve(
                     overworld.registryAccess().lookupOrThrow(Registries.BIOME), data.getGenerationSeed());
+            // The real Nether biome forced onto core columns (red fog/ambient/music + lets the vanilla
+            // Nether decoration features' own biome filter pass so they actually place).
+            Holder<Biome> netherCoreBiome = overworld.registryAccess()
+                    .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
 
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
-                    overworldBiomeSource, highlandBiomes));
+                    overworldBiomeSource, highlandBiomes, netherCoreBiome));
             LOGGER.info("[DungeonTrain] Nether-band terrain context published: enabled={} seaLevel={} worldCeiling={} netherTop={} baseRelief={}",
                     enabled, seaLevel, worldCeiling, netherTop, baseRelief);
         } catch (Throwable t) {
