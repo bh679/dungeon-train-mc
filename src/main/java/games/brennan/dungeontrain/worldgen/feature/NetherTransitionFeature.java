@@ -80,6 +80,18 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     /** netherRamp at/above this is the real-Nether core (REPLACE); below it is the netherrack crossfade. */
     private static final double CORE_THRESHOLD = 0.999;
 
+    // --- Shore (ocean-entry beach): a gentle natural ramp climbing out of the water, NOT a mountain ridge. ---
+    /** Blocks the shore's seaward edge starts below sea level (it climbs to {@code seaLevel + SHORE_INLAND_RISE}). */
+    private static final int SHORE_SUBSEA_DEPTH = 6;
+    /** Blocks the shore rises above sea level at the inland edge where it meets the mountains. */
+    private static final int SHORE_INLAND_RISE = 2;
+    /** Low-amplitude jitter (± blocks) on the shore surface so the ramp isn't dead flat. */
+    private static final double SHORE_JITTER_BLOCKS = 1.5;
+    /** Salt mixed into the seed for the shore's gentle value noise (distinct from the mountain noise). */
+    private static final long SHORE_JITTER_SALT = 0x5EA5A11DBEA1L;
+    /** Minimum solid-sand body depth below the shore surface (extends down to the natural seabed when deeper). */
+    private static final int SHORE_BODY_DEPTH = 8;
+
     private static final Set<Heightmap.Types> WG_HEIGHTMAPS = EnumSet.of(
             Heightmap.Types.MOTION_BLOCKING,
             Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
@@ -88,6 +100,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
     private static final BlockState NETHERRACK = Blocks.NETHERRACK.defaultBlockState();
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+    private static final BlockState WATER = Blocks.WATER.defaultBlockState();
 
     public NetherTransitionFeature() {
         super(NoneFeatureConfiguration.CODEC);
@@ -135,7 +148,8 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             MountainPalette palette = MountainPalette.fromSeed(seed);
 
             // Is THIS band's entrance over ocean? (Computed once per chunk from the natural surface at the band
-            // start.) If so, the leading beach span is rendered as sandy cliffs instead of a flat shelf.
+            // start.) If so, the leading beach span is rendered as a gentle sand shore — a ramp out of the
+            // shallows up to the mountains — instead of the synthetic mountain heightmap.
             boolean oceanEntrance = isOceanEntrance(overworld, cycle.netherBandEntranceX(chunkMinX + 8),
                     g.trackCenterZ(), seaLevel);
 
@@ -172,8 +186,9 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
 
                 double n = netherRamp[dx];
                 boolean core = n >= CORE_THRESHOLD && netherDensity != null;
-                // Beach span over an ocean entrance: natural-height SAND (not amplified) before the mountains.
+                // Beach span over an ocean entrance: a gentle sand shore (shallows water + ramp) before the mountains.
                 boolean beach = !core && oceanEntrance && cycle.isNetherBeachStage(worldX);
+                double beachProgress = beach ? cycle.netherBeachProgress(worldX) : 0.0;
                 double mult = cycle.netherMountainMultiplier(worldX);
                 int sampleX = worldX + NETHER_SAMPLE_OFFSET_X;
 
@@ -183,9 +198,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     if (core) {
                         colChanged = fillNetherColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
                                 minY, worldTop, sampleX, netherDensity, cellW, cellH, netherSeaLevel);
+                    } else if (beach) {
+                        colChanged = fillShoreColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
+                                minY, worldTop, seaLevel, seed, beachProgress);
                     } else {
                         colChanged = fillMountainColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
-                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette, beach);
+                                minY, worldTop, seaLevel, baseRelief, mult, n, netherTopApprox, seed, palette);
                     }
                     changed |= colChanged;
                 }
@@ -217,7 +235,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
     private boolean fillMountainColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
                                        int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
                                        int minY, int worldTop, int seaLevel, int baseRelief, double mult, double n,
-                                       int netherTopApprox, long seed, MountainPalette palette, boolean beach) {
+                                       int netherTopApprox, long seed, MountainPalette palette) {
         int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
         // Mountain relief = a synthetic ridged heightmap (so flat terrain still gets mountains) blended with
         // the natural terrain, scaled by the stage multiplier. Bounded so high stages don't clamp flat.
@@ -239,9 +257,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
             if (!lanesTunnel && y > bedY && inCorridorLane(worldZ, tg)) continue; // keep low-mound lane clear
             int depth = columnTop - y;
-            BlockState block = beach
-                    ? BeachPalette.surfaceBlock(depth, Disintegration.coherentNoise(seed, worldX, y, worldZ))
-                    : mountainMaterial(palette, depth, columnTop, n, seed, worldX, y, worldZ);
+            BlockState block = mountainMaterial(palette, depth, columnTop, n, seed, worldX, y, worldZ);
             if (y > surfaceY) {
                 // added mountain body — fill air/foliage only (preserve ores etc. below the surface).
                 if (!w.isReplaceable(dx, y, dz)) continue;
@@ -251,6 +267,60 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
             // else (y <= surfaceY && depth < SKIN): re-skin the natural surface (matters at ×1) — overwrite.
             w.set(dx, y, dz, block);
             changed = true;
+        }
+        return changed;
+    }
+
+    /**
+     * Leading <b>shore</b> column over an ocean entrance: a gentle sand ramp climbing out of the
+     * water — below sea level at the seaward edge ({@code seaLevel − SHORE_SUBSEA_DEPTH}) up to
+     * {@code seaLevel + SHORE_INLAND_RISE} where it meets the mountains, shaped by low-amplitude
+     * value noise (a couple of blocks of jitter), NOT the dramatic ridged mountain heightmap. Below
+     * the sand surface is solid {@link BeachPalette} (sand → sandstone → stone, extended down to the
+     * natural seabed); where the surface sits below sea level, shallows water fills from the sand up
+     * to sea level — so the column reads submerged sand → waterline → dry sand → mountains. Natural
+     * seabed poking above the ramp is cleared to water/air so the ramp is the true surface.
+     *
+     * <p>{@code progress} is {@link WorldGenCycle#netherBeachProgress} (0 seaward → 1 inland). Raw,
+     * Sable-safe section writes via {@link ColumnWriter}; the track + (low-mound) corridor lane stay
+     * clear so the train still rides through — by default the whole shore sits well below the bed.</p>
+     */
+    private boolean fillShoreColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+                                    int bedY, int railY, int zMin, int zMax, TunnelGeometry tg,
+                                    int minY, int worldTop, int seaLevel, long seed, double progress) {
+        int surfaceY = Math.max(minY, Math.min(worldTop, chunk.getHeight(Heightmap.Types.OCEAN_FLOOR_WG, dx, dz)));
+        // Gentle ramp: seaward (progress 0) below sea, inland (progress 1) just above — plus a little jitter.
+        double jitter = (MountainNoise.height01(seed ^ SHORE_JITTER_SALT, worldX, worldZ) - 0.5) * (2.0 * SHORE_JITTER_BLOCKS);
+        double seaward = seaLevel - SHORE_SUBSEA_DEPTH;
+        double inland = seaLevel + SHORE_INLAND_RISE;
+        int columnTop = (int) Math.round(seaward + (inland - seaward) * progress + jitter);
+        columnTop = Math.max(minY + 1, Math.min(worldTop, columnTop));
+        // A shore is low, so it never qualifies as a tunnel — its corridor lane stays open for the train.
+        boolean lanesTunnel = columnTop >= bedY + TUNNEL_CLEAR_HEIGHT;
+
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+
+        // Above the sand surface: shallows water up to sea level, air above it — clearing any natural
+        // seabed that pokes above the ramp so the shore reads cleanly.
+        int top = Math.min(worldTop, Math.max(seaLevel, surfaceY));
+        for (int y = top; y > columnTop; y--) {
+            if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
+            if (!lanesTunnel && y > bedY && inCorridorLane(worldZ, tg)) {
+                if (!w.isAir(dx, y, dz)) { w.set(dx, y, dz, AIR); changed = true; } // keep the train lane clear
+                continue;
+            }
+            BlockState want = y <= seaLevel ? WATER : AIR;
+            if (!w.isSame(dx, y, dz, want)) { w.set(dx, y, dz, want); changed = true; }
+        }
+
+        // Solid sand body below the surface: sand → sandstone → stone with depth, extended down to the seabed.
+        int floor = Math.max(minY, Math.min(columnTop - SHORE_BODY_DEPTH, surfaceY));
+        for (int y = columnTop; y >= floor; y--) {
+            if (isTrackBlock(worldZ, y, bedY, railY, zMin, zMax, tg)) continue;
+            if (!lanesTunnel && y > bedY && inCorridorLane(worldZ, tg)) continue;
+            BlockState block = BeachPalette.surfaceBlock(columnTop - y, Disintegration.coherentNoise(seed, worldX, y, worldZ));
+            if (!w.isSame(dx, y, dz, block)) { w.set(dx, y, dz, block); changed = true; }
         }
         return changed;
     }
@@ -417,6 +487,11 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
         boolean isSame(int dx, int y, int dz, BlockState state) {
             if (!ensure(y)) return false;
             return section.getBlockState(dx, y - baseY, dz) == state;
+        }
+
+        boolean isAir(int dx, int y, int dz) {
+            if (!ensure(y)) return false;
+            return section.getBlockState(dx, y - baseY, dz).isAir();
         }
 
         void set(int dx, int y, int dz, BlockState state) {

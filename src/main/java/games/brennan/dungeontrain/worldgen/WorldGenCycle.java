@@ -177,6 +177,21 @@ public record WorldGenCycle(long startX, int owGap,
         return ln >= 0 && ln < Math.max(0, beachBlocks);
     }
 
+    /**
+     * Progress {@code 0..1} across the leading nether beach span: {@code 0} at the seaward entrance
+     * edge (the ocean waterline) climbing to {@code 1} at the inland edge where the beach meets the
+     * mountains — so a shore ramp can be drawn across it. Clamped to {@code [0,1]}; outside the beach
+     * span the value is meaningless, so callers must gate on {@link #isNetherBeachStage}.
+     */
+    public double netherBeachProgress(int worldX) {
+        int beach = Math.max(0, beachBlocks);
+        if (beach == 0) return 0.0;
+        long ln = netherOffset(worldX);
+        if (ln <= 0L) return 0.0;
+        double p = (double) ln / beach;
+        return p < 0.0 ? 0.0 : (p > 1.0 ? 1.0 : p);
+    }
+
     /** World-X where the current nether band's rise begins (for ocean detection), or {@code Long.MIN_VALUE}. */
     public long netherBandEntranceX(int worldX) {
         long o = offset(worldX);

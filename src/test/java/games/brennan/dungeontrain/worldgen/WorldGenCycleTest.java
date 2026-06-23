@@ -113,6 +113,25 @@ final class WorldGenCycleTest {
     }
 
     @Test
+    @DisplayName("beach progress ramps 0 (seaward waterline) → 1 (inland, meeting the mountains)")
+    void beachProgress() {
+        WorldGenCycle b = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 40, 60, 50, 200, 100, 40, 200, 0);
+        assertEquals(0.0, b.netherBeachProgress(1300), EPS);   // ln 0  — seaward entrance edge (the waterline)
+        assertEquals(0.5, b.netherBeachProgress(1320), EPS);   // ln 20 — halfway up the shore
+        org.junit.jupiter.api.Assertions.assertTrue(b.netherBeachProgress(1339) > 0.9); // ln 39 — almost at the mountains
+    }
+
+    @Test
+    @DisplayName("phaseShift slides the whole cycle so the first nether band arrives earlier")
+    void phaseShift() {
+        // Same geometry as C but shifted 100 blocks into the cycle.
+        WorldGenCycle p = new WorldGenCycle(1000L, 300, 40, new int[] {1, 5, 20}, 0, 60, 50, 200, 100, 40, 200, 100);
+        assertEquals(0.0, C.netherHeightRamp(1260), EPS);  // unshifted (C): still overworld at cycle offset 260
+        org.junit.jupiter.api.Assertions.assertTrue(p.netherHeightRamp(1260) > 0.0); // shifted: the nether band has begun
+        assertEquals(p.netherHeightRamp(1260), p.netherHeightRamp(1260 + PERIOD), EPS); // shift is constant across cycles
+    }
+
+    @Test
     @DisplayName("a disabled phase collapses to zero length")
     void disabledCollapse() {
         WorldGenCycle endOnly = new WorldGenCycle(0L, 300, 0, new int[] {1, 5, 20}, 0, 0, 0, 0, 100, 40, 200, 0);
