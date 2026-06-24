@@ -350,14 +350,6 @@
         { "id": "minecraft:leather_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 }
       ]
     },
-    "0,0,1": {
-      "entries": [
-        { "id": "minecraft:leather_helmet", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
-        { "id": "minecraft:leather_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
-        { "id": "minecraft:leather_leggings", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
-        { "id": "minecraft:leather_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 }
-      ]
-    },
     "6,0,1": {
       "entries": [
         { "id": "minecraft:leather_helmet", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
@@ -389,10 +381,19 @@
         { "id": "minecraft:leather_leggings", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
         { "id": "minecraft:leather_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 }
       ]
+    },
+    "3,2,0": {
+      "fillMax": 2,
+      "entries": [
+        { "id": "minecraft:leather_helmet", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:leather_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:leather_leggings", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
+        { "id": "minecraft:leather_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 }
+      ]
     }
   },
   "links": {
     "4,0,3": "lethershopchest",
-    "3,2,0": "leatherrandom"
+    "0,0,1": "leatherrandom"
   }
 }
