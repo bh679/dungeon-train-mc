@@ -670,7 +670,12 @@ public final class VariantOverlayRenderer {
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(m.typeName()).append('[');
             for (EditorTypeMenusPacket.Variant v : m.variants()) {
-                keyBuf.append(v.name()).append('=').append(v.weight()).append(',');
+                // Include the spawn gate (min/max level + phase mask) in the dedup key so editing it
+                // from the world-space panel re-pushes the snapshot and the cells update live —
+                // otherwise only weight changes would refresh the panel.
+                keyBuf.append(v.name()).append('=').append(v.weight())
+                    .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
+                    .append('p').append(v.phaseMask()).append(',');
             }
             keyBuf.append("];");
         }

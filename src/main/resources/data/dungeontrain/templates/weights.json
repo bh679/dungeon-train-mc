@@ -9,8 +9,8 @@
   "shop": 10,
   "standard": {
     "weight": 20,
+    "maxLevel": 0,
     "phases": [
-      "OVERWORLD",
       "NETHER",
       "VOID"
     ]
@@ -18,7 +18,7 @@
   "windowed": {
     "weight": 20,
     "phases": [
-      "OVERWORLD",
+      "NETHER",
       "VOID",
       "END"
     ]
