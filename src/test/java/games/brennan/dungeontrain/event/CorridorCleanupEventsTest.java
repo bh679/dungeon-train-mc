@@ -126,13 +126,13 @@ final class CorridorCleanupEventsTest {
     }
 
     @Test
-    @DisplayName("isTrackRowCell — bed/rail row within the track footprint is left for the template re-stamp")
+    @DisplayName("isTrackRowCell — bed/rail row within the track footprint flags the template re-stamp")
     void isTrackRowCellMatchesTrackFootprint() {
-        // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4. The reported basalt was bedY 82, Z 2.
+        // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4. Reported basalt: bedY 82 Z2, railY 84 Z2.
         TrackGeometry g = new TrackGeometry(82, 83, 0, 4);
 
-        // Bed row (bedY) across the whole track Z-span → a track cell (left for the real-template re-stamp).
-        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 2, g), "bed centre (the reported cell) is a track cell");
+        // Bed row (bedY) across the whole track Z-span → a track cell (flags the real-template re-stamp).
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 2, g), "bed centre (the first reported cell) is a track cell");
         assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 0, g), "bed edge is a track cell");
         assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 4, g), "bed edge is a track cell");
         // Rail row (railY) across the track Z-span → a track cell (the template owns the whole rail row).

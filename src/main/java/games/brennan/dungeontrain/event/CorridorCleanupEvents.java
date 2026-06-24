@@ -67,11 +67,11 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * <p>That Y span deliberately reaches the <b>bed/rail row</b> ({@code bedY} + {@code railY}), which
  * the airspace-only clearances skip. Cross-chunk timing lets a neighbouring basalt feature overwrite
  * the bed (or a rail) <em>after</em> this chunk's {@code track_bed} already laid it, and no other pass
- * repairs that — every clearance protects the track row by starting at {@code bedY+1}. Off-track
- * clutter is cleared to air; a buried track cell ({@link #isTrackRowCell}) is instead left for a
- * re-stamp of the <b>authored track template</b> ({@code TrackGenerator.ensureTracksForChunk} — the
- * real {@code TrackTemplateStore} cells + per-block variant sidecar, never the hardcoded fallback),
- * so the repaired bed/rails match exactly what worldgen laid. Fluids stay excluded (the cascade hazard
+ * repairs that — every clearance protects the track row by starting at {@code bedY+1}. All clutter is
+ * cleared to air; if any sat on the track row ({@link #isTrackRowCell}) the <b>authored track template</b>
+ * ({@code TrackGenerator.ensureTracksForChunk} — the real {@code TrackTemplateStore} cells + per-block
+ * variant sidecar, never the hardcoded fallback) is re-stamped afterwards to put the solid bed/rails back,
+ * so the repaired track matches exactly what worldgen laid. Fluids stay excluded (the cascade hazard
  * above); worldgen-placed water is drained at generation time by {@code NetherTransitionFeature}
  * instead. The stone-brick walls sit outside {@code airMinZ..airMaxZ}, so they're never touched.</p>
  */
@@ -237,10 +237,10 @@ public final class CorridorCleanupEvents {
      * <b>repair the track surface</b> where it landed on the bed/rail row. Z is {@code airMinZ..airMaxZ}
      * (strictly inside the stone-brick walls); Y is {@code bedY..ceilingY-1} — the tunnel interior PLUS
      * the bed row, because cross-chunk spillover can overwrite the bed (or a rail) after {@code track_bed}
-     * laid it and no other pass touches that row. Off-track clutter is cleared to air; a buried track cell
-     * ({@link #isTrackRowCell}) is left in place and fixed by re-stamping the real track template (see
-     * below). Per-column band gate; a cheap whole-chunk early-out skips worlds with the band disabled / no
-     * train.
+     * laid it and no other pass touches that row. All clutter is cleared to air; if any sat on the bed/rail
+     * row ({@link #isTrackRowCell}) the authored track template is then re-stamped to put the solid
+     * bed/rails back (cells the template authored as air stay cleared). Per-column band gate; a cheap
+     * whole-chunk early-out skips worlds with the band disabled / no train.
      */
     private static void cleanNetherClutter(
         ServerLevel overworld, BlockPos.MutableBlockPos cursor,
@@ -264,18 +264,21 @@ public final class CorridorCleanupEvents {
                     BlockState state = overworld.getBlockState(cursor);
                     if (state.isAir()) continue;
                     if (!isNetherClutter(state)) continue;
-                    // Clutter buried on the bed/rail row is left for the real-template re-stamp below;
-                    // off-track clutter is cleared to air here.
-                    if (isTrackRowCell(y, z, g)) { trackBuried = true; continue; }
+                    // Clear EVERY clutter cell to air. A cell on the track row is also flagged so the
+                    // authored template is re-stamped below: the re-stamp puts the SOLID bed/rail cells
+                    // back over the air, while cells the template authored as air just stay cleared.
+                    if (isTrackRowCell(y, z, g)) trackBuried = true;
                     overworld.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
                 }
             }
         }
 
-        // Re-stamp the AUTHORED track template (bed + rails + per-block variant sidecar) over the buried
-        // cells — never the hardcoded fallback. ensureTracksForChunk pulls the cached TrackTemplateStore
-        // cells and only rewrites cells whose current block differs, so it's cheap and reproduces exactly
-        // what worldgen laid; a fresh set forces the (otherwise once-per-chunk) re-lay.
+        // Re-stamp the AUTHORED track template (bed + rails + per-block variant sidecar) over the cleared
+        // track row — never the hardcoded fallback. ensureTracksForChunk pulls the cached
+        // TrackTemplateStore cells and only writes a cell where the template has a (solid) block, so it
+        // restores exactly what worldgen laid; cells the template leaves empty stay the air we cleared
+        // above (its runtime re-lay treats a null template cell as "leave existing"). A fresh set forces
+        // the (otherwise once-per-chunk) re-lay.
         if (trackBuried) {
             TrackGenerator.ensureTracksForChunk(overworld, chunkMinX >> 4, chunkMinZ >> 4, g, new HashSet<>());
         }
@@ -283,9 +286,9 @@ public final class CorridorCleanupEvents {
 
     /**
      * True for a cell on the track's bed row ({@code bedY}) or rail row ({@code railY}) within the track
-     * Z-footprint ({@code trackZMin..trackZMax}) — the cells the track template authors. Cross-chunk basalt
-     * that buries one of these is repaired by re-stamping the real template (never the fallback palette),
-     * so the sweep leaves it for that re-lay rather than clearing it to air. Pure function — unit-tested.
+     * Z-footprint ({@code trackZMin..trackZMax}) — the cells the track template authors. Basalt here is
+     * cleared to air like any clutter, but it also flags the chunk so the authored template is re-stamped
+     * afterwards (never the fallback palette) to put the solid bed/rails back. Pure function — unit-tested.
      */
     static boolean isTrackRowCell(int y, int z, TrackGeometry g) {
         return (y == g.bedY() || y == g.railY()) && z >= g.trackZMin() && z <= g.trackZMax();
