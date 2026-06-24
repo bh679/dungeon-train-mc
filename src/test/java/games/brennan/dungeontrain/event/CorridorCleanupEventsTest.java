@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.track.TrackPalette;
+import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +14,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -122,6 +126,32 @@ final class CorridorCleanupEventsTest {
         assertEquals(16, CorridorCleanupEvents.drainBudget(17), "above the cap is clamped to the cap");
         assertEquals(16, CorridorCleanupEvents.drainBudget(10_000), "a huge backlog stays bounded");
         assertEquals(0, CorridorCleanupEvents.drainBudget(-3), "defensive: negative → 0");
+    }
+
+    @Test
+    @DisplayName("trackRepairBlock — buried bed/rail cells restore the track, off-track cells do not")
+    void trackRepairRestoresTrackSurface() {
+        // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4 (rails at Z 1 and 3),
+        // matching the reported basalt at bedY 82 / Z 2 (track centre).
+        TrackGeometry g = new TrackGeometry(82, 83, 0, 4);
+        TunnelGeometry tg = TunnelGeometry.from(g);
+
+        // Bed row (bedY, across the track Z-span) → restore the stone-brick bed.
+        assertEquals(TrackPalette.BED, CorridorCleanupEvents.trackRepairBlock(82, 2, g, tg), "bed centre (the reported cell) restored");
+        assertEquals(TrackPalette.BED, CorridorCleanupEvents.trackRepairBlock(82, 0, g, tg), "bed edge restored");
+        assertEquals(TrackPalette.BED, CorridorCleanupEvents.trackRepairBlock(82, 4, g, tg), "bed edge restored");
+
+        // Rail columns (railY, Z 1 and 3) → restore the rail.
+        assertEquals(TrackPalette.RAIL, CorridorCleanupEvents.trackRepairBlock(83, 1, g, tg), "near rail restored");
+        assertEquals(TrackPalette.RAIL, CorridorCleanupEvents.trackRepairBlock(83, 3, g, tg), "far rail restored");
+
+        // Off-track cells → null (the caller clears these to air, never to a track block).
+        assertNull(CorridorCleanupEvents.trackRepairBlock(83, 2, g, tg), "rail-level centre is air between the rails");
+        assertNull(CorridorCleanupEvents.trackRepairBlock(83, 0, g, tg), "rail-level bed edge is not a rail column");
+        assertNull(CorridorCleanupEvents.trackRepairBlock(82, -1, g, tg), "pad beside the bed is not track");
+        assertNull(CorridorCleanupEvents.trackRepairBlock(82, 5, g, tg), "pad beside the bed is not track");
+        assertNull(CorridorCleanupEvents.trackRepairBlock(84, 2, g, tg), "above the rail is air");
+        assertNull(CorridorCleanupEvents.trackRepairBlock(81, 2, g, tg), "below the bed is not track");
     }
 
     @Test
