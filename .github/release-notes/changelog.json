@@ -2262,9 +2262,9 @@
       "summary": "The Quiet Rules of the Train book can now turn up a new rule hinting that worn-down weapons and armour can be mended by combining two of the same item \u2014 and that the result keeps the stats of whichever piece you place on the left.",
       "highlights": [],
       "date": "2026-06-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.355.0",
+      "released_at": "2026-06-24T03:17:26Z"
     },
     {
       "id": "revert-pause-resume-train-rider",
@@ -2278,9 +2278,9 @@
       ],
       "pr": 564,
       "date": "2026-06-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.355.0",
+      "released_at": "2026-06-24T03:17:26Z"
     }
   ]
 }
