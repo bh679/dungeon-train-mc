@@ -39,6 +39,8 @@ import java.util.function.Predicate;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.ItemStatLevelScaling;
 import games.brennan.adventureitemnames.api.NameComposer;
 import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.narrative.RandomBookFactory;
@@ -744,7 +746,12 @@ public final class ContainerContentsRoller {
 
         long statsSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_STATS);
         RandomSource statsRng = RandomSource.create(statsSeed);
-        StatsModifier.applyStats(stack, statsRng);
+        // Scale the stat roll by the carriage's difficulty tier (deterministic
+        // from carriageIndex, so the same chest still rolls identical stats).
+        // Editor preview uses pIdx -1 → tier 0 → no bonus.
+        int diffTier = DifficultyProgression.tierForTravelled(Math.abs(carriageIndex));
+        StatsModifier.applyStats(stack, statsRng,
+            ItemStatLevelScaling.primaryStatBonus(stack, diffTier));
 
         RandomSource dyeChanceRng = RandomSource.create(
             mix(localPos, worldSeed, carriageIndex, slot, SALT_DYE_CHANCE));
