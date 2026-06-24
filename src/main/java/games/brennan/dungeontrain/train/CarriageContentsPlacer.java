@@ -313,6 +313,46 @@ public final class CarriageContentsPlacer {
     }
 
     /**
+     * Strip baked <em>dynamic</em> state off a {@code minecraft:villager} entity NBT
+     * before it is created, so each template spawn starts clean and the existing
+     * train systems re-derive that state per spawn:
+     * <ul>
+     *   <li>{@code CustomName} — removed so AIN's {@code NameComposer.applyMobName}
+     *       (idempotent: no-ops when a name is already present) assigns a fresh name.</li>
+     *   <li>{@code Offers} and {@code Xp} — removed so
+     *       {@link games.brennan.dungeontrain.event.VillagerTrainSpawnEvents} rerolls
+     *       trades and its persistence logic re-applies cleanly.</li>
+     *   <li>The {@link games.brennan.dungeontrain.event.VillagerTrainSpawnEvents#REROLLED_TAG}
+     *       marker — removed from {@code Tags} so the reroll handler actually fires
+     *       (a captured template freezes this tag in, which would suppress the reroll).</li>
+     * </ul>
+     *
+     * <p>{@code VillagerData} (profession + type) is deliberately kept: it is the
+     * authored carriage intent (an armorer carriage stays an armorer); the reroll
+     * handler overwrites the level. No-op for any non-villager entity.</p>
+     *
+     * <p>Defends against carriage templates saved in the editor with a live villager
+     * (the in-game editor captures entity NBT verbatim, baking in name/trades). The
+     * block-side analogue is {@link #clearBakedNarrativeLecternBooks}.</p>
+     */
+    static void stripBakedVillagerState(CompoundTag entityNbt) {
+        if (!"minecraft:villager".equals(entityNbt.getString("id"))) return;
+        entityNbt.remove("CustomName");
+        entityNbt.remove("Offers");
+        entityNbt.remove("Xp");
+        if (entityNbt.contains("Tags", Tag.TAG_LIST)) {
+            ListTag tags = entityNbt.getList("Tags", Tag.TAG_STRING);
+            tags.removeIf(t -> games.brennan.dungeontrain.event.VillagerTrainSpawnEvents.REROLLED_TAG
+                .equals(t.getAsString()));
+            if (tags.isEmpty()) {
+                entityNbt.remove("Tags");
+            } else {
+                entityNbt.put("Tags", tags);
+            }
+        }
+    }
+
+    /**
      * Overlay any {@link CarriageContentsVariantBlocks} entries for
      * {@code contents} onto the stamped interior. Each picked
      * {@link VariantState} is silent-placed at {@code interiorOrigin + localPos}
@@ -529,6 +569,13 @@ public final class CarriageContentsPlacer {
             double worldZ = origin.getZ() + localZ;
 
             CompoundTag entityNbt = entry.getCompound("nbt").copy();
+            // minecraft:villager — strip baked dynamic state (CustomName / Offers /
+            // trade-xp / the "already rerolled" marker) so each spawn gets a fresh
+            // AIN name + freshly-rolled trades (see VillagerTrainSpawnEvents). The
+            // editor captures live villager NBT, freezing name+trades into the
+            // template otherwise — the duplicate-villager bug. Runs before the Tags
+            // augmentation below so the carriage-contents tag is still added.
+            stripBakedVillagerState(entityNbt);
             // Fresh UUID so spawning the same template at N carriages doesn't
             // collide on the UUID index (MC silently drops duplicate UUIDs).
             entityNbt.putUUID("UUID", UUID.randomUUID());
