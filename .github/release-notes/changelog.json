@@ -2296,6 +2296,22 @@
       "released": true,
       "released_in": "v0.356.0",
       "released_at": "2026-06-24T05:31:02Z"
+    },
+    {
+      "id": "hell-on-rails-advancement",
+      "version": "0.356.0",
+      "type": "feat",
+      "title": "New advancement: Hell on Rails",
+      "summary": "Ride the train deep into the Nether stretch and earn a new advancement, Hell on Rails. It unlocks once you're well inside the netherrack \u2014 not the moment you cross the edge \u2014 and now sits just before Voided Warranty on the advancement tree.",
+      "highlights": [
+        "New \"Hell on Rails\" advancement for reaching the Nether band aboard the train",
+        "Placed before Voided Warranty in the advancement tree, matching the journey order"
+      ],
+      "pr": 567,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
