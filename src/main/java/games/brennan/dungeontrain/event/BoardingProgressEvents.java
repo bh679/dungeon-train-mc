@@ -23,6 +23,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import org.joml.primitives.AABBdc;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -50,7 +51,7 @@ import java.util.UUID;
  * to absorb the carriage-index gap.</p>
  *
  * <p>Gap tolerance: the AABB check is padded horizontally by
- * {@link Trains#ON_TRAIN_HORIZONTAL_PADDING} to bridge the small joints between adjacent
+ * {@link #HORIZONTAL_PADDING} to bridge the small joints between adjacent
  * carriage groups, and the leader is held for {@link #OFF_TRAIN_GRACE_SCANS}
  * scans after they fall out of every AABB before being cleared — so a
  * player walking continuously across the train doesn't have each
@@ -70,6 +71,14 @@ public final class BoardingProgressEvents {
      * carriage groups). 6 scans × 10 ticks ≈ 3 seconds.
      */
     private static final int OFF_TRAIN_GRACE_SCANS = 6;
+
+    /**
+     * Horizontal pad applied to each carriage's worldAABB before the
+     * containment check, in blocks. Joints between adjacent carriage groups
+     * are tiny but non-zero; without this pad, the player flickers
+     * "off-train" once per group boundary and we lose the cross-group delta.
+     */
+    private static final double HORIZONTAL_PADDING = 1.0;
 
     /**
      * Per-player last broadcast value of {@code travelledCarriageIndex} —
@@ -317,13 +326,24 @@ public final class BoardingProgressEvents {
     }
 
     /**
-     * Find which carriage's worldAABB contains the player, or null if none —
-     * delegates to {@link Trains#carriageContaining(List, ServerPlayer)} (padded by
-     * {@link Trains#ON_TRAIN_HORIZONTAL_PADDING} horizontally, +3 on Y for roof-standers).
+     * Find which carriage's worldAABB contains the player, or null if none.
+     * Horizontal bounds are padded by {@link #HORIZONTAL_PADDING} to bridge
+     * the small joints between adjacent carriage groups; Y is padded above
+     * by 3 to count players standing on or sprint-jumping from the roof as
+     * "on the train" (sprint-jump peaks at ~1.25 blocks above standing).
      */
     @Nullable
     private static Integer findPlayerCarriagePIdx(List<Trains.Carriage> carriages, ServerPlayer player) {
-        Trains.Carriage c = Trains.carriageContaining(carriages, player);
-        return c == null ? null : c.provider().getPIdx();
+        double px = player.getX();
+        double py = player.getY();
+        double pz = player.getZ();
+        for (Trains.Carriage c : carriages) {
+            AABBdc bb = c.ship().worldAABB();
+            if (px < bb.minX() - HORIZONTAL_PADDING || px > bb.maxX() + HORIZONTAL_PADDING) continue;
+            if (py < bb.minY() || py > bb.maxY() + 3.0) continue;
+            if (pz < bb.minZ() - HORIZONTAL_PADDING || pz > bb.maxZ() + HORIZONTAL_PADDING) continue;
+            return c.provider().getPIdx();
+        }
+        return null;
     }
 }
