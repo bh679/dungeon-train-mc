@@ -4,6 +4,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
+import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -29,7 +31,12 @@ import java.util.List;
  *       overworld.</li>
  * </ul>
  *
- * <p>All three are one-shot {@code gameplay_action} markers (same trigger as
+ * <p>Independently of the void/End {@code zoneAt} classification, the same scan also grants
+ * {@code reached_nether} ("Entered the Nether") when the player's column reads as the Nether core
+ * of the cycle's Nether band (via {@link NetherBand#isInNetherBiome}). The Nether band is a
+ * separate phase of the same repeating {@link WorldGenCycle}, so it is checked separately.</p>
+ *
+ * <p>All four are one-shot {@code gameplay_action} markers (same trigger as
  * {@code landed_on_tracks} etc.); vanilla advancement dedupe makes re-firing the same id every
  * scan a no-op. When disintegration is disabled {@link DisintegrationBand#zoneAt} always returns
  * {@code OVERWORLD} and the overworld-again gate is never satisfied, so nothing fires.</p>
@@ -57,6 +64,12 @@ public final class ZoneProgressEvents {
 
         for (ServerPlayer player : players) {
             if (player.isSpectator()) continue;
+
+            // Nether band — a separate phase of the cycle from the void/End classification below.
+            if (NetherBand.isInNetherBiome(level, player.getBlockX())) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_nether");
+            }
+
             switch (DisintegrationBand.zoneAt(level, player.getBlockX())) {
                 case VOID ->
                     ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_void");
