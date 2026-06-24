@@ -133,6 +133,11 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
+        // Any click that isn't the phase button or one of its popup options dismisses the popup.
+        if (hit.cell() != CellKind.PHASE && hit.cell() != CellKind.PHASE_OPTION) {
+            EditorTypeMenuRenderer.closePhasePopup();
+        }
+
         // Category bar click → run "dt editor <id>" (CommandRunner expects
         // bare command text, no leading slash — the chat path adds it).
         if (hit.cell() == EditorTypeMenuRenderer.CellKind.CATEGORY) {
@@ -300,7 +305,13 @@ public final class EditorTypeMenuInputHandler {
             }
             case MIN_LEVEL -> dispatchLevel(menu, variant, "minlevel", shift);
             case MAX_LEVEL -> dispatchLevel(menu, variant, "maxlevel", shift);
-            case PHASE -> dispatchPhase(menu, variant, hit.slotIdx());
+            case PHASE -> {
+                // One button → open/close the phase popup (client-side; no command).
+                if (!isSubVariants(menu)) {
+                    EditorTypeMenuRenderer.togglePhasePopup(hit.menuIdx(), hit.variantIdx());
+                }
+            }
+            case PHASE_OPTION -> dispatchPhase(menu, variant, hit.slotIdx());
             default -> {}
         }
     }

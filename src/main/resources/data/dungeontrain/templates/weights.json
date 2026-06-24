@@ -7,6 +7,20 @@
   "open": 20,
   "pen": 15,
   "shop": 10,
-  "standard": 20,
-  "windowed": 20
+  "standard": {
+    "weight": 20,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID"
+    ]
+  },
+  "windowed": {
+    "weight": 20,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  }
 }

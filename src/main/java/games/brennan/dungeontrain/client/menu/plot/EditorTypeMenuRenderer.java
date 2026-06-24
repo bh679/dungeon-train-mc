@@ -93,8 +93,10 @@ public final class EditorTypeMenuRenderer {
         MIN_LEVEL,
         /** Spawn-gate max Diff-Level cell — click +1, shift-click -1 (cycles through "all"). */
         MAX_LEVEL,
-        /** Spawn-gate phase cell — {@code slotIdx} = phase ordinal (0..3); click toggles that phase. */
+        /** Spawn-gate phase cell — a single button on the row; click opens/closes the phase popup. */
         PHASE,
+        /** A toggle button inside the open phase popup — {@code slotIdx} = phase ordinal (0..3). */
+        PHASE_OPTION,
         /** Package row — clicking activates that package. */
         PKG_NAME,
         /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
@@ -214,6 +216,28 @@ public final class EditorTypeMenuRenderer {
     private static volatile List<EditorTypeMenusPacket.Menu> CACHE = List.of();
     private static volatile Hovered HOVERED = Hovered.NONE;
 
+    /** Which variant row (if any) currently has its phase popup open. {@code null} = closed. */
+    private record PhasePopup(int menuIdx, int variantIdx) {}
+    private static volatile PhasePopup PHASE_POPUP = null;
+
+    /** The open phase popup, or {@code null}. Read by the input handler to route popup clicks. */
+    public static boolean isPhasePopupOpen(int menuIdx, int variantIdx) {
+        PhasePopup pp = PHASE_POPUP;
+        return pp != null && pp.menuIdx() == menuIdx && pp.variantIdx() == variantIdx;
+    }
+
+    /** Open the phase popup for {@code (menuIdx, variantIdx)}, or close it if it's already that row. */
+    public static void togglePhasePopup(int menuIdx, int variantIdx) {
+        PhasePopup pp = PHASE_POPUP;
+        PHASE_POPUP = (pp != null && pp.menuIdx() == menuIdx && pp.variantIdx() == variantIdx)
+            ? null
+            : new PhasePopup(menuIdx, variantIdx);
+    }
+
+    public static void closePhasePopup() {
+        PHASE_POPUP = null;
+    }
+
     /**
      * Sticky billboard basis for the package menu — captured on the first
      * render frame after the menu appears, reused every frame after. Unlike
@@ -262,12 +286,22 @@ public final class EditorTypeMenuRenderer {
         if (packet.isEmpty()) {
             CACHE = List.of();
             HOVERED = Hovered.NONE;
+            PHASE_POPUP = null;
             PACKAGE_BASIS = null;
             LOGGER.info("[DungeonTrain] EditorTypeMenus: snapshot cleared");
             return;
         }
         List<EditorTypeMenusPacket.Menu> menus = List.copyOf(packet.menus());
         CACHE = menus;
+        // Keep the phase popup open across rebuilds (toggling a phase re-pushes the snapshot) as long
+        // as its row still exists; otherwise close it.
+        PhasePopup pp = PHASE_POPUP;
+        if (pp != null) {
+            boolean stillValid = pp.menuIdx() >= 0 && pp.menuIdx() < menus.size()
+                && menus.get(pp.menuIdx()).isNavMenu()
+                && pp.variantIdx() >= 0 && pp.variantIdx() < menus.get(pp.menuIdx()).variants().size();
+            if (!stillValid) PHASE_POPUP = null;
+        }
         // Keep PACKAGE_BASIS sticky across snapshots that still carry a
         // package menu (so category switches don't reorient the panel); drop
         // it if the new snapshot has no package menu, so the next appearance
@@ -330,7 +364,7 @@ public final class EditorTypeMenuRenderer {
             } else {
                 shiftIn = 0;
             }
-            drawMenu(ps, buffer, font, cam, anchor, menu, local, shiftIn);
+            drawMenu(ps, buffer, font, cam, anchor, menu, local, shiftIn, i);
         }
 
         buffer.endBatch(PANEL_QUAD);
@@ -693,6 +727,13 @@ public final class EditorTypeMenuRenderer {
      */
     public static Hovered hitFor(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
                                  double hitX, double hitY) {
+        // An open phase popup floats past the panel's right edge, so it must be hit-tested before
+        // the normal panel-bounds rejection — and takes precedence over the row cells beneath it.
+        PhasePopup pp = PHASE_POPUP;
+        if (pp != null && pp.menuIdx() == menuIdx && menu.isNavMenu()) {
+            Hovered popupHit = phasePopupHit(menuIdx, menu, font, hitX, hitY);
+            if (popupHit != null) return popupHit;
+        }
         if (menu.isPackageMenu()) {
             return hitForPackageMenu(menuIdx, menu, font, hitX, hitY);
         }
@@ -844,12 +885,8 @@ public final class EditorTypeMenuRenderer {
         if (hitX < rc.weightR()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
         if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
         if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
-        // Phase cell — resolve which of the 4 letters was hit.
-        double subW = rc.phaseSubW(colRight);
-        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
-        if (slot < 0) slot = 0;
-        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
-        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
+        // Phase cell is a single button — clicking it opens the phase popup.
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE);
     }
 
 
@@ -859,7 +896,7 @@ public final class EditorTypeMenuRenderer {
         PoseStack ps, MultiBufferSource buffer, Font font,
         Vec3 cam, Vec3 anchor,
         EditorTypeMenusPacket.Menu menu, Hovered hovered,
-        double priorCompanionWidth
+        double priorCompanionWidth, int menuIdx
     ) {
         Vec3[] b = basisFor(menu, anchor, cam);
         Vec3 right = b[0], up = b[1], normal = b[2];
@@ -895,7 +932,7 @@ public final class EditorTypeMenuRenderer {
         if (menu.isPackageMenu()) {
             drawPackageMenu(ps, buffer, font, menu, hovered);
         } else if (menu.isNavMenu()) {
-            drawNavMenu(ps, buffer, font, menu, hovered);
+            drawNavMenu(ps, buffer, font, menu, hovered, menuIdx);
         } else {
             drawCompanionMenu(ps, buffer, font, menu, hovered);
         }
@@ -963,7 +1000,7 @@ public final class EditorTypeMenuRenderer {
 
     private static void drawNavMenu(
         PoseStack ps, MultiBufferSource buffer, Font font,
-        EditorTypeMenusPacket.Menu menu, Hovered hovered
+        EditorTypeMenusPacket.Menu menu, Hovered hovered, int menuIdx
     ) {
         double halfW = halfWidth(menu, font);
         double halfH = halfHeight(menu, font);
@@ -1169,6 +1206,82 @@ public final class EditorTypeMenuRenderer {
             drawCenteredText(ps, buffer, font, NEW_LABEL,
                 (expColLeft + expColRight) / 2.0, newRowCY, NEW_COLOR);
         }
+
+        // Phase popup — floats to the right of the panel for the row whose phase button was clicked.
+        PhasePopup pp = PHASE_POPUP;
+        if (pp != null && pp.menuIdx() == menuIdx
+            && pp.variantIdx() >= 0 && pp.variantIdx() < menu.variants().size()) {
+            drawPhasePopup(ps, buffer, font, menu, menu.variants().get(pp.variantIdx()), hovered);
+        }
+    }
+
+    // ---------- phase popup ----------
+
+    /** Width of one phase-popup button (sized for the longest label with its checkbox prefix). */
+    private static final double PHASE_POPUP_BUTTON_W = 1.30;
+    /** Gap (panel-local) between the panel's right edge and the popup. */
+    private static final double PHASE_POPUP_GAP = 0.12;
+    /** Full phase labels, indexed by {@code TrainPhase} ordinal. */
+    private static final String[] PHASE_NAMES = {"Overworld", "Nether", "Void", "End"};
+    private static final int PHASE_POPUP_BG = 0xE0202020;
+
+    /** Left edge of the popup column in this menu's panel-local space. */
+    private static double phasePopupLeft(EditorTypeMenusPacket.Menu menu, Font font) {
+        return halfWidth(menu, font) + PHASE_POPUP_GAP;
+    }
+
+    /** Top edge of the popup (just below the panel's top), in panel-local space. */
+    private static double phasePopupTop(EditorTypeMenusPacket.Menu menu, Font font) {
+        return halfHeight(menu, font) - ROW_H;
+    }
+
+    private static void drawPhasePopup(PoseStack ps, MultiBufferSource buffer, Font font,
+                                       EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
+                                       Hovered hovered) {
+        double l = phasePopupLeft(menu, font);
+        double r = l + PHASE_POPUP_BUTTON_W;
+        double top = phasePopupTop(menu, font);
+        double bot = top - PHASE_NAMES.length * ROW_H;
+
+        drawQuad(ps, buffer, l - 0.03, bot - 0.03, r + 0.03, top + 0.03, PHASE_POPUP_BG);
+
+        int mask = variant.phaseMask();
+        for (int slot = 0; slot < PHASE_NAMES.length; slot++) {
+            double bTop = top - slot * ROW_H;
+            double bBot = bTop - ROW_H;
+            boolean on = (mask & (1 << slot)) != 0;
+            boolean hov = hovered.cell == CellKind.PHASE_OPTION && hovered.slotIdx() == slot;
+            int tint = on
+                ? (hov ? 0xD066FF99 : 0xA033CC66)
+                : (hov ? 0xC0AAAAAA : 0x60777777);
+            drawQuad(ps, buffer, l + 0.005, bBot + 0.005, r - 0.005, bTop - 0.005, tint);
+            String label = (on ? "[x] " : "[ ] ") + PHASE_NAMES[slot];
+            drawCenteredText(ps, buffer, font, label, (l + r) / 2.0, (bTop + bBot) / 2.0,
+                on ? 0xFFFFFFFF : 0xFFCCCCCC);
+        }
+    }
+
+    /**
+     * Hit-test the open phase popup. Returns a {@link CellKind#PHASE_OPTION} hover when the crosshair
+     * is over one of the four toggle buttons, else {@code null}. Checked before the panel-bounds
+     * rejection so the popup (which floats outside the panel) still registers.
+     */
+    private static Hovered phasePopupHit(int menuIdx, EditorTypeMenusPacket.Menu menu, Font font,
+                                         double hitX, double hitY) {
+        PhasePopup pp = PHASE_POPUP;
+        if (pp == null) return null;
+        double l = phasePopupLeft(menu, font);
+        double r = l + PHASE_POPUP_BUTTON_W;
+        if (hitX < l || hitX > r) return null;
+        double top = phasePopupTop(menu, font);
+        for (int slot = 0; slot < PHASE_NAMES.length; slot++) {
+            double bTop = top - slot * ROW_H;
+            double bBot = bTop - ROW_H;
+            if (hitY <= bTop && hitY >= bBot) {
+                return new Hovered(menuIdx, pp.variantIdx(), CellKind.PHASE_OPTION, slot);
+            }
+        }
+        return null;
     }
 
     /**
@@ -1256,12 +1369,9 @@ public final class EditorTypeMenuRenderer {
                     rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
             }
             case PHASE -> {
-                if (rc.showGate() && hoverSlot >= 0 && hoverSlot < PHASE_LETTERS.length) {
-                    double subW = rc.phaseSubW(rowRight);
-                    double l = rc.maxR() + hoverSlot * subW;
-                    drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005,
-                        l + subW - 0.005, rowTop - 0.005, HOVER_COLOR);
-                }
+                // Phase is one button — highlight the whole cell on hover.
+                if (rc.showGate()) drawQuad(ps, buffer, rc.maxR() + 0.005, rowBottom + 0.005,
+                    rowRight - 0.005, rowTop - 0.005, HOVER_COLOR);
             }
             default -> { }
         }
