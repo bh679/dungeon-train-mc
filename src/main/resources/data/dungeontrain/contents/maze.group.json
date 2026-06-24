@@ -29,6 +29,10 @@
     {
       "id": "doors",
       "weight": 1
+    },
+    {
+      "id": "maze6",
+      "weight": 1
     }
   ]
 }
