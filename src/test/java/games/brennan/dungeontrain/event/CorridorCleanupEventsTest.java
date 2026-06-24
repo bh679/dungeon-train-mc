@@ -1,8 +1,6 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.track.TrackGeometry;
-import games.brennan.dungeontrain.track.TrackPalette;
-import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +12,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -129,29 +126,24 @@ final class CorridorCleanupEventsTest {
     }
 
     @Test
-    @DisplayName("trackRepairBlock — buried bed/rail cells restore the track, off-track cells do not")
-    void trackRepairRestoresTrackSurface() {
-        // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4 (rails at Z 1 and 3),
-        // matching the reported basalt at bedY 82 / Z 2 (track centre).
+    @DisplayName("isTrackRowCell — bed/rail row within the track footprint is left for the template re-stamp")
+    void isTrackRowCellMatchesTrackFootprint() {
+        // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4. The reported basalt was bedY 82, Z 2.
         TrackGeometry g = new TrackGeometry(82, 83, 0, 4);
-        TunnelGeometry tg = TunnelGeometry.from(g);
 
-        // Bed row (bedY, across the track Z-span) → restore the stone-brick bed.
-        assertEquals(TrackPalette.BED, CorridorCleanupEvents.trackRepairBlock(82, 2, g, tg), "bed centre (the reported cell) restored");
-        assertEquals(TrackPalette.BED, CorridorCleanupEvents.trackRepairBlock(82, 0, g, tg), "bed edge restored");
-        assertEquals(TrackPalette.BED, CorridorCleanupEvents.trackRepairBlock(82, 4, g, tg), "bed edge restored");
+        // Bed row (bedY) across the whole track Z-span → a track cell (left for the real-template re-stamp).
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 2, g), "bed centre (the reported cell) is a track cell");
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 0, g), "bed edge is a track cell");
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 4, g), "bed edge is a track cell");
+        // Rail row (railY) across the track Z-span → a track cell (the template owns the whole rail row).
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(83, 1, g), "rail-row cell is a track cell");
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(83, 2, g), "rail-row centre is still a track cell");
 
-        // Rail columns (railY, Z 1 and 3) → restore the rail.
-        assertEquals(TrackPalette.RAIL, CorridorCleanupEvents.trackRepairBlock(83, 1, g, tg), "near rail restored");
-        assertEquals(TrackPalette.RAIL, CorridorCleanupEvents.trackRepairBlock(83, 3, g, tg), "far rail restored");
-
-        // Off-track cells → null (the caller clears these to air, never to a track block).
-        assertNull(CorridorCleanupEvents.trackRepairBlock(83, 2, g, tg), "rail-level centre is air between the rails");
-        assertNull(CorridorCleanupEvents.trackRepairBlock(83, 0, g, tg), "rail-level bed edge is not a rail column");
-        assertNull(CorridorCleanupEvents.trackRepairBlock(82, -1, g, tg), "pad beside the bed is not track");
-        assertNull(CorridorCleanupEvents.trackRepairBlock(82, 5, g, tg), "pad beside the bed is not track");
-        assertNull(CorridorCleanupEvents.trackRepairBlock(84, 2, g, tg), "above the rail is air");
-        assertNull(CorridorCleanupEvents.trackRepairBlock(81, 2, g, tg), "below the bed is not track");
+        // Off the track footprint → not a track cell (those clutter cells are cleared to air).
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(82, -1, g), "pad beside the bed is not a track cell");
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(82, 5, g), "pad beside the bed is not a track cell");
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(84, 2, g), "above the rail row is not a track cell");
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(81, 2, g), "below the bed row is not a track cell");
     }
 
     @Test
