@@ -2296,6 +2296,55 @@
       "released": true,
       "released_in": "v0.356.0",
       "released_at": "2026-06-24T05:31:02Z"
+    },
+    {
+      "id": "hell-on-rails-advancement",
+      "version": "0.356.0",
+      "type": "feat",
+      "title": "New advancement: Hell on Rails",
+      "summary": "Ride the train deep into the Nether stretch and earn a new advancement, Hell on Rails. It unlocks once you're well inside the netherrack \u2014 not the moment you cross the edge \u2014 and now sits just before Voided Warranty on the advancement tree.",
+      "highlights": [
+        "New \"Hell on Rails\" advancement for reaching the Nether band aboard the train",
+        "Placed before Voided Warranty in the advancement tree, matching the journey order"
+      ],
+      "pr": 567,
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.357.0",
+      "released_at": "2026-06-24T07:18:58Z"
+    },
+    {
+      "id": "train-villager-unique-names-trades",
+      "version": "0.356.0",
+      "type": "fix",
+      "title": "Train villagers no longer share the same name and trades",
+      "summary": "Villagers riding the train sometimes spawned as identical twins \u2014 the same name and the same trades in every carriage of a given type. Each train villager now gets its own randomly generated name and a freshly rolled set of trades, while still keeping the carriage's profession (an armorer carriage still has an armorer).",
+      "highlights": [
+        "Each train villager gets a unique name",
+        "Trades are rolled fresh per villager instead of repeating",
+        "Shop professions (armorer, toolsmith, leatherworker, \u2026) are preserved"
+      ],
+      "pr": 568,
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.357.0",
+      "released_at": "2026-06-24T07:18:58Z"
+    },
+    {
+      "id": "nether-core-5000",
+      "version": "0.357.0",
+      "type": "content",
+      "title": "Longer Nether crossing \u2014 real-Nether core now spans 5,000 blocks",
+      "summary": "The real-Nether leg of the journey now runs 5,000 blocks \u2014 the same length as the End-island stretch \u2014 so the train spends a substantial stretch crossing genuine Nether terrain (red sky, netherrack, nether mobs) instead of a brief flicker before the world reassembles into the overworld.",
+      "highlights": [
+        "Real-Nether core span increased from 400 to 5,000 blocks",
+        "Now as long as the End-island stretch of the loop"
+      ],
+      "pr": 569,
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.357.0",
+      "released_at": "2026-06-24T07:18:58Z"
     }
   ]
 }
