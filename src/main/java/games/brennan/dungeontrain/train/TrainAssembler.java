@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -222,7 +223,10 @@ public final class TrainAssembler {
         for (int slot = 0; slot < groupSize; slot++) {
             int carriagePIdx = anchorPIdx + slot;
             BlockPos carriageOrigin = origin.offset(enclosedStartOffset + slot * length, 0, 0);
-            CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg);
+            // Gate the shell pick by this carriage's Diff-Level + worldgen phase (derived from its
+            // pIdx, so it is deterministic and matches the contents/track gates).
+            GateContext gateCtx = GateContext.forCarriage(level, carriagePIdx, length);
+            CarriageVariant variant = CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg, gateCtx);
             enclosedBySlot[slot] = variant;
 
             // Within a spawnGroup call, the enclosed run is wrapped by

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.track;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
@@ -599,7 +600,9 @@ public final class TrackGenerator {
         ServerLevel level, PillarSection section, CarriageDims dims, long worldSeed, int pillarIndex
     ) {
         TrackKind kind = PillarTemplateStore.pillarKind(section);
-        String name = TrackVariantRegistry.pickName(kind, worldSeed, pillarIndex);
+        // pillarIndex is the pillar's world-X — resolve its Diff-Level + phase for the gate.
+        String name = TrackVariantRegistry.pickName(kind, worldSeed, pillarIndex,
+            GateContext.atWorldX(level, pillarIndex));
         Optional<BlockState[][]> col = PillarTemplateStore.getColumnFor(level, section, dims, name);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(1, section.height(), dims.width()));
@@ -1153,7 +1156,8 @@ public final class TrackGenerator {
         boolean flipped
     ) {
         String stairsName = TrackVariantRegistry.pickName(
-            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
+            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX,
+            GateContext.atWorldX(serverLevel, centerX));
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunctFor(serverLevel,
                 games.brennan.dungeontrain.track.PillarAdjunct.STAIRS, stairsName);
@@ -1529,7 +1533,8 @@ public final class TrackGenerator {
         int surfaceY = target.surfaceY();
 
         String stairsName = TrackVariantRegistry.pickName(
-            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX);
+            TrackKind.ADJUNCT_STAIRS, worldSeed, centerX,
+            GateContext.atWorldX(serverLevel, centerX));
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunctFor(serverLevel,
                 PillarAdjunct.STAIRS, stairsName);
@@ -1678,7 +1683,8 @@ public final class TrackGenerator {
         int entranceBaseY = surfaceY - ENTRANCE_OVERLAP_Y;
 
         String entranceName = TrackVariantRegistry.pickName(
-            TrackKind.ADJUNCT_STAIRS_ENTRANCE, worldSeed, centerX);
+            TrackKind.ADJUNCT_STAIRS_ENTRANCE, worldSeed, centerX,
+            GateContext.atWorldX(serverLevel, centerX));
         Optional<StructureTemplate> templateOpt =
             PillarTemplateStore.getAdjunctFor(serverLevel,
                 PillarAdjunct.STAIRS_ENTRANCE, entranceName);
@@ -1822,7 +1828,8 @@ public final class TrackGenerator {
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> {
-                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx);
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
+                        GateContext.atWorldX(level, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
                     Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
                     TrackVariantBlocks sidecar =
                         TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
@@ -1933,7 +1940,8 @@ public final class TrackGenerator {
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> {
-                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx);
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
+                        GateContext.atWorldX(serverLevel, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
                     Optional<BlockState[][][]> cells =
                         TrackTemplateStore.getCellsFor(serverLevel, dims, name);
                     TrackVariantBlocks sidecar =

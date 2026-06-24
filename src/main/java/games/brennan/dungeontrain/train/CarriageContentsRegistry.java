@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateRegistry;
@@ -159,10 +160,20 @@ public final class CarriageContentsRegistry {
      * 2-arg behaviour for callers / tests that don't have a variant in scope).
      */
     public static synchronized CarriageContents pick(long worldSeed, int carriageIndex, CarriageVariant variant) {
+        return pick(worldSeed, carriageIndex, variant, null);
+    }
+
+    /**
+     * Gate-aware {@link #pick(long, int, CarriageVariant)}: when {@code gateCtx} is non-null,
+     * contents whose per-template gate excludes its Diff-Level / phase are dropped from the pool
+     * before the weighted draw (an emptied pool falls back to the ungated pool). {@code null} skips
+     * gating — used by the editor-preview path (sentinel pIdx) and tests.
+     */
+    public static synchronized CarriageContents pick(long worldSeed, int carriageIndex, CarriageVariant variant, GateContext gateCtx) {
         CarriageContentsAllowList allow = (variant == null)
             ? CarriageContentsAllowList.EMPTY
             : CarriageVariantContentsAllowStore.get(variant).orElse(CarriageContentsAllowList.EMPTY);
-        return pick(worldSeed, carriageIndex, allow);
+        return pick(worldSeed, carriageIndex, allow, gateCtx);
     }
 
     /**
@@ -185,8 +196,13 @@ public final class CarriageContentsRegistry {
      * unrelated ids.</p>
      */
     public static CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow) {
+        return pick(worldSeed, carriageIndex, allow, null);
+    }
+
+    /** Gate-aware {@link #pick(long, int, CarriageContentsAllowList)}. */
+    public static CarriageContents pick(long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx) {
         CarriageContentsAllowList safeAllow = (allow == null) ? CarriageContentsAllowList.EMPTY : allow;
-        PickContext ctx = buildPickContext(worldSeed, carriageIndex, safeAllow);
+        PickContext ctx = buildPickContext(worldSeed, carriageIndex, safeAllow, gateCtx);
         if (ctx.fallbackToDefault) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
@@ -195,7 +211,7 @@ public final class CarriageContentsRegistry {
 
     /** Synchronised pool snapshot + top-level weighted pick. */
     private static synchronized PickContext buildPickContext(
-        long worldSeed, int carriageIndex, CarriageContentsAllowList allow
+        long worldSeed, int carriageIndex, CarriageContentsAllowList allow, GateContext gateCtx
     ) {
         List<CarriageContents> all = allContents();
         if (all.isEmpty()) return PickContext.fallback();
@@ -211,12 +227,29 @@ public final class CarriageContentsRegistry {
             return PickContext.fallback();
         }
 
-        int m = pool.size();
         CarriageContentsWeights weights = CarriageContentsWeights.current();
+
+        // Per-template spawn gate (min/max Diff-Level + phase). Drop out-of-band / out-of-phase
+        // contents before the weighted draw; if that empties the pool, fall back to the ungated pool
+        // so the carriage still gets an interior (a content slot must never be left unfillable).
+        List<CarriageContents> effective = pool;
+        if (gateCtx != null) {
+            List<CarriageContents> gated = new ArrayList<>(pool.size());
+            for (CarriageContents c : pool) {
+                if (gateCtx.allows(weights.gateFor(c.id()))) gated.add(c);
+            }
+            if (!gated.isEmpty()) {
+                effective = gated;
+            } else {
+                warnGateEmptyOnce();
+            }
+        }
+
+        int m = effective.size();
         int[] cumulative = new int[m];
         int total = 0;
         for (int i = 0; i < m; i++) {
-            total += weights.weightFor(pool.get(i).id());
+            total += weights.weightFor(effective.get(i).id());
             cumulative[i] = total;
         }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
@@ -224,13 +257,13 @@ public final class CarriageContentsRegistry {
         CarriageContents picked;
         if (total <= 0) {
             warnAllZeroOnce();
-            picked = pool.get(rng.nextInt(m));
+            picked = effective.get(rng.nextInt(m));
         } else {
             int r = rng.nextInt(total);
-            CarriageContents tail = pool.get(m - 1);
+            CarriageContents tail = effective.get(m - 1);
             CarriageContents found = tail;
             for (int i = 0; i < m; i++) {
-                if (r < cumulative[i]) { found = pool.get(i); break; }
+                if (r < cumulative[i]) { found = effective.get(i); break; }
             }
             picked = found;
         }
@@ -335,6 +368,18 @@ public final class CarriageContentsRegistry {
             ZERO_WARNED = true;
             LOGGER.warn("[DungeonTrain] All carriage contents have weight 0 — falling back to uniform pick. "
                 + "Set at least one contents weight > 0 in config/dungeontrain/user/contents/weights.json.");
+        }
+    }
+
+    /** One-shot warning when min/max-level + phase gates empty the contents pool — once per session. */
+    private static volatile boolean GATE_EMPTY_WARNED = false;
+    private static void warnGateEmptyOnce() {
+        if (GATE_EMPTY_WARNED) return;
+        synchronized (CarriageContentsRegistry.class) {
+            if (GATE_EMPTY_WARNED) return;
+            GATE_EMPTY_WARNED = true;
+            LOGGER.warn("[DungeonTrain] Min/max-level + phase gates emptied the carriage contents pool — "
+                + "falling back to the ungated pool. Check the contents' level bands and phases.");
         }
     }
 
@@ -481,6 +526,7 @@ public final class CarriageContentsRegistry {
         CarriageVariantContentsAllowStore.clearCache();
         CarriageContentsGroupStore.clearCache();
         ZERO_WARNED = false;
+        GATE_EMPTY_WARNED = false;
         MISSING_CHILD_WARNED.clear();
         NESTED_GROUP_WARNED.clear();
     }

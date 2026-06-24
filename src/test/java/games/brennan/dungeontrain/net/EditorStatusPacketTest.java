@@ -24,8 +24,23 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip preserves all fields")
     void roundTrip_carriages() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Carriages", "standard", "standard", "standard", true, 50, true, Collections.emptySet());
+            "Carriages", "standard", "standard", "standard", true, 50,
+            0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
+            true, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
+        assertEquals(original, decoded);
+    }
+
+    @Test
+    @DisplayName("round-trip preserves a non-default spawn gate (min/max level + phase mask)")
+    void roundTrip_gate() {
+        EditorStatusPacket original = new EditorStatusPacket(
+            "Carriages", "nether_market", "nether_market", "nether_market", false, 5,
+            3, 40, 0b0010, true, Collections.emptySet());
+        EditorStatusPacket decoded = roundTrip(original);
+        assertEquals(3, decoded.minLevel());
+        assertEquals(40, decoded.maxLevel());
+        assertEquals(0b0010, decoded.phaseMask());
         assertEquals(original, decoded);
     }
 
@@ -33,7 +48,8 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip preserves the excludedContents set")
     void roundTrip_excludedContents() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Carriages", "standard", "standard", "standard", false, 5, true,
+            "Carriages", "standard", "standard", "standard", false, 5,
+            0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, true,
             Set.of("default", "lava_pool"));
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(2, decoded.excludedContents().size());
@@ -45,7 +61,8 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip keeps model, modelId, and modelName distinct for track-side models")
     void roundTrip_tracks_pathStringAndKindAndNameSurviveSeparately() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Tracks", "track / track2", "track", "track2", false, 5, true, Collections.emptySet());
+            "Tracks", "track / track2", "track", "track2", false, 5,
+            0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, true, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals("Tracks", decoded.category());
         assertEquals("track / track2", decoded.model());
@@ -73,14 +90,16 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip handles pillar and tunnel modelIds + modelNames")
     void roundTrip_pillarsAndTunnels() {
         EditorStatusPacket pillar = roundTrip(new EditorStatusPacket(
-            "Tracks", "pillar / bottom / stone", "pillar_bottom", "stone", false, 3, true, Collections.emptySet()));
+            "Tracks", "pillar / bottom / stone", "pillar_bottom", "stone", false, 3,
+            0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, true, Collections.emptySet()));
         assertEquals("pillar_bottom", pillar.modelId());
         assertEquals("stone", pillar.modelName());
         assertEquals("pillar / bottom / stone", pillar.model());
         assertEquals(3, pillar.weight());
 
         EditorStatusPacket tunnel = roundTrip(new EditorStatusPacket(
-            "Tracks", "tunnel / section / default", "tunnel_section", "default", true, 1, false, Collections.emptySet()));
+            "Tracks", "tunnel / section / default", "tunnel_section", "default", true, 1,
+            0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, false, Collections.emptySet()));
         assertEquals("tunnel_section", tunnel.modelId());
         assertEquals("default", tunnel.modelName());
         assertEquals("tunnel / section / default", tunnel.model());
@@ -92,7 +111,8 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip handles contents (modelId == modelName)")
     void roundTrip_contents() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Contents", "default", "default", "default", false, 7, true, Collections.emptySet());
+            "Contents", "default", "default", "default", false, 7,
+            0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, true, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
         assertEquals("default", decoded.modelName());

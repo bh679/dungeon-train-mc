@@ -434,7 +434,7 @@ final class CarriagePlacerTest {
     @Test
     @DisplayName("Weighted: weight=0 excludes a variant from the RANDOM pool")
     void weighted_zeroWeightExcludes() {
-        CarriageWeights weights = new CarriageWeights(Map.of("windowed", 0));
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of("windowed", 0));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 13L);
         Set<String> seen = new HashSet<>();
         for (int i = 0; i < 10_000; i++) {
@@ -453,7 +453,7 @@ final class CarriagePlacerTest {
         // standard=2, others=1 → expected share of 'standard' is 2/(2+1+1) = 0.5.
         // Over 20_000 samples with a fixed seed, a ±5% tolerance is loose
         // enough to avoid flakes but tight enough to catch a broken mapping.
-        CarriageWeights weights = new CarriageWeights(Map.of(
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of(
                 "standard", 2,
                 "windowed", 1,
                 "flatbed", 1
@@ -475,7 +475,7 @@ final class CarriagePlacerTest {
         // flatbed=0 would exclude it from the random pool, but the separator
         // slot at every (groupSize+1)th index is a fixed visual rhythm and
         // must remain a flatbed regardless of weight.
-        CarriageWeights weights = new CarriageWeights(Map.of("flatbed", 0));
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of("flatbed", 0));
         int groupSize = 3;
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, groupSize, 77L);
         int cycleLen = groupSize + 1;
@@ -493,7 +493,7 @@ final class CarriagePlacerTest {
         // In RANDOM_GROUPED, group slots pick from the non-flatbed pool, which
         // excludes flatbed by construction. This test confirms setting a
         // non-flatbed weight to 0 keeps it out of the group slots too.
-        CarriageWeights weights = new CarriageWeights(Map.of("windowed", 0));
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of("windowed", 0));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM_GROUPED, 3, 0L);
         int cycleLen = 4;
         for (int cycle = 0; cycle < 200; cycle++) {
@@ -509,7 +509,7 @@ final class CarriagePlacerTest {
     @Test
     @DisplayName("Weighted: all-zero pool falls back to uniform (no empty-train crash)")
     void weighted_allZeroFallsBackToUniform() {
-        CarriageWeights weights = new CarriageWeights(Map.of(
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of(
                 "standard", 0,
                 "windowed", 0,
                 "flatbed", 0
@@ -526,7 +526,7 @@ final class CarriagePlacerTest {
     @Test
     @DisplayName("Weighted: same (seed, index, weights) is deterministic across repeat calls")
     void weighted_isDeterministic() {
-        CarriageWeights weights = new CarriageWeights(Map.of("standard", 5, "flatbed", 3));
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of("standard", 5, "flatbed", 3));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 999L);
         String first = CarriagePlacer.variantForIndex(17, cfg, weights).id();
         for (int i = 0; i < 100; i++) {
@@ -540,7 +540,7 @@ final class CarriagePlacerTest {
         // 'ghost' is not a registered variant, so its 50 weight is dead weight
         // with no effect on the pool. The four built-ins all get DEFAULT=1, so
         // the sequence should match EMPTY weights.
-        CarriageWeights weights = new CarriageWeights(Map.of("ghost", 50));
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of("ghost", 50));
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 0xABCL);
         for (int i = 0; i < 200; i++) {
             assertEquals(
@@ -554,7 +554,7 @@ final class CarriagePlacerTest {
     @Test
     @DisplayName("Weighted: clamped weights (>MAX) behave as MAX")
     void weighted_abovemMaxClampsToMax() {
-        CarriageWeights weights = new CarriageWeights(Map.of("standard", CarriageWeights.MAX + 999));
+        CarriageWeights weights = CarriageWeights.ofWeights(Map.of("standard", CarriageWeights.MAX + 999));
         // With standard at MAX(=100) and the others at DEFAULT(=1), standard's
         // share should be ~100/103 ≈ 0.97.
         CarriageGenerationConfig cfg = new CarriageGenerationConfig(CarriageGenerationMode.RANDOM, 4, 7L);

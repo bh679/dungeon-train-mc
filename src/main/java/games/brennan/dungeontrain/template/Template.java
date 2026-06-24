@@ -144,6 +144,16 @@ public sealed interface Template
     int weight();
 
     /**
+     * Spawn gate for this template — the min/max Diff-Level band + worldgen phase set in which it is
+     * eligible. {@link TemplateGate#DEFAULT} (eligible at every level and phase) for kinds without a
+     * gate pool (today: parts). Sourced from the same per-id weight store as {@link #weight()}, so
+     * the train generator can drop out-of-band / out-of-phase templates from the candidate pool
+     * before the weighted pick. Default is {@link TemplateGate#DEFAULT} so kinds added in future stay
+     * NPE-safe.
+     */
+    default TemplateGate gate() { return TemplateGate.DEFAULT; }
+
+    /**
      * Bare variant-name segment for the editor HUD and command splicing —
      * what {@code /dt editor weight <kind> <name> ...} expects. Defaults
      * to {@link #id()} so future kinds without a separate name field stay
@@ -261,6 +271,7 @@ public sealed interface Template
         @Override public TemplateRegistry<Carriage> registry() { return CarriageVariantRegistry.adapter(); }
 
         @Override public int weight() { return CarriageWeights.current().weightFor(variant.id()); }
+        @Override public TemplateGate gate() { return CarriageWeights.current().gateFor(variant.id()); }
         @Override public String variantName() { return variant.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageEditor.stampPlot(level, variant, dims);
@@ -324,6 +335,7 @@ public sealed interface Template
         @Override public TemplateRegistry<Contents> registry() { return CarriageContentsRegistry.adapter(); }
 
         @Override public int weight() { return CarriageContentsWeights.current().weightFor(contents.id()); }
+        @Override public TemplateGate gate() { return CarriageContentsWeights.current().gateFor(contents.id()); }
         @Override public String variantName() { return contents.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageContentsEditor.stampPlot(level, contents, dims);
@@ -468,6 +480,7 @@ public sealed interface Template
         @Override public TemplateRegistry<Track> registry() { return TrackVariantRegistry.adapterForTrack(); }
 
         @Override public int weight() { return TrackVariantWeights.weightFor(TrackKind.TILE, name); }
+        @Override public TemplateGate gate() { return TrackVariantWeights.gateFor(TrackKind.TILE, name); }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             TrackEditor.stampPlot(level, dims);
@@ -531,6 +544,9 @@ public sealed interface Template
 
         @Override public int weight() {
             return TrackVariantWeights.weightFor(TrackPlotLocator.pillarKind(section), name);
+        }
+        @Override public TemplateGate gate() {
+            return TrackVariantWeights.gateFor(TrackPlotLocator.pillarKind(section), name);
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
@@ -604,6 +620,9 @@ public sealed interface Template
         @Override public int weight() {
             return TrackVariantWeights.weightFor(PillarTemplateStore.adjunctKind(adjunct), name);
         }
+        @Override public TemplateGate gate() {
+            return TrackVariantWeights.gateFor(PillarTemplateStore.adjunctKind(adjunct), name);
+        }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             PillarEditor.stampPlot(level, adjunct, dims);
@@ -668,6 +687,9 @@ public sealed interface Template
 
         @Override public int weight() {
             return TrackVariantWeights.weightFor(TrackPlotLocator.tunnelKind(variant), name);
+        }
+        @Override public TemplateGate gate() {
+            return TrackVariantWeights.gateFor(TrackPlotLocator.tunnelKind(variant), name);
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
