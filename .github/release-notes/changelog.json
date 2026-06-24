@@ -2314,6 +2314,23 @@
       "released_at": null
     },
     {
+      "id": "train-villager-unique-names-trades",
+      "version": "0.356.0",
+      "type": "fix",
+      "title": "Train villagers no longer share the same name and trades",
+      "summary": "Villagers riding the train sometimes spawned as identical twins \u2014 the same name and the same trades in every carriage of a given type. Each train villager now gets its own randomly generated name and a freshly rolled set of trades, while still keeping the carriage's profession (an armorer carriage still has an armorer).",
+      "highlights": [
+        "Each train villager gets a unique name",
+        "Trades are rolled fresh per villager instead of repeating",
+        "Shop professions (armorer, toolsmith, leatherworker, \u2026) are preserved"
+      ],
+      "pr": 568,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "nether-core-5000",
       "version": "0.357.0",
       "type": "content",
