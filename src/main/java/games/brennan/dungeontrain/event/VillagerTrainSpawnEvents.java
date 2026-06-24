@@ -66,8 +66,14 @@ public final class VillagerTrainSpawnEvents {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Marker tag: present on a villager once we've rerolled their trades. */
-    private static final String REROLLED_TAG = "dungeontrain_trades_rerolled";
+    /**
+     * Marker tag: present on a villager once we've rerolled their trades. Public
+     * so {@link games.brennan.dungeontrain.train.CarriageContentsPlacer} can strip
+     * it from baked template NBT at spawn time — an editor capture freezes this tag
+     * into the template, which would otherwise make this handler skip the reroll
+     * (line {@code onEntityJoin} gate) and pin every spawn to identical trades.
+     */
+    public static final String REROLLED_TAG = "dungeontrain_trades_rerolled";
 
     /** Vanilla villager max level (Master). */
     private static final int MAX_LEVEL = 5;
