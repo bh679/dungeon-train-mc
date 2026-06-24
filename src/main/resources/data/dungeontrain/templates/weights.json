@@ -7,20 +7,6 @@
   "open": 20,
   "pen": 15,
   "shop": 10,
-  "standard": {
-    "weight": 20,
-    "maxLevel": 0,
-    "phases": [
-      "NETHER",
-      "VOID"
-    ]
-  },
-  "windowed": {
-    "weight": 20,
-    "phases": [
-      "NETHER",
-      "VOID",
-      "END"
-    ]
-  }
+  "standard": 20,
+  "windowed": 20
 }
