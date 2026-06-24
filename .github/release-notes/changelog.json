@@ -2379,6 +2379,21 @@
       "released": true,
       "released_in": "v0.358.0",
       "released_at": "2026-06-24T09:11:01Z"
+    },
+    {
+      "id": "nether-tunnel-no-waterlogged-stairs",
+      "version": "0.358.0",
+      "type": "fix",
+      "title": "No more waterlogged stairs in the Nether tunnel",
+      "summary": "The train tunnel and its pillar staircases no longer come out waterlogged when the track crosses the Nether band. The Nether stays bone-dry \u2014 no stray water seeping into the stone-brick stairs, slabs, or walls of the corridor.",
+      "highlights": [
+        "Tunnel & pillar stairs stay dry through the Nether band"
+      ],
+      "pr": 573,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
