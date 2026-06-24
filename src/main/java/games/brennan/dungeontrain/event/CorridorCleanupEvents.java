@@ -128,11 +128,25 @@ public final class CorridorCleanupEvents {
         int chunkMaxZ = chunkMinZ + 15;
         if (!chunkOverlapsCorridorZ(chunkMinZ, chunkMaxZ, tg.airMinZ(), tg.airMaxZ())) return;
 
-        long key = ChunkPos.asLong(cx, cz);
-        if (CLEANED.contains(key)) return;
-        // offer() onto the tail; drain pops from head so cleanup follows
-        // load order ≈ spatial proximity to the player.
-        PENDING.offer(key);
+        // A chunk's decoration spills basalt into its NEIGHBOURS' corridor during that chunk's feature
+        // step — which can run AFTER a neighbour already loaded, got swept, and was marked CLEANED. The
+        // late spillover then never gets re-swept and surfaces just ahead of where cleanup already passed
+        // (a basalt-deltas column rooted in the chunk ahead bleeding back into the one you're riding into).
+        // Fix: on every corridor-chunk load, clear the CLEANED mark on this chunk AND its 8 neighbours and
+        // (re)enqueue them, so the chunk that just decorated triggers a re-sweep of the cells it spilled
+        // into. The drain (16 chunks/tick — far above the load rate) skips still-unloaded neighbours (they
+        // re-enqueue on their own load), and re-sweeping a clean chunk is a cheap no-op scan.
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int nx = cx + dx, nz = cz + dz;
+                if (TrackGenerator.isShipyardChunk(nx, nz)) continue;
+                int nMinZ = nz << 4;
+                if (!chunkOverlapsCorridorZ(nMinZ, nMinZ + 15, tg.airMinZ(), tg.airMaxZ())) continue;
+                long nKey = ChunkPos.asLong(nx, nz);
+                CLEANED.remove(nKey);
+                PENDING.offer(nKey);
+            }
+        }
     }
 
     @SubscribeEvent
@@ -269,7 +283,7 @@ public final class CorridorCleanupEvents {
                     // back over the air, while cells the template authored as air just stay cleared.
                     if (isTrackRowCell(y, z, g)) trackBuried = true;
                     overworld.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
-                }
+                                }
             }
         }
 
