@@ -2253,6 +2253,18 @@
       "released": true,
       "released_in": "v0.354.0",
       "released_at": "2026-06-23T12:31:19Z"
+    },
+    {
+      "id": "quiet-rule-combine-repair",
+      "version": "0.354.0",
+      "type": "content",
+      "title": "New Quiet Rule: mend worn gear by combining it",
+      "summary": "The Quiet Rules of the Train book can now turn up a new rule hinting that worn-down weapons and armour can be mended by combining two of the same item \u2014 and that the result keeps the stats of whichever piece you place on the left.",
+      "highlights": [],
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
