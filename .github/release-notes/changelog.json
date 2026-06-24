@@ -2296,6 +2296,22 @@
       "released": true,
       "released_in": "v0.356.0",
       "released_at": "2026-06-24T05:31:02Z"
+    },
+    {
+      "id": "nether-core-5000",
+      "version": "0.357.0",
+      "type": "content",
+      "title": "Longer Nether crossing \u2014 real-Nether core now spans 5,000 blocks",
+      "summary": "The real-Nether leg of the journey now runs 5,000 blocks \u2014 the same length as the End-island stretch \u2014 so the train spends a substantial stretch crossing genuine Nether terrain (red sky, netherrack, nether mobs) instead of a brief flicker before the world reassembles into the overworld.",
+      "highlights": [
+        "Real-Nether core span increased from 400 to 5,000 blocks",
+        "Now as long as the End-island stretch of the loop"
+      ],
+      "pr": 0,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
