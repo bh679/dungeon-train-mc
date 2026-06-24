@@ -53,7 +53,7 @@ public final class ZoneProgressEvents {
      * not "just touched the edge". The default core band (~520 blocks of Nether-reading column,
      * larger in dev-test) comfortably contains this depth.
      */
-    private static final int NETHER_DEPTH_BLOCKS = 150;
+    private static final int NETHER_DEPTH_BLOCKS = 100;
 
     private static final ResourceLocation REACHED_VOID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
