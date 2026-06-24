@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
@@ -155,7 +156,14 @@ public final class TunnelPlacer {
     private static void stampTemplateWorldgen(WorldGenLevel level, BlockPos origin,
                                               StructureTemplate template, boolean mirrorX) {
         StructurePlaceSettings settings = new StructurePlaceSettings()
-            .setIgnoreEntities(true);
+            .setIgnoreEntities(true)
+            // Honour the template's dry (waterlogged=false) state — never inherit terrain
+            // water into the stamped stairs/slabs/walls/trapdoors. The default
+            // APPLY_WATERLOGGING re-floods any waterloggable block placed into a cell that
+            // still holds water, which waterlogs tunnel stairs wherever a column's worldgen
+            // water-drain hasn't landed yet (band edges / cross-chunk decoration-order
+            // races). The Nether band must stay bone-dry, so ignore existing fluids.
+            .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
         // No ShipFilterProcessor — no ships at chunkgen.
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
@@ -295,7 +303,10 @@ public final class TunnelPlacer {
             // Skip positions owned by a managed ship so a tunnel stamp that
             // lands in the chunk the train is currently in doesn't wipe
             // out carriage voxels with the template's interior-air cells.
-            .addProcessor(ShipFilterProcessor.INSTANCE);
+            .addProcessor(ShipFilterProcessor.INSTANCE)
+            // Keep the tunnel dry — don't inherit terrain water into waterloggable
+            // blocks (mirrors the worldgen path; see stampTemplateWorldgen).
+            .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), 3);
         anchorAboveFootprint(level, origin);
