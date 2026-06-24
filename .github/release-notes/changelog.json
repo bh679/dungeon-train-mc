@@ -2309,9 +2309,9 @@
       ],
       "pr": 567,
       "date": "2026-06-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.357.0",
+      "released_at": "2026-06-24T07:18:58Z"
     },
     {
       "id": "train-villager-unique-names-trades",
@@ -2326,9 +2326,9 @@
       ],
       "pr": 568,
       "date": "2026-06-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.357.0",
+      "released_at": "2026-06-24T07:18:58Z"
     },
     {
       "id": "nether-core-5000",
@@ -2342,9 +2342,9 @@
       ],
       "pr": 569,
       "date": "2026-06-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.357.0",
+      "released_at": "2026-06-24T07:18:58Z"
     }
   ]
 }
