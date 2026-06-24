@@ -2296,11 +2296,23 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * Release ALL of one train's trailing force-loads — settled <em>and</em>
-     * unsettled — used when the player leaves the train's vicinity. Bypasses
-     * {@link #reconcileForceLoads} (which deliberately keeps unsettled carriages
-     * loaded) because the player is gone: there is nothing left to settle, so
-     * the whole window can drop and Sable can cull the train normally.
+     * Release one train's trailing force-loads when the player leaves the train's
+     * vicinity, so Sable can cull the now-unneeded train normally — with ONE
+     * carve-out: a group that hasn't serialized yet ({@link #shouldRetainOnWalkAway})
+     * stays held, exactly as {@link #reconcileForceLoads} keeps it. Culling an
+     * un-serialized group yields a null-pointer holding entry that
+     * {@code snatchAndLoad} can't revive, so it would respawn FRESH (re-rolled,
+     * player edits lost) instead of reloading intact.
+     *
+     * <p>This bail formerly released <em>everything</em> on the premise that "the
+     * player is gone." That premise is false on a singleplayer pause/resume: the
+     * rider is only transiently flung off the moving train (Sable carry hasn't
+     * re-grabbed them), so they read as "not near" for a few ticks while still
+     * present. Stripping the un-serialized frontier groups in that window culled
+     * them unrecoverably and regenerated the whole train (early-session, when none
+     * have autosaved yet, that is literally every carriage). Retained groups stay
+     * tracked in {@link #FORCELOADED_BY_TRAIN} and release on a later tick once they
+     * serialize (or via {@link #clearSettleTracker} on a train wipe).</p>
      *
      * <p>UUID-keyed (option 2): a tracked ticket whose carriage isn't in the
      * visible train (e.g. a just-spawned backward group force-loaded via
@@ -2308,19 +2320,52 @@ public final class TrainCarriageAppender {
      * is released through the registry handle so no Sable ticket leaks.</p>
      */
     private static void releaseTrainForceLoads(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
-        Set<UUID> current = FORCELOADED_BY_TRAIN.remove(trainId);
+        Set<UUID> current = FORCELOADED_BY_TRAIN.get(trainId);
         if (current == null || current.isEmpty()) return;
         Shipyard shipyard = Shipyards.of(level);
         Map<UUID, Trains.Carriage> byId = new HashMap<>(train.size());
         for (Trains.Carriage c : train) byId.put(c.ship().subLevelId(), c);
         int released = 0;
-        for (UUID id : current) {
+        int keptUnserialized = 0;
+        for (Iterator<UUID> it = current.iterator(); it.hasNext(); ) {
+            UUID id = it.next();
+            // Resolve the live handle (visible wrapper, else registry handle —
+            // same resolution releaseForceLoadByUuid uses) to read its
+            // serialization state. Keep un-serialized groups held + tracked; never
+            // strip them here (see method doc; pause/resume regen, follows #548). A
+            // null handle (stale ticket, no live ship) has nothing to keep resident.
+            Trains.Carriage c = byId.get(id);
+            ManagedShip ship = (c != null) ? c.ship() : findRegistryShipByUuid(trainId, id);
+            if (ship != null && shouldRetainOnWalkAway(ship.hasSerializationPointer())) {
+                keptUnserialized++;
+                continue;
+            }
             if (releaseForceLoadByUuid(shipyard, trainId, id, byId)) released++;
+            it.remove();
         }
-        if (released > 0) {
-            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s) (player left vicinity)",
-                trainId, released);
+        if (current.isEmpty()) FORCELOADED_BY_TRAIN.remove(trainId);
+        if (released > 0 || keptUnserialized > 0) {
+            LOGGER.debug("[DungeonTrain] Force-load window trainId={} released {} trailing sub-level(s), kept {} un-serialized held (player left vicinity)",
+                trainId, released, keptUnserialized);
         }
+    }
+
+    /**
+     * Walk-away release recoverability guard (pure core): a resolvable carriage must
+     * stay force-loaded even though the player has left the train's vicinity iff it
+     * has not yet serialized to disk ({@code !hasSerializationPointer}). Releasing an
+     * un-serialized group would let Sable cull it into a null-pointer holding entry
+     * that {@code snatchAndLoad} can't revive — the carriage would then respawn fresh
+     * (re-rolled, player edits lost) instead of reloading intact. Mirrors the guard
+     * {@link #reconcileForceLoads} applies to the sliding window (option 2).
+     *
+     * <p>The {@code ship != null} stale-ticket check stays at the call site (a ticket
+     * with no live ship has nothing to keep resident). This boolean core is the
+     * serialization decision only — package-private + pure for unit testing alongside
+     * {@link #decideEdgeAction} / {@link #subLevelDeltaFor}.</p>
+     */
+    static boolean shouldRetainOnWalkAway(boolean hasSerializationPointer) {
+        return !hasSerializationPointer;
     }
 
     /**
