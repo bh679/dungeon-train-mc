@@ -2,6 +2,7 @@
   "schemaVersion": 4,
   "block": "minecraft:armor_stand",
   "category": "armor_stand",
+  "fillMax": 2,
   "entries": [
     { "id": "minecraft:leather_helmet", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
     { "id": "minecraft:leather_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },

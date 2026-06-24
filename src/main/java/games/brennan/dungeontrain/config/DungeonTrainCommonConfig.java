@@ -128,14 +128,14 @@ public final class DungeonTrainCommonConfig {
     /** Blocks of real Nether world-gen at the centre of the band. */
     public static final int MIN_NETHER_CORE_HOLD_BLOCKS = 0;
     public static final int MAX_NETHER_CORE_HOLD_BLOCKS = 100_000_000;
-    public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 400;
+    public static final int DEFAULT_NETHER_CORE_HOLD_BLOCKS = 5000;
     /**
-     * Dev-test preset for the real-Nether core span — expanded to 2000 blocks (vs the 400-block release
+     * Dev-test preset for the real-Nether core span — a short 1000-block core (vs the 5000-block release
      * default) so the full sweep of Nether biomes is fast to walk through in-game. Used automatically on
      * any non-{@code main}/non-release build (see {@link #isNetherDevTestMode()}); release builds keep the
      * configured value. The multi-biome core itself ships to release — only this length is dev-gated.
      */
-    public static final int DEVTEST_NETHER_CORE_HOLD_BLOCKS = 2000;
+    public static final int DEVTEST_NETHER_CORE_HOLD_BLOCKS = 1000;
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.IntValue DEFAULT_PLAYER_MOB_SPAWN;
@@ -307,7 +307,7 @@ public final class DungeonTrainCommonConfig {
                         MIN_NETHER_CORE_FADE_BLOCKS, MAX_NETHER_CORE_FADE_BLOCKS);
         ModConfigSpec.IntValue netherCoreHoldBlocks = b
                 .comment("Blocks of real Nether world-gen (sampled from the Nether dimension) at the centre of the",
-                        "band. Default 400.")
+                        "band. Default 5000.")
                 .defineInRange("netherCoreHoldBlocks", DEFAULT_NETHER_CORE_HOLD_BLOCKS,
                         MIN_NETHER_CORE_HOLD_BLOCKS, MAX_NETHER_CORE_HOLD_BLOCKS);
         b.pop();
@@ -472,7 +472,7 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_CORE_FADE_BLOCKS.get() : DEFAULT_NETHER_CORE_FADE_BLOCKS;
     }
 
-    /** Real-Nether core span (blocks); dev-test preset (2000) on branch builds, else config. */
+    /** Real-Nether core span (blocks); dev-test preset (1000) on branch builds, else config. */
     public static int getNetherCoreHoldBlocks() {
         if (isNetherDevTestMode()) return DEVTEST_NETHER_CORE_HOLD_BLOCKS;
         return isLoaded() ? NETHER_CORE_HOLD_BLOCKS.get() : DEFAULT_NETHER_CORE_HOLD_BLOCKS;

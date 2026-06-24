@@ -49,6 +49,7 @@
     "2,4,4": { "lockId": 3, "states": ["minecraft:oak_fence[east=true,north=false,south=true,waterlogged=false,west=true]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "2,3,4": { "lockId": 3, "states": ["minecraft:oak_fence[east=true,north=false,south=true,waterlogged=false,west=true]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
     "1,4,4": { "lockId": 3, "states": ["minecraft:oak_fence[east=true,north=false,south=true,waterlogged=false,west=true]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
-    "1,3,4": { "lockId": 3, "states": ["minecraft:oak_fence[east=true,north=false,south=true,waterlogged=false,west=true]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}] }
+    "1,3,4": { "lockId": 3, "states": ["minecraft:oak_fence[east=true,north=false,south=true,waterlogged=false,west=true]", {"state": "minecraft:command_block[conditional=false,facing=north]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}}] },
+    "3,0,1": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:villager", "weight": 162}, {"entity": "minecraft:zombie_villager", "difficulty": {"min": 16, "max": 16}}]
   }
 }
