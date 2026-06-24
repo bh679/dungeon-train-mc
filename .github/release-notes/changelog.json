@@ -2363,6 +2363,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "new-carriage-variants",
+      "version": "0.358.0",
+      "type": "content",
+      "title": "New carriage variants",
+      "summary": "Five new carriages join the train: two additional statue carriages, a second worship carriage, and two new shop carriages (a smithing variant and a leatherworker variant). Also added a wither barrel loot table.",
+      "highlights": [],
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
