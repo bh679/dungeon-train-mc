@@ -57,6 +57,10 @@
     {
       "id": "huskskel",
       "weight": 2
+    },
+    {
+      "id": "witch",
+      "weight": 1
     }
   ]
 }
