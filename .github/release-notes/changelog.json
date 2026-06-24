@@ -2394,6 +2394,21 @@
       "released": true,
       "released_in": "v0.359.0",
       "released_at": "2026-06-24T10:05:25Z"
+    },
+    {
+      "id": "nether-track-basalt-resweep",
+      "version": "0.359.0",
+      "type": "fix",
+      "title": "No more basalt on the Nether train tracks",
+      "summary": "Crossing the Nether band, basalt from the basalt-delta stretches could still end up on the train tracks \u2014 sitting on the rails, the bed, or the centre line \u2014 and it was most stubborn right at the leading edge, appearing on track that had just generated ahead of you. The corridor cleanup now catches that late-arriving basalt and re-lays the real track over anything it buried, so the tunnel stays clear the whole way through.",
+      "highlights": [
+        "Stray basalt no longer ends up on the rails or bed as you ride through the Nether band"
+      ],
+      "pr": 576,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
