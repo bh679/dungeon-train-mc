@@ -89,6 +89,12 @@ public final class EditorTypeMenuRenderer {
      */
     public enum CellKind {
         NONE, HEADER, NAME, WEIGHT, NEW, CATEGORY, TYPE_TAB, SUB_VARIANT,
+        /** Spawn-gate min Diff-Level cell — click +1, shift-click -1. */
+        MIN_LEVEL,
+        /** Spawn-gate max Diff-Level cell — click +1, shift-click -1 (cycles through "all"). */
+        MAX_LEVEL,
+        /** Spawn-gate phase cell — {@code slotIdx} = phase ordinal (0..3); click toggles that phase. */
+        PHASE,
         /** Package row — clicking activates that package. */
         PKG_NAME,
         /** Package Save cell — falls through to the X-menu's flat package screen for typing. */
@@ -143,6 +149,14 @@ public final class EditorTypeMenuRenderer {
     static final double PAD_X = 0.10;
     /** Fraction of panel width allocated to the weight cell on rows that have one. */
     static final double WEIGHT_CELL_FRACTION = 0.25;
+    /**
+     * Fraction of panel width allocated to the gate area (weight | min | max | phase) on rows that
+     * carry a per-template spawn gate. Wider than {@link #WEIGHT_CELL_FRACTION} to fit the four
+     * cells; the name fills the remaining {@code 1 - GATE_AREA_FRACTION}.
+     */
+    static final double GATE_AREA_FRACTION = 0.62;
+    /** Phase-cell letter labels, indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
+    static final String[] PHASE_LETTERS = {"O", "N", "V", "E"};
     /** Visible gap (panel-local units) between the per-plot panel and a companion type menu. */
     static final double COMPANION_GAP = 0.15;
     /** Minimum width of a collapsed tab column — keeps single-character type names readable. */
@@ -181,6 +195,11 @@ public final class EditorTypeMenuRenderer {
     private static final int HEADER_COLOR = 0xFFFFEEBB;
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
+    /** Light-blue text for the min/max spawn-level cells, distinct from the warm weight colour. */
+    private static final int LEVEL_COLOR = 0xFFBBD0FF;
+    /** Phase letter colours — bright green when the phase is enabled, dim grey when off. */
+    private static final int PHASE_ON_COLOR = 0xFF66FF66;
+    private static final int PHASE_OFF_COLOR = 0xFF777777;
     /** Bright green text for the "+ New" label so it stands out from variant rows. */
     private static final int NEW_COLOR = 0xFFAAFFAA;
     /** Slightly dimmed text for collapsed tabs so the expanded tab reads as primary. */
@@ -378,12 +397,18 @@ public final class EditorTypeMenuRenderer {
         double newW = font.width(NEW_LABEL) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
+        boolean anyGate = false;
         for (EditorTypeMenusPacket.Variant v : menu.variants()) {
             double w = font.width(v.name()) * TEXT_SCALE + 2 * PAD_X;
             if (w > maxNameW) maxNameW = w;
             if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT) anyWeight = true;
+            if (v.weight() != EditorPlotLabelsPacket.NO_WEIGHT
+                && v.phaseMask() != EditorTypeMenusPacket.Variant.NO_GATE) anyGate = true;
         }
-        double nameSpaceFraction = anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0;
+        // Reserve the gate area (weight|min|max|phase) when any row carries a gate, else just the
+        // weight cell — so the longest name still fits in the remaining fraction.
+        double nameSpaceFraction = anyGate ? (1.0 - GATE_AREA_FRACTION)
+            : (anyWeight ? (1.0 - WEIGHT_CELL_FRACTION) : 1.0);
         double scaledForName = maxNameW / nameSpaceFraction;
         return Math.max(MIN_HALF_W * 2.0, Math.max(Math.max(headerW, newW), scaledForName));
     }
@@ -811,14 +836,20 @@ public final class EditorTypeMenuRenderer {
         if (spanOffset != 0) return Hovered.NONE;
         if (hitX < colLeft || hitX > colRight) return Hovered.NONE;
         boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
-        double colW = colRight - colLeft;
-        if (hasWeight) {
-            double weightCellLeft = colRight - colW * WEIGHT_CELL_FRACTION;
-            if (hitX >= weightCellLeft) {
-                return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
-            }
-        }
-        return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (!hasWeight) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+
+        RightCells rc = rightCells(colLeft, colRight, true, /*allowGate*/ true, variant.phaseMask());
+        if (hitX < rc.nameRight()) return new Hovered(menuIdx, variantIdx, CellKind.NAME);
+        if (!rc.showGate()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
+        if (hitX < rc.weightR()) return new Hovered(menuIdx, variantIdx, CellKind.WEIGHT);
+        if (hitX < rc.minR()) return new Hovered(menuIdx, variantIdx, CellKind.MIN_LEVEL);
+        if (hitX < rc.maxR()) return new Hovered(menuIdx, variantIdx, CellKind.MAX_LEVEL);
+        // Phase cell — resolve which of the 4 letters was hit.
+        double subW = rc.phaseSubW(colRight);
+        int slot = subW > 0 ? (int) ((hitX - rc.maxR()) / subW) : 0;
+        if (slot < 0) slot = 0;
+        if (slot >= PHASE_LETTERS.length) slot = PHASE_LETTERS.length - 1;
+        return new Hovered(menuIdx, variantIdx, CellKind.PHASE, slot);
     }
 
 
@@ -907,13 +938,11 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
 
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
-            double weightCellLeft = halfW - (halfW * 2.0) * WEIGHT_CELL_FRACTION;
-            double nameRight = hasWeight ? weightCellLeft : halfW;
+            CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
 
+            // Companion (sub-variant) rows carry no per-template spawn gate — allowGate=false.
             drawVariantRow(ps, buffer, font, variant, -halfW, rowBottom, halfW, rowTop,
-                rowCY, weightCellLeft, nameRight, hasWeight,
-                hovered.variantIdx == vi && hovered.cell == CellKind.NAME,
-                hovered.variantIdx == vi && hovered.cell == CellKind.WEIGHT,
+                rowCY, hasWeight, false, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
         }
 
@@ -1044,7 +1073,6 @@ public final class EditorTypeMenuRenderer {
         String activeModelId = activeModelId();
         String activeModelName = activeModelName();
         double expColW = expColRight - expColLeft;
-        double weightCellLeft = expColRight - expColW * WEIGHT_CELL_FRACTION;
 
         double availableSubW = availableSubVariantWidth(menu, font);
         // Cumulative top of the next variant — shifts down by the variant's
@@ -1062,12 +1090,11 @@ public final class EditorTypeMenuRenderer {
             drawQuad(ps, buffer, expColLeft, rowTop - 0.005, expColRight, rowTop + 0.005, ROW_SEP_COLOR);
 
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
-            double nameRight = hasWeight ? weightCellLeft : expColRight;
+            CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
 
+            // Nav (top-level template) rows carry the per-template spawn gate — allowGate=true.
             drawVariantRow(ps, buffer, font, variant, expColLeft, rowBottom, expColRight, rowTop,
-                rowCY, weightCellLeft, nameRight, hasWeight,
-                hovered.variantIdx == vi && hovered.cell == CellKind.NAME,
-                hovered.variantIdx == vi && hovered.cell == CellKind.WEIGHT,
+                rowCY, hasWeight, true, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
 
             // Sub-variants — horizontal cells across one or more lines.
@@ -1150,14 +1177,51 @@ public final class EditorTypeMenuRenderer {
      * (panel-local) — companion menus pass the full panel width, nav menus
      * pass the expanded column's bounds.
      */
+    /** Right-area cell boundaries for a variant row (name | weight | min | max | phase). */
+    private record RightCells(boolean hasWeight, boolean showGate,
+                              double nameRight, double weightL, double weightR,
+                              double minR, double maxR) {
+        /** Sub-cell width of one phase letter within the phase cell [{@code maxR}, {@code rowRight}]. */
+        double phaseSubW(double rowRight) { return (rowRight - maxR) / PHASE_LETTERS.length; }
+    }
+
+    /**
+     * Compute the right-hand cell layout for a variant row. No weight ⇒ the whole row is the name
+     * cell. Weight but no gate ⇒ the right {@link #WEIGHT_CELL_FRACTION} is the weight cell (legacy
+     * behaviour). Gate present ⇒ the right {@link #GATE_AREA_FRACTION} splits into
+     * weight | min | max | phase. A {@code phaseMask} of {@link EditorTypeMenusPacket.Variant#NO_GATE}
+     * (or {@code allowGate == false}) keeps the legacy weight-only layout.
+     */
+    private static RightCells rightCells(double rowLeft, double rowRight, boolean hasWeight,
+                                         boolean allowGate, int phaseMask) {
+        if (!hasWeight) {
+            return new RightCells(false, false, rowRight, rowRight, rowRight, rowRight, rowRight);
+        }
+        double colW = rowRight - rowLeft;
+        boolean showGate = allowGate && phaseMask != EditorTypeMenusPacket.Variant.NO_GATE;
+        if (!showGate) {
+            double wl = rowRight - colW * WEIGHT_CELL_FRACTION;
+            return new RightCells(true, false, wl, wl, rowRight, rowRight, rowRight);
+        }
+        double gateLeft = rowRight - colW * GATE_AREA_FRACTION;
+        // weight | min | max = 1 unit each; phase = 1.6 units (room for 4 letters).
+        double unit = (rowRight - gateLeft) / 4.6;
+        double weightR = gateLeft + unit;
+        double minR = weightR + unit;
+        double maxR = minR + unit;
+        return new RightCells(true, true, gateLeft, gateLeft, weightR, minR, maxR);
+    }
+
     private static void drawVariantRow(
         PoseStack ps, MultiBufferSource buffer, Font font,
         EditorTypeMenusPacket.Variant variant,
         double rowLeft, double rowBottom, double rowRight, double rowTop,
-        double rowCY, double weightCellLeft, double nameRight,
-        boolean hasWeight, boolean nameHover, boolean weightHover,
+        double rowCY, boolean hasWeight, boolean allowGate,
+        CellKind hoverCell, int hoverSlot,
         String activeModelId, String activeModelName
     ) {
+        RightCells rc = rightCells(rowLeft, rowRight, hasWeight, allowGate, variant.phaseMask());
+
         // Provenance tint — orange for imported variants (highest priority),
         // blue for user-authored, no tint for bundled.
         if (variant.isImported()) {
@@ -1177,24 +1241,57 @@ public final class EditorTypeMenuRenderer {
                 rowRight - 0.005, rowTop - 0.005, ACTIVE_ROW_COLOR);
         }
 
-        // Hover highlight.
-        if (nameHover) {
-            drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
-                nameRight - 0.005, rowTop - 0.005, HOVER_COLOR);
-        }
-        if (weightHover) {
-            drawQuad(ps, buffer, weightCellLeft + 0.005, rowBottom + 0.005,
-                rowRight - 0.005, rowTop - 0.005, HOVER_COLOR);
+        // Hover highlight — per cell.
+        switch (hoverCell) {
+            case NAME -> drawQuad(ps, buffer, rowLeft + 0.005, rowBottom + 0.005,
+                rc.nameRight() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            case WEIGHT -> drawQuad(ps, buffer, rc.weightL() + 0.005, rowBottom + 0.005,
+                rc.weightR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            case MIN_LEVEL -> {
+                if (rc.showGate()) drawQuad(ps, buffer, rc.weightR() + 0.005, rowBottom + 0.005,
+                    rc.minR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            case MAX_LEVEL -> {
+                if (rc.showGate()) drawQuad(ps, buffer, rc.minR() + 0.005, rowBottom + 0.005,
+                    rc.maxR() - 0.005, rowTop - 0.005, HOVER_COLOR);
+            }
+            case PHASE -> {
+                if (rc.showGate() && hoverSlot >= 0 && hoverSlot < PHASE_LETTERS.length) {
+                    double subW = rc.phaseSubW(rowRight);
+                    double l = rc.maxR() + hoverSlot * subW;
+                    drawQuad(ps, buffer, l + 0.005, rowBottom + 0.005,
+                        l + subW - 0.005, rowTop - 0.005, HOVER_COLOR);
+                }
+            }
+            default -> { }
         }
 
         // Name (centred within its cell).
-        double nameCX = (rowLeft + nameRight) / 2.0;
+        double nameCX = (rowLeft + rc.nameRight()) / 2.0;
         drawCenteredText(ps, buffer, font, variant.name(), nameCX, rowCY, NAME_COLOR);
 
-        if (hasWeight) {
-            double weightCX = (weightCellLeft + rowRight) / 2.0;
-            drawCenteredText(ps, buffer, font, "×" + variant.weight(),
-                weightCX, rowCY, WEIGHT_COLOR);
+        if (!rc.hasWeight()) return;
+
+        // Weight cell.
+        double weightCX = (rc.weightL() + rc.weightR()) / 2.0;
+        drawCenteredText(ps, buffer, font, "×" + variant.weight(), weightCX, rowCY, WEIGHT_COLOR);
+
+        if (!rc.showGate()) return;
+
+        // Min / Max Diff-Level cells.
+        double minCX = (rc.weightR() + rc.minR()) / 2.0;
+        drawCenteredText(ps, buffer, font, "≥" + variant.minLevel(), minCX, rowCY, LEVEL_COLOR);
+        double maxCX = (rc.minR() + rc.maxR()) / 2.0;
+        String maxLabel = variant.maxLevel() < 0 ? "≤∞" : "≤" + variant.maxLevel();
+        drawCenteredText(ps, buffer, font, maxLabel, maxCX, rowCY, LEVEL_COLOR);
+
+        // Phase letters — one per phase, bright when enabled.
+        double subW = rc.phaseSubW(rowRight);
+        for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
+            boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+            double cx = rc.maxR() + (slot + 0.5) * subW;
+            drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot], cx, rowCY,
+                on ? PHASE_ON_COLOR : PHASE_OFF_COLOR);
         }
     }
 

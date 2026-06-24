@@ -6,7 +6,9 @@ import games.brennan.dungeontrain.track.PillarAdjunct;
 import games.brennan.dungeontrain.track.PillarSection;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
@@ -87,9 +89,11 @@ public final class EditorTypeMenus {
                 for (CarriageVariant v : variants) {
                     EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                         CarriageTemplateStore.fileForId(v.id()));
+                    TemplateGate g = weights.gateFor(v.id());
                     rows.add(new EditorTypeMenusPacket.Variant(
-                        v.id(), weights.weightFor(v.id()), cat, v.id(), v.id(),
-                        p.isUser(), p.isImported()));
+                        v.id(), weights.weightFor(v.id()),
+                        g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                        cat, v.id(), v.id(), p.isUser(), p.isImported()));
                 }
                 out.add(new EditorTypeMenusPacket.Menu(
                     anchor, "Carriages", rows, false,
@@ -158,9 +162,11 @@ public final class EditorTypeMenus {
         for (CarriageContents c : topLevel) {
             EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 CarriageContentsStore.fileForId(c.id()));
+            TemplateGate g = weights.gateFor(c.id());
             rows.add(new EditorTypeMenusPacket.Variant(
-                c.id(), weights.weightFor(c.id()), cat, c.id(), c.id(),
-                p.isUser(), p.isImported(),
+                c.id(), weights.weightFor(c.id()),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                cat, c.id(), c.id(), p.isUser(), p.isImported(),
                 subVariantsFor(c.id(), cat)));
         }
         List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
@@ -211,9 +217,11 @@ public final class EditorTypeMenus {
         for (String name : names) {
             EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
+            TemplateGate g = TrackVariantWeights.gateFor(kind, name);
             rows.add(new EditorTypeMenusPacket.Variant(
-                name, TrackVariantWeights.weightFor(kind, name), cat, modelId, name,
-                p.isUser(), p.isImported()));
+                name, TrackVariantWeights.weightFor(kind, name),
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                cat, modelId, name, p.isUser(), p.isImported()));
         }
         out.add(new EditorTypeMenusPacket.Menu(
             anchor, typeName, rows, false,

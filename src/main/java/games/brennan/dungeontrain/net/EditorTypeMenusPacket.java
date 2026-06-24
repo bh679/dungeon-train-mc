@@ -137,6 +137,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
     public record Variant(
         String name,
         int weight,
+        int minLevel,
+        int maxLevel,
+        int phaseMask,
         String category,
         String modelId,
         String modelName,
@@ -144,10 +147,30 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         boolean isImported,
         List<Variant> subVariants
     ) {
-        /** Convenience constructor for variants with no children — keeps every existing call site compiling unchanged. */
+        /**
+         * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
+         * parts) — the renderer draws no level/phase cells for it. Real gates always have ≥1 phase
+         * bit set after normalisation, so 0 is a safe sentinel.
+         */
+        public static final int NO_GATE = 0;
+
+        /** Convenience: no gate + no children — keeps the original call sites compiling unchanged. */
         public Variant(String name, int weight, String category, String modelId, String modelName,
                        boolean isUser, boolean isImported) {
-            this(name, weight, category, modelId, modelName, isUser, isImported, List.of());
+            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, List.of());
+        }
+
+        /** Convenience: no gate, with children. */
+        public Variant(String name, int weight, String category, String modelId, String modelName,
+                       boolean isUser, boolean isImported, List<Variant> subVariants) {
+            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, subVariants);
+        }
+
+        /** Convenience: top-level template row carrying a spawn gate, no children. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, List.of());
         }
     }
 
@@ -198,6 +221,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
     private static void encodeVariant(FriendlyByteBuf buf, Variant v) {
         buf.writeUtf(v.name(), 128);
         buf.writeVarInt(v.weight());
+        buf.writeVarInt(v.minLevel());
+        buf.writeVarInt(v.maxLevel());
+        buf.writeVarInt(v.phaseMask());
         buf.writeUtf(v.category(), 32);
         buf.writeUtf(v.modelId(), 64);
         buf.writeUtf(v.modelName(), 64);
@@ -212,6 +238,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
     private static Variant decodeVariant(FriendlyByteBuf buf) {
         String name = buf.readUtf(128);
         int weight = buf.readVarInt();
+        int minLevel = buf.readVarInt();
+        int maxLevel = buf.readVarInt();
+        int phaseMask = buf.readVarInt();
         String category = buf.readUtf(32);
         String modelId = buf.readUtf(64);
         String modelName = buf.readUtf(64);
@@ -222,7 +251,8 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         for (int k = 0; k < sn; k++) {
             subs.add(decodeVariant(buf));
         }
-        return new Variant(name, weight, category, modelId, modelName, isUser, isImported, subs);
+        return new Variant(name, weight, minLevel, maxLevel, phaseMask,
+            category, modelId, modelName, isUser, isImported, subs);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
