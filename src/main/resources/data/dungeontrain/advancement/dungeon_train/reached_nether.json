@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:netherrack" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_nether.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.reached_nether.description" },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": { "actionId": "reached_nether" }
+    }
+  },
+  "requirements": [["reached"]]
+}
