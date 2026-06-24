@@ -2345,6 +2345,24 @@
       "released": true,
       "released_in": "v0.357.0",
       "released_at": "2026-06-24T07:18:58Z"
+    },
+    {
+      "id": "new-shop-maze-library-feature-carriages",
+      "version": "0.357.0",
+      "type": "content",
+      "title": "New carriages: shops, library rooms, maze rooms, and shrines",
+      "summary": "A fresh batch of carriages now rides the train. Two new villager shops (an archer stall and a cleric), three new maze rooms, two new library cars, and four landmark feature carriages \u2014 a statue, a grave, a worship shrine, and a wither room \u2014 all appear as variants of their existing carriage types.",
+      "highlights": [
+        "New shop carriages: archer and cleric",
+        "New maze rooms: two layouts plus a doors room",
+        "New library carriages: a two-lane library and a book-door room",
+        "New feature carriages: statue, grave, worship shrine, and wither room"
+      ],
+      "pr": 570,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
