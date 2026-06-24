@@ -1,13 +1,16 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.track.TrackGeometry;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -108,5 +111,57 @@ final class CorridorCleanupEventsTest {
             CorridorCleanupEvents.isNetherClutter(block.defaultBlockState()),
             () -> block + " must NOT be treated as Nether clutter"
         );
+    }
+
+    @Test
+    @DisplayName("drainBudget — scales with the backlog, capped at MAX_CHUNKS_PER_TICK (16)")
+    void drainBudgetClampsToCap() {
+        assertEquals(0, CorridorCleanupEvents.drainBudget(0), "empty queue → no work");
+        assertEquals(1, CorridorCleanupEvents.drainBudget(1), "tiny backlog drains fully");
+        assertEquals(15, CorridorCleanupEvents.drainBudget(15), "below the cap drains fully");
+        assertEquals(16, CorridorCleanupEvents.drainBudget(16), "at the cap drains fully");
+        assertEquals(16, CorridorCleanupEvents.drainBudget(17), "above the cap is clamped to the cap");
+        assertEquals(16, CorridorCleanupEvents.drainBudget(10_000), "a huge backlog stays bounded");
+        assertEquals(0, CorridorCleanupEvents.drainBudget(-3), "defensive: negative → 0");
+    }
+
+    @Test
+    @DisplayName("isTrackRowCell — bed/rail row within the track footprint flags the template re-stamp")
+    void isTrackRowCellMatchesTrackFootprint() {
+        // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4. Reported basalt: bedY 82 Z2, railY 84 Z2.
+        TrackGeometry g = new TrackGeometry(82, 83, 0, 4);
+
+        // Bed row (bedY) across the whole track Z-span → a track cell (flags the real-template re-stamp).
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 2, g), "bed centre (the first reported cell) is a track cell");
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 0, g), "bed edge is a track cell");
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(82, 4, g), "bed edge is a track cell");
+        // Rail row (railY) across the track Z-span → a track cell (the template owns the whole rail row).
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(83, 1, g), "rail-row cell is a track cell");
+        assertTrue(CorridorCleanupEvents.isTrackRowCell(83, 2, g), "rail-row centre is still a track cell");
+
+        // Off the track footprint → not a track cell (those clutter cells are cleared to air).
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(82, -1, g), "pad beside the bed is not a track cell");
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(82, 5, g), "pad beside the bed is not a track cell");
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(84, 2, g), "above the rail row is not a track cell");
+        assertFalse(CorridorCleanupEvents.isTrackRowCell(81, 2, g), "below the bed row is not a track cell");
+    }
+
+    @Test
+    @DisplayName("chunkOverlapsCorridorZ — the pad-only chunk near a chunk boundary still overlaps")
+    void chunkOverlapsCorridorZcoversPad() {
+        // Corridor airspace z = [-3..9] (e.g. track z=0..6 widened ±3) — straddles the z=-1 / z=0 seam.
+        int zMin = -3, zMax = 9;
+        // Chunk z=0 spans [0..15] — holds the track + most of the corridor.
+        assertTrue(CorridorCleanupEvents.chunkOverlapsCorridorZ(0, 15, zMin, zMax),
+            "the track chunk overlaps the corridor");
+        // Chunk z=-1 spans [-16..-1] — holds ONLY the outer pad (z=-3..-1), no track row. This is the
+        // chunk the old track-Z prefilter dropped; it must now be enqueued so its pad basalt is swept.
+        assertTrue(CorridorCleanupEvents.chunkOverlapsCorridorZ(-16, -1, zMin, zMax),
+            "a pad-only chunk near the boundary must still overlap");
+        // Chunks fully outside the corridor span are correctly skipped.
+        assertFalse(CorridorCleanupEvents.chunkOverlapsCorridorZ(16, 31, zMin, zMax),
+            "a chunk past the corridor does not overlap");
+        assertFalse(CorridorCleanupEvents.chunkOverlapsCorridorZ(-32, -17, zMin, zMax),
+            "a chunk before the corridor does not overlap");
     }
 }
