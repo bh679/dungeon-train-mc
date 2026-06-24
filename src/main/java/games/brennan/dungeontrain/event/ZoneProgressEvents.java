@@ -47,6 +47,14 @@ public final class ZoneProgressEvents {
     /** Zone-scan cadence (ticks) — matches the other per-level advancement scans. */
     private static final int SCAN_PERIOD_TICKS = 20;
 
+    /**
+     * How far (blocks) past the near edge of the Nether-core band the player must be before
+     * {@code reached_nether} is granted — so the advancement reads as "deep in the Nether",
+     * not "just touched the edge". The default core band (~520 blocks of Nether-reading column,
+     * larger in dev-test) comfortably contains this depth.
+     */
+    private static final int NETHER_DEPTH_BLOCKS = 300;
+
     private static final ResourceLocation REACHED_VOID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/reached_void");
     private static final ResourceLocation REACHED_END_ISLANDS =
@@ -66,7 +74,14 @@ public final class ZoneProgressEvents {
             if (player.isSpectator()) continue;
 
             // Nether band — a separate phase of the cycle from the void/End classification below.
-            if (NetherBand.isInNetherBiome(level, player.getBlockX())) {
+            // Only grant once the player is well INSIDE the Nether (not the moment they cross the
+            // edge): the train travels +X, so the player enters the contiguous Nether-core band
+            // from its -X side; requiring the column NETHER_DEPTH_BLOCKS behind them to also read
+            // as Nether proves they are at least that deep. The band is a single trapezoid, so two
+            // in-band samples imply everything between is in-band too.
+            int px = player.getBlockX();
+            if (NetherBand.isInNetherBiome(level, px)
+                && NetherBand.isInNetherBiome(level, px - NETHER_DEPTH_BLOCKS)) {
                 ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "reached_nether");
             }
 
