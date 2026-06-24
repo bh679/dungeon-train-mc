@@ -2433,9 +2433,9 @@
         "Huskskel chests now use randomised loot pools (weapons, armour, food)"
       ],
       "date": "2026-06-24",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.360.0",
+      "released_at": "2026-06-24T12:09:05Z"
     }
   ]
 }
