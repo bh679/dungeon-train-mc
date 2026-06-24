@@ -95,6 +95,22 @@ public final class DifficultyApplier {
      *         tier returned null, etc.)
      */
     public static boolean apply(Mob mob, int carriageIndex, RandomSource rng, boolean applyEffects) {
+        return apply(mob, carriageIndex, rng, applyEffects, false);
+    }
+
+    /**
+     * As {@link #apply(Mob, int, RandomSource, boolean)}, but {@code scaleStatsByLevel}
+     * opts into difficulty-scaled item stats: when {@code true}, each rolled equipment
+     * piece additionally gets a flat
+     * {@link ItemStatLevelScaling#primaryStatBonus primary-stat bonus} for the current
+     * tier. PlayerMobs pass {@code true}; regular carriage mobs pass {@code false} so
+     * their gear keeps the plain AIS roll.
+     *
+     * @return true if any modification was made, false if no-op (registry empty,
+     *         tier returned null, etc.)
+     */
+    public static boolean apply(Mob mob, int carriageIndex, RandomSource rng,
+                                boolean applyEffects, boolean scaleStatsByLevel) {
         int tierIndex = DifficultyProgression.tierForTravelled(carriageIndex);
         // Tier 0 = vanilla baseline; no equipment, effects, or enchantments.
         // Real progression starts at tier 1 once the player has actually
@@ -102,16 +118,19 @@ public final class DifficultyApplier {
         DifficultyTier tier = ProceduralTiers.tierFor(tierIndex);
         if (tier == null) return false;
 
+        // 0 disables the per-tier stat bonus (regular mobs); PlayerMobs scale by tier.
+        int statScalingTier = scaleStatsByLevel ? tierIndex : 0;
+
         boolean armorOk = supportsArmor(mob);
         ServerLevel serverLevel = mob.level() instanceof ServerLevel sl ? sl : null;
         HolderLookup.Provider registries = serverLevel != null ? serverLevel.registryAccess() : null;
 
         if (armorOk) {
-            applyArmorSlot(mob, EquipmentSlot.HEAD,  tier.armor().helmet(),     tier.armor().slotChance(), tier.enchant(), registries, rng);
-            applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng);
-            applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng);
-            applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng);
-            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng);
+            applyArmorSlot(mob, EquipmentSlot.HEAD,  tier.armor().helmet(),     tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
+            applyArmorSlot(mob, EquipmentSlot.CHEST, tier.armor().chestplate(), tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
+            applyArmorSlot(mob, EquipmentSlot.LEGS,  tier.armor().leggings(),   tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
+            applyArmorSlot(mob, EquipmentSlot.FEET,  tier.armor().boots(),      tier.armor().slotChance(), tier.enchant(), registries, rng, statScalingTier);
+            applyWeaponSlot(mob, tier.weapon().mainhand(), tier.weapon().chance(), tier.enchant(), registries, rng, statScalingTier);
         }
 
         if (applyEffects) {
@@ -137,12 +156,13 @@ public final class DifficultyApplier {
                                        double slotChance,
                                        DifficultyTier.EnchantSpec enchant,
                                        HolderLookup.Provider registries,
-                                       RandomSource rng) {
+                                       RandomSource rng,
+                                       int statScalingTier) {
         if (pool.isEmpty() || slotChance <= 0.0) return;
         if (!mob.getItemBySlot(slot).isEmpty()) return;
         if (rng.nextDouble() >= slotChance) return;
 
-        ItemStack stack = rollEquipment(pool, enchant, registries, rng);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier);
         if (stack == null) return;
         mob.setItemSlot(slot, stack);
         mob.setDropChance(slot, DIFFICULTY_DROP_CHANCE);
@@ -164,7 +184,8 @@ public final class DifficultyApplier {
                                         double chance,
                                         DifficultyTier.EnchantSpec enchant,
                                         HolderLookup.Provider registries,
-                                        RandomSource rng) {
+                                        RandomSource rng,
+                                        int statScalingTier) {
         ItemStack current = mob.getItemBySlot(EquipmentSlot.MAINHAND);
         if (!current.isEmpty()) {
             if (isRangedWeapon(current)) {
@@ -176,7 +197,7 @@ public final class DifficultyApplier {
         if (pool.isEmpty() || chance <= 0.0) return;
         if (rng.nextDouble() >= chance) return;
 
-        ItemStack stack = rollEquipment(pool, enchant, registries, rng);
+        ItemStack stack = rollEquipment(pool, enchant, registries, rng, statScalingTier);
         if (stack == null) return;
         mob.setItemSlot(EquipmentSlot.MAINHAND, stack);
         mob.setDropChance(EquipmentSlot.MAINHAND, DIFFICULTY_DROP_CHANCE);
@@ -184,14 +205,17 @@ public final class DifficultyApplier {
 
     /**
      * Roll one equipment piece from {@code pool}: weighted-pick → tier enchant →
-     * AIN name → AIS stats. Returns {@code null} when the pool is empty or the
-     * picked item id doesn't resolve. Does not touch the mob — the caller places
-     * the stack and sets its drop chance.
+     * AIN name → AIS stats. {@code statScalingTier} (0 = none) adds a flat
+     * {@link ItemStatLevelScaling#primaryStatBonus primary-stat bonus} on top of the
+     * AIS roll. Returns {@code null} when the pool is empty or the picked item id
+     * doesn't resolve. Does not touch the mob — the caller places the stack and sets
+     * its drop chance.
      */
     private static ItemStack rollEquipment(List<DifficultyTier.WeightedItem> pool,
                                            DifficultyTier.EnchantSpec enchant,
                                            HolderLookup.Provider registries,
-                                           RandomSource rng) {
+                                           RandomSource rng,
+                                           int statScalingTier) {
         DifficultyTier.WeightedItem picked = weightedPick(pool, rng);
         if (picked == null) return null;
         Item item = BuiltInRegistries.ITEM.get(picked.item());
@@ -202,7 +226,8 @@ public final class DifficultyApplier {
         ItemStack stack = new ItemStack(item);
         maybeEnchant(stack, enchant, registries, rng);
         NameComposer.applyName(stack, rng);
-        StatsModifier.applyStats(stack, rng);
+        StatsModifier.applyStats(stack, rng,
+            ItemStatLevelScaling.primaryStatBonus(stack, statScalingTier));
         return stack;
     }
 
