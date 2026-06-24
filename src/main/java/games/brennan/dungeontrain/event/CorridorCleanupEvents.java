@@ -37,7 +37,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * The spillover lands inside the cleared corridor without re-clearing.
  *
  * <p>Architecture: enqueue corridor chunks on {@link ChunkEvent.Load},
- * drain {@link #CHUNKS_PER_TICK} chunks per server tick. Setting blocks
+ * drain up to {@link #MAX_CHUNKS_PER_TICK} chunks per server tick (scaled to the
+ * pending backlog by {@link #drainBudget(int)}). Setting blocks
  * synchronously inside the load callback was tried first and hung the
  * server thread because lighting / fluid cascades re-entered chunk
  * loading recursively. Deferring to a tick boundary breaks that path —
@@ -68,7 +69,15 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class CorridorCleanupEvents {
 
-    private static final int CHUNKS_PER_TICK = 1;
+    /**
+     * Upper bound on corridor chunks cleaned per server tick. The actual budget is
+     * {@link #drainBudget(int)} of the pending-queue depth, so a burst of freshly generated corridor
+     * chunks clears within a tick or two of loading — ahead of the train — instead of trickling out
+     * one per tick (the old fixed budget let the train outrun the sweep, so cross-chunk basalt reached
+     * the rails before it was cleared). Each chunk scan is a narrow bounded region (~a couple thousand
+     * block reads), so 16/tick stays well under a millisecond and the queue normally sits near-empty.
+     */
+    private static final int MAX_CHUNKS_PER_TICK = 16;
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     /** ChunkPos longs that have been queued by {@link #onChunkLoad}, awaiting drain. */
@@ -97,13 +106,18 @@ public final class CorridorCleanupEvents {
         int cz = pos.z;
         if (TrackGenerator.isShipyardChunk(cx, cz)) return;
 
-        // Fast Z-corridor prefilter — corridor is z=[trackZMin..trackZMax];
-        // typically chunk cz=0 only for the default 7-wide corridor.
+        // Fast Z-corridor prefilter — enqueue any chunk overlapping the tunnel AIRSPACE span
+        // (airMinZ..airMaxZ = trackZ ± 3), not just the track-Z rows. The Nether-clutter sweep cleans
+        // the full airspace, so when the corridor straddles a chunk Z-boundary the chunk holding only
+        // the outer ±3 corridor pad must still be enqueued — otherwise its pad basalt is never swept.
+        // The per-chunk sweeps clamp their own Z ranges, so the wider gate is safe (the foliage sweep
+        // simply no-ops on a pad-only chunk).
         CarriageDims dims = data.dims();
         TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
+        TunnelGeometry tg = TunnelGeometry.from(g);
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
-        if (chunkMaxZ < g.trackZMin() || chunkMinZ > g.trackZMax()) return;
+        if (!chunkOverlapsCorridorZ(chunkMinZ, chunkMaxZ, tg.airMinZ(), tg.airMaxZ())) return;
 
         long key = ChunkPos.asLong(cx, cz);
         if (CLEANED.contains(key)) return;
@@ -129,7 +143,7 @@ public final class CorridorCleanupEvents {
         CarriageDims dims = data.dims();
         TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
 
-        int budget = CHUNKS_PER_TICK;
+        int budget = drainBudget(PENDING.size());
         while (budget > 0) {
             Long key = PENDING.poll();
             if (key == null) break;
@@ -145,6 +159,26 @@ public final class CorridorCleanupEvents {
             CLEANED.add(key);
             budget--;
         }
+    }
+
+    /**
+     * Per-tick drain budget: clean as many queued corridor chunks as are pending, capped at
+     * {@link #MAX_CHUNKS_PER_TICK}. Scaling with the backlog lets a burst of freshly generated chunks
+     * clear within a tick or two (so the train never rides into un-swept basalt), while the cap bounds
+     * worst-case per-tick work. Pure function — unit-tested.
+     */
+    static int drainBudget(int pendingSize) {
+        return Math.min(Math.max(pendingSize, 0), MAX_CHUNKS_PER_TICK);
+    }
+
+    /**
+     * Whether a chunk's Z span [{@code chunkMinZ}..{@code chunkMaxZ}] overlaps the corridor Z span
+     * [{@code corridorZMin}..{@code corridorZMax}]. Used as the {@link #onChunkLoad} enqueue prefilter
+     * against the tunnel airspace span, so a chunk holding only the outer corridor pad (when the
+     * corridor straddles a chunk Z-boundary) is never dropped. Pure function — unit-tested.
+     */
+    static boolean chunkOverlapsCorridorZ(int chunkMinZ, int chunkMaxZ, int corridorZMin, int corridorZMax) {
+        return chunkMaxZ >= corridorZMin && chunkMinZ <= corridorZMax;
     }
 
     private static void cleanCorridorChunk(
