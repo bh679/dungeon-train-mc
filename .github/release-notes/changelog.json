@@ -2265,6 +2265,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "revert-pause-resume-train-rider",
+      "version": "0.354.0",
+      "type": "fix",
+      "title": "Temporarily roll back the pause/resume train fix",
+      "summary": "We've rolled back the recent change that kept you aboard the train across a singleplayer pause, while we work on a better fix for a new issue it introduced. As a stop-gap the older behaviour returns: pausing mid-ride can again leave you behind with the train having rolled on ahead. A proper fix is in progress.",
+      "highlights": [
+        "Reverts the v0.354.0 pause/resume rider fix as a temporary stop-gap.",
+        "Known trade-off: pausing while riding can again strand you behind the moving train until the proper fix lands."
+      ],
+      "pr": 564,
+      "date": "2026-06-24",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

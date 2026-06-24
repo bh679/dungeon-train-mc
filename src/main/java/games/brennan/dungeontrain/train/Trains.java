@@ -4,11 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
-import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -162,63 +159,6 @@ public final class Trains {
                 totalShips, withTrainProvider, summary);
         }
         return trains;
-    }
-
-    /**
-     * Horizontal pad (blocks) applied to each carriage's {@link ManagedShip#worldAABB()}
-     * when testing whether a player is standing on the train, bridging the small joints
-     * between adjacent carriage groups. Shared by boarding detection and the resume
-     * re-anchor so "on the train" means the same thing everywhere.
-     */
-    public static final double ON_TRAIN_HORIZONTAL_PADDING = 1.0;
-
-    /**
-     * The trainId whose carriages contain {@code player}, or {@code null} if the player is
-     * not on any train in {@code trains}. Pure position test — no side effects.
-     *
-     * @see #carriageContaining(List, ServerPlayer)
-     */
-    @Nullable
-    public static UUID trainIdContaining(Map<UUID, List<Carriage>> trains, ServerPlayer player) {
-        for (Map.Entry<UUID, List<Carriage>> e : trains.entrySet()) {
-            if (carriageContaining(e.getValue(), player) != null) return e.getKey();
-        }
-        return null;
-    }
-
-    /**
-     * The carriage in {@code carriages} whose {@link ManagedShip#worldAABB() worldAABB}
-     * contains {@code player}, or {@code null} if none does. Horizontal bounds are padded by
-     * {@link #ON_TRAIN_HORIZONTAL_PADDING}; the top is padded by 3 so players standing on (or
-     * sprint-jumping from) the roof still count as "on the train". Pure — no side effects.
-     */
-    @Nullable
-    public static Carriage carriageContaining(List<Carriage> carriages, ServerPlayer player) {
-        double px = player.getX();
-        double py = player.getY();
-        double pz = player.getZ();
-        for (Carriage c : carriages) {
-            AABBdc bb = c.ship().worldAABB();
-            if (withinOnTrainEnvelope(bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ(), px, py, pz)) {
-                return c;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Pure geometry core of {@link #carriageContaining} (extracted for unit testing):
-     * is {@code (px,py,pz)} inside the carriage AABB padded by
-     * {@link #ON_TRAIN_HORIZONTAL_PADDING} on X/Z and by 3 on top (roof-standers), with no
-     * bottom pad? No MC/JOML types so it runs in a plain JUnit test.
-     */
-    static boolean withinOnTrainEnvelope(double minX, double minY, double minZ,
-                                         double maxX, double maxY, double maxZ,
-                                         double px, double py, double pz) {
-        if (px < minX - ON_TRAIN_HORIZONTAL_PADDING || px > maxX + ON_TRAIN_HORIZONTAL_PADDING) return false;
-        if (py < minY || py > maxY + 3.0) return false;
-        if (pz < minZ - ON_TRAIN_HORIZONTAL_PADDING || pz > maxZ + ON_TRAIN_HORIZONTAL_PADDING) return false;
-        return true;
     }
 
     /**
