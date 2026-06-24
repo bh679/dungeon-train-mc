@@ -13,6 +13,22 @@
     {
       "id": "cherryblossom",
       "weight": 3
+    },
+    {
+      "id": "statue",
+      "weight": 1
+    },
+    {
+      "id": "grave",
+      "weight": 1
+    },
+    {
+      "id": "worship",
+      "weight": 1
+    },
+    {
+      "id": "wither",
+      "weight": 1
     }
   ]
 }
