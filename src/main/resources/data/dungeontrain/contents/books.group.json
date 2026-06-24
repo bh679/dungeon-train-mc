@@ -44,7 +44,7 @@
     },
     {
       "id": "cake",
-      "weight": 2
+      "weight": 1
     },
     {
       "id": "books2lanes",
@@ -52,7 +52,7 @@
     },
     {
       "id": "bookdoor",
-      "weight": 4
+      "weight": 2
     }
   ]
 }
