@@ -1,8 +1,8 @@
 package games.brennan.dungeontrain.mixin;
 
-import games.brennan.dungeontrain.worldgen.NetherBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -26,8 +26,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * <p>Vanilla decides explode-vs-sleep purely on the dimension's {@code bedWorks} flag
  * ({@link BedBlock#canSetSpawn}) inside {@code useWithoutItem}. We reproduce vanilla's exact
  * explosion branch — resolve the head half, remove both halves, detonate with the
- * {@code badRespawnPointExplosion} damage source — when the bed sits in the Nether core
- * ({@link NetherBand#isInNetherBiome}). Server-side only (the explosion path is); the
+ * {@code badRespawnPointExplosion} damage source — when the bed's <b>baked biome</b> at
+ * {@code pos} is tagged {@link net.minecraft.tags.BiomeTags#IS_NETHER} (every core biome
+ * {@code NetherCoreBiomes} assigns carries it). We gate on the persisted biome, not a live
+ * band-formula recompute, so the explosion follows what the world actually generated and the
+ * player sees — green highland/crossfade approach columns and config/build-drift columns are
+ * not {@code IS_NETHER} and sleep normally. Server-side only (the explosion path is); the
  * {@code bedWorks()} guard means the real Nether/End keep their own handling and we only
  * <i>add</i> behaviour the overworld lacks.</p>
  */
@@ -40,7 +44,11 @@ public abstract class BedBlockMixin {
         if (level.isClientSide) return;
         if (!level.dimensionType().bedWorks()) return;          // real Nether/End: vanilla already explodes
         if (!(level instanceof ServerLevel serverLevel)) return;
-        if (!NetherBand.isInNetherBiome(serverLevel, pos.getX())) return;
+        // Gate on the bed's ACTUAL baked biome — what the world generated and the player sees —
+        // not a live band-formula recompute. Only the real Nether core carries an IS_NETHER biome
+        // (all five via NetherCoreBiomes); the green highland/crossfade approach and any
+        // config/build-drift columns are not IS_NETHER, so beds sleep there as in vanilla.
+        if (!serverLevel.getBiome(pos).is(BiomeTags.IS_NETHER)) return;
 
         Block self = (Block) (Object) this;
         BlockState headState = state;
