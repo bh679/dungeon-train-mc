@@ -2,9 +2,11 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.adventureitemnames.api.NameComposer;
+import games.brennan.adventureitemstats.api.StatsModifier;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.difficulty.ItemStatLevelScaling;
 import games.brennan.dungeontrain.difficulty.ProceduralTiers;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.TrainMembership;
@@ -16,6 +18,7 @@ import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.npc.VillagerData;
 import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.VillagerTrades;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.item.trading.MerchantOffers;
 import net.minecraft.world.level.Level;
@@ -163,14 +166,13 @@ public final class VillagerTrainSpawnEvents {
         Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap = VillagerTrades.TRADES.get(profession);
         if (tradeMap == null) return;
 
-        int newLevel;
-        if (DungeonTrainConfig.getDifficultyEnabled()) {
-            newLevel = cappedLevel(villager.getRandom(), DifficultyProgression.currentTier(serverLevel));
-        } else {
-            newLevel = pickLevel(villager.getRandom());
-        }
+        int difficultyTier = DungeonTrainConfig.getDifficultyEnabled()
+            ? DifficultyProgression.currentTier(serverLevel) : 0;
+        int newLevel = DungeonTrainConfig.getDifficultyEnabled()
+            ? cappedLevel(villager.getRandom(), difficultyTier)
+            : pickLevel(villager.getRandom());
         villager.setVillagerData(data.setLevel(newLevel));
-        villager.setOffers(generateOffersFor(villager, tradeMap, newLevel));
+        villager.setOffers(generateOffersFor(villager, tradeMap, newLevel, difficultyTier));
         villager.addTag(REROLLED_TAG);
 
         LOGGER.info("[DungeonTrain] Rerolled train villager: uuid={} profession={} level={}",
@@ -216,7 +218,8 @@ public final class VillagerTrainSpawnEvents {
 
     private static MerchantOffers generateOffersFor(Villager villager,
                                                     Int2ObjectMap<VillagerTrades.ItemListing[]> tradeMap,
-                                                    int targetLevel) {
+                                                    int targetLevel,
+                                                    int difficultyTier) {
         MerchantOffers offers = new MerchantOffers();
         RandomSource rng = villager.getRandom();
         for (int lv = 1; lv <= targetLevel; lv++) {
@@ -227,9 +230,18 @@ public final class VillagerTrainSpawnEvents {
             int count = Math.min(OFFERS_PER_LEVEL, pool.size());
             for (int i = 0; i < count; i++) {
                 MerchantOffer offer = pool.get(i).getOffer(villager, rng);
-                if (offer != null) offers.add(offer);
+                if (offer != null) offers.add(withAisStats(offer, rng, difficultyTier));
             }
         }
         return offers;
+    }
+
+    private static MerchantOffer withAisStats(MerchantOffer offer, RandomSource rng, int difficultyTier) {
+        ItemStack result = offer.getResult().copy();
+        double bonus = ItemStatLevelScaling.primaryStatBonus(result, difficultyTier) + 0.2;
+        StatsModifier.applyStats(result, rng, bonus);
+        return new MerchantOffer(
+            offer.getItemCostA(), offer.getItemCostB(), result,
+            offer.getMaxUses(), offer.getXp(), offer.getPriceMultiplier());
     }
 }
