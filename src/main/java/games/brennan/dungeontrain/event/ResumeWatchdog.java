@@ -36,8 +36,11 @@ import java.util.UUID;
  * <em>wall-clock</em> gap between consecutive server ticks. On a detected resume, for every
  * player still on a train:</p>
  * <ol>
- *   <li><b>Layer A</b> — {@link TrainCarriageAppender#grantResumeGrace}: hold that train's
- *       force-loads for a short window so it can't be culled mid-re-anchor.</li>
+ *   <li><b>Layer A</b> — {@link TrainCarriageAppender#grantResumeGrace} +
+ *       {@link TrainCarriageAppender#holdWholeTrainForResume}: suppress the walk-away
+ *       force-load release AND pin every carriage resident for a short (renewing, capped)
+ *       window, so the transient fling can't cull any part of the train — the regeneration
+ *       source. The hold self-drains back to the trailing-N window once the rider is aboard.</li>
  *   <li><b>Layer B</b> — re-teleport the player onto the train's current deck and fire
  *       {@link SpawnDeckHoldPacket}, reusing the exact spawn/respawn-on-deck path
  *       ({@link RespawnDimensionEvents}): the teleport closes the horizontal gap and the
@@ -99,8 +102,14 @@ public final class ResumeWatchdog {
             UUID trainId = Trains.trainIdContaining(trains, player);
             if (trainId == null) continue;            // not on a train — leave them be
 
-            // Layer A: hold this train's force-loads through the re-anchor window.
+            // Layer A: hold this train's force-loads through the re-anchor window, and
+            // pin the WHOLE train resident so the transient fling can't cull any carriage.
+            // Near/ahead carriages otherwise rely on Sable proximity residency, which
+            // lapses the moment the rider reads as "not near" — culling them, and any that
+            // can't reload from holding regenerate fresh. Both holds self-drain once the
+            // rider is aboard (grace lapses; reconcileForceLoads returns to the trailing-N).
             TrainCarriageAppender.grantResumeGrace(trainId, gameTick, RESUME_GRACE_TICKS);
+            TrainCarriageAppender.holdWholeTrainForResume(trainLevel, trainId, trains.get(trainId));
 
             // Layer B: re-place onto the (now-advanced) deck + client deck-hold. Yaw -90
             // faces +X (travel direction), matching the spawn/respawn-on-deck pose.

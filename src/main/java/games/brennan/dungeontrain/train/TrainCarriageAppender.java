@@ -75,12 +75,18 @@ public final class TrainCarriageAppender {
 
     /**
      * Suppress the "player left vicinity" force-load release for {@code trainId} until
-     * {@code nowTick + graceTicks}. Called by {@code ResumeWatchdog} the moment it detects a
-     * singleplayer pause/resume, so the trailing carriages stay resident while the flung-off
-     * rider is re-anchored onto the deck (#547). Server-thread only.
+     * {@code nowTick + graceTicks}, and record {@code nowTick} as the resume-recovery
+     * start (the renewal cap in {@link #updateTrain}'s bail measures from it). Called by
+     * {@code ResumeWatchdog} the moment it detects a singleplayer pause/resume, so the
+     * whole-train resume-hold ({@link #holdWholeTrainForResume}) stays resident while the
+     * flung-off rider is re-anchored onto the deck (#547/#548). Server-thread only.
      */
     public static void grantResumeGrace(UUID trainId, long nowTick, int graceTicks) {
         RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + graceTicks);
+        // ResumeWatchdog only calls this on the resume-DETECTION tick (the >=2 s gap),
+        // never mid-recovery, so each call marks a fresh recovery start — overwrite rather
+        // than putIfAbsent so a later resume isn't capped from a stale earlier start.
+        RESUME_STARTED_TICK.put(trainId, nowTick);
     }
 
     /**
@@ -177,10 +183,33 @@ public final class TrainCarriageAppender {
      * release is suppressed after a singleplayer pause/resume. Set by
      * {@link #grantResumeGrace} (called from {@code ResumeWatchdog} on a detected resume);
      * consulted in {@link #updateTrain}'s empty-near-players bail so a momentarily flung-off
-     * rider can't lose the train to a Sable cull before re-anchoring (#547). Entries
-     * self-expire; cleared in {@link #clearSettleTracker}.
+     * rider can't lose the train to a Sable cull before re-anchoring (#547/#548). While
+     * active it also keeps the whole-train resume-hold ({@link #holdWholeTrainForResume})
+     * resident. Renewed each tick the rider is still not near (capped via
+     * {@link #RESUME_STARTED_TICK}); entries self-expire and are cleared in
+     * {@link #clearSettleTracker}.
      */
     private static final Map<UUID, Long> RESUME_GRACE_UNTIL_TICK = new ConcurrentHashMap<>();
+
+    /**
+     * trainId → game-tick the current resume-recovery began (set by
+     * {@link #grantResumeGrace}). Bounds how long {@link #updateTrain}'s bail keeps
+     * renewing {@link #RESUME_GRACE_UNTIL_TICK} while the rider is still not near — so a
+     * genuine post-resume walk-away eventually releases instead of holding forever.
+     * Cleared when the grace lapses or in {@link #clearSettleTracker}.
+     */
+    private static final Map<UUID, Long> RESUME_STARTED_TICK = new ConcurrentHashMap<>();
+
+    /** Ticks the resume bail re-extends the grace by each tick the rider is still not near (~3 s). */
+    private static final int RESUME_GRACE_RENEW_TICKS = 60;
+
+    /**
+     * Hard cap (ticks ≈ 10 s) on the renewed resume-hold, measured from the resume
+     * start. Past this the bail stops renewing and releases — covers "Sable carry never
+     * recovers" and "player genuinely walked off right after a resume" without an
+     * unbounded force-load hold.
+     */
+    private static final int RESUME_HOLD_CAP_TICKS = 200;
 
     /**
      * Stall threshold: 600 ticks = 30 s at 20 Hz. Comfortably past the
@@ -1081,6 +1110,7 @@ public final class TrainCarriageAppender {
         // level handle; here we only drop our in-memory mirror.
         FORCELOADED_BY_TRAIN.clear();
         RESUME_GRACE_UNTIL_TICK.clear();
+        RESUME_STARTED_TICK.clear();
     }
 
     /**
@@ -1551,11 +1581,21 @@ public final class TrainCarriageAppender {
             // releasing, so the train can't be culled out from under the player before
             // they re-anchor. A genuine walk-away (no pause) never sets a grace deadline,
             // so it still releases here as before.
+            long nowTick = level.getGameTime();
             Long graceUntil = RESUME_GRACE_UNTIL_TICK.get(trainId);
-            if (graceUntil != null && level.getGameTime() <= graceUntil) {
+            if (graceUntil != null && nowTick <= graceUntil) {
+                // Rider still not near during a resume — renew the window so the
+                // whole-train resume-hold (force-loaded by ResumeWatchdog via
+                // holdWholeTrainForResume) survives until they re-anchor, capped from
+                // the resume start so a genuine post-resume walk-away still releases.
+                Long startedAt = RESUME_STARTED_TICK.get(trainId);
+                if (startedAt != null && nowTick - startedAt < RESUME_HOLD_CAP_TICKS) {
+                    RESUME_GRACE_UNTIL_TICK.put(trainId, nowTick + RESUME_GRACE_RENEW_TICKS);
+                }
                 return false; // resume grace active — hold the window, do not release
             }
             RESUME_GRACE_UNTIL_TICK.remove(trainId); // expired (or never set) — normal cull
+            RESUME_STARTED_TICK.remove(trainId);
             releaseTrainForceLoads(level, trainId, train);
             return false;
         }
@@ -2167,13 +2207,32 @@ public final class TrainCarriageAppender {
             byId.put(id, c);
             ids.add(new TrailingId(c.provider().getPIdx(), id));
         }
-        // The train list is one entry per group/sub-level, so target the
-        // backmost-N GROUPS directly (not × groupSize).
-        Set<UUID> target = active
-            ? backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS)
-            : Set.of();
+        // During a singleplayer resume-recovery window keep the WHOLE train resident
+        // (every visible carriage), not just the trailing-N. The rider is teleported
+        // back onto the deck on the resume tick, so they read as "near" for a tick or
+        // two — without this, reconcile would drain the whole-train resume-hold (set by
+        // holdWholeTrainForResume) back to trailing-N on that near-tick, re-exposing the
+        // near/ahead carriages to a cull if Sable carry then re-breaks and flings the
+        // rider again. Holding the full set until the grace lapses (rider stably aboard)
+        // closes that oscillation. Drains to the trailing-N window the moment it lapses.
+        Set<UUID> target;
+        if (isResumeHoldActive(trainId, level.getGameTime())) {
+            target = new HashSet<>(byId.keySet());
+        } else {
+            // The train list is one entry per group/sub-level, so target the
+            // backmost-N GROUPS directly (not × groupSize).
+            target = active
+                ? backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS)
+                : Set.of();
+        }
 
         reconcileForceLoads(level, trainId, target, byId);
+    }
+
+    /** True while {@code trainId} is inside its (renewing) resume-recovery grace window. */
+    private static boolean isResumeHoldActive(UUID trainId, long nowTick) {
+        Long until = RESUME_GRACE_UNTIL_TICK.get(trainId);
+        return until != null && nowTick <= until;
     }
 
     /**
@@ -2267,6 +2326,45 @@ public final class TrainCarriageAppender {
     private static void holdGroupResident(ServerLevel level, UUID trainId, ManagedShip ship) {
         Shipyards.of(level).forceLoad(ship);
         FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>()).add(ship.subLevelId());
+    }
+
+    /**
+     * Force-load EVERY carriage of {@code train} and track them in
+     * {@link #FORCELOADED_BY_TRAIN}, so a singleplayer pause/resume can't cull any part
+     * of the train while the rider is transiently flung off the deck (Sable carry hasn't
+     * re-grabbed them). The trailing-N window ({@link #maintainTrailingForceLoadWindow})
+     * only force-loads the tail; carriages near/ahead of the player rely on Sable
+     * <em>proximity</em> residency, which evaporates the moment the rider reads as "not
+     * near" — so on a resume they would cull and, if not reloadable, regenerate. Pinning
+     * the whole train here removes that dependency on the (transiently-absent) rider.
+     *
+     * <p>Called by {@code ResumeWatchdog} the instant it detects a resume, alongside
+     * {@link #grantResumeGrace}: the grace (renewed in {@link #updateTrain}'s bail)
+     * suppresses the walk-away release while these sticky tickets keep the whole train
+     * resident through the fling. Once the rider re-anchors,
+     * {@link #maintainTrailingForceLoadWindow}/{@link #reconcileForceLoads} drain the
+     * window back to the trailing-N groups (releasing the now proximity-resident
+     * carriages; un-serialized ones stay per {@link #shouldRetainOnWalkAway}).</p>
+     *
+     * <p>Idempotent — only force-loads a carriage not already ticketed (so it never
+     * double-tickets a trailing/frontier group already held). Server-thread only.
+     * (#548 follow-up.)</p>
+     */
+    public static void holdWholeTrainForResume(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
+        if (train == null || train.isEmpty()) return;
+        Shipyard shipyard = Shipyards.of(level);
+        Set<UUID> current = FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>());
+        int held = 0;
+        for (Trains.Carriage c : train) {
+            if (current.add(c.ship().subLevelId())) {
+                shipyard.forceLoad(c.ship());
+                held++;
+            }
+        }
+        if (held > 0) {
+            LOGGER.debug("[DungeonTrain] Resume hold: force-loaded {} previously-unticketed carriage(s) of trainId={} ({} total held) so the resume-fling can't cull the train",
+                held, trainId, current.size());
+        }
     }
 
     /** The registry handle ({@link ManagedShip}) for a sub-level UUID in this train, or null. */
