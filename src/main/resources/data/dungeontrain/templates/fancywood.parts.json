@@ -19,13 +19,26 @@
     {
       "name": "open",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "darkopen",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "roof": [
     {
       "name": "standard",
-      "weight": 1,
+      "weight": 5,
       "phases": [
         "OVERWORLD",
         "VOID",
@@ -34,9 +47,25 @@
     },
     {
       "name": "dark",
+      "weight": 10,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkwindow",
       "weight": 1,
       "phases": [
         "NETHER"
+      ]
+    },
+    {
+      "name": "windowed",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
       ]
     }
   ],
