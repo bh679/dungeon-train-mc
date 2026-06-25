@@ -11,8 +11,10 @@ import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -20,6 +22,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.Vec3;
@@ -27,8 +30,10 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -140,6 +145,11 @@ public final class TunnelEditor {
         double tz = origin.getZ() + TunnelPlacer.WIDTH / 2.0;
         player.teleportTo(overworld, tx, ty, tz, player.getYRot(), player.getXRot());
 
+        // The far half is rebuilt by mirroring on save — edit one side only.
+        player.sendSystemMessage(Component.literal(
+            "[DungeonTrain] Tunnel editor: edit the chest-side half (Z ≤ centre). "
+            + "The opposite half mirrors automatically on save."));
+
         LOGGER.info("[DungeonTrain] Editor enter: {} -> tunnel_{} default plot at {} ({} variants, {})",
             player.getName().getString(), variant.name().toLowerCase(java.util.Locale.ROOT), origin,
             TrackVariantRegistry.namesFor(TunnelTemplateStore.tunnelKind(variant)).size(),
@@ -242,6 +252,12 @@ public final class TunnelEditor {
         String name = id.name();
         BlockPos origin = plotOrigin(id);
 
+        // Author edits only the chest-side half; rebuild the far half in-world
+        // by reflecting it across the centre column so the captured template —
+        // and therefore every generated tunnel — stays byte-for-byte identical.
+        // The lone chest is kept single (see mirrorAuthoredHalf).
+        mirrorAuthoredHalf(overworld, origin, variant, name);
+
         StructureTemplate template = new StructureTemplate();
         Vec3i size = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
         template.fillFromWorld(overworld, origin, size, false, Blocks.STRUCTURE_VOID);
@@ -313,6 +329,74 @@ public final class TunnelEditor {
                         + (z == z0 || z == z1 ? 1 : 0);
                     if (extremes < 2) continue;
                     level.setBlock(new BlockPos(x, y, z), state, 3);
+                }
+            }
+        }
+    }
+
+    // ─── Half-model mirroring ──────────────────────────────────────────
+    //
+    // Tunnels are symmetric across the Z (width) axis about the centre
+    // column, so the author edits only the chest-side master half and the
+    // far half is rebuilt on save. Keeps the generated tunnel identical
+    // while halving authoring work.
+
+    /** Local Z of the mirror plane (centre column); the tunnel is symmetric about it. */
+    static final int MIRROR_CENTER_Z = (TunnelPlacer.WIDTH - 1) / 2; // 13-wide → 6
+
+    /**
+     * Reflect a local Z across {@link #MIRROR_CENTER_Z}. For a master-half
+     * source {@code 0..MIRROR_CENTER_Z-1} this returns its far-half
+     * counterpart; the map is its own inverse. Pure arithmetic — unit-tested
+     * in {@code TunnelMirrorMapTest} (mirrors the {@code probeXOffsets} pattern).
+     */
+    static int mirrorTargetZ(int sourceZ) {
+        return (TunnelPlacer.WIDTH - 1) - sourceZ; // 12 - sourceZ
+    }
+
+    /**
+     * Rebuild the far (high-Z) half of the tunnel plot from the authored
+     * master half by reflecting it across the centre column, so the author
+     * edits one side only. Runs in-world immediately before {@link #save}
+     * captures the region, so the stored template — and therefore every
+     * generated tunnel — is unchanged; only the authoring workflow differs.
+     *
+     * <p>Each master column {@code sz ∈ [0, MIRROR_CENTER_Z)} is copied to
+     * {@link #mirrorTargetZ(int)} with its block state
+     * {@link Mirror#LEFT_RIGHT}-reflected (Z axis → NORTH↔SOUTH facings); the
+     * centre column and the whole master half are left untouched.</p>
+     *
+     * <p>Sidecar marker cells (the section chest at local {@code [7,1,1]}) are
+     * the one intentional asymmetry: their mirror target is set to AIR rather
+     * than a duplicate marker, and a sidecar cell that already lives on the far
+     * side is preserved. Structural blocks carry no block-entity data, so a
+     * plain state copy is sufficient ({@code fillFromWorld(takeEntities=false)}
+     * ignores entities such as a decorative minecart).</p>
+     */
+    private static void mirrorAuthoredHalf(ServerLevel level, BlockPos origin,
+                                           TunnelVariant variant, String name) {
+        TrackKind kind = TunnelTemplateStore.tunnelKind(variant);
+        Vec3i footprint = new Vec3i(TunnelPlacer.LENGTH, TunnelPlacer.HEIGHT, TunnelPlacer.WIDTH);
+        Set<BlockPos> sidecar = new HashSet<>();
+        for (var entry : TrackVariantBlocks.loadFor(kind, name, footprint).entries()) {
+            sidecar.add(entry.localPos().immutable());
+        }
+        BlockState air = Blocks.AIR.defaultBlockState();
+        for (int dx = 0; dx < TunnelPlacer.LENGTH; dx++) {
+            for (int dy = 0; dy < TunnelPlacer.HEIGHT; dy++) {
+                for (int sz = 0; sz < MIRROR_CENTER_Z; sz++) {
+                    int tz = mirrorTargetZ(sz);
+                    // Never stomp a sidecar marker that lives on the far side.
+                    if (sidecar.contains(new BlockPos(dx, dy, tz))) continue;
+                    BlockPos tgt = origin.offset(dx, dy, tz);
+                    if (sidecar.contains(new BlockPos(dx, dy, sz))) {
+                        // Don't duplicate the chest — its airspace background is AIR.
+                        SilentBlockOps.setBlockSilent(level, tgt, air);
+                        continue;
+                    }
+                    BlockState mirrored = level.getBlockState(origin.offset(dx, dy, sz))
+                        .mirror(Mirror.LEFT_RIGHT);
+                    SilentBlockOps.setBlockSilent(level, tgt, mirrored);
                 }
             }
         }
