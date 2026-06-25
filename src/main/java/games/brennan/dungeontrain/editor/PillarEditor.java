@@ -245,8 +245,16 @@ public final class PillarEditor {
         String name = id.name();
         BlockPos origin = plotOrigin(id, dims);
 
-        StructureTemplate template = captureTemplate(overworld, origin, section, dims);
+        // Editor mirror save-time backstop to live mirroring — symmetric capture
+        // per the sidecar's enabled axes. No-op when all axes are off (default).
         TrackKind kind = PillarTemplateStore.pillarKind(section);
+        Vec3i footprint = kind.dims(dims);
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+        EditorMirror.rebuildFromMaster(overworld, origin, footprint,
+            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+            EditorMirror.markersOf(sidecar.entries()));
+
+        StructureTemplate template = captureTemplate(overworld, origin, section, dims);
         TrackVariantStore.save(kind, name, template);
 
         // Refresh the dirty-check baseline.
@@ -262,8 +270,7 @@ public final class PillarEditor {
         try {
             TrackVariantStore.saveToSource(kind, name, template);
             try {
-                Vec3i footprint = kind.dims(dims);
-                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource(kind, name);
+                sidecar.saveToSource(kind, name);
             } catch (IOException e) {
                 LOGGER.warn("[DungeonTrain] Pillar editor save: variant sidecar source write failed for {}: {}",
                     section.id(), e.toString());
@@ -428,8 +435,16 @@ public final class PillarEditor {
         String name = id.name();
         BlockPos origin = plotOriginAdjunct(id, dims);
 
-        StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
+        // Editor mirror save-time backstop to live mirroring — symmetric capture
+        // per the sidecar's enabled axes. No-op when all axes are off (default).
         TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
+        Vec3i footprint = kind.dims(dims);
+        TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+        EditorMirror.rebuildFromMaster(overworld, origin, footprint,
+            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+            EditorMirror.markersOf(sidecar.entries()));
+
+        StructureTemplate template = captureAdjunctTemplate(overworld, origin, adjunct);
         TrackVariantStore.save(kind, name, template);
 
         // Refresh the dirty-check baseline.
@@ -445,8 +460,7 @@ public final class PillarEditor {
         try {
             TrackVariantStore.saveToSource(kind, name, template);
             try {
-                Vec3i footprint = kind.dims(dims);
-                TrackVariantBlocks.loadFor(kind, name, footprint).saveToSource(kind, name);
+                sidecar.saveToSource(kind, name);
             } catch (IOException e) {
                 LOGGER.warn("[DungeonTrain] Pillar editor save adjunct: variant sidecar source write failed for {}: {}",
                     adjunct.id(), e.toString());

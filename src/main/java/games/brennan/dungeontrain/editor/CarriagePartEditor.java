@@ -400,6 +400,14 @@ public final class CarriagePartEditor {
         BlockPos origin = plotOrigin(kind, name, dims);
         if (origin == null) origin = nextFreePlotOrigin(kind, dims);
 
+        // Editor mirror save-time backstop to live mirroring — symmetric capture
+        // per the sidecar's enabled axes. No-op when all axes are off (default).
+        Vec3i partSize = kind.dims(dims);
+        CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
+        EditorMirror.rebuildFromMaster(overworld, origin, partSize,
+            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+            EditorMirror.markersOf(sidecar.entries()));
+
         StructureTemplate template = captureTemplate(overworld, origin, kind, dims);
         CarriagePartTemplateStore.save(kind, name, template);
         CarriagePartRegistry.register(kind, name);
@@ -427,8 +435,6 @@ public final class CarriagePartEditor {
             // Promote the variants sidecar too — without this, shift-right-click
             // variant authoring stayed in run/config and was lost on worktree
             // delete (the same defect the contents editor had pre-0.66.1).
-            Vec3i partSize = kind.dims(dims);
-            CarriagePartVariantBlocks sidecar = CarriagePartVariantBlocks.loadFor(kind, name, partSize);
             sidecar.saveToSource(kind, name);
             // Promote the container-contents sidecar (per-position links and
             // pools). Without this, chest→loot-prefab references authored in

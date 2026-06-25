@@ -79,6 +79,7 @@ public final class EditorMenuScreen implements MenuScreen {
                     "dungeontrain editor part rename",
                     "", name));
             }
+            addMirrorToggles(out);
             out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
             out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
             return out;
@@ -147,20 +148,32 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
-        // Tunnel mirror-on-save toggles — author one quarter, the editor rebuilds
-        // the rest on save per the enabled axes. Only tunnel kinds are symmetric.
-        if ("tracks".equals(category) && modelId != null && modelId.startsWith("tunnel_")
+        // Editor mirror toggles — author one octant, the editor mirrors live
+        // (and rebuilds on save) across the enabled axes. Available in every
+        // template plot (off by default outside tunnels).
+        if (("carriages".equals(category) || "contents".equals(category) || "tracks".equals(category))
             && modelName != null && !modelName.isEmpty()) {
-            String prefix = "dungeontrain editor tracks mirror " + modelId + " " + modelName;
-            out.add(new CommandMenuEntry.Toggle("Mirror X", EditorStatusHudOverlay.mirrorX(),
-                prefix + " x on", prefix + " x off"));
-            out.add(new CommandMenuEntry.Toggle("Mirror Z", EditorStatusHudOverlay.mirrorZ(),
-                prefix + " z on", prefix + " z off"));
+            addMirrorToggles(out);
         }
 
         out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
         out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;
+    }
+
+    /**
+     * Append Mirror X / Y / Z toggles, wired to the position-resolved
+     * {@code editor mirror <axis> on|off} command (resolves whichever plot the
+     * player stands in). Toggle state is the server-pushed
+     * {@link EditorStatusHudOverlay} mirror flags.
+     */
+    private static void addMirrorToggles(List<CommandMenuEntry> out) {
+        out.add(new CommandMenuEntry.Toggle("Mirror X", EditorStatusHudOverlay.mirrorX(),
+            "dungeontrain editor mirror x on", "dungeontrain editor mirror x off"));
+        out.add(new CommandMenuEntry.Toggle("Mirror Y", EditorStatusHudOverlay.mirrorY(),
+            "dungeontrain editor mirror y on", "dungeontrain editor mirror y off"));
+        out.add(new CommandMenuEntry.Toggle("Mirror Z", EditorStatusHudOverlay.mirrorZ(),
+            "dungeontrain editor mirror z on", "dungeontrain editor mirror z off"));
     }
 
     /**

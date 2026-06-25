@@ -71,13 +71,51 @@ public final class CarriagePartVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
+    /**
+     * Per-template editor mirror axes, applied live and as a save-time backstop
+     * by {@link EditorMirror}. Optional top-level {@code "mirror": {x,y,z}}
+     * field; all default false (parts are opt-in — not inherently symmetric).
+     */
+    private boolean mirrorX;
+    private boolean mirrorY;
+    private boolean mirrorZ;
+
     private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
+        this(entries, lockIds, false, false, false);
+    }
+
+    private CarriagePartVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                                      boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.mirrorX = mirrorX;
+        this.mirrorY = mirrorY;
+        this.mirrorZ = mirrorZ;
     }
 
     public static CarriagePartVariantBlocks empty() {
         return new CarriagePartVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
+    }
+
+    /** Editor mirror X (length) axis. False unless the sidecar sets {@code mirror.x=true}. */
+    public boolean mirrorX() { return mirrorX; }
+
+    /** Editor mirror Y (height) axis. False unless the sidecar sets {@code mirror.y=true}. */
+    public boolean mirrorY() { return mirrorY; }
+
+    /** Editor mirror Z (width) axis. False unless the sidecar sets {@code mirror.z=true}. */
+    public boolean mirrorZ() { return mirrorZ; }
+
+    /** True when no axis is enabled — the absent-{@code mirror}-field state (part default). */
+    private boolean isDefaultMirror() {
+        return !mirrorX && !mirrorY && !mirrorZ;
+    }
+
+    /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
+    public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        this.mirrorX = x;
+        this.mirrorY = y;
+        this.mirrorZ = z;
     }
 
     public static Path configPathFor(CarriagePartKind kind, String name) {
@@ -144,7 +182,19 @@ public final class CarriagePartVariantBlocks {
                     kind.id(), name, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
-        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) return empty();
+        // Optional top-level editor mirror axes — all default false (parts are opt-in).
+        boolean mirrorX = false;
+        boolean mirrorY = false;
+        boolean mirrorZ = false;
+        if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
+            JsonObject m = obj.getAsJsonObject("mirror");
+            if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
+            if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
+            if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
+        }
+        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
+            return new CarriagePartVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorY, mirrorZ);
+        }
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         JsonObject variants = obj.getAsJsonObject("variants");
@@ -177,7 +227,7 @@ public final class CarriagePartVariantBlocks {
         }
         LOGGER.info("[DungeonTrain] Loaded {} part variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new CarriagePartVariantBlocks(out, outLocks);
+        return new CarriagePartVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ);
     }
 
     static BlockPos parsePos(String key) {
@@ -331,9 +381,9 @@ public final class CarriagePartVariantBlocks {
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
         }
-        if (entries.isEmpty()) {
+        if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled part variant sidecar for {}:{} (no entries)",
+            LOGGER.info("[DungeonTrain] Cleared bundled part variant sidecar for {}:{} (no entries, default mirror)",
                 kind.id(), name);
             return;
         }
@@ -351,6 +401,11 @@ public final class CarriagePartVariantBlocks {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
+        if (!isDefaultMirror()) {
+            sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
+              .append(", \"y\": ").append(mirrorY)
+              .append(", \"z\": ").append(mirrorZ).append(" },\n");
+        }
         sb.append("  \"variants\": {");
         boolean first = true;
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
