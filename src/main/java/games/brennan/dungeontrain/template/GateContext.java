@@ -47,14 +47,32 @@ public record GateContext(int level, TrainPhase phase) {
     }
 
     /**
-     * Resolve the context for carriage {@code carriagePIdx}: its Diff-Level is
-     * {@code tierForTravelled(abs(pIdx))} (identical to {@link DifficultyProgression#levelAtWorldX}
-     * at {@code pIdx*carriageLength}) and its phase is taken at world-X
-     * {@code pIdx*carriageLength} — the placement X the band terrain was generated against (the
-     * train is anchored at world-X 0). Pure in {@code carriagePIdx}, so the block pass and deferred
-     * entity pass agree.
+     * The sub-level <b>group anchor</b> pIdx for {@code carriagePIdx}: the lowest pIdx in the Sable
+     * sub-level group of {@code groupSize} enclosed carriages that contains it. Mirrors the
+     * assembler's tiling ({@code TrainAssembler}'s
+     * {@code seedAnchor = floorDiv(initialPIdx, groupSize) * groupSize}) — the half-flatbed pads sit
+     * outside the integer carriage grid, so pIdx-space tiles cleanly into blocks of {@code groupSize}.
+     * {@code groupSize <= 0} is treated as 1 (per-carriage).
+     */
+    public static int groupAnchorPIdx(int carriagePIdx, int groupSize) {
+        int g = Math.max(1, groupSize);
+        return Math.floorDiv(carriagePIdx, g) * g;
+    }
+
+    /**
+     * Resolve the context for the carriage <b>group</b> containing {@code carriagePIdx}: every car in
+     * the same sub-level group resolves the <em>same</em> Diff-Level and {@link TrainPhase} from the
+     * group's anchor world-X ({@code groupAnchorPIdx * carriageLength} — the placement X the band
+     * terrain was generated against, train anchored at world-X 0). Gating the whole group from one
+     * overworld position means a connected group never themes half-Overworld / half-Nether when it
+     * straddles a band edge. The group size is read from this world's generation config — the same
+     * source the assembler tiles sub-levels by — so the shell, contents, and parts gates (and the
+     * block pass + deferred entity pass) all agree for a given carriage. Pure in
+     * {@code (carriagePIdx, groupSize, carriageLength)}.
      */
     public static GateContext forCarriage(ServerLevel level, int carriagePIdx, int carriageLength) {
-        return atWorldX(level, carriagePIdx * carriageLength, carriageLength);
+        int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
+        int anchorPIdx = groupAnchorPIdx(carriagePIdx, groupSize);
+        return atWorldX(level, anchorPIdx * carriageLength, carriageLength);
     }
 }
