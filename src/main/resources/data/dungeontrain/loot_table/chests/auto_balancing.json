@@ -12,7 +12,7 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:potato",
-          "weight": 17
+          "weight": 16
         },
         {
           "type": "minecraft:item",
@@ -27,7 +27,7 @@
         {
           "type": "minecraft:item",
           "name": "minecraft:apple",
-          "weight": 3
+          "weight": 2
         }
       ]
     }
