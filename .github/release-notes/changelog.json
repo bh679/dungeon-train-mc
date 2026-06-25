@@ -2445,9 +2445,9 @@
       "summary": "A passenger's Discord story was silently skipped when a remote echo (a traveller from another world's past life) spawned on a distant carriage and the player walked up later. The encounter journal now opens retroactively on first close approach, so every remote echo meeting \u2014 however it starts \u2014 gets its story.",
       "highlights": [],
       "date": "2026-06-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.361.0",
+      "released_at": "2026-06-25T02:31:15Z"
     }
   ]
 }
