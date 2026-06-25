@@ -284,6 +284,15 @@ public final class CarriageEditor {
         BlockPos origin = plotOrigin(variant, dims);
         if (origin == null) throw new IOException("Unknown variant '" + variant.id() + "'.");
 
+        // Apply the editor mirror (save-time backstop to live mirroring) before
+        // capture so the stored template is symmetric per the sidecar's enabled
+        // axes. No-op when all axes are off (the carriage default).
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        EditorMirror.rebuildFromMaster(overworld, origin,
+            new Vec3i(dims.length(), dims.height(), dims.width()),
+            sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
+            EditorMirror.markersOf(sidecar.entries()));
+
         StructureTemplate template = captureTemplate(overworld, origin, dims);
         CarriageTemplateStore.save(variant, template);
 
@@ -291,7 +300,6 @@ public final class CarriageEditor {
         // `editor variant set/clear` commands mutate it eagerly during the
         // session). Empty maps are written as a deleted file so removing every
         // entry doesn't leave a stale sidecar on disk.
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
         sidecar.save(variant);
 
         // Contents store: persist any in-session loot-prefab link changes

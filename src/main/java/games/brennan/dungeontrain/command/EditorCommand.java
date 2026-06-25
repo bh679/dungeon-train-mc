@@ -248,27 +248,23 @@ public final class EditorCommand {
             .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES))
             .then(Commands.literal("carriages")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
+            // Position-resolved mirror toggle — works in any editor plot. Backs
+            // the X-menu Mirror X / Y / Z toggles for every category.
+            .then(Commands.literal("mirror")
+                .then(mirrorAxisNode("x"))
+                .then(mirrorAxisNode("y"))
+                .then(mirrorAxisNode("z")))
             .then(Commands.literal("tracks")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))
+                // Explicit (kind, name) mirror toggle — scripting / out-of-plot use.
                 .then(Commands.literal("mirror")
                     .then(Commands.argument("kind", StringArgumentType.word())
                         .suggests(TRACK_KIND_SUGGESTIONS)
                         .then(Commands.argument("name", StringArgumentType.word())
                             .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
-                            .then(Commands.literal("x")
-                                .then(Commands.literal("on").executes(ctx -> runTrackMirror(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "kind"),
-                                    StringArgumentType.getString(ctx, "name"), true, true)))
-                                .then(Commands.literal("off").executes(ctx -> runTrackMirror(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "kind"),
-                                    StringArgumentType.getString(ctx, "name"), true, false))))
-                            .then(Commands.literal("z")
-                                .then(Commands.literal("on").executes(ctx -> runTrackMirror(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "kind"),
-                                    StringArgumentType.getString(ctx, "name"), false, true)))
-                                .then(Commands.literal("off").executes(ctx -> runTrackMirror(ctx.getSource(),
-                                    StringArgumentType.getString(ctx, "kind"),
-                                    StringArgumentType.getString(ctx, "name"), false, false)))))))
+                            .then(trackMirrorAxisNode("x"))
+                            .then(trackMirrorAxisNode("y"))
+                            .then(trackMirrorAxisNode("z")))))
                 .then(Commands.literal("new")
                     .then(Commands.argument("kind", StringArgumentType.word())
                         .suggests(TRACK_KIND_SUGGESTIONS)
@@ -746,46 +742,107 @@ public final class EditorCommand {
         }
     }
 
+    /** Brigadier subtree: {@code <axis> on|off} → {@link #runMirrorAtPosition} (position-resolved). */
+    private static LiteralArgumentBuilder<CommandSourceStack> mirrorAxisNode(String axis) {
+        return Commands.literal(axis)
+            .then(Commands.literal("on").executes(ctx -> runMirrorAtPosition(ctx.getSource(), axis, true)))
+            .then(Commands.literal("off").executes(ctx -> runMirrorAtPosition(ctx.getSource(), axis, false)));
+    }
+
+    /** Brigadier subtree: {@code <axis> on|off} → {@link #runTrackMirror} for the ambient (kind, name). */
+    private static LiteralArgumentBuilder<CommandSourceStack> trackMirrorAxisNode(String axis) {
+        return Commands.literal(axis)
+            .then(Commands.literal("on").executes(ctx -> runTrackMirror(ctx.getSource(),
+                StringArgumentType.getString(ctx, "kind"), StringArgumentType.getString(ctx, "name"), axis, true)))
+            .then(Commands.literal("off").executes(ctx -> runTrackMirror(ctx.getSource(),
+                StringArgumentType.getString(ctx, "kind"), StringArgumentType.getString(ctx, "name"), axis, false)));
+    }
+
+    /** Apply one {@code x|y|z} axis to a track sidecar, preserving the other two. */
+    private static void applyMirrorAxis(games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg,
+                                        String axis, boolean on) {
+        boolean x = cfg.mirrorX(), y = cfg.mirrorY(), z = cfg.mirrorZ();
+        switch (axis) {
+            case "x" -> x = on;
+            case "y" -> y = on;
+            case "z" -> z = on;
+            default -> { return; }
+        }
+        cfg.setMirrorAxes(x, y, z);
+    }
+
     /**
-     * Toggle one mirror-on-save axis for a tunnel variant. Persists the flag in
-     * the variant's {@code variants.json} (via {@code TrackVariantBlocks.setMirrorAxes})
-     * so {@link games.brennan.dungeontrain.editor.TunnelEditor}'s next save mirrors
-     * the authored quarter across the enabled axes. Tunnels only — other track
-     * kinds are not symmetric. Backs the X-menu Mirror X / Mirror Z toggles.
+     * Toggle one editor mirror axis for a track-side variant by explicit
+     * {@code (kind, name)} — used by the {@code editor tracks mirror …} command
+     * for scripting / out-of-plot edits. The X-menu instead uses the
+     * position-resolved {@link #runMirrorAtPosition}. Persists the flag in the
+     * variant's {@code variants.json} so the editor's live + save-time mirroring
+     * reflects the authored octant across the enabled axes.
      */
-    private static int runTrackMirror(CommandSourceStack source, String rawKind, String name, boolean axisX, boolean on) {
+    private static int runTrackMirror(CommandSourceStack source, String rawKind, String name, String axis, boolean on) {
         games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
         if (kind == null) return 0;
-        if (kind != games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_SECTION
-            && kind != games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_PORTAL) {
-            source.sendFailure(Component.literal(
-                "Mirror toggles apply to tunnels only (tunnel_section, tunnel_portal).")
-                .withStyle(ChatFormatting.RED));
-            return 0;
-        }
         if (name == null || name.isEmpty()) {
             source.sendFailure(Component.literal("Variant name is required."));
             return 0;
         }
-        Vec3i footprint = new Vec3i(
-            games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
-            games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
-            games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
+        CarriageDims dims = DungeonTrainWorldData.get(source.getLevel()).dims();
+        Vec3i footprint = kind.dims(dims);
         games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg =
             games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, name, footprint);
-        boolean newX = axisX ? on : cfg.mirrorX();
-        boolean newZ = axisX ? cfg.mirrorZ() : on;
-        cfg.setMirrorAxes(newX, newZ);
+        applyMirrorAxis(cfg, axis, on);
         try {
             cfg.save(kind, name);
             if (EditorDevMode.isEnabled()) cfg.saveToSource(kind, name);
             source.sendSuccess(() -> Component.literal(
-                "Editor: " + kind.id() + ":" + name + " mirror " + (axisX ? "X" : "Z") + " "
+                "Editor: " + kind.id() + ":" + name + " mirror " + axis.toUpperCase(Locale.ROOT) + " "
                     + (on ? "on" : "off")).withStyle(ChatFormatting.GREEN), true);
             return 1;
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] editor tracks mirror failed for {}:{}", kind.id(), name, e);
             source.sendFailure(Component.literal("track mirror failed: " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * Toggle one editor mirror axis on whatever editor plot the player is
+     * standing in — any category (carriage / contents / part / track-side).
+     * Resolved via {@link games.brennan.dungeontrain.editor.BlockVariantPlot};
+     * backs the X-menu Mirror X / Y / Z toggles.
+     */
+    private static int runMirrorAtPosition(CommandSourceStack source, String axis, boolean on) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("This command must be run by a player."));
+            return 0;
+        }
+        CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel()).dims();
+        games.brennan.dungeontrain.editor.BlockVariantPlot plot =
+            games.brennan.dungeontrain.editor.BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) {
+            source.sendFailure(Component.literal("Stand inside an editor plot to toggle mirror.")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        boolean x = plot.mirrorX(), y = plot.mirrorY(), z = plot.mirrorZ();
+        switch (axis) {
+            case "x" -> x = on;
+            case "y" -> y = on;
+            case "z" -> z = on;
+            default -> { return 0; }
+        }
+        plot.setMirrorAxes(x, y, z);
+        try {
+            plot.save();
+            source.sendSuccess(() -> Component.literal(
+                "Editor: mirror " + axis.toUpperCase(Locale.ROOT) + " " + (on ? "on" : "off"))
+                .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor mirror failed", e);
+            source.sendFailure(Component.literal("mirror failed: " + e.getMessage())
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
@@ -3997,7 +4054,8 @@ public final class EditorCommand {
                 games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, sourceName, expectedSize);
             if (!sourceSidecar.isEmpty()) {
                 games.brennan.dungeontrain.track.variant.TrackVariantBlocks copy =
-                    games.brennan.dungeontrain.track.variant.TrackVariantBlocks.empty();
+                    games.brennan.dungeontrain.track.variant.TrackVariantBlocks.emptyFor(kind);
+                copy.setMirrorAxes(sourceSidecar.mirrorX(), sourceSidecar.mirrorY(), sourceSidecar.mirrorZ());
                 for (games.brennan.dungeontrain.editor.CarriageVariantBlocks.Entry e : sourceSidecar.entries()) {
                     copy.put(e.localPos(), e.states());
                 }

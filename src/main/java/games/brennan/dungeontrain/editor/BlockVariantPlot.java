@@ -69,6 +69,18 @@ public interface BlockVariantPlot {
     /** Persist to disk. */
     void save() throws IOException;
 
+    /** Editor mirror X (length) axis for this plot's sidecar. */
+    boolean mirrorX();
+
+    /** Editor mirror Y (height) axis for this plot's sidecar. */
+    boolean mirrorY();
+
+    /** Editor mirror Z (width) axis for this plot's sidecar. */
+    boolean mirrorZ();
+
+    /** Set all three editor mirror axes on this plot's sidecar. Caller must {@link #save} to persist. */
+    void setMirrorAxes(boolean x, boolean y, boolean z);
+
     /** Lock-id at {@code localPos}; 0 if unlocked or no cell. */
     int lockIdAt(BlockPos localPos);
 
@@ -272,6 +284,10 @@ public interface BlockVariantPlot {
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
     }
 
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
@@ -311,6 +327,10 @@ public interface BlockVariantPlot {
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
     }
 
     /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
@@ -352,6 +372,10 @@ public interface BlockVariantPlot {
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
     }
 
     /** Wraps a {@link TrackVariantBlocks} sidecar. */
@@ -393,6 +417,10 @@ public interface BlockVariantPlot {
         @Override public Map<BlockPos, Integer> allLockIds() { return sidecar.allLockIds(); }
         @Override public int nextFreeLockId() { return sidecar.nextFreeLockId(); }
         @Override public java.util.Set<BlockPos> allFlaggedPositions() { return collectPositions(sidecar.entries()); }
+        @Override public boolean mirrorX() { return sidecar.mirrorX(); }
+        @Override public boolean mirrorY() { return sidecar.mirrorY(); }
+        @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
     }
 
     /**

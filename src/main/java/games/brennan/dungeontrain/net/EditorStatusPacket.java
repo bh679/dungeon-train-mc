@@ -57,7 +57,7 @@ import java.util.Set;
  */
 public record EditorStatusPacket(String category, String model, String modelId, String modelName, boolean devmode,
                                  int weight, int minLevel, int maxLevel, int phaseMask,
-                                 boolean partMenuEnabled, boolean mirrorX, boolean mirrorZ,
+                                 boolean partMenuEnabled, boolean mirrorX, boolean mirrorY, boolean mirrorZ,
                                  Set<String> excludedContents)
     implements CustomPacketPayload {
 
@@ -87,7 +87,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
 
     public static EditorStatusPacket empty() {
         return new EditorStatusPacket("", "", "", "", false, NO_WEIGHT,
-            0, MAX_LEVEL_ALL, ALL_PHASES_MASK, true, false, false, Collections.emptySet());
+            0, MAX_LEVEL_ALL, ALL_PHASES_MASK, true, false, false, false, Collections.emptySet());
     }
 
     public void encode(FriendlyByteBuf buf) {
@@ -102,6 +102,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         buf.writeVarInt(phaseMask);
         buf.writeBoolean(partMenuEnabled);
         buf.writeBoolean(mirrorX);
+        buf.writeBoolean(mirrorY);
         buf.writeBoolean(mirrorZ);
         buf.writeVarInt(excludedContents.size());
         for (String s : excludedContents) buf.writeUtf(s);
@@ -119,6 +120,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         int phases = buf.readVarInt();
         boolean pme = buf.readBoolean();
         boolean mx = buf.readBoolean();
+        boolean my = buf.readBoolean();
         boolean mz = buf.readBoolean();
         int n = buf.readVarInt();
         Set<String> excluded;
@@ -128,7 +130,7 @@ public record EditorStatusPacket(String category, String model, String modelId, 
             excluded = new LinkedHashSet<>(n);
             for (int i = 0; i < n; i++) excluded.add(buf.readUtf(64));
         }
-        return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, mz, excluded);
+        return new EditorStatusPacket(c, m, id, name, d, w, minLv, maxLv, phases, pme, mx, my, mz, excluded);
     }
 
     @Override
@@ -140,6 +142,6 @@ public record EditorStatusPacket(String category, String model, String modelId, 
         ctx.enqueueWork(() -> EditorStatusHudOverlay.setStatus(
             packet.category, packet.model, packet.modelId, packet.modelName,
             packet.devmode, packet.weight, packet.minLevel, packet.maxLevel, packet.phaseMask,
-            packet.partMenuEnabled, packet.mirrorX, packet.mirrorZ, packet.excludedContents));
+            packet.partMenuEnabled, packet.mirrorX, packet.mirrorY, packet.mirrorZ, packet.excludedContents));
     }
 }

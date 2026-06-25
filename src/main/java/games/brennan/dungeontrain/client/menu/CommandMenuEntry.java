@@ -110,13 +110,22 @@ public sealed interface CommandMenuEntry {
     record SaveAction(String label, Runnable onClick, boolean saved) implements CommandMenuEntry {}
 
     /**
-     * On/off state entry. The label is augmented with {@code [ON]} /
-     * {@code [OFF]} at render time based on {@link #state}. Clicking runs
-     * either {@link #cmdToTurnOn} (when currently off) or
-     * {@link #cmdToTurnOff} (when currently on). Does NOT close the menu —
-     * the server ack updates the displayed state on the next rebuild.
+     * On/off state entry. When {@link #showStateText} is true the label is
+     * augmented with {@code [ON]} / {@code [OFF]} at render time based on
+     * {@link #state}; when false the state is conveyed by the green/grey cell
+     * tint alone (used by compact one-row toggle groups where the suffix won't
+     * fit). Clicking runs either {@link #cmdToTurnOn} (when currently off) or
+     * {@link #cmdToTurnOff} (when currently on). Does NOT close the menu — the
+     * server ack updates the displayed state on the next rebuild.
      */
-    record Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff) implements CommandMenuEntry {}
+    record Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff, boolean showStateText)
+        implements CommandMenuEntry {
+
+        /** Convenience overload — defaults to showing the {@code [ON]}/{@code [OFF]} suffix. */
+        Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff) {
+            this(label, state, cmdToTurnOn, cmdToTurnOff, true);
+        }
+    }
 
     /**
      * Two buttons side-by-side in one row. Each side is its own

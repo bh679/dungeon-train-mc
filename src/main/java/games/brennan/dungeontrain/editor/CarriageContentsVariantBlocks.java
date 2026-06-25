@@ -74,13 +74,51 @@ public final class CarriageContentsVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
+    /**
+     * Per-template editor mirror axes, applied live and as a save-time backstop
+     * by {@link EditorMirror}. Optional top-level {@code "mirror": {x,y,z}}
+     * field; all default false (interiors are opt-in — not inherently symmetric).
+     */
+    private boolean mirrorX;
+    private boolean mirrorY;
+    private boolean mirrorZ;
+
     private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
+        this(entries, lockIds, false, false, false);
+    }
+
+    private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                                          boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.mirrorX = mirrorX;
+        this.mirrorY = mirrorY;
+        this.mirrorZ = mirrorZ;
     }
 
     public static CarriageContentsVariantBlocks empty() {
         return new CarriageContentsVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
+    }
+
+    /** Editor mirror X (length) axis. False unless the sidecar sets {@code mirror.x=true}. */
+    public boolean mirrorX() { return mirrorX; }
+
+    /** Editor mirror Y (height) axis. False unless the sidecar sets {@code mirror.y=true}. */
+    public boolean mirrorY() { return mirrorY; }
+
+    /** Editor mirror Z (width) axis. False unless the sidecar sets {@code mirror.z=true}. */
+    public boolean mirrorZ() { return mirrorZ; }
+
+    /** True when no axis is enabled — the absent-{@code mirror}-field state (contents default). */
+    private boolean isDefaultMirror() {
+        return !mirrorX && !mirrorY && !mirrorZ;
+    }
+
+    /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
+    public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        this.mirrorX = x;
+        this.mirrorY = y;
+        this.mirrorZ = z;
     }
 
     public static Path configPathFor(CarriageContents contents) {
@@ -147,7 +185,19 @@ public final class CarriageContentsVariantBlocks {
                     contents.id(), origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
-        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) return empty();
+        // Optional top-level editor mirror axes — all default false (interiors are opt-in).
+        boolean mirrorX = false;
+        boolean mirrorY = false;
+        boolean mirrorZ = false;
+        if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
+            JsonObject m = obj.getAsJsonObject("mirror");
+            if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
+            if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
+            if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
+        }
+        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
+            return new CarriageContentsVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorY, mirrorZ);
+        }
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         JsonObject variants = obj.getAsJsonObject("variants");
@@ -180,7 +230,7 @@ public final class CarriageContentsVariantBlocks {
         }
         LOGGER.info("[DungeonTrain] Loaded {} contents variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new CarriageContentsVariantBlocks(out, outLocks);
+        return new CarriageContentsVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ);
     }
 
     static BlockPos parsePos(String key) {
@@ -380,6 +430,11 @@ public final class CarriageContentsVariantBlocks {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
+        if (!isDefaultMirror()) {
+            sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
+              .append(", \"y\": ").append(mirrorY)
+              .append(", \"z\": ").append(mirrorZ).append(" },\n");
+        }
         sb.append("  \"variants\": {");
         boolean first = true;
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {

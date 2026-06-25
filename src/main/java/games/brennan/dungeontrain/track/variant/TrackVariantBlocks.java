@@ -63,36 +63,65 @@ public final class TrackVariantBlocks {
     private final Map<BlockPos, Integer> lockIds;
 
     /**
-     * Per-template mirror-on-save axes (tunnels only — consumed by
-     * {@link games.brennan.dungeontrain.editor.TunnelEditor}). Stored as the
-     * optional top-level {@code "mirror": {"x":…,"z":…}} field. Default
-     * true/true so a sidecar with no {@code mirror} field — or no sidecar at
-     * all ({@link #empty}) — authors as a fully mirrored model.
+     * Per-template mirror axes, applied live while editing and as a save-time
+     * backstop by {@link games.brennan.dungeontrain.editor.EditorMirror}.
+     * Stored as the optional top-level {@code "mirror": {"x":…,"y":…,"z":…}}
+     * field. The absent-field default is {@link #defaultMirror kind-aware}:
+     * tunnels default X+Z on (they are symmetric on both horizontals — matches
+     * the pre-existing behaviour and every shipped tunnel sidecar with no
+     * {@code mirror} field); track tiles / pillars / adjuncts default all-off
+     * (mirroring is opt-in). Y defaults off for every kind.
      */
     private boolean mirrorX;
+    private boolean mirrorY;
     private boolean mirrorZ;
 
+    /** Owning kind — selects this template's default mirror axes. Null only for the bare {@link #empty}. */
+    private final TrackKind kind;
+
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                               boolean mirrorX, boolean mirrorZ) {
+                               TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.kind = kind;
         this.mirrorX = mirrorX;
+        this.mirrorY = mirrorY;
         this.mirrorZ = mirrorZ;
     }
 
-    public static TrackVariantBlocks empty() {
-        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), true, true);
+    /**
+     * Default mirror axes {@code [x, y, z]} for a track kind: tunnels default
+     * X+Z on, every other kind all-off; Y always off. Null kind → all-off.
+     */
+    static boolean[] defaultMirror(TrackKind kind) {
+        boolean tunnel = kind == TrackKind.TUNNEL_SECTION || kind == TrackKind.TUNNEL_PORTAL;
+        return new boolean[]{ tunnel, false, tunnel };
     }
 
-    /** Mirror-on-save X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
+    /** Bare empty sidecar, all axes off — only for paths with no kind context. */
+    public static TrackVariantBlocks empty() {
+        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), null, false, false, false);
+    }
+
+    /** Empty sidecar carrying {@code kind}'s default mirror axes — the missing-sidecar state. */
+    public static TrackVariantBlocks emptyFor(TrackKind kind) {
+        boolean[] d = defaultMirror(kind);
+        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, d[0], d[1], d[2]);
+    }
+
+    /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
     public boolean mirrorX() { return mirrorX; }
 
-    /** Mirror-on-save Z (width) axis. True unless the sidecar sets {@code mirror.z=false}. */
+    /** Mirror Y (height) axis. False unless the sidecar sets {@code mirror.y=true}. */
+    public boolean mirrorY() { return mirrorY; }
+
+    /** Mirror Z (width) axis. True unless the sidecar sets {@code mirror.z=false}. */
     public boolean mirrorZ() { return mirrorZ; }
 
-    /** Set both mirror-on-save axes — used by the {@code editor tracks mirror} command before {@link #save}. */
-    public synchronized void setMirrorAxes(boolean x, boolean z) {
+    /** Set all three mirror axes — used by the {@code editor mirror} command before {@link #save}. */
+    public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
         this.mirrorX = x;
+        this.mirrorY = y;
         this.mirrorZ = z;
     }
 
@@ -134,14 +163,14 @@ public final class TrackVariantBlocks {
         }
         String resource = bundledResourceFor(kind, name);
         try (InputStream in = TrackVariantBlocks.class.getResourceAsStream(resource)) {
-            if (in == null) return empty();
+            if (in == null) return emptyFor(kind);
             try (Reader r = new InputStreamReader(in, StandardCharsets.UTF_8)) {
                 return parse(r, kind, name, "bundled " + resource, size);
             }
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Failed to read bundled track variant sidecar {}: {}",
                 resource, e.toString());
-            return empty();
+            return emptyFor(kind);
         }
     }
 
@@ -151,7 +180,7 @@ public final class TrackVariantBlocks {
         if (!root.isJsonObject()) {
             LOGGER.warn("[DungeonTrain] Track variant sidecar {}:{} ({}) is not a JSON object — ignoring.",
                 kind.id(), name, origin);
-            return empty();
+            return emptyFor(kind);
         }
         JsonObject obj = root.getAsJsonObject();
         if (obj.has("schemaVersion")) {
@@ -161,17 +190,21 @@ public final class TrackVariantBlocks {
                     kind.id(), name, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
-        // Optional top-level mirror-on-save axes (tunnels). Absent → both true.
-        boolean mirrorX = true;
-        boolean mirrorZ = true;
+        // Optional top-level mirror axes. Absent → this kind's default (tunnels
+        // X/Z on, others all-off; Y always off).
+        boolean[] def = defaultMirror(kind);
+        boolean mirrorX = def[0];
+        boolean mirrorY = def[1];
+        boolean mirrorZ = def[2];
         if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
             JsonObject m = obj.getAsJsonObject("mirror");
             if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
+            if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
             if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
         }
         if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
             // Mirror-only sidecar (e.g. a portal toggled off X) carries no cells.
-            return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorZ);
+            return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, mirrorX, mirrorY, mirrorZ);
         }
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
@@ -205,7 +238,7 @@ public final class TrackVariantBlocks {
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out, outLocks, mirrorX, mirrorZ);
+        return new TrackVariantBlocks(out, outLocks, kind, mirrorX, mirrorY, mirrorZ);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -330,9 +363,9 @@ public final class TrackVariantBlocks {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
         }
         // Delete only when there is genuinely nothing to persist — no cells AND
-        // default mirror. A mirror-only sidecar (empty cells, non-default axes,
-        // e.g. a portal with X off) must still be written.
-        if (entries.isEmpty() && mirrorX && mirrorZ) {
+        // default mirror (X/Z on, Y off). A mirror-only sidecar (empty cells,
+        // non-default axes, e.g. a portal with X off) must still be written.
+        if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
             LOGGER.info("[DungeonTrain] Cleared bundled track variant sidecar for {}:{} (no entries, default mirror)",
                 kind.id(), name);
@@ -346,13 +379,20 @@ public final class TrackVariantBlocks {
             kind.id(), name, file);
     }
 
+    /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
+    private boolean isDefaultMirror() {
+        boolean[] d = defaultMirror(kind);
+        return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2];
+    }
+
     private String toJsonText() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
-        // Only emit the mirror field when non-default (not both true) so existing
-        // sidecars stay byte-identical on resave — absent reads back as both true.
-        if (!(mirrorX && mirrorZ)) {
+        // Only emit the mirror field when non-default so existing sidecars stay
+        // byte-identical on resave — absent reads back as X/Z on, Y off.
+        if (!isDefaultMirror()) {
             sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
+              .append(", \"y\": ").append(mirrorY)
               .append(", \"z\": ").append(mirrorZ).append(" },\n");
         }
         sb.append("  \"variants\": {");
