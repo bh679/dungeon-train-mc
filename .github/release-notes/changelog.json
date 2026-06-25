@@ -2483,6 +2483,21 @@
       "released": true,
       "released_in": "v0.362.0",
       "released_at": "2026-06-25T10:54:19Z"
+    },
+    {
+      "id": "dark-nether-carriage",
+      "version": "0.363.0",
+      "type": "content",
+      "title": "Dark Nether carriage parts",
+      "summary": "New dark carriage part set built from polished blackstone, nether bricks, and basalt. The fire template now uses these parts exclusively and only spawns in the Nether.",
+      "highlights": [
+        "Dark walls, floor, roof, and doors with Nether-block palette",
+        "Fire carriage now Nether-phase-only"
+      ],
+      "date": "2026-06-25",
+      "released": true,
+      "released_in": "v0.363.0",
+      "released_at": "2026-06-25T12:13:10Z"
     }
   ]
 }
