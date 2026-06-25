@@ -2495,9 +2495,9 @@
         "Fire carriage now Nether-phase-only"
       ],
       "date": "2026-06-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.363.0",
+      "released_at": "2026-06-25T12:13:10Z"
     }
   ]
 }
