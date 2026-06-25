@@ -2448,6 +2448,24 @@
       "released": true,
       "released_in": "v0.361.0",
       "released_at": "2026-06-25T02:31:15Z"
+    },
+    {
+      "id": "live-editor-mirroring",
+      "version": "0.361.0",
+      "type": "feat",
+      "title": "Live mirroring in the template editor (X / Y / Z, all templates)",
+      "summary": "The in-game template editor now mirrors your edits live as you build: place or break a block and its reflections update instantly across the enabled axes \u2014 no save needed. A new vertical Y axis joins the existing left/right (X) and front/back (Z) mirrors, flipping slabs, stairs, doors and trapdoors the right way up. Mirroring is now available on every editor template (carriages, parts, tracks, pillars, tunnels), off by default; tunnels keep their existing horizontal mirroring. Toggle Mirror X / Y / Z from the editor's X-menu. Generated structures are unchanged.",
+      "highlights": [
+        "Edits mirror live across the enabled axes while you build",
+        "New Y (vertical) axis \u2014 slabs/stairs/doors flip top-to-bottom",
+        "Mirror toggles on every editor template, off by default (tunnels keep X+Z on)",
+        "Single Mirror X / Y / Z row in the editor X-menu"
+      ],
+      "pr": 581,
+      "date": "2026-06-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

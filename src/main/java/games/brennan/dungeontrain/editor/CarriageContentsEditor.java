@@ -305,6 +305,19 @@ public final class CarriageContentsEditor {
         BlockPos origin = plotOrigin(contents, dims);
         if (origin == null) throw new IOException("Unknown contents '" + contents.id() + "'.");
 
+        // Editor mirror save-time backstop to live mirroring — runs on the
+        // interior region (origin+1, interior size), matching the sidecar's
+        // interior-relative cells. No-op when all axes are off (default).
+        {
+            BlockPos mirrorOrigin = origin.offset(1, 1, 1);
+            net.minecraft.core.Vec3i mirrorSize = CarriageContentsPlacer.interiorSize(dims);
+            CarriageContentsVariantBlocks mirrorSidecar =
+                CarriageContentsVariantBlocks.loadFor(contents, mirrorSize);
+            EditorMirror.rebuildFromMaster(overworld, mirrorOrigin, mirrorSize,
+                mirrorSidecar.mirrorX(), mirrorSidecar.mirrorY(), mirrorSidecar.mirrorZ(),
+                EditorMirror.markersOf(mirrorSidecar.entries()));
+        }
+
         StructureTemplate template = CarriageContentsPlacer.captureTemplate(overworld, origin, dims);
         CarriageContentsStore.save(contents, template);
 

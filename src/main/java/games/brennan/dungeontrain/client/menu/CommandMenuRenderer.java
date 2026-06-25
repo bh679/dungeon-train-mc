@@ -472,7 +472,8 @@ public final class CommandMenuRenderer {
 
     private static String labelFor(CommandMenuEntry entry) {
         if (entry instanceof CommandMenuEntry.Toggle t) {
-            return t.label() + (t.state() ? " [ON]" : " [OFF]");
+            // Compact toggles convey state by the green/grey cell tint alone.
+            return t.showStateText() ? t.label() + (t.state() ? " [ON]" : " [OFF]") : t.label();
         }
         return entry.label();
     }

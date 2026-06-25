@@ -188,13 +188,52 @@ public final class CarriageVariantBlocks {
      */
     private final Map<BlockPos, Integer> lockIds;
 
+    /**
+     * Per-template editor mirror axes, applied live and as a save-time
+     * backstop by {@link EditorMirror}. Stored as the optional top-level
+     * {@code "mirror": {"x":…,"y":…,"z":…}} field; all default false (carriages
+     * are not inherently symmetric — mirroring is opt-in per template).
+     */
+    private boolean mirrorX;
+    private boolean mirrorY;
+    private boolean mirrorZ;
+
     private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
+        this(entries, lockIds, false, false, false);
+    }
+
+    private CarriageVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                                  boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.mirrorX = mirrorX;
+        this.mirrorY = mirrorY;
+        this.mirrorZ = mirrorZ;
     }
 
     public static CarriageVariantBlocks empty() {
         return new CarriageVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
+    }
+
+    /** Editor mirror X (length) axis. False unless the sidecar sets {@code mirror.x=true}. */
+    public boolean mirrorX() { return mirrorX; }
+
+    /** Editor mirror Y (height) axis. False unless the sidecar sets {@code mirror.y=true}. */
+    public boolean mirrorY() { return mirrorY; }
+
+    /** Editor mirror Z (width) axis. False unless the sidecar sets {@code mirror.z=true}. */
+    public boolean mirrorZ() { return mirrorZ; }
+
+    /** True when no axis is enabled — the absent-{@code mirror}-field state (carriage default). */
+    private boolean isDefaultMirror() {
+        return !mirrorX && !mirrorY && !mirrorZ;
+    }
+
+    /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
+    public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
+        this.mirrorX = x;
+        this.mirrorY = y;
+        this.mirrorZ = z;
     }
 
     /** On-disk path for the config-dir sidecar matching {@code variant}. */
@@ -273,8 +312,19 @@ public final class CarriageVariantBlocks {
                     id, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
+        // Optional top-level editor mirror axes — all default false (carriages
+        // are opt-in). A mirror-only sidecar (axes set, no cells) is still valid.
+        boolean mirrorX = false;
+        boolean mirrorY = false;
+        boolean mirrorZ = false;
+        if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
+            JsonObject m = obj.getAsJsonObject("mirror");
+            if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
+            if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
+            if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
+        }
         if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
-            return empty();
+            return new CarriageVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorY, mirrorZ);
         }
         HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks =
             BuiltInRegistries.BLOCK.asLookup();
@@ -331,7 +381,7 @@ public final class CarriageVariantBlocks {
             if (lockId > 0) outLocks.put(posI, lockId);
         }
         LOGGER.info("[DungeonTrain] Loaded {} variant entries for {} from {}", out.size(), id, origin);
-        return new CarriageVariantBlocks(out, outLocks);
+        return new CarriageVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ);
     }
 
     /**
@@ -737,10 +787,10 @@ public final class CarriageVariantBlocks {
      */
     public synchronized void save(CarriageVariant variant) throws IOException {
         Path file = configPathFor(variant);
-        if (entries.isEmpty()) {
+        if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
             CACHE.put(variant.id(), this);
-            LOGGER.info("[DungeonTrain] Cleared variant sidecar for {} (no entries)", variant.id());
+            LOGGER.info("[DungeonTrain] Cleared variant sidecar for {} (no entries, default mirror)", variant.id());
             return;
         }
         Files.createDirectories(file.getParent());
@@ -767,9 +817,9 @@ public final class CarriageVariantBlocks {
      */
     public synchronized void saveToSource(CarriageVariant variant) throws IOException {
         Path file = sourcePathForVariant(variant);
-        if (entries.isEmpty()) {
+        if (entries.isEmpty() && isDefaultMirror()) {
             Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled variant sidecar for {} (no entries)", variant.id());
+            LOGGER.info("[DungeonTrain] Cleared bundled variant sidecar for {} (no entries, default mirror)", variant.id());
             return;
         }
         Files.createDirectories(file.getParent());
@@ -822,6 +872,13 @@ public final class CarriageVariantBlocks {
         StringBuilder sb = new StringBuilder(256);
         sb.append("{\n");
         sb.append("  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
+        // Only emit the mirror field when non-default (some axis on) so existing
+        // sidecars stay byte-identical on resave — absent reads back as all-off.
+        if (!isDefaultMirror()) {
+            sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
+              .append(", \"y\": ").append(mirrorY)
+              .append(", \"z\": ").append(mirrorZ).append(" },\n");
+        }
         sb.append("  \"variants\": {");
         boolean first = true;
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
