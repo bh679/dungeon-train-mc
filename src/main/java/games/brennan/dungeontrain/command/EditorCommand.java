@@ -988,16 +988,12 @@ public final class EditorCommand {
 
     /** maxLevel inc cycles ALL → 0 → 1 → … → MAX_LEVEL → ALL (mirrors the mob difficulty-band editor). */
     private static TemplateGate maxLevelInc(TemplateGate g) {
-        int m = g.maxLevel();
-        int next = (m == TemplateGate.ALL) ? 0 : (m >= TemplateGate.MAX_LEVEL ? TemplateGate.ALL : m + 1);
-        return g.withMaxLevel(next);
+        return g.incMaxLevel();
     }
 
     /** maxLevel dec cycles the other way: ALL → MAX_LEVEL → … → 0 → ALL. */
     private static TemplateGate maxLevelDec(TemplateGate g) {
-        int m = g.maxLevel();
-        int next = (m == TemplateGate.ALL) ? TemplateGate.MAX_LEVEL : (m <= 0 ? TemplateGate.ALL : m - 1);
-        return g.withMaxLevel(next);
+        return g.decMaxLevel();
     }
 
     private static TemplateGate togglePhase(TemplateGate g, String phaseToken, boolean on) {

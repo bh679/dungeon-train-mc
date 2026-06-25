@@ -66,6 +66,19 @@ final class TemplateGateTest {
     }
 
     @Test
+    @DisplayName("incMaxLevel cycles ALL→0→…→MAX→ALL; decMaxLevel reverses")
+    void maxLevelCycle() {
+        // inc: ALL → 0, mid-range steps up, MAX wraps back to ALL
+        assertEquals(0, TemplateGate.DEFAULT.incMaxLevel().maxLevel());
+        assertEquals(6, TemplateGate.ofLevels(0, 5).incMaxLevel().maxLevel());
+        assertEquals(TemplateGate.ALL, TemplateGate.ofLevels(0, TemplateGate.MAX_LEVEL).incMaxLevel().maxLevel());
+        // dec: ALL → MAX, mid-range steps down, 0 wraps back to ALL
+        assertEquals(TemplateGate.MAX_LEVEL, TemplateGate.DEFAULT.decMaxLevel().maxLevel());
+        assertEquals(4, TemplateGate.ofLevels(0, 5).decMaxLevel().maxLevel());
+        assertEquals(TemplateGate.ALL, TemplateGate.ofLevels(0, 0).decMaxLevel().maxLevel());
+    }
+
+    @Test
     @DisplayName("withPhase toggles; removing the last phase normalises back to all")
     void withPhase() {
         TemplateGate g = TemplateGate.DEFAULT.withPhase(TrainPhase.OVERWORLD, false);

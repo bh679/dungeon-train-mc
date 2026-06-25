@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.menu.MenuRenderStates;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.LightTexture;
@@ -71,22 +72,37 @@ public final class PartPositionMenuRenderer {
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
-    /** Width of one grid column (a name + weight cell pair, plus the optional [X] chip in remove-mode). */
-    static final double COLUMN_WIDTH = 1.6;
-    /** Minimum panel width — guarantees the four-cell toolbar can fit "Remove" / "Cancel" / "Clear" labels without text overlap. */
-    static final double MIN_PANEL_WIDTH = 2.4;
-    /** Bumped minimum for door rows so the extra end-mode cell ("end+mid" label) doesn't crowd the name text. */
-    static final double DOOR_MIN_PANEL_WIDTH = 3.0;
+    /** Width of one grid column (name + weight + gate cells, plus optional side/end/[X] chips). */
+    static final double COLUMN_WIDTH = 3.2;
+    /** Minimum panel width — fits the toolbar labels and the weight+gate cell strip without crowding the name. */
+    static final double MIN_PANEL_WIDTH = 3.6;
+    /** Bumped minimum for door rows so the extra side+end cells don't crowd the name text. */
+    static final double DOOR_MIN_PANEL_WIDTH = 4.4;
     /** Width of the X chip on the right of each entry row when remove-mode is on. */
     static final double X_CELL_WIDTH = 0.30;
     /** Width of the weight cell on the right side of each entry row. */
     static final double WEIGHT_CELL_WIDTH = 0.40;
+    /** Width of the min-level gate cell (≥N) — all kinds. */
+    static final double MIN_LEVEL_CELL_WIDTH = 0.34;
+    /** Width of the max-level gate cell (≤N / ≤∞) — all kinds. */
+    static final double MAX_LEVEL_CELL_WIDTH = 0.34;
+    /** Width of the dimension (phase) gate cell — four toggle letters O N V E — all kinds. */
+    static final double PHASE_CELL_WIDTH = 0.56;
     /** Width of the side-mode cell (walls/doors only) — fits "(1|2)" with padding. */
     static final double SIDE_MODE_CELL_WIDTH = 0.50;
     /** Width of the end-mode cell (doors only) — fits "end+mid" with padding. */
     static final double END_MODE_CELL_WIDTH = 0.60;
     /** Text scale matches CommandMenuRenderer's. */
     static final double TEXT_SCALE = 0.012;
+
+    /** Phase letters, indexed by {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal. */
+    static final String[] PHASE_LETTERS = {"O", "N", "V", "E"};
+    /** Min/max-level text colour — matches the template-type editor's LEVEL_COLOR. */
+    static final int LEVEL_COLOR = 0xFFBBD0FF;
+    /** Phase letter colour when the dimension is enabled. */
+    static final int PHASE_ON_COLOR = 0xFF66FF66;
+    /** Phase letter colour when the dimension is disabled. */
+    static final int PHASE_OFF_COLOR = 0xFF777777;
 
     private PartPositionMenuRenderer() {}
 
@@ -230,6 +246,9 @@ public final class PartPositionMenuRenderer {
             //   [X] (rightmost, in remove-mode only)
             //   end-mode cell (only for doors)
             //   side-mode cell (only for walls/doors)
+            //   phase cell    (O N V E — all kinds)
+            //   max-level cell (≤N / ≤∞ — all kinds)
+            //   min-level cell (≥N — all kinds)
             //   weight cell
             //   name cell (fills the remaining left space)
             double xCellW = removeMode ? X_CELL_WIDTH : 0.0;
@@ -239,7 +258,13 @@ public final class PartPositionMenuRenderer {
             double endCellL  = endCellR - endCellW;
             double sideCellR = endCellL;
             double sideCellL = sideCellR - sideCellW;
-            double weightCellR = sideCellL;
+            double phaseCellR = sideCellL;
+            double phaseCellL = phaseCellR - PHASE_CELL_WIDTH;
+            double maxCellR = phaseCellL;
+            double maxCellL = maxCellR - MAX_LEVEL_CELL_WIDTH;
+            double minCellR = maxCellL;
+            double minCellL = minCellR - MIN_LEVEL_CELL_WIDTH;
+            double weightCellR = minCellL;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
             double nameCellL = colXL;
             double nameCellR = weightCellL;
@@ -262,6 +287,42 @@ public final class PartPositionMenuRenderer {
             drawCenteredText(ps, buffer, font, Integer.toString(entry.weight()),
                 (weightCellL + weightCellR) / 2.0, rowCY,
                 weightHover ? 0xFF000000 : 0xFFFFFFFF);
+
+            // Gate cells — Diff-Level band (≥min / ≤max) + dimension letters
+            // (O N V E). Shown for every kind; mirrors the template-type editor.
+            var gate = entry.gate();
+
+            // Min-level cell (≥N) — click bumps +1, shift-click −1.
+            boolean minHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_MIN_LEVEL && hovered.index() == i;
+            drawQuad(ps, buffer, minCellL + 0.005, rowBottom + 0.005,
+                minCellR - 0.005, rowTop - 0.005, minHover ? 0xC066AACC : 0x3033557A);
+            drawCenteredText(ps, buffer, font, "≥" + gate.minLevel(),
+                (minCellL + minCellR) / 2.0, rowCY, minHover ? 0xFF000000 : LEVEL_COLOR);
+
+            // Max-level cell (≤N, or ≤∞ when unbounded).
+            boolean maxHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_MAX_LEVEL && hovered.index() == i;
+            drawQuad(ps, buffer, maxCellL + 0.005, rowBottom + 0.005,
+                maxCellR - 0.005, rowTop - 0.005, maxHover ? 0xC066AACC : 0x3033557A);
+            String maxLabel = gate.maxLevel() < 0 ? "≤∞" : "≤" + gate.maxLevel();
+            drawCenteredText(ps, buffer, font, maxLabel,
+                (maxCellL + maxCellR) / 2.0, rowCY, maxHover ? 0xFF000000 : LEVEL_COLOR);
+
+            // Phase cell: four letters O N V E; click a letter to toggle that dimension.
+            double phaseLetterW = (phaseCellR - phaseCellL) / PHASE_LETTERS.length;
+            TrainPhase[] phases = TrainPhase.values();
+            for (int slot = 0; slot < PHASE_LETTERS.length; slot++) {
+                boolean on = slot < phases.length && gate.phases().contains(phases[slot]);
+                boolean phaseHover = hovered.kind() == PartPositionMenu.CellKind.ENTRY_PHASE
+                    && hovered.index() == i && hovered.phaseSlot() == slot;
+                double lx = phaseCellL + slot * phaseLetterW;
+                if (phaseHover) {
+                    drawQuad(ps, buffer, lx + 0.004, rowBottom + 0.005,
+                        lx + phaseLetterW - 0.004, rowTop - 0.005, 0x90FFFFFF);
+                }
+                drawCenteredText(ps, buffer, font, PHASE_LETTERS[slot],
+                    lx + phaseLetterW / 2.0, rowCY,
+                    phaseHover ? 0xFF000000 : (on ? PHASE_ON_COLOR : PHASE_OFF_COLOR));
+            }
 
             // Side-mode cell (walls/doors only) — click cycles BOTH→ONE→EITHER.
             if (showSideMode) {

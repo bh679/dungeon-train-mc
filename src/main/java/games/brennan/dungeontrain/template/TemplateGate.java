@@ -93,6 +93,23 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     }
 
     /**
+     * Cycle {@code maxLevel} up one step for a click-to-bump editor:
+     * {@link #ALL} → 0 → 1 → … → {@link #MAX_LEVEL} → {@link #ALL} (mirrors the mob difficulty-band
+     * editor's wrap). Shared by the template-type editor and the carriage-parts editor so both step
+     * the {@code ALL}↔finite sentinel identically.
+     */
+    public TemplateGate incMaxLevel() {
+        int next = (maxLevel == ALL) ? 0 : (maxLevel >= MAX_LEVEL ? ALL : maxLevel + 1);
+        return withMaxLevel(next);
+    }
+
+    /** Cycle {@code maxLevel} down one step: {@link #ALL} → {@link #MAX_LEVEL} → … → 0 → {@link #ALL}. */
+    public TemplateGate decMaxLevel() {
+        int next = (maxLevel == ALL) ? MAX_LEVEL : (maxLevel <= 0 ? ALL : maxLevel - 1);
+        return withMaxLevel(next);
+    }
+
+    /**
      * Copy with {@code phase} toggled on/off. Toggling the last remaining phase off normalises back
      * to all phases (the canonical constructor's "empty ⇒ all" rule), so the gate never becomes
      * "eligible in zero phases".

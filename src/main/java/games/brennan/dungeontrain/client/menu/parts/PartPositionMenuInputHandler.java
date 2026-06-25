@@ -174,6 +174,31 @@ public final class PartPositionMenuInputHandler {
                 DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.BUMP_WEIGHT, variantId, kind, name, delta));
             }
+            case ENTRY_MIN_LEVEL -> {
+                List<WeightedName> entries = PartPositionMenu.entries();
+                if (hit.index() < 0 || hit.index() >= entries.size()) return;
+                String name = entries.get(hit.index()).name();
+                int delta = shift ? -1 : 1;
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
+                    PartAssignmentEditPacket.Op.BUMP_MIN_LEVEL, variantId, kind, name, delta));
+            }
+            case ENTRY_MAX_LEVEL -> {
+                List<WeightedName> entries = PartPositionMenu.entries();
+                if (hit.index() < 0 || hit.index() >= entries.size()) return;
+                String name = entries.get(hit.index()).name();
+                int delta = shift ? -1 : 1;
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
+                    PartAssignmentEditPacket.Op.BUMP_MAX_LEVEL, variantId, kind, name, delta));
+            }
+            case ENTRY_PHASE -> {
+                List<WeightedName> entries = PartPositionMenu.entries();
+                if (hit.index() < 0 || hit.index() >= entries.size()) return;
+                if (hit.phaseSlot() < 0) return;
+                String name = entries.get(hit.index()).name();
+                // delta carries the TrainPhase ordinal to toggle (see PartAssignmentEditPacket).
+                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
+                    PartAssignmentEditPacket.Op.TOGGLE_PHASE, variantId, kind, name, hit.phaseSlot()));
+            }
             case ENTRY_REMOVE_X -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;

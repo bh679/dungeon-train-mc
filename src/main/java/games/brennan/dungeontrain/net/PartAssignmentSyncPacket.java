@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.EndMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.SideMode;
 import games.brennan.dungeontrain.train.CarriagePartAssignment.WeightedName;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -74,6 +76,10 @@ public record PartAssignmentSyncPacket(
             buf.writeVarInt(e.weight());
             buf.writeByte(e.sideMode().ordinal());
             buf.writeByte(e.endMode().ordinal());
+            // Per-entry spawn gate: Diff-Level band + dimension mask (maxLevel == ALL is -1).
+            buf.writeVarInt(e.gate().minLevel());
+            buf.writeVarInt(e.gate().maxLevel());
+            buf.writeByte(TrainPhase.toMask(e.gate().phases()));
         }
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
@@ -105,7 +111,11 @@ public record PartAssignmentSyncPacket(
             byte endOrd = buf.readByte();
             EndMode endMode = (endOrd >= 0 && endOrd < EndMode.values().length)
                 ? EndMode.values()[endOrd] : EndMode.BOTH;
-            entries.add(new WeightedName(name, weight, mode, endMode));
+            int minLevel = buf.readVarInt();
+            int maxLevel = buf.readVarInt();
+            int phaseMask = buf.readByte() & 0xFF;
+            TemplateGate gate = new TemplateGate(minLevel, maxLevel, TrainPhase.fromMask(phaseMask));
+            entries.add(new WeightedName(name, weight, mode, endMode, gate));
         }
         Vec3 anchor = readVec3(buf);
         Vec3 right  = readVec3(buf);

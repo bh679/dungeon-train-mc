@@ -356,10 +356,26 @@ public final class CarriagePlacer {
         if (assignment.isEmpty()) return;
         CarriagePartAssignment a = assignment.get();
         if (a.allNone()) return;
+        GateContext gateCtx = partGateContext(level, carriageIndex, dims);
         for (CarriagePartKind kind : CarriagePartKind.values()) {
-            java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex);
+            java.util.List<String> picks = a.pickPerPlacement(kind, seed, carriageIndex, gateCtx);
             CarriagePartPlacer.spawnPartVariantMobsAt(level, origin, kind, picks, dims, seed, carriageIndex);
         }
+    }
+
+    /**
+     * The spawn-gate context for a carriage's part picks: its Diff-Level band + {@link
+     * games.brennan.dungeontrain.worldgen.TrainPhase dimension}, or {@code null} for the
+     * editor-preview / template-load sentinel ({@link CarriageContentsPlacer#EDITOR_SENTINEL_PIDX})
+     * so authoring shows every part regardless of where the player stands. Shared by {@link
+     * #stampPartsOverlay}, {@link #spawnPartsVariantMobs}, and {@link PartRegionFilterProcessor} so
+     * all three resolve the identical gated pool — the stamped part, its claimed footprint, and its
+     * baked mobs always agree. Mirrors the contents gate at the {@code applyContents} call site.
+     */
+    static GateContext partGateContext(ServerLevel level, int carriageIndex, CarriageDims dims) {
+        return carriageIndex == CarriageContentsPlacer.EDITOR_SENTINEL_PIDX
+            ? null
+            : GateContext.forCarriage(level, carriageIndex, dims.length());
     }
 
     /**
@@ -712,6 +728,7 @@ public final class CarriagePlacer {
         CarriagePartAssignment a = assignment.get();
         if (a.allNone()) return null;
 
+        GateContext gateCtx = partGateContext(level, carriageIndex, dims);
         StringBuilder desc = new StringBuilder();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             // Pick once per placement so walls / doors honour the per-entry
@@ -719,9 +736,10 @@ public final class CarriagePlacer {
             // for the other side; EITHER = seeded coin-flip). Door entries
             // additionally filter by EndMode against the flatbed-neighbour
             // flags. Floor / roof resolves to a single-element list and
-            // behaves as before.
+            // behaves as before. The gate drops out-of-band / out-of-dimension
+            // entries before the draw (ungated fallback keeps the slot fillable).
             java.util.List<String> picks = a.pickPerPlacement(
-                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront);
+                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, gateCtx);
             boolean stamped = false;
             for (String picked : picks) {
                 if (!CarriagePartKind.NONE.equals(picked)

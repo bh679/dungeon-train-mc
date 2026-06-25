@@ -4,11 +4,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.TemplateWeightCodec;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.function.UnaryOperator;
 
 /**
  * Per-carriage-variant map of {@link CarriagePartKind} → candidate part
@@ -27,17 +32,28 @@ import java.util.Random;
  * case that kind's stamp is skipped entirely (the FLATBED case:
  * {@code walls=[{none, 1}]} leaves the sides open).</p>
  *
+ * <p>Each entry also carries an optional per-entry spawn {@link TemplateGate} (Diff-Level band +
+ * {@link TrainPhase dimension} set), mirroring the per-template gate on carriage / contents / track
+ * variants. At spawn the picker drops out-of-band / out-of-dimension entries <b>before</b> the
+ * weighted draw via {@link #applyGate}, falling back to the ungated pool if that empties the slot so
+ * a part is never left unfillable. The gate is (de)serialised with the shared
+ * {@link TemplateWeightCodec} so it shares the exact on-disk shape used by the weight stores; the
+ * default gate emits nothing, so prior files round-trip byte-identically.</p>
+ *
  * <p>JSON schema is forward and backwards tolerant:
  * <ul>
- *   <li><b>v2</b> (current) — array of {@code {"name": "...", "weight": N}} objects.</li>
+ *   <li><b>v3</b> (current) — v2 plus optional gate fields ({@code minLevel}, {@code maxLevel},
+ *       {@code phases}) per entry, emitted only when the gate is non-default.</li>
+ *   <li><b>v2</b> — array of {@code {"name": "...", "weight": N}} objects.</li>
  *   <li><b>v1</b> — array of bare strings; loaded with {@code weight=1}.</li>
  *   <li><b>v0 scalar</b> — a single bare string in a slot; normalised to one entry at weight 1.</li>
  * </ul></p>
  *
  * <pre>
- * { "schemaVersion": 2,
+ * { "schemaVersion": 3,
  *   "floor": [ { "name": "wood", "weight": 3 } ],
  *   "walls": [ { "name": "standard_walls", "weight": 1 },
+ *              { "name": "nether", "weight": 2, "minLevel": 10, "phases": ["NETHER"] },
  *              { "name": "none", "weight": 1 } ],
  *   "roof":  [ { "name": "standard", "weight": 1 } ],
  *   "doors": [] }
@@ -47,7 +63,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
                                      List<WeightedName> roof, List<WeightedName> doors) {
 
     public static final String SCHEMA_KEY = "schemaVersion";
-    public static final int SCHEMA_VERSION = 2;
+    public static final int SCHEMA_VERSION = 3;
 
     /** Inclusive weight bounds. Authors clamp to this range; the JSON loader also clamps. */
     public static final int MIN_WEIGHT = 1;
@@ -145,14 +161,18 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     }
 
     /**
-     * A candidate name with its pick weight, side-mode constraint, and
-     * end-mode constraint. Weight is clamped to {@code [MIN_WEIGHT,
-     * MAX_WEIGHT]}; sideMode defaults to {@link SideMode#BOTH} and
-     * endMode defaults to {@link EndMode#BOTH} so legacy entries (and
-     * floor / roof / wall entries that don't care about position-along-
-     * the-group) match the original mirroring behaviour.
+     * A candidate name with its pick weight, side-mode constraint,
+     * end-mode constraint, and per-entry spawn {@link TemplateGate}.
+     * Weight is clamped to {@code [MIN_WEIGHT, MAX_WEIGHT]}; sideMode
+     * defaults to {@link SideMode#BOTH}, endMode to {@link EndMode#BOTH},
+     * and gate to {@link TemplateGate#DEFAULT} (eligible at every
+     * Diff-Level and dimension) so legacy entries (and floor / roof / wall
+     * entries that don't care about position-along-the-group) match the
+     * original behaviour. The convenience constructors below keep every
+     * pre-gate call site compiling unchanged.
      */
-    public record WeightedName(String name, int weight, SideMode sideMode, EndMode endMode) {
+    public record WeightedName(String name, int weight, SideMode sideMode, EndMode endMode,
+                               TemplateGate gate) {
         public WeightedName {
             name = (name == null || name.isBlank())
                 ? CarriagePartKind.NONE
@@ -160,26 +180,32 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             weight = clampWeight(weight);
             if (sideMode == null) sideMode = SideMode.BOTH;
             if (endMode == null) endMode = EndMode.BOTH;
+            if (gate == null) gate = TemplateGate.DEFAULT;
         }
 
-        /** Default-weight, BOTH-side, BOTH-end entry. */
+        /** Default-weight, BOTH-side, BOTH-end, default-gate entry. */
         public static WeightedName of(String name) {
-            return new WeightedName(name, MIN_WEIGHT, SideMode.BOTH, EndMode.BOTH);
+            return new WeightedName(name, MIN_WEIGHT, SideMode.BOTH, EndMode.BOTH, TemplateGate.DEFAULT);
         }
 
-        /** Default-weight entry with explicit side mode (endMode defaults to BOTH). */
+        /** Default-weight entry with explicit side mode (endMode BOTH, default gate). */
         public static WeightedName of(String name, SideMode sideMode) {
-            return new WeightedName(name, MIN_WEIGHT, sideMode, EndMode.BOTH);
+            return new WeightedName(name, MIN_WEIGHT, sideMode, EndMode.BOTH, TemplateGate.DEFAULT);
         }
 
-        /** 2-arg back-compat constructor — defaults sideMode and endMode to BOTH. */
+        /** 2-arg back-compat constructor — defaults sideMode/endMode BOTH, gate DEFAULT. */
         public WeightedName(String name, int weight) {
-            this(name, weight, SideMode.BOTH, EndMode.BOTH);
+            this(name, weight, SideMode.BOTH, EndMode.BOTH, TemplateGate.DEFAULT);
         }
 
-        /** 3-arg back-compat constructor — defaults endMode to BOTH. */
+        /** 3-arg back-compat constructor — defaults endMode BOTH, gate DEFAULT. */
         public WeightedName(String name, int weight, SideMode sideMode) {
-            this(name, weight, sideMode, EndMode.BOTH);
+            this(name, weight, sideMode, EndMode.BOTH, TemplateGate.DEFAULT);
+        }
+
+        /** 4-arg back-compat constructor — defaults gate DEFAULT. */
+        public WeightedName(String name, int weight, SideMode sideMode, EndMode endMode) {
+            this(name, weight, sideMode, endMode, TemplateGate.DEFAULT);
         }
     }
 
@@ -255,7 +281,17 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * with the same list+weights always returns the same name.</p>
      */
     public String pick(CarriagePartKind kind, long seed, int carriageIndex) {
-        List<WeightedName> list = entries(kind);
+        return pick(kind, seed, carriageIndex, null);
+    }
+
+    /**
+     * Gate-aware {@link #pick(CarriagePartKind, long, int)}: when {@code gateCtx} is non-null,
+     * {@link #applyGate} drops entries whose {@link TemplateGate} excludes the carriage's Diff-Level
+     * / dimension before the weighted draw (ungated fallback if that empties the slot). A
+     * {@code null} context — editor preview, slash command, template load — skips gating entirely.
+     */
+    public String pick(CarriagePartKind kind, long seed, int carriageIndex, GateContext gateCtx) {
+        List<WeightedName> list = applyGate(entries(kind), gateCtx);
         if (list.size() == 1) return list.get(0).name();
         long mixed = seed ^ ((long) carriageIndex * MIX) ^ ((long) kind.ordinal() * 0xC6BC279692B5C323L);
         return weightedPick(list, mixed);
@@ -274,7 +310,16 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * fallback chosen for LOOPING / RANDOM modes.</p>
      */
     public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex) {
-        return pickPerPlacement(kind, seed, carriageIndex, false, false);
+        return pickPerPlacement(kind, seed, carriageIndex, false, false, null);
+    }
+
+    /**
+     * Gate-aware no-flatbed overload — see
+     * {@link #pickPerPlacement(CarriagePartKind, long, int, boolean, boolean, GateContext)}.
+     */
+    public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex,
+                                         GateContext gateCtx) {
+        return pickPerPlacement(kind, seed, carriageIndex, false, false, gateCtx);
     }
 
     /**
@@ -307,12 +352,25 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      */
     public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex,
                                          boolean flatbedAtBack, boolean flatbedAtFront) {
+        return pickPerPlacement(kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, null);
+    }
+
+    /**
+     * Gate-aware {@link #pickPerPlacement(CarriagePartKind, long, int, boolean, boolean)}: when
+     * {@code gateCtx} is non-null, {@link #applyGate} drops out-of-band / out-of-dimension entries
+     * from the candidate pool before the per-placement SideMode/EndMode logic runs (ungated fallback
+     * if that empties the kind's pool). A {@code null} context skips gating, so editor preview and
+     * slash-command callers see every entry regardless of where the carriage sits.
+     */
+    public List<String> pickPerPlacement(CarriagePartKind kind, long seed, int carriageIndex,
+                                         boolean flatbedAtBack, boolean flatbedAtFront,
+                                         GateContext gateCtx) {
         boolean twoPlacements = kind == CarriagePartKind.WALLS || kind == CarriagePartKind.DOORS;
         if (!twoPlacements) {
-            return List.of(pick(kind, seed, carriageIndex));
+            return List.of(pick(kind, seed, carriageIndex, gateCtx));
         }
 
-        List<WeightedName> list = entries(kind);
+        List<WeightedName> list = applyGate(entries(kind), gateCtx);
         // End-mode filter applies to DOORS only; WALLS keep their full list.
         boolean applyEndFilter = kind == CarriagePartKind.DOORS;
         List<WeightedName> poolBack  = applyEndFilter ? filterByEndMode(list, flatbedAtBack)  : list;
@@ -404,6 +462,23 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         return out.isEmpty() ? list : out;
     }
 
+    /**
+     * Drop entries whose {@link TemplateGate} excludes {@code gateCtx} (the carriage's Diff-Level +
+     * dimension), mirroring the per-template gate filter on the carriage / contents / track pools
+     * ({@code CarriageContentsRegistry.pick}, {@code CarriagePlacer.gateFilter}). A {@code null}
+     * context returns the list unchanged (no gating); an empty result falls back to the full list so
+     * a slot is never left unfillable. The {@link CarriagePartKind#NONE} sentinel carries the default
+     * gate, so the FLATBED {@code walls=[{none,1}]} case always survives the filter.
+     */
+    private static List<WeightedName> applyGate(List<WeightedName> list, GateContext gateCtx) {
+        if (gateCtx == null) return list;
+        List<WeightedName> gated = new ArrayList<>(list.size());
+        for (WeightedName e : list) {
+            if (gateCtx.allows(e.gate())) gated.add(e);
+        }
+        return gated.isEmpty() ? list : gated;
+    }
+
     /** Weighted-cumulative pick from a non-empty list. Returns the first entry's name when total weight is 0. */
     private static String weightedPick(List<WeightedName> list, long seed) {
         int total = 0;
@@ -492,7 +567,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), clampWeight(e.weight() + delta), e.sideMode(), e.endMode()));
+                updated.add(new WeightedName(e.name(), clampWeight(e.weight() + delta), e.sideMode(), e.endMode(), e.gate()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -515,7 +590,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode().next(), e.endMode()));
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode().next(), e.endMode(), e.gate()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -539,7 +614,61 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode().next()));
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode().next(), e.gate()));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        if (!changed) return this;
+        return with(kind, updated);
+    }
+
+    /**
+     * Step the {@code minLevel} of {@code name}'s gate in {@code kind}'s list by {@code delta}
+     * (typically ±1; re-clamped to {@code [0, MAX_LEVEL]} by the gate constructor). Mirrors the
+     * template-type editor's {@code minlevel inc|dec}. Returns {@code this} unchanged if the name
+     * isn't in the list.
+     */
+    public CarriagePartAssignment withMinLevel(CarriagePartKind kind, String name, int delta) {
+        return mutateGate(kind, name, g -> g.withMinLevel(g.minLevel() + delta));
+    }
+
+    /**
+     * Step the {@code maxLevel} of {@code name}'s gate one notch in {@code kind}'s list — up for
+     * {@code delta >= 0}, down otherwise — cycling the {@link TemplateGate#ALL}↔finite sentinel
+     * exactly as the template-type editor's {@code maxlevel inc|dec} does. Returns {@code this}
+     * unchanged if the name isn't in the list.
+     */
+    public CarriagePartAssignment withMaxLevel(CarriagePartKind kind, String name, int delta) {
+        return mutateGate(kind, name, g -> delta >= 0 ? g.incMaxLevel() : g.decMaxLevel());
+    }
+
+    /**
+     * Toggle {@code phase} on/off in the gate of {@code name} in {@code kind}'s list. Toggling the
+     * last remaining dimension off normalises back to all dimensions (the gate's "empty ⇒ all"
+     * rule), so a gate never becomes "eligible in zero dimensions". Returns {@code this} unchanged
+     * if the name isn't in the list.
+     */
+    public CarriagePartAssignment togglePhase(CarriagePartKind kind, String name, TrainPhase phase) {
+        return mutateGate(kind, name, g -> g.withPhase(phase, !g.phases().contains(phase)));
+    }
+
+    /**
+     * Shared rewrite for the gate mutators: replace the first entry matching {@code name} with a copy
+     * whose gate is {@code op}-transformed, preserving name/weight/sideMode/endMode. No match ⇒
+     * {@code this} unchanged.
+     */
+    private CarriagePartAssignment mutateGate(CarriagePartKind kind, String name,
+                                              UnaryOperator<TemplateGate> op) {
+        List<WeightedName> existing = entries(kind);
+        String norm = (name == null) ? CarriagePartKind.NONE : name.toLowerCase(Locale.ROOT);
+        List<WeightedName> updated = new ArrayList<>(existing.size());
+        boolean changed = false;
+        for (WeightedName e : existing) {
+            if (!changed && e.name().equals(norm)) {
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode(),
+                    op.apply(e.gate())));
                 changed = true;
             } else {
                 updated.add(e);
@@ -588,6 +717,9 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             if (e.endMode() != EndMode.BOTH) {
                 obj.addProperty("endMode", e.endMode().name().toLowerCase(Locale.ROOT));
             }
+            // Gate fields (minLevel / maxLevel / phases) — emitted only when non-default, in the
+            // shared TemplateWeightCodec shape so parts sidecars match the weight stores on disk.
+            TemplateWeightCodec.writeGateFields(obj, e.gate());
             arr.add(obj);
         }
         return arr;
@@ -642,7 +774,10 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             EndMode endMode = obj.has("endMode") && obj.get("endMode").isJsonPrimitive()
                 ? EndMode.fromId(obj.get("endMode").getAsString())
                 : EndMode.BOTH;
-            out.add(new WeightedName(name, weight, mode, endMode));
+            // Optional gate fields — absent ⇒ TemplateGate.DEFAULT (eligible everywhere), so v1/v2
+            // entries load unchanged.
+            TemplateGate gate = TemplateWeightCodec.parseGate(obj);
+            out.add(new WeightedName(name, weight, mode, endMode, gate));
         }
         if (out.isEmpty()) return List.of(WeightedName.of(CarriagePartKind.NONE));
         return out;

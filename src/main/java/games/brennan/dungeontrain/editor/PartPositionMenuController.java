@@ -400,6 +400,19 @@ public final class PartPositionMenuController {
             case BUMP_WEIGHT -> current.withWeight(packet.kind(), packet.name(), packet.delta());
             case CYCLE_SIDE_MODE -> current.cycleSideMode(packet.kind(), packet.name());
             case CYCLE_END_MODE -> current.cycleEndMode(packet.kind(), packet.name());
+            case BUMP_MIN_LEVEL -> current.withMinLevel(packet.kind(), packet.name(), packet.delta());
+            case BUMP_MAX_LEVEL -> current.withMaxLevel(packet.kind(), packet.name(), packet.delta());
+            case TOGGLE_PHASE -> {
+                // delta carries the TrainPhase ordinal to flip (see PartAssignmentEditPacket).
+                games.brennan.dungeontrain.worldgen.TrainPhase[] phases =
+                    games.brennan.dungeontrain.worldgen.TrainPhase.values();
+                int idx = packet.delta();
+                if (idx < 0 || idx >= phases.length) {
+                    LOGGER.warn("[DungeonTrain] PartMenu TOGGLE_PHASE rejected: bad phase ordinal {}", idx);
+                    yield current;
+                }
+                yield current.togglePhase(packet.kind(), packet.name(), phases[idx]);
+            }
             // Unreachable — PREVIEW_ENTRY is handled by an early return above.
             // Kept here so the switch stays exhaustive over the Op enum.
             case PREVIEW_ENTRY -> current;

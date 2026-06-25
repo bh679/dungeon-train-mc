@@ -134,7 +134,18 @@ public final class TemplateWeightCodec {
     private static JsonObject entryObject(TemplateMeta meta) {
         JsonObject o = new JsonObject();
         o.addProperty(K_WEIGHT, meta.weight());
-        TemplateGate g = meta.gate();
+        writeGateFields(o, meta.gate());
+        return o;
+    }
+
+    /**
+     * Emit the non-default gate fields ({@link #K_MIN}, {@link #K_MAX}, {@link #K_PHASES}) into
+     * {@code o}; each field is omitted when it sits at its own default (minLevel 0, maxLevel
+     * {@link TemplateGate#ALL}, all phases), so a {@link TemplateGate#isDefault() default} gate adds
+     * nothing. Shared by the weight stores and the carriage-parts sidecar codec so both emit the
+     * identical on-disk gate shape.
+     */
+    public static void writeGateFields(JsonObject o, TemplateGate g) {
         if (g.minLevel() != 0) o.addProperty(K_MIN, g.minLevel());
         if (g.maxLevel() != TemplateGate.ALL) o.addProperty(K_MAX, g.maxLevel());
         if (g.phases().size() != TrainPhase.values().length) {
@@ -145,6 +156,5 @@ public final class TemplateWeightCodec {
             }
             o.add(K_PHASES, arr);
         }
-        return o;
     }
 }
