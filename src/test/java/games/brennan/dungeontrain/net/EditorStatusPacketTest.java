@@ -24,7 +24,7 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip preserves all fields")
     void roundTrip_carriages() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Carriages", "standard", "standard", "standard", true, 50, true, Collections.emptySet());
+            "Carriages", "standard", "standard", "standard", true, 50, true, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }
@@ -34,7 +34,7 @@ final class EditorStatusPacketTest {
     void roundTrip_excludedContents() {
         EditorStatusPacket original = new EditorStatusPacket(
             "Carriages", "standard", "standard", "standard", false, 5, true,
-            Set.of("default", "lava_pool"));
+            false, false, Set.of("default", "lava_pool"));
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(2, decoded.excludedContents().size());
         assertTrue(decoded.excludedContents().contains("default"));
@@ -45,7 +45,7 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip keeps model, modelId, and modelName distinct for track-side models")
     void roundTrip_tracks_pathStringAndKindAndNameSurviveSeparately() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Tracks", "track / track2", "track", "track2", false, 5, true, Collections.emptySet());
+            "Tracks", "track / track2", "track", "track2", false, 5, true, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals("Tracks", decoded.category());
         assertEquals("track / track2", decoded.model());
@@ -73,26 +73,29 @@ final class EditorStatusPacketTest {
     @DisplayName("round-trip handles pillar and tunnel modelIds + modelNames")
     void roundTrip_pillarsAndTunnels() {
         EditorStatusPacket pillar = roundTrip(new EditorStatusPacket(
-            "Tracks", "pillar / bottom / stone", "pillar_bottom", "stone", false, 3, true, Collections.emptySet()));
+            "Tracks", "pillar / bottom / stone", "pillar_bottom", "stone", false, 3, true, false, false, Collections.emptySet()));
         assertEquals("pillar_bottom", pillar.modelId());
         assertEquals("stone", pillar.modelName());
         assertEquals("pillar / bottom / stone", pillar.model());
         assertEquals(3, pillar.weight());
 
         EditorStatusPacket tunnel = roundTrip(new EditorStatusPacket(
-            "Tracks", "tunnel / section / default", "tunnel_section", "default", true, 1, false, Collections.emptySet()));
+            "Tracks", "tunnel / section / default", "tunnel_section", "default", true, 1, false,
+            true, false, Collections.emptySet()));
         assertEquals("tunnel_section", tunnel.modelId());
         assertEquals("default", tunnel.modelName());
         assertEquals("tunnel / section / default", tunnel.model());
         assertEquals(1, tunnel.weight());
         assertEquals(false, tunnel.partMenuEnabled());
+        assertEquals(true, tunnel.mirrorX(), "mirrorX survives the wire");
+        assertEquals(false, tunnel.mirrorZ(), "mirrorZ survives the wire, distinct from mirrorX");
     }
 
     @Test
     @DisplayName("round-trip handles contents (modelId == modelName)")
     void roundTrip_contents() {
         EditorStatusPacket original = new EditorStatusPacket(
-            "Contents", "default", "default", "default", false, 7, true, Collections.emptySet());
+            "Contents", "default", "default", "default", false, 7, true, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
         assertEquals("default", decoded.modelName());

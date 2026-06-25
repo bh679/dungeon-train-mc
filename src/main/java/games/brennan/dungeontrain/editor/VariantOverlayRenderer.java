@@ -324,7 +324,7 @@ public final class VariantOverlayRenderer {
             // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
                 "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
-                partMenuEnabled, Collections.emptySet()));
+                partMenuEnabled, false, false, Collections.emptySet()));
             return;
         }
 
@@ -342,19 +342,22 @@ public final class VariantOverlayRenderer {
         String modelName = modelNameFor(l.model());
         boolean partMenuEnabled = PartPositionMenuController.isMenuEnabled(player);
         Set<String> excludedContents = excludedContentsFor(l.model());
+        boolean[] mirror = tunnelMirrorAxes(l.model());
         // Dedup key includes displayName (not just id) so walking from one
         // named variant to another in the same kind invalidates the cache —
         // model.id() is the kind tag and stays constant across a kind's
         // variants. Excluded set is sorted so its serialization is stable.
+        // Mirror flags are in the key so a tunnel toggle pushes a refresh next tick.
         String excludedKey = excludedContents.isEmpty()
             ? ""
             : String.join(",", new TreeSet<>(excludedContents));
-        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight + "|" + partMenuEnabled + "|" + excludedKey;
+        String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
+            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + "|" + excludedKey;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
-            devmode, weight, partMenuEnabled, excludedContents));
+            devmode, weight, partMenuEnabled, mirror[0], mirror[1], excludedContents));
     }
 
     /**
@@ -390,6 +393,24 @@ public final class VariantOverlayRenderer {
      */
     private static String modelNameFor(Template model) {
         return model.variantName();
+    }
+
+    /**
+     * Mirror-on-save axes {@code [x, z]} for a tunnel model, read from its
+     * {@code variants.json} sidecar (default both true). Both false for any
+     * non-tunnel model — the X-menu only renders the Mirror toggles for tunnels.
+     */
+    private static boolean[] tunnelMirrorAxes(Template model) {
+        if (!(model instanceof Template.Tunnel tm)) return new boolean[]{false, false};
+        games.brennan.dungeontrain.track.variant.TrackKind kind =
+            TunnelTemplateStore.tunnelKind(tm.variant());
+        Vec3i footprint = new Vec3i(
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg =
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, tm.name(), footprint);
+        return new boolean[]{cfg.mirrorX(), cfg.mirrorZ()};
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {

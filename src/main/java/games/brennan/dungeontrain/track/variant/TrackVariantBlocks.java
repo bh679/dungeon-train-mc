@@ -62,13 +62,38 @@ public final class TrackVariantBlocks {
     /** pos → lock-id (≥1 = locked, 0/missing = unlocked). See {@link CarriageVariantBlocks#lockIdAt}. */
     private final Map<BlockPos, Integer> lockIds;
 
-    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
+    /**
+     * Per-template mirror-on-save axes (tunnels only — consumed by
+     * {@link games.brennan.dungeontrain.editor.TunnelEditor}). Stored as the
+     * optional top-level {@code "mirror": {"x":…,"z":…}} field. Default
+     * true/true so a sidecar with no {@code mirror} field — or no sidecar at
+     * all ({@link #empty}) — authors as a fully mirrored model.
+     */
+    private boolean mirrorX;
+    private boolean mirrorZ;
+
+    private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
+                               boolean mirrorX, boolean mirrorZ) {
         this.entries = entries;
         this.lockIds = lockIds;
+        this.mirrorX = mirrorX;
+        this.mirrorZ = mirrorZ;
     }
 
     public static TrackVariantBlocks empty() {
-        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>());
+        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), true, true);
+    }
+
+    /** Mirror-on-save X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
+    public boolean mirrorX() { return mirrorX; }
+
+    /** Mirror-on-save Z (width) axis. True unless the sidecar sets {@code mirror.z=false}. */
+    public boolean mirrorZ() { return mirrorZ; }
+
+    /** Set both mirror-on-save axes — used by the {@code editor tracks mirror} command before {@link #save}. */
+    public synchronized void setMirrorAxes(boolean x, boolean z) {
+        this.mirrorX = x;
+        this.mirrorZ = z;
     }
 
     public static Path configPathFor(TrackKind kind, String name) {
@@ -136,7 +161,18 @@ public final class TrackVariantBlocks {
                     kind.id(), name, origin, v, CURRENT_SCHEMA_VERSION);
             }
         }
-        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) return empty();
+        // Optional top-level mirror-on-save axes (tunnels). Absent → both true.
+        boolean mirrorX = true;
+        boolean mirrorZ = true;
+        if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
+            JsonObject m = obj.getAsJsonObject("mirror");
+            if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
+            if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
+        }
+        if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
+            // Mirror-only sidecar (e.g. a portal toggled off X) carries no cells.
+            return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorZ);
+        }
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
         JsonObject variants = obj.getAsJsonObject("variants");
@@ -169,7 +205,7 @@ public final class TrackVariantBlocks {
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out, outLocks);
+        return new TrackVariantBlocks(out, outLocks, mirrorX, mirrorZ);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -293,9 +329,12 @@ public final class TrackVariantBlocks {
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
         }
-        if (entries.isEmpty()) {
+        // Delete only when there is genuinely nothing to persist — no cells AND
+        // default mirror. A mirror-only sidecar (empty cells, non-default axes,
+        // e.g. a portal with X off) must still be written.
+        if (entries.isEmpty() && mirrorX && mirrorZ) {
             Files.deleteIfExists(file);
-            LOGGER.info("[DungeonTrain] Cleared bundled track variant sidecar for {}:{} (no entries)",
+            LOGGER.info("[DungeonTrain] Cleared bundled track variant sidecar for {}:{} (no entries, default mirror)",
                 kind.id(), name);
             return;
         }
@@ -310,6 +349,12 @@ public final class TrackVariantBlocks {
     private String toJsonText() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n  \"schemaVersion\": ").append(CURRENT_SCHEMA_VERSION).append(",\n");
+        // Only emit the mirror field when non-default (not both true) so existing
+        // sidecars stay byte-identical on resave — absent reads back as both true.
+        if (!(mirrorX && mirrorZ)) {
+            sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
+              .append(", \"z\": ").append(mirrorZ).append(" },\n");
+        }
         sb.append("  \"variants\": {");
         boolean firstEntry = true;
         for (Map.Entry<BlockPos, List<VariantState>> e : entries.entrySet()) {
