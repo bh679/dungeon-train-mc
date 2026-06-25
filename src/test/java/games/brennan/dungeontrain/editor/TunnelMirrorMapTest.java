@@ -4,75 +4,134 @@ import games.brennan.dungeontrain.tunnel.TunnelPlacer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Unit tests for the tunnel half-model mirror mapping used by
- * {@link TunnelEditor#mirrorAuthoredHalf} — the author edits only the
- * chest-side master half (local Z {@code 0..centre}) and the far half is
- * rebuilt by reflecting across the centre column on save. The in-world copy
- * itself is editor-coupled and is exercised in the Gate 2 in-game test; this
- * locks down the index arithmetic (the error-prone bit), mirroring the
- * {@code TunnelPortalProbeTest} approach for {@code probeXOffsets}.
+ * Unit tests for the tunnel mirror mapping used by
+ * {@link TunnelEditor#mirrorAuthoredHalf}: the author edits the low master
+ * quarter ({@code x ≤ MIRROR_LAST_MASTER_X, z ≤ MIRROR_CENTER_Z}) and the rest
+ * is rebuilt by reflecting across the enabled axes. The in-world copy is
+ * editor-coupled (covered by the Gate-2 in-game test); this locks down the
+ * index arithmetic and source classification — the error-prone bits —
+ * mirroring the {@code TunnelPortalProbeTest} approach for {@code probeXOffsets}.
  */
 final class TunnelMirrorMapTest {
 
+    // ─── planes / dimensions ────────────────────────────────────────────
+
     @Test
-    @DisplayName("Centre plane is the middle column of the 13-wide tunnel (Z=6)")
-    void centreIsTheMiddleColumn() {
+    @DisplayName("Mirror planes: X between 4/5 (even length, no centre), Z centre column 6 (odd width)")
+    void mirrorPlanes() {
+        assertEquals(10, TunnelPlacer.LENGTH, "tunnel is 10 long on X");
         assertEquals(13, TunnelPlacer.WIDTH, "tunnel is 13 wide on Z");
-        assertEquals(6, TunnelEditor.MIRROR_CENTER_Z, "mirrors about local Z=6");
+        assertEquals(4, TunnelEditor.MIRROR_LAST_MASTER_X, "last master X column is 4 (master 0..4)");
+        assertEquals(6, TunnelEditor.MIRROR_CENTER_Z, "Z mirror centre column is 6");
+    }
+
+    // ─── reflection arithmetic ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("X reflects 0↔9 … 4↔5; the map is its own inverse")
+    void mirrorTargetX() {
+        assertEquals(9, TunnelEditor.mirrorTargetX(0));
+        assertEquals(8, TunnelEditor.mirrorTargetX(1));
+        assertEquals(7, TunnelEditor.mirrorTargetX(2));
+        assertEquals(6, TunnelEditor.mirrorTargetX(3));
+        assertEquals(5, TunnelEditor.mirrorTargetX(4));
+        for (int x = 0; x < TunnelPlacer.LENGTH; x++) {
+            assertEquals(x, TunnelEditor.mirrorTargetX(TunnelEditor.mirrorTargetX(x)), "X mirror is an involution");
+        }
     }
 
     @Test
-    @DisplayName("Each master column reflects to its far-half counterpart (sz → 12 − sz)")
-    void masterColumnsReflectAcrossCentre() {
+    @DisplayName("Z reflects 0↔12 … 5↔7, 6 fixed; the map is its own inverse")
+    void mirrorTargetZ() {
         assertEquals(12, TunnelEditor.mirrorTargetZ(0));
-        assertEquals(11, TunnelEditor.mirrorTargetZ(1));
-        assertEquals(10, TunnelEditor.mirrorTargetZ(2));
-        assertEquals(9, TunnelEditor.mirrorTargetZ(3));
-        assertEquals(8, TunnelEditor.mirrorTargetZ(4));
         assertEquals(7, TunnelEditor.mirrorTargetZ(5));
+        assertEquals(6, TunnelEditor.mirrorTargetZ(6), "centre column maps to itself");
+        for (int z = 0; z < TunnelPlacer.WIDTH; z++) {
+            assertEquals(z, TunnelEditor.mirrorTargetZ(TunnelEditor.mirrorTargetZ(z)), "Z mirror is an involution");
+        }
     }
 
+    // ─── source classification ──────────────────────────────────────────
+
     @Test
-    @DisplayName("Reflection is its own inverse; targets land strictly in the far half")
-    void reflectionIsAnInvolution() {
-        for (int sz = 0; sz < TunnelEditor.MIRROR_CENTER_Z; sz++) {
-            int tz = TunnelEditor.mirrorTargetZ(sz);
-            assertTrue(tz > TunnelEditor.MIRROR_CENTER_Z && tz < TunnelPlacer.WIDTH,
-                "target column " + tz + " lands in the far half");
-            assertEquals(sz, TunnelEditor.mirrorTargetZ(tz),
-                "mirror is its own inverse about the centre");
+    @DisplayName("Axis off → identity: every column maps to itself")
+    void sourceIdentityWhenAxisOff() {
+        for (int dx = 0; dx < TunnelPlacer.LENGTH; dx++) {
+            assertEquals(dx, TunnelEditor.sourceX(dx, false));
+        }
+        for (int dz = 0; dz < TunnelPlacer.WIDTH; dz++) {
+            assertEquals(dz, TunnelEditor.sourceZ(dz, false));
         }
     }
 
     @Test
-    @DisplayName("Master half rebuilds every far-half column exactly once — no gaps, no overlap")
-    void masterHalfFullyCoversTheFarHalf() {
-        Set<Integer> produced = new HashSet<>();
-        for (int sz = 0; sz < TunnelEditor.MIRROR_CENTER_Z; sz++) {
-            produced.add(TunnelEditor.mirrorTargetZ(sz));
+    @DisplayName("X-mirror on: master 0..4 fixed; far 5..9 reflect into the master half")
+    void sourceXMirrorOn() {
+        for (int dx = 0; dx <= TunnelEditor.MIRROR_LAST_MASTER_X; dx++) {
+            assertEquals(dx, TunnelEditor.sourceX(dx, true), "master X column " + dx + " maps to itself");
         }
-        for (int tz = TunnelEditor.MIRROR_CENTER_Z + 1; tz < TunnelPlacer.WIDTH; tz++) {
-            assertTrue(produced.contains(tz), "far-half column " + tz + " is rebuilt");
+        for (int dx = TunnelEditor.MIRROR_LAST_MASTER_X + 1; dx < TunnelPlacer.LENGTH; dx++) {
+            int sx = TunnelEditor.sourceX(dx, true);
+            assertEquals(TunnelPlacer.LENGTH - 1 - dx, sx, "far X column " + dx + " reflects to " + (TunnelPlacer.LENGTH - 1 - dx));
+            assertTrue(sx <= TunnelEditor.MIRROR_LAST_MASTER_X, "…which is inside the master half");
         }
-        assertEquals(TunnelPlacer.WIDTH - 1 - TunnelEditor.MIRROR_CENTER_Z, produced.size(),
-            "no duplicate / missing far-half columns");
     }
 
     @Test
-    @DisplayName("Section chest [7,1,1] sits on the master half; its mirror target [7,1,11] is far-half (suppressed)")
-    void chestStaysSingle() {
-        int chestZ = 1; // section chest sidecar marker is local [7,1,1]
-        assertTrue(chestZ < TunnelEditor.MIRROR_CENTER_Z, "chest lives on the authored master half");
-        assertEquals(11, TunnelEditor.mirrorTargetZ(chestZ), "chest reflects to local Z=11");
-        assertFalse(11 <= TunnelEditor.MIRROR_CENTER_Z,
-            "…which is on the far half, where mirrorAuthoredHalf writes AIR instead of a duplicate chest");
+    @DisplayName("Z-mirror on: master 0..6 fixed; far 7..12 reflect into the master half")
+    void sourceZMirrorOn() {
+        for (int dz = 0; dz <= TunnelEditor.MIRROR_CENTER_Z; dz++) {
+            assertEquals(dz, TunnelEditor.sourceZ(dz, true), "master Z column " + dz + " maps to itself");
+        }
+        for (int dz = TunnelEditor.MIRROR_CENTER_Z + 1; dz < TunnelPlacer.WIDTH; dz++) {
+            int sz = TunnelEditor.sourceZ(dz, true);
+            assertEquals(TunnelPlacer.WIDTH - 1 - dz, sz, "far Z column " + dz + " reflects to " + (TunnelPlacer.WIDTH - 1 - dz));
+            assertTrue(sz <= TunnelEditor.MIRROR_CENTER_Z, "…which is inside the master half");
+        }
+    }
+
+    @Test
+    @DisplayName("Both axes on: every cell sources from the low master quarter — no gaps")
+    void masterQuarterCoversEverything() {
+        for (int dx = 0; dx < TunnelPlacer.LENGTH; dx++) {
+            for (int dz = 0; dz < TunnelPlacer.WIDTH; dz++) {
+                int sx = TunnelEditor.sourceX(dx, true);
+                int sz = TunnelEditor.sourceZ(dz, true);
+                assertTrue(sx <= TunnelEditor.MIRROR_LAST_MASTER_X && sz <= TunnelEditor.MIRROR_CENTER_Z,
+                    "(" + dx + "," + dz + ") must source from the master quarter, got (" + sx + "," + sz + ")");
+            }
+        }
+    }
+
+    // ─── chest (sidecar marker [7,1,1]) across axis combos ───────────────
+
+    @Test
+    @DisplayName("Z-only: chest column [7,1] is master (preserved); its Z-mirror [7,11] sources from it (→ AIR)")
+    void chestUnderZOnly() {
+        int cx = 7, cz = 1;
+        // X off, Z on → chest cell is master on both axes, so it is left untouched.
+        assertEquals(cx, TunnelEditor.sourceX(cx, false), "x=7 fixed (X mirror off)");
+        assertEquals(cz, TunnelEditor.sourceZ(cz, true), "z=1 is in the master Z half");
+        // Its Z reflection [7,11] is a far cell whose Z source is the chest column.
+        int tz = TunnelEditor.mirrorTargetZ(cz);
+        assertEquals(11, tz);
+        assertEquals(cz, TunnelEditor.sourceZ(tz, true), "[7,11] sources Z from the chest column → suppressed to AIR");
+    }
+
+    @Test
+    @DisplayName("X-mirror on: chest column [7,1] is a far-X cell — preserved by the target-marker skip, never duplicated")
+    void chestUnderXMirror() {
+        int cx = 7, cz = 1;
+        // X on → x=7 is far; the cell is NOT master, so the impl keeps it only
+        // via the target-marker skip (it is a sidecar position).
+        assertEquals(2, TunnelEditor.sourceX(cx, true), "chest x=7 reflects from master x=2");
+        assertNotEquals(cx, TunnelEditor.sourceX(cx, true), "chest cell is not master under X-mirror");
+        // The master source x=2 is plain airspace (not the chest), so nothing re-creates a chest elsewhere.
+        assertEquals(cz, TunnelEditor.sourceZ(cz, true), "z stays in the master half");
     }
 }
