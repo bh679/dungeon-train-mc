@@ -1,58 +1,143 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "floor": [
     {
       "name": "cracked",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "wood",
-      "weight": 2
+      "weight": 2,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "standard",
-      "weight": 20
+      "weight": 20,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "nether",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 20,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "walls": [
     {
       "name": "cracked",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "standard",
       "weight": 6,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "roof": [
     {
-      "name": "none",
-      "weight": 1
+      "name": "standard",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "doors": [
     {
       "name": "irondoor",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "standard",
       "weight": 10,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "wooddoor",
       "weight": 3,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "open_wall",
       "weight": 8,
       "sideMode": "either",
-      "endMode": "mid"
+      "endMode": "mid",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }
