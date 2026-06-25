@@ -8,11 +8,39 @@
     },
     {
       "id": "tree",
-      "weight": 8
+      "weight": 7
     },
     {
       "id": "cherryblossom",
       "weight": 3
+    },
+    {
+      "id": "statue",
+      "weight": 1
+    },
+    {
+      "id": "grave",
+      "weight": 1
+    },
+    {
+      "id": "worship",
+      "weight": 1
+    },
+    {
+      "id": "wither",
+      "weight": 1
+    },
+    {
+      "id": "statue2",
+      "weight": 1
+    },
+    {
+      "id": "statue3",
+      "weight": 1
+    },
+    {
+      "id": "worship2",
+      "weight": 1
     }
   ]
 }

@@ -250,6 +250,25 @@ public final class EditorCommand {
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.CARRIAGES)))
             .then(Commands.literal("tracks")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))
+                .then(Commands.literal("mirror")
+                    .then(Commands.argument("kind", StringArgumentType.word())
+                        .suggests(TRACK_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word())
+                            .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                            .then(Commands.literal("x")
+                                .then(Commands.literal("on").executes(ctx -> runTrackMirror(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "kind"),
+                                    StringArgumentType.getString(ctx, "name"), true, true)))
+                                .then(Commands.literal("off").executes(ctx -> runTrackMirror(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "kind"),
+                                    StringArgumentType.getString(ctx, "name"), true, false))))
+                            .then(Commands.literal("z")
+                                .then(Commands.literal("on").executes(ctx -> runTrackMirror(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "kind"),
+                                    StringArgumentType.getString(ctx, "name"), false, true)))
+                                .then(Commands.literal("off").executes(ctx -> runTrackMirror(ctx.getSource(),
+                                    StringArgumentType.getString(ctx, "kind"),
+                                    StringArgumentType.getString(ctx, "name"), false, false)))))))
                 .then(Commands.literal("new")
                     .then(Commands.argument("kind", StringArgumentType.word())
                         .suggests(TRACK_KIND_SUGGESTIONS)
@@ -723,6 +742,51 @@ public final class EditorCommand {
             source.sendFailure(Component.literal("track weight failed: "
                 + t.getClass().getSimpleName() + ": " + t.getMessage()
             ).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    /**
+     * Toggle one mirror-on-save axis for a tunnel variant. Persists the flag in
+     * the variant's {@code variants.json} (via {@code TrackVariantBlocks.setMirrorAxes})
+     * so {@link games.brennan.dungeontrain.editor.TunnelEditor}'s next save mirrors
+     * the authored quarter across the enabled axes. Tunnels only — other track
+     * kinds are not symmetric. Backs the X-menu Mirror X / Mirror Z toggles.
+     */
+    private static int runTrackMirror(CommandSourceStack source, String rawKind, String name, boolean axisX, boolean on) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        if (kind != games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_SECTION
+            && kind != games.brennan.dungeontrain.track.variant.TrackKind.TUNNEL_PORTAL) {
+            source.sendFailure(Component.literal(
+                "Mirror toggles apply to tunnels only (tunnel_section, tunnel_portal).")
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        if (name == null || name.isEmpty()) {
+            source.sendFailure(Component.literal("Variant name is required."));
+            return 0;
+        }
+        Vec3i footprint = new Vec3i(
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.LENGTH,
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.HEIGHT,
+            games.brennan.dungeontrain.tunnel.TunnelPlacer.WIDTH);
+        games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg =
+            games.brennan.dungeontrain.track.variant.TrackVariantBlocks.loadFor(kind, name, footprint);
+        boolean newX = axisX ? on : cfg.mirrorX();
+        boolean newZ = axisX ? cfg.mirrorZ() : on;
+        cfg.setMirrorAxes(newX, newZ);
+        try {
+            cfg.save(kind, name);
+            if (EditorDevMode.isEnabled()) cfg.saveToSource(kind, name);
+            source.sendSuccess(() -> Component.literal(
+                "Editor: " + kind.id() + ":" + name + " mirror " + (axisX ? "X" : "Z") + " "
+                    + (on ? "on" : "off")).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor tracks mirror failed for {}:{}", kind.id(), name, e);
+            source.sendFailure(Component.literal("track mirror failed: " + e.getMessage())
+                .withStyle(ChatFormatting.RED));
             return 0;
         }
     }

@@ -8,27 +8,43 @@
     },
     {
       "id": "armorer",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "smith",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "archer",
       "weight": 1
     },
     {
-      "id": "weaponssmith",
+      "id": "archer2",
       "weight": 1
+    },
+    {
+      "id": "weaponssmith",
+      "weight": 2
     },
     {
       "id": "toolsmith",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "leatherworker",
+      "weight": 2
+    },
+    {
+      "id": "cleric",
+      "weight": 1
+    },
+    {
+      "id": "smirth2",
       "weight": 3
+    },
+    {
+      "id": "lether2",
+      "weight": 1
     }
   ]
 }

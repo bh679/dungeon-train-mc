@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "states": [
+    {"state": "minecraft:bookshelf", "weight": 400},
+    {"state": "minecraft:chiseled_bookshelf[facing=north,slot_0_occupied=false,slot_1_occupied=false,slot_2_occupied=false,slot_3_occupied=false,slot_4_occupied=false,slot_5_occupied=false]", "weight": 20, "rotation": {"mode": "lock", "dirs": ["south"]}},
+    {"state": "minecraft:decorated_pot[cracked=false,facing=north,waterlogged=false]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "pot"},
+    {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 5, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "starter"},
+    {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 2, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot_irongold"},
+    {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "loot"},
+    {"state": "minecraft:chest[facing=north,type=single,waterlogged=false]", "weight": 3, "rotation": {"mode": "lock", "dirs": ["north"]}, "lootPrefab": "librarian"}
+  ]
+}

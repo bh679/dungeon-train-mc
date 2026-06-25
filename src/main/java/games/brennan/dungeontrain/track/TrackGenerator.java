@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.joml.Vector3dc;
@@ -1302,7 +1303,10 @@ public final class TrackGenerator {
 
             StructurePlaceSettings settings = new StructurePlaceSettings()
                 .setIgnoreEntities(true)
-                .setBoundingBox(clip);
+                .setBoundingBox(clip)
+                // Dry pillar stairs — don't inherit terrain water into waterloggable
+                // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
+                .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             // No ShipFilterProcessor — no ships at chunkgen.
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
 
@@ -1700,7 +1704,10 @@ public final class TrackGenerator {
             int stampOriginZ = !flipped ? minZ + PillarAdjunct.STAIRS_ENTRANCE.zSize() - 1 : minZ;
             BlockPos stampOrigin = new BlockPos(minX, entranceBaseY, stampOriginZ);
             StructurePlaceSettings settings = new StructurePlaceSettings()
-                .setIgnoreEntities(true);
+                .setIgnoreEntities(true)
+                // Dry pillar stairs — don't inherit terrain water into waterloggable
+                // blocks (see TunnelPlacer.stampTemplateWorldgen for the full rationale).
+                .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
             if (!flipped) settings.setMirror(Mirror.LEFT_RIGHT);
             template.placeInWorld(level, stampOrigin, stampOrigin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
             // Sidecar pass — same shape as stairs stamp.

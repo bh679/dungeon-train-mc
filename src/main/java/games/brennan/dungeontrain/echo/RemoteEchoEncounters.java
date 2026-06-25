@@ -8,15 +8,18 @@ import games.brennan.dungeontrain.ship.CarriageDeck;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.playermob.compat.ReincarnationRecord;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,6 +57,10 @@ public final class RemoteEchoEncounters {
     /** Embed bar colour for the encounter story — greyish-blue (Blue Grey), distinct from death-red. */
     private static final int EMBED_COLOR = 0x607D8B;
 
+    /** Echo spawned but no player was within range at the time; promoted to ACTIVE on first close approach. */
+    private record PendingEcho(ResourceKey<Level> dimension, ReincarnationRecord record) {}
+    private static final Map<UUID, PendingEcho> PENDING = new HashMap<>();
+
     private static final Map<UUID, EchoEncounter> ACTIVE = new HashMap<>();
 
     private RemoteEchoEncounters() {}
@@ -70,7 +77,11 @@ public final class RemoteEchoEncounters {
         if (!(mob.level() instanceof ServerLevel level)) return;
         if (ACTIVE.size() >= MAX_ACTIVE) return;
         Player nearest = level.getNearestPlayer(mob, PRIMARY_PLAYER_RADIUS);
-        if (!(nearest instanceof ServerPlayer player)) return; // no audience → don't bother tracking
+        if (!(nearest instanceof ServerPlayer player)) {
+            // No audience in range yet — park for retroactive promotion in scan().
+            PENDING.put(mob.getUUID(), new PendingEcho(level.dimension(), record));
+            return;
+        }
 
         UUID echoId = mob.getUUID();
         EchoEncounter enc = new EchoEncounter(echoId, level.dimension(), record.playerId(),
@@ -126,7 +137,7 @@ public final class RemoteEchoEncounters {
      * {@link EchoEncounterEvents}.
      */
     public static void scan(ServerLevel level, long tick) {
-        if (ACTIVE.isEmpty()) return;
+        if (ACTIVE.isEmpty() && PENDING.isEmpty()) return;
         List<Trains.Carriage> carriages = null; // computed lazily, once, only if a journal is in this level
 
         for (EchoEncounter enc : new ArrayList<>(ACTIVE.values())) {
@@ -163,6 +174,30 @@ public final class RemoteEchoEncounters {
             }
             enc.lastOnDeck = onDeck;
         }
+
+        // Promote pending records whose echo now has a nearby player.
+        if (!PENDING.isEmpty()) {
+            for (Iterator<Map.Entry<UUID, PendingEcho>> it = PENDING.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<UUID, PendingEcho> entry = it.next();
+                if (entry.getValue().dimension() != level.dimension()) continue;
+                Entity echo = level.getEntity(entry.getKey());
+                if (echo == null || !echo.isAlive()) { it.remove(); continue; }
+                if (ACTIVE.size() >= MAX_ACTIVE) break;
+                Player nearest = level.getNearestPlayer(echo, MEET_RADIUS);
+                if (!(nearest instanceof ServerPlayer player)) continue;
+                if (carriages == null) carriages = Trains.allCarriages(level);
+                ReincarnationRecord rec = entry.getValue().record();
+                EchoEncounter enc = new EchoEncounter(echo.getUUID(), level.dimension(),
+                        rec.playerId(), rec.name(), player.getUUID(), rec.carriage(), tick);
+                enc.log(EchoEvent.SPAWNED);
+                enc.log(EchoEvent.MET);
+                enc.lastOnDeck = CarriageDeck.isOnCarriageDeck(carriages, echo);
+                ACTIVE.put(echo.getUUID(), enc);
+                it.remove();
+                LOGGER.info("[DungeonTrain] Remote echo of '{}' (id={}) — journal opened retroactively for {}.",
+                        rec.name(), echo.getUUID(), player.getGameProfile().getName());
+            }
+        }
     }
 
     // ---------------- terminal: kills & player death ----------------
@@ -178,6 +213,26 @@ public final class RemoteEchoEncounters {
             boolean byPrimary = killer instanceof ServerPlayer p && p.getUUID().equals(echoEnc.primaryPlayerId);
             endEcho(level, victimId, byPrimary ? EndReason.ECHO_SLAIN_BY_YOU : EndReason.ECHO_SLAIN);
         }
+        // Echo died while still pending (kill happened before the scan could promote it).
+        PendingEcho pending = PENDING.remove(victimId);
+        if (pending != null && pending.dimension() == level.dimension()) {
+            ServerPlayer player = null;
+            if (killer instanceof ServerPlayer p) {
+                player = p;
+            } else {
+                Player n = level.getNearestPlayer(victim, PRIMARY_PLAYER_RADIUS);
+                if (n instanceof ServerPlayer sp) player = sp;
+            }
+            if (player != null) {
+                EchoEncounter enc = new EchoEncounter(victimId, level.dimension(),
+                        pending.record().playerId(), pending.record().name(),
+                        player.getUUID(), pending.record().carriage(), level.getGameTime());
+                enc.log(EchoEvent.SPAWNED);
+                boolean byPrimary = killer instanceof ServerPlayer p && p.getUUID().equals(player.getUUID());
+                post(level, enc, byPrimary ? EndReason.ECHO_SLAIN_BY_YOU : EndReason.ECHO_SLAIN);
+            }
+        }
+
         // The dead entity may instead be a primary player — close their encounters.
         for (EchoEncounter enc : new ArrayList<>(ACTIVE.values())) {
             if (!victimId.equals(enc.primaryPlayerId)) continue;
@@ -186,14 +241,15 @@ public final class RemoteEchoEncounters {
         }
     }
 
-    /** Drop every journal (world unload / server stop). */
+    /** Drop every journal and pending record (world unload / server stop). */
     public static void clearAll() {
         ACTIVE.clear();
+        PENDING.clear();
     }
 
-    /** Number of currently-open journals (for the dev test command's feedback). */
+    /** Number of currently-open journals plus pending records (for the dev test command's feedback). */
     public static int activeCount() {
-        return ACTIVE.size();
+        return ACTIVE.size() + PENDING.size();
     }
 
     /**

@@ -163,6 +163,17 @@ public final class EditorMenuScreen implements MenuScreen {
                 "Phases", new PhaseSelectScreen(category, modelId, modelName)));
         }
 
+        // Tunnel mirror-on-save toggles — author one quarter, the editor rebuilds
+        // the rest on save per the enabled axes. Only tunnel kinds are symmetric.
+        if ("tracks".equals(category) && modelId != null && modelId.startsWith("tunnel_")
+            && modelName != null && !modelName.isEmpty()) {
+            String prefix = "dungeontrain editor tracks mirror " + modelId + " " + modelName;
+            out.add(new CommandMenuEntry.Toggle("Mirror X", EditorStatusHudOverlay.mirrorX(),
+                prefix + " x on", prefix + " x off"));
+            out.add(new CommandMenuEntry.Toggle("Mirror Z", EditorStatusHudOverlay.mirrorZ(),
+                prefix + " z on", prefix + " z off"));
+        }
+
         out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
         out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;

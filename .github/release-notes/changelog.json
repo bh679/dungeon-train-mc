@@ -2345,6 +2345,109 @@
       "released": true,
       "released_in": "v0.357.0",
       "released_at": "2026-06-24T07:18:58Z"
+    },
+    {
+      "id": "new-shop-maze-library-feature-carriages",
+      "version": "0.358.0",
+      "type": "content",
+      "title": "New carriages: shops, library rooms, maze rooms, and shrines",
+      "summary": "A fresh batch of carriages now rides the train. Two new villager shops (an archer stall and a cleric), three new maze rooms, two new library cars, and four landmark feature carriages \u2014 a statue, a grave, a worship shrine, and a wither room \u2014 all appear as variants of their existing carriage types.",
+      "highlights": [
+        "New shop carriages: archer and cleric",
+        "New maze rooms: two layouts plus a doors room",
+        "New library carriages: a two-lane library and a book-door room",
+        "New feature carriages: statue, grave, worship shrine, and wither room"
+      ],
+      "pr": 570,
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.358.0",
+      "released_at": "2026-06-24T09:11:01Z"
+    },
+    {
+      "id": "stats-scale-with-difficulty",
+      "version": "0.358.0",
+      "type": "feat",
+      "title": "Item stats grow with difficulty",
+      "summary": "Weapons and armour found deeper into the run now hit harder and hold up better. Each difficulty level adds a flat bonus to an item's main stat \u2014 attack damage for weapons, armour for armour \u2014 with axes gaining a little extra. Applies to chest, container and vase loot, and to the gear carried by player-like mobs.",
+      "highlights": [
+        "+0.1 attack damage / armour per difficulty level (+0.15 for axes)",
+        "Scales chest, container and vase loot, plus PlayerMob equipment",
+        "Regular mob gear and the secondary stats (attack speed, toughness) are unchanged"
+      ],
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.358.0",
+      "released_at": "2026-06-24T09:11:01Z"
+    },
+    {
+      "id": "nether-tunnel-no-waterlogged-stairs",
+      "version": "0.358.0",
+      "type": "fix",
+      "title": "No more waterlogged stairs in the Nether tunnel",
+      "summary": "The train tunnel and its pillar staircases no longer come out waterlogged when the track crosses the Nether band. The Nether stays bone-dry \u2014 no stray water seeping into the stone-brick stairs, slabs, or walls of the corridor.",
+      "highlights": [
+        "Tunnel & pillar stairs stay dry through the Nether band"
+      ],
+      "pr": 573,
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.359.0",
+      "released_at": "2026-06-24T10:05:25Z"
+    },
+    {
+      "id": "new-carriage-variants",
+      "version": "0.359.0",
+      "type": "content",
+      "title": "New carriage variants",
+      "summary": "Five new carriages join the train: two additional statue carriages, a second worship carriage, and two new shop carriages (a smithing variant and a leatherworker variant). Also added a wither barrel loot table.",
+      "highlights": [],
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.360.0",
+      "released_at": "2026-06-24T11:19:08Z"
+    },
+    {
+      "id": "nether-track-basalt-resweep",
+      "version": "0.360.0",
+      "type": "fix",
+      "title": "No more basalt on the Nether train tracks",
+      "summary": "Crossing the Nether band, basalt from the basalt-delta stretches could still end up on the train tracks \u2014 sitting on the rails, the bed, or the centre line \u2014 and it was most stubborn right at the leading edge, appearing on track that had just generated ahead of you. The corridor cleanup now catches that late-arriving basalt and re-lays the real track over anything it buried, so the tunnel stays clear the whole way through.",
+      "highlights": [
+        "Stray basalt no longer ends up on the rails or bed as you ride through the Nether band"
+      ],
+      "pr": 576,
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.360.0",
+      "released_at": "2026-06-24T11:19:08Z"
+    },
+    {
+      "id": "witch-carriage",
+      "version": "0.360.0",
+      "type": "content",
+      "title": "Witch Carriage",
+      "summary": "A new enemy carriage haunted by a witch joins the train roster. The huskskel carriage also received improved loot chests.",
+      "highlights": [
+        "New witch carriage with a witch mob",
+        "Huskskel chests now use randomised loot pools (weapons, armour, food)"
+      ],
+      "date": "2026-06-24",
+      "released": true,
+      "released_in": "v0.360.0",
+      "released_at": "2026-06-24T12:09:05Z"
+    },
+    {
+      "id": "remote-echo-story-fix",
+      "version": "0.360.1",
+      "type": "fix",
+      "title": "Remote echo encounter stories now always post to Discord",
+      "summary": "A passenger's Discord story was silently skipped when a remote echo (a traveller from another world's past life) spawned on a distant carriage and the player walked up later. The encounter journal now opens retroactively on first close approach, so every remote echo meeting \u2014 however it starts \u2014 gets its story.",
+      "highlights": [],
+      "date": "2026-06-25",
+      "released": true,
+      "released_in": "v0.361.0",
+      "released_at": "2026-06-25T02:31:15Z"
     }
   ]
 }

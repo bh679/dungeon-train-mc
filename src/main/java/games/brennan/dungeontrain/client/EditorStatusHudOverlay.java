@@ -64,6 +64,13 @@ public final class EditorStatusHudOverlay {
     /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
     private static boolean partMenuEnabled = true;
     /**
+     * Per-template mirror-on-save axes for the active tunnel variant. Only
+     * meaningful (and only rendered) when the model is a tunnel; default false
+     * out of context. The X-menu's Mirror X / Mirror Z toggles read these.
+     */
+    private static boolean mirrorX = false;
+    private static boolean mirrorZ = false;
+    /**
      * Content ids the active carriage variant has explicitly disallowed. Empty
      * for non-carriage statuses and for carriages with no exclusions. The
      * Contents drilldown screen reads this for per-row red/green toggle state.
@@ -97,7 +104,8 @@ public final class EditorStatusHudOverlay {
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
     public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
                                  boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
-                                 boolean newPartMenuEnabled, Set<String> newExcludedContents) {
+                                 boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorZ,
+                                 Set<String> newExcludedContents) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -108,6 +116,8 @@ public final class EditorStatusHudOverlay {
         maxLevel = newMaxLevel;
         phaseMask = newPhaseMask;
         partMenuEnabled = newPartMenuEnabled;
+        mirrorX = newMirrorX;
+        mirrorZ = newMirrorZ;
         excludedContents = (newExcludedContents == null || newExcludedContents.isEmpty())
             ? Collections.emptySet()
             : Set.copyOf(newExcludedContents);
@@ -124,6 +134,8 @@ public final class EditorStatusHudOverlay {
         maxLevel = -1;
         phaseMask = 0b1111;
         partMenuEnabled = true;
+        mirrorX = false;
+        mirrorZ = false;
         excludedContents = Collections.emptySet();
         unsavedList = null;
         clearChangesList();
@@ -186,6 +198,16 @@ public final class EditorStatusHudOverlay {
     /** Server-reported per-player part-position auto-open menu flag. Default true. */
     public static boolean isPartMenuEnabled() {
         return partMenuEnabled;
+    }
+
+    /** Mirror-on-save X-axis flag for the active tunnel variant (X-menu toggle state). */
+    public static boolean mirrorX() {
+        return mirrorX;
+    }
+
+    /** Mirror-on-save Z-axis flag for the active tunnel variant (X-menu toggle state). */
+    public static boolean mirrorZ() {
+        return mirrorZ;
     }
 
     /**
