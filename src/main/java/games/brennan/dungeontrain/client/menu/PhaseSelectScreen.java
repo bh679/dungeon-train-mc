@@ -42,10 +42,14 @@ public final class PhaseSelectScreen implements MenuScreen {
             int mask = EditorStatusHudOverlay.phaseMask();
             for (TrainPhase p : TrainPhase.values()) {
                 boolean on = (mask & p.bit()) != 0;
+                // Plain click toggles this dimension on/off; shift-click sends the shared "others"
+                // action — "toggle all but that one" — matching the world-space dimension menus.
                 out.add(new CommandMenuEntry.Toggle(
                     displayName(p), on,
                     prefix + " " + p.token() + " on",
-                    prefix + " " + p.token() + " off"
+                    prefix + " " + p.token() + " off",
+                    true,
+                    prefix + " " + p.token() + " others"
                 ));
             }
         }

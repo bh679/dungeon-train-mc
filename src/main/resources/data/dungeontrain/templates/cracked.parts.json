@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "floor": [
     {
       "name": "cracked",
@@ -10,34 +10,94 @@
     {
       "name": "cracked",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "broken",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "sideMode": "one",
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkbroken",
+      "weight": 10,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "roof": [
     {
       "name": "cracked",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "broken",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "doors": [
     {
       "name": "cracked",
       "weight": 10,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "broken",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }

@@ -1001,6 +1001,17 @@ public final class EditorCommand {
         return p == null ? g : g.withPhase(p, on);
     }
 
+    /**
+     * The {@code others} phase action — "toggle all but that one" (shift-click in every dimension
+     * editor). Flips every dimension <em>except</em> {@code phaseToken} via the shared
+     * {@link TemplateGate#toggleOtherPhases}, the single source every dimension-toggle UI funnels
+     * through (parts menu, template-type menu, keyboard Phases menu, and this slash command).
+     */
+    private static TemplateGate toggleOtherPhases(TemplateGate g, String phaseToken) {
+        TrainPhase p = TrainPhase.byToken(phaseToken);
+        return p == null ? g : g.toggleOtherPhases(p);
+    }
+
     // ---- Brigadier subtree builders (single-id categories: carriages, contents) ----
 
     private static LiteralArgumentBuilder<CommandSourceStack> minLevelSingle(
@@ -1037,7 +1048,9 @@ public final class EditorCommand {
                     .then(Commands.literal("on").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
                         g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
                     .then(Commands.literal("off").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
-                        g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))));
+                        g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))
+                    .then(Commands.literal("others").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                        g -> toggleOtherPhases(g, StringArgumentType.getString(c, "phase")))))));
     }
 
     // ---- Brigadier subtree builders (track-side: kind + name) ----
@@ -1084,7 +1097,10 @@ public final class EditorCommand {
                             g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
                         .then(Commands.literal("off").executes(c -> applyTrackGate(c.getSource(),
                             StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
-                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false)))))));
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))
+                        .then(Commands.literal("others").executes(c -> applyTrackGate(c.getSource(),
+                            StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                            g -> toggleOtherPhases(g, StringArgumentType.getString(c, "phase"))))))));
     }
 
     /**
