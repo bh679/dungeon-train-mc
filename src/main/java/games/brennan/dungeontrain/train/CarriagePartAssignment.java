@@ -655,6 +655,15 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     }
 
     /**
+     * Toggle every dimension <em>except</em> {@code phase} in the gate of {@code name} — the editor's
+     * shift-click on a dimension letter ("toggle all but that one"). Returns {@code this} unchanged
+     * if the name isn't in the list.
+     */
+    public CarriagePartAssignment toggleOtherPhases(CarriagePartKind kind, String name, TrainPhase phase) {
+        return mutateGate(kind, name, g -> g.toggleOtherPhases(phase));
+    }
+
+    /**
      * Shared rewrite for the gate mutators: replace the first entry matching {@code name} with a copy
      * whose gate is {@code op}-transformed, preserving name/weight/sideMode/endMode. No match ⇒
      * {@code this} unchanged.

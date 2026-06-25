@@ -91,4 +91,26 @@ final class TemplateGateTest {
         assertEquals(TemplateGate.ALL_PHASES, cleared.phases());
         assertTrue(cleared.isDefault());
     }
+
+    @Test
+    @DisplayName("toggleOtherPhases flips all but the kept dimension; solos from all-on, restores from solo, keeps the level band")
+    void toggleOtherPhasesBehaviour() {
+        // all-on → solo the kept one
+        assertEquals(EnumSet.of(TrainPhase.NETHER),
+            TemplateGate.DEFAULT.toggleOtherPhases(TrainPhase.NETHER).phases());
+        // solo → restore all (a second shift-click on the same letter)
+        TemplateGate solo = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        assertEquals(TemplateGate.ALL_PHASES, solo.toggleOtherPhases(TrainPhase.NETHER).phases());
+        // mixed: the kept dimension stays, every other flips
+        TemplateGate mixed = new TemplateGate(0, TemplateGate.ALL,
+            EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.NETHER));
+        assertEquals(EnumSet.of(TrainPhase.NETHER, TrainPhase.VOID, TrainPhase.END),
+            mixed.toggleOtherPhases(TrainPhase.NETHER).phases());
+        // the Diff-Level band is untouched
+        TemplateGate banded = new TemplateGate(3, 9, EnumSet.of(TrainPhase.OVERWORLD));
+        TemplateGate after = banded.toggleOtherPhases(TrainPhase.OVERWORLD);
+        assertEquals(3, after.minLevel());
+        assertEquals(9, after.maxLevel());
+        assertEquals(TemplateGate.ALL_PHASES, after.phases(), "OVERWORLD kept + others flipped on = all");
+    }
 }

@@ -119,4 +119,20 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
         if (on) next.add(phase); else next.remove(phase);
         return new TemplateGate(minLevel, maxLevel, next);
     }
+
+    /**
+     * Toggle every dimension <em>except</em> {@code keep} (whose membership is preserved) — the
+     * editor's shift-click on a dimension letter, "toggle all but that one". From the all-on default
+     * this solos {@code keep}; applied again it restores the rest. An empty result normalises back to
+     * all dimensions (the gate's "empty ⇒ all" invariant).
+     */
+    public TemplateGate toggleOtherPhases(TrainPhase keep) {
+        EnumSet<TrainPhase> next = EnumSet.noneOf(TrainPhase.class);
+        for (TrainPhase p : TrainPhase.values()) {
+            boolean on = phases.contains(p);
+            // keep: unchanged; others: flipped.
+            if (p == keep ? on : !on) next.add(p);
+        }
+        return new TemplateGate(minLevel, maxLevel, next);
+    }
 }

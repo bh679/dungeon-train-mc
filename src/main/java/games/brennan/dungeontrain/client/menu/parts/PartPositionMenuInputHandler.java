@@ -195,9 +195,13 @@ public final class PartPositionMenuInputHandler {
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
                 if (hit.phaseSlot() < 0) return;
                 String name = entries.get(hit.index()).name();
-                // delta carries the TrainPhase ordinal to toggle (see PartAssignmentEditPacket).
+                // delta carries the TrainPhase ordinal (see PartAssignmentEditPacket).
+                // Plain click toggles that dimension; shift-click toggles all but that one.
+                PartAssignmentEditPacket.Op op = shift
+                    ? PartAssignmentEditPacket.Op.TOGGLE_OTHER_PHASES
+                    : PartAssignmentEditPacket.Op.TOGGLE_PHASE;
                 DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
-                    PartAssignmentEditPacket.Op.TOGGLE_PHASE, variantId, kind, name, hit.phaseSlot()));
+                    op, variantId, kind, name, hit.phaseSlot()));
             }
             case ENTRY_REMOVE_X -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
