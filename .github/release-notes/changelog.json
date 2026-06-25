@@ -2448,6 +2448,22 @@
       "released": true,
       "released_in": "v0.361.0",
       "released_at": "2026-06-25T02:31:15Z"
+    },
+    {
+      "id": "world-exit-teardown-freeze-fix",
+      "version": "0.361.0",
+      "type": "fix",
+      "title": "No more long freeze when leaving a world after a long journey",
+      "summary": "Leaving a world \u2014 returning to the title screen, boarding a fresh run, or quitting to desktop \u2014 no longer freezes the game for up to ~2.5 minutes after you've travelled far down the line. The train's carriages are now torn down cleanly on exit instead of stalling the world save.",
+      "highlights": [
+        "Fixes a multi-minute freeze when leaving a world after travelling far along the train",
+        "Applies to go-to-title, starting a fresh run, and quit-to-desktop"
+      ],
+      "pr": 579,
+      "date": "2026-06-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

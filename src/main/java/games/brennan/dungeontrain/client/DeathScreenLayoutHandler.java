@@ -1,17 +1,12 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
-import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
-import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.event.TrainSubLevelTeardown;
 import games.brennan.dungeontrain.player.PendingInventory;
-import games.brennan.dungeontrain.ship.ManagedShip;
-import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
-import games.brennan.dungeontrain.ship.Shipyards;
-import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.client.Minecraft;
@@ -226,30 +221,39 @@ public final class DeathScreenLayoutHandler {
         }
     }
 
+    /**
+     * Total wall-clock budget for the best-effort Sable container pump across
+     * all levels, on the server thread. Kept well under the 10 s client-side
+     * give-up below so the server task can't block teardown past it — the
+     * reflective sweep + drain (which actually clear {@code updatingChunkMap})
+     * always run regardless of how much of this budget the pump consumes.
+     */
+    private static final long SERVER_TEARDOWN_BUDGET_NANOS = 3_000_000_000L; // 3 s
+    /** Per-level cap on the pump, sub-divided from {@link #SERVER_TEARDOWN_BUDGET_NANOS}. */
+    private static final long PER_LEVEL_PUMP_NANOS = 1_000_000_000L; // 1 s
+
+    /**
+     * Run the {@link TrainSubLevelTeardown hardened Sable #679 teardown} on the
+     * server thread before the integrated server is torn down, so its
+     * {@code stopServer} wait loop can't spin on {@code ChunkMap.hasWork()} (the
+     * ~2.5-minute world-exit freeze after teleporting far along the train). This
+     * runs the same proven drain as {@link games.brennan.dungeontrain.event.ShipShutdownEvents}
+     * at {@code ServerStopping} — delete trains, bounded pump, reflective
+     * {@code PlotChunkHolder} sweep, vanilla-holder drain — rather than the old
+     * open-coded busy-spin that left leaked holders behind.
+     */
     private static void preDrainTrainSubLevels(MinecraftServer server) {
         CompletableFuture<Void> done = new CompletableFuture<>();
         server.execute(() -> {
             try {
+                long deadline = System.nanoTime() + SERVER_TEARDOWN_BUDGET_NANOS;
                 for (ServerLevel level : server.getAllLevels()) {
-                    Shipyard shipyard = Shipyards.of(level);
-                    int deleted = 0;
-                    for (ManagedShip ship : shipyard.findAll()) {
-                        if (ship.getKinematicDriver() instanceof TrainTransformProvider) {
-                            shipyard.delete(ship);
-                            deleted++;
-                        }
-                    }
-                    ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-                    if (container != null && deleted > 0) {
-                        long deadline = System.nanoTime() + 1_000_000_000L; // 1 s
-                        int ticks = 0;
-                        while (System.nanoTime() < deadline) {
-                            container.tick();
-                            ticks++;
-                            Thread.yield();
-                        }
-                        LOGGER.info("DeathScreenLayout: pre-drained {} train sub-levels in {} ({} ticks, ~1s wall)",
-                                deleted, level.dimension().location(), ticks);
+                    long remaining = deadline - System.nanoTime();
+                    long pump = Math.max(0L, Math.min(PER_LEVEL_PUMP_NANOS, remaining));
+                    TrainSubLevelTeardown.Result r = TrainSubLevelTeardown.teardownLevel(level, pump);
+                    if (r.deleted() > 0 || r.plotSwept() > 0 || r.vanillaDrained() > 0) {
+                        LOGGER.info("DeathScreenLayout: pre-drained {} train sub-levels in {} (swept {} PlotChunkHolders, drained {} vanilla ChunkHolders)",
+                                r.deleted(), level.dimension().location(), r.plotSwept(), r.vanillaDrained());
                     }
                 }
             } catch (Throwable t) {

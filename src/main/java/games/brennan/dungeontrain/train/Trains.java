@@ -140,7 +140,11 @@ public final class Trains {
             trains.computeIfAbsent(provider.getTrainId(), k -> new ArrayList<>())
                 .add(new Carriage(ship, provider));
         }
-        if (LOGGER.isDebugEnabled()) {
+        // TRACE, not DEBUG: this runs from hot per-tick paths (TrainTickEvents,
+        // TrainCarriageAppender, CarriageGroupGap) and at ~471 lines/s during a
+        // teleport burst would dominate the server-thread log. Keep it available
+        // for deep tracing without paying the cost under the default DEBUG dev config.
+        if (LOGGER.isTraceEnabled()) {
             StringBuilder summary = new StringBuilder();
             for (Map.Entry<UUID, List<Carriage>> e : trains.entrySet()) {
                 if (summary.length() > 0) summary.append("; ");
@@ -155,7 +159,7 @@ public final class Trains {
                 }
                 summary.append("]");
             }
-            LOGGER.debug("[DungeonTrain] Trains.byTrainId: totalShips={} withTrainProvider={} trains={{{}}}",
+            LOGGER.trace("[DungeonTrain] Trains.byTrainId: totalShips={} withTrainProvider={} trains={{{}}}",
                 totalShips, withTrainProvider, summary);
         }
         return trains;
