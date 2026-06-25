@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "2,0,5": { "lockId": 1, "states": [{"state": "minecraft:warped_hyphae[axis=z]", "weight": 30, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:crimson_hyphae[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "2,0,4": { "lockId": 1, "states": [{"state": "minecraft:warped_hyphae[axis=z]", "weight": 30, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:crimson_hyphae[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "2,0,3": { "lockId": 1, "states": [{"state": "minecraft:warped_hyphae[axis=z]", "weight": 30, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:crimson_hyphae[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "2,0,2": { "lockId": 1, "states": [{"state": "minecraft:warped_hyphae[axis=z]", "weight": 30, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:crimson_hyphae[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] },
+    "2,0,1": { "lockId": 1, "states": [{"state": "minecraft:warped_hyphae[axis=z]", "weight": 30, "rotation": {"mode": "lock", "dirs": ["south"]}}, {"state": "minecraft:crimson_hyphae[axis=z]", "rotation": {"mode": "lock", "dirs": ["south"]}}] }
+  }
+}

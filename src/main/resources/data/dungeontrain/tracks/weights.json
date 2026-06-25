@@ -1,4 +1,32 @@
 {
-  "default": 100,
-  "sleeperless": 2
+  "default": {
+    "weight": 100,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  },
+  "nethertracks": {
+    "weight": 1,
+    "phases": [
+      "NETHER"
+    ]
+  },
+  "sleeperless": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  },
+  "sleepside": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  }
 }

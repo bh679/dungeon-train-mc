@@ -1,0 +1,16 @@
+{
+  "darktunnel": {
+    "weight": 1,
+    "phases": [
+      "NETHER"
+    ]
+  },
+  "default": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END"
+    ]
+  }
+}
