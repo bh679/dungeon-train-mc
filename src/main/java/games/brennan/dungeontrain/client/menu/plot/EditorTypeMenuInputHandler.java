@@ -298,8 +298,45 @@ public final class EditorTypeMenuInputHandler {
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
             }
+            case MIN_LEVEL -> dispatchLevel(menu, variant, "minlevel", shift);
+            case MAX_LEVEL -> dispatchLevel(menu, variant, "maxlevel", shift);
+            case PHASE -> dispatchPhase(menu, variant, hit.slotIdx());
             default -> {}
         }
+    }
+
+    /** Lowercase phase tokens indexed by {@code TrainPhase} ordinal (OVERWORLD/NETHER/VOID/END). */
+    private static final String[] PHASE_TOKENS = {"overworld", "nether", "void", "end"};
+
+    /** Bump a per-template gate level bound. Gate cells render only on top-level template rows. */
+    private static void dispatchLevel(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
+                                      String sub, boolean shift) {
+        if (isSubVariants(menu)) return;
+        String dir = shift ? "dec" : "inc";
+        String cmd = EditorPlotTeleport.levelCommandFor(
+            variant.category(), variant.modelId(), variant.modelName(), sub, dir);
+        if (cmd == null) return;
+        LOGGER.debug("[DungeonTrain] EditorTypeMenu {} : {}", sub, cmd);
+        CommandRunner.run(cmd);
+    }
+
+    /** Toggle the phase identified by {@code slot} (TrainPhase ordinal) on the variant's gate. */
+    private static void dispatchPhase(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
+                                      int slot) {
+        if (isSubVariants(menu)) return;
+        if (slot < 0 || slot >= PHASE_TOKENS.length) return;
+        boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+        String cmd = EditorPlotTeleport.phaseCommandFor(
+            variant.category(), variant.modelId(), variant.modelName(),
+            PHASE_TOKENS[slot], on ? "off" : "on");
+        if (cmd == null) return;
+        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {}={}: {}", PHASE_TOKENS[slot], !on, cmd);
+        CommandRunner.run(cmd);
+    }
+
+    private static boolean isSubVariants(EditorTypeMenusPacket.Menu menu) {
+        return games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+            .equals(menu.typeName());
     }
 
     /**

@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.net.BlockVariantLockIdsPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotLabelsPacket;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.net.EditorTypeMenusPacket;
 import games.brennan.dungeontrain.net.VariantHoverPacket;
 import games.brennan.dungeontrain.template.Template;
@@ -326,6 +328,7 @@ public final class VariantOverlayRenderer {
             // consistency, but the menu won't render a weight row for parts.
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
                 "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
+                0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
                 partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], Collections.emptySet()));
             return;
         }
@@ -344,6 +347,12 @@ public final class VariantOverlayRenderer {
         String modelName = modelNameFor(l.model());
         boolean partMenuEnabled = PartPositionMenuController.isMenuEnabled(player);
         Set<String> excludedContents = excludedContentsFor(l.model());
+        // Per-template spawn gate (min/max Diff-Level + phase set) for the inline
+        // level steppers + phase popup in the editor menu.
+        TemplateGate gate = l.model().gate();
+        int minLevel = gate.minLevel();
+        int maxLevel = gate.maxLevel();
+        int phaseMask = TrainPhase.toMask(gate.phases());
         boolean[] mirror = mirrorAxesAt(player, dims);
         // Dedup key includes displayName (not just id) so walking from one
         // named variant to another in the same kind invalidates the cache —
@@ -354,12 +363,14 @@ public final class VariantOverlayRenderer {
             ? ""
             : String.join(",", new TreeSet<>(excludedContents));
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
+            + "|" + minLevel + "|" + maxLevel + "|" + phaseMask
             + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + "|" + excludedKey;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
-            devmode, weight, partMenuEnabled, mirror[0], mirror[1], mirror[2], excludedContents));
+            devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
+            mirror[0], mirror[1], mirror[2], excludedContents));
     }
 
     /**
@@ -677,7 +688,12 @@ public final class VariantOverlayRenderer {
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
                 .append(':').append(m.typeName()).append('[');
             for (EditorTypeMenusPacket.Variant v : m.variants()) {
-                keyBuf.append(v.name()).append('=').append(v.weight()).append(',');
+                // Include the spawn gate (min/max level + phase mask) in the dedup key so editing it
+                // from the world-space panel re-pushes the snapshot and the cells update live —
+                // otherwise only weight changes would refresh the panel.
+                keyBuf.append(v.name()).append('=').append(v.weight())
+                    .append('@').append(v.minLevel()).append('-').append(v.maxLevel())
+                    .append('p').append(v.phaseMask()).append(',');
             }
             keyBuf.append("];");
         }

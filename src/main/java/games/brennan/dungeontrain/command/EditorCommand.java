@@ -25,6 +25,8 @@ import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.EditorWelcome;
 import games.brennan.dungeontrain.editor.PillarEditor;
 import games.brennan.dungeontrain.template.Template;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
 import games.brennan.dungeontrain.editor.TrackEditor;
 import games.brennan.dungeontrain.editor.TrackTemplateStore;
@@ -202,6 +204,13 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    /** Suggests the four spawn-phase tokens for {@code /dt editor ... phase <id> <phase> on|off}. */
+    private static final SuggestionProvider<CommandSourceStack> PHASE_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (TrainPhase p : TrainPhase.values()) builder.suggest(p.token());
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PART_KIND_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriagePartKind k : CarriagePartKind.values()) builder.suggest(k.id());
@@ -286,7 +295,10 @@ public final class EditorCommand {
                                 .executes(ctx -> runTrackWeightSet(ctx.getSource(),
                                     StringArgumentType.getString(ctx, "kind"),
                                     StringArgumentType.getString(ctx, "name"),
-                                    IntegerArgumentType.getInteger(ctx, "value"))))))))
+                                    IntegerArgumentType.getInteger(ctx, "value")))))))
+                .then(minLevelTrack())
+                .then(maxLevelTrack())
+                .then(phaseTrack()))
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -408,6 +420,9 @@ public final class EditorCommand {
                             .executes(ctx -> runContentsWeightSet(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
                                 IntegerArgumentType.getInteger(ctx, "value"))))))
+                .then(minLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
+                .then(maxLevelSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
+                .then(phaseSingle(CONTENTS_SUGGESTIONS, EditorCommand::applyContentsGate))
                 .then(Commands.literal("group")
                     .then(Commands.literal("new")
                         .then(Commands.argument("parent", StringArgumentType.word())
@@ -546,6 +561,9 @@ public final class EditorCommand {
                         .executes(ctx -> runWeightSet(ctx.getSource(),
                             StringArgumentType.getString(ctx, "variant"),
                             IntegerArgumentType.getInteger(ctx, "value"))))))
+            .then(minLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
+            .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
+            .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(buildVariantSubtree(buildContext));
     }
 
@@ -884,6 +902,193 @@ public final class EditorCommand {
         if (contents == null) return 0;
         int current = CarriageContentsWeights.current().weightFor(contents.id());
         return runContentsWeightSet(source, rawContents, current + delta);
+    }
+
+    // ============================================================
+    // Per-template spawn gate — min/max Diff-Level band + worldgen phase set.
+    // Read-modify-write over the template's current TemplateGate, persisted via
+    // the store's setGate(). Mirrors the weight commands; shared across
+    // carriages / contents / track-side variants.
+    // ============================================================
+
+    /** Per-category gate application: parse the id, apply {@code op} to its current gate, persist. */
+    @FunctionalInterface
+    private interface SingleGateOp {
+        int run(CommandSourceStack source, String id, java.util.function.UnaryOperator<TemplateGate> op);
+    }
+
+    private static int applyCarriageGate(CommandSourceStack source, String rawVariant, java.util.function.UnaryOperator<TemplateGate> op) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        try {
+            TemplateGate next = op.apply(CarriageWeights.current().gateFor(variant.id()));
+            CarriageWeights.setGate(variant.id(), next);
+            gateSuccess(source, variant.id(), next, CarriageWeights.configPath().toString());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "carriage", variant.id(), t);
+        }
+    }
+
+    private static int applyContentsGate(CommandSourceStack source, String rawContents, java.util.function.UnaryOperator<TemplateGate> op) {
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        try {
+            TemplateGate next = op.apply(CarriageContentsWeights.current().gateFor(contents.id()));
+            CarriageContentsWeights.setGate(contents.id(), next);
+            gateSuccess(source, contents.id(), next, CarriageContentsWeights.configPath().toString());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "contents", contents.id(), t);
+        }
+    }
+
+    private static int applyTrackGate(CommandSourceStack source, String rawKind, String name, java.util.function.UnaryOperator<TemplateGate> op) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        if (name == null || name.isEmpty()) {
+            source.sendFailure(Component.literal("Variant name is required."));
+            return 0;
+        }
+        try {
+            TemplateGate next = op.apply(TrackVariantWeights.gateFor(kind, name));
+            TrackVariantWeights.setGate(kind, name, next);
+            gateSuccess(source, kind.id() + ":" + name, next, TrackVariantWeights.configPath(kind).toString());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "track", kind.id() + ":" + name, t);
+        }
+    }
+
+    private static void gateSuccess(CommandSourceStack source, String id, TemplateGate g, String path) {
+        String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
+        StringBuilder phases = new StringBuilder();
+        if (g.phases().size() == TrainPhase.values().length) {
+            phases.append("all");
+        } else {
+            for (TrainPhase p : TrainPhase.values()) {
+                if (!g.phases().contains(p)) continue;
+                if (phases.length() > 0) phases.append(',');
+                phases.append(p.token());
+            }
+        }
+        String phaseStr = phases.toString();
+        source.sendSuccess(() -> Component.literal(
+            "Editor: gate " + id + " — level " + g.minLevel() + ".." + maxStr
+                + ", phases [" + phaseStr + "] (saved to " + path + ")."
+        ).withStyle(ChatFormatting.GREEN), true);
+    }
+
+    private static int gateFail(CommandSourceStack source, String what, String id, Throwable t) {
+        LOGGER.error("[DungeonTrain] editor {} gate set failed for {}", what, id, t);
+        source.sendFailure(Component.literal(what + " gate failed: "
+            + t.getClass().getSimpleName() + ": " + t.getMessage()).withStyle(ChatFormatting.RED));
+        return 0;
+    }
+
+    /** maxLevel inc cycles ALL → 0 → 1 → … → MAX_LEVEL → ALL (mirrors the mob difficulty-band editor). */
+    private static TemplateGate maxLevelInc(TemplateGate g) {
+        int m = g.maxLevel();
+        int next = (m == TemplateGate.ALL) ? 0 : (m >= TemplateGate.MAX_LEVEL ? TemplateGate.ALL : m + 1);
+        return g.withMaxLevel(next);
+    }
+
+    /** maxLevel dec cycles the other way: ALL → MAX_LEVEL → … → 0 → ALL. */
+    private static TemplateGate maxLevelDec(TemplateGate g) {
+        int m = g.maxLevel();
+        int next = (m == TemplateGate.ALL) ? TemplateGate.MAX_LEVEL : (m <= 0 ? TemplateGate.ALL : m - 1);
+        return g.withMaxLevel(next);
+    }
+
+    private static TemplateGate togglePhase(TemplateGate g, String phaseToken, boolean on) {
+        TrainPhase p = TrainPhase.byToken(phaseToken);
+        return p == null ? g : g.withPhase(p, on);
+    }
+
+    // ---- Brigadier subtree builders (single-id categories: carriages, contents) ----
+
+    private static LiteralArgumentBuilder<CommandSourceStack> minLevelSingle(
+            SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
+        return Commands.literal("minlevel")
+            .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
+                .then(Commands.literal("inc").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                    g -> g.withMinLevel(g.minLevel() + 1))))
+                .then(Commands.literal("dec").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                    g -> g.withMinLevel(g.minLevel() - 1))))
+                .then(Commands.argument("value", IntegerArgumentType.integer(0, TemplateGate.MAX_LEVEL))
+                    .executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                        g -> g.withMinLevel(IntegerArgumentType.getInteger(c, "value"))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> maxLevelSingle(
+            SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
+        return Commands.literal("maxlevel")
+            .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
+                .then(Commands.literal("inc").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                    EditorCommand::maxLevelInc)))
+                .then(Commands.literal("dec").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                    EditorCommand::maxLevelDec)))
+                .then(Commands.argument("value", IntegerArgumentType.integer(TemplateGate.ALL, TemplateGate.MAX_LEVEL))
+                    .executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                        g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value"))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> phaseSingle(
+            SuggestionProvider<CommandSourceStack> sug, SingleGateOp run) {
+        return Commands.literal("phase")
+            .then(Commands.argument("id", StringArgumentType.word()).suggests(sug)
+                .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
+                    .then(Commands.literal("on").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                        g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
+                    .then(Commands.literal("off").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
+                        g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))));
+    }
+
+    // ---- Brigadier subtree builders (track-side: kind + name) ----
+
+    private static LiteralArgumentBuilder<CommandSourceStack> minLevelTrack() {
+        return Commands.literal("minlevel")
+            .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                    .then(Commands.literal("inc").executes(c -> applyTrackGate(c.getSource(),
+                        StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                        g -> g.withMinLevel(g.minLevel() + 1))))
+                    .then(Commands.literal("dec").executes(c -> applyTrackGate(c.getSource(),
+                        StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                        g -> g.withMinLevel(g.minLevel() - 1))))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(0, TemplateGate.MAX_LEVEL))
+                        .executes(c -> applyTrackGate(c.getSource(),
+                            StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                            g -> g.withMinLevel(IntegerArgumentType.getInteger(c, "value")))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> maxLevelTrack() {
+        return Commands.literal("maxlevel")
+            .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                    .then(Commands.literal("inc").executes(c -> applyTrackGate(c.getSource(),
+                        StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                        EditorCommand::maxLevelInc)))
+                    .then(Commands.literal("dec").executes(c -> applyTrackGate(c.getSource(),
+                        StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                        EditorCommand::maxLevelDec)))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(TemplateGate.ALL, TemplateGate.MAX_LEVEL))
+                        .executes(c -> applyTrackGate(c.getSource(),
+                            StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                            g -> g.withMaxLevel(IntegerArgumentType.getInteger(c, "value")))))));
+    }
+
+    private static LiteralArgumentBuilder<CommandSourceStack> phaseTrack() {
+        return Commands.literal("phase")
+            .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
+                .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                    .then(Commands.argument("phase", StringArgumentType.word()).suggests(PHASE_SUGGESTIONS)
+                        .then(Commands.literal("on").executes(c -> applyTrackGate(c.getSource(),
+                            StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), true))))
+                        .then(Commands.literal("off").executes(c -> applyTrackGate(c.getSource(),
+                            StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                            g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false)))))));
     }
 
     /**

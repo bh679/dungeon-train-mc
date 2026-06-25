@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.track.variant;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateRegistry;
@@ -194,6 +195,7 @@ public final class TrackVariantRegistry {
     public static synchronized void clear() {
         for (TreeSet<String> set : NAMES.values()) set.clear();
         ZERO_WARNED.clear();
+        GATE_EMPTY_WARNED.clear();
     }
 
     /**
@@ -208,13 +210,38 @@ public final class TrackVariantRegistry {
      * names.</p>
      */
     public static String pickName(TrackKind kind, long worldSeed, long tileIndex) {
+        return pickName(kind, worldSeed, tileIndex, null);
+    }
+
+    /**
+     * Gate-aware {@link #pickName(TrackKind, long, long)}: when {@code gateCtx} is non-null, names
+     * whose per-template gate excludes its Diff-Level / phase are dropped from the pool before the
+     * weighted draw (an emptied pool falls back to the ungated pool, warned once per kind).
+     * {@code null} skips gating.
+     */
+    public static String pickName(TrackKind kind, long worldSeed, long tileIndex, GateContext gateCtx) {
         List<String> pool = namesFor(kind);
         int n = pool.size();
         if (n == 0) return TrackKind.DEFAULT_NAME;
-        int[] cumulative = new int[n];
+
+        List<String> effective = pool;
+        if (gateCtx != null) {
+            List<String> gated = new ArrayList<>(n);
+            for (String name : pool) {
+                if (gateCtx.allows(TrackVariantWeights.gateFor(kind, name))) gated.add(name);
+            }
+            if (!gated.isEmpty()) {
+                effective = gated;
+            } else {
+                warnGateEmptyOnce(kind);
+            }
+        }
+
+        int en = effective.size();
+        int[] cumulative = new int[en];
         int total = 0;
-        for (int i = 0; i < n; i++) {
-            total += TrackVariantWeights.weightFor(kind, pool.get(i));
+        for (int i = 0; i < en; i++) {
+            total += TrackVariantWeights.weightFor(kind, effective.get(i));
             cumulative[i] = total;
         }
         long mixed = worldSeed
@@ -223,13 +250,13 @@ public final class TrackVariantRegistry {
         Random rng = new Random(mixed);
         if (total <= 0) {
             warnAllZeroOnce(kind);
-            return pool.get(rng.nextInt(n));
+            return effective.get(rng.nextInt(en));
         }
         int r = rng.nextInt(total);
-        for (int i = 0; i < n; i++) {
-            if (r < cumulative[i]) return pool.get(i);
+        for (int i = 0; i < en; i++) {
+            if (r < cumulative[i]) return effective.get(i);
         }
-        return pool.get(n - 1);
+        return effective.get(en - 1);
     }
 
     private static final java.util.EnumSet<TrackKind> ZERO_WARNED = java.util.EnumSet.noneOf(TrackKind.class);
@@ -237,6 +264,14 @@ public final class TrackVariantRegistry {
     private static synchronized void warnAllZeroOnce(TrackKind kind) {
         if (!ZERO_WARNED.add(kind)) return;
         LOGGER.warn("[DungeonTrain] Every track variant in pool {} has weight 0 — falling back to uniform pick. Check weights.json.",
+            kind.id());
+    }
+
+    private static final java.util.EnumSet<TrackKind> GATE_EMPTY_WARNED = java.util.EnumSet.noneOf(TrackKind.class);
+
+    private static synchronized void warnGateEmptyOnce(TrackKind kind) {
+        if (!GATE_EMPTY_WARNED.add(kind)) return;
+        LOGGER.warn("[DungeonTrain] Min/max-level + phase gates emptied track pool {} — falling back to the ungated pool. Check the variants' level bands and phases.",
             kind.id());
     }
 

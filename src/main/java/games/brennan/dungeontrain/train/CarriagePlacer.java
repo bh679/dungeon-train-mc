@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
 import games.brennan.dungeontrain.editor.VariantState;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -388,7 +389,13 @@ public final class CarriagePlacer {
             return null;
         }
         try {
-            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant);
+            // Editor preview / template-load path uses EDITOR_SENTINEL_PIDX — bypass the spawn gate
+            // so the editor still rolls from the full candidate pool. Real carriages derive the gate
+            // from their own pIdx so the block pass and deferred entity pass agree.
+            GateContext gateCtx = carriageIndex == CarriageContentsPlacer.EDITOR_SENTINEL_PIDX
+                ? null
+                : GateContext.forCarriage(level, carriageIndex, dims.length());
+            CarriageContents contents = CarriageContentsRegistry.pick(config.seed(), carriageIndex, variant, gateCtx);
             // Clear any entities left over from a previous carriage at this
             // shipyard position — the block-only clearBoundingBox in
             // TrainAssembler doesn't discard entities, so armor stands and
@@ -783,11 +790,21 @@ public final class CarriagePlacer {
      * pick from the non-flatbed pool.</p>
      */
     public static CarriageVariant enclosedVariantForIndex(int i, CarriageGenerationConfig config) {
-        CarriageVariant v = variantForIndex(i, config);
+        return enclosedVariantForIndex(i, config, null);
+    }
+
+    /**
+     * Gate-aware {@link #enclosedVariantForIndex(int, CarriageGenerationConfig)}: when
+     * {@code gateCtx} is non-null, out-of-level / out-of-phase variants are dropped from the pool
+     * before the weighted pick (an emptied pool falls back to the ungated pool — the train never
+     * stalls). {@code null} skips gating (editor previews / tests).
+     */
+    public static CarriageVariant enclosedVariantForIndex(int i, CarriageGenerationConfig config, GateContext gateCtx) {
+        CarriageVariant v = variantForIndex(i, config, CarriageWeights.current(), gateCtx);
         if (!isAnyFlatbed(v)) return v;
         List<CarriageVariant> pool = filterOutFlatbed(CarriageVariantRegistry.allVariants());
         if (pool.isEmpty()) return v; // fallback to whatever variantForIndex gave
-        return weightedSeededPick(config.seed(), i, pool, CarriageWeights.current());
+        return weightedSeededPick(config.seed(), i, pool, CarriageWeights.current(), gateCtx);
     }
 
     /**
@@ -811,6 +828,16 @@ public final class CarriagePlacer {
      * of track always re-places the identical carriage.</p>
      */
     public static CarriageVariant variantForIndex(int i, CarriageGenerationConfig config, CarriageWeights weights) {
+        return variantForIndex(i, config, weights, null);
+    }
+
+    /**
+     * Gate-aware {@link #variantForIndex(int, CarriageGenerationConfig, CarriageWeights)}.
+     * {@code gateCtx} (when non-null) prunes out-of-level / out-of-phase variants from the weighted
+     * pool. The LOOPING mode is a deterministic cycle and ignores both weights and the gate (its
+     * fixed rhythm must not be perturbed), matching how it already ignores {@code weights}.
+     */
+    public static CarriageVariant variantForIndex(int i, CarriageGenerationConfig config, CarriageWeights weights, GateContext gateCtx) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) {
             // Defensive: registry should always have the four built-ins, but
@@ -819,7 +846,7 @@ public final class CarriagePlacer {
         }
         return switch (config.mode()) {
             case LOOPING -> variants.get(Math.floorMod(i, variants.size()));
-            case RANDOM -> weightedSeededPick(config.seed(), i, variants, weights);
+            case RANDOM -> weightedSeededPick(config.seed(), i, variants, weights, gateCtx);
             case RANDOM_GROUPED -> {
                 int cycleLen = config.groupSize() + 1;
                 int pos = Math.floorMod(i, cycleLen);
@@ -832,7 +859,7 @@ public final class CarriagePlacer {
                     // choice, so fall back to flatbed for those slots too.
                     yield FLATBED_VARIANT;
                 }
-                yield weightedSeededPick(config.seed(), i, nonFlatbed, weights);
+                yield weightedSeededPick(config.seed(), i, nonFlatbed, weights, gateCtx);
             }
         };
     }
@@ -883,25 +910,50 @@ public final class CarriagePlacer {
      * {@link CarriagePlacer#warnAllZeroOnce}.</p>
      */
     private static CarriageVariant weightedSeededPick(long seed, int index, List<CarriageVariant> pool, CarriageWeights weights) {
-        int n = pool.size();
+        return weightedSeededPick(seed, index, pool, weights, null);
+    }
+
+    private static CarriageVariant weightedSeededPick(long seed, int index, List<CarriageVariant> pool, CarriageWeights weights, GateContext gateCtx) {
+        List<CarriageVariant> effective = gateFilter(pool, weights, gateCtx);
+        int n = effective.size();
         int[] cumulative = new int[n];
         int total = 0;
         for (int i = 0; i < n; i++) {
-            total += weights.weightFor(pool.get(i).id());
+            total += weights.weightFor(effective.get(i).id());
             cumulative[i] = total;
         }
         long mixed = seed ^ ((long) index * 0x9E3779B97F4A7C15L);
         Random rng = new Random(mixed);
         if (total <= 0) {
             warnAllZeroOnce();
-            return pool.get(rng.nextInt(n));
+            return effective.get(rng.nextInt(n));
         }
         int r = rng.nextInt(total);
         for (int i = 0; i < n; i++) {
-            if (r < cumulative[i]) return pool.get(i);
+            if (r < cumulative[i]) return effective.get(i);
         }
         // Unreachable: r < total and cumulative[n-1] == total. Defensive tail.
-        return pool.get(n - 1);
+        return effective.get(n - 1);
+    }
+
+    /**
+     * Drop variants whose per-template gate excludes {@code gateCtx}'s Diff-Level / phase. A
+     * {@code null} context (editor preview / tests) or a fully-default gate set leaves the pool
+     * unchanged, so the pre-feature pick is reproduced bit-for-bit. If gating empties the pool the
+     * <em>ungated</em> pool is returned (the carriage slot must never be left unfillable), warned
+     * once per server session.
+     */
+    private static List<CarriageVariant> gateFilter(List<CarriageVariant> pool, CarriageWeights weights, GateContext gateCtx) {
+        if (gateCtx == null) return pool;
+        List<CarriageVariant> gated = new ArrayList<>(pool.size());
+        for (CarriageVariant v : pool) {
+            if (gateCtx.allows(weights.gateFor(v.id()))) gated.add(v);
+        }
+        if (gated.isEmpty()) {
+            warnGateEmptyOnce();
+            return pool;
+        }
+        return gated;
     }
 
     /** Throttle for the all-zero-weights fallback warning — one log line per server session. */
@@ -911,6 +963,15 @@ public final class CarriagePlacer {
         if (ALL_ZERO_WARNED) return;
         ALL_ZERO_WARNED = true;
         LOGGER.warn("[DungeonTrain] Every variant in the random pool has weight 0 — falling back to uniform pick. Check weights.json.");
+    }
+
+    /** Throttle for the gate-emptied-pool fallback warning — one log line per server session. */
+    private static volatile boolean GATE_EMPTY_WARNED = false;
+
+    private static void warnGateEmptyOnce() {
+        if (GATE_EMPTY_WARNED) return;
+        GATE_EMPTY_WARNED = true;
+        LOGGER.warn("[DungeonTrain] A carriage variant pool was emptied by min/max-level + phase gates — falling back to the ungated pool. Check the templates' level bands and phases.");
     }
 
     /**

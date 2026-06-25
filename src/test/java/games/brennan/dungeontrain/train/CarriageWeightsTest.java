@@ -30,14 +30,14 @@ final class CarriageWeightsTest {
     @Test
     @DisplayName("weightFor returns stored value for known id")
     void weightFor_returnsStoredValue() {
-        CarriageWeights w = new CarriageWeights(Map.of("standard", 7));
+        CarriageWeights w = CarriageWeights.ofWeights(Map.of("standard", 7));
         assertEquals(7, w.weightFor("standard"));
     }
 
     @Test
     @DisplayName("weightFor returns DEFAULT for an unknown id")
     void weightFor_returnsDefaultForUnknown() {
-        CarriageWeights w = new CarriageWeights(Map.of("standard", 7));
+        CarriageWeights w = CarriageWeights.ofWeights(Map.of("standard", 7));
         assertEquals(CarriageWeights.DEFAULT, w.weightFor("windowed"));
     }
 
@@ -46,21 +46,21 @@ final class CarriageWeightsTest {
     void weightFor_clampsBelowMin() {
         // The record constructor keeps raw values as given; clamping happens
         // on read. A map with -5 stored in it should surface as MIN (0).
-        CarriageWeights w = new CarriageWeights(Map.of("standard", -5));
+        CarriageWeights w = CarriageWeights.ofWeights(Map.of("standard", -5));
         assertEquals(CarriageWeights.MIN, w.weightFor("standard"));
     }
 
     @Test
     @DisplayName("weightFor clamps above-max values to MAX")
     void weightFor_clampsAboveMax() {
-        CarriageWeights w = new CarriageWeights(Map.of("standard", CarriageWeights.MAX + 50));
+        CarriageWeights w = CarriageWeights.ofWeights(Map.of("standard", CarriageWeights.MAX + 50));
         assertEquals(CarriageWeights.MAX, w.weightFor("standard"));
     }
 
     @Test
     @DisplayName("weightFor zero is preserved (used to exclude a variant)")
     void weightFor_zeroPreserved() {
-        CarriageWeights w = new CarriageWeights(Map.of("flatbed", 0));
+        CarriageWeights w = CarriageWeights.ofWeights(Map.of("flatbed", 0));
         assertEquals(0, w.weightFor("flatbed"));
     }
 
@@ -79,7 +79,7 @@ final class CarriageWeightsTest {
     void constructor_defensivelyCopiesInputMap() {
         Map<String, Integer> mutable = new HashMap<>();
         mutable.put("standard", 5);
-        CarriageWeights w = new CarriageWeights(mutable);
+        CarriageWeights w = CarriageWeights.ofWeights(mutable);
         mutable.put("standard", 99);      // mutate after construction
         mutable.put("windowed", 0);
         assertEquals(5, w.weightFor("standard"), "record should snapshot the input map");
@@ -89,9 +89,10 @@ final class CarriageWeightsTest {
     @Test
     @DisplayName("Returned map from byId is unmodifiable")
     void byId_returnsUnmodifiable() {
-        CarriageWeights w = new CarriageWeights(Map.of("standard", 5));
+        CarriageWeights w = CarriageWeights.ofWeights(Map.of("standard", 5));
         assertThrows(UnsupportedOperationException.class,
-                () -> w.byId().put("extra", 1));
+                () -> w.byId().put("extra",
+                        games.brennan.dungeontrain.template.TemplateMeta.of(1)));
     }
 
     @Test

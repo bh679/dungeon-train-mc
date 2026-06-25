@@ -2466,6 +2466,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-band-phase-gating",
+      "version": "0.362.0",
+      "type": "feat",
+      "title": "Nether track & tunnel set + level/phase spawn rules for train templates",
+      "summary": "The Nether stretch of the train now has its own look: blackstone track tiles, tunnel sections, and tunnel portals take over from the overworld stone-brick set as you ride through it. Under the hood, any weighted train template \u2014 carriages, interiors, track, and tunnels \u2014 can now be limited to a difficulty-level range and to specific world phases (Overworld, Nether, Void, End), and authors set those limits right in the in-game editor.",
+      "highlights": [
+        "New blackstone-themed Nether track tiles, tunnel sections, and tunnel portals that appear only in the Nether band",
+        "Train templates can be gated to a min/max difficulty level and to chosen world phases (Overworld / Nether / Void / End)",
+        "In-editor min/max-level steppers and a phase selector on every weighted template \u2014 on both the menu and the floating world-space panels"
+      ],
+      "pr": 582,
+      "date": "2026-06-25",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

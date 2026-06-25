@@ -148,6 +148,22 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weightRow = weightTripleFor(category, modelId, modelName, currentWeight);
         if (weightRow != null) out.add(weightRow);
 
+        // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
+        // drilldown to the OW/Nether/Void/End checkbox popup. Only shown for weighted, addressable
+        // models (weightRow != null is the exact same gate).
+        if (weightRow != null) {
+            int minLv = EditorStatusHudOverlay.minLevel();
+            int maxLv = EditorStatusHudOverlay.maxLevel();
+            CommandMenuEntry minRow = levelTripleFor(category, modelId, modelName, "minlevel",
+                "Min Lv (" + minLv + ")", "0-100");
+            if (minRow != null) out.add(minRow);
+            CommandMenuEntry maxRow = levelTripleFor(category, modelId, modelName, "maxlevel",
+                "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")", "-1..100");
+            if (maxRow != null) out.add(maxRow);
+            out.add(new CommandMenuEntry.DrillIn(
+                "Phases", new PhaseSelectScreen(category, modelId, modelName)));
+        }
+
         // Editor mirror toggles — author one octant, the editor mirrors live
         // (and rebuilds on save) across the enabled axes. Available in every
         // template plot (off by default outside tunnels).
@@ -228,6 +244,37 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
         CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
         return new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90);
+    }
+
+    /**
+     * Build a {@link CommandMenuEntry.Triple} stepper for a per-template spawn-gate level bound,
+     * or null when the category has no gate / no addressable model. {@code sub} is the gate
+     * subcommand ({@code minlevel} / {@code maxlevel}); {@code label} is the pre-rendered cell
+     * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
+     * Command shapes mirror {@link #weightTripleFor}:
+     * <ul>
+     *   <li>{@code carriages}: {@code dungeontrain editor <sub> <modelId> {dec|inc|""}}</li>
+     *   <li>{@code tracks}: {@code dungeontrain editor tracks <sub> <modelId> <modelName> {dec|inc|""}}</li>
+     *   <li>{@code contents}: {@code dungeontrain editor contents <sub> <modelId> {dec|inc|""}}</li>
+     * </ul>
+     */
+    static CommandMenuEntry levelTripleFor(String category, String modelId, String modelName,
+                                           String sub, String label, String hint) {
+        if (modelId == null || modelId.isEmpty()) return null;
+        String prefix;
+        switch (category) {
+            case "carriages" -> prefix = "dungeontrain editor " + sub + " " + modelId;
+            case "tracks" -> {
+                if (modelName == null || modelName.isEmpty()) return null;
+                prefix = "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName;
+            }
+            case "contents" -> prefix = "dungeontrain editor contents " + sub + " " + modelId;
+            default -> { return null; }
+        }
+        CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
+        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(label, hint, prefix);
+        CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
+        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
     }
 
     /**

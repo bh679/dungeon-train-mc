@@ -6,6 +6,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.TemplateMeta;
+import games.brennan.dungeontrain.template.TemplateWeightCodec;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -26,7 +29,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Per-{@link TrackKind} weight maps biasing the seeded random pick in
@@ -52,7 +54,7 @@ public final class TrackVariantWeights {
     public static final int DEFAULT = 1;
 
     /** Per-kind cache, populated on {@link #reload()}. */
-    private static final Map<TrackKind, Map<String, Integer>> CURRENT = new EnumMap<>(TrackKind.class);
+    private static final Map<TrackKind, Map<String, TemplateMeta>> CURRENT = new EnumMap<>(TrackKind.class);
     static {
         for (TrackKind k : TrackKind.values()) CURRENT.put(k, Map.of());
     }
@@ -68,17 +70,25 @@ public final class TrackVariantWeights {
     /** Clamped weight for {@code (kind, name)}; {@link #DEFAULT} if no entry. */
     public static synchronized int weightFor(TrackKind kind, String name) {
         if (name == null) return DEFAULT;
-        Integer w = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
-        if (w == null) return DEFAULT;
-        return clamp(w);
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        if (m == null) return DEFAULT;
+        return clamp(m.weight());
     }
 
-    /** Update one weight on disk and in memory. Returns the clamped value. */
+    /** Spawn {@link TemplateGate gate} for {@code (kind, name)}; {@link TemplateGate#DEFAULT} if none. */
+    public static synchronized TemplateGate gateFor(TrackKind kind, String name) {
+        if (name == null) return TemplateGate.DEFAULT;
+        TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
+        return m == null ? TemplateGate.DEFAULT : m.gate();
+    }
+
+    /** Update one weight on disk and in memory, keeping the entry's gate. Returns the clamped value. */
     public static synchronized int set(TrackKind kind, String name, int value) throws IOException {
         String key = name.toLowerCase(Locale.ROOT);
         int clamped = clamp(value);
-        Map<String, Integer> next = new HashMap<>(CURRENT.get(kind));
-        next.put(key, clamped);
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta prev = next.get(key);
+        next.put(key, new TemplateMeta(clamped, prev == null ? TemplateGate.DEFAULT : prev.gate()));
         CURRENT.put(kind, next);
         writeConfig(kind, next);
         trySaveToSource(kind, next);
@@ -87,12 +97,30 @@ public final class TrackVariantWeights {
         return clamped;
     }
 
+    /**
+     * Update the spawn {@link TemplateGate gate} for {@code (kind, name)}, preserving its weight, and
+     * persist. Returns the stored gate.
+     */
+    public static synchronized TemplateGate setGate(TrackKind kind, String name, TemplateGate gate) throws IOException {
+        String key = name.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(CURRENT.get(kind));
+        TemplateMeta prev = next.get(key);
+        int weight = prev == null ? DEFAULT : prev.weight();
+        next.put(key, new TemplateMeta(weight, gate));
+        CURRENT.put(kind, next);
+        writeConfig(kind, next);
+        trySaveToSource(kind, next);
+        LOGGER.info("[DungeonTrain] Set track gate {}:{}={} (persisted to {}).",
+            kind.id(), key, gate, configPath(kind));
+        return gate;
+    }
+
     /** Remove the entry for {@code (kind, name)}. Returns true if removed. */
     public static synchronized boolean unset(TrackKind kind, String name) throws IOException {
         String key = name.toLowerCase(Locale.ROOT);
-        Map<String, Integer> cur = CURRENT.get(kind);
+        Map<String, TemplateMeta> cur = CURRENT.get(kind);
         if (!cur.containsKey(key)) return false;
-        Map<String, Integer> next = new HashMap<>(cur);
+        Map<String, TemplateMeta> next = new HashMap<>(cur);
         next.remove(key);
         CURRENT.put(kind, next);
         writeConfig(kind, next);
@@ -106,7 +134,7 @@ public final class TrackVariantWeights {
     public static synchronized void reload() {
         int total = 0;
         for (TrackKind kind : TrackKind.values()) {
-            Map<String, Integer> merged = new HashMap<>();
+            Map<String, TemplateMeta> merged = new HashMap<>();
             int bundled = loadInto(kind, merged, true);
             int config = loadInto(kind, merged, false);
             CURRENT.put(kind, Map.copyOf(merged));
@@ -154,21 +182,21 @@ public final class TrackVariantWeights {
      * so a dev's in-game tweak ships with the next build. Throws if the source
      * tree isn't writable.
      */
-    public static synchronized void saveToSource(TrackKind kind, Map<String, Integer> weights) throws IOException {
+    public static synchronized void saveToSource(TrackKind kind, Map<String, TemplateMeta> weights) throws IOException {
         if (!sourceTreeAvailable()) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");
         }
         Path file = sourceFile(kind);
         Files.createDirectories(file.getParent());
-        Map<String, Integer> sorted = new TreeMap<>(weights);
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+            new GsonBuilder().setPrettyPrinting().create()
+                .toJson(TemplateWeightCodec.toJson(weights), w);
         }
         LOGGER.info("[DungeonTrain] Wrote bundled track weights for {} to {} (devmode promote).", kind.id(), file);
     }
 
     /** Best-effort source-tree write invoked from {@link #set} / {@link #unset}. */
-    private static void trySaveToSource(TrackKind kind, Map<String, Integer> weights) {
+    private static void trySaveToSource(TrackKind kind, Map<String, TemplateMeta> weights) {
         if (!sourceTreeAvailable()) return;
         try {
             saveToSource(kind, weights);
@@ -185,12 +213,12 @@ public final class TrackVariantWeights {
         return projectRoot.resolve("src/main/resources");
     }
 
-    private static void writeConfig(TrackKind kind, Map<String, Integer> weights) throws IOException {
+    private static void writeConfig(TrackKind kind, Map<String, TemplateMeta> weights) throws IOException {
         Path file = configPath(kind);
         Files.createDirectories(file.getParent());
-        Map<String, Integer> sorted = new TreeMap<>(weights);
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+            new GsonBuilder().setPrettyPrinting().create()
+                .toJson(TemplateWeightCodec.toJson(weights), w);
         }
     }
 
@@ -199,7 +227,7 @@ public final class TrackVariantWeights {
      * {@code fromResource} is true, reads the classpath resource; otherwise
      * the per-install config file. Returns the count of entries added.
      */
-    private static int loadInto(TrackKind kind, Map<String, Integer> into, boolean fromResource) {
+    private static int loadInto(TrackKind kind, Map<String, TemplateMeta> into, boolean fromResource) {
         try (Reader reader = fromResource ? openResource(kind) : openConfig(kind)) {
             if (reader == null) return 0;
             JsonElement root = JsonParser.parseReader(reader);
@@ -212,8 +240,12 @@ public final class TrackVariantWeights {
             int added = 0;
             for (Map.Entry<String, JsonElement> e : obj.entrySet()) {
                 String name = e.getKey().toLowerCase(Locale.ROOT);
-                Integer parsed = parseWeight(kind, name, e.getValue(), fromResource);
-                if (parsed == null) continue;
+                TemplateMeta parsed = TemplateWeightCodec.parseEntry(e.getValue(), TrackVariantWeights::clamp);
+                if (parsed == null) {
+                    LOGGER.warn("[DungeonTrain] Track weight entry for {}:{} in {} is invalid — ignoring.",
+                        kind.id(), name, fromResource ? bundledResource(kind) : configPath(kind));
+                    continue;
+                }
                 into.put(name, parsed);
                 added++;
             }
@@ -240,31 +272,6 @@ public final class TrackVariantWeights {
             LOGGER.error("[DungeonTrain] Could not open track weights file {}: {}", file, e.toString());
             return null;
         }
-    }
-
-    private static Integer parseWeight(TrackKind kind, String name, JsonElement el, boolean fromResource) {
-        String origin = fromResource ? "bundled" : "config";
-        if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isNumber()) {
-            LOGGER.warn("[DungeonTrain] Track weight for {}:{} in {} is not a number — ignoring.",
-                kind.id(), name, origin);
-            return null;
-        }
-        double raw;
-        try {
-            raw = el.getAsDouble();
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Track weight for {}:{} in {} failed to parse: {}",
-                kind.id(), name, origin, e.toString());
-            return null;
-        }
-        if (Double.isNaN(raw) || Double.isInfinite(raw)) return null;
-        int rounded = (int) Math.round(raw);
-        int clamped = clamp(rounded);
-        if (clamped != rounded) {
-            LOGGER.warn("[DungeonTrain] Track weight {}:{} in {} clamped from {} to {} (range {}..{}).",
-                kind.id(), name, origin, rounded, clamped, MIN, MAX);
-        }
-        return clamped;
     }
 
     @SubscribeEvent

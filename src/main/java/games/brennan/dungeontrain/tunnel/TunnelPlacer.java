@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.tunnel;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
 import games.brennan.dungeontrain.ship.ShipFilterProcessor;
 import games.brennan.dungeontrain.ship.Shipyards;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.template.TemplateKind;
 import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.track.variant.TrackKind;
@@ -124,7 +125,8 @@ public final class TunnelPlacer {
     public static boolean placeSectionAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin) {
         long worldSeed = serverLevel.getSeed();
         int tileIndex = origin.getX();
-        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex);
+        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex,
+            GateContext.atWorldX(serverLevel, tileIndex));
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.SECTION, name);
         if (stored.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
@@ -142,7 +144,8 @@ public final class TunnelPlacer {
     public static boolean placePortalAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin, boolean mirrorX) {
         long worldSeed = serverLevel.getSeed();
         int tileIndex = origin.getX();
-        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_PORTAL, worldSeed, tileIndex);
+        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_PORTAL, worldSeed, tileIndex,
+            GateContext.atWorldX(serverLevel, tileIndex));
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.PORTAL, name);
         if (stored.isEmpty()) return false;
         BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;

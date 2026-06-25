@@ -93,6 +93,20 @@ public final class DifficultyProgression {
     }
 
     /**
+     * The boarding-HUD "Diff-Level" of the column at {@code worldX}, derived purely from position:
+     * the carriage-equivalent index there is {@code floorDiv(worldX, carriageLength)} (for a
+     * carriage this equals its own pIdx, since the train is anchored at world-X 0), mapped through
+     * {@link #tierForTravelled}. Used by the per-template spawn gate
+     * ({@link games.brennan.dungeontrain.template.TemplateGate}) so every weighted template kind —
+     * carriages, contents, track, pillars, tunnels — shares one position-derived level scale.
+     * Deterministic and player-independent (unlike {@link #currentTier}), which keeps the gated
+     * selection reproducible across reloads. Pure (params in) so it is unit-testable.
+     */
+    public static int levelAtWorldX(int worldX, int carriageLength) {
+        return tierForTravelled(Math.floorDiv(worldX, Math.max(1, carriageLength)));
+    }
+
+    /**
      * The three-stage gentle-onboarding ramp a carriage hostile falls into, by the lead player's
      * raw travelled-carriage progress. {@link #NO_HOSTILES} (the opening stretch) suppresses
      * authored hostiles entirely; {@link #EASY_MOBS} (the next stretch) replaces them with small

@@ -30,35 +30,35 @@ final class CarriageContentsWeightsTest {
     @Test
     @DisplayName("weightFor returns stored value for known id")
     void weightFor_returnsStoredValue() {
-        CarriageContentsWeights w = new CarriageContentsWeights(Map.of("default", 7));
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(Map.of("default", 7));
         assertEquals(7, w.weightFor("default"));
     }
 
     @Test
     @DisplayName("weightFor returns DEFAULT for an unknown id")
     void weightFor_returnsDefaultForUnknown() {
-        CarriageContentsWeights w = new CarriageContentsWeights(Map.of("default", 7));
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(Map.of("default", 7));
         assertEquals(CarriageContentsWeights.DEFAULT, w.weightFor("furnished"));
     }
 
     @Test
     @DisplayName("weightFor clamps negative values to MIN")
     void weightFor_clampsBelowMin() {
-        CarriageContentsWeights w = new CarriageContentsWeights(Map.of("default", -5));
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(Map.of("default", -5));
         assertEquals(CarriageContentsWeights.MIN, w.weightFor("default"));
     }
 
     @Test
     @DisplayName("weightFor clamps above-max values to MAX")
     void weightFor_clampsAboveMax() {
-        CarriageContentsWeights w = new CarriageContentsWeights(Map.of("default", CarriageContentsWeights.MAX + 50));
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(Map.of("default", CarriageContentsWeights.MAX + 50));
         assertEquals(CarriageContentsWeights.MAX, w.weightFor("default"));
     }
 
     @Test
     @DisplayName("weightFor zero is preserved (used to exclude a contents)")
     void weightFor_zeroPreserved() {
-        CarriageContentsWeights w = new CarriageContentsWeights(Map.of("default", 0));
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(Map.of("default", 0));
         assertEquals(0, w.weightFor("default"));
     }
 
@@ -77,7 +77,7 @@ final class CarriageContentsWeightsTest {
     void constructor_defensivelyCopiesInputMap() {
         Map<String, Integer> mutable = new HashMap<>();
         mutable.put("default", 5);
-        CarriageContentsWeights w = new CarriageContentsWeights(mutable);
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(mutable);
         mutable.put("default", 99);
         mutable.put("furnished", 0);
         assertEquals(5, w.weightFor("default"), "record should snapshot the input map");
@@ -87,9 +87,10 @@ final class CarriageContentsWeightsTest {
     @Test
     @DisplayName("Returned map from byId is unmodifiable")
     void byId_returnsUnmodifiable() {
-        CarriageContentsWeights w = new CarriageContentsWeights(Map.of("default", 5));
+        CarriageContentsWeights w = CarriageContentsWeights.ofWeights(Map.of("default", 5));
         assertThrows(UnsupportedOperationException.class,
-                () -> w.byId().put("extra", 1));
+                () -> w.byId().put("extra",
+                        games.brennan.dungeontrain.template.TemplateMeta.of(1)));
     }
 
     @Test

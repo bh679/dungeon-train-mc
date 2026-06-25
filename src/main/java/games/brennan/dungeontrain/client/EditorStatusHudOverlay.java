@@ -57,6 +57,10 @@ public final class EditorStatusHudOverlay {
     private static boolean devmode = false;
     /** Current variant weight for the active model, or {@link #NO_WEIGHT} when not applicable. */
     private static int weight = NO_WEIGHT;
+    /** Active model's spawn gate: min Diff-Level (default 0), max Diff-Level ({@code -1} = no upper bound), and a 4-bit phase mask (default all four set). */
+    private static int minLevel = 0;
+    private static int maxLevel = -1;
+    private static int phaseMask = 0b1111;
     /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
     private static boolean partMenuEnabled = true;
     /**
@@ -100,8 +104,8 @@ public final class EditorStatusHudOverlay {
 
     /** Called from {@code EditorStatusPacket.handle} on the main client thread. */
     public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
-                                 boolean newDevmode, int newWeight, boolean newPartMenuEnabled,
-                                 boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
+                                 boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
+                                 boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
                                  Set<String> newExcludedContents) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
@@ -109,6 +113,9 @@ public final class EditorStatusHudOverlay {
         modelName = newModelName == null ? "" : newModelName;
         devmode = newDevmode;
         weight = newWeight;
+        minLevel = newMinLevel;
+        maxLevel = newMaxLevel;
+        phaseMask = newPhaseMask;
         partMenuEnabled = newPartMenuEnabled;
         mirrorX = newMirrorX;
         mirrorY = newMirrorY;
@@ -125,6 +132,9 @@ public final class EditorStatusHudOverlay {
         modelName = "";
         devmode = false;
         weight = NO_WEIGHT;
+        minLevel = 0;
+        maxLevel = -1;
+        phaseMask = 0b1111;
         partMenuEnabled = true;
         mirrorX = false;
         mirrorY = false;
@@ -171,6 +181,21 @@ public final class EditorStatusHudOverlay {
     /** Current variant weight for the active carriage model, or -1 when not applicable. */
     public static int weight() {
         return weight;
+    }
+
+    /** Active model's minimum spawn Diff-Level (0 = from the start). */
+    public static int minLevel() {
+        return minLevel;
+    }
+
+    /** Active model's maximum spawn Diff-Level, or {@code -1} for "no upper bound". */
+    public static int maxLevel() {
+        return maxLevel;
+    }
+
+    /** Active model's 4-bit worldgen-phase mask (bit per {@code TrainPhase} ordinal: OW/Nether/Void/End). */
+    public static int phaseMask() {
+        return phaseMask;
     }
 
     /** Server-reported per-player part-position auto-open menu flag. Default true. */

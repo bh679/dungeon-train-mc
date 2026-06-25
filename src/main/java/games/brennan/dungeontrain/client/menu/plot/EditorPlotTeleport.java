@@ -52,6 +52,38 @@ public final class EditorPlotTeleport {
     }
 
     /**
+     * Build the slash command that bumps a per-template spawn-gate level bound
+     * ({@code sub} = {@code "minlevel"} / {@code "maxlevel"}) of the template
+     * identified by {@code (category, modelId, modelName)} in {@code dir}
+     * ({@code "inc"} / {@code "dec"}). Mirrors {@link #weightCommandFor}; null
+     * for categories without a gate pool.
+     */
+    public static String levelCommandFor(String category, String modelId, String modelName, String sub, String dir) {
+        return switch (category) {
+            case "CARRIAGES" -> "dungeontrain editor " + sub + " " + modelId + " " + dir;
+            case "CONTENTS" -> "dungeontrain editor contents " + sub + " " + modelId + " " + dir;
+            case "TRACKS" -> "dungeontrain editor tracks " + sub + " " + modelId + " " + modelName + " " + dir;
+            default -> null;
+        };
+    }
+
+    /**
+     * Build the slash command that toggles a spawn-gate phase
+     * ({@code phaseToken} = {@code overworld|nether|void|end}) {@code on}/{@code off}
+     * for the template identified by {@code (category, modelId, modelName)}.
+     * Null for categories without a gate pool.
+     */
+    public static String phaseCommandFor(String category, String modelId, String modelName,
+                                         String phaseToken, String onOff) {
+        return switch (category) {
+            case "CARRIAGES" -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + onOff;
+            case "CONTENTS" -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + onOff;
+            case "TRACKS" -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + onOff;
+            default -> null;
+        };
+    }
+
+    /**
      * Build the slash command that bumps the per-member weight of {@code memberId}
      * within {@code parentId}'s contents group, in {@code dir} ({@code "inc"} or
      * {@code "dec"}). Used by the Sub-Variants companion menu's weight cell —

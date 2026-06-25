@@ -6,6 +6,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.template.TemplateMeta;
+import games.brennan.dungeontrain.template.TemplateWeightCodec;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -25,7 +28,6 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.TreeMap;
 
 /**
  * Per-variant weight map that biases the seeded random pick in
@@ -51,7 +53,7 @@ import java.util.TreeMap;
  * weights for customs that haven't been installed yet.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
-public record CarriageWeights(Map<String, Integer> byId) {
+public record CarriageWeights(Map<String, TemplateMeta> byId) {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -76,13 +78,30 @@ public record CarriageWeights(Map<String, Integer> byId) {
     }
 
     /**
+     * Build a weights table from a plain {@code id → weight} map, every entry with the default
+     * (eligible-everywhere) {@link TemplateGate}. The in-memory equivalent of the bare-int JSON
+     * legacy form; convenient for callers/tests that only set weights.
+     */
+    public static CarriageWeights ofWeights(Map<String, Integer> weights) {
+        Map<String, TemplateMeta> m = new HashMap<>();
+        weights.forEach((k, v) -> m.put(k, TemplateMeta.of(v)));
+        return new CarriageWeights(m);
+    }
+
+    /**
      * Return the clamped weight for {@code id}, or {@link #DEFAULT} if not in the map.
      * Always in {@code [MIN, MAX]}.
      */
     public int weightFor(String id) {
-        Integer w = byId.get(id);
-        if (w == null) return DEFAULT;
-        return clamp(w);
+        TemplateMeta m = byId.get(id);
+        if (m == null) return DEFAULT;
+        return clamp(m.weight());
+    }
+
+    /** The spawn {@link TemplateGate gate} for {@code id}, or {@link TemplateGate#DEFAULT} if absent. */
+    public TemplateGate gateFor(String id) {
+        TemplateMeta m = byId.get(id);
+        return m == null ? TemplateGate.DEFAULT : m.gate();
     }
 
     public static int clamp(int value) {
@@ -98,7 +117,7 @@ public record CarriageWeights(Map<String, Integer> byId) {
 
     /** Reload bundled + config weights into {@link #current}. Safe to call outside event handlers. */
     public static synchronized void reload() {
-        Map<String, Integer> merged = new HashMap<>();
+        Map<String, TemplateMeta> merged = new HashMap<>();
         int bundled = loadInto(BUNDLED_RESOURCE, merged, true);
         int config = loadInto(null, merged, false);
         current = new CarriageWeights(merged);
@@ -120,8 +139,9 @@ public record CarriageWeights(Map<String, Integer> byId) {
     public static synchronized int set(String id, int value) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         int clamped = clamp(value);
-        Map<String, Integer> next = new HashMap<>(current.byId());
-        next.put(key, clamped);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        next.put(key, new TemplateMeta(clamped, prev == null ? TemplateGate.DEFAULT : prev.gate()));
         current = new CarriageWeights(next);
         writeConfig(current);
         trySaveToSource(current);
@@ -131,13 +151,32 @@ public record CarriageWeights(Map<String, Integer> byId) {
     }
 
     /**
+     * Update the spawn {@link TemplateGate gate} (min/max Diff-Level + phase set) for {@code id},
+     * preserving its current weight, and persist. The gate takes effect for the next carriage that
+     * spawns. Returns the stored gate.
+     */
+    public static synchronized TemplateGate setGate(String id, TemplateGate gate) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        int weight = prev == null ? DEFAULT : prev.weight();
+        next.put(key, new TemplateMeta(weight, gate));
+        current = new CarriageWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage gate {}={} (persisted to {}).",
+                key, gate, configPath());
+        return gate;
+    }
+
+    /**
      * Remove an override for {@code id} (reverts it to {@link #DEFAULT} on the
      * next lookup). Persists immediately. Returns true if an entry was removed.
      */
     public static synchronized boolean unset(String id) throws IOException {
         String key = id.toLowerCase(Locale.ROOT);
         if (!current.byId().containsKey(key)) return false;
-        Map<String, Integer> next = new HashMap<>(current.byId());
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
         next.remove(key);
         current = new CarriageWeights(next);
         writeConfig(current);
@@ -155,9 +194,9 @@ public record CarriageWeights(Map<String, Integer> byId) {
     private static void writeConfig(CarriageWeights weights) throws IOException {
         Path file = configPath();
         Files.createDirectories(file.getParent());
-        Map<String, Integer> sorted = new TreeMap<>(weights.byId());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+            new GsonBuilder().setPrettyPrinting().create()
+                    .toJson(TemplateWeightCodec.toJson(weights.byId()), w);
         }
     }
 
@@ -167,7 +206,7 @@ public record CarriageWeights(Map<String, Integer> byId) {
      * per-install config file. Returns the number of entries added (for logging).
      * Missing files are silently accepted — both tiers are optional.
      */
-    private static int loadInto(String source, Map<String, Integer> into, boolean fromResource) {
+    private static int loadInto(String source, Map<String, TemplateMeta> into, boolean fromResource) {
         try (Reader reader = fromResource ? openResource(source) : openConfig()) {
             if (reader == null) return 0;
             JsonElement root = JsonParser.parseReader(reader);
@@ -180,8 +219,12 @@ public record CarriageWeights(Map<String, Integer> byId) {
             int added = 0;
             for (Map.Entry<String, JsonElement> e : obj.entrySet()) {
                 String id = e.getKey().toLowerCase(Locale.ROOT);
-                Integer parsed = parseWeight(id, e.getValue(), fromResource);
-                if (parsed == null) continue;
+                TemplateMeta parsed = TemplateWeightCodec.parseEntry(e.getValue(), CarriageWeights::clamp);
+                if (parsed == null) {
+                    LOGGER.warn("[DungeonTrain] Weight entry for '{}' in {} is invalid — ignoring.",
+                            id, fromResource ? source : configPath());
+                    continue;
+                }
                 into.put(id, parsed);
                 added++;
             }
@@ -244,9 +287,9 @@ public record CarriageWeights(Map<String, Integer> byId) {
         }
         Path file = sourceFile();
         Files.createDirectories(file.getParent());
-        Map<String, Integer> sorted = new TreeMap<>(weights.byId());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            new GsonBuilder().setPrettyPrinting().create().toJson(sorted, w);
+            new GsonBuilder().setPrettyPrinting().create()
+                    .toJson(TemplateWeightCodec.toJson(weights.byId()), w);
         }
         LOGGER.info("[DungeonTrain] Wrote bundled carriage weights to {} (devmode promote).", file);
     }
@@ -271,37 +314,6 @@ public record CarriageWeights(Map<String, Integer> byId) {
         Path projectRoot = gameDir.getParent();
         if (projectRoot == null) return null;
         return projectRoot.resolve("src/main/resources");
-    }
-
-    /**
-     * Parse a single JSON value into a clamped integer weight. Returns null for
-     * invalid entries (non-primitive, non-numeric, NaN) and logs a warning so
-     * bad file edits surface instead of silently reverting to default.
-     */
-    private static Integer parseWeight(String id, JsonElement el, boolean fromResource) {
-        String origin = fromResource ? "bundled" : "config";
-        if (!el.isJsonPrimitive() || !el.getAsJsonPrimitive().isNumber()) {
-            LOGGER.warn("[DungeonTrain] Weight for '{}' in {} is not a number — ignoring.", id, origin);
-            return null;
-        }
-        double raw;
-        try {
-            raw = el.getAsDouble();
-        } catch (Exception e) {
-            LOGGER.warn("[DungeonTrain] Weight for '{}' in {} failed to parse: {}", id, origin, e.toString());
-            return null;
-        }
-        if (Double.isNaN(raw) || Double.isInfinite(raw)) {
-            LOGGER.warn("[DungeonTrain] Weight for '{}' in {} is not finite — ignoring.", id, origin);
-            return null;
-        }
-        int rounded = (int) Math.round(raw);
-        int clamped = clamp(rounded);
-        if (clamped != rounded) {
-            LOGGER.warn("[DungeonTrain] Weight for '{}' in {} clamped from {} to {} (range {}..{}).",
-                    id, origin, rounded, clamped, MIN, MAX);
-        }
-        return clamped;
     }
 
     @SubscribeEvent
