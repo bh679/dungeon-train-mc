@@ -313,6 +313,10 @@ public final class CarriageContentsEditor {
             net.minecraft.core.Vec3i mirrorSize = CarriageContentsPlacer.interiorSize(dims);
             CarriageContentsVariantBlocks mirrorSidecar =
                 CarriageContentsVariantBlocks.loadFor(contents, mirrorSize);
+            // "V" toggle: mirror the variant pools first so the structural pass
+            // below preserves the freshly-reflected far cells via markersOf.
+            EditorVariantMirror.rebuildFromMaster(overworld,
+                new BlockVariantPlot.ContentsPlot(contents, mirrorOrigin, mirrorSize));
             EditorMirror.rebuildFromMaster(overworld, mirrorOrigin, mirrorSize,
                 mirrorSidecar.mirrorX(), mirrorSidecar.mirrorY(), mirrorSidecar.mirrorZ(),
                 EditorMirror.markersOf(mirrorSidecar.entries()));

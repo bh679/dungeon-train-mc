@@ -190,6 +190,10 @@ public final class TrackEditor {
         // per the sidecar's enabled axes. No-op when all axes are off (default).
         Vec3i footprint = TrackKind.TILE.dims(dims);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(TrackKind.TILE, name, footprint);
+        // "V" toggle: mirror the variant pools first so the structural pass below
+        // preserves the freshly-reflected far cells via markersOf.
+        EditorVariantMirror.rebuildFromMaster(overworld,
+            new BlockVariantPlot.TrackPlot(TrackKind.TILE, name, origin, footprint));
         EditorMirror.rebuildFromMaster(overworld, origin, footprint,
             sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
             EditorMirror.markersOf(sidecar.entries()));

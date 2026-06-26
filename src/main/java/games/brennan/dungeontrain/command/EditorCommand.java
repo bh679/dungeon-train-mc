@@ -253,7 +253,8 @@ public final class EditorCommand {
             .then(Commands.literal("mirror")
                 .then(mirrorAxisNode("x"))
                 .then(mirrorAxisNode("y"))
-                .then(mirrorAxisNode("z")))
+                .then(mirrorAxisNode("z"))
+                .then(mirrorAxisNode("v")))
             .then(Commands.literal("tracks")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.TRACKS))
                 // Explicit (kind, name) mirror toggle — scripting / out-of-plot use.
@@ -264,7 +265,8 @@ public final class EditorCommand {
                             .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
                             .then(trackMirrorAxisNode("x"))
                             .then(trackMirrorAxisNode("y"))
-                            .then(trackMirrorAxisNode("z")))))
+                            .then(trackMirrorAxisNode("z"))
+                            .then(trackMirrorAxisNode("v")))))
                 .then(Commands.literal("new")
                     .then(Commands.argument("kind", StringArgumentType.word())
                         .suggests(TRACK_KIND_SUGGESTIONS)
@@ -761,9 +763,13 @@ public final class EditorCommand {
                 StringArgumentType.getString(ctx, "kind"), StringArgumentType.getString(ctx, "name"), axis, false)));
     }
 
-    /** Apply one {@code x|y|z} axis to a track sidecar, preserving the other two. */
+    /** Apply one {@code x|y|z} axis (or the {@code v} variant-mirror flag) to a track sidecar, preserving the rest. */
     private static void applyMirrorAxis(games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg,
                                         String axis, boolean on) {
+        if (axis.equals("v")) {
+            cfg.setMirrorVariants(on);
+            return;
+        }
         boolean x = cfg.mirrorX(), y = cfg.mirrorY(), z = cfg.mirrorZ();
         switch (axis) {
             case "x" -> x = on;
@@ -829,14 +835,18 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        boolean x = plot.mirrorX(), y = plot.mirrorY(), z = plot.mirrorZ();
-        switch (axis) {
-            case "x" -> x = on;
-            case "y" -> y = on;
-            case "z" -> z = on;
-            default -> { return 0; }
+        if (axis.equals("v")) {
+            plot.setMirrorVariants(on);
+        } else {
+            boolean x = plot.mirrorX(), y = plot.mirrorY(), z = plot.mirrorZ();
+            switch (axis) {
+                case "x" -> x = on;
+                case "y" -> y = on;
+                case "z" -> z = on;
+                default -> { return 0; }
+            }
+            plot.setMirrorAxes(x, y, z);
         }
-        plot.setMirrorAxes(x, y, z);
         try {
             plot.save();
             source.sendSuccess(() -> Component.literal(

@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
+import games.brennan.dungeontrain.editor.EditorVariantMirror;
 import games.brennan.dungeontrain.editor.VariantOverlayRenderer;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.editor.VariantState;
@@ -187,6 +188,12 @@ public final class VariantClipboardItem extends Item {
             sendActionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
             return InteractionResult.FAIL;
         }
+
+        // Mirror the pasted variant pool (+ reflected base block) to the
+        // symmetric cells when the plot's "V" toggle is on — parity with the
+        // shift-click add and break paths, which otherwise leaves a paste
+        // looking like a plain mirrored block on the far side.
+        EditorVariantMirror.mirrorEditLive(serverLevel, plot, localPos, states);
 
         // Refresh the all-faces lock-id overlay so the new badge shows
         // immediately without waiting for the next overlay tick.

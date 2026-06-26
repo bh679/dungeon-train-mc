@@ -71,6 +71,7 @@ public final class EditorStatusHudOverlay {
     private static boolean mirrorX = false;
     private static boolean mirrorY = false;
     private static boolean mirrorZ = false;
+    private static boolean mirrorVariants = false;
     /**
      * Content ids the active carriage variant has explicitly disallowed. Empty
      * for non-carriage statuses and for carriages with no exclusions. The
@@ -106,7 +107,7 @@ public final class EditorStatusHudOverlay {
     public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
                                  boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
                                  boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
-                                 Set<String> newExcludedContents) {
+                                 boolean newMirrorVariants, Set<String> newExcludedContents) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -120,6 +121,7 @@ public final class EditorStatusHudOverlay {
         mirrorX = newMirrorX;
         mirrorY = newMirrorY;
         mirrorZ = newMirrorZ;
+        mirrorVariants = newMirrorVariants;
         excludedContents = (newExcludedContents == null || newExcludedContents.isEmpty())
             ? Collections.emptySet()
             : Set.copyOf(newExcludedContents);
@@ -139,6 +141,7 @@ public final class EditorStatusHudOverlay {
         mirrorX = false;
         mirrorY = false;
         mirrorZ = false;
+        mirrorVariants = false;
         excludedContents = Collections.emptySet();
         unsavedList = null;
         clearChangesList();
@@ -226,6 +229,11 @@ public final class EditorStatusHudOverlay {
     /** Editor mirror Z-axis flag for the active model (X-menu toggle state). */
     public static boolean mirrorZ() {
         return mirrorZ;
+    }
+
+    /** Editor mirror-variants ("V") flag for the active model (X-menu toggle state). */
+    public static boolean mirrorVariants() {
+        return mirrorVariants;
     }
 
     /**

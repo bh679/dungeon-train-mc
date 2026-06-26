@@ -164,6 +164,7 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        mirrorVariantAdd(level, player, clicked, updated);
         sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
@@ -217,6 +218,7 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        mirrorVariantAdd(level, player, clicked, updated);
         sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
@@ -271,6 +273,7 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        mirrorVariantAdd(level, player, clicked, updated);
         sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
@@ -322,6 +325,7 @@ public final class VariantBlockInteractions {
             return;
         }
 
+        mirrorVariantAdd(level, player, clicked, updated);
         sendAddedFeedback(player, clicked, local, newVariant, updated);
         VariantOverlayRenderer.pushImmediateHover(player, clicked, updated);
         suppressVanillaPlace(event);
@@ -509,6 +513,22 @@ public final class VariantBlockInteractions {
         player.displayClientMessage(
             Component.literal("+ " + label + "  →  " + count + " variants @ " + lx + "," + ly + "," + lz)
                 .withStyle(sentinel ? ChatFormatting.AQUA : ChatFormatting.GREEN), true);
+    }
+
+    /**
+     * Mirror a just-recorded variant edit to the symmetric cells when the plot's
+     * "V" toggle is on. Re-resolves the {@link BlockVariantPlot} and recomputes
+     * {@code local} from its origin — the exact frame {@link VariantBlockBreakHandler}
+     * uses — so the image cells line up regardless of which branch recorded the edit.
+     */
+    private static void mirrorVariantAdd(ServerLevel level, ServerPlayer player, BlockPos clicked,
+                                         List<VariantState> updated) {
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
+        if (plot == null) return;
+        BlockPos local = clicked.subtract(plot.origin());
+        if (!plot.inBounds(local)) return;
+        EditorVariantMirror.mirrorEditLive(level, plot, local, updated);
     }
 
     /**

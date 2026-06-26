@@ -2545,9 +2545,9 @@
       ],
       "pr": 589,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "worldgen-cycle-memo",
@@ -2560,9 +2560,9 @@
       ],
       "pr": 590,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "editor-menus-master-toggle",
@@ -2576,9 +2576,43 @@
       ],
       "pr": 593,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
+    },
+    {
+      "id": "echo-story-gear-and-chat",
+      "version": "0.367.0",
+      "type": "feat",
+      "title": "Echo encounter stories describe the echo's gear and your words",
+      "summary": "When you meet a remote echo aboard the train, its Discord story now paints a fuller picture: it names the echo's two finest items \u2014 enchantments, armour trim and all \u2014 notes any better gear it claims along the way, and remembers if you spoke to it. Your words are sometimes quoted in the tale, sometimes just hinted at, and are always kept private if you'd recently been in touch with the dev.",
+      "highlights": [
+        "The echo's two best items (with enchantments & armour trim) now appear in its story",
+        "Better gear the echo picks up mid-encounter is added as it happens",
+        "Chatting near an echo can become part of the story \u2014 your words quoted or kept private"
+      ],
+      "pr": 595,
+      "date": "2026-06-26",
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
+    },
+    {
+      "id": "editor-mirror-block-variants",
+      "version": "0.367.0",
+      "type": "feat",
+      "title": "Editor mirror now reflects block variants",
+      "summary": "The template editor's XYZ mirror gains an opt-in \"V\" toggle that also mirrors per-cell block-variant pools across the enabled axes \u2014 so you can author one half of a carriage or part and get the symmetric variants for free. Off by default, so existing templates are unchanged.",
+      "highlights": [
+        "New V checkbox beside the X / Y / Z mirror toggles in the editor menu",
+        "Variant pools mirror live as you add, paste, or break \u2014 with a save-time backstop",
+        "Block facing, slab/stair half, and lock-group ids all reflect correctly"
+      ],
+      "pr": 596,
+      "date": "2026-06-26",
+      "released": true,
+      "released_in": "v0.367.0",
+      "released_at": "2026-06-26T09:52:26Z"
     },
     {
       "id": "resume-train-hold",
@@ -2589,6 +2623,7 @@
       "highlights": [
         "The whole train is kept loaded through the pause, then eases back to normal once you've settled back on board."
       ],
+      "pr": 599,
       "date": "2026-06-26",
       "released": false,
       "released_in": null,
