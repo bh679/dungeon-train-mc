@@ -52,6 +52,8 @@ public final class ResumeRenderDiagnostics {
 
     private static long lastTickNanos = 0L;
     private static int logTicksRemaining = 0;
+    /** Last-seen Sable interpolation {@code stopped} flag, to detect the stopped→running resume edge. */
+    private static boolean wasStopped = false;
 
     private ResumeRenderDiagnostics() {}
 
@@ -61,13 +63,38 @@ public final class ResumeRenderDiagnostics {
         ClientLevel level = mc.level;
         if (level == null) {
             lastTickNanos = 0L; // left the world — reset baseline so re-entry isn't a "resume"
+            wasStopped = false;
             return;
         }
 
         long now = System.nanoTime();
         long prev = lastTickNanos;
         lastTickNanos = now;
-        if (prev != 0L) {
+
+        // Primary trigger — the Sable interpolation stopped→running edge (the actual snap signal).
+        // A server pause sets the interpolation 'stopped' flag; on resume it clears and
+        // interpolationTick hard-resets (the pose snap). An Esc-menu pause freezes the SERVER but
+        // not the client tick loop, so the wall-clock trigger below never sees a gap — this edge
+        // catches it. A baseline dump on running→stopped captures the pre-pause pose to diff against.
+        boolean stoppedNow = false;
+        try {
+            ClientSubLevelContainer container = SubLevelContainer.getContainer(level);
+            if (container != null) stoppedNow = container.getInterpolation().isStopped();
+        } catch (Throwable ignored) {
+            // interpolation not available yet (no sub-levels) — treat as running
+        }
+        if (!wasStopped && stoppedNow) {
+            LOGGER.info("[DT-resume-diag] interpolation running→stopped (server pause) — pre-pause baseline:");
+            try { dump(level); } catch (Throwable ignored) {}
+        } else if (wasStopped && !stoppedNow) {
+            logTicksRemaining = LOG_TICKS;
+            LOGGER.info("[DT-resume-diag] interpolation stopped→running (server resume) — dumping sub-level render state for {} ticks", LOG_TICKS);
+        }
+        wasStopped = stoppedNow;
+
+        // Fallback trigger — a multi-second client wall-clock gap (covers a genuine CLIENT freeze,
+        // e.g. window minimise, where no snapshot packets arrive so the edge above wouldn't fire).
+        if (prev != 0L && logTicksRemaining <= 0) {
             long gapMs = (now - prev) / 1_000_000L;
             if (gapMs >= RESUME_GAP_MS) {
                 logTicksRemaining = LOG_TICKS;
