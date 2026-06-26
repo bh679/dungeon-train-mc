@@ -2624,6 +2624,7 @@
         "Books no longer pause singleplayer mid-ride",
         "Fixes carriages vanishing after reading a book on the train"
       ],
+      "pr": 597,
       "date": "2026-06-26",
       "released": false,
       "released_in": null,
