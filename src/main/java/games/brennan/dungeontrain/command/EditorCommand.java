@@ -345,6 +345,9 @@ public final class EditorCommand {
             .then(Commands.literal("partmenu")
                 .then(Commands.literal("on").executes(ctx -> runPartMenu(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runPartMenu(ctx.getSource(), false))))
+            .then(Commands.literal("editormenus")
+                .then(Commands.literal("on").executes(ctx -> runEditorMenus(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> runEditorMenus(ctx.getSource(), false))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -2594,6 +2597,32 @@ public final class EditorCommand {
         games.brennan.dungeontrain.editor.PartPositionMenuController.setMenuEnabled(player, on);
         source.sendSuccess(() -> Component.literal(
             "Editor part-position menu: " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        return 1;
+    }
+
+    /**
+     * Master toggle for all editor world-space menus. Drives the persistent
+     * parts-position auto-open flag (the only menu with persistent state) and,
+     * when turning OFF, also force-closes the two on-demand menus (block-variant
+     * tap-Z, container-contents tap-C) if they happen to be open. Those two stay
+     * reopenable on demand while OFF — this only closes what's currently up.
+     */
+    private static int runEditorMenus(CommandSourceStack source, boolean on) {
+        net.minecraft.server.level.ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("Editor menus: only players can toggle the menu."));
+            return 0;
+        }
+        games.brennan.dungeontrain.editor.PartPositionMenuController.setMenuEnabled(player, on);
+        if (!on) {
+            // Close any open on-demand world-space menus. Both are no-ops when
+            // nothing is open (drop the OPEN entry + send an empty sync packet).
+            games.brennan.dungeontrain.editor.BlockVariantMenuController.toggle(player, false);
+            games.brennan.dungeontrain.editor.ContainerContentsMenuController.toggle(player, false);
+        }
+        source.sendSuccess(() -> Component.literal(
+            "Editor menus: " + (on ? "ON" : "OFF")
         ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
         return 1;
     }

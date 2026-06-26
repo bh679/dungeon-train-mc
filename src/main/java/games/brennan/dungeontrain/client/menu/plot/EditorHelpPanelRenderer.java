@@ -160,6 +160,11 @@ public final class EditorHelpPanelRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+        // Master "Editor Menus" toggle — hide all world-space editor panels when off.
+        if (!games.brennan.dungeontrain.client.EditorStatusHudOverlay.isEditorMenusVisible()) {
+            HOVERED = Hovered.NONE;
+            return;
+        }
         EditorTypeMenusPacket.Menu navMenu = firstNavMenu();
         if (navMenu == null) {
             HOVERED = Hovered.NONE;
