@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 8,
+  "mirror": { "x": true, "y": true, "z": true, "v": false },
+  "variants": {
+    "6,0,0": { "lockId": 1, "states": ["minecraft:copper_block", "minecraft:chiseled_copper", "minecraft:copper_grate[waterlogged=false]", "minecraft:cut_copper"] }
+  }
+}
