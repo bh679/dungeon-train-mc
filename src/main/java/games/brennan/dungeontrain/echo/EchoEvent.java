@@ -27,6 +27,8 @@ public enum EchoEvent {
     GAVE_GIFT,
     /** The echo gave the player an item. */
     RECEIVED_GIFT,
+    /** The player used chat while the echo was around (contents shown or withheld per the privacy guard). */
+    CHAT,
     /** The echo left the carriage deck shortly after the player struck it — a deliberate shove. */
     PUSHED_OFF_TRAIN,
     /** The echo left the carriage deck on its own (a fall / a gap), with no recent player strike. */

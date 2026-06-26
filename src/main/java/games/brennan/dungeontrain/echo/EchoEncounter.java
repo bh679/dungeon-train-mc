@@ -5,7 +5,9 @@ import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,8 +33,17 @@ final class EchoEncounter {
     /** The carriage depth the echo is themed to (where the source player died); {@code <0} if unknown. */
     final int sourceCarriage;
     final long spawnTick;
-    /** Up to two pre-rendered descriptors of the echo's most notable items, best-first; never null. */
+    /** Up to two pre-rendered descriptors of the echo's most notable items at spawn, best-first; never null. */
     final List<String> bestItems;
+
+    /** Score an in-encounter pickup must beat to be logged as an upgrade; raised as upgrades land. */
+    double bestBarScore;
+    /** Item display names already named in the story (spawn best + acquired) — dedups upgrades. */
+    final Set<String> mentionedItemNames;
+    /** Descriptors of items the echo acquired mid-encounter that bettered its gear, in order. */
+    final List<String> acquiredItems = new ArrayList<>();
+    /** The primary player's first chat near the echo, when contents are shown; {@code null} = note-only. */
+    String chatLine = null;
 
     private final List<EchoEvent> beats = new ArrayList<>();
     private final EnumSet<EchoEvent> seen = EnumSet.noneOf(EchoEvent.class);
@@ -45,7 +56,8 @@ final class EchoEncounter {
     byte[] photo = null;
 
     EchoEncounter(UUID echoId, ResourceKey<Level> dimension, UUID sourcePlayerId, String sourceName,
-                  UUID primaryPlayerId, int sourceCarriage, long spawnTick, List<String> bestItems) {
+                  UUID primaryPlayerId, int sourceCarriage, long spawnTick,
+                  EchoItemHighlights.Highlights highlights) {
         this.echoId = echoId;
         this.dimension = dimension;
         this.sourcePlayerId = sourcePlayerId;
@@ -53,7 +65,15 @@ final class EchoEncounter {
         this.primaryPlayerId = primaryPlayerId;
         this.sourceCarriage = sourceCarriage;
         this.spawnTick = spawnTick;
-        this.bestItems = bestItems == null ? List.of() : List.copyOf(bestItems);
+        if (highlights == null) {
+            this.bestItems = List.of();
+            this.bestBarScore = Double.NEGATIVE_INFINITY;
+            this.mentionedItemNames = new HashSet<>();
+        } else {
+            this.bestItems = List.copyOf(highlights.descriptors());
+            this.bestBarScore = highlights.barScore();
+            this.mentionedItemNames = new HashSet<>(highlights.names());
+        }
     }
 
     /** Record a beat the first time it happens; later repeats are ignored. Returns true if newly logged. */

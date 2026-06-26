@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Picks the most notable items a remote echo is carrying and renders each as a one-line descriptor
@@ -50,12 +51,20 @@ final class EchoItemHighlights {
 
     private EchoItemHighlights() {}
 
+    /** One ranked item: its display name (the dedup key), full descriptor, and value score. */
+    record Scored(String name, String descriptor, double score) {}
+
     /**
-     * The up-to-{@code max} most notable items the echo is carrying, best-first, each as a descriptor
-     * string. Reads the six equipment slots plus the PlayerMob backpack. Empty when the echo carries
-     * nothing.
+     * The spawn snapshot: the top {@code max} descriptors, the score bar a later pickup must beat to
+     * count as an upgrade, and the set of item names already in the story.
      */
-    static List<String> topItems(PlayerMobEntity mob, int max) {
+    record Highlights(List<String> descriptors, double barScore, Set<String> names) {}
+
+    /**
+     * Every non-empty item the echo carries (six equipment slots + PlayerMob backpack), scored and
+     * described, deduped by display name, best-first.
+     */
+    static List<Scored> ranked(PlayerMobEntity mob) {
         List<ItemStack> stacks = new ArrayList<>();
         for (EquipmentSlot slot : EquipmentSlot.values()) {
             stacks.add(mob.getItemBySlot(slot));
@@ -64,19 +73,52 @@ final class EchoItemHighlights {
         for (int i = 0; i < backpack.getContainerSize(); i++) {
             stacks.add(backpack.getItem(i));
         }
-
         stacks.removeIf(ItemStack::isEmpty);
         stacks.sort(Comparator.comparingDouble(EchoItemHighlights::score).reversed());
 
-        List<String> out = new ArrayList<>(max);
+        List<Scored> out = new ArrayList<>();
         Set<String> seenNames = new LinkedHashSet<>();
         for (ItemStack stack : stacks) {
-            if (out.size() >= max) break;
             String name = stack.getHoverName().getString();
-            if (!seenNames.add(name)) continue; // skip a second copy of the same item
-            out.add(describe(stack, name));
+            if (!seenNames.add(name)) continue; // collapse a second copy of the same item
+            out.add(new Scored(name, describe(stack, name), score(stack)));
         }
         return out;
+    }
+
+    /**
+     * Snapshot the echo's up-to-{@code max} most notable items at spawn. {@code barScore} is the
+     * weakest included item's score (the bar an in-encounter pickup must beat to be "better"), or
+     * {@code NEGATIVE_INFINITY} when the echo spawned empty-handed.
+     */
+    static Highlights snapshot(PlayerMobEntity mob, int max) {
+        List<Scored> ranked = ranked(mob);
+        List<String> descriptors = new ArrayList<>(max);
+        Set<String> names = new HashSet<>();
+        double bar = Double.NEGATIVE_INFINITY;
+        for (Scored s : ranked) {
+            if (descriptors.size() >= max) break;
+            descriptors.add(s.descriptor());
+            names.add(s.name());
+            bar = s.score(); // ranked is descending, so the last taken is the weakest included
+        }
+        return new Highlights(descriptors, bar, names);
+    }
+
+    /**
+     * If the echo now holds a not-yet-mentioned item that beats its current best bar, record it as a
+     * mid-encounter upgrade on {@code enc} and raise the bar to it. At most one per call, so a steady
+     * stream of pickups reads as gradual gains rather than a dump.
+     */
+    static void collectUpgrades(PlayerMobEntity mob, EchoEncounter enc) {
+        for (Scored s : ranked(mob)) {
+            if (s.score() <= enc.bestBarScore) break;            // nothing better remains (sorted desc)
+            if (enc.mentionedItemNames.contains(s.name())) continue; // already named in the story
+            enc.acquiredItems.add(s.descriptor());
+            enc.mentionedItemNames.add(s.name());
+            enc.bestBarScore = s.score();
+            return;
+        }
     }
 
     // ---------------- scoring ----------------
