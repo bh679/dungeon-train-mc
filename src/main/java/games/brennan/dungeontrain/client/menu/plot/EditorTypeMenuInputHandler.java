@@ -360,7 +360,10 @@ public final class EditorTypeMenuInputHandler {
                     CommandRunner.run("dungeontrain editor stage delete " + id);
                     EditorTypeMenuRenderer.clearStagesRemoveMode();
                 } else {
-                    CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StageEditScreen(id));
+                    // Toggle this stage as the focused per-stage carriage preview (re-click deselects).
+                    // The gate is edited inline on this same row (≥ / ≤ / phase cells), so the old
+                    // StageEditScreen drill-in is redundant — clicking the name now selects.
+                    CommandRunner.run("dungeontrain editor stage select " + id);
                 }
             }
             case MIN_LEVEL -> {

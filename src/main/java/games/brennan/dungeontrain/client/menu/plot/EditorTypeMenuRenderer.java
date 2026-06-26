@@ -214,6 +214,8 @@ public final class EditorTypeMenuRenderer {
     private static final int STAGE_CUSTOM_COLOR = 0xFF99AABB;
     /** Red band behind stage rows while remove-mode is active. */
     private static final int REMOVE_ROW_BG = 0x60FF4444;
+    /** Persistent green tint behind the stage row that is the focused per-stage carriage preview. */
+    private static final int SELECTED_ROW_BG = 0x6055DD55;
     /** Green "+ Add" / red "– Remove" toolbar button text. */
     private static final int STAGE_ADD_COLOR = 0xFFAAFFAA;
     private static final int STAGE_REMOVE_COLOR = 0xFFFF9999;
@@ -1465,6 +1467,9 @@ public final class EditorTypeMenuRenderer {
             double rowCY = (rowTop + rowBottom) / 2.0;
             drawQuad(ps, buffer, -halfW, rowTop - 0.005, halfW, rowTop + 0.005, ROW_SEP_COLOR);
             if (removeMode) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, REMOVE_ROW_BG);
+            // Persistent green tint on the focused stage (the one driving the per-stage carriage preview).
+            boolean selectedRow = !removeMode && !SELECTED_STAGE.isEmpty() && SELECTED_STAGE.equals(v.modelId());
+            if (selectedRow) drawQuad(ps, buffer, -halfW + 0.005, rowBottom + 0.005, halfW - 0.005, rowTop - 0.005, SELECTED_ROW_BG);
 
             StageRowCells rc = stageRowCells(-halfW, halfW);
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
