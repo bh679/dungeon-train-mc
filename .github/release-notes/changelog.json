@@ -2575,6 +2575,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "reliable-echo-photo-and-discord-delivery",
+      "version": "0.367.0",
+      "type": "fix",
+      "title": "Encounter stories reliably include the echo's photo",
+      "summary": "When you cross paths with a remote echo, the story posted to Discord now reliably carries the snapshot of that echo \u2014 previously the photo was often missing, especially on short encounters or when the echo was in shade or aboard a carriage. Discord reports are sturdier overall: a message that used to vanish on a rate-limit or brief network blip is now retried instead of silently dropped.",
+      "highlights": [
+        "The echo photo is now captured persistently through the encounter, and the story waits a moment for it to arrive before posting \u2014 so encounter stories show up with their picture.",
+        "Death reports, encounter stories, and chat relay retry transient Discord send failures (rate-limits, brief outages) instead of dropping the message."
+      ],
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
