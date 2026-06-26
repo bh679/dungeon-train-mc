@@ -11,6 +11,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +22,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.armortrim.ArmorTrim;
+import net.minecraft.world.item.armortrim.TrimMaterial;
+import net.minecraft.world.item.armortrim.TrimMaterials;
+import net.minecraft.world.item.armortrim.TrimPattern;
+import net.minecraft.world.item.armortrim.TrimPatterns;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.List;
@@ -107,6 +121,10 @@ public final class EchoEncounterTestCommand {
             return 0;
         }
 
+        // Gear the test echo (enchanted weapon, trimmed enchanted armour, a rare backpack item) so the
+        // story's "best items" line — captured below in onRemoteEchoSpawned — has something to describe.
+        gearUp(mob, level.registryAccess());
+
         ReincarnationRecord record = new ReincarnationRecord(
             "dttest", UUID.randomUUID().toString(), UUID.randomUUID(), name,
             TEST_CARRIAGE, "", new CompoundTag(), List.of());
@@ -117,6 +135,39 @@ public final class EchoEncounterTestCommand {
                     + RemoteEchoEncounters.activeCount() + " active). Interact, then kill it or /dtechotest finish.")
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
+    }
+
+    /**
+     * Dress the test echo in representative gear so {@code EchoItemHighlights} has notable items to
+     * surface: an enchanted netherite sword (highest score), a trimmed, enchanted diamond chestplate,
+     * and an enchanted golden apple in the backpack (a rare non-gear item). Best-effort — any registry
+     * miss leaves the echo bare rather than failing the command.
+     */
+    private static void gearUp(PlayerMobEntity mob, RegistryAccess registries) {
+        try {
+            ItemStack sword = new ItemStack(Items.NETHERITE_SWORD);
+            sword.enchant(enchantment(registries, Enchantments.SHARPNESS), 5);
+            sword.enchant(enchantment(registries, Enchantments.UNBREAKING), 3);
+            mob.setItemSlot(EquipmentSlot.MAINHAND, sword);
+
+            ItemStack chest = new ItemStack(Items.DIAMOND_CHESTPLATE);
+            chest.enchant(enchantment(registries, Enchantments.PROTECTION), 4);
+            Holder<TrimMaterial> material = registries.lookupOrThrow(Registries.TRIM_MATERIAL)
+                    .getOrThrow(TrimMaterials.NETHERITE);
+            Holder<TrimPattern> pattern = registries.lookupOrThrow(Registries.TRIM_PATTERN)
+                    .getOrThrow(TrimPatterns.SILENCE);
+            chest.set(DataComponents.TRIM, new ArmorTrim(material, pattern));
+            mob.setItemSlot(EquipmentSlot.CHEST, chest);
+
+            mob.getInventory().setItem(0, new ItemStack(Items.ENCHANTED_GOLDEN_APPLE));
+        } catch (Throwable ignored) {
+            // Leave the echo bare — the story simply omits the gear line.
+        }
+    }
+
+    private static Holder<Enchantment> enchantment(RegistryAccess registries,
+                                                   net.minecraft.resources.ResourceKey<Enchantment> key) {
+        return registries.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(key);
     }
 
     private static int finish(CommandContext<CommandSourceStack> ctx) {
