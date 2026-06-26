@@ -17,9 +17,13 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * {@link games.brennan.dungeontrain.editor.CarriageVariantPartsStore}.
  *
  * <p>{@code op} encodes the action; {@code name} is the entry being
- * targeted ({@code ""} for {@link Op#CLEAR}); {@code delta} is the
- * weight change (only used by {@link Op#BUMP_WEIGHT}, typically +1 or
- * -1). {@link Op#PREVIEW_ENTRY} re-stamps the named variant's template
+ * targeted ({@code ""} for {@link Op#CLEAR}); {@code delta} carries the
+ * step for {@link Op#BUMP_WEIGHT} / {@link Op#BUMP_MIN_LEVEL} /
+ * {@link Op#BUMP_MAX_LEVEL} (typically +1 or -1), and the
+ * {@link games.brennan.dungeontrain.worldgen.TrainPhase} ordinal to flip
+ * for {@link Op#TOGGLE_PHASE} / {@link Op#TOGGLE_OTHER_PHASES} (the latter
+ * flips every dimension <em>except</em> the carried one — shift-click).
+ * {@link Op#PREVIEW_ENTRY} re-stamps the named variant's template
  * at the placement under the player's crosshair — assignment list,
  * weights, and side-mode chips are untouched (transient world-only
  * effect). The server validates that the player is actually OP and is
@@ -29,7 +33,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind kind,
                                        String name, int delta) implements CustomPacketPayload {
 
-    public enum Op { ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY, CYCLE_END_MODE }
+    // NOTE: ordinals are the wire format (encode writes op.ordinal()) — only ever APPEND.
+    public enum Op {
+        ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY, CYCLE_END_MODE,
+        BUMP_MIN_LEVEL, BUMP_MAX_LEVEL, TOGGLE_PHASE, TOGGLE_OTHER_PHASES
+    }
 
     public static final Type<PartAssignmentEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "part_assignment_edit"));

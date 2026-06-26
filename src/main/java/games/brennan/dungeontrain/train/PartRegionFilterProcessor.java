@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
+import games.brennan.dungeontrain.template.GateContext;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
@@ -82,12 +83,15 @@ public final class PartRegionFilterProcessor extends StructureProcessor {
         CarriagePartAssignment a = assignment.get();
         if (a.allNone()) return Optional.empty();
 
+        // Use the same gate the overlay uses so the claimed-box set matches the gated picks
+        // CarriagePlacer.stampPartsOverlay will actually stamp.
+        GateContext gateCtx = CarriagePlacer.partGateContext(level, carriageIndex, dims);
         List<BoundingBox> boxes = new ArrayList<>();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             List<CarriagePartKind.Placement> placements = kind.placements(dims);
             Vec3i partSize = kind.dims(dims);
             List<String> picks = a.pickPerPlacement(
-                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront);
+                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, gateCtx);
             for (int i = 0; i < placements.size(); i++) {
                 String name = i < picks.size() ? picks.get(i) : null;
                 if (name == null || name.isBlank() || CarriagePartKind.NONE.equals(name)) continue;

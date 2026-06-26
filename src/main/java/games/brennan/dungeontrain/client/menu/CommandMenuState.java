@@ -308,7 +308,14 @@ public final class CommandMenuState {
         } else if (entry instanceof CommandMenuEntry.TypeArg type) {
             beginTyping(type.argName(), type.commandPrefix(), type.commandSuffix(), type.initialBuffer());
         } else if (entry instanceof CommandMenuEntry.Toggle toggle) {
-            String cmd = toggle.state() ? toggle.cmdToTurnOff() : toggle.cmdToTurnOn();
+            String cmd;
+            if (toggle.cmdToToggleOthers() != null && net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+                // Shift-click a dimension toggle = "toggle all but that one" — the shared others
+                // action, identical to the world-space dimension menus.
+                cmd = toggle.cmdToToggleOthers();
+            } else {
+                cmd = toggle.state() ? toggle.cmdToTurnOff() : toggle.cmdToTurnOn();
+            }
             CommandRunner.run(cmd);
             // Stay open so the user can see the state flip. The next tick's
             // rebuild will pick up the server-acked devmode value.

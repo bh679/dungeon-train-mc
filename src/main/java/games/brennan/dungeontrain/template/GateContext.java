@@ -47,14 +47,61 @@ public record GateContext(int level, TrainPhase phase) {
     }
 
     /**
-     * Resolve the context for carriage {@code carriagePIdx}: its Diff-Level is
-     * {@code tierForTravelled(abs(pIdx))} (identical to {@link DifficultyProgression#levelAtWorldX}
-     * at {@code pIdx*carriageLength}) and its phase is taken at world-X
-     * {@code pIdx*carriageLength} — the placement X the band terrain was generated against (the
-     * train is anchored at world-X 0). Pure in {@code carriagePIdx}, so the block pass and deferred
-     * entity pass agree.
+     * The sub-level <b>group anchor</b> pIdx for {@code carriagePIdx}: the lowest pIdx in the Sable
+     * sub-level group of {@code groupSize} enclosed carriages that contains it. Mirrors the
+     * assembler's tiling ({@code TrainAssembler}'s
+     * {@code seedAnchor = floorDiv(initialPIdx, groupSize) * groupSize}). This is the
+     * <b>carriage-index</b> frame — used for the Diff-Level so a group's gate matches what the
+     * boarding HUD, mob difficulty, and contents difficulty compute from
+     * {@link DifficultyProgression#tierForTravelled tierForTravelled(carriageIndex)}.
+     * {@code groupSize <= 0} is treated as 1 (per-carriage).
+     */
+    public static int groupAnchorPIdx(int carriagePIdx, int groupSize) {
+        int g = Math.max(1, groupSize);
+        return Math.floorDiv(carriagePIdx, g) * g;
+    }
+
+    /**
+     * The <b>real overworld world-X</b> of the first enclosed carriage of the sub-level group
+     * containing {@code carriagePIdx} (train origin X = 0). Each group physically occupies
+     * {@code subLevelStride = groupSize × length + 2 × halfPadLen} blocks
+     * ({@code halfPadLen = (length+1)/2}) because of the half-flatbed pads <b>between</b> groups, so
+     * group {@code G} starts at {@code G × subLevelStride} — matching the assembler / appender
+     * placement and therefore the frame the track / tunnel gates and the disintegration / nether band
+     * terrain live in. This is NOT the pad-free {@code pIdx × length} frame, which lags real-X by
+     * {@code groupIdx × 2 × halfPadLen} (≈1000 blocks by the Nether at the default length 9) — the
+     * reason carriages gated on {@code pIdx × length} entered the Nether band ~1000 blocks late.
+     * {@code groupSize <= 1} ⇒ single-carriage sub-levels with stride = length (no pads). Pure in the
+     * three args.
+     */
+    public static int groupRealStartX(int carriagePIdx, int groupSize, int carriageLength) {
+        int g = Math.max(1, groupSize);
+        int halfPadLen = (carriageLength + 1) / 2;
+        int subLevelStride = (g > 1) ? (g * carriageLength + 2 * halfPadLen) : carriageLength;
+        return Math.floorDiv(carriagePIdx, g) * subLevelStride;
+    }
+
+    /**
+     * Resolve the context for the carriage <b>group</b> containing {@code carriagePIdx}, gating the
+     * whole group from one position so a connected group never themes half-Overworld / half-Nether.
+     * The two axes deliberately use different frames:
+     * <ul>
+     *   <li><b>Diff-Level</b> from the group's <em>carriage-index</em> anchor
+     *       ({@link #groupAnchorPIdx}) — stays consistent with the boarding HUD / mob / contents
+     *       difficulty, all of which key on the carriage index.</li>
+     *   <li><b>{@link TrainPhase Dimension}</b> from the group's <em>real overworld</em> X
+     *       ({@link #groupRealStartX}) — the same frame the track / tunnel gates and the band terrain
+     *       use, so a carriage's dimension flips at the same world-X as the track beneath it (the
+     *       pad-free {@code pIdx × length} frame lagged the real frame by the inter-group pads).</li>
+     * </ul>
+     * Group size is read from this world's generation config. Pure in
+     * {@code (carriagePIdx, groupSize, carriageLength)}.
      */
     public static GateContext forCarriage(ServerLevel level, int carriagePIdx, int carriageLength) {
-        return atWorldX(level, carriagePIdx * carriageLength, carriageLength);
+        int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
+        int diffLevel = DifficultyProgression.tierForTravelled(groupAnchorPIdx(carriagePIdx, groupSize));
+        TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(),
+            groupRealStartX(carriagePIdx, groupSize, carriageLength));
+        return new GateContext(diffLevel, phase);
     }
 }

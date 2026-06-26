@@ -1,62 +1,195 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "floor": [
     {
       "name": "cracked",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "standard",
-      "weight": 40
+      "weight": 40,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "nether",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 40,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "walls": [
     {
       "name": "standard",
       "weight": 1,
-      "sideMode": "one"
+      "sideMode": "one",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "slotwindow",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "smallwindows",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "window2",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "sideMode": "one",
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkwindow",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "roof": [
     {
-      "name": "none",
-      "weight": 1
+      "name": "sunroof",
+      "weight": 2,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "windowed",
+      "weight": 30,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "open",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "standard",
+      "weight": 10,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkwindow",
+      "weight": 40,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "doors": [
     {
       "name": "standard",
-      "weight": 10
+      "weight": 10,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "wooddoor",
       "weight": 2,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "irondoor",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "open_wall",
       "weight": 8,
       "sideMode": "either",
-      "endMode": "mid"
+      "endMode": "mid",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }

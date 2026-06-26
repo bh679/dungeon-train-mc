@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "floor": [
     {
       "name": "dirt",
@@ -8,53 +8,150 @@
     {
       "name": "mud",
       "weight": 1
+    },
+    {
+      "name": "nether",
+      "weight": 10,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "walls": [
     {
       "name": "open",
       "weight": 20,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "standard",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "cracked",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "wooden",
       "weight": 2,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "slotwindow",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkopen",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkwindow",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "roof": [
     {
       "name": "open",
-      "weight": 5
+      "weight": 5,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "standard",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     },
     {
       "name": "windowed",
-      "weight": 1
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkwindow",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "doors": [
     {
       "name": "wooddoor",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
     }
   ]
 }

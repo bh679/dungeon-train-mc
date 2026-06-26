@@ -42,6 +42,9 @@ public final class PartPositionMenu {
         CLOSE,
         ENTRY_NAME,
         ENTRY_WEIGHT,
+        ENTRY_MIN_LEVEL,
+        ENTRY_MAX_LEVEL,
+        ENTRY_PHASE,
         ENTRY_SIDE_MODE,
         ENTRY_END_MODE,
         ENTRY_REMOVE_X,
@@ -60,9 +63,18 @@ public final class PartPositionMenu {
         return kind == CarriagePartKind.DOORS;
     }
 
-    /** A specific cell hit by the raycast. */
-    public record Hit(CellKind kind, int index) {
-        public static final Hit NONE = new Hit(CellKind.NONE, -1);
+    /**
+     * A specific cell hit by the raycast. {@code phaseSlot} identifies which of the four phase
+     * letters (0=O .. 3=E, matching {@link games.brennan.dungeontrain.worldgen.TrainPhase}'s ordinal)
+     * an {@link CellKind#ENTRY_PHASE} hit landed on; it is {@code -1} for every other cell.
+     */
+    public record Hit(CellKind kind, int index, int phaseSlot) {
+        public static final Hit NONE = new Hit(CellKind.NONE, -1, -1);
+
+        /** Non-phase cells — {@code phaseSlot} defaults to {@code -1}. */
+        public Hit(CellKind kind, int index) {
+            this(kind, index, -1);
+        }
     }
 
     private PartPositionMenu() {}
