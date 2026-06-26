@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
@@ -31,6 +32,9 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
@@ -447,6 +451,27 @@ public final class TrackGenerator {
         TrackGeometry g,
         TilePaint paint
     ) {
+        return placeTrackColumn(level, null, worldX, worldZ, g, paint);
+    }
+
+    /**
+     * Place the bed + rail of one track column from the authored tile {@code paint}.
+     *
+     * @param chunk when non-null, bed/rail writes go <b>section-local with no per-block relight</b>
+     *              into this already-loaded chunk — the corridor-cleanup re-stamp path, which must be
+     *              cheap ({@code level.setBlock}'s lighting measured ~84 ms/column on freshly-generating
+     *              Nether-band chunks). {@code null} keeps the worldgen / fill-render-distance behaviour
+     *              ({@link SilentBlockOps#setBlockSilent}, which relights). The caller guarantees every
+     *              written position lies inside {@code chunk}.
+     */
+    private static boolean placeTrackColumn(
+        ServerLevel level,
+        @Nullable LevelChunk chunk,
+        int worldX,
+        int worldZ,
+        TrackGeometry g,
+        TilePaint paint
+    ) {
         Shipyard shipyard = Shipyards.of(level);
         BlockPos bedPos = new BlockPos(worldX, g.bedY(), worldZ);
 
@@ -464,7 +489,7 @@ public final class TrackGenerator {
         if (bedState != null) {
             BlockState existingBed = level.getBlockState(bedPos);
             if (!existingBed.is(bedState.getBlock())) {
-                SilentBlockOps.setBlockSilent(level, bedPos, bedState);
+                writeTrackCell(level, chunk, bedPos, bedState);
             }
         }
 
@@ -482,11 +507,34 @@ public final class TrackGenerator {
             if (!shipyard.isInShip(railPos)) {
                 BlockState existingRail = level.getBlockState(railPos);
                 if (!existingRail.is(railState.getBlock())) {
-                    SilentBlockOps.setBlockSilent(level, railPos, railState);
+                    writeTrackCell(level, chunk, railPos, railState);
                 }
             }
         }
         return true;
+    }
+
+    /**
+     * Write one track cell. With a non-null {@code chunk}, writes section-local with {@code lightUpdate
+     * = false} (no per-block relight, no shape cascade) plus a batched client {@code blockChanged} — the
+     * cheap, Sable-safe path the corridor cleanup uses. With {@code chunk == null}, falls back to
+     * {@link SilentBlockOps#setBlockSilent} (relights) for the worldgen / fill-render-distance callers.
+     */
+    private static void writeTrackCell(ServerLevel level, @Nullable LevelChunk chunk, BlockPos pos, BlockState state) {
+        if (chunk == null) {
+            SilentBlockOps.setBlockSilent(level, pos, state);
+            return;
+        }
+        int sIdx = chunk.getSectionIndex(pos.getY());
+        LevelChunkSection section = chunk.getSection(sIdx);
+        int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+        int lx = pos.getX() & 15;
+        int lz = pos.getZ() & 15;
+        int ly = pos.getY() - baseY;
+        if (section.getBlockState(lx, ly, lz).hasBlockEntity()) chunk.removeBlockEntity(pos);
+        section.setBlockState(lx, ly, lz, state, false);
+        chunk.setUnsaved(true);
+        level.getChunkSource().blockChanged(pos);
     }
 
     /**
@@ -1850,6 +1898,41 @@ public final class TrackGenerator {
         }
 
         filledChunks.add(chunkKey);
+    }
+
+    /**
+     * Re-stamp the AUTHORED track template (bed + rails + per-block variant sidecar — never the
+     * {@link TrackPalette} fallback) for ONLY the given track cells, each a packed
+     * {@code (worldX << 32) | (worldZ & 0xFFFFFFFF)} long. The corridor cleanup uses this to repair
+     * just the handful of bed/rail cells a cross-chunk Nether-decoration column buried, instead of
+     * re-laying the whole 16-wide chunk via {@link #ensureTracksForChunk} (measured at 0.5–1.4 s when
+     * the per-column {@code Shipyards}/{@code getBlockState}/template work ran for all ~80 columns).
+     * Each touched tile's paint is resolved once (cached {@link TrackTemplateStore} lookups). Caller
+     * is responsible for only passing cells it actually cleared to air on the track row.
+     */
+    public static void restampTrackColumns(ServerLevel level, LevelChunk chunk, TrackGeometry g, Set<Long> packedColumns) {
+        if (packedColumns.isEmpty()) return;
+        CarriageDims dims = DungeonTrainWorldData.get(level).dims();
+        long worldSeed = level.getSeed();
+        Vec3i tileFootprint = TrackKind.TILE.dims(dims);
+        Map<Long, TilePaint> tilePaints = new HashMap<>();
+        for (long key : packedColumns) {
+            int worldX = (int) (key >> 32);
+            int worldZ = (int) key;
+            long tileIndex = Math.floorDiv((long) worldX, (long) TrackPlacer.TILE_LENGTH);
+            TilePaint paint = tilePaints.computeIfAbsent(
+                tileIndex,
+                idx -> {
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
+                        GateContext.atWorldX(level, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
+                    Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
+                    TrackVariantBlocks sidecar =
+                        TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
+                    return new TilePaint(cells, sidecar, worldSeed, idx);
+                }
+            );
+            placeTrackColumn(level, chunk, worldX, worldZ, g, paint);
+        }
     }
 
     /**

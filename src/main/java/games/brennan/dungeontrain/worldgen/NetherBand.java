@@ -60,4 +60,17 @@ public final class NetherBand {
         if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false; // End band wins
         return netherRampAt(overworld, worldX) >= NETHER_CORE_RAMP;
     }
+
+    /**
+     * Pure, allocation-free band-core test against a <b>pre-resolved</b> {@link WorldGenCycle} — the
+     * exact same predicate as {@link #isInNetherBiome(ServerLevel, int)} (End band wins, then
+     * {@code netherRamp >= NETHER_CORE_RAMP}) but with the cycle hoisted by the caller, so a hot
+     * per-column loop pays no {@code WorldGenCycle.fromConfig} / {@code DungeonTrainWorldData.get}
+     * lookups. The caller MUST have already confirmed {@link #startX} != {@link #OFF} (the
+     * nether-enabled + starts-with-train + non-empty-band gate) — this overload does not re-check it.
+     */
+    public static boolean isInNetherBiome(WorldGenCycle cycle, int worldX) {
+        if (cycle.endMiddleRamp(worldX) > 0.0) return false; // End band wins
+        return cycle.netherRamp(worldX) >= NETHER_CORE_RAMP;
+    }
 }

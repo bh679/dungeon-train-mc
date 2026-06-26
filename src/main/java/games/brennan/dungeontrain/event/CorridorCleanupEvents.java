@@ -8,16 +8,19 @@ import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
@@ -28,6 +31,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Predicate;
 
 /**
  * Sweeps cross-chunk foliage spillover out of the train corridor on a
@@ -69,8 +73,8 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * the bed (or a rail) <em>after</em> this chunk's {@code track_bed} already laid it, and no other pass
  * repairs that — every clearance protects the track row by starting at {@code bedY+1}. All clutter is
  * cleared to air; if any sat on the track row ({@link #isTrackRowCell}) the <b>authored track template</b>
- * ({@code TrackGenerator.ensureTracksForChunk} — the real {@code TrackTemplateStore} cells + per-block
- * variant sidecar, never the hardcoded fallback) is re-stamped afterwards to put the solid bed/rails back,
+ * ({@code TrackGenerator.restampTrackColumns} — the real {@code TrackTemplateStore} cells + per-block
+ * variant sidecar, never the hardcoded fallback) is re-stamped over just those columns to put the solid bed/rails back,
  * so the repaired track matches exactly what worldgen laid. Fluids stay excluded (the cascade hazard
  * above); worldgen-placed water is drained at generation time by {@code NetherTransitionFeature}
  * instead. The stone-brick walls sit outside {@code airMinZ..airMaxZ}, so they're never touched.</p>
@@ -88,6 +92,20 @@ public final class CorridorCleanupEvents {
      */
     private static final int MAX_CHUNKS_PER_TICK = 16;
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
+
+    /**
+     * Wall-clock cap on a single drain pass (applied only AFTER at least one chunk is processed, so
+     * forward progress is guaranteed). Block I/O + the track re-stamp dominate per-chunk cost in the
+     * Nether band, and the count cap alone let a 16-chunk burst freeze the server tick for seconds;
+     * this bounds the freeze and spreads the rest across ticks. Un-drained chunks stay in
+     * {@link #PENDING}, {@code CLEANED}-unmarked, so they're still swept before the train reaches them.
+     * {@link #shouldStopDraining} is pure — unit-tested.
+     */
+    private static final long DRAIN_BUDGET_NANOS = 3_000_000L; // ~3 ms
+
+    /** Foliage / Nether-clutter strip predicates, pre-resolved so the per-cell sweep allocates nothing. */
+    private static final Predicate<BlockState> FOLIAGE = CorridorCleanupEvents::isFoliage;
+    private static final Predicate<BlockState> CLUTTER = CorridorCleanupEvents::isNetherClutter;
 
     /** ChunkPos longs that have been queued by {@link #onChunkLoad}, awaiting drain. */
     private static final Deque<Long> PENDING = new ConcurrentLinkedDeque<>();
@@ -166,21 +184,30 @@ public final class CorridorCleanupEvents {
         CarriageDims dims = data.dims();
         TrackGeometry g = TrackGeometry.from(dims, data.getTrainY());
 
+        // Resolve the band layout ONCE per drain — it is constant within a tick, so the per-column
+        // core test (NetherBand.isInNetherBiome(cycle, x)) pays no fromConfig / SavedData lookups.
+        long bandStartX = NetherBand.startX(overworld);
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+
         int budget = drainBudget(PENDING.size());
+        long drainStartNanos = System.nanoTime();
         while (budget > 0) {
             Long key = PENDING.poll();
             if (key == null) break;
             int cx = ChunkPos.getX(key);
             int cz = ChunkPos.getZ(key);
             if (CLEANED.contains(key)) continue;
-            if (!level.getChunkSource().hasChunk(cx, cz)) {
-                // Chunk unloaded between enqueue and drain. Drop it; if it
-                // reloads, ChunkEvent.Load re-enqueues.
-                continue;
-            }
-            cleanCorridorChunk(level, cx, cz, dims, g);
+            // getChunkNow returns null for a not-yet-FULL (or unloaded) chunk — unlike hasChunk, which
+            // would let level.getBlockState sync-load it (an observed multi-100ms stall). Drop it; a
+            // neighbour load re-enqueues it once it is FULL.
+            LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+            if (chunk == null) continue;
+            cleanCorridorChunk(chunk, level, cx, cz, dims, g, cycle, bandStartX);
             CLEANED.add(key);
             budget--;
+            // Wall-clock cap (only after >=1 chunk, so forward progress is guaranteed): keep a single
+            // tick from freezing on a burst of expensive fresh chunks. The rest stay queued.
+            if (shouldStopDraining(System.nanoTime() - drainStartNanos)) break;
         }
     }
 
@@ -195,6 +222,15 @@ public final class CorridorCleanupEvents {
     }
 
     /**
+     * Whether the per-tick drain has spent its wall-clock slice ({@link #DRAIN_BUDGET_NANOS}) and
+     * should stop after the current chunk. The caller consults this only after draining at least one
+     * chunk, so the sweep always makes forward progress. Pure function — unit-tested.
+     */
+    static boolean shouldStopDraining(long elapsedNanos) {
+        return elapsedNanos >= DRAIN_BUDGET_NANOS;
+    }
+
+    /**
      * Whether a chunk's Z span [{@code chunkMinZ}..{@code chunkMaxZ}] overlaps the corridor Z span
      * [{@code corridorZMin}..{@code corridorZMax}]. Used as the {@link #onChunkLoad} enqueue prefilter
      * against the tunnel airspace span, so a chunk holding only the outer corridor pad (when the
@@ -205,43 +241,31 @@ public final class CorridorCleanupEvents {
     }
 
     private static void cleanCorridorChunk(
-        ServerLevel level, int cx, int cz, CarriageDims dims, TrackGeometry g
+        LevelChunk chunk, ServerLevel level, int cx, int cz, CarriageDims dims, TrackGeometry g,
+        WorldGenCycle cycle, long bandStartX
     ) {
         int chunkMinX = cx << 4;
-        int chunkMaxX = chunkMinX + 15;
         int chunkMinZ = cz << 4;
         int chunkMaxZ = chunkMinZ + 15;
-        int zLo = Math.max(g.trackZMin(), chunkMinZ);
-        int zHi = Math.min(g.trackZMax(), chunkMaxZ);
 
-        // Y range covers the bed + rail rows AND the carriage envelope, so
-        // cross-chunk foliage spillover into template-authored air gaps in
-        // the bed / rail rows also gets cleaned. The predicate is narrow
-        // enough that the bed and rail blocks themselves stay intact.
+        // Foliage sweep across the track Z-span + carriage envelope (all dimensions). The Y range
+        // covers the bed + rail rows AND the carriage envelope, so cross-chunk foliage spillover into
+        // template-authored air gaps in those rows also gets cleaned; the predicate is narrow enough
+        // that the bed and rail blocks themselves stay intact.
+        int zLoF = Math.max(g.trackZMin(), chunkMinZ);
+        int zHiF = Math.min(g.trackZMax(), chunkMaxZ);
         int trainY = g.bedY() + 2;
-        int minY = Math.max(level.getMinBuildHeight(), g.bedY());
-        int maxY = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
-
-        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        if (maxY >= minY) {
-            for (int x = chunkMinX; x <= chunkMaxX; x++) {
-                for (int z = zLo; z <= zHi; z++) {
-                    for (int y = minY; y <= maxY; y++) {
-                        cursor.set(x, y, z);
-                        BlockState state = level.getBlockState(cursor);
-                        if (state.isAir()) continue;
-                        if (!isFoliage(state)) continue;
-                        level.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
-                    }
-                }
-            }
+        int minYF = Math.max(level.getMinBuildHeight(), g.bedY());
+        int maxYF = Math.min(level.getMaxBuildHeight() - 1, trainY + dims.height());
+        if (zLoF <= zHiF && maxYF >= minYF) {
+            sweepSection(chunk, level, chunkMinX, zLoF, zHiF, minYF, maxYF, null, FOLIAGE, g, null);
         }
 
-        // Nether-band core only: also clear cross-chunk Nether-decoration spillover
-        // (basalt etc.) from the tunnel cross-section. The band is an overworld-dimension
-        // construct, so this no-ops when the corridor runs through another dimension.
+        // Nether-band core only: also clear cross-chunk Nether-decoration spillover (basalt etc.) from
+        // the tunnel cross-section. The band is an overworld-dimension construct, so this no-ops when
+        // the corridor runs through another dimension.
         if (level.dimension().equals(Level.OVERWORLD)) {
-            cleanNetherClutter(level, cursor, chunkMinX, chunkMaxX, chunkMinZ, chunkMaxZ, g);
+            cleanNetherClutter(chunk, level, chunkMinX, chunkMinZ, chunkMaxZ, g, cycle, bandStartX);
         }
     }
 
@@ -251,51 +275,97 @@ public final class CorridorCleanupEvents {
      * <b>repair the track surface</b> where it landed on the bed/rail row. Z is {@code airMinZ..airMaxZ}
      * (strictly inside the stone-brick walls); Y is {@code bedY..ceilingY-1} — the tunnel interior PLUS
      * the bed row, because cross-chunk spillover can overwrite the bed (or a rail) after {@code track_bed}
-     * laid it and no other pass touches that row. All clutter is cleared to air; if any sat on the bed/rail
-     * row ({@link #isTrackRowCell}) the authored track template is then re-stamped to put the solid
-     * bed/rails back (cells the template authored as air stay cleared). Per-column band gate; a cheap
-     * whole-chunk early-out skips worlds with the band disabled / no train.
+     * laid it and no other pass touches that row. Clutter is cleared via a section-local, no-relight
+     * write ({@link #sweepSection}); if any sat on the bed/rail row ({@link #isTrackRowCell}) the authored
+     * template is re-stamped over just those columns ({@link TrackGenerator#restampTrackColumns}, never
+     * the fallback palette). The band-core column mask is computed ONCE from the pre-resolved
+     * {@code cycle} (no per-column config lookups), with whole-chunk early-outs when the band is off /
+     * the world is trainless and when no column is in-band.
      */
     private static void cleanNetherClutter(
-        ServerLevel overworld, BlockPos.MutableBlockPos cursor,
-        int chunkMinX, int chunkMaxX, int chunkMinZ, int chunkMaxZ, TrackGeometry g
+        LevelChunk chunk, ServerLevel overworld, int chunkMinX, int chunkMinZ, int chunkMaxZ,
+        TrackGeometry g, WorldGenCycle cycle, long bandStartX
     ) {
-        if (NetherBand.startX(overworld) == NetherBand.OFF) return;     // band off / trainless world
+        if (bandStartX == NetherBand.OFF) return;                        // band off / trainless world
         TunnelGeometry tg = TunnelGeometry.from(g);
         int zLo = Math.max(tg.airMinZ(), chunkMinZ);
         int zHi = Math.min(tg.airMaxZ(), chunkMaxZ);
-        if (zLo > zHi) return;                                          // corridor not in this chunk's Z span
-        int minY = Math.max(overworld.getMinBuildHeight(), g.bedY());   // includes the bed/rail row
+        if (zLo > zHi) return;                                           // corridor not in this chunk's Z span
+        int minY = Math.max(overworld.getMinBuildHeight(), g.bedY());    // includes the bed/rail row
         int maxY = Math.min(overworld.getMaxBuildHeight() - 1, tg.ceilingY() - 1);
         if (maxY < minY) return;
 
-        boolean trackBuried = false;
-        for (int x = chunkMinX; x <= chunkMaxX; x++) {
-            if (!NetherBand.isInNetherBiome(overworld, x)) continue;    // core columns only
-            for (int z = zLo; z <= zHi; z++) {
-                for (int y = minY; y <= maxY; y++) {
-                    cursor.set(x, y, z);
-                    BlockState state = overworld.getBlockState(cursor);
-                    if (state.isAir()) continue;
-                    if (!isNetherClutter(state)) continue;
-                    // Clear EVERY clutter cell to air. A cell on the track row is also flagged so the
-                    // authored template is re-stamped below: the re-stamp puts the SOLID bed/rail cells
-                    // back over the air, while cells the template authored as air just stay cleared.
-                    if (isTrackRowCell(y, z, g)) trackBuried = true;
-                    overworld.setBlock(cursor, AIR, Block.UPDATE_CLIENTS);
-                                }
+        // Band-core column mask, computed ONCE from the hoisted cycle (no per-column fromConfig). Same
+        // predicate as NetherBand.isInNetherBiome(ServerLevel,int); the band-off gate above already
+        // stands in for that overload's startX != OFF check.
+        boolean[] mask = new boolean[16];
+        boolean any = false;
+        for (int dx = 0; dx < 16; dx++) {
+            mask[dx] = NetherBand.isInNetherBiome(cycle, chunkMinX + dx);
+            if (mask[dx]) any = true;
+        }
+        if (!any) return;                                               // no Nether-core column in this chunk
+
+        Set<Long> buried = new HashSet<>();
+        sweepSection(chunk, overworld, chunkMinX, zLo, zHi, minY, maxY, mask, CLUTTER, g, buried);
+
+        // Re-stamp the AUTHORED track template (bed + rails + per-block variant sidecar — never the
+        // hardcoded fallback) over only the cleared track-row cells, restoring exactly what worldgen laid.
+        if (!buried.isEmpty()) {
+            TrackGenerator.restampTrackColumns(overworld, chunk, g, buried);
+        }
+    }
+
+    /**
+     * Section-local strip of {@code strip}-matching blocks from the corridor cross-section of one loaded
+     * chunk. Skips all-air sections ({@link LevelChunkSection#hasOnlyAir}), reads/writes section voxels
+     * directly, and clears matches to air with {@code setBlockState(..., false)} — the Sable-safe,
+     * no-relight, no-shape-cascade path used by {@code NetherTransitionEvents} /
+     * {@code WorldDisintegrationEvents} (a world-level {@code setBlock} per cell, with its lighting +
+     * client packet, was the measured multi-second cost). Each cleared cell is reported to clients via
+     * {@link net.minecraft.server.level.ServerChunkCache#blockChanged} (cheap + batched; a no-op for a
+     * chunk not yet sent), and the chunk is marked unsaved. {@code colMask} (nullable = all columns)
+     * gates the 16 X columns; when {@code buriedOut} is non-null, every cleared cell on the track row
+     * ({@link #isTrackRowCell}) is recorded there (packed {@code (x << 32) | (z & 0xFFFFFFFF)}) for a
+     * targeted re-stamp. Lighting is intentionally left to the chunk's normal send-time relight
+     * (clutter removal in an enclosed tunnel barely changes light).
+     */
+    private static void sweepSection(
+        LevelChunk chunk, ServerLevel level, int chunkMinX,
+        int zLo, int zHi, int minY, int maxY,
+        boolean[] colMask, Predicate<BlockState> strip, TrackGeometry g, Set<Long> buriedOut
+    ) {
+        boolean changed = false;
+        BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        int sectionCount = chunk.getSectionsCount();
+        for (int sIdx = 0; sIdx < sectionCount; sIdx++) {
+            LevelChunkSection section = chunk.getSection(sIdx);
+            if (section.hasOnlyAir()) continue;
+            int baseY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(sIdx));
+            int yStart = Math.max(minY, baseY);
+            int yEnd = Math.min(maxY, baseY + 15);
+            if (yStart > yEnd) continue;
+            for (int x = chunkMinX; x <= chunkMinX + 15; x++) {
+                if (colMask != null && !colMask[x - chunkMinX]) continue;
+                int lx = x & 15;
+                for (int z = zLo; z <= zHi; z++) {
+                    int lz = z & 15;
+                    for (int y = yStart; y <= yEnd; y++) {
+                        BlockState state = section.getBlockState(lx, y - baseY, lz);
+                        if (state.isAir() || !strip.test(state)) continue;
+                        if (buriedOut != null && isTrackRowCell(y, z, g)) {
+                            buriedOut.add(((long) x << 32) | (z & 0xFFFFFFFFL));
+                        }
+                        cursor.set(x, y, z);
+                        if (state.hasBlockEntity()) chunk.removeBlockEntity(cursor);
+                        section.setBlockState(lx, y - baseY, lz, AIR, false);
+                        level.getChunkSource().blockChanged(cursor);
+                        changed = true;
+                    }
+                }
             }
         }
-
-        // Re-stamp the AUTHORED track template (bed + rails + per-block variant sidecar) over the cleared
-        // track row — never the hardcoded fallback. ensureTracksForChunk pulls the cached
-        // TrackTemplateStore cells and only writes a cell where the template has a (solid) block, so it
-        // restores exactly what worldgen laid; cells the template leaves empty stay the air we cleared
-        // above (its runtime re-lay treats a null template cell as "leave existing"). A fresh set forces
-        // the (otherwise once-per-chunk) re-lay.
-        if (trackBuried) {
-            TrackGenerator.ensureTracksForChunk(overworld, chunkMinX >> 4, chunkMinZ >> 4, g, new HashSet<>());
-        }
+        if (changed) chunk.setUnsaved(true);
     }
 
     /**
