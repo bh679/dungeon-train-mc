@@ -2519,7 +2519,7 @@
     },
     {
       "id": "nether-corridor-cleanup-perf",
-      "version": "0.365.0",
+      "version": "0.366.0",
       "type": "perf",
       "title": "Smoother Nether-band travel \u2014 no more lag spikes",
       "summary": "Riding through the Nether section of the world no longer causes multi-second freezes. The system that keeps stray Nether blocks (basalt and friends) off the train tracks was rewritten to run far more efficiently, so the rails stay clear without the game hitching as new terrain generates ahead of you.",
