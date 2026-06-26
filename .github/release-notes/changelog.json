@@ -2516,6 +2516,21 @@
       "released": true,
       "released_in": "v0.365.0",
       "released_at": "2026-06-26T00:19:25Z"
+    },
+    {
+      "id": "nether-corridor-cleanup-perf",
+      "version": "0.365.0",
+      "type": "perf",
+      "title": "Smoother Nether-band travel \u2014 no more lag spikes",
+      "summary": "Riding through the Nether section of the world no longer causes multi-second freezes. The system that keeps stray Nether blocks (basalt and friends) off the train tracks was rewritten to run far more efficiently, so the rails stay clear without the game hitching as new terrain generates ahead of you.",
+      "highlights": [
+        "Fixed the multi-second server freezes when traveling into freshly-generated Nether-band terrain.",
+        "Track-clearing now keeps pace even when many chunks generate at once."
+      ],
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
