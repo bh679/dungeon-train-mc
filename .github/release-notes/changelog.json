@@ -2657,9 +2657,9 @@
       ],
       "pr": 601,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.370.0",
+      "released_at": "2026-06-26T12:38:56Z"
     },
     {
       "id": "stages-ship-bundled",
@@ -2673,9 +2673,9 @@
         "Fix: part-to-Stage links on the default carriages now resolve (they previously fell back to a plain gate because the Stages weren't bundled in the jar)."
       ],
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.370.0",
+      "released_at": "2026-06-26T12:38:56Z"
     }
   ]
 }
