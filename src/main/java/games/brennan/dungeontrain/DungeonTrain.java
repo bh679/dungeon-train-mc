@@ -169,6 +169,16 @@ public class DungeonTrain {
                 DungeonTrainCommonConfig.SPEC,
                 "dungeontrain-common.toml");
 
+        // Invalidate the memoised WorldGenCycle whenever the COMMON config (re)loads, so the
+        // worldgen band classifiers rebuild it from the new values. The base ModConfigEvent
+        // listener catches both Loading (clears any pre-load default cycle) and Reloading
+        // (config-screen / file-watcher edits); the spec guard ignores SERVER/CLIENT events.
+        modBus.addListener((net.neoforged.fml.event.config.ModConfigEvent event) -> {
+            if (event.getConfig().getSpec() == DungeonTrainCommonConfig.SPEC) {
+                games.brennan.dungeontrain.worldgen.WorldGenCycle.invalidateCache();
+            }
+        });
+
         // No NeoForge.EVENT_BUS.register(this) — every game-bus listener in
         // this mod lives in its own @EventBusSubscriber class (event/*.java,
         // editor/*.java, etc.) which the loader auto-registers. NeoForge

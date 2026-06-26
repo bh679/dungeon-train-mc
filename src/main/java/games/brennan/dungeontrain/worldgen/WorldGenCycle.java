@@ -46,8 +46,46 @@ public record WorldGenCycle(long startX, int owGap,
                             int coreFade, int coreHold,
                             int eFade, int eVoid, int eEnd, int phaseShift) {
 
-    /** Build from live COMMON config; a disabled phase collapses to zero length (just overworld). */
+    /**
+     * Memoised {@link #build} result. {@code fromConfig} is a pure read of the GLOBAL COMMON
+     * config, so a single cached instance is valid until the config reloads. It is invalidated by
+     * {@link #invalidateCache()} on every COMMON {@code ModConfigEvent} (Loading + Reloading), wired
+     * from {@code DungeonTrain}. {@code volatile} so a worldgen thread always sees the latest
+     * instance (or {@code null} after an invalidation); the record is immutable and never mutates
+     * its {@code stageMultipliers} array, so sharing one instance across threads is safe.
+     */
+    private static volatile WorldGenCycle cached;
+
+    /**
+     * Live COMMON-config cycle, memoised. Before this cache, the band classifiers
+     * ({@link NetherBand}, {@link DisintegrationBand}, the nether/biome features) rebuilt this
+     * record — ~14 config reads + a {@code getNetherStageMultipliers()} string-parse + allocs —
+     * on every per-column call (measured at millions/play-session). Now it builds once per config
+     * (re)load. Double-checked locking: the {@code volatile} read is the warm fast path; the
+     * {@code synchronized} block runs only on the first call and immediately after an invalidation.
+     * Byte-identical to the un-cached value (same global config in, same record out).
+     */
     public static WorldGenCycle fromConfig() {
+        WorldGenCycle c = cached;
+        if (c != null) return c;
+        synchronized (WorldGenCycle.class) {
+            if (cached == null) cached = build();
+            return cached;
+        }
+    }
+
+    /**
+     * Drop the memoised {@link #fromConfig} cycle so the next call rebuilds from current config.
+     * Called from the COMMON {@code ModConfigEvent} listener (Loading clears any pre-load default
+     * cycle; Reloading covers config-screen / file-watcher edits). Pure (no Minecraft types) so the
+     * record stays unit-testable.
+     */
+    public static void invalidateCache() {
+        cached = null;
+    }
+
+    /** Build from live COMMON config; a disabled phase collapses to zero length (just overworld). */
+    private static WorldGenCycle build() {
         boolean nether = DungeonTrainCommonConfig.isNetherTransitionEnabled();
         boolean end = DungeonTrainCommonConfig.isDisintegrationEnabled();
         return new WorldGenCycle(
