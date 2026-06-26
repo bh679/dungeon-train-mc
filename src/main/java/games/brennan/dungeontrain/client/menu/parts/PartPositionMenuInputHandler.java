@@ -174,6 +174,14 @@ public final class PartPositionMenuInputHandler {
                 DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.BUMP_WEIGHT, variantId, kind, name, delta));
             }
+            case ENTRY_STAGE -> {
+                List<WeightedName> entries = PartPositionMenu.entries();
+                if (hit.index() < 0 || hit.index() >= entries.size()) return;
+                WeightedName e = entries.get(hit.index());
+                // Open the Stage / Custom picker for this entry; it sends a SET_STAGE edit on pick.
+                CommandMenuState.openAt(games.brennan.dungeontrain.client.menu.StagePickerScreen.forParts(
+                    variantId, kind, e.name(), e.stageId()));
+            }
             case ENTRY_MIN_LEVEL -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
