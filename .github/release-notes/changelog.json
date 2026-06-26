@@ -2528,9 +2528,9 @@
         "Track-clearing now keeps pace even when many chunks generate at once."
       ],
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.366.0",
+      "released_at": "2026-06-26T00:44:06Z"
     }
   ]
 }
