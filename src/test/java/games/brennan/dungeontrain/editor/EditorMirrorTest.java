@@ -167,4 +167,72 @@ final class EditorMirrorTest {
         BlockState once = EditorMirror.reflect(stair, true, true, true);
         assertEquals(stair, EditorMirror.reflect(once, true, true, true));
     }
+
+    // ─── variant-pool reflection (the "V" toggle) ───────────────────────
+
+    @Test
+    @DisplayName("mirrorDirection flips only the matching axis")
+    void mirrorDirectionAxis() {
+        assertEquals(Direction.WEST, EditorMirror.mirrorDirection(Direction.EAST, true, false, false));
+        assertEquals(Direction.SOUTH, EditorMirror.mirrorDirection(Direction.NORTH, false, false, true));
+        assertEquals(Direction.DOWN, EditorMirror.mirrorDirection(Direction.UP, false, true, false));
+        // X face is unaffected by a Z flip.
+        assertEquals(Direction.EAST, EditorMirror.mirrorDirection(Direction.EAST, false, false, true));
+    }
+
+    @Test
+    @DisplayName("reflectRotation remaps LOCK/OPTIONS dirs; default RANDOM passes through")
+    void reflectRotation() {
+        VariantRotation lockEast = VariantRotation.lock(Direction.EAST);
+        VariantRotation flipped = EditorMirror.reflectRotation(lockEast, true, false, false);
+        assertEquals(VariantRotation.Mode.LOCK, flipped.mode());
+        assertEquals(java.util.Set.of(Direction.WEST), flipped.directions());
+
+        VariantRotation opts = VariantRotation.options(
+            VariantRotation.maskOf(Direction.NORTH) | VariantRotation.maskOf(Direction.EAST));
+        VariantRotation optsFlipped = EditorMirror.reflectRotation(opts, true, false, false);
+        assertEquals(java.util.Set.of(Direction.NORTH, Direction.WEST), optsFlipped.directions());
+
+        // RANDOM/default (dirMask 0) is returned unchanged.
+        assertSame(VariantRotation.NONE, EditorMirror.reflectRotation(VariantRotation.NONE, true, true, true));
+    }
+
+    @Test
+    @DisplayName("reflectHalf swaps TOP/BOTTOM only on a Y flip")
+    void reflectHalf() {
+        VariantHalf top = new VariantHalf(VariantHalf.Mode.TOP);
+        assertEquals(VariantHalf.Mode.BOTTOM, EditorMirror.reflectHalf(top, true).mode());
+        assertSame(top, EditorMirror.reflectHalf(top, false));
+        VariantHalf rnd = VariantHalf.NONE;
+        assertSame(rnd, EditorMirror.reflectHalf(rnd, true));
+    }
+
+    @Test
+    @DisplayName("reflectVariant mirrors a block entry's state + preserves weight; mobs pass through")
+    void reflectVariant() {
+        BlockState stairEast = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST);
+        VariantState block = VariantState.of(stairEast).withWeight(3);
+        VariantState reflected = EditorMirror.reflectVariant(block, true, false, false);
+        assertEquals(Direction.WEST,
+            reflected.state().getValue(BlockStateProperties.HORIZONTAL_FACING));
+        assertEquals(3, reflected.weight());
+
+        VariantState mob = VariantState.ofMob(
+            net.minecraft.resources.ResourceLocation.withDefaultNamespace("zombie"),
+            null, 2, VariantRotation.NONE);
+        assertSame(mob, EditorMirror.reflectVariant(mob, true, true, true), "mob entries pass through unchanged");
+    }
+
+    @Test
+    @DisplayName("reflectStates reflects every entry and preserves pool size")
+    void reflectStates() {
+        BlockState stairEast = Blocks.STONE_BRICK_STAIRS.defaultBlockState()
+            .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.EAST);
+        List<VariantState> pool = List.of(VariantState.of(Blocks.STONE.defaultBlockState()),
+            VariantState.of(stairEast));
+        List<VariantState> out = EditorMirror.reflectStates(pool, true, false, false);
+        assertEquals(2, out.size());
+        assertEquals(Direction.WEST, out.get(1).state().getValue(BlockStateProperties.HORIZONTAL_FACING));
+    }
 }

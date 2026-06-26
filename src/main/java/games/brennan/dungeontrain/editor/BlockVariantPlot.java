@@ -78,8 +78,14 @@ public interface BlockVariantPlot {
     /** Editor mirror Z (width) axis for this plot's sidecar. */
     boolean mirrorZ();
 
+    /** Mirror-variants ("V") opt-in for this plot's sidecar — reflect variant pools, not just structural blocks. */
+    boolean mirrorVariants();
+
     /** Set all three editor mirror axes on this plot's sidecar. Caller must {@link #save} to persist. */
     void setMirrorAxes(boolean x, boolean y, boolean z);
+
+    /** Set the mirror-variants ("V") opt-in on this plot's sidecar. Caller must {@link #save} to persist. */
+    void setMirrorVariants(boolean v);
 
     /** Lock-id at {@code localPos}; 0 if unlocked or no cell. */
     int lockIdAt(BlockPos localPos);
@@ -287,7 +293,9 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorX() { return sidecar.mirrorX(); }
         @Override public boolean mirrorY() { return sidecar.mirrorY(); }
         @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
@@ -330,7 +338,9 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorX() { return sidecar.mirrorX(); }
         @Override public boolean mirrorY() { return sidecar.mirrorY(); }
         @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
     /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
@@ -375,7 +385,9 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorX() { return sidecar.mirrorX(); }
         @Override public boolean mirrorY() { return sidecar.mirrorY(); }
         @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
     /** Wraps a {@link TrackVariantBlocks} sidecar. */
@@ -420,7 +432,9 @@ public interface BlockVariantPlot {
         @Override public boolean mirrorX() { return sidecar.mirrorX(); }
         @Override public boolean mirrorY() { return sidecar.mirrorY(); }
         @Override public boolean mirrorZ() { return sidecar.mirrorZ(); }
+        @Override public boolean mirrorVariants() { return sidecar.mirrorVariants(); }
         @Override public void setMirrorAxes(boolean x, boolean y, boolean z) { sidecar.setMirrorAxes(x, y, z); }
+        @Override public void setMirrorVariants(boolean v) { sidecar.setMirrorVariants(v); }
     }
 
     /**

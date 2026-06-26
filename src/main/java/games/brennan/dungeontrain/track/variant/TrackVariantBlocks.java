@@ -75,18 +75,21 @@ public final class TrackVariantBlocks {
     private boolean mirrorX;
     private boolean mirrorY;
     private boolean mirrorZ;
+    /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. Off by default for every kind. */
+    private boolean mirrorVariants;
 
     /** Owning kind — selects this template's default mirror axes. Null only for the bare {@link #empty}. */
     private final TrackKind kind;
 
     private TrackVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                               TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
+                               TrackKind kind, boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
         this.kind = kind;
         this.mirrorX = mirrorX;
         this.mirrorY = mirrorY;
         this.mirrorZ = mirrorZ;
+        this.mirrorVariants = mirrorVariants;
     }
 
     /**
@@ -100,13 +103,13 @@ public final class TrackVariantBlocks {
 
     /** Bare empty sidecar, all axes off — only for paths with no kind context. */
     public static TrackVariantBlocks empty() {
-        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), null, false, false, false);
+        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), null, false, false, false, false);
     }
 
     /** Empty sidecar carrying {@code kind}'s default mirror axes — the missing-sidecar state. */
     public static TrackVariantBlocks emptyFor(TrackKind kind) {
         boolean[] d = defaultMirror(kind);
-        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, d[0], d[1], d[2]);
+        return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, d[0], d[1], d[2], false);
     }
 
     /** Mirror X (length) axis. True unless the sidecar sets {@code mirror.x=false}. */
@@ -118,11 +121,19 @@ public final class TrackVariantBlocks {
     /** Mirror Z (width) axis. True unless the sidecar sets {@code mirror.z=false}. */
     public boolean mirrorZ() { return mirrorZ; }
 
+    /** Mirror-variants ("V") opt-in. False unless the sidecar sets {@code mirror.v=true}. */
+    public boolean mirrorVariants() { return mirrorVariants; }
+
     /** Set all three mirror axes — used by the {@code editor mirror} command before {@link #save}. */
     public synchronized void setMirrorAxes(boolean x, boolean y, boolean z) {
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
+    }
+
+    /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
+    public synchronized void setMirrorVariants(boolean v) {
+        this.mirrorVariants = v;
     }
 
     public static Path configPathFor(TrackKind kind, String name) {
@@ -196,15 +207,17 @@ public final class TrackVariantBlocks {
         boolean mirrorX = def[0];
         boolean mirrorY = def[1];
         boolean mirrorZ = def[2];
+        boolean mirrorVariants = false;
         if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
             JsonObject m = obj.getAsJsonObject("mirror");
             if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
             if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
             if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
+            if (m.has("v")) mirrorVariants = m.get("v").getAsBoolean();
         }
         if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
             // Mirror-only sidecar (e.g. a portal toggled off X) carries no cells.
-            return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, mirrorX, mirrorY, mirrorZ);
+            return new TrackVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
         }
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
@@ -238,7 +251,7 @@ public final class TrackVariantBlocks {
         }
         LOGGER.info("[DungeonTrain] Loaded {} track variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new TrackVariantBlocks(out, outLocks, kind, mirrorX, mirrorY, mirrorZ);
+        return new TrackVariantBlocks(out, outLocks, kind, mirrorX, mirrorY, mirrorZ, mirrorVariants);
     }
 
     private static boolean inBounds(BlockPos p, Vec3i size) {
@@ -382,7 +395,7 @@ public final class TrackVariantBlocks {
     /** True when the axes match this kind's defaults — the absent-{@code mirror}-field state. */
     private boolean isDefaultMirror() {
         boolean[] d = defaultMirror(kind);
-        return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2];
+        return mirrorX == d[0] && mirrorY == d[1] && mirrorZ == d[2] && !mirrorVariants;
     }
 
     private String toJsonText() {
@@ -393,7 +406,8 @@ public final class TrackVariantBlocks {
         if (!isDefaultMirror()) {
             sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
               .append(", \"y\": ").append(mirrorY)
-              .append(", \"z\": ").append(mirrorZ).append(" },\n");
+              .append(", \"z\": ").append(mirrorZ)
+              .append(", \"v\": ").append(mirrorVariants).append(" },\n");
         }
         sb.append("  \"variants\": {");
         boolean firstEntry = true;
