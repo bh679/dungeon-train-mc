@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "floor": [
     {
       "name": "cracked",
@@ -8,7 +8,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "standard",
@@ -17,21 +18,24 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "nether",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     },
     {
       "name": "dark",
       "weight": 40,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ],
   "walls": [
@@ -43,7 +47,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "slotwindow",
@@ -53,7 +58,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "smallwindows",
@@ -63,7 +69,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "window2",
@@ -73,7 +80,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
@@ -81,7 +89,8 @@
       "sideMode": "one",
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     },
     {
       "name": "darkwindow",
@@ -89,7 +98,8 @@
       "sideMode": "either",
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ],
   "roof": [
@@ -100,7 +110,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "windowed",
@@ -109,7 +120,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "open",
@@ -118,7 +130,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "standard",
@@ -127,21 +140,24 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     },
     {
       "name": "darkwindow",
       "weight": 40,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ],
   "doors": [
@@ -152,7 +168,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "wooddoor",
@@ -162,7 +179,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "irondoor",
@@ -171,7 +189,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "open_wall",
@@ -182,14 +201,16 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ]
 }
