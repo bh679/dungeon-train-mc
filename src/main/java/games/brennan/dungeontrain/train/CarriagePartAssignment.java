@@ -400,20 +400,28 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     }
 
     /**
-     * Stage-filtered per-placement pick for the editor's per-stage carriage preview: keep only the
-     * entries whose {@code stageId} matches {@code stageId} (case-insensitive) — <b>no</b> gate
-     * filtering and <b>no</b> ungated fallback. Returns an <b>empty list</b> when nothing is linked to
-     * the stage, the signal for the caller ({@code CarriagePlacer.stampPartsOverlay}) to air out that
-     * swappable slot rather than leaving the base geometry. When at least one entry is linked, the
-     * shared {@link #pickPerPlacementFrom} core runs the same SideMode/EndMode/weighted logic as the
-     * gated path, so a stamped stage part honours its mirror / end tags exactly as it would at spawn.
+     * Stage-filtered per-placement pick for the editor's per-stage carriage preview, in two tiers:
+     * <ol>
+     *   <li>entries whose {@code stageId} matches {@code stageId} (case-insensitive) — the explicit link;</li>
+     *   <li>if none, entries whose effective gate {@linkplain TemplateGate#overlaps overlaps}
+     *       {@code stageGate} (the selected stage's own gate — same diff-level band + dimension), so a
+     *       slot still shows what would actually appear at this stage rather than airing out.</li>
+     * </ol>
+     * Returns an <b>empty list</b> only when neither tier matches — the signal for the caller
+     * ({@code CarriagePlacer.stampPartsOverlayForStage}) to air out that swappable slot. When a tier
+     * has candidates, the shared {@link #pickPerPlacementFrom} core runs the same SideMode/EndMode/
+     * weighted logic as the gated path, so a stamped part honours its mirror / end tags exactly as at
+     * spawn. Neither tier falls back to the ungated full list.
      */
     public List<String> pickPerPlacementForStage(CarriagePartKind kind, long seed, int carriageIndex,
                                                  boolean flatbedAtBack, boolean flatbedAtFront,
-                                                 String stageId) {
-        List<WeightedName> filtered = filterByStage(entries(kind), stageId);
-        if (filtered.isEmpty()) return List.of();
-        return pickPerPlacementFrom(kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, filtered);
+                                                 String stageId, TemplateGate stageGate) {
+        List<WeightedName> candidates = filterByStage(entries(kind), stageId);
+        if (candidates.isEmpty()) {
+            candidates = filterByGateOverlap(entries(kind), stageGate);
+        }
+        if (candidates.isEmpty()) return List.of();
+        return pickPerPlacementFrom(kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, candidates);
     }
 
     /**
@@ -551,6 +559,24 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         List<WeightedName> out = new ArrayList<>(list.size());
         for (WeightedName e : list) {
             if (e.stageId() != null && e.stageId().toLowerCase(Locale.ROOT).equals(key)) out.add(e);
+        }
+        return out;
+    }
+
+    /**
+     * Tier-2 candidate pool for the per-stage preview when {@link #filterByStage} comes up empty: real
+     * parts (never the {@link CarriagePartKind#NONE} sentinel) whose effective gate
+     * {@linkplain TemplateGate#overlaps overlaps} {@code stageGate} — the selected stage's own gate
+     * (same diff-level band + dimension). No fallback to the full list (empty ⇒ the slot airs out).
+     * NONE is skipped so its everything-overlapping DEFAULT gate can't turn "no overlapping part" into
+     * an air pick — a flatbed's {@code walls=[none]} still airs out exactly as before.
+     */
+    private static List<WeightedName> filterByGateOverlap(List<WeightedName> list, TemplateGate stageGate) {
+        if (stageGate == null) return List.of();
+        List<WeightedName> out = new ArrayList<>(list.size());
+        for (WeightedName e : list) {
+            if (CarriagePartKind.NONE.equals(e.name())) continue;
+            if (stageGate.overlaps(e.effectiveGate())) out.add(e);
         }
         return out;
     }

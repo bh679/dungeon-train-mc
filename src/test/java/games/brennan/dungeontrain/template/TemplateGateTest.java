@@ -113,4 +113,35 @@ final class TemplateGateTest {
         assertEquals(9, after.maxLevel());
         assertEquals(TemplateGate.ALL_PHASES, after.phases(), "OVERWORLD kept + others flipped on = all");
     }
+
+    @Test
+    @DisplayName("overlaps: true only when level bands AND phase sets both intersect")
+    void overlaps() {
+        TemplateGate nether = new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.NETHER));
+        // Same dimension, overlapping level bands → overlap.
+        assertTrue(nether.overlaps(new TemplateGate(5, 15, EnumSet.of(TrainPhase.NETHER))));
+        assertTrue(nether.overlaps(TemplateGate.DEFAULT), "DEFAULT (all phases, 0..ALL) overlaps any gate");
+        // Same dimension, disjoint level bands → no overlap.
+        TemplateGate low = new TemplateGate(0, 10, EnumSet.of(TrainPhase.NETHER));
+        assertFalse(low.overlaps(new TemplateGate(50, 60, EnumSet.of(TrainPhase.NETHER))), "0..10 vs 50..60 disjoint");
+        // Overlapping level bands, disjoint dimensions → no overlap.
+        assertFalse(nether.overlaps(new TemplateGate(0, TemplateGate.ALL, EnumSet.of(TrainPhase.OVERWORLD))),
+            "NETHER vs OVERWORLD share levels but not a dimension");
+        // Shares one of several dimensions → overlap.
+        assertTrue(nether.overlaps(new TemplateGate(0, TemplateGate.ALL,
+            EnumSet.of(TrainPhase.OVERWORLD, TrainPhase.NETHER))));
+        // Symmetric, and null-safe.
+        assertTrue(new TemplateGate(5, 15, EnumSet.of(TrainPhase.NETHER)).overlaps(nether));
+        assertFalse(nether.overlaps(null));
+    }
+
+    @Test
+    @DisplayName("overlaps: ALL (unbounded max) extends the band to +infinity")
+    void overlapsUnbounded() {
+        TemplateGate open = new TemplateGate(20, TemplateGate.ALL, EnumSet.of(TrainPhase.END));
+        assertTrue(open.overlaps(new TemplateGate(100, TemplateGate.ALL, EnumSet.of(TrainPhase.END))),
+            "both unbounded above and share END → overlap at high levels");
+        assertFalse(open.overlaps(new TemplateGate(0, 10, EnumSet.of(TrainPhase.END))),
+            "20..ALL doesn't reach 0..10");
+    }
 }

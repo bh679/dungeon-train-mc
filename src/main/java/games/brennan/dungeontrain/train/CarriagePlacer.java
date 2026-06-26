@@ -786,10 +786,14 @@ public final class CarriagePlacer {
     private static String stampPartsOverlayForStage(ServerLevel level, BlockPos origin, CarriagePartAssignment a,
                                                     CarriageDims dims, long seed, int carriageIndex,
                                                     boolean flatbedAtBack, boolean flatbedAtFront, String stageFilter) {
+        // The selected stage's own gate — the tier-2 fallback target: when a slot has nothing explicitly
+        // linked to the stage, any part whose effective gate overlaps this gate shows instead of air.
+        games.brennan.dungeontrain.template.TemplateGate stageGate =
+            games.brennan.dungeontrain.editor.StageStore.gateOf(stageFilter).orElse(null);
         StringBuilder desc = new StringBuilder();
         for (CarriagePartKind kind : CarriagePartKind.values()) {
             java.util.List<String> picks = a.pickPerPlacementForStage(
-                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, stageFilter);
+                kind, seed, carriageIndex, flatbedAtBack, flatbedAtFront, stageFilter, stageGate);
             // Air out the whole slot first (drop the base shell inside this swappable band), then stamp
             // any stage-linked placement on top. Nothing linked (or template missing) ⇒ the slot stays air.
             CarriagePartPlacer.eraseKind(level, origin, kind, dims);
