@@ -28,7 +28,9 @@ public record GateContext(int level, TrainPhase phase) {
      * Resolve the context for the column at {@code worldX}. {@code carriageLength} maps the world-X
      * to the carriage-equivalent index for the Diff-Level (see
      * {@link DifficultyProgression#levelAtWorldX}); the phase is taken straight from the world-X
-     * band classifiers.
+     * band classifiers ({@link TrainPhase#phaseAt}). The Overworld↔Nether <em>block-level</em> fade
+     * for tunnels/tracks is applied later, at stamp time, via
+     * {@link games.brennan.dungeontrain.worldgen.NetherFade} — not by softening this phase.
      */
     public static GateContext atWorldX(ServerLevel level, int worldX, int carriageLength) {
         ServerLevel overworld = level.getServer().overworld();
