@@ -109,6 +109,8 @@ class CommandAllowlistTest {
         assertFalse(CommandAllowlist.taints("w Steve hi"));
         assertFalse(CommandAllowlist.taints("trigger objective"));
         assertFalse(CommandAllowlist.taints("list"));
+        assertFalse(CommandAllowlist.taints("feedback"));
+        assertFalse(CommandAllowlist.taints("feedback some bug report text"));
     }
 
     @Test

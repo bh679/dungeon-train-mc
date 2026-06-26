@@ -45,11 +45,12 @@ public final class CommandAllowlist {
      * Non-DT-namespaced roots that don't taint a run: vanilla permission-0
      * social/info commands everyone may run, plus benign "end / reset the run"
      * actions — {@code /kill} (dying / ending a run) and {@code /new-world} (the
-     * dev world-roll command).
+     * dev world-roll command). {@code /feedback} (player bug-report submission)
+     * is also exempt.
      */
     private static final Set<String> ALLOWED_ROOTS = Set.of(
         "help", "me", "msg", "tell", "w", "teammsg", "tm", "trigger", "list",
-        "kill", "new-world");
+        "feedback", "kill", "new-world");
 
     private CommandAllowlist() {}
 
