@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
+import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
@@ -327,6 +328,18 @@ public class DungeonTrain {
             } catch (Throwable t) {
                 LOGGER.warn("EnderChestPersistence present but slot-lock seam unavailable ({}); "
                         + "Free Play Ender Chest lock disabled.", t.toString());
+            }
+        }
+
+        // Feed relayed Discord messages from the dev into the remote-echo chat privacy guard via
+        // DiscordPresence's inbound-message seam (InboundDiscordHooks, discordpresence 0.41.0+).
+        // Tolerate a DP build predating the seam: degrade to the @-mention guard only.
+        if (ModList.get().isLoaded("discordpresence")) {
+            try {
+                DiscordInboundBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("DiscordPresence present but inbound-message seam unavailable ({}); "
+                        + "echo-story dev-chat guard falls back to @-mention only.", t.toString());
             }
         }
     }

@@ -2579,6 +2579,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "echo-story-gear-and-chat",
+      "version": "0.367.0",
+      "type": "feat",
+      "title": "Echo encounter stories describe the echo's gear and your words",
+      "summary": "When you meet a remote echo aboard the train, its Discord story now paints a fuller picture: it names the echo's two finest items \u2014 enchantments, armour trim and all \u2014 notes any better gear it claims along the way, and remembers if you spoke to it. Your words are sometimes quoted in the tale, sometimes just hinted at, and are always kept private if you'd recently been in touch with the dev.",
+      "highlights": [
+        "The echo's two best items (with enchantments & armour trim) now appear in its story",
+        "Better gear the echo picks up mid-encounter is added as it happens",
+        "Chatting near an echo can become part of the story \u2014 your words quoted or kept private"
+      ],
+      "pr": 595,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
