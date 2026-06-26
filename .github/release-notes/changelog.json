@@ -2565,12 +2565,16 @@
       "released_at": null
     },
     {
-      "id": "discord-difficulty-level-up",
+      "id": "editor-menus-master-toggle",
       "version": "0.367.0",
       "type": "feat",
-      "title": "Discord difficulty level-up notifications",
-      "summary": "Each time a player reaches a new difficulty level on the train, a short message posts to their Discord thread \u2014 naming the level and their current carriage. Fires once per tier per life, so dying and re-progressing sends fresh notifications. Can be toggled off with difficultyLevelNoticeToDiscord in the server config.",
-      "highlights": [],
+      "title": "Editor Menus toggle hides all world-space editor panels",
+      "summary": "The in-game editor's X-menu now has a single 'Editor Menus' toggle that hides every floating world-space panel at once \u2014 the help board, the carriage/contents/track lists, the part and block-variant menus, and plot labels \u2014 for an unobstructed view while building. The X menu stays available so you can flip everything back on anytime.",
+      "highlights": [
+        "One toggle hides or shows all editor world-space menus",
+        "Any open part, block-variant, and container menus close when toggled off"
+      ],
+      "pr": 593,
       "date": "2026-06-26",
       "released": false,
       "released_in": null,

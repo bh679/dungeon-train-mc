@@ -226,7 +226,8 @@ public final class EchoEncounterTestCommand {
         CommandSourceStack source = ctx.getSource();
         int ended = RemoteEchoEncounters.devEndAll(source.getServer());
         source.sendSuccess(() -> Component.literal(
-                "[echotest] ended " + ended + " open journal(s) — stories posted (if Discord is configured).")
+                "[echotest] ended " + ended + " open journal(s) — each story posts once its screenshot lands "
+                    + "(or after a short wait), if Discord is configured.")
             .withStyle(ChatFormatting.AQUA), false);
         return ended;
     }

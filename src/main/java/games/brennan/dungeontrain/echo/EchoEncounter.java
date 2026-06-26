@@ -54,6 +54,12 @@ final class EchoEncounter {
     Boolean lastOnDeck = null;
     /** Stage C: the captured screenshot of the echo, or {@code null} for the text-only post. */
     byte[] photo = null;
+    /**
+     * Gametime of the most recent screenshot request (throttles re-requests while {@link #photo} is
+     * still null). {@code Long.MIN_VALUE} = never requested — also the signal that there is no capture
+     * in flight, so a finished encounter need not be held waiting for one.
+     */
+    long lastPhotoRequestTick = Long.MIN_VALUE;
 
     EchoEncounter(UUID echoId, ResourceKey<Level> dimension, UUID sourcePlayerId, String sourceName,
                   UUID primaryPlayerId, int sourceCarriage, long spawnTick,
