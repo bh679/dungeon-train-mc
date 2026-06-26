@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "floor": [
     {
       "name": "wood",
@@ -19,13 +19,54 @@
     {
       "name": "open",
       "weight": 1,
-      "sideMode": "either"
+      "sideMode": "either",
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "darkopen",
+      "weight": 1,
+      "sideMode": "either",
+      "phases": [
+        "NETHER"
+      ]
     }
   ],
   "roof": [
     {
-      "name": "none",
-      "weight": 1
+      "name": "standard",
+      "weight": 5,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
+    },
+    {
+      "name": "dark",
+      "weight": 10,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "darkwindow",
+      "weight": 1,
+      "phases": [
+        "NETHER"
+      ]
+    },
+    {
+      "name": "windowed",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END"
+      ]
     }
   ],
   "doors": [

@@ -68,17 +68,18 @@ public final class EditorPlotTeleport {
     }
 
     /**
-     * Build the slash command that toggles a spawn-gate phase
-     * ({@code phaseToken} = {@code overworld|nether|void|end}) {@code on}/{@code off}
-     * for the template identified by {@code (category, modelId, modelName)}.
-     * Null for categories without a gate pool.
+     * Build the slash command that changes a spawn-gate dimension
+     * ({@code phaseToken} = {@code overworld|nether|void|end}) for the template identified by
+     * {@code (category, modelId, modelName)}. {@code action} is {@code on} / {@code off} (plain
+     * click) or {@code others} (shift-click — "toggle all but that one"). Null for categories
+     * without a gate pool.
      */
     public static String phaseCommandFor(String category, String modelId, String modelName,
-                                         String phaseToken, String onOff) {
+                                         String phaseToken, String action) {
         return switch (category) {
-            case "CARRIAGES" -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + onOff;
-            case "CONTENTS" -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + onOff;
-            case "TRACKS" -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + onOff;
+            case "CARRIAGES" -> "dungeontrain editor phase " + modelId + " " + phaseToken + " " + action;
+            case "CONTENTS" -> "dungeontrain editor contents phase " + modelId + " " + phaseToken + " " + action;
+            case "TRACKS" -> "dungeontrain editor tracks phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             default -> null;
         };
     }

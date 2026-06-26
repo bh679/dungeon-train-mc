@@ -93,6 +93,23 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     }
 
     /**
+     * Cycle {@code maxLevel} up one step for a click-to-bump editor:
+     * {@link #ALL} → 0 → 1 → … → {@link #MAX_LEVEL} → {@link #ALL} (mirrors the mob difficulty-band
+     * editor's wrap). Shared by the template-type editor and the carriage-parts editor so both step
+     * the {@code ALL}↔finite sentinel identically.
+     */
+    public TemplateGate incMaxLevel() {
+        int next = (maxLevel == ALL) ? 0 : (maxLevel >= MAX_LEVEL ? ALL : maxLevel + 1);
+        return withMaxLevel(next);
+    }
+
+    /** Cycle {@code maxLevel} down one step: {@link #ALL} → {@link #MAX_LEVEL} → … → 0 → {@link #ALL}. */
+    public TemplateGate decMaxLevel() {
+        int next = (maxLevel == ALL) ? MAX_LEVEL : (maxLevel <= 0 ? ALL : maxLevel - 1);
+        return withMaxLevel(next);
+    }
+
+    /**
      * Copy with {@code phase} toggled on/off. Toggling the last remaining phase off normalises back
      * to all phases (the canonical constructor's "empty ⇒ all" rule), so the gate never becomes
      * "eligible in zero phases".
@@ -100,6 +117,22 @@ public record TemplateGate(int minLevel, int maxLevel, Set<TrainPhase> phases) {
     public TemplateGate withPhase(TrainPhase phase, boolean on) {
         EnumSet<TrainPhase> next = EnumSet.copyOf(phases);
         if (on) next.add(phase); else next.remove(phase);
+        return new TemplateGate(minLevel, maxLevel, next);
+    }
+
+    /**
+     * Toggle every dimension <em>except</em> {@code keep} (whose membership is preserved) — the
+     * editor's shift-click on a dimension letter, "toggle all but that one". From the all-on default
+     * this solos {@code keep}; applied again it restores the rest. An empty result normalises back to
+     * all dimensions (the gate's "empty ⇒ all" invariant).
+     */
+    public TemplateGate toggleOtherPhases(TrainPhase keep) {
+        EnumSet<TrainPhase> next = EnumSet.noneOf(TrainPhase.class);
+        for (TrainPhase p : TrainPhase.values()) {
+            boolean on = phases.contains(p);
+            // keep: unchanged; others: flipped.
+            if (p == keep ? on : !on) next.add(p);
+        }
         return new TemplateGate(minLevel, maxLevel, next);
     }
 }

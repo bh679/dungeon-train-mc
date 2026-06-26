@@ -2495,9 +2495,27 @@
         "Fire carriage now Nether-phase-only"
       ],
       "date": "2026-06-25",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.363.0",
+      "released_at": "2026-06-25T12:13:10Z"
+    },
+    {
+      "id": "carriage-parts-dimension-gate",
+      "version": "0.364.0",
+      "type": "feat",
+      "title": "Carriages reskin by dimension \u2014 Nether-themed dark carriages",
+      "summary": "Carriage parts (floors, walls, roofs, doors) can now be restricted to a Diff-Level range and to specific dimensions, so the train's carriages visibly change as it crosses the world. A new Nether-themed dark carriage set (blackstone & nether brick) rides through the Nether band, and the change carries the same in-world editor controls used for the rest of the train: per-part minimum/maximum Diff-Level and Overworld/Nether/Void/End toggles (shift-click a dimension to solo it). Nether carriage theming now begins at the same point the Nether track does.",
+      "highlights": [
+        "Carriage parts can be gated by Diff-Level range and by dimension (Overworld/Nether/Void/End)",
+        "New Nether-themed dark carriage set appears in the Nether band",
+        "Editor: \u2265min / \u2264max / O N V E columns per part; shift-click a dimension toggles all-but-that-one (shared across every dimension menu)",
+        "Fix: Nether carriage parts now begin where the Nether track does (previously lagged ~1000 blocks)"
+      ],
+      "pr": 585,
+      "date": "2026-06-25",
+      "released": true,
+      "released_in": "v0.365.0",
+      "released_at": "2026-06-26T00:19:25Z"
     }
   ]
 }

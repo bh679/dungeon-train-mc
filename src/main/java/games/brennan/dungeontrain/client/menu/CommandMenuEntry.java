@@ -118,12 +118,18 @@ public sealed interface CommandMenuEntry {
      * {@link #cmdToTurnOff} (when currently on). Does NOT close the menu — the
      * server ack updates the displayed state on the next rebuild.
      */
-    record Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff, boolean showStateText)
+    record Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff,
+                  boolean showStateText, String cmdToToggleOthers)
         implements CommandMenuEntry {
 
-        /** Convenience overload — defaults to showing the {@code [ON]}/{@code [OFF]} suffix. */
+        /** Convenience overload — defaults to showing the {@code [ON]}/{@code [OFF]} suffix, no shift action. */
         Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff) {
-            this(label, state, cmdToTurnOn, cmdToTurnOff, true);
+            this(label, state, cmdToTurnOn, cmdToTurnOff, true, null);
+        }
+
+        /** Convenience overload — explicit state-text visibility, no shift action. */
+        Toggle(String label, boolean state, String cmdToTurnOn, String cmdToTurnOff, boolean showStateText) {
+            this(label, state, cmdToTurnOn, cmdToTurnOff, showStateText, null);
         }
     }
 

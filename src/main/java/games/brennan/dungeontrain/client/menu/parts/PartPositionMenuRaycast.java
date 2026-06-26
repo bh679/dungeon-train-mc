@@ -138,6 +138,7 @@ public final class PartPositionMenuRaycast {
         boolean showEndMode  = PartPositionMenu.kindHasEndMode(PartPositionMenu.kind());
         double colXL = -halfW + col * colActualW;
         double colXR = colXL + colActualW;
+        // Mirror PartPositionMenuRenderer's right-to-left cell layout exactly.
         double xCellW = removeMode ? PartPositionMenuRenderer.X_CELL_WIDTH : 0.0;
         double endCellW  = showEndMode ? PartPositionMenuRenderer.END_MODE_CELL_WIDTH : 0.0;
         double sideCellW = showSideMode ? PartPositionMenuRenderer.SIDE_MODE_CELL_WIDTH : 0.0;
@@ -145,7 +146,13 @@ public final class PartPositionMenuRaycast {
         double endCellL  = endCellR - endCellW;
         double sideCellR = endCellL;
         double sideCellL = sideCellR - sideCellW;
-        double weightCellR = sideCellL;
+        double phaseCellR = sideCellL;
+        double phaseCellL = phaseCellR - PartPositionMenuRenderer.PHASE_CELL_WIDTH;
+        double maxCellR = phaseCellL;
+        double maxCellL = maxCellR - PartPositionMenuRenderer.MAX_LEVEL_CELL_WIDTH;
+        double minCellR = maxCellL;
+        double minCellL = minCellR - PartPositionMenuRenderer.MIN_LEVEL_CELL_WIDTH;
+        double weightCellR = minCellL;
         double weightCellL = weightCellR - PartPositionMenuRenderer.WEIGHT_CELL_WIDTH;
 
         if (removeMode && hitX >= colXR - PartPositionMenuRenderer.X_CELL_WIDTH) {
@@ -156,6 +163,20 @@ public final class PartPositionMenuRaycast {
         }
         if (showSideMode && hitX >= sideCellL && hitX <= sideCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_SIDE_MODE, idx);
+        }
+        if (hitX >= phaseCellL && hitX <= phaseCellR) {
+            int letters = PartPositionMenuRenderer.PHASE_LETTERS.length;
+            double letterW = (phaseCellR - phaseCellL) / letters;
+            int slot = (int) Math.floor((hitX - phaseCellL) / letterW);
+            if (slot < 0) slot = 0;
+            if (slot >= letters) slot = letters - 1;
+            return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_PHASE, idx, slot);
+        }
+        if (hitX >= maxCellL && hitX <= maxCellR) {
+            return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_MAX_LEVEL, idx);
+        }
+        if (hitX >= minCellL && hitX <= minCellR) {
+            return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_MIN_LEVEL, idx);
         }
         if (hitX >= weightCellL && hitX <= weightCellR) {
             return new PartPositionMenu.Hit(PartPositionMenu.CellKind.ENTRY_WEIGHT, idx);

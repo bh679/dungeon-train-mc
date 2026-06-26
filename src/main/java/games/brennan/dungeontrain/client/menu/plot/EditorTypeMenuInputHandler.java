@@ -300,7 +300,7 @@ public final class EditorTypeMenuInputHandler {
             }
             case MIN_LEVEL -> dispatchLevel(menu, variant, "minlevel", shift);
             case MAX_LEVEL -> dispatchLevel(menu, variant, "maxlevel", shift);
-            case PHASE -> dispatchPhase(menu, variant, hit.slotIdx());
+            case PHASE -> dispatchPhase(menu, variant, hit.slotIdx(), shift);
             default -> {}
         }
     }
@@ -320,17 +320,22 @@ public final class EditorTypeMenuInputHandler {
         CommandRunner.run(cmd);
     }
 
-    /** Toggle the phase identified by {@code slot} (TrainPhase ordinal) on the variant's gate. */
+    /**
+     * Toggle the dimension identified by {@code slot} (TrainPhase ordinal) on the variant's gate.
+     * Plain click flips that one ({@code on}/{@code off}); shift-click sends the shared {@code others}
+     * action — "toggle all but that one" — so this matches the parts menu and the keyboard Phases menu.
+     */
     private static void dispatchPhase(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
-                                      int slot) {
+                                      int slot, boolean shift) {
         if (isSubVariants(menu)) return;
         if (slot < 0 || slot >= PHASE_TOKENS.length) return;
         boolean on = (variant.phaseMask() & (1 << slot)) != 0;
+        String action = shift ? "others" : (on ? "off" : "on");
         String cmd = EditorPlotTeleport.phaseCommandFor(
             variant.category(), variant.modelId(), variant.modelName(),
-            PHASE_TOKENS[slot], on ? "off" : "on");
+            PHASE_TOKENS[slot], action);
         if (cmd == null) return;
-        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {}={}: {}", PHASE_TOKENS[slot], !on, cmd);
+        LOGGER.debug("[DungeonTrain] EditorTypeMenu phase {} {}: {}", PHASE_TOKENS[slot], action, cmd);
         CommandRunner.run(cmd);
     }
 
