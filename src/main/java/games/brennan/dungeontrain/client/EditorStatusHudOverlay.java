@@ -203,6 +203,16 @@ public final class EditorStatusHudOverlay {
         return partMenuEnabled;
     }
 
+    /**
+     * Master visibility flag for the editor's always-on world-space panels
+     * (help board, type/variant lists, plot labels). Shares the server-synced
+     * {@code partMenuEnabled} flag so the single "Editor Menus" X-menu toggle
+     * governs all editor world-space UI at once. Default true (visible).
+     */
+    public static boolean isEditorMenusVisible() {
+        return partMenuEnabled;
+    }
+
     /** Editor mirror X-axis flag for the active model (X-menu toggle state). */
     public static boolean mirrorX() {
         return mirrorX;

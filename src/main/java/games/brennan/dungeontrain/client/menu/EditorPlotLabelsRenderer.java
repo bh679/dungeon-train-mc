@@ -188,6 +188,8 @@ public final class EditorPlotLabelsRenderer {
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+        // Master "Editor Menus" toggle — hide all world-space editor panels when off.
+        if (!games.brennan.dungeontrain.client.EditorStatusHudOverlay.isEditorMenusVisible()) return;
         List<EditorPlotLabelsPacket.Entry> snapshot = CACHE;
         if (snapshot.isEmpty()) return;
 
