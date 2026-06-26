@@ -27,13 +27,18 @@ public record GateContext(int level, TrainPhase phase) {
     /**
      * Resolve the context for the column at {@code worldX}. {@code carriageLength} maps the world-X
      * to the carriage-equivalent index for the Diff-Level (see
-     * {@link DifficultyProgression#levelAtWorldX}); the phase is taken straight from the world-X
-     * band classifiers.
+     * {@link DifficultyProgression#levelAtWorldX}); the phase comes from
+     * {@link TrainPhase#gatePhaseAt}, which <b>noise-fades</b> the Overworld↔Nether boundary across
+     * the Nether crossfade (keyed on this world's {@code generationSeed}) so the world features that
+     * gate on this context — tunnels, tracks, pillars — dither between their Overworld and
+     * Nether-dark variants instead of snapping at one line. Carriage gating uses the hard
+     * {@link #forCarriage} path instead.
      */
     public static GateContext atWorldX(ServerLevel level, int worldX, int carriageLength) {
         ServerLevel overworld = level.getServer().overworld();
         int diffLevel = DifficultyProgression.levelAtWorldX(worldX, carriageLength);
-        return new GateContext(diffLevel, TrainPhase.phaseAt(overworld, worldX));
+        long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
+        return new GateContext(diffLevel, TrainPhase.gatePhaseAt(overworld, worldX, genSeed));
     }
 
     /**
@@ -96,6 +101,12 @@ public record GateContext(int level, TrainPhase phase) {
      * </ul>
      * Group size is read from this world's generation config. Pure in
      * {@code (carriagePIdx, groupSize, carriageLength)}.
+     *
+     * <p>Carriages keep the <b>hard</b> {@link TrainPhase#phaseAt} classification (one theme per
+     * group at the {@code ramp == 0.5} boundary); only the world-feature gate
+     * ({@link #atWorldX}) noise-fades across the Nether crossfade. So within the crossfade the
+     * tunnels/tracks below a carriage dither while the carriage itself snaps at the midpoint — an
+     * accepted, deliberate seam. Outside the crossfade the two frames still agree exactly.</p>
      */
     public static GateContext forCarriage(ServerLevel level, int carriagePIdx, int carriageLength) {
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
