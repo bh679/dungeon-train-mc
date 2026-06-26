@@ -2691,6 +2691,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sandstone-carriage-variants",
+      "version": "0.371.0",
+      "type": "content",
+      "title": "New sandstone carriage parts",
+      "summary": "Fresh sandstone carriage parts join the rotation \u2014 windowed, broken, and open-lattice sandstone walls plus an open sandstone roof \u2014 woven into several existing carriages for more variety on the train.",
+      "highlights": [
+        "Windowed, broken, and open sandstone wall variants",
+        "New open sandstone roof part"
+      ],
+      "pr": 604,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
