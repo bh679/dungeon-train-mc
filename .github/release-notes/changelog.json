@@ -2626,9 +2626,9 @@
         "Fix: Nether-gated templates and Stages now trigger as the Nether terrain begins, not hundreds of blocks into the Nether core."
       ],
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.368.0",
+      "released_at": "2026-06-26T10:55:54Z"
     }
   ]
 }
