@@ -2548,6 +2548,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "worldgen-cycle-memo",
+      "version": "0.366.0",
+      "type": "perf",
+      "title": "Leaner world generation",
+      "summary": "World generation now reuses a single cached band-layout calculation instead of rebuilding it for every terrain column \u2014 previously it was recomputed millions of times per session. This cuts redundant work and memory churn while terrain generates (including around the Nether and End transition bands), with no change to the world that's produced.",
+      "highlights": [
+        "Same world, generated more efficiently \u2014 no change to terrain, structures, or the train."
+      ],
+      "pr": 590,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
