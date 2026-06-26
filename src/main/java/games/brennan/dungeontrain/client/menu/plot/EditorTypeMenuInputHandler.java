@@ -133,6 +133,13 @@ public final class EditorTypeMenuInputHandler {
             mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
         }
 
+        // Stages management panel — its rows are Stages (NAME → edit that stage), and its header /
+        // "+ New" footer open the Stages window (which has the create-stage typing row).
+        if (menu.isStagesMenu()) {
+            handleStagesMenu(hit, menu);
+            return;
+        }
+
         // Category bar click → run "dt editor <id>" (CommandRunner expects
         // bare command text, no leading slash — the chat path adds it).
         if (hit.cell() == EditorTypeMenuRenderer.CellKind.CATEGORY) {
@@ -266,6 +273,13 @@ public final class EditorTypeMenuInputHandler {
 
         switch (hit.cell()) {
             case NAME -> {
+                // Shift-click a gateable template's name opens the Stage / Custom picker (the
+                // floating-menu entry point for linking a template to a Stage). Plain click teleports.
+                if (shift && EditorPlotTeleport.stageApplyCommandFor(
+                        variant.category(), variant.modelId(), variant.modelName(), "custom") != null) {
+                    openStagePicker(variant);
+                    return;
+                }
                 String cmd = EditorPlotTeleport.commandFor(
                     variant.category(), variant.modelId(), variant.modelName());
                 if (cmd == null) return;
@@ -298,9 +312,42 @@ public final class EditorTypeMenuInputHandler {
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
                 CommandRunner.run(cmd);
             }
-            case MIN_LEVEL -> dispatchLevel(menu, variant, "minlevel", shift);
-            case MAX_LEVEL -> dispatchLevel(menu, variant, "maxlevel", shift);
-            case PHASE -> dispatchPhase(menu, variant, hit.slotIdx(), shift);
+            // Gate cells: while the row is Stage-linked its cells show the Stage's (read-only) gate,
+            // so a click opens the picker (re-pick / Custom) instead of editing — which would
+            // silently detach. Custom rows edit the inline gate as before.
+            case MIN_LEVEL -> { if (!openPickerIfLinked(variant)) dispatchLevel(menu, variant, "minlevel", shift); }
+            case MAX_LEVEL -> { if (!openPickerIfLinked(variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
+            case PHASE -> { if (!openPickerIfLinked(variant)) dispatchPhase(menu, variant, hit.slotIdx(), shift); }
+            default -> {}
+        }
+    }
+
+    /** Open the Stage / Custom picker for {@code variant} when it is Stage-linked; returns whether it did. */
+    private static boolean openPickerIfLinked(EditorTypeMenusPacket.Variant variant) {
+        if (!variant.isStageLinked()) return false;
+        openStagePicker(variant);
+        return true;
+    }
+
+    /** Open the {@link games.brennan.dungeontrain.client.menu.StagePickerScreen} for {@code variant}. */
+    private static void openStagePicker(EditorTypeMenusPacket.Variant variant) {
+        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StagePickerScreen(
+            variant.category(), variant.modelId(), variant.modelName(), variant.stageId()));
+    }
+
+    /**
+     * Click routing for the world-space Stages panel: a stage row's NAME opens that Stage's edit
+     * screen; the header / "+ New" footer open the Stages window (with its create-stage typing row).
+     */
+    private static void handleStagesMenu(Hovered hit, EditorTypeMenusPacket.Menu menu) {
+        switch (hit.cell()) {
+            case NAME -> {
+                if (hit.variantIdx() < 0 || hit.variantIdx() >= menu.variants().size()) return;
+                String stageId = menu.variants().get(hit.variantIdx()).modelId();
+                CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.StageEditScreen(stageId));
+            }
+            case NEW, HEADER -> CommandMenuState.openAt(
+                new games.brennan.dungeontrain.client.menu.StagesListScreen());
             default -> {}
         }
     }

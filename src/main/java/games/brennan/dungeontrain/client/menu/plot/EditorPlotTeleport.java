@@ -96,6 +96,38 @@ public final class EditorPlotTeleport {
         return "dungeontrain editor contents group set-weight " + parentId + " " + memberId + " " + dir;
     }
 
+    /**
+     * Build the slash command that links the template identified by
+     * {@code (category, modelId, modelName)} to a Stage ({@code stageToken} = a stage id, or
+     * {@code custom} to detach). Mirrors {@link #levelCommandFor}'s category mapping; null for
+     * categories without a per-template gate pool (PARTS uses its own packet path).
+     */
+    public static String stageApplyCommandFor(String category, String modelId, String modelName, String stageToken) {
+        // Category arrives uppercase from the world-space rows (EditorCategory.name()) and lowercase
+        // from the keyboard menu (EditorStatusHudOverlay.category()) — normalise so both route.
+        String c = category == null ? "" : category.toUpperCase(java.util.Locale.ROOT);
+        return switch (c) {
+            case "CARRIAGES" -> "dungeontrain editor stage apply carriage " + modelId + " " + stageToken;
+            case "CONTENTS" -> "dungeontrain editor stage apply contents " + modelId + " " + stageToken;
+            case "TRACKS" -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
+            default -> null;
+        };
+    }
+
+    /**
+     * Build the slash command that edits a Stage's own gate ({@code sub} = {@code minlevel}/
+     * {@code maxlevel}) in {@code dir} ({@code inc}/{@code dec}). The Stages panel + edit screen use
+     * this; {@code stageId} is the stage id.
+     */
+    public static String stageLevelCommandFor(String stageId, String sub, String dir) {
+        return "dungeontrain editor stage " + sub + " " + stageId + " " + dir;
+    }
+
+    /** Build the slash command toggling a Stage's dimension ({@code on}/{@code off}/{@code others}). */
+    public static String stagePhaseCommandFor(String stageId, String phaseToken, String action) {
+        return "dungeontrain editor stage phase " + stageId + " " + phaseToken + " " + action;
+    }
+
     private static String trackTeleportCommand(String modelId) {
         // The track tile's per-plot label uses {@code TrackKind.TILE.id() == "tile"};
         // {@code Template.TrackModel.id()} (used by the keyboard menu) returns "track".

@@ -96,10 +96,21 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         return clamp(m.weight());
     }
 
-    /** The spawn {@link TemplateGate gate} for {@code id}, or {@link TemplateGate#DEFAULT} if absent. */
+    /**
+     * The <b>effective</b> spawn {@link TemplateGate gate} for {@code id}: the linked Stage's gate
+     * when this entry is Stage-linked, else its inline gate ({@link TemplateGate#DEFAULT} if absent).
+     * Resolution is an O(1) {@link games.brennan.dungeontrain.editor.StageStore} map lookup.
+     */
     public TemplateGate gateFor(String id) {
         TemplateMeta m = byId.get(id);
-        return m == null ? TemplateGate.DEFAULT : m.gate();
+        if (m == null) return TemplateGate.DEFAULT;
+        return games.brennan.dungeontrain.editor.StageStore.effectiveGate(m.gate(), m.stageId());
+    }
+
+    /** The Stage id this contents is linked to, or {@code null} when it has a Custom inline gate. */
+    public String stageIdFor(String id) {
+        TemplateMeta m = byId.get(id);
+        return m == null ? null : m.stageId();
     }
 
     public static int clamp(int value) {
@@ -163,6 +174,30 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
         LOGGER.info("[DungeonTrain] Set carriage contents gate {}={} (persisted to {}).",
                 key, gate, configPath());
         return gate;
+    }
+
+    /**
+     * Link {@code id} to the named Stage ({@code stageId}), or detach to Custom when {@code stageId}
+     * is null (snapshotting the Stage's current gate inline). Weight preserved. Persists. See
+     * {@link CarriageWeights#setStage}.
+     */
+    public static synchronized String setStage(String id, String stageId) throws IOException {
+        String key = id.toLowerCase(Locale.ROOT);
+        String link = (stageId == null || stageId.isBlank()) ? null : stageId.toLowerCase(Locale.ROOT);
+        Map<String, TemplateMeta> next = new HashMap<>(current.byId());
+        TemplateMeta prev = next.get(key);
+        int weight = prev == null ? DEFAULT : prev.weight();
+        TemplateGate inline = prev == null ? TemplateGate.DEFAULT : prev.gate();
+        if (link == null && prev != null && prev.stageId() != null) {
+            inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, prev.stageId());
+        }
+        next.put(key, new TemplateMeta(weight, inline, link));
+        current = new CarriageContentsWeights(next);
+        writeConfig(current);
+        trySaveToSource(current);
+        LOGGER.info("[DungeonTrain] Set carriage contents stage {}={} (persisted to {}).",
+                key, link == null ? "<custom>" : link, configPath());
+        return link;
     }
 
     /**

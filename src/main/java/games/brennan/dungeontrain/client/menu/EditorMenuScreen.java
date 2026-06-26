@@ -150,18 +150,32 @@ public final class EditorMenuScreen implements MenuScreen {
 
         // Spawn gate — min/max Diff-Level steppers (same categories as Weight) plus a Phases
         // drilldown to the OW/Nether/Void/End checkbox popup. Only shown for weighted, addressable
-        // models (weightRow != null is the exact same gate).
+        // models (weightRow != null is the exact same gate). When the model is linked to a Stage we
+        // hide the editable cells (per the locked UX) and show only the Stage chip — to change the
+        // gate the player edits the Stage or picks Custom to detach.
         if (weightRow != null) {
-            int minLv = EditorStatusHudOverlay.minLevel();
-            int maxLv = EditorStatusHudOverlay.maxLevel();
-            CommandMenuEntry minRow = levelTripleFor(category, modelId, modelName, "minlevel",
-                "Min Lv (" + minLv + ")", "0-100");
-            if (minRow != null) out.add(minRow);
-            CommandMenuEntry maxRow = levelTripleFor(category, modelId, modelName, "maxlevel",
-                "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")", "-1..100");
-            if (maxRow != null) out.add(maxRow);
-            out.add(new CommandMenuEntry.DrillIn(
-                "Phases", new PhaseSelectScreen(category, modelId, modelName)));
+            String stageId = EditorStatusHudOverlay.stageId();
+            boolean linked = stageId != null && !stageId.isEmpty();
+            if (linked) {
+                out.add(new CommandMenuEntry.DrillIn(
+                    "Stage: " + stageId + "  ▾",
+                    new StagePickerScreen(category, modelId, modelName, stageId)));
+            } else {
+                int minLv = EditorStatusHudOverlay.minLevel();
+                int maxLv = EditorStatusHudOverlay.maxLevel();
+                CommandMenuEntry minRow = levelTripleFor(category, modelId, modelName, "minlevel",
+                    "Min Lv (" + minLv + ")", "0-100");
+                if (minRow != null) out.add(minRow);
+                CommandMenuEntry maxRow = levelTripleFor(category, modelId, modelName, "maxlevel",
+                    "Max Lv (" + (maxLv < 0 ? "all" : Integer.toString(maxLv)) + ")", "-1..100");
+                if (maxRow != null) out.add(maxRow);
+                out.add(new CommandMenuEntry.DrillIn(
+                    "Phases", new PhaseSelectScreen(category, modelId, modelName)));
+                // Stage / Custom picker — link this template to a Stage preset (or stay Custom).
+                out.add(new CommandMenuEntry.DrillIn(
+                    "Stage: Custom  ▾",
+                    new StagePickerScreen(category, modelId, modelName, "")));
+            }
         }
 
         // Editor mirror toggles — author one octant, the editor mirrors live
@@ -172,6 +186,7 @@ public final class EditorMenuScreen implements MenuScreen {
             addMirrorToggles(out);
         }
 
+        out.add(new CommandMenuEntry.DrillIn("Stages", new StagesListScreen()));
         out.add(new CommandMenuEntry.DrillIn("Package", new PackageListScreen()));
         out.add(new CommandMenuEntry.Run("Exit", "dungeontrain editor exit"));
         return out;

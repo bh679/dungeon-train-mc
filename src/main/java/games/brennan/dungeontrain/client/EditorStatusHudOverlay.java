@@ -61,6 +61,8 @@ public final class EditorStatusHudOverlay {
     private static int minLevel = 0;
     private static int maxLevel = -1;
     private static int phaseMask = 0b1111;
+    /** Stage id the active model is linked to ({@code ""} = Custom / unlinked). Drives the chip-vs-cells choice in the keyboard gate controls. */
+    private static String stageId = "";
     /** Server-reported per-player part-position auto-open menu flag. Defaults true for fresh sessions. */
     private static boolean partMenuEnabled = true;
     /**
@@ -106,7 +108,7 @@ public final class EditorStatusHudOverlay {
     public static void setStatus(String newCategory, String newModel, String newModelId, String newModelName,
                                  boolean newDevmode, int newWeight, int newMinLevel, int newMaxLevel, int newPhaseMask,
                                  boolean newPartMenuEnabled, boolean newMirrorX, boolean newMirrorY, boolean newMirrorZ,
-                                 Set<String> newExcludedContents) {
+                                 Set<String> newExcludedContents, String newStageId) {
         category = newCategory == null ? "" : newCategory;
         model = newModel == null ? "" : newModel;
         modelId = newModelId == null ? "" : newModelId;
@@ -116,6 +118,7 @@ public final class EditorStatusHudOverlay {
         minLevel = newMinLevel;
         maxLevel = newMaxLevel;
         phaseMask = newPhaseMask;
+        stageId = newStageId == null ? "" : newStageId;
         partMenuEnabled = newPartMenuEnabled;
         mirrorX = newMirrorX;
         mirrorY = newMirrorY;
@@ -135,6 +138,7 @@ public final class EditorStatusHudOverlay {
         minLevel = 0;
         maxLevel = -1;
         phaseMask = 0b1111;
+        stageId = "";
         partMenuEnabled = true;
         mirrorX = false;
         mirrorY = false;
@@ -196,6 +200,16 @@ public final class EditorStatusHudOverlay {
     /** Active model's 4-bit worldgen-phase mask (bit per {@code TrainPhase} ordinal: OW/Nether/Void/End). */
     public static int phaseMask() {
         return phaseMask;
+    }
+
+    /** Stage id the active model is linked to, or {@code ""} when it has a Custom inline gate. */
+    public static String stageId() {
+        return stageId;
+    }
+
+    /** True when the active model is linked to a Stage (gate cells are replaced by the Stage chip). */
+    public static boolean isStageLinked() {
+        return stageId != null && !stageId.isEmpty();
     }
 
     /** Server-reported per-player part-position auto-open menu flag. Default true. */

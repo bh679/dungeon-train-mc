@@ -77,4 +77,56 @@ final class TemplateWeightCodecTest {
         assertEquals(original.gate().phases(), back.gate().phases());
         assertFalse(back.gate().isDefault());
     }
+
+    // ---- Stage link (v2 of the codec — optional "stage" field) ----
+
+    @Test
+    @DisplayName("absent stage key parses as Custom (null stageId) — pre-feature files unchanged")
+    void parseNoStageLink() {
+        TemplateMeta bare = TemplateWeightCodec.parseEntry(JsonParser.parseString("20"), CLAMP);
+        assertNull(bare.stageId());
+        TemplateMeta obj = TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"minLevel\":3}"), CLAMP);
+        assertNull(obj.stageId());
+    }
+
+    @Test
+    @DisplayName("stage key parses into stageId (lower-cased); blank stage is normalised to null")
+    void parseStageLink() {
+        TemplateMeta m = TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"stage\":\"Deep_Nether\"}"), CLAMP);
+        assertEquals("deep_nether", m.stageId());
+        assertTrue(m.isLinked());
+        TemplateMeta blank = TemplateWeightCodec.parseEntry(
+            JsonParser.parseString("{\"weight\":5,\"stage\":\"\"}"), CLAMP);
+        assertNull(blank.stageId());
+    }
+
+    @Test
+    @DisplayName("a linked entry with a DEFAULT inline gate still serialises as an object carrying stage")
+    void emitLinkedDefaultGate() {
+        JsonObject out = TemplateWeightCodec.toJson(Map.of(
+            "linked", new TemplateMeta(4, TemplateGate.DEFAULT, "nether")));
+        assertTrue(out.get("linked").isJsonObject());
+        JsonObject o = out.getAsJsonObject("linked");
+        assertEquals(4, o.get("weight").getAsInt());
+        assertEquals("nether", o.get("stage").getAsString());
+        // Default inline gate ⇒ no gate fields emitted.
+        assertFalse(o.has("minLevel"));
+        assertFalse(o.has("maxLevel"));
+        assertFalse(o.has("phases"));
+    }
+
+    @Test
+    @DisplayName("round-trip preserves the stage link alongside the inline snapshot gate")
+    void roundTripLinked() {
+        TemplateMeta original = new TemplateMeta(
+            9, new TemplateGate(5, 30, EnumSet.of(TrainPhase.NETHER)), "endgame");
+        JsonObject json = TemplateWeightCodec.toJson(Map.of("x", original));
+        TemplateMeta back = TemplateWeightCodec.parseEntry(json.get("x"), CLAMP);
+        assertEquals("endgame", back.stageId());
+        assertEquals(5, back.gate().minLevel());
+        assertEquals(30, back.gate().maxLevel());
+        assertEquals(EnumSet.of(TrainPhase.NETHER), back.gate().phases());
+    }
 }
