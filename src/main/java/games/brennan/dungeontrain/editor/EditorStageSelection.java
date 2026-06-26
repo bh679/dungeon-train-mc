@@ -40,9 +40,23 @@ public final class EditorStageSelection {
         return selectedStageId;
     }
 
-    /** True iff a stage is selected. */
+    /** True iff a stage is explicitly selected. */
     public static boolean hasSelection() {
         return selectedStageId != null;
+    }
+
+    /**
+     * The stage that actually drives the per-stage preview, the menu highlight, and the add-default:
+     * the explicit {@link #selected()} when it names an existing stage, otherwise the <b>first</b>
+     * stage in {@link StageStore}'s id-sorted order — so once any stages exist the editor always
+     * previews one ("no valid selection ⇒ the first stage"). {@code null} only when no stages exist at
+     * all, in which case the preview falls back to the normal unfiltered view.
+     */
+    public static String effective() {
+        String sel = selectedStageId;
+        if (sel != null && StageStore.exists(sel)) return sel;
+        java.util.List<String> ids = StageStore.allIds();
+        return ids.isEmpty() ? null : ids.get(0);
     }
 
     /** True iff {@code id} is the currently selected stage (case-insensitive). */

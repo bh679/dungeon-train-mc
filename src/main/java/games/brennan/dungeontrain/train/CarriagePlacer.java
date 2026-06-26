@@ -148,9 +148,10 @@ public final class CarriagePlacer {
     public static Set<BlockPos> placeAt(ServerLevel level, BlockPos origin, CarriageVariant variant, CarriageDims dims) {
         // Editor preview: no group context, so end-mode tags fall back to BOTH-behaviour.
         String base = stampBase(level, origin, variant, dims, 0L, 0, false, false);
-        // When an author has focused a Stage, preview each carriage for that stage: keep the base
-        // shell, stamp only stage-linked parts, air out the rest. Null = today's unfiltered preview.
-        String stageFilter = games.brennan.dungeontrain.editor.EditorStageSelection.selected();
+        // Preview each carriage for the focused Stage: keep the base shell, stamp only stage-linked
+        // parts (or gate-overlapping ones), air out the rest. Defaults to the first stage when none is
+        // explicitly selected; null (no stages exist at all) = today's unfiltered preview.
+        String stageFilter = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
         String overlay = stampPartsOverlay(level, origin, variant, dims, 0L, 0, false, false, stageFilter);
         return finishPlace(level, origin, variant, dims, base, overlay);
     }

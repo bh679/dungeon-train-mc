@@ -488,9 +488,10 @@ public final class PartPositionMenuController {
                     yield current;
                 }
                 CarriagePartAssignment withPart = current.withAppended(packet.kind(), packet.name(), 1);
-                // Default a newly-added part to the focused Stage (if any), so authoring straight into a
-                // selected stage links the entry without a separate "set stage" step. Null = Custom.
-                String focusedStage = EditorStageSelection.selected();
+                // Default a newly-added part to the focused Stage — the explicit selection, or the first
+                // stage when none is selected — so authoring straight into the previewed stage links the
+                // entry without a separate "set stage" step. Null (no stages exist) = Custom.
+                String focusedStage = EditorStageSelection.effective();
                 yield focusedStage == null
                     ? withPart
                     : withPart.withStage(packet.kind(), packet.name(), focusedStage);
@@ -562,10 +563,11 @@ public final class PartPositionMenuController {
             return;
         }
 
-        // When a stage preview is active, re-stamp this carriage so the per-stage preview reflects the
-        // edit right away — the unfiltered preview only re-stamps on plot re-entry, but the stage
-        // preview must show/hide the just-changed part now (e.g. a part just defaulted into this stage).
-        if (EditorStageSelection.hasSelection()) {
+        // When a stage preview is active (an explicit selection or the first-stage default), re-stamp
+        // this carriage so the per-stage preview reflects the edit right away — the unfiltered preview
+        // only re-stamps on plot re-entry, but the stage preview must show/hide the just-changed part
+        // now (e.g. a part just defaulted into this stage).
+        if (EditorStageSelection.effective() != null) {
             CarriageEditor.stampPlot(overworld, standingIn, dims);
         }
 
