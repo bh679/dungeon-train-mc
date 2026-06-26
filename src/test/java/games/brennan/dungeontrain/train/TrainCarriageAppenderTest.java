@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -341,5 +342,28 @@ final class TrainCarriageAppenderTest {
     void subLevelDelta_groupSizeZeroThrows() {
         assertThrows(IllegalArgumentException.class,
             () -> TrainCarriageAppender.subLevelDeltaFor(-3, 0, 0));
+    }
+
+    // ---- Walk-away release recoverability guard (pause/resume regen fix) ----
+    //
+    // shouldRetainOnWalkAway is the pure decision core for releaseTrainForceLoads:
+    // when the player leaves the train's vicinity, an un-serialized group (no on-disk
+    // pointer) MUST stay force-loaded. Culling it before its first serialization
+    // yields a null-pointer holding entry snatchAndLoad can't revive, so the carriage
+    // respawns FRESH (re-rolled, edits lost) instead of reloading. A singleplayer
+    // pause/resume transiently flings the rider off (Sable carry lag), tripping the
+    // walk-away bail; without this guard it stripped the un-serialized frontier groups
+    // and the whole train regenerated. Mirrors the guard reconcileForceLoads applies.
+
+    @Test
+    @DisplayName("shouldRetainOnWalkAway: un-serialized (no pointer) → retain (held)")
+    void retain_unserialized_isHeld() {
+        assertTrue(TrainCarriageAppender.shouldRetainOnWalkAway(false));
+    }
+
+    @Test
+    @DisplayName("shouldRetainOnWalkAway: serialized (has pointer) → releasable")
+    void retain_serialized_releasable() {
+        assertFalse(TrainCarriageAppender.shouldRetainOnWalkAway(true));
     }
 }
