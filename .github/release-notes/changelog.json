@@ -2613,6 +2613,22 @@
       "released": true,
       "released_in": "v0.367.0",
       "released_at": "2026-06-26T09:52:26Z"
+    },
+    {
+      "id": "book-screen-no-pause",
+      "version": "0.368.0",
+      "type": "fix",
+      "title": "Reading a book no longer freezes a moving train",
+      "summary": "Reading a written book on the train no longer pauses (and autosaves) your singleplayer game, which previously caused nearby carriages to vanish until a world reload. The train now keeps moving while you read.",
+      "highlights": [
+        "Books no longer pause singleplayer mid-ride",
+        "Fixes carriages vanishing after reading a book on the train"
+      ],
+      "pr": 597,
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
