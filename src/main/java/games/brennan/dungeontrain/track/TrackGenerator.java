@@ -20,7 +20,9 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StairsLocationData;
 import games.brennan.dungeontrain.world.StairsRegistryData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
+import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -421,12 +423,28 @@ public final class TrackGenerator {
         Optional<BlockState[][][]> cells,
         TrackVariantBlocks sidecar,
         long worldSeed,
-        long tileIndex
+        long tileIndex,
+        // Second (Nether-dark) source for the per-block crossfade composite — null/absent for tiles
+        // outside the crossfade, where {@link #resolveComposite} degrades to the Overworld variant.
+        Optional<BlockState[][][]> netherCells,
+        TrackVariantBlocks netherSidecar,
+        ServerLevel fadeOverworld,
+        long genSeed
     ) {
+        /** Single-variant tile (no crossfade composite) — Nether source absent. */
+        TilePaint(Optional<BlockState[][][]> cells, TrackVariantBlocks sidecar,
+                  long worldSeed, long tileIndex) {
+            this(cells, sidecar, worldSeed, tileIndex, Optional.empty(), null, null, 0L);
+        }
+
         BlockState resolveSidecar(BlockState base, int xMod, int y, int zOff) {
-            if (sidecar == null || sidecar.isEmpty() || base == null) return base;
+            return resolveSidecar(sidecar, base, xMod, y, zOff);
+        }
+
+        private BlockState resolveSidecar(TrackVariantBlocks sc, BlockState base, int xMod, int y, int zOff) {
+            if (sc == null || sc.isEmpty() || base == null) return base;
             BlockPos local = new BlockPos(xMod, y, zOff);
-            games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(
+            games.brennan.dungeontrain.editor.VariantState picked = sc.resolve(
                 local, worldSeed, (int) tileIndex);
             if (picked == null) return base;
             if (picked.isMob()) {
@@ -436,8 +454,61 @@ public final class TrackGenerator {
             return games.brennan.dungeontrain.editor.RotationApplier.apply(
                 picked.state(), picked.rotation(), picked.half(),
                 local, worldSeed, (int) tileIndex,
-                sidecar.lockIdAt(local));
+                sc.lockIdAt(local));
         }
+
+        /**
+         * Final block for a cell, compositing the Overworld and Nether variants per block across the
+         * Nether crossfade. {@code owBase} is the Overworld base cell the caller already read (NBT cell
+         * or palette fallback). With no Nether source this is just the Overworld sidecar resolution
+         * (unchanged behaviour). Inside the crossfade, cells {@link NetherFade#selectsNether} marks as
+         * Nether take the Nether variant's block (its NBT cell + Nether sidecar), falling back to the
+         * Overworld result when the Nether cell is empty so the dither never carves a hole.
+         */
+        BlockState resolveComposite(BlockState owBase, int xMod, int y, int zOff,
+                                    int worldX, int worldY, int worldZ) {
+            BlockState ow = resolveSidecar(owBase, xMod, y, zOff);
+            if (fadeOverworld == null) return ow;          // no Nether source — single variant
+            double ramp = NetherFade.rampAt(fadeOverworld, worldX);
+            if (!NetherFade.selectsNether(genSeed, worldX, worldY, worldZ, ramp)) return ow;
+            BlockState ntBase = (netherCells != null && netherCells.isPresent())
+                ? netherCells.get()[xMod][y][zOff] : owBase;
+            BlockState nt = resolveSidecar(netherSidecar, ntBase, xMod, y, zOff);
+            return nt != null ? nt : ow;
+        }
+    }
+
+    /**
+     * Build the per-tile paint for track tile {@code idx}. Outside the Nether crossfade this is the
+     * classic single registry-weighted variant (hard {@link TrainPhase} pick). Inside the crossfade it
+     * also resolves the Nether variant ({@code nethertracks}) so {@link TilePaint#resolveComposite}
+     * can dither the two per block. Shared by the runtime ({@code ensureTracksForChunk}) and worldgen
+     * painters so both blend identically.
+     */
+    private static TilePaint buildTilePaint(ServerLevel level, CarriageDims dims, long worldSeed,
+                                            long idx, Vec3i tileFootprint) {
+        int tileX = (int) (idx * TrackPlacer.TILE_LENGTH);
+        GateContext baseCtx = GateContext.atWorldX(level, tileX, dims.length());
+        ServerLevel overworld = level.getServer().overworld();
+        if (NetherFade.intersectsCrossfade(overworld, tileX, tileX + TrackPlacer.TILE_LENGTH - 1)) {
+            long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
+            String owName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
+                new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
+            String ntName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
+                new GateContext(baseCtx.level(), TrainPhase.NETHER));
+            return new TilePaint(
+                TrackTemplateStore.getCellsFor(level, dims, owName),
+                TrackVariantBlocks.loadFor(TrackKind.TILE, owName, tileFootprint),
+                worldSeed, idx,
+                TrackTemplateStore.getCellsFor(level, dims, ntName),
+                TrackVariantBlocks.loadFor(TrackKind.TILE, ntName, tileFootprint),
+                overworld, genSeed);
+        }
+        String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx, baseCtx);
+        return new TilePaint(
+            TrackTemplateStore.getCellsFor(level, dims, name),
+            TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint),
+            worldSeed, idx);
     }
 
     private static boolean placeTrackColumn(
@@ -460,7 +531,7 @@ public final class TrackGenerator {
         BlockState bedState = paint.cells().isPresent()
             ? paint.cells().get()[xMod][0][zOff]
             : TrackPalette.BED;
-        bedState = paint.resolveSidecar(bedState, xMod, 0, zOff);
+        bedState = paint.resolveComposite(bedState, xMod, 0, zOff, worldX, g.bedY(), worldZ);
         if (bedState != null) {
             BlockState existingBed = level.getBlockState(bedPos);
             if (!existingBed.is(bedState.getBlock())) {
@@ -476,7 +547,7 @@ public final class TrackGenerator {
         } else {
             railState = null;
         }
-        railState = paint.resolveSidecar(railState, xMod, 1, zOff);
+        railState = paint.resolveComposite(railState, xMod, 1, zOff, worldX, g.railY(), worldZ);
         if (railState != null) {
             BlockPos railPos = new BlockPos(worldX, g.railY(), worldZ);
             if (!shipyard.isInShip(railPos)) {
@@ -1834,14 +1905,7 @@ public final class TrackGenerator {
             long tileIndex = Math.floorDiv((long) worldX, (long) TrackPlacer.TILE_LENGTH);
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
-                idx -> {
-                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                        GateContext.atWorldX(level, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
-                    Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
-                    TrackVariantBlocks sidecar =
-                        TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
-                    return new TilePaint(cells, sidecar, worldSeed, idx);
-                }
+                idx -> buildTilePaint(level, dims, worldSeed, idx, tileFootprint)
             );
 
             for (int worldZ = zLo; worldZ <= zHi; worldZ++) {
@@ -1946,15 +2010,7 @@ public final class TrackGenerator {
             int xMod = Math.floorMod(x, TrackPlacer.TILE_LENGTH);
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
-                idx -> {
-                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                        GateContext.atWorldX(serverLevel, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
-                    Optional<BlockState[][][]> cells =
-                        TrackTemplateStore.getCellsFor(serverLevel, dims, name);
-                    TrackVariantBlocks sidecar =
-                        TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
-                    return new TilePaint(cells, sidecar, worldSeed, idx);
-                }
+                idx -> buildTilePaint(serverLevel, dims, worldSeed, idx, tileFootprint)
             );
 
             for (int z = zLo; z <= zHi; z++) {
@@ -1965,7 +2021,7 @@ public final class TrackGenerator {
                 BlockState bedState = paint.cells().isPresent()
                     ? paint.cells().get()[xMod][0][zOff]
                     : TrackPalette.BED;
-                bedState = paint.resolveSidecar(bedState, xMod, 0, zOff);
+                bedState = paint.resolveComposite(bedState, xMod, 0, zOff, x, g.bedY(), z);
                 pos.set(x, g.bedY(), z);
                 level.setBlock(pos, bedState != null ? bedState : air, Block.UPDATE_CLIENTS);
 
@@ -1980,7 +2036,7 @@ public final class TrackGenerator {
                 } else {
                     railState = null;
                 }
-                railState = paint.resolveSidecar(railState, xMod, 1, zOff);
+                railState = paint.resolveComposite(railState, xMod, 1, zOff, x, g.railY(), z);
                 if (canPlaceRail) {
                     pos.set(x, g.railY(), z);
                     level.setBlock(pos, railState != null ? railState : air, Block.UPDATE_CLIENTS);

@@ -9,8 +9,11 @@ import games.brennan.dungeontrain.template.TemplateType;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
+import games.brennan.dungeontrain.worldgen.NetherFade;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
+import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -21,7 +24,9 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessor;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
@@ -123,16 +128,8 @@ public final class TunnelPlacer {
      * cascades are unsafe within the worldgen 3×3 decoration window.</p>
      */
     public static boolean placeSectionAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin) {
-        long worldSeed = serverLevel.getSeed();
-        int tileIndex = origin.getX();
-        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_SECTION, worldSeed, tileIndex,
-            GateContext.atWorldX(serverLevel, tileIndex));
-        Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.SECTION, name);
-        if (stored.isEmpty()) return false;
-        eraseInteriorAirspaceWorldgen(level, origin);
-        stampTemplateWorldgen(level, origin, stored.get(), false);
-        applyTunnelSidecarWorldgen(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
-        return true;
+        return placeTunnelWorldgen(level, serverLevel, origin,
+            TunnelVariant.SECTION, TrackKind.TUNNEL_SECTION, false);
     }
 
     /**
@@ -142,22 +139,77 @@ public final class TunnelPlacer {
      * only post-processing (shipyard guard, sidecar SilentBlockOps).
      */
     public static boolean placePortalAtWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin, boolean mirrorX) {
+        return placeTunnelWorldgen(level, serverLevel, origin,
+            TunnelVariant.PORTAL, TrackKind.TUNNEL_PORTAL, mirrorX);
+    }
+
+    /**
+     * Shared worldgen stamp for both tunnel variants. Outside the Nether crossfade this is the
+     * classic single-variant stamp (hard {@link TrainPhase} pick). <b>Inside</b> the crossfade it
+     * composites the Overworld and Nether-dark variants <em>per block</em>: it stamps the Overworld
+     * variant in full, then overlays the Nether variant through a {@link NetherFadeMaskProcessor}
+     * (and a fade-gated sidecar) so each cell takes the Nether block only where
+     * {@link NetherFade#selectsNether} is true — turning the tunnel Nether in the same clumps the
+     * surrounding terrain turns netherrack. Both the OW and Nether names are picked deterministically
+     * from this tile's seed with a phase-forced {@link GateContext}, so the blend is reproducible.
+     */
+    private static boolean placeTunnelWorldgen(WorldGenLevel level, ServerLevel serverLevel, BlockPos origin,
+                                               TunnelVariant variant, TrackKind kind, boolean mirrorX) {
         long worldSeed = serverLevel.getSeed();
         int tileIndex = origin.getX();
-        String name = TrackVariantRegistry.pickName(TrackKind.TUNNEL_PORTAL, worldSeed, tileIndex,
-            GateContext.atWorldX(serverLevel, tileIndex));
-        Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, TunnelVariant.PORTAL, name);
-        if (stored.isEmpty()) return false;
+        ServerLevel overworld = serverLevel.getServer().overworld();
         BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
+        GateContext baseCtx = GateContext.atWorldX(serverLevel, tileIndex);
+
+        // Outside the crossfade: classic single-variant stamp (hard phase).
+        if (!NetherFade.intersectsCrossfade(overworld, origin.getX(), origin.getX() + LENGTH - 1)) {
+            String name = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex, baseCtx);
+            Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(serverLevel, variant, name);
+            if (stored.isEmpty()) return false;
+            eraseInteriorAirspaceWorldgen(level, origin);
+            stampTemplateWorldgen(level, stampOrigin, stored.get(), mirrorX);
+            applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, name, worldSeed, tileIndex);
+            return true;
+        }
+
+        // Inside the crossfade: Overworld base, then a per-block-masked Nether overlay.
+        String owName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
+            new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
+        Optional<StructureTemplate> owTemplate = TunnelTemplateStore.getFor(serverLevel, variant, owName);
+        if (owTemplate.isEmpty()) return false;
         eraseInteriorAirspaceWorldgen(level, origin);
-        stampTemplateWorldgen(level, stampOrigin, stored.get(), mirrorX);
-        applyTunnelSidecarWorldgen(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
+        stampTemplateWorldgen(level, stampOrigin, owTemplate.get(), mirrorX);
+        applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, owName, worldSeed, tileIndex);
+
+        long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
+        String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
+            new GateContext(baseCtx.level(), TrainPhase.NETHER));
+        Optional<StructureTemplate> netherTemplate = TunnelTemplateStore.getFor(serverLevel, variant, netherName);
+        if (netherTemplate.isPresent()) {
+            stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,
+                new NetherFadeMaskProcessor(overworld, genSeed));
+            applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, netherName, worldSeed, tileIndex,
+                overworld, genSeed);
+        }
         return true;
     }
 
 
     private static void stampTemplateWorldgen(WorldGenLevel level, BlockPos origin,
                                               StructureTemplate template, boolean mirrorX) {
+        stampTemplateWorldgen(level, origin, template, mirrorX, null);
+    }
+
+    /**
+     * As {@link #stampTemplateWorldgen(WorldGenLevel, BlockPos, StructureTemplate, boolean)} but with
+     * an optional extra {@link StructureProcessor} — used to overlay the Nether-dark variant through
+     * a {@link NetherFadeMaskProcessor} so only the fade-selected cells of the second stamp land,
+     * leaving the Overworld stamp beneath everywhere else. Re-anchoring the footprint is idempotent,
+     * so the masked overlay can run it again harmlessly.
+     */
+    private static void stampTemplateWorldgen(WorldGenLevel level, BlockPos origin,
+                                              StructureTemplate template, boolean mirrorX,
+                                              @Nullable StructureProcessor extraProcessor) {
         StructurePlaceSettings settings = new StructurePlaceSettings()
             .setIgnoreEntities(true)
             // Honour the template's dry (waterlogged=false) state — never inherit terrain
@@ -168,6 +220,7 @@ public final class TunnelPlacer {
             // races). The Nether band must stay bone-dry, so ignore existing fluids.
             .setLiquidSettings(LiquidSettings.IGNORE_WATERLOGGING);
         // No ShipFilterProcessor — no ships at chunkgen.
+        if (extraProcessor != null) settings.addProcessor(extraProcessor);
         if (mirrorX) settings.setMirror(Mirror.FRONT_BACK);
         template.placeInWorld(level, origin, origin, settings, level.getRandom(), Block.UPDATE_CLIENTS);
         anchorAboveFootprintWorldgen(level, origin);
@@ -259,6 +312,20 @@ public final class TunnelPlacer {
         WorldGenLevel level, BlockPos origin, boolean mirrorX,
         TrackKind kind, String name, long worldSeed, int tileIndex
     ) {
+        applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, name, worldSeed, tileIndex, null, 0L);
+    }
+
+    /**
+     * As the unmasked overload, but when {@code fadeOverworld != null} each sidecar cell is written
+     * only where {@link NetherFade#selectsNether} is true — the masked Nether-variant overlay, so a
+     * Nether sidecar block lands exactly where the Nether base block did (and the Overworld sidecar
+     * survives elsewhere). Keeps the base stamp and the sidecar overlay in lock-step per cell.
+     */
+    private static void applyTunnelSidecarWorldgen(
+        WorldGenLevel level, BlockPos origin, boolean mirrorX,
+        TrackKind kind, String name, long worldSeed, int tileIndex,
+        @Nullable ServerLevel fadeOverworld, long genSeed
+    ) {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
         if (sidecar.isEmpty()) return;
@@ -269,6 +336,12 @@ public final class TunnelPlacer {
             int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
             int wy = origin.getY() + ly;
             int wz = origin.getZ() + lz;
+            // Masked overlay: only write cells the per-block fade selects as Nether; the Overworld
+            // stamp/sidecar already filled the rest.
+            if (fadeOverworld != null
+                && !NetherFade.selectsNether(genSeed, wx, wy, wz, NetherFade.rampAt(fadeOverworld, wx))) {
+                continue;
+            }
             BlockPos wpos = new BlockPos(wx, wy, wz);
             games.brennan.dungeontrain.editor.VariantState picked =
                 sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
