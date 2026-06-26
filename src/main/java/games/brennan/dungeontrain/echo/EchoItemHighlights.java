@@ -179,18 +179,26 @@ final class EchoItemHighlights {
         return name + " (" + String.join(" · ", segments) + ")";
     }
 
-    /** "8 attack" / "8 armor", or {@code null} when the item has neither. */
-    @SuppressWarnings("deprecation")
+    /**
+     * "12 attack" / "10 armor" — but only when the stat is <em>non-default</em> (the item was buffed
+     * beyond its vanilla baseline via custom attribute modifiers). A plain netherite sword's standard
+     * 8 attack is omitted as noise; {@code null} when the item carries no above-default attack or armor.
+     */
+    @SuppressWarnings("deprecation") // Item.getDefaultAttributeModifiers — the vanilla baseline.
     private static String statSegment(ItemStack stack) {
-        ItemAttributeModifiers modifiers = stack.getOrDefault(
+        ItemAttributeModifiers defaults = stack.getItem().getDefaultAttributeModifiers();
+        ItemAttributeModifiers actual = stack.getOrDefault(
                 DataComponents.ATTRIBUTE_MODIFIERS, ItemAttributeModifiers.EMPTY);
-        if (modifiers.modifiers().isEmpty()) {
-            modifiers = stack.getItem().getDefaultAttributeModifiers();
+        ItemAttributeModifiers effective = actual.modifiers().isEmpty() ? defaults : actual;
+
+        double attack = sumAddValue(effective, Attributes.ATTACK_DAMAGE);
+        if (attack > 0 && attack != sumAddValue(defaults, Attributes.ATTACK_DAMAGE)) {
+            return number(attack) + " attack";
         }
-        double attack = sumAddValue(modifiers, Attributes.ATTACK_DAMAGE);
-        if (attack > 0) return number(attack) + " attack";
-        double armor = sumAddValue(modifiers, Attributes.ARMOR);
-        if (armor > 0) return number(armor) + " armor";
+        double armor = sumAddValue(effective, Attributes.ARMOR);
+        if (armor > 0 && armor != sumAddValue(defaults, Attributes.ARMOR)) {
+            return number(armor) + " armor";
+        }
         return null;
     }
 

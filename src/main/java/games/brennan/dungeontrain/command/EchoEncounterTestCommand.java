@@ -23,9 +23,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.EquipmentSlotGroup;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.armortrim.ArmorTrim;
 import net.minecraft.world.item.armortrim.TrimMaterial;
 import net.minecraft.world.item.armortrim.TrimMaterials;
@@ -159,6 +163,15 @@ public final class EchoEncounterTestCommand {
             Holder<TrimPattern> pattern = registries.lookupOrThrow(Registries.TRIM_PATTERN)
                     .getOrThrow(TrimPatterns.SILENCE);
             chest.set(DataComponents.TRIM, new ArmorTrim(material, pattern));
+            // Buff its armour above the vanilla default so the story prints a (non-default) stat —
+            // the plain sword/axe stay standard and correctly show no stat.
+            ItemAttributeModifiers buffed = chest.getItem().getDefaultAttributeModifiers()
+                    .withModifierAdded(Attributes.ARMOR,
+                            new AttributeModifier(
+                                    ResourceLocation.fromNamespaceAndPath("dungeontrain", "echo_test_armor"),
+                                    4.0, AttributeModifier.Operation.ADD_VALUE),
+                            EquipmentSlotGroup.CHEST);
+            chest.set(DataComponents.ATTRIBUTE_MODIFIERS, buffed);
             mob.setItemSlot(EquipmentSlot.CHEST, chest);
 
             mob.getInventory().setItem(0, new ItemStack(Items.ENCHANTED_GOLDEN_APPLE));
