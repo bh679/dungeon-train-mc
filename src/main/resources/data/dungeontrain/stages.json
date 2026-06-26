@@ -1,10 +1,18 @@
 {
-  "desert": {
-    "name": "desert",
-    "minLevel": 40,
-    "maxLevel": 40,
+  "copper": {
+    "name": "copper",
+    "minLevel": 20,
     "phases": [
       "OVERWORLD"
+    ]
+  },
+  "desert": {
+    "name": "desert",
+    "minLevel": 10,
+    "maxLevel": 40,
+    "phases": [
+      "OVERWORLD",
+      "VOID"
     ]
   },
   "nether": {
@@ -16,6 +24,7 @@
   },
   "stone": {
     "name": "stone",
+    "maxLevel": 10,
     "phases": [
       "OVERWORLD",
       "VOID"

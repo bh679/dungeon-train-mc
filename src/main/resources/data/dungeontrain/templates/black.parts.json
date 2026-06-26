@@ -10,6 +10,11 @@
       "name": "standard",
       "weight": 1,
       "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "walls": [
@@ -22,6 +27,11 @@
       "name": "standard",
       "weight": 1,
       "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "roof": [
@@ -34,6 +44,11 @@
       "name": "standard",
       "weight": 1,
       "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "doors": [
@@ -46,6 +61,11 @@
       "name": "dark",
       "weight": 1,
       "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ]
 }

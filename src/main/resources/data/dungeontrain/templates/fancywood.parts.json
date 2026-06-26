@@ -4,6 +4,11 @@
     {
       "name": "wood",
       "weight": 1
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "walls": [
@@ -35,6 +40,18 @@
         "NETHER"
       ],
       "stage": "nether"
+    },
+    {
+      "name": "sandwindow",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "desert"
+    },
+    {
+      "name": "sandstoneopen",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "desert"
     }
   ],
   "roof": [
@@ -50,7 +67,7 @@
     },
     {
       "name": "dark",
-      "weight": 10,
+      "weight": 6,
       "phases": [
         "NETHER"
       ],
@@ -73,6 +90,16 @@
         "END"
       ],
       "stage": "stone"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "stage": "desert"
+    },
+    {
+      "name": "sandstoneopen",
+      "weight": 1,
+      "stage": "desert"
     }
   ],
   "doors": [
@@ -86,6 +113,12 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "nether"
+    },
+    {
+      "name": "sandstone",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "desert"
     }
   ]
 }
