@@ -2660,6 +2660,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stages-ship-bundled",
+      "version": "0.370.0",
+      "type": "feat",
+      "title": "Stages ship as default content + auto-promote in dev",
+      "summary": "The named gate Stages you build in the editor (difficulty-level + dimension presets) now ship with the mod itself. The default carriages come pre-tuned with shipped Stages, and the standard carriage gains new sandstone parts that appear in a desert stretch. For content creators, Stage edits made in dev mode now commit to the source tree and ship in the next build, the same way the rest of the editor content does.",
+      "highlights": [
+        "Three Stages (desert / nether / stone) and sandstone carriage parts now ship as defaults; the default carriages use them to gate which parts appear where.",
+        "Editor Stage edits auto-promote to source in dev mode, so authored presets ship with the next build.",
+        "Fix: part-to-Stage links on the default carriages now resolve (they previously fell back to a plain gate because the Stages weren't bundled in the jar)."
+      ],
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

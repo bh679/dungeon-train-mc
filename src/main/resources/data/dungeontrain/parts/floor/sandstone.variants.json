@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 8,
+  "variants": {
+    "3,0,2": ["minecraft:sandstone", "minecraft:purple_terracotta", "minecraft:orange_terracotta"],
+    "2,0,1": { "lockId": 1, "states": ["minecraft:sandstone", "minecraft:orange_terracotta"] },
+    "2,0,3": { "lockId": 1, "states": ["minecraft:sandstone", "minecraft:orange_terracotta"] },
+    "4,0,3": { "lockId": 1, "states": ["minecraft:sandstone", "minecraft:orange_terracotta"] },
+    "4,0,1": { "lockId": 1, "states": ["minecraft:sandstone", "minecraft:orange_terracotta"] }
+  }
+}
