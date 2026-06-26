@@ -2563,6 +2563,18 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-difficulty-level-up",
+      "version": "0.367.0",
+      "type": "feat",
+      "title": "Discord difficulty level-up notifications",
+      "summary": "Each time a player reaches a new difficulty level on the train, a short message posts to their Discord thread \u2014 naming the level and their current carriage. Fires once per tier per life, so dying and re-progressing sends fresh notifications. Can be toggled off with difficultyLevelNoticeToDiscord in the server config.",
+      "highlights": [],
+      "date": "2026-06-26",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

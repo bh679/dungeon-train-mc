@@ -75,6 +75,8 @@ public final class DungeonTrainConfig {
 
     public static final boolean DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD = true;
 
+    public static final boolean DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = true;
+
     /** Play the fly-up spawn cinematic the first time each player enters a world. */
     public static final boolean DEFAULT_INTRO_CINEMATIC_ENABLED = true;
     public static final int MIN_INTRO_DURATION_TICKS = 20;
@@ -103,6 +105,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue FREE_PLAY_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
+    public static final ModConfigSpec.BooleanValue DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue INTRO_CINEMATIC_ENABLED;
     public static final ModConfigSpec.IntValue INTRO_CINEMATIC_DURATION_TICKS;
 
@@ -131,6 +134,7 @@ public final class DungeonTrainConfig {
         FREE_PLAY_NOTICE_TO_DISCORD = pair.getLeft().freePlayNoticeToDiscord;
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
+        DIFFICULTY_LEVEL_NOTICE_TO_DISCORD = pair.getLeft().difficultyLevelNoticeToDiscord;
         INTRO_CINEMATIC_ENABLED = pair.getLeft().introCinematicEnabled;
         INTRO_CINEMATIC_DURATION_TICKS = pair.getLeft().introCinematicDurationTicks;
     }
@@ -226,6 +230,12 @@ public final class DungeonTrainConfig {
                         "player's Discord thread — useful for reproducing and debugging a player's run. Requires the",
                         "bundled Discord Presence mod with a webhookUrl configured in config/discordpresence-server.toml.")
                 .define("worldJoinReportToDiscord", DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD);
+        ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord = b
+                .comment("Post a short embed to Discord each time a player's difficulty tier increases — i.e. they",
+                        "have advanced far enough through carriages to reach the next Difficulty Level. Fires once per",
+                        "tier per life (tier resets to 0 on death). Posts into the player's Discord thread. Requires",
+                        "the bundled Discord Presence mod with a webhookUrl configured in config/discordpresence-server.toml.")
+                .define("difficultyLevelNoticeToDiscord", DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD);
         b.pop();
         b.push("intro");
         ModConfigSpec.BooleanValue introCinematicEnabled = b
@@ -243,7 +253,7 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                introCinematicEnabled, introCinematicDurationTicks);
+                difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks);
     }
 
     /**
@@ -350,6 +360,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? WORLD_JOIN_REPORT_TO_DISCORD.get() : DEFAULT_WORLD_JOIN_REPORT_TO_DISCORD;
     }
 
+    /** Whether to post a notice to Discord each time a player's difficulty tier increases. */
+    public static boolean isDifficultyLevelNoticeToDiscord() {
+        return isLoaded() ? DIFFICULTY_LEVEL_NOTICE_TO_DISCORD.get() : DEFAULT_DIFFICULTY_LEVEL_NOTICE_TO_DISCORD;
+    }
+
     /** Whether the fly-up spawn cinematic plays the first time a player enters a world. */
     public static boolean isIntroCinematicEnabled() {
         return isLoaded() ? INTRO_CINEMATIC_ENABLED.get() : DEFAULT_INTRO_CINEMATIC_ENABLED;
@@ -448,6 +463,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue freePlayNoticeToDiscord,
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
+            ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
             ModConfigSpec.BooleanValue introCinematicEnabled,
             ModConfigSpec.IntValue introCinematicDurationTicks
     ) {}
