@@ -126,6 +126,15 @@ final class CorridorCleanupEventsTest {
     }
 
     @Test
+    @DisplayName("shouldStopDraining — trips at the ~3ms wall-clock budget (the caller guarantees a 1-chunk floor)")
+    void shouldStopDrainingTripsAtBudget() {
+        assertFalse(CorridorCleanupEvents.shouldStopDraining(0L), "no time spent → keep draining");
+        assertFalse(CorridorCleanupEvents.shouldStopDraining(2_999_999L), "just under budget → keep draining");
+        assertTrue(CorridorCleanupEvents.shouldStopDraining(3_000_000L), "at budget → stop after this chunk");
+        assertTrue(CorridorCleanupEvents.shouldStopDraining(50_000_000L), "way over budget → stop");
+    }
+
+    @Test
     @DisplayName("isTrackRowCell — bed/rail row within the track footprint flags the template re-stamp")
     void isTrackRowCellMatchesTrackFootprint() {
         // trainY 84 → bedY 82, railY 83; 5-wide track at world Z 0..4. Reported basalt: bedY 82 Z2, railY 84 Z2.
