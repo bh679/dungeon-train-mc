@@ -52,6 +52,19 @@ public final class RemoteEchoEncounters {
     private static final long PUSH_WINDOW_TICKS = 100L;
     /** Safety cap so a pathological run can't grow the map without bound. */
     private static final int MAX_ACTIVE = 64;
+    /**
+     * Re-ask for the echo screenshot at most this often while we still have none. Above the client's
+     * ~1.3 s capture-retry window so only one capture is ever in flight, but frequent enough to land a
+     * clean angle during a brief encounter.
+     */
+    private static final long PHOTO_REQUEST_COOLDOWN_TICKS = 30L; // ~1.5 s
+    /**
+     * How long a finished encounter's post is held waiting for an in-flight screenshot before it posts
+     * text-only — long enough for the request → client capture (~1.3 s) → upload round-trip to land.
+     */
+    private static final long POST_GRACE_TICKS = 60L; // ~3 s
+    /** Safety cap on deferred (awaiting-photo) posts. */
+    private static final int MAX_PENDING_POST = 64;
 
     private static final String PHOTO_FILENAME = "echo.png";
     /** Embed bar colour for the encounter story — greyish-blue (Blue Grey), distinct from death-red. */
@@ -62,6 +75,15 @@ public final class RemoteEchoEncounters {
     private static final Map<UUID, PendingEcho> PENDING = new HashMap<>();
 
     private static final Map<UUID, EchoEncounter> ACTIVE = new HashMap<>();
+
+    /**
+     * A finished encounter whose Discord post is briefly held so an in-flight screenshot can still land
+     * on its embed. Flushed the moment the photo arrives ({@link #onPhoto}) or when its deadline passes
+     * (posted text-only by {@link #scan}).
+     */
+    private record PendingPost(ResourceKey<Level> dimension, EchoEncounter encounter, EndReason reason,
+                               long deadlineTick) {}
+    private static final Map<UUID, PendingPost> PENDING_POST = new HashMap<>();
 
     private RemoteEchoEncounters() {}
 
@@ -121,11 +143,23 @@ public final class RemoteEchoEncounters {
         if (enc != null) enc.log(EchoEvent.RECEIVED_GIFT);
     }
 
-    /** Stage C: store the captured screenshot of the echo for the eventual post. */
-    public static void onPhoto(UUID echoId, byte[] png) {
+    /**
+     * Stage C: the client delivered a screenshot of the echo. Buffer it on the open journal, or — when
+     * the encounter has already ended and its post is being held for exactly this — attach it and post
+     * now (so a late photo still rides its story instead of being dropped).
+     */
+    public static void onPhoto(ServerPlayer sender, UUID echoId, byte[] png) {
+        if (png == null || png.length == 0) return;
         EchoEncounter enc = ACTIVE.get(echoId);
-        if (enc != null && png != null && png.length > 0) {
+        if (enc != null) {
             enc.photo = png;
+            return;
+        }
+        PendingPost pp = PENDING_POST.remove(echoId);
+        if (pp != null) {
+            pp.encounter().photo = png;
+            ServerLevel level = sender.getServer().getLevel(pp.dimension());
+            if (level != null) postSafely(level, pp.encounter(), pp.reason());
         }
     }
 
@@ -137,7 +171,7 @@ public final class RemoteEchoEncounters {
      * {@link EchoEncounterEvents}.
      */
     public static void scan(ServerLevel level, long tick) {
-        if (ACTIVE.isEmpty() && PENDING.isEmpty()) return;
+        if (ACTIVE.isEmpty() && PENDING.isEmpty() && PENDING_POST.isEmpty()) return;
         List<Trains.Carriage> carriages = null; // computed lazily, once, only if a journal is in this level
 
         for (EchoEncounter enc : new ArrayList<>(ACTIVE.values())) {
@@ -156,9 +190,15 @@ public final class RemoteEchoEncounters {
                 enc.log(EchoEvent.MET);
             }
             if (dist <= EYE_CONTACT_RADIUS && player.hasLineOfSight(echo)) {
-                if (enc.log(EchoEvent.EYE_CONTACT)) {
-                    // Stage C hooks the screenshot request here (first eye contact).
+                enc.log(EchoEvent.EYE_CONTACT); // story beat (first occurrence only)
+                // Keep (re)asking for a screenshot until one lands: a single shot at first eye contact
+                // routinely misses (echo in shade or boxed in by carriage walls). The cooldown sits above
+                // the client's ~1.3 s capture window, so only one capture is ever in flight.
+                if (enc.photo == null
+                        && (enc.lastPhotoRequestTick == Long.MIN_VALUE
+                            || tick - enc.lastPhotoRequestTick >= PHOTO_REQUEST_COOLDOWN_TICKS)) {
                     EchoSnapshotRequests.requestIfEnabled(player, echo);
+                    enc.lastPhotoRequestTick = tick;
                 }
             }
             if (dist <= CROUCH_RADIUS) {
@@ -198,6 +238,20 @@ public final class RemoteEchoEncounters {
                         rec.name(), echo.getUUID(), player.getGameProfile().getName());
             }
         }
+
+        // Flush held posts whose screenshot never arrived in time (deadline passed) — the photo-arrived
+        // case is flushed immediately by onPhoto. Only this dimension's entries (their deadline is in this
+        // level's gametime); each level's scan flushes its own.
+        if (!PENDING_POST.isEmpty()) {
+            for (Iterator<Map.Entry<UUID, PendingPost>> it = PENDING_POST.entrySet().iterator(); it.hasNext(); ) {
+                PendingPost pp = it.next().getValue();
+                if (pp.dimension() != level.dimension()) continue;
+                if (pp.encounter().photo != null || tick >= pp.deadlineTick()) {
+                    it.remove();
+                    postSafely(level, pp.encounter(), pp.reason());
+                }
+            }
+        }
     }
 
     // ---------------- terminal: kills & player death ----------------
@@ -229,7 +283,7 @@ public final class RemoteEchoEncounters {
                         player.getUUID(), pending.record().carriage(), level.getGameTime());
                 enc.log(EchoEvent.SPAWNED);
                 boolean byPrimary = killer instanceof ServerPlayer p && p.getUUID().equals(player.getUUID());
-                post(level, enc, byPrimary ? EndReason.ECHO_SLAIN_BY_YOU : EndReason.ECHO_SLAIN);
+                finishEncounter(level, enc, byPrimary ? EndReason.ECHO_SLAIN_BY_YOU : EndReason.ECHO_SLAIN);
             }
         }
 
@@ -241,10 +295,11 @@ public final class RemoteEchoEncounters {
         }
     }
 
-    /** Drop every journal and pending record (world unload / server stop). */
+    /** Drop every journal, pending record, and held post (world unload / server stop). */
     public static void clearAll() {
         ACTIVE.clear();
         PENDING.clear();
+        PENDING_POST.clear();
     }
 
     /** Number of currently-open journals plus pending records (for the dev test command's feedback). */
@@ -276,10 +331,31 @@ public final class RemoteEchoEncounters {
         return enc != null && player.getUUID().equals(enc.primaryPlayerId) ? enc : null;
     }
 
-    /** Finalise a journal: remove it, build the story, and post it (best-effort) to Discord. */
+    /** Finalise a journal: remove it from ACTIVE, then post now or hold briefly for an in-flight photo. */
     private static void endEcho(ServerLevel level, UUID echoId, EndReason reason) {
         EchoEncounter enc = ACTIVE.remove(echoId);
         if (enc == null) return;
+        finishEncounter(level, enc, reason);
+    }
+
+    /**
+     * Post the finished encounter now, or — when a screenshot was requested but hasn't arrived yet —
+     * hold it in {@link #PENDING_POST} so the in-flight photo can still land on its embed (flushed by
+     * {@link #onPhoto} on arrival, or by {@link #scan} once {@link #POST_GRACE_TICKS} elapses). An
+     * encounter that never requested a photo (never saw the echo) posts immediately, unchanged.
+     */
+    private static void finishEncounter(ServerLevel level, EchoEncounter enc, EndReason reason) {
+        boolean awaitingPhoto = enc.photo == null && enc.lastPhotoRequestTick != Long.MIN_VALUE;
+        if (awaitingPhoto && PENDING_POST.size() < MAX_PENDING_POST) {
+            PENDING_POST.put(enc.echoId,
+                    new PendingPost(level.dimension(), enc, reason, level.getGameTime() + POST_GRACE_TICKS));
+            return;
+        }
+        postSafely(level, enc, reason);
+    }
+
+    /** Build the story and post it (best-effort) to Discord; never throws into the caller. */
+    private static void postSafely(ServerLevel level, EchoEncounter enc, EndReason reason) {
         try {
             post(level, enc, reason);
         } catch (Throwable t) {
