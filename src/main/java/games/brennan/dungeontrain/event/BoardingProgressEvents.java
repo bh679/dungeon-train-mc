@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.difficulty.BoardingProgressData;
+import games.brennan.dungeontrain.discord.DifficultyLevelReport;
 import games.brennan.dungeontrain.net.BoardingProgressPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
@@ -86,6 +87,13 @@ public final class BoardingProgressEvents {
      * hasn't changed since the last scan. UUID → last-sent-travelled.
      */
     private static final Map<UUID, Integer> LAST_BROADCAST = new HashMap<>();
+
+    /**
+     * Per-player last difficulty tier for which a Discord notification was posted.
+     * Seeded to the current tier on login (avoids re-notifying a returning player)
+     * and reset to 0 on respawn (fresh notifications each life). UUID → last-notified-tier.
+     */
+    private static final Map<UUID, Integer> LAST_NOTIFIED_TIER = new HashMap<>();
 
     /** Transient: consecutive scans the active leader has been off every AABB. */
     private static int leaderOffTrainScans = 0;
@@ -241,6 +249,17 @@ public final class BoardingProgressEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         LAST_BROADCAST.remove(player.getUUID());
+        LAST_NOTIFIED_TIER.remove(player.getUUID());
+    }
+
+    /**
+     * Reset the notified-tier baseline on respawn so the player gets fresh
+     * Discord tier notifications in their new life (tier resets to 0 on death).
+     */
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        LAST_NOTIFIED_TIER.put(player.getUUID(), 0);
     }
 
     /**
@@ -310,6 +329,12 @@ public final class BoardingProgressEvents {
             if (last != null && last == travelled) continue;
             LAST_BROADCAST.put(player.getUUID(), travelled);
             DungeonTrainNet.sendTo(player, packetFor(travelled));
+            int tier = DifficultyProgression.tierForTravelled(travelled);
+            Integer lastNotifiedTier = LAST_NOTIFIED_TIER.get(player.getUUID());
+            if (lastNotifiedTier != null && tier > lastNotifiedTier) {
+                LAST_NOTIFIED_TIER.put(player.getUUID(), tier);
+                DifficultyLevelReport.post(player, tier);
+            }
         }
     }
 
@@ -317,6 +342,7 @@ public final class BoardingProgressEvents {
     public static void sendPlayerHudPacket(ServerPlayer player) {
         int travelled = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).travelledCarriageIndex();
         LAST_BROADCAST.put(player.getUUID(), travelled);
+        LAST_NOTIFIED_TIER.put(player.getUUID(), DifficultyProgression.tierForTravelled(travelled));
         DungeonTrainNet.sendTo(player, packetFor(travelled));
     }
 

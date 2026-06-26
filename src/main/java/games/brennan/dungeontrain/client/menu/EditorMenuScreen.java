@@ -120,14 +120,16 @@ public final class EditorMenuScreen implements MenuScreen {
         CommandMenuEntry renameEntry = renameEntryFor(category, model);
         if (renameEntry != null) out.add(renameEntry);
 
-        // Part Variant Menu — carriage variants only. Toggle for the
-        // auto-opening world-space part-position menu.
+        // Editor Menus — carriage variants only. Master toggle for the
+        // world-space editor menus: drives the auto-opening part-position
+        // menu's persistent flag and, when turned off, also closes any open
+        // tap-to-open block-variant / container-contents menus.
         if ("carriages".equals(category)) {
-            boolean pmEnabled = EditorStatusHudOverlay.isPartMenuEnabled();
+            boolean pmEnabled = EditorStatusHudOverlay.isEditorMenusVisible();
             out.add(new CommandMenuEntry.Toggle(
-                "Part Variant Menu", pmEnabled,
-                "dungeontrain editor partmenu on",
-                "dungeontrain editor partmenu off"
+                "Editor Menus", pmEnabled,
+                "dungeontrain editor editormenus on",
+                "dungeontrain editor editormenus off"
             ));
             // Contents — drilldown listing every registered content with a
             // per-row red/green toggle so the author can exclude specific
@@ -193,14 +195,15 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Append a single {@code [Mirror | X | Y | Z]} row — a {@code Mirror}
-     * header label followed by the three per-axis toggles, wired to the
-     * position-resolved {@code editor mirror <axis> on|off} command (resolves
-     * whichever plot the player stands in). Toggle state (and the green
-     * on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
+     * Append a {@code Mirror} header label followed by a {@code [X | Y | Z | V]}
+     * toggle row, wired to the position-resolved {@code editor mirror <axis> on|off}
+     * command (resolves whichever plot the player stands in). X/Y/Z mirror
+     * structural blocks across an axis; the {@code V} toggle additionally mirrors
+     * the per-cell variant pools (opt-in — off by default). Toggle state (and the
+     * green on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
      */
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
-        CommandMenuEntry header = new CommandMenuEntry.Label("Mirror");
+        out.add(new CommandMenuEntry.Label("Mirror"));
         // showStateText=false → state shown by the green (on) / grey (off) tint only.
         CommandMenuEntry x = new CommandMenuEntry.Toggle("X", EditorStatusHudOverlay.mirrorX(),
             "dungeontrain editor mirror x on", "dungeontrain editor mirror x off", false);
@@ -208,7 +211,9 @@ public final class EditorMenuScreen implements MenuScreen {
             "dungeontrain editor mirror y on", "dungeontrain editor mirror y off", false);
         CommandMenuEntry z = new CommandMenuEntry.Toggle("Z", EditorStatusHudOverlay.mirrorZ(),
             "dungeontrain editor mirror z on", "dungeontrain editor mirror z off", false);
-        out.add(new CommandMenuEntry.Quad(header, x, y, z, 0.28, 0.52, 0.76));
+        CommandMenuEntry v = new CommandMenuEntry.Toggle("V", EditorStatusHudOverlay.mirrorVariants(),
+            "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
+        out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
     }
 
     /**

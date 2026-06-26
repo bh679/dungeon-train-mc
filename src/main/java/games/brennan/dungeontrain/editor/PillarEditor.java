@@ -250,6 +250,10 @@ public final class PillarEditor {
         TrackKind kind = PillarTemplateStore.pillarKind(section);
         Vec3i footprint = kind.dims(dims);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+        // "V" toggle: mirror the variant pools first so the structural pass below
+        // preserves the freshly-reflected far cells via markersOf.
+        EditorVariantMirror.rebuildFromMaster(overworld,
+            new BlockVariantPlot.TrackPlot(kind, name, origin, footprint));
         EditorMirror.rebuildFromMaster(overworld, origin, footprint,
             sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
             EditorMirror.markersOf(sidecar.entries()));
@@ -440,6 +444,10 @@ public final class PillarEditor {
         TrackKind kind = PillarTemplateStore.adjunctKind(adjunct);
         Vec3i footprint = kind.dims(dims);
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, footprint);
+        // "V" toggle: mirror the variant pools first so the structural pass below
+        // preserves the freshly-reflected far cells via markersOf.
+        EditorVariantMirror.rebuildFromMaster(overworld,
+            new BlockVariantPlot.TrackPlot(kind, name, origin, footprint));
         EditorMirror.rebuildFromMaster(overworld, origin, footprint,
             sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
             EditorMirror.markersOf(sidecar.entries()));

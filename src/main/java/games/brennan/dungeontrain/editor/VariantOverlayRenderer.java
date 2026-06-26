@@ -321,7 +321,7 @@ public final class VariantOverlayRenderer {
             boolean[] partMirror = mirrorAxesAt(player, dims);
             String partModel = partLoc.kind().id() + ":" + partLoc.name();
             String partKey = "PARTS|" + partModel + "|" + partDevmode + "|" + partMenuEnabled
-                + "|" + partMirror[0] + partMirror[1] + partMirror[2];
+                + "|" + partMirror[0] + partMirror[1] + partMirror[2] + partMirror[3];
             if (partKey.equals(prev)) return;
             LAST_STATUS.put(uuid, partKey);
             // Parts have no weight pool — pass the part name as modelName for
@@ -329,7 +329,8 @@ public final class VariantOverlayRenderer {
             DungeonTrainNet.sendTo(player, new EditorStatusPacket(
                 "Parts", partModel, partModel, partLoc.name(), partDevmode, EditorStatusPacket.NO_WEIGHT,
                 0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-                partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], Collections.emptySet()));
+                partMenuEnabled, partMirror[0], partMirror[1], partMirror[2], partMirror[3],
+                Collections.emptySet(), ""));
             return;
         }
 
@@ -367,13 +368,13 @@ public final class VariantOverlayRenderer {
             : String.join(",", new TreeSet<>(excludedContents));
         String key = l.category().name() + "|" + l.model().displayName() + "|" + devmode + "|" + weight
             + "|" + minLevel + "|" + maxLevel + "|" + phaseMask + "|" + stageId
-            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + "|" + excludedKey;
+            + "|" + partMenuEnabled + "|" + mirror[0] + mirror[1] + mirror[2] + mirror[3] + "|" + excludedKey;
         if (key.equals(prev)) return;
         LAST_STATUS.put(uuid, key);
         DungeonTrainNet.sendTo(player, new EditorStatusPacket(
             l.category().displayName(), l.model().displayName(), l.model().id(), modelName,
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
-            mirror[0], mirror[1], mirror[2], excludedContents, stageId));
+            mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId));
     }
 
     /**
@@ -412,15 +413,15 @@ public final class VariantOverlayRenderer {
     }
 
     /**
-     * Editor mirror axes {@code [x, y, z]} for the plot the player is standing
-     * in — read from that plot's sidecar via {@link BlockVariantPlot}, for any
-     * editor category. All false when the player isn't in a plot. Backs the
-     * X-menu Mirror X / Y / Z toggle state.
+     * Editor mirror flags {@code [x, y, z, variants]} for the plot the player is
+     * standing in — read from that plot's sidecar via {@link BlockVariantPlot},
+     * for any editor category. All false when the player isn't in a plot. Backs
+     * the X-menu Mirror X / Y / Z / V toggle state.
      */
     private static boolean[] mirrorAxesAt(ServerPlayer player, CarriageDims dims) {
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
-        if (plot == null) return new boolean[]{false, false, false};
-        return new boolean[]{plot.mirrorX(), plot.mirrorY(), plot.mirrorZ()};
+        if (plot == null) return new boolean[]{false, false, false, false};
+        return new boolean[]{plot.mirrorX(), plot.mirrorY(), plot.mirrorZ(), plot.mirrorVariants()};
     }
 
     private static void clearHoverIfStale(ServerPlayer player) {

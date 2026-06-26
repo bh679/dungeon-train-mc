@@ -5,7 +5,9 @@ import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -31,6 +33,17 @@ final class EchoEncounter {
     /** The carriage depth the echo is themed to (where the source player died); {@code <0} if unknown. */
     final int sourceCarriage;
     final long spawnTick;
+    /** Up to two pre-rendered descriptors of the echo's most notable items at spawn, best-first; never null. */
+    final List<String> bestItems;
+
+    /** Score an in-encounter pickup must beat to be logged as an upgrade; raised as upgrades land. */
+    double bestBarScore;
+    /** Item display names already named in the story (spawn best + acquired) — dedups upgrades. */
+    final Set<String> mentionedItemNames;
+    /** Descriptors of items the echo acquired mid-encounter that bettered its gear, in order. */
+    final List<String> acquiredItems = new ArrayList<>();
+    /** The primary player's first chat near the echo, when contents are shown; {@code null} = note-only. */
+    String chatLine = null;
 
     private final List<EchoEvent> beats = new ArrayList<>();
     private final EnumSet<EchoEvent> seen = EnumSet.noneOf(EchoEvent.class);
@@ -41,9 +54,16 @@ final class EchoEncounter {
     Boolean lastOnDeck = null;
     /** Stage C: the captured screenshot of the echo, or {@code null} for the text-only post. */
     byte[] photo = null;
+    /**
+     * Gametime of the most recent screenshot request (throttles re-requests while {@link #photo} is
+     * still null). {@code Long.MIN_VALUE} = never requested — also the signal that there is no capture
+     * in flight, so a finished encounter need not be held waiting for one.
+     */
+    long lastPhotoRequestTick = Long.MIN_VALUE;
 
     EchoEncounter(UUID echoId, ResourceKey<Level> dimension, UUID sourcePlayerId, String sourceName,
-                  UUID primaryPlayerId, int sourceCarriage, long spawnTick) {
+                  UUID primaryPlayerId, int sourceCarriage, long spawnTick,
+                  EchoItemHighlights.Highlights highlights) {
         this.echoId = echoId;
         this.dimension = dimension;
         this.sourcePlayerId = sourcePlayerId;
@@ -51,6 +71,15 @@ final class EchoEncounter {
         this.primaryPlayerId = primaryPlayerId;
         this.sourceCarriage = sourceCarriage;
         this.spawnTick = spawnTick;
+        if (highlights == null) {
+            this.bestItems = List.of();
+            this.bestBarScore = Double.NEGATIVE_INFINITY;
+            this.mentionedItemNames = new HashSet<>();
+        } else {
+            this.bestItems = List.copyOf(highlights.descriptors());
+            this.bestBarScore = highlights.barScore();
+            this.mentionedItemNames = new HashSet<>(highlights.names());
+        }
     }
 
     /** Record a beat the first time it happens; later repeats are ignored. Returns true if newly logged. */

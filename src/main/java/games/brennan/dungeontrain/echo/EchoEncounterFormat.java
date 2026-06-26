@@ -27,10 +27,25 @@ final class EchoEncounterFormat {
         StringBuilder out = new StringBuilder();
         out.append(opener(playerName, enc));
 
+        String items = items(enc);
+        if (items != null) {
+            out.append(' ').append(items);
+        }
+
+        // The action paragraph: the beats and any gear claimed along the way, read as one flow.
+        List<String> action = new ArrayList<>();
         String middle = middle(playerName, enc);
         if (!middle.isEmpty()) {
-            out.append("\n\n").append(middle);
+            action.add(middle);
         }
+        String acquired = acquired(enc);
+        if (acquired != null) {
+            action.add(acquired);
+        }
+        if (!action.isEmpty()) {
+            out.append("\n\n").append(String.join(" ", action));
+        }
+
         out.append("\n\n").append(closer(playerName, enc, reason));
         return out.toString();
     }
@@ -43,16 +58,62 @@ final class EchoEncounterFormat {
                 + " stepped aboard " + playerName + "'s train.";
     }
 
+    /**
+     * One sentence naming the echo's most notable gear (already rendered with stats/enchants/trim),
+     * or {@code null} when it carried nothing worth mentioning. Sits right after the opener as
+     * scene-setting before the action.
+     */
+    private static String items(EchoEncounter enc) {
+        List<String> items = enc.bestItems;
+        if (items.isEmpty()) {
+            return null;
+        }
+        if (items.size() == 1) {
+            return "It still bore " + items.get(0) + ".";
+        }
+        return "It still bore " + items.get(0) + " and " + items.get(1) + ".";
+    }
+
+    /**
+     * One sentence naming the gear the echo bettered its kit with during the ride (already rendered
+     * with stats/enchants/trim), or {@code null} when it gained nothing. Reads as escalation after
+     * the beats.
+     */
+    private static String acquired(EchoEncounter enc) {
+        List<String> gained = enc.acquiredItems;
+        if (gained.isEmpty()) {
+            return null;
+        }
+        if (gained.size() == 1) {
+            return "Along the way it claimed " + gained.get(0) + ".";
+        }
+        String last = gained.get(gained.size() - 1);
+        String rest = String.join(", ", gained.subList(0, gained.size() - 1));
+        return "Along the way it claimed " + rest + ", and then " + last + ".";
+    }
+
     /** The middle beats (everything but SPAWNED), each as a sentence, joined into one paragraph. */
     private static String middle(String playerName, EchoEncounter enc) {
         List<String> lines = new ArrayList<>();
         for (EchoEvent beat : enc.beats()) {
-            String s = sentence(beat, playerName, enc.sourceName);
+            String s = beat == EchoEvent.CHAT ? chat(playerName, enc) : sentence(beat, playerName, enc.sourceName);
             if (s != null) {
                 lines.add(s);
             }
         }
         return String.join(" ", lines);
+    }
+
+    /**
+     * The chat beat: quotes the player's words when contents are shown, else just notes they spoke.
+     * The include/withhold decision is made server-side at capture (random, or forced to note-only by
+     * the recent-dev-contact privacy guard) and baked into {@link EchoEncounter#chatLine}.
+     */
+    private static String chat(String playerName, EchoEncounter enc) {
+        if (enc.chatLine != null) {
+            return playerName + " spoke up: “" + enc.chatLine + "”";
+        }
+        return playerName + " spoke as the echo listened.";
     }
 
     /** One sentence per middle beat; {@code null} for beats handled by the opener/closer. */
@@ -67,6 +128,8 @@ final class EchoEncounterFormat {
             case ECHO_STRUCK_PLAYER -> "The echo struck back.";
             case GAVE_GIFT -> playerName + " pressed a gift into its hands.";
             case RECEIVED_GIFT -> "The echo offered a gift in return.";
+            case CHAT -> null; // rendered by chat() — needs the dynamic message line
+
             case PUSHED_OFF_TRAIN -> playerName + " shoved it from the carriage.";
             case FELL_OFF_TRAIN -> "It lost its footing and slipped from the train.";
         };

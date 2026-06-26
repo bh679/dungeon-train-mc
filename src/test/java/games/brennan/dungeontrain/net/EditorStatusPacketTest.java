@@ -27,7 +27,7 @@ final class EditorStatusPacketTest {
         EditorStatusPacket original = new EditorStatusPacket(
             "Carriages", "standard", "standard", "standard", true, 50,
             0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-            true, false, false, false, Collections.emptySet());
+            true, false, false, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
     }
@@ -37,7 +37,7 @@ final class EditorStatusPacketTest {
     void roundTrip_gate() {
         EditorStatusPacket original = new EditorStatusPacket(
             "Carriages", "nether_market", "nether_market", "nether_market", false, 5,
-            3, 40, 0b0010, true, false, false, false, Collections.emptySet());
+            3, 40, 0b0010, true, false, false, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(3, decoded.minLevel());
         assertEquals(40, decoded.maxLevel());
@@ -51,7 +51,7 @@ final class EditorStatusPacketTest {
         EditorStatusPacket original = new EditorStatusPacket(
             "Carriages", "standard", "standard", "standard", false, 5,
             0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, true,
-            false, false, false, Set.of("default", "lava_pool"));
+            false, false, false, false, Set.of("default", "lava_pool"));
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(2, decoded.excludedContents().size());
         assertTrue(decoded.excludedContents().contains("default"));
@@ -64,7 +64,7 @@ final class EditorStatusPacketTest {
         EditorStatusPacket original = new EditorStatusPacket(
             "Tracks", "track / track2", "track", "track2", false, 5,
             0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-            true, false, false, false, Collections.emptySet());
+            true, false, false, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals("Tracks", decoded.category());
         assertEquals("track / track2", decoded.model());
@@ -94,7 +94,7 @@ final class EditorStatusPacketTest {
         EditorStatusPacket pillar = roundTrip(new EditorStatusPacket(
             "Tracks", "pillar / bottom / stone", "pillar_bottom", "stone", false, 3,
             0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-            true, false, false, false, Collections.emptySet()));
+            true, false, false, false, false, Collections.emptySet()));
         assertEquals("pillar_bottom", pillar.modelId());
         assertEquals("stone", pillar.modelName());
         assertEquals("pillar / bottom / stone", pillar.model());
@@ -103,7 +103,7 @@ final class EditorStatusPacketTest {
         EditorStatusPacket tunnel = roundTrip(new EditorStatusPacket(
             "Tracks", "tunnel / section / default", "tunnel_section", "default", true, 1,
             0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK, false,
-            true, true, false, Collections.emptySet()));
+            true, true, false, true, Collections.emptySet()));
         assertEquals("tunnel_section", tunnel.modelId());
         assertEquals("default", tunnel.modelName());
         assertEquals("tunnel / section / default", tunnel.model());
@@ -112,6 +112,7 @@ final class EditorStatusPacketTest {
         assertEquals(true, tunnel.mirrorX(), "mirrorX survives the wire");
         assertEquals(true, tunnel.mirrorY(), "mirrorY survives the wire");
         assertEquals(false, tunnel.mirrorZ(), "mirrorZ survives the wire, distinct from mirrorX/Y");
+        assertEquals(true, tunnel.mirrorVariants(), "mirrorVariants (V) survives the wire");
     }
 
     @Test
@@ -120,7 +121,7 @@ final class EditorStatusPacketTest {
         EditorStatusPacket original = new EditorStatusPacket(
             "Contents", "default", "default", "default", false, 7,
             0, EditorStatusPacket.MAX_LEVEL_ALL, EditorStatusPacket.ALL_PHASES_MASK,
-            true, false, false, false, Collections.emptySet());
+            true, false, false, false, false, Collections.emptySet());
         EditorStatusPacket decoded = roundTrip(original);
         assertEquals(original, decoded);
         assertEquals("default", decoded.modelName());

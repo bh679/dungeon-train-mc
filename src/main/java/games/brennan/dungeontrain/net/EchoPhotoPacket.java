@@ -40,8 +40,8 @@ public record EchoPhotoPacket(UUID echoId, byte[] png) implements CustomPacketPa
 
     public static void handle(EchoPhotoPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer)) return;
-            RemoteEchoEncounters.onPhoto(packet.echoId(), packet.png());
+            if (!(ctx.player() instanceof ServerPlayer player)) return;
+            RemoteEchoEncounters.onPhoto(player, packet.echoId(), packet.png());
         });
     }
 }
