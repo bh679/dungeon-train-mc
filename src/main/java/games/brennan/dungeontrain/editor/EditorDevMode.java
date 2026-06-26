@@ -10,9 +10,11 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
  * Session flag that toggles dev-mode write-through in the editor save paths.
  *
  * When enabled, {@link CarriageEditor#save} (and the parts/contents/track/tunnel
- * equivalents) also write the saved template into the on-disk source tree at
- * {@code src/main/resources/data/dungeontrain/...} so author-built templates
- * get committed alongside the rest of the mod.
+ * equivalents, plus {@link StageStore} gate presets) also write the saved template
+ * into the on-disk source tree at {@code src/main/resources/data/dungeontrain/...}
+ * so author-built templates get committed alongside the rest of the mod. Edit via the
+ * {@code /dt editor ...} slash commands (not a raw text editor) so the in-memory store
+ * stays in sync — raw file edits only take effect on the next world load.
  *
  * <p>Defaults each server start to {@link CarriageTemplateStore#sourceTreeAvailable()}:
  * <ul>
