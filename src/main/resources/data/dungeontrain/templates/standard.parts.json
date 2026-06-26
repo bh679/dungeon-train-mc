@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "floor": [
     {
       "name": "cracked",
@@ -74,20 +74,8 @@
   ],
   "roof": [
     {
-      "name": "standard",
-      "weight": 1,
-      "phases": [
-        "OVERWORLD",
-        "VOID",
-        "END"
-      ]
-    },
-    {
-      "name": "dark",
-      "weight": 1,
-      "phases": [
-        "NETHER"
-      ]
+      "name": "none",
+      "weight": 2
     }
   ],
   "doors": [

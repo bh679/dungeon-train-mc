@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "floor": [
     {
       "name": "cracked",
@@ -15,7 +15,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "broken",
@@ -25,7 +26,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
@@ -33,7 +35,8 @@
       "sideMode": "one",
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     },
     {
       "name": "darkbroken",
@@ -41,7 +44,8 @@
       "sideMode": "either",
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ],
   "roof": [
@@ -52,7 +56,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "broken",
@@ -61,14 +66,16 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ],
   "doors": [
@@ -80,7 +87,8 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "broken",
@@ -90,14 +98,16 @@
         "OVERWORLD",
         "VOID",
         "END"
-      ]
+      ],
+      "stage": "stone"
     },
     {
       "name": "dark",
       "weight": 1,
       "phases": [
         "NETHER"
-      ]
+      ],
+      "stage": "nether"
     }
   ]
 }

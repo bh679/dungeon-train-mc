@@ -154,6 +154,13 @@ public sealed interface Template
     default TemplateGate gate() { return TemplateGate.DEFAULT; }
 
     /**
+     * The Stage this template is linked to, or {@code ""} (Custom) when it has an inline gate. When
+     * non-empty, {@link #gate()} returns that Stage's gate live, and the editor renders a Stage chip
+     * instead of the editable cells. {@code ""} for kinds without a per-template stage link (parts).
+     */
+    default String stageId() { return ""; }
+
+    /**
      * Bare variant-name segment for the editor HUD and command splicing —
      * what {@code /dt editor weight <kind> <name> ...} expects. Defaults
      * to {@link #id()} so future kinds without a separate name field stay
@@ -272,6 +279,7 @@ public sealed interface Template
 
         @Override public int weight() { return CarriageWeights.current().weightFor(variant.id()); }
         @Override public TemplateGate gate() { return CarriageWeights.current().gateFor(variant.id()); }
+        @Override public String stageId() { String s = CarriageWeights.current().stageIdFor(variant.id()); return s == null ? "" : s; }
         @Override public String variantName() { return variant.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageEditor.stampPlot(level, variant, dims);
@@ -336,6 +344,7 @@ public sealed interface Template
 
         @Override public int weight() { return CarriageContentsWeights.current().weightFor(contents.id()); }
         @Override public TemplateGate gate() { return CarriageContentsWeights.current().gateFor(contents.id()); }
+        @Override public String stageId() { String s = CarriageContentsWeights.current().stageIdFor(contents.id()); return s == null ? "" : s; }
         @Override public String variantName() { return contents.id(); }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             CarriageContentsEditor.stampPlot(level, contents, dims);
@@ -481,6 +490,7 @@ public sealed interface Template
 
         @Override public int weight() { return TrackVariantWeights.weightFor(TrackKind.TILE, name); }
         @Override public TemplateGate gate() { return TrackVariantWeights.gateFor(TrackKind.TILE, name); }
+        @Override public String stageId() { String s = TrackVariantWeights.stageIdFor(TrackKind.TILE, name); return s == null ? "" : s; }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             TrackEditor.stampPlot(level, dims);
@@ -547,6 +557,10 @@ public sealed interface Template
         }
         @Override public TemplateGate gate() {
             return TrackVariantWeights.gateFor(TrackPlotLocator.pillarKind(section), name);
+        }
+        @Override public String stageId() {
+            String s = TrackVariantWeights.stageIdFor(TrackPlotLocator.pillarKind(section), name);
+            return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
@@ -623,6 +637,10 @@ public sealed interface Template
         @Override public TemplateGate gate() {
             return TrackVariantWeights.gateFor(PillarTemplateStore.adjunctKind(adjunct), name);
         }
+        @Override public String stageId() {
+            String s = TrackVariantWeights.stageIdFor(PillarTemplateStore.adjunctKind(adjunct), name);
+            return s == null ? "" : s;
+        }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
             PillarEditor.stampPlot(level, adjunct, dims);
@@ -690,6 +708,10 @@ public sealed interface Template
         }
         @Override public TemplateGate gate() {
             return TrackVariantWeights.gateFor(TrackPlotLocator.tunnelKind(variant), name);
+        }
+        @Override public String stageId() {
+            String s = TrackVariantWeights.stageIdFor(TrackPlotLocator.tunnelKind(variant), name);
+            return s == null ? "" : s;
         }
         @Override public String variantName() { return name; }
         @Override public void restampPlot(ServerLevel level, CarriageDims dims) {

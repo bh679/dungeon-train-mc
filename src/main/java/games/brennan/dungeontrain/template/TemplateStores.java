@@ -146,5 +146,9 @@ public final class TemplateStores {
         games.brennan.dungeontrain.train.CarriageWeights.reload();
         games.brennan.dungeontrain.train.CarriageContentsWeights.reload();
         games.brennan.dungeontrain.track.variant.TrackVariantWeights.reload();
+        // Global Stage presets — reloaded here too so an import/reload barrier refreshes the live
+        // gate every linked template resolves through (the store is global, so this is idempotent
+        // when nothing changed on disk).
+        games.brennan.dungeontrain.editor.StageStore.reload();
     }
 }

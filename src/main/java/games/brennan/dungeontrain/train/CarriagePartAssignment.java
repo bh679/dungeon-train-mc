@@ -40,9 +40,15 @@ import java.util.function.UnaryOperator;
  * {@link TemplateWeightCodec} so it shares the exact on-disk shape used by the weight stores; the
  * default gate emits nothing, so prior files round-trip byte-identically.</p>
  *
+ * <p>An entry may instead <b>link live to a named Stage</b> (optional {@code stage} field): its
+ * effective gate is then that Stage's gate, resolved via {@code StageStore.effectiveGate}, so editing
+ * the Stage retunes every linked part entry. A null link means the inline gate is authoritative
+ * (Custom), exactly as before Stages existed.</p>
+ *
  * <p>JSON schema is forward and backwards tolerant:
  * <ul>
- *   <li><b>v3</b> (current) — v2 plus optional gate fields ({@code minLevel}, {@code maxLevel},
+ *   <li><b>v4</b> (current) — v3 plus an optional {@code stage} link per entry, emitted only when set.</li>
+ *   <li><b>v3</b> — v2 plus optional gate fields ({@code minLevel}, {@code maxLevel},
  *       {@code phases}) per entry, emitted only when the gate is non-default.</li>
  *   <li><b>v2</b> — array of {@code {"name": "...", "weight": N}} objects.</li>
  *   <li><b>v1</b> — array of bare strings; loaded with {@code weight=1}.</li>
@@ -63,7 +69,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
                                      List<WeightedName> roof, List<WeightedName> doors) {
 
     public static final String SCHEMA_KEY = "schemaVersion";
-    public static final int SCHEMA_VERSION = 3;
+    public static final int SCHEMA_VERSION = 4;
 
     /** Inclusive weight bounds. Authors clamp to this range; the JSON loader also clamps. */
     public static final int MIN_WEIGHT = 1;
@@ -172,7 +178,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      * pre-gate call site compiling unchanged.
      */
     public record WeightedName(String name, int weight, SideMode sideMode, EndMode endMode,
-                               TemplateGate gate) {
+                               TemplateGate gate, String stageId) {
         public WeightedName {
             name = (name == null || name.isBlank())
                 ? CarriagePartKind.NONE
@@ -181,31 +187,46 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             if (sideMode == null) sideMode = SideMode.BOTH;
             if (endMode == null) endMode = EndMode.BOTH;
             if (gate == null) gate = TemplateGate.DEFAULT;
+            if (stageId != null && stageId.isBlank()) stageId = null;
         }
 
-        /** Default-weight, BOTH-side, BOTH-end, default-gate entry. */
+        /** Default-weight, BOTH-side, BOTH-end, default-gate, unlinked entry. */
         public static WeightedName of(String name) {
-            return new WeightedName(name, MIN_WEIGHT, SideMode.BOTH, EndMode.BOTH, TemplateGate.DEFAULT);
+            return new WeightedName(name, MIN_WEIGHT, SideMode.BOTH, EndMode.BOTH, TemplateGate.DEFAULT, null);
         }
 
-        /** Default-weight entry with explicit side mode (endMode BOTH, default gate). */
+        /** Default-weight entry with explicit side mode (endMode BOTH, default gate, unlinked). */
         public static WeightedName of(String name, SideMode sideMode) {
-            return new WeightedName(name, MIN_WEIGHT, sideMode, EndMode.BOTH, TemplateGate.DEFAULT);
+            return new WeightedName(name, MIN_WEIGHT, sideMode, EndMode.BOTH, TemplateGate.DEFAULT, null);
         }
 
-        /** 2-arg back-compat constructor — defaults sideMode/endMode BOTH, gate DEFAULT. */
+        /** 2-arg back-compat constructor — defaults sideMode/endMode BOTH, gate DEFAULT, unlinked. */
         public WeightedName(String name, int weight) {
-            this(name, weight, SideMode.BOTH, EndMode.BOTH, TemplateGate.DEFAULT);
+            this(name, weight, SideMode.BOTH, EndMode.BOTH, TemplateGate.DEFAULT, null);
         }
 
-        /** 3-arg back-compat constructor — defaults endMode BOTH, gate DEFAULT. */
+        /** 3-arg back-compat constructor — defaults endMode BOTH, gate DEFAULT, unlinked. */
         public WeightedName(String name, int weight, SideMode sideMode) {
-            this(name, weight, sideMode, EndMode.BOTH, TemplateGate.DEFAULT);
+            this(name, weight, sideMode, EndMode.BOTH, TemplateGate.DEFAULT, null);
         }
 
-        /** 4-arg back-compat constructor — defaults gate DEFAULT. */
+        /** 4-arg back-compat constructor — defaults gate DEFAULT, unlinked. */
         public WeightedName(String name, int weight, SideMode sideMode, EndMode endMode) {
-            this(name, weight, sideMode, endMode, TemplateGate.DEFAULT);
+            this(name, weight, sideMode, endMode, TemplateGate.DEFAULT, null);
+        }
+
+        /** 5-arg back-compat constructor — unlinked (Custom inline gate). */
+        public WeightedName(String name, int weight, SideMode sideMode, EndMode endMode, TemplateGate gate) {
+            this(name, weight, sideMode, endMode, gate, null);
+        }
+
+        /**
+         * The effective gate this entry spawns under: the linked Stage's gate when {@link #stageId}
+         * names an existing Stage, else the inline {@link #gate}. O(1)
+         * {@link games.brennan.dungeontrain.editor.StageStore} lookup.
+         */
+        public TemplateGate effectiveGate() {
+            return games.brennan.dungeontrain.editor.StageStore.effectiveGate(gate, stageId);
         }
     }
 
@@ -474,7 +495,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         if (gateCtx == null) return list;
         List<WeightedName> gated = new ArrayList<>(list.size());
         for (WeightedName e : list) {
-            if (gateCtx.allows(e.gate())) gated.add(e);
+            if (gateCtx.allows(e.effectiveGate())) gated.add(e);
         }
         return gated.isEmpty() ? list : gated;
     }
@@ -567,7 +588,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), clampWeight(e.weight() + delta), e.sideMode(), e.endMode(), e.gate()));
+                updated.add(new WeightedName(e.name(), clampWeight(e.weight() + delta), e.sideMode(), e.endMode(), e.gate(), e.stageId()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -590,7 +611,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode().next(), e.endMode(), e.gate()));
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode().next(), e.endMode(), e.gate(), e.stageId()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -614,7 +635,7 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         boolean changed = false;
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
-                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode().next(), e.gate()));
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode().next(), e.gate(), e.stageId()));
                 changed = true;
             } else {
                 updated.add(e);
@@ -677,7 +698,36 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
         for (WeightedName e : existing) {
             if (!changed && e.name().equals(norm)) {
                 updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode(),
-                    op.apply(e.gate())));
+                    op.apply(e.gate()), e.stageId()));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        if (!changed) return this;
+        return with(kind, updated);
+    }
+
+    /**
+     * Link the entry {@code name} in {@code kind}'s list to the named Stage ({@code stageId}), or
+     * detach to Custom when {@code stageId} is null. On detach the previously-effective gate (the
+     * Stage's gate, if it was linked) is snapshotted into the inline gate so the entry's manual cells
+     * reappear pre-filled. Returns {@code this} unchanged if the name isn't in the list. Mirrors the
+     * weight stores' {@code setStage}.
+     */
+    public CarriagePartAssignment withStage(CarriagePartKind kind, String name, String stageId) {
+        String link = (stageId == null || stageId.isBlank()) ? null : stageId.toLowerCase(Locale.ROOT);
+        List<WeightedName> existing = entries(kind);
+        String norm = (name == null) ? CarriagePartKind.NONE : name.toLowerCase(Locale.ROOT);
+        List<WeightedName> updated = new ArrayList<>(existing.size());
+        boolean changed = false;
+        for (WeightedName e : existing) {
+            if (!changed && e.name().equals(norm)) {
+                TemplateGate inline = e.gate();
+                if (link == null && e.stageId() != null) {
+                    inline = games.brennan.dungeontrain.editor.StageStore.effectiveGate(inline, e.stageId());
+                }
+                updated.add(new WeightedName(e.name(), e.weight(), e.sideMode(), e.endMode(), inline, link));
                 changed = true;
             } else {
                 updated.add(e);
@@ -729,6 +779,8 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             // Gate fields (minLevel / maxLevel / phases) — emitted only when non-default, in the
             // shared TemplateWeightCodec shape so parts sidecars match the weight stores on disk.
             TemplateWeightCodec.writeGateFields(obj, e.gate());
+            // Optional Stage link — when set, this entry's effective gate is the Stage's gate.
+            if (e.stageId() != null) obj.addProperty(TemplateWeightCodec.K_STAGE, e.stageId());
             arr.add(obj);
         }
         return arr;
@@ -786,7 +838,9 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
             // Optional gate fields — absent ⇒ TemplateGate.DEFAULT (eligible everywhere), so v1/v2
             // entries load unchanged.
             TemplateGate gate = TemplateWeightCodec.parseGate(obj);
-            out.add(new WeightedName(name, weight, mode, endMode, gate));
+            // Optional Stage link (v4) — absent ⇒ null (Custom), so v1–v3 entries load unchanged.
+            String stageId = TemplateWeightCodec.parseStage(obj);
+            out.add(new WeightedName(name, weight, mode, endMode, gate, stageId));
         }
         if (out.isEmpty()) return List.of(WeightedName.of(CarriagePartKind.NONE));
         return out;

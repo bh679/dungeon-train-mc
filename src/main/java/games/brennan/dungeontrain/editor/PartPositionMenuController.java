@@ -417,6 +417,16 @@ public final class PartPositionMenuController {
                     ? current.toggleOtherPhases(packet.kind(), packet.name(), phase)
                     : current.togglePhase(packet.kind(), packet.name(), phase);
             }
+            // Link the entry to a Stage (empty stageId = detach to Custom). Unknown stage ids are
+            // tolerated — the entry's effective gate then falls back to its inline snapshot.
+            case SET_STAGE -> {
+                String link = packet.stageId();
+                if (link != null && !link.isBlank()
+                    && !games.brennan.dungeontrain.editor.StageStore.exists(link)) {
+                    LOGGER.warn("[DungeonTrain] PartMenu SET_STAGE: stage '{}' does not exist — linking anyway.", link);
+                }
+                yield current.withStage(packet.kind(), packet.name(), link);
+            }
             // Unreachable — PREVIEW_ENTRY is handled by an early return above.
             // Kept here so the switch stays exhaustive over the Op enum.
             case PREVIEW_ENTRY -> current;

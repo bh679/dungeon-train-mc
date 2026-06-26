@@ -73,4 +73,29 @@ public final class NetherBand {
         if (cycle.endMiddleRamp(worldX) > 0.0) return false; // End band wins
         return cycle.netherRamp(worldX) >= NETHER_CORE_RAMP;
     }
+
+    /**
+     * True when world-X sits anywhere in the band's <b>netherrack stretch</b> — the netherrack
+     * crossfade-in, the core, and the crossfade-out (i.e. {@code netherRamp > 0}), End band not
+     * owning the column. This is the span where the world <em>reads</em> as the Nether (netherrack
+     * present), which begins well before the strict {@link #isInNetherBiome biome core}
+     * ({@code netherRamp >= 0.5}, reached only ~{@code coreFade/2} blocks deeper).
+     *
+     * <p>The train-<b>phase</b> gate ({@link games.brennan.dungeontrain.worldgen.TrainPhase#phaseAt})
+     * uses this so a NETHER-gated template / Stage spawns across the visible Nether stretch instead of
+     * only its deep core — fixing "Nether stages don't trigger until deep into the Nether". The strict
+     * {@link #isInNetherBiome} stays the source of truth for the real Nether biome / mob behaviour.</p>
+     */
+    public static boolean isInNetherBand(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return false;
+        if (DisintegrationBand.middleRampAt(overworld, worldX) > 0.0) return false; // End band wins
+        return netherRampAt(overworld, worldX) > 0.0;
+    }
+
+    /** Pure {@link WorldGenCycle} overload of {@link #isInNetherBand(ServerLevel, int)} (End wins, then
+     *  {@code netherRamp > 0}) — for tests and any hot per-column caller that hoisted the cycle. */
+    public static boolean isInNetherBand(WorldGenCycle cycle, int worldX) {
+        if (cycle.endMiddleRamp(worldX) > 0.0) return false; // End band wins
+        return cycle.netherRamp(worldX) > 0.0;
+    }
 }

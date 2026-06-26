@@ -71,28 +71,38 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         String activeCategoryId,
         List<CategoryButton> categoryBar,
         List<TypeTab> typeStrip,
-        boolean isPackageMenu
+        boolean isPackageMenu,
+        boolean isStagesMenu
     ) {
         /** Convenience: row-start menus default to {@code isCompanion=false} and empty nav chrome. */
         public Menu(BlockPos worldPos, String typeName, List<Variant> variants) {
-            this(worldPos, typeName, variants, false, "", List.of(), List.of(), false);
+            this(worldPos, typeName, variants, false, "", List.of(), List.of(), false, false);
         }
 
         /** Convenience: explicit companion flag, no nav chrome. */
         public Menu(BlockPos worldPos, String typeName, List<Variant> variants, boolean isCompanion) {
-            this(worldPos, typeName, variants, isCompanion, "", List.of(), List.of(), false);
+            this(worldPos, typeName, variants, isCompanion, "", List.of(), List.of(), false, false);
         }
 
-        /** Convenience: full nav-menu constructor without the package flag — keeps the existing
-         *  nav-menu call sites compiling unchanged. */
+        /** Convenience: full nav-menu constructor without the package/stages flags — keeps the
+         *  existing nav-menu call sites compiling unchanged. */
         public Menu(BlockPos worldPos, String typeName, List<Variant> variants, boolean isCompanion,
                     String activeCategoryId, List<CategoryButton> categoryBar, List<TypeTab> typeStrip) {
-            this(worldPos, typeName, variants, isCompanion, activeCategoryId, categoryBar, typeStrip, false);
+            this(worldPos, typeName, variants, isCompanion, activeCategoryId, categoryBar, typeStrip, false, false);
+        }
+
+        /** Convenience: package/stages-flagged menu without nav chrome (keeps the package-menu call
+         *  site compiling; the stages menu sets {@code isStagesMenu=true}). */
+        public Menu(BlockPos worldPos, String typeName, List<Variant> variants, boolean isCompanion,
+                    String activeCategoryId, List<CategoryButton> categoryBar, List<TypeTab> typeStrip,
+                    boolean isPackageMenu) {
+            this(worldPos, typeName, variants, isCompanion, activeCategoryId, categoryBar, typeStrip,
+                isPackageMenu, false);
         }
 
         /** True when this menu carries the category bar + type strip (a row-start nav panel). */
         public boolean isNavMenu() {
-            return !isCompanion && !isPackageMenu && !categoryBar.isEmpty();
+            return !isCompanion && !isPackageMenu && !isStagesMenu && !categoryBar.isEmpty();
         }
     }
 
@@ -145,7 +155,8 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         String modelName,
         boolean isUser,
         boolean isImported,
-        List<Variant> subVariants
+        List<Variant> subVariants,
+        String stageId
     ) {
         /**
          * {@code phaseMask == NO_GATE} marks a row with no per-template spawn gate (sub-variants /
@@ -154,23 +165,54 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
          */
         public static final int NO_GATE = 0;
 
+        public Variant {
+            if (stageId == null) stageId = "";
+        }
+
+        /** True when this row is linked to a named Stage — the renderer draws a Stage chip in place
+         *  of the editable min/max/phase cells. */
+        public boolean isStageLinked() {
+            return stageId != null && !stageId.isEmpty();
+        }
+
         /** Convenience: no gate + no children — keeps the original call sites compiling unchanged. */
         public Variant(String name, int weight, String category, String modelId, String modelName,
                        boolean isUser, boolean isImported) {
-            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, List.of());
+            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, List.of(), "");
         }
 
         /** Convenience: no gate, with children. */
         public Variant(String name, int weight, String category, String modelId, String modelName,
                        boolean isUser, boolean isImported, List<Variant> subVariants) {
-            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, subVariants);
+            this(name, weight, 0, -1, NO_GATE, category, modelId, modelName, isUser, isImported, subVariants, "");
         }
 
-        /** Convenience: top-level template row carrying a spawn gate, no children. */
+        /** Convenience: top-level template row carrying a spawn gate, no children, Custom (unlinked). */
         public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
                        String category, String modelId, String modelName, boolean isUser, boolean isImported) {
             this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
-                isUser, isImported, List.of());
+                isUser, isImported, List.of(), "");
+        }
+
+        /** Convenience: gated row <b>with children</b>, Custom (unlinked) — disambiguated from the
+         *  stageId overload by the trailing {@code List<Variant>}. */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       List<Variant> subVariants) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, subVariants, "");
+        }
+
+        /**
+         * Convenience: top-level template row carrying a spawn gate <b>and</b> an optional Stage link
+         * ({@code stageId} empty = Custom). The carriage / contents / track menus use this so the
+         * renderer can decide chip-vs-cells per row.
+         */
+        public Variant(String name, int weight, int minLevel, int maxLevel, int phaseMask,
+                       String category, String modelId, String modelName, boolean isUser, boolean isImported,
+                       String stageId) {
+            this(name, weight, minLevel, maxLevel, phaseMask, category, modelId, modelName,
+                isUser, isImported, List.of(), stageId);
         }
     }
 
@@ -215,6 +257,7 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 buf.writeUtf(t.modelName(), 64);
             }
             buf.writeBoolean(m.isPackageMenu());
+            buf.writeBoolean(m.isStagesMenu());
         }
     }
 
@@ -233,6 +276,7 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         for (Variant sv : v.subVariants()) {
             encodeVariant(buf, sv);
         }
+        buf.writeUtf(v.stageId() == null ? "" : v.stageId(), 64);
     }
 
     private static Variant decodeVariant(FriendlyByteBuf buf) {
@@ -251,8 +295,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
         for (int k = 0; k < sn; k++) {
             subs.add(decodeVariant(buf));
         }
+        String stageId = buf.readUtf(64);
         return new Variant(name, weight, minLevel, maxLevel, phaseMask,
-            category, modelId, modelName, isUser, isImported, subs);
+            category, modelId, modelName, isUser, isImported, subs, stageId);
     }
 
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
@@ -286,8 +331,9 @@ public record EditorTypeMenusPacket(List<Menu> menus) implements CustomPacketPay
                 typeStrip.add(new TypeTab(tabName, tabCategory, tabModelId, tabModelName));
             }
             boolean isPackageMenu = buf.readBoolean();
+            boolean isStagesMenu = buf.readBoolean();
             out.add(new Menu(pos, typeName, variants, isCompanion,
-                activeCategoryId, categoryBar, typeStrip, isPackageMenu));
+                activeCategoryId, categoryBar, typeStrip, isPackageMenu, isStagesMenu));
         }
         return new EditorTypeMenusPacket(out);
     }

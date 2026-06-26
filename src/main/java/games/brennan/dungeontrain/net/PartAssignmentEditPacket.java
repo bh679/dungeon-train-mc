@@ -31,12 +31,19 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * matches the existing slash-command authorisation model.</p>
  */
 public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind kind,
-                                       String name, int delta) implements CustomPacketPayload {
+                                       String name, int delta, String stageId) implements CustomPacketPayload {
 
     // NOTE: ordinals are the wire format (encode writes op.ordinal()) — only ever APPEND.
     public enum Op {
         ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY, CYCLE_END_MODE,
-        BUMP_MIN_LEVEL, BUMP_MAX_LEVEL, TOGGLE_PHASE, TOGGLE_OTHER_PHASES
+        BUMP_MIN_LEVEL, BUMP_MAX_LEVEL, TOGGLE_PHASE, TOGGLE_OTHER_PHASES,
+        /** Link the entry {@code name} to Stage {@code stageId} (empty = detach to Custom). */
+        SET_STAGE
+    }
+
+    /** Back-compat constructor for the non-stage ops — leaves {@code stageId} empty. */
+    public PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind kind, String name, int delta) {
+        this(op, variantId, kind, name, delta, "");
     }
 
     public static final Type<PartAssignmentEditPacket> TYPE =
@@ -54,6 +61,7 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
         buf.writeByte(kind.ordinal());
         buf.writeUtf(name == null ? "" : name);
         buf.writeVarInt(delta);
+        buf.writeUtf(stageId == null ? "" : stageId);
     }
 
     public static PartAssignmentEditPacket decode(FriendlyByteBuf buf) {
@@ -64,7 +72,8 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
         CarriagePartKind kind = CarriagePartKind.values()[kindOrd];
         String name = buf.readUtf(64);
         int delta = buf.readVarInt();
-        return new PartAssignmentEditPacket(op, id, kind, name, delta);
+        String stageId = buf.readUtf(64);
+        return new PartAssignmentEditPacket(op, id, kind, name, delta, stageId);
     }
 
     @Override

@@ -211,6 +211,24 @@ public final class EditorCommand {
             return builder.buildFuture();
         };
 
+    /** The {@code apply … <stage>} keyword that detaches a template back to a Custom inline gate. */
+    private static final String STAGE_CUSTOM_TOKEN = "custom";
+
+    /** Existing Stage ids — for {@code /dt editor stage {delete|rename|minlevel|…} <id>}. */
+    private static final SuggestionProvider<CommandSourceStack> STAGE_SUGGESTIONS =
+        (ctx, builder) -> {
+            for (String id : games.brennan.dungeontrain.editor.StageStore.allIds()) builder.suggest(id);
+            return builder.buildFuture();
+        };
+
+    /** Stage ids plus the {@code custom} keyword — for {@code stage apply … <stage|custom>}. */
+    private static final SuggestionProvider<CommandSourceStack> STAGE_OR_CUSTOM_SUGGESTIONS =
+        (ctx, builder) -> {
+            builder.suggest(STAGE_CUSTOM_TOKEN);
+            for (String id : games.brennan.dungeontrain.editor.StageStore.allIds()) builder.suggest(id);
+            return builder.buildFuture();
+        };
+
     private static final SuggestionProvider<CommandSourceStack> PART_KIND_SUGGESTIONS =
         (ctx, builder) -> {
             for (CarriagePartKind k : CarriagePartKind.values()) builder.suggest(k.id());
@@ -569,6 +587,7 @@ public final class EditorCommand {
             .then(minLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
+            .then(buildStageSubtree())
             .then(buildVariantSubtree(buildContext));
     }
 
@@ -1064,6 +1083,224 @@ public final class EditorCommand {
                         g -> togglePhase(g, StringArgumentType.getString(c, "phase"), false))))
                     .then(Commands.literal("others").executes(c -> run.run(c.getSource(), StringArgumentType.getString(c, "id"),
                         g -> toggleOtherPhases(g, StringArgumentType.getString(c, "phase")))))));
+    }
+
+    // ============================================================
+    // Stages — named, reusable gate presets. CRUD + gate-edit + link/detach.
+    // The Stages window and the "Stage / Custom" picker dispatch these.
+    // ============================================================
+
+    /** {@code /dungeontrain editor stage …} — manage named gate presets and link templates to them. */
+    private static LiteralArgumentBuilder<CommandSourceStack> buildStageSubtree() {
+        return Commands.literal("stage")
+            .then(Commands.literal("new")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .executes(c -> runStageNew(c.getSource(), StringArgumentType.getString(c, "id")))))
+            .then(Commands.literal("delete")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .executes(c -> runStageDelete(c.getSource(), StringArgumentType.getString(c, "id")))))
+            .then(Commands.literal("rename")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGE_SUGGESTIONS)
+                    .then(Commands.argument("name", StringArgumentType.greedyString())
+                        .executes(c -> runStageRename(c.getSource(), StringArgumentType.getString(c, "id"),
+                            StringArgumentType.getString(c, "name"))))))
+            .then(Commands.literal("list").executes(c -> runStageList(c.getSource())))
+            // Gate editing for a stage reuses the shared min/max/phase builders, keyed on the stage id.
+            .then(minLevelSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
+            .then(maxLevelSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
+            .then(phaseSingle(STAGE_SUGGESTIONS, EditorCommand::applyStageGate))
+            // Link a template to a stage (or `custom` to detach).
+            .then(Commands.literal("apply")
+                .then(Commands.literal("carriage")
+                    .then(Commands.argument("id", StringArgumentType.word()).suggests(CARRIAGE_VARIANT_SUGGESTIONS)
+                        .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
+                            .executes(c -> applyCarriageStage(c.getSource(),
+                                StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
+                .then(Commands.literal("contents")
+                    .then(Commands.argument("id", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
+                        .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
+                            .executes(c -> applyContentsStage(c.getSource(),
+                                StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
+                .then(Commands.literal("tracks")
+                    .then(Commands.argument("kind", StringArgumentType.word()).suggests(TRACK_KIND_SUGGESTIONS)
+                        .then(Commands.argument("name", StringArgumentType.word()).suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
+                            .then(Commands.argument("stage", StringArgumentType.word()).suggests(STAGE_OR_CUSTOM_SUGGESTIONS)
+                                .executes(c -> applyTrackStage(c.getSource(),
+                                    StringArgumentType.getString(c, "kind"), StringArgumentType.getString(c, "name"),
+                                    StringArgumentType.getString(c, "stage"))))))));
+    }
+
+    /** Gate editor for a stage — read-modify-write its {@link TemplateGate} via {@code StageStore}. */
+    private static int applyStageGate(CommandSourceStack source, String stageId,
+                                      java.util.function.UnaryOperator<TemplateGate> op) {
+        String id = stageId == null ? "" : stageId.toLowerCase(java.util.Locale.ROOT);
+        if (id.isEmpty()) {
+            source.sendFailure(Component.literal("Stage id is required.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        try {
+            TemplateGate current = games.brennan.dungeontrain.editor.StageStore.gateOf(id)
+                .orElse(TemplateGate.DEFAULT);
+            TemplateGate next = op.apply(current);
+            games.brennan.dungeontrain.editor.StageStore.setGate(id, next);
+            gateSuccess(source, "stage:" + id, next,
+                games.brennan.dungeontrain.editor.StageStore.configPath().toString());
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage", id, t);
+        }
+    }
+
+    private static int runStageNew(CommandSourceStack source, String rawId) {
+        try {
+            games.brennan.dungeontrain.template.Stage created =
+                games.brennan.dungeontrain.editor.StageStore.add(rawId);
+            if (created == null) {
+                source.sendFailure(Component.literal("Invalid stage id: " + rawId).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal("Editor: created stage '" + created.id() + "'.")
+                .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage new", rawId, t);
+        }
+    }
+
+    private static int runStageDelete(CommandSourceStack source, String rawId) {
+        try {
+            boolean removed = games.brennan.dungeontrain.editor.StageStore.delete(rawId);
+            if (!removed) {
+                source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal("Editor: deleted stage '"
+                + rawId.toLowerCase(java.util.Locale.ROOT) + "'. Linked templates fall back to their inline gate.")
+                .withStyle(ChatFormatting.YELLOW), true);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage delete", rawId, t);
+        }
+    }
+
+    private static int runStageRename(CommandSourceStack source, String rawId, String name) {
+        try {
+            games.brennan.dungeontrain.template.Stage renamed =
+                games.brennan.dungeontrain.editor.StageStore.rename(rawId, name);
+            if (renamed == null) {
+                source.sendFailure(Component.literal("No such stage: " + rawId).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+            source.sendSuccess(() -> Component.literal("Editor: renamed stage '" + renamed.id()
+                + "' → \"" + renamed.name() + "\".").withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "stage rename", rawId, t);
+        }
+    }
+
+    private static int runStageList(CommandSourceStack source) {
+        java.util.List<games.brennan.dungeontrain.template.Stage> stages =
+            games.brennan.dungeontrain.editor.StageStore.allStages();
+        if (stages.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("Editor: no stages defined. Create one with "
+                + "/dt editor stage new <id>.").withStyle(ChatFormatting.GRAY), false);
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Editor: " + stages.size() + " stage(s):")
+            .withStyle(ChatFormatting.AQUA), false);
+        for (games.brennan.dungeontrain.template.Stage s : stages) {
+            TemplateGate g = s.gate();
+            String maxStr = g.maxLevel() == TemplateGate.ALL ? "all" : Integer.toString(g.maxLevel());
+            String phaseStr = g.phases().size() == TrainPhase.values().length ? "all" : phaseTokens(g);
+            source.sendSuccess(() -> Component.literal("  • " + s.id() + " — level " + g.minLevel()
+                + ".." + maxStr + ", phases [" + phaseStr + "]").withStyle(ChatFormatting.GRAY), false);
+        }
+        return stages.size();
+    }
+
+    private static String phaseTokens(TemplateGate g) {
+        StringBuilder sb = new StringBuilder();
+        for (TrainPhase p : TrainPhase.values()) {
+            if (!g.phases().contains(p)) continue;
+            if (sb.length() > 0) sb.append(',');
+            sb.append(p.token());
+        }
+        return sb.toString();
+    }
+
+    private static int applyCarriageStage(CommandSourceStack source, String rawVariant, String stageToken) {
+        CarriageVariant variant = parseVariant(source, rawVariant);
+        if (variant == null) return 0;
+        String link = resolveStageLink(source, stageToken);
+        if (link == INVALID_STAGE) return 0;
+        try {
+            CarriageWeights.setStage(variant.id(), link);
+            stageApplySuccess(source, "carriage", variant.id(), link);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "carriage stage", variant.id(), t);
+        }
+    }
+
+    private static int applyContentsStage(CommandSourceStack source, String rawContents, String stageToken) {
+        CarriageContents contents = parseContents(source, rawContents);
+        if (contents == null) return 0;
+        String link = resolveStageLink(source, stageToken);
+        if (link == INVALID_STAGE) return 0;
+        try {
+            CarriageContentsWeights.setStage(contents.id(), link);
+            stageApplySuccess(source, "contents", contents.id(), link);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "contents stage", contents.id(), t);
+        }
+    }
+
+    private static int applyTrackStage(CommandSourceStack source, String rawKind, String name, String stageToken) {
+        games.brennan.dungeontrain.track.variant.TrackKind kind = parseTrackKind(source, rawKind);
+        if (kind == null) return 0;
+        if (name == null || name.isEmpty()) {
+            source.sendFailure(Component.literal("Variant name is required.").withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        String link = resolveStageLink(source, stageToken);
+        if (link == INVALID_STAGE) return 0;
+        try {
+            TrackVariantWeights.setStage(kind, name, link);
+            stageApplySuccess(source, "track", kind.id() + ":" + name, link);
+            return 1;
+        } catch (Throwable t) {
+            return gateFail(source, "track stage", kind.id() + ":" + name, t);
+        }
+    }
+
+    /** Sentinel distinguishing a reported error from a legitimate {@code null} ("custom"/detach) link. */
+    private static final String INVALID_STAGE = new String("\0invalid");
+
+    /**
+     * Resolve a {@code <stage>} apply token: {@code custom}/blank ⇒ {@code null} (detach); an existing
+     * stage id ⇒ that id; an unknown id ⇒ failure reported and {@link #INVALID_STAGE} returned.
+     */
+    private static String resolveStageLink(CommandSourceStack source, String token) {
+        if (token == null || token.isBlank() || token.equalsIgnoreCase(STAGE_CUSTOM_TOKEN)) return null;
+        String id = token.toLowerCase(java.util.Locale.ROOT);
+        if (!games.brennan.dungeontrain.editor.StageStore.exists(id)) {
+            source.sendFailure(Component.literal("No such stage: " + id
+                + " (use 'custom' to detach).").withStyle(ChatFormatting.RED));
+            return INVALID_STAGE;
+        }
+        return id;
+    }
+
+    private static void stageApplySuccess(CommandSourceStack source, String what, String id, String link) {
+        if (link == null) {
+            source.sendSuccess(() -> Component.literal("Editor: detached " + what + " " + id
+                + " to Custom.").withStyle(ChatFormatting.GREEN), true);
+        } else {
+            source.sendSuccess(() -> Component.literal("Editor: linked " + what + " " + id
+                + " to stage '" + link + "'.").withStyle(ChatFormatting.GREEN), true);
+        }
     }
 
     // ---- Brigadier subtree builders (track-side: kind + name) ----

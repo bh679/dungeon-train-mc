@@ -2615,8 +2615,24 @@
       "released_at": "2026-06-26T09:52:26Z"
     },
     {
+      "id": "editor-stages",
+      "version": "0.368.0",
+      "type": "feat",
+      "title": "Editor Stages \u2014 reusable difficulty/dimension presets",
+      "summary": "Content creators using the in-game editor can now define named Stages \u2014 reusable presets of the difficulty-level and dimension gating that decides where a template is allowed to spawn \u2014 and apply them to carriages, contents, parts, and tracks. Edit a Stage once and every template linked to it retunes together. This release also fixes Nether-gated content so it appears across the whole Nether stretch instead of only deep in its core.",
+      "highlights": [
+        "A global Stages list sits beside the editor's template menu, with inline add / remove / edit of each preset's level band and dimensions.",
+        "Pick a Stage (or 'Custom') from any gate-editing spot \u2014 including per carriage-part entry \u2014 and linked templates update live when you edit the Stage.",
+        "Fix: Nether-gated templates and Stages now trigger as the Nether terrain begins, not hundreds of blocks into the Nether core."
+      ],
+      "date": "2026-06-26",
+      "released": true,
+      "released_in": "v0.368.0",
+      "released_at": "2026-06-26T10:55:54Z"
+    },
+    {
       "id": "resume-train-hold",
-      "version": "0.367.0",
+      "version": "0.368.0",
       "type": "fix",
       "title": "Train carriages no longer lost when you pause and resume",
       "summary": "Pausing a singleplayer game on a moving train \u2014 via the Esc menu, reading a book, or an advancement popup \u2014 could make the carriages around you disappear and stay gone until you reloaded the world. The train is now held in place across the pause so its carriages survive it.",

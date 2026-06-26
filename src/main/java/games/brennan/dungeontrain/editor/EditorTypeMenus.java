@@ -90,10 +90,12 @@ public final class EditorTypeMenus {
                     EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                         CarriageTemplateStore.fileForId(v.id()));
                     TemplateGate g = weights.gateFor(v.id());
+                    String stageId = weights.stageIdFor(v.id());
                     rows.add(new EditorTypeMenusPacket.Variant(
                         v.id(), weights.weightFor(v.id()),
                         g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-                        cat, v.id(), v.id(), p.isUser(), p.isImported()));
+                        cat, v.id(), v.id(), p.isUser(), p.isImported(),
+                        stageId == null ? "" : stageId));
                 }
                 out.add(new EditorTypeMenusPacket.Menu(
                     anchor, "Carriages", rows, false,
@@ -163,11 +165,12 @@ public final class EditorTypeMenus {
             EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 CarriageContentsStore.fileForId(c.id()));
             TemplateGate g = weights.gateFor(c.id());
+            String stageId = weights.stageIdFor(c.id());
             rows.add(new EditorTypeMenusPacket.Variant(
                 c.id(), weights.weightFor(c.id()),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
                 cat, c.id(), c.id(), p.isUser(), p.isImported(),
-                subVariantsFor(c.id(), cat)));
+                subVariantsFor(c.id(), cat), stageId == null ? "" : stageId));
         }
         List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
         List<EditorTypeMenusPacket.TypeTab> typeStrip = List.of(
@@ -218,10 +221,12 @@ public final class EditorTypeMenus {
             EditorPlotLabels.Provenance p = EditorPlotLabels.provenanceOf(
                 games.brennan.dungeontrain.track.variant.TrackVariantStore.fileFor(kind, name));
             TemplateGate g = TrackVariantWeights.gateFor(kind, name);
+            String stageId = TrackVariantWeights.stageIdFor(kind, name);
             rows.add(new EditorTypeMenusPacket.Variant(
                 name, TrackVariantWeights.weightFor(kind, name),
                 g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
-                cat, modelId, name, p.isUser(), p.isImported()));
+                cat, modelId, name, p.isUser(), p.isImported(),
+                stageId == null ? "" : stageId));
         }
         out.add(new EditorTypeMenusPacket.Menu(
             anchor, typeName, rows, false,
@@ -378,6 +383,55 @@ public final class EditorTypeMenus {
             firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
             firstOrigin.getZ() + footprint.getZ() / 2 + PACKAGE_MENU_Z_OFFSET
         );
+    }
+
+    // ---------- Stages management panel ----------
+
+    /** Category token on stage rows — the input handler routes their clicks to {@code editor stage …}. */
+    public static final String STAGES_CATEGORY = "stages";
+
+    /** Sentinel modelId for the synthetic "+ New Stage" row (name-cell click opens the name dialog). */
+    public static final String STAGE_NEW_SENTINEL = "__new_stage__";
+
+    /** Z offset for the Stages panel — one slot past the package menu, on the same {@code -Z} side. */
+    private static final int STAGES_MENU_Z_OFFSET = -10;
+
+    /** Anchor for the floating Stages panel — beside the carriages nav menu / package menu at the door. */
+    public static BlockPos stagesMenuAnchor(CarriageDims dims) {
+        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
+        if (variants.isEmpty()) return null;
+        BlockPos firstOrigin = CarriageEditor.plotOrigin(variants.get(0), dims);
+        if (firstOrigin == null) return null;
+        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        return new BlockPos(
+            firstOrigin.getX() - MENU_GAP,
+            firstOrigin.getY() + footprint.getY() + Y_ANCHOR_LIFT,
+            firstOrigin.getZ() + footprint.getZ() / 2 + STAGES_MENU_Z_OFFSET
+        );
+    }
+
+    /**
+     * The Stages management panel: one gated row per Stage (name + min/max/dimension cells, edited via
+     * the {@code editor stage …} commands) plus a synthetic "+ New Stage" row whose name-cell click
+     * opens the name dialog. {@code null} when there is no anchor (no carriages registered yet).
+     */
+    public static EditorTypeMenusPacket.Menu buildStagesMenu(CarriageDims dims) {
+        BlockPos anchor = stagesMenuAnchor(dims);
+        if (anchor == null) return null;
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>();
+        for (games.brennan.dungeontrain.template.Stage s : StageStore.allStages()) {
+            TemplateGate g = s.gate();
+            // weight = NO_WEIGHT keeps the row weightless; the gated ctor still carries the gate so
+            // the row reads as (name + level/dimension) and the client edit screen can show values.
+            rows.add(new EditorTypeMenusPacket.Variant(
+                s.name(), EditorPlotLabelsPacket.NO_WEIGHT,
+                g.minLevel(), g.maxLevel(), TrainPhase.toMask(g.phases()),
+                STAGES_CATEGORY, s.id(), s.id(), true, false));
+        }
+        // The companion-menu renderer adds its own "+ New" footer row (routed to the StageNameScreen
+        // by the input handler), so no synthetic create row is needed here.
+        return new EditorTypeMenusPacket.Menu(
+            anchor, "Stages", rows, false, "", List.of(), List.of(), false, true);
     }
 
     /**
