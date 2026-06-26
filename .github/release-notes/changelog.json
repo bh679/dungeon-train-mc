@@ -5,7 +5,7 @@
       "version": "0.294.0",
       "type": "feat",
       "title": "Cinematic spawn-on-train intro",
-      "summary": "You now begin each new world aboard the train. On your first arrival, a short cinematic sweeps up from the ground to reveal your train before handing you the controls \u2014 press Space at any time to skip it.",
+      "summary": "You now begin each new world aboard the train. On your first arrival, a short cinematic sweeps up from the ground to reveal your train before handing you the controls — press Space at any time to skip it.",
       "highlights": [
         "Spawn standing on a flatbed of the train instead of on the ground beside it",
         "A fly-up intro camera reveals the train the first time you enter a world",
@@ -38,7 +38,7 @@
       "version": "0.295.0",
       "type": "feat",
       "title": "Enemies scale with difficulty level",
-      "summary": "Train enemies now spawn based on the current difficulty. Each spawn egg has a difficulty range, so the early game stays gentle \u2014 small slimes and basic mobs \u2014 while tougher foes like husks, bogged and vindicators ramp in only as you travel deeper and the difficulty climbs. When an enemy is out of its range, that spot fills with an in-range enemy instead, so enemy carriages and cages are never left empty.",
+      "summary": "Train enemies now spawn based on the current difficulty. Each spawn egg has a difficulty range, so the early game stays gentle — small slimes and basic mobs — while tougher foes like husks, bogged and vindicators ramp in only as you travel deeper and the difficulty climbs. When an enemy is out of its range, that spot fills with an in-range enemy instead, so enemy carriages and cages are never left empty.",
       "highlights": [
         "Easy mobs (small slimes) are gated to the opening levels; tougher mobs appear only at higher difficulty",
         "Tuned difficulty windows across the skeleton, bogged, pillager, vindicator, zombie and slime carriages",
@@ -58,7 +58,7 @@
       "version": "0.296.0",
       "type": "fix",
       "title": "Advancements only earnable in survival or adventure",
-      "summary": "Dungeon Train advancements can no longer be earned in creative or spectator mode \u2014 play in survival or adventure to unlock them. The in-game editor's advancements still unlock in creative, and vanilla Minecraft advancements are unaffected.",
+      "summary": "Dungeon Train advancements can no longer be earned in creative or spectator mode — play in survival or adventure to unlock them. The in-game editor's advancements still unlock in creative, and vanilla Minecraft advancements are unaffected.",
       "highlights": [
         "DT gameplay advancements can't be earned in creative or spectator",
         "Editor advancements still unlock in creative",
@@ -92,9 +92,9 @@
       "version": "0.297.0",
       "type": "fix",
       "title": "Piglins no longer wrongly become magma cubes outside the Nether",
-      "summary": "On a train's easy opening stretch, tough mobs get swapped for friendly slimes (and Nether creatures for magma cubes). Piglins were being turned into magma cubes even on Overworld trains. Now zombified piglins are never swapped, and piglins and piglin brutes only turn into magma cubes inside the Nether \u2014 on other trains they spawn exactly as placed.",
+      "summary": "On a train's easy opening stretch, tough mobs get swapped for friendly slimes (and Nether creatures for magma cubes). Piglins were being turned into magma cubes even on Overworld trains. Now zombified piglins are never swapped, and piglins and piglin brutes only turn into magma cubes inside the Nether — on other trains they spawn exactly as placed.",
       "highlights": [
-        "Zombified piglins are never replaced \u2014 they always spawn as placed",
+        "Zombified piglins are never replaced — they always spawn as placed",
         "Piglins & piglin brutes only become magma cubes on Nether trains",
         "Overworld trains no longer spawn out-of-place magma cubes from piglins"
       ],
@@ -126,7 +126,7 @@
       "version": "0.300.0",
       "type": "feat",
       "title": "Leatherworker shop carriage",
-      "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery \u2014 handy for patching together armour or recolouring your kit mid-run.",
+      "summary": "A leatherworker's stall now rides the train among the other shops. Its chest is stocked with leather and the full set of leather armour, a whole rainbow of dyes, emeralds, a potion and other odds and ends from the tannery — handy for patching together armour or recolouring your kit mid-run.",
       "highlights": [
         "New leatherworker shop carriage joins the train's rotating shops",
         "Stocked with leather, the full leather-armour set and leather horse armour",
@@ -159,7 +159,7 @@
       "version": "0.301.0",
       "type": "fix",
       "title": "Empty enemy spots no longer leave a stray block behind",
-      "summary": "A carriage spot that can only hold enemies \u2014 and whose enemies are all the wrong level for your current depth \u2014 now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
+      "summary": "A carriage spot that can only hold enemies — and whose enemies are all the wrong level for your current depth — now stays as empty air instead of leaving a stray block where a mob would have stood. The enemy still appears once you travel deep enough for it to belong.",
       "highlights": [
         "Mob-only carriage spots with no depth-appropriate enemy now clear to air",
         "No more leftover placeholder block where a not-yet-eligible mob would stand"
@@ -192,13 +192,13 @@
       "version": "0.302.0",
       "type": "feat",
       "title": "Five train-traversal advancements",
-      "summary": "Five new advancements reward exploring the world the train rides through \u2014 hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
+      "summary": "Five new advancements reward exploring the world the train rides through — hopping down onto the tracks, wandering off and finding your way back aboard, and discovering the bridge-pillar staircases and tunnel stairwells along the route.",
       "highlights": [
-        "Track Record \u2014 set foot on the rails below the train",
-        "Off the Rails \u2014 leave the train and tracks behind for the open world",
-        "Back on Track \u2014 climb aboard again after getting off",
-        "Taking the Stairs \u2014 use a bridge-pillar staircase",
-        "Beneath the Candy Kingdom \u2014 enter a tunnel stairwell"
+        "Track Record — set foot on the rails below the train",
+        "Off the Rails — leave the train and tracks behind for the open world",
+        "Back on Track — climb aboard again after getting off",
+        "Taking the Stairs — use a bridge-pillar staircase",
+        "Beneath the Candy Kingdom — enter a tunnel stairwell"
       ],
       "pr": 382,
       "date": "2026-06-14",
@@ -211,7 +211,7 @@
       "version": "0.302.0",
       "type": "feat",
       "title": "Armor stands as randomized carriage contents",
-      "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty \u2014 more variety in what you find aboard the train.",
+      "summary": "Carriage cells can now randomly feature an armor stand wearing a rolled set of armor, sitting alongside the usual blocks and loot. Some carriages show an equipped stand in a corner, others leave it empty — more variety in what you find aboard the train.",
       "highlights": [
         "Armor stands can now appear as random carriage contents, sometimes wearing a full set of gear",
         "Each stand's loadout is rolled per spawn, so no two carriages are guaranteed alike"
@@ -227,11 +227,11 @@
       "version": "0.303.0",
       "type": "feat",
       "title": "Keep Inventory now carries your gear to the next world",
-      "summary": "With Keep Inventory turned on, dying and starting a New World now brings your whole inventory and experience along \u2014 and the new world keeps the rule on, so your gear and XP carry through run after run. With Keep Inventory off, nothing changes.",
+      "summary": "With Keep Inventory turned on, dying and starting a New World now brings your whole inventory and experience along — and the new world keeps the rule on, so your gear and XP carry through run after run. With Keep Inventory off, nothing changes.",
       "highlights": [
         "Inventory (including armor and offhand) and XP carry into the next world when Keep Inventory is on",
         "The next world keeps the Keep Inventory rule enabled automatically, so it chains across every run",
-        "No change when Keep Inventory is off \u2014 the next world still starts empty"
+        "No change when Keep Inventory is off — the next world still starts empty"
       ],
       "pr": 385,
       "date": "2026-06-14",
@@ -244,7 +244,7 @@
       "version": "0.304.0",
       "type": "feat",
       "title": "Quality-of-life mods in the modpack: AppleSkin + Mouse Tweaks",
-      "summary": "The Dungeon Train modpack now includes AppleSkin \u2014 the food saturation and hunger-value overlay \u2014 enabled by default (you can untick it when installing). Mouse Tweaks, for faster inventory management (shift-drag and scroll-to-move items), is offered as an optional add-on you can opt into.",
+      "summary": "The Dungeon Train modpack now includes AppleSkin — the food saturation and hunger-value overlay — enabled by default (you can untick it when installing). Mouse Tweaks, for faster inventory management (shift-drag and scroll-to-move items), is offered as an optional add-on you can opt into.",
       "highlights": [
         "AppleSkin food/saturation overlay now ships with the modpack (on by default)",
         "Mouse Tweaks inventory quality-of-life available as an optional add-on"
@@ -260,9 +260,9 @@
       "version": "0.304.0",
       "type": "feat",
       "title": "Know The Rules advancement + clearer ride-time goals",
-      "summary": "A new \"Know The Rules\" advancement joins the Taking Notes branch \u2014 read every Quiet Rule of the train to earn it, and \"Respect The Rules\" now nests beneath it. Two ride-time advancements also spell out how long you need to stay aboard: \"Settling In\" (ten hours) and \"I Live Here Now\" (twenty-four hours).",
+      "summary": "A new \"Know The Rules\" advancement joins the Taking Notes branch — read every Quiet Rule of the train to earn it, and \"Respect The Rules\" now nests beneath it. Two ride-time advancements also spell out how long you need to stay aboard: \"Settling In\" (ten hours) and \"I Live Here Now\" (twenty-four hours).",
       "highlights": [
-        "New \"Know The Rules\" advancement \u2014 read every Quiet Rule of the train",
+        "New \"Know The Rules\" advancement — read every Quiet Rule of the train",
         "\"Respect The Rules\" now sits beneath it in the Taking Notes branch",
         "\"Settling In\" and \"I Live Here Now\" descriptions now state the hours required"
       ],
@@ -276,8 +276,8 @@
       "id": "quiet-rules-dev-key-adventurer-tips",
       "version": "0.304.0",
       "type": "content",
-      "title": "More Quiet Rules of the Train \u2014 the maker, the key, and fellow adventurers",
-      "summary": "The Quiet Rules of the Train book gains ten new entries. Some whisper of reaching the one who built the train; one points to the key that reveals what you came here to do \u2014 and shows your own bound advancements key inline; the rest are hard-won advice on the other adventurers you meet: when to bow, when to gift, when to defend, and how to win them over.",
+      "title": "More Quiet Rules of the Train — the maker, the key, and fellow adventurers",
+      "summary": "The Quiet Rules of the Train book gains ten new entries. Some whisper of reaching the one who built the train; one points to the key that reveals what you came here to do — and shows your own bound advancements key inline; the rest are hard-won advice on the other adventurers you meet: when to bow, when to gift, when to defend, and how to win them over.",
       "highlights": [
         "A rule on reaching the train's maker via \"@Dev\"",
         "A rule that reveals your own advancements key, inline in the page",
@@ -294,7 +294,7 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Jade tooltips available as an optional modpack add-on",
-      "summary": "Jade \u2014 the \"what am I looking at\" overlay that shows the name and details of whatever block or item you're aiming at \u2014 is now offered as an optional add-on for the Dungeon Train modpack that you can opt into. Heads-up: Jade's tooltip doesn't show for blocks on the moving train yet (a Sable limitation); it works everywhere else.",
+      "summary": "Jade — the \"what am I looking at\" overlay that shows the name and details of whatever block or item you're aiming at — is now offered as an optional add-on for the Dungeon Train modpack that you can opt into. Heads-up: Jade's tooltip doesn't show for blocks on the moving train yet (a Sable limitation); it works everywhere else.",
       "highlights": [
         "Jade block & item tooltips offered as an optional modpack add-on",
         "Known limitation: no tooltip for blocks on the moving train (works fine off-train)"
@@ -310,10 +310,10 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Type @Dev in chat: autocomplete + highlight",
-      "summary": "The bundled Discord Presence mod updates to 0.15.0. Typing @Dev (or @brennanhatton) in chat now autocompletes like a command and turns yellow as you type \u2014 so the new Quiet Rule about reaching the maker is something you can actually see and use. The deeper Discord wiring (real pings, engaged-only relay) ships too but stays off until a server owner turns it on.",
+      "summary": "The bundled Discord Presence mod updates to 0.15.0. Typing @Dev (or @brennanhatton) in chat now autocompletes like a command and turns yellow as you type — so the new Quiet Rule about reaching the maker is something you can actually see and use. The deeper Discord wiring (real pings, engaged-only relay) ships too but stays off until a server owner turns it on.",
       "highlights": [
         "@Dev / @brennanhatton autocomplete in chat (Tab to complete) and highlight yellow as you type",
-        "Pairs with the new \u201creach the maker via @Dev\u201d Quiet Rule",
+        "Pairs with the new “reach the maker via @Dev” Quiet Rule",
         "Real Discord pings and relay gating are bundled but off by default"
       ],
       "pr": 393,
@@ -327,11 +327,11 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Meet, befriend, or lay to rest your own echo",
-      "summary": "Three new advancements follow your reunions with your own echo \u2014 a passenger reincarnated from one of your past lives. Walk up to one, win it over with a two-way gift exchange, or put it to rest.",
+      "summary": "Three new advancements follow your reunions with your own echo — a passenger reincarnated from one of your past lives. Walk up to one, win it over with a two-way gift exchange, or put it to rest.",
       "highlights": [
-        "New \"Hello, Old Soul\" \u2014 come within two blocks of your own echo",
-        "\"Old Friends, New Life\" \u2014 befriend your own echo",
-        "\"Lay to Rest\" \u2014 kill your own echo"
+        "New \"Hello, Old Soul\" — come within two blocks of your own echo",
+        "\"Old Friends, New Life\" — befriend your own echo",
+        "\"Lay to Rest\" — kill your own echo"
       ],
       "pr": 398,
       "date": "2026-06-15",
@@ -344,7 +344,7 @@
       "version": "0.305.0",
       "type": "fix",
       "title": "AppleSkin listed as an optional dependency",
-      "summary": "AppleSkin \u2014 the food and saturation overlay bundled on-by-default in the Dungeon Train modpack \u2014 is now also listed as an optional add-on on the mod's own CurseForge page, so it's discoverable straight from the mod.",
+      "summary": "AppleSkin — the food and saturation overlay bundled on-by-default in the Dungeon Train modpack — is now also listed as an optional add-on on the mod's own CurseForge page, so it's discoverable straight from the mod.",
       "highlights": [
         "AppleSkin now shown as an optional dependency of the mod"
       ],
@@ -359,7 +359,7 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Archways fade between elevated track pillars",
-      "summary": "Where the train's track climbs onto tall support pillars \u2014 crossing ravines, rivers, and oceans \u2014 the pillars now fade toward each other with stepped archways instead of standing as bare posts. The arches are built from each pillar's own stone, so a viaduct made of fancy or themed pillars arches in its own material.",
+      "summary": "Where the train's track climbs onto tall support pillars — crossing ravines, rivers, and oceans — the pillars now fade toward each other with stepped archways instead of standing as bare posts. The arches are built from each pillar's own stone, so a viaduct made of fancy or themed pillars arches in its own material.",
       "highlights": [
         "Tall track pillars now fade into stepped archways toward their neighbours",
         "Arches copy each pillar's own blocks, so themed pillars arch in-material"
@@ -375,10 +375,10 @@
       "version": "0.305.0",
       "type": "feat",
       "title": "Everything Burrito: earn every other advancement",
-      "summary": "A new challenge advancement, Everything Burrito, unlocks once you've earned every other Dungeon Train advancement \u2014 editor achievements aside. It hangs off 'Help I Can't Get Off' at the end of the line, and tracks the achievement list dynamically, so it always means '100%' even as new advancements arrive in future updates.",
+      "summary": "A new challenge advancement, Everything Burrito, unlocks once you've earned every other Dungeon Train advancement — editor achievements aside. It hangs off 'Help I Can't Get Off' at the end of the line, and tracks the achievement list dynamically, so it always means '100%' even as new advancements arrive in future updates.",
       "highlights": [
         "New 'Everything Burrito' challenge advancement for 100% completion",
-        "Counts every non-editor advancement \u2014 and auto-includes any added in future updates"
+        "Counts every non-editor advancement — and auto-includes any added in future updates"
       ],
       "pr": 401,
       "date": "2026-06-15",
@@ -391,7 +391,7 @@
       "version": "0.305.0",
       "type": "fix",
       "title": "Pause menu works during the intro cutscene",
-      "summary": "Switching windows (or pressing Esc) during the spawn intro cutscene now opens a pause menu you can actually use \u2014 you can click its buttons and Esc closes it \u2014 and the cutscene picks up right where it left off when you come back. Previously the menu could open in a frozen, unclickable state.",
+      "summary": "Switching windows (or pressing Esc) during the spawn intro cutscene now opens a pause menu you can actually use — you can click its buttons and Esc closes it — and the cutscene picks up right where it left off when you come back. Previously the menu could open in a frozen, unclickable state.",
       "highlights": [
         "The pause menu is now clickable and closable during the intro cutscene",
         "The intro now pauses and resumes around the menu instead of locking up"
@@ -407,7 +407,7 @@
       "version": "0.305.0",
       "type": "content",
       "title": "New decor carriages (house, tree, cherry blossom) + broken roof",
-      "summary": "A new 'features' content set rides the train \u2014 house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
+      "summary": "A new 'features' content set rides the train — house, tree, and cherry-blossom builds that can appear inside several carriage types, with chests of loot in the tree and cherry-blossom variants. Cracked carriages also gain a new 'broken' roof look.",
       "highlights": [
         "New house, tree, and cherry-blossom carriage content (tree & cherry blossom carry loot chests)",
         "New 'broken' roof variant for cracked carriages"
@@ -439,7 +439,7 @@
       "title": "Gentler opening: a mob-free start, then slimes, then normal",
       "summary": "New runs now ease in over three stages. The first stretch of the train is completely free of hostile mobs, so you can find your feet, meet the villagers and grab starter loot in peace. After that, a stretch of harmless slimes gives you a gentle combat warm-up before the usual mobs and difficulty kick in. It's all on by default and fully tunable per world.",
       "highlights": [
-        "The first ~10 carriages spawn no hostile mobs \u2014 villagers, traders and friendly mobs still ride along",
+        "The first ~10 carriages spawn no hostile mobs — villagers, traders and friendly mobs still ride along",
         "The next ~15 carriages spawn only slimes, for an easy combat warm-up",
         "Normal mobs and the usual difficulty curve resume after the opening stretch",
         "All three stages are on by default and tunable in dungeontrain-server.toml"
@@ -458,7 +458,7 @@
       "summary": "Opening the in-game editor now greets you with a short welcome that points out what the editor can do and how to reach Brennan for help.",
       "highlights": [
         "A friendly welcome appears in chat a couple of seconds after you first open the editor each session.",
-        "Click the @brennanhatton mention to message Brennan directly \u2014 your message reaches him on Discord."
+        "Click the @brennanhatton mention to message Brennan directly — your message reaches him on Discord."
       ],
       "pr": 408,
       "date": "2026-06-15",
@@ -471,7 +471,7 @@
       "version": "0.308.0",
       "type": "feat",
       "title": "Tag the dev from in-game chat",
-      "summary": "Type @dev or @brennanhatton in chat and it now pings the developer in the community Discord \u2014 a message shouted into the dark can finally reach someone.",
+      "summary": "Type @dev or @brennanhatton in chat and it now pings the developer in the community Discord — a message shouted into the dark can finally reach someone.",
       "highlights": [
         "@dev and @brennanhatton in chat now ping the developer in the community Discord feed"
       ],
@@ -503,7 +503,7 @@
       "version": "0.310.0",
       "type": "feat",
       "title": "Editor welcome shows Brennan's Discord \"last seen online\"",
-      "summary": "The Dungeon Train editor welcome can again end with whether Brennan is online on Discord right now, or how long ago he was last seen \u2014 so creators know if a quick reply is likely. Powered by Discord Presence's presence query over the community relay; gracefully hidden when his presence is unknown.",
+      "summary": "The Dungeon Train editor welcome can again end with whether Brennan is online on Discord right now, or how long ago he was last seen — so creators know if a quick reply is likely. Powered by Discord Presence's presence query over the community relay; gracefully hidden when his presence is unknown.",
       "highlights": [
         "Editor welcome shows \"Brennan is online on Discord right now!\" or \"last seen online X ago\"",
         "Gracefully hidden when his Discord presence is unknown"
@@ -532,7 +532,7 @@
       "version": "0.311.0",
       "type": "feat",
       "title": "All advancements now persist across worlds",
-      "summary": "Every advancement you earn \u2014 vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods \u2014 now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
+      "summary": "Every advancement you earn — vanilla Minecraft (Story, Nether, The End, Adventure, Husbandry), Dungeon Train, and other mods — now follows you into every world, the same way Dungeon Train's own advancements always have. Start a brand-new world and your earned advancements are already unlocked, no fanfare. Advancements you'd earned before this update get absorbed automatically the next time you load an existing world. Recipe-book unlocks stay per-world.",
       "highlights": [
         "Vanilla and other-mod advancements now carry across worlds, not just Dungeon Train's",
         "Earned advancements from existing worlds are absorbed automatically on next load",
@@ -549,7 +549,7 @@
       "version": "0.311.0",
       "type": "feat",
       "title": "Tagging @dev in chat shows how recently Brennan was online",
-      "summary": "Type @dev or @brennanhatton in chat and the game quietly tells you how recently Brennan was last online on Discord \u2014 \"online right now\" or \"online 5 minutes ago\" \u2014 so you know whether to expect a reply. It only appears when he's been around in the last half hour, lands a beat after your own message, and won't show more than once every 5 minutes.",
+      "summary": "Type @dev or @brennanhatton in chat and the game quietly tells you how recently Brennan was last online on Discord — \"online right now\" or \"online 5 minutes ago\" — so you know whether to expect a reply. It only appears when he's been around in the last half hour, lands a beat after your own message, and won't show more than once every 5 minutes.",
       "highlights": [
         "Tag @dev or @brennanhatton to see Brennan's recent online status in chat",
         "Only shows when he was online within the last 30 minutes",
@@ -566,7 +566,7 @@
       "version": "0.311.0",
       "type": "fix",
       "title": "\"Reboarder\" advancement now unlocks reliably",
-      "summary": "Shoving a passenger off the moving train now reliably earns the Reboarder advancement \u2014 including when they tumble off the open side of a carriage into a gap or fall onto the tracks below, not just when they're knocked cleanly clear. Those off-the-edge falls used to slip through and never counted.",
+      "summary": "Shoving a passenger off the moving train now reliably earns the Reboarder advancement — including when they tumble off the open side of a carriage into a gap or fall onto the tracks below, not just when they're knocked cleanly clear. Those off-the-edge falls used to slip through and never counted.",
       "highlights": [
         "Pushing a passenger off the train now reliably unlocks Reboarder",
         "Counts passengers that fall off the side or onto the tracks, not only clean knock-offs"
@@ -582,7 +582,7 @@
       "version": "0.311.0",
       "type": "content",
       "title": "New book: \"All the Creator Asks\"",
-      "summary": "A new random book joins the pool \u2014 a fallen adventurer's reverent testament that treats the death-screen feedback survey as a holy rite of the afterlife, written to gently beg you to answer it. Eight short variants turn up in chests, on bookshelves, and at narrative lecterns.",
+      "summary": "A new random book joins the pool — a fallen adventurer's reverent testament that treats the death-screen feedback survey as a holy rite of the afterlife, written to gently beg you to answer it. Eight short variants turn up in chests, on bookshelves, and at narrative lecterns.",
       "highlights": [
         "New 8-variant random book that venerates the feedback survey as a spiritual passage",
         "Found in chest rolls, bookshelf drops, and narrative lecterns"
@@ -598,7 +598,7 @@
       "version": "0.311.0",
       "type": "feat",
       "title": "Replay the intro cinematic on demand",
-      "summary": "The opening cinematic is no longer a one-time thing \u2014 run /dungeontrain cinematic (or /dt cinematic) any time to watch it again. By default the camera lifts off from a spot on the ground beside the track, right where you are, and sweeps up and away as the train carries you onward \u2014 just like the intro. Prefer to start from exactly where you're looking? Use /dt cinematic current.",
+      "summary": "The opening cinematic is no longer a one-time thing — run /dungeontrain cinematic (or /dt cinematic) any time to watch it again. By default the camera lifts off from a spot on the ground beside the track, right where you are, and sweeps up and away as the train carries you onward — just like the intro. Prefer to start from exactly where you're looking? Use /dt cinematic current.",
       "highlights": [
         "New /dt cinematic command replays the opening cinematic on demand",
         "Default shot rises from the ground beside you near the track; 'current' starts from your current view"
@@ -616,7 +616,7 @@
       "title": "Carriage # and difficulty on Discord advancement posts",
       "summary": "Earn an advancement and the community Discord now shows which carriage you were riding and your difficulty level at that moment, posted on its own line right below the advancement.",
       "highlights": [
-        "Reads e.g. \"Carriage +7 \u00b7 Difficulty Level 3\", matching the in-game HUD."
+        "Reads e.g. \"Carriage +7 · Difficulty Level 3\", matching the in-game HUD."
       ],
       "pr": 420,
       "date": "2026-06-16",
@@ -629,10 +629,10 @@
       "version": "0.312.0",
       "type": "feat",
       "title": "New advancement: The Great Beyond",
-      "summary": "Earn a new advancement \u2014 \"The Great Beyond\" \u2014 by completing the death-screen feedback survey. Once you've answered every survey question, it unlocks. The survey is provided by the bundled Discord Presence mod, which now also lets you open it any time with the new /feedback command.",
+      "summary": "Earn a new advancement — \"The Great Beyond\" — by completing the death-screen feedback survey. Once you've answered every survey question, it unlocks. The survey is provided by the bundled Discord Presence mod, which now also lets you open it any time with the new /feedback command.",
       "highlights": [
-        "\"The Great Beyond\" \u2014 Complete the feedback survey after death.",
-        "Counts however you finish the survey \u2014 on the death screen or via /feedback."
+        "\"The Great Beyond\" — Complete the feedback survey after death.",
+        "Counts however you finish the survey — on the death screen or via /feedback."
       ],
       "date": "2026-06-16",
       "released": true,
@@ -644,7 +644,7 @@
       "version": "0.313.0",
       "type": "feat",
       "title": "Time-aboard & distance-ridden advancements",
-      "summary": "Seven new advancements reward the long haul. Stay aboard for an hour or two without dying, and rack up the kilometres you ride \u2014 both within a single life and across every run you've ever taken. They branch off Dungeon Train Explorer in the advancements screen.",
+      "summary": "Seven new advancements reward the long haul. Stay aboard for an hour or two without dying, and rack up the kilometres you ride — both within a single life and across every run you've ever taken. They branch off Dungeon Train Explorer in the advancements screen.",
       "highlights": [
         "Single-life time aboard: One Long Ride (1 hour) and Reality Escaped (2 hours)",
         "Single-life distance: Escaping Spawn (10 km), Cross-Country (100 km), The Long Run (250 km)",
@@ -661,7 +661,7 @@
       "version": "0.315.0",
       "type": "feat",
       "title": "Narrative death screen",
-      "summary": "Dying on the train now opens a paginated, narrated retrospective instead of the plain vanilla screen. The Dungeon Train reflects on your fall, your deeds, the cargo you carried, all your lives, and the platform ahead \u2014 your run and lifetime stats woven in, a train that fills as you read, and lore that adapts to how you died. Page through with Continue, then Board anew or Leave the line.",
+      "summary": "Dying on the train now opens a paginated, narrated retrospective instead of the plain vanilla screen. The Dungeon Train reflects on your fall, your deeds, the cargo you carried, all your lives, and the platform ahead — your run and lifetime stats woven in, a train that fills as you read, and lore that adapts to how you died. Page through with Continue, then Board anew or Leave the line.",
       "highlights": [
         "Paginated narrative death screen with data-driven lore",
         "Per-run and lifetime stats: carriages, distance, time aboard, mobs, friends, loot containers, books, deaths",
@@ -722,7 +722,7 @@
       "version": "0.316.0",
       "type": "feat",
       "title": "Persistent Ender Chest across runs",
-      "summary": "The Ender Chest now persists between worlds \u2014 items you store survive your death and carry into the next run. Survival and creative inventories are kept separate, so switching game modes gives you a fresh Ender Chest for that mode.",
+      "summary": "The Ender Chest now persists between worlds — items you store survive your death and carry into the next run. Survival and creative inventories are kept separate, so switching game modes gives you a fresh Ender Chest for that mode.",
       "highlights": [
         "Ender Chest contents carry forward when you die and start a new world",
         "Separate inventory per game mode (survival, creative, adventure, spectator)",
@@ -738,7 +738,7 @@
       "version": "0.316.0",
       "type": "feat",
       "title": "Death screen: lectern stories count as books, plus first-death send-off",
-      "summary": "Stories you read at narrative lecterns now count toward the \"Books read\" tally on your death-screen run summary \u2014 previously only books read from your hand were counted. And your very first death now gets its own bespoke lines on the \"all your lives\" and \"the platform\" pages, instead of the generic send-off written for veteran riders.",
+      "summary": "Stories you read at narrative lecterns now count toward the \"Books read\" tally on your death-screen run summary — previously only books read from your hand were counted. And your very first death now gets its own bespoke lines on the \"all your lives\" and \"the platform\" pages, instead of the generic send-off written for veteran riders.",
       "highlights": [
         "Narrative-lectern stories now count toward \"Books read\" on the death screen",
         "Unique first-death dialogue on the \"all your lives\" and \"the platform\" pages"
@@ -754,10 +754,10 @@
       "version": "0.317.0",
       "type": "feat",
       "title": "Open-ended feedback survey question",
-      "summary": "After you die, the feedback survey's second question is now open-ended \u2014 \"If you could change one thing about the mod, what would it be?\" \u2014 answered in a free-text box instead of a 0\u201310 rating. The first question (how likely you'd recommend the game) is unchanged, and your answer is only sent if you actually type something.",
+      "summary": "After you die, the feedback survey's second question is now open-ended — \"If you could change one thing about the mod, what would it be?\" — answered in a free-text box instead of a 0–10 rating. The first question (how likely you'd recommend the game) is unchanged, and your answer is only sent if you actually type something.",
       "highlights": [
         "Survey's second question is now a free-text \"what would you change?\" prompt",
-        "Replaces the old difficulty-progression 0\u201310 rating"
+        "Replaces the old difficulty-progression 0–10 rating"
       ],
       "pr": 435,
       "date": "2026-06-18",
@@ -770,10 +770,10 @@
       "version": "0.317.0",
       "type": "feat",
       "title": "Cinematographer clear-view: see through walls to film the train",
-      "summary": "TrainCinematographer mode gains a clear-view sub-mode: while filming, the blocks directly in front of the camera turn invisible so terrain, carriage walls and clutter stop blocking the shot \u2014 then quietly return as you pan away, leaving the world untouched. Doors, trapdoors and slabs are left alone, and the camera's automatic door-opening now reaches much further down the train.",
+      "summary": "TrainCinematographer mode gains a clear-view sub-mode: while filming, the blocks directly in front of the camera turn invisible so terrain, carriage walls and clutter stop blocking the shot — then quietly return as you pan away, leaving the world untouched. Doors, trapdoors and slabs are left alone, and the camera's automatic door-opening now reaches much further down the train.",
       "highlights": [
-        "New: /dt cinematographer clearview on|off \u2014 see straight through whatever the camera is pointed at",
-        "Blocks turn invisible (not removed), so nothing collapses and your train stays intact \u2014 decorated pots, bookshelves and chests come back with their contents",
+        "New: /dt cinematographer clearview on|off — see straight through whatever the camera is pointed at",
+        "Blocks turn invisible (not removed), so nothing collapses and your train stays intact — decorated pots, bookshelves and chests come back with their contents",
         "Cinematographer now auto-opens doors much further ahead (50 blocks)"
       ],
       "pr": 437,
@@ -787,7 +787,7 @@
       "version": "0.317.0",
       "type": "refactor",
       "title": "Ender Chest Persistence extracted to standalone mod",
-      "summary": "The Ender Chest cross-world and per-game-mode persistence is now shipped as the standalone Ender Chest Persistence mod (bundled in DT's jar, so no separate install is needed). The player-facing behaviour is identical \u2014 Ender Chest contents are preserved across world resets and isolated by game mode.",
+      "summary": "The Ender Chest cross-world and per-game-mode persistence is now shipped as the standalone Ender Chest Persistence mod (bundled in DT's jar, so no separate install is needed). The player-facing behaviour is identical — Ender Chest contents are preserved across world resets and isolated by game mode.",
       "highlights": [],
       "pr": 438,
       "date": "2026-06-18",
@@ -800,11 +800,11 @@
       "version": "0.317.0",
       "type": "feat",
       "title": "Photos of your ride behind the death screen",
-      "summary": "The train now quietly snaps third-person photos of your journey and shows them as the backdrop on the death screen \u2014 a recap of your run, with the most fitting shot behind each page.",
+      "summary": "The train now quietly snaps third-person photos of your journey and shows them as the backdrop on the death screen — a recap of your run, with the most fitting shot behind each page.",
       "highlights": [
         "Photos are taken throughout the ride and become the background on each death-screen page",
-        "Shots favour well-lit moments where you're in clear view, and capture key beats \u2014 fights, new armour, opening chests, breaking pots, reading lore, and meeting travellers",
-        "Optional chat log of when each photo is taken \u2014 toggle it in the X menu under Options"
+        "Shots favour well-lit moments where you're in clear view, and capture key beats — fights, new armour, opening chests, breaking pots, reading lore, and meeting travellers",
+        "Optional chat log of when each photo is taken — toggle it in the X menu under Options"
       ],
       "pr": 440,
       "date": "2026-06-18",
@@ -833,9 +833,9 @@
       "version": "0.318.0",
       "type": "fix",
       "title": "Death-screen ride photos only snap when you're in clear view",
-      "summary": "Ride photos now confirm there's an unobstructed line to your character before snapping, so a death-screen background never shows you hidden behind a carriage wall. Inside walled carriages the camera finds an angle that actually sees you \u2014 down an aisle or through a doorway \u2014 or skips the shot until one opens up.",
+      "summary": "Ride photos now confirm there's an unobstructed line to your character before snapping, so a death-screen background never shows you hidden behind a carriage wall. Inside walled carriages the camera finds an angle that actually sees you — down an aisle or through a doorway — or skips the shot until one opens up.",
       "highlights": [
-        "No more death-screen photos of the back of a wall \u2014 every shot has a clear view of you",
+        "No more death-screen photos of the back of a wall — every shot has a clear view of you",
         "Works inside Sable carriages, not just open decks: the camera checks the carriage's own walls",
         "If nothing can see you right now, the photo is skipped and retried instead of captured blind"
       ],
@@ -852,9 +852,9 @@
       "title": "FerriteCore added to the modpack for lower memory use",
       "summary": "The Dungeon Train modpack now bundles FerriteCore as an on-by-default add-on that quietly trims memory use. It deduplicates internal game data (block states, models) to cut RAM on this content-heavy pack, with no change to how the game plays. You can untick it during install.",
       "highlights": [
-        "On-by-default Include \u2014 deselectable at install; the standalone mod is unaffected.",
+        "On-by-default Include — deselectable at install; the standalone mod is unaffected.",
         "Measured ~18% lower client memory at the menu; safe with the moving train (Sable).",
-        "Full memory benchmark and methodology: [wiki \u2192 Compatibility \u2192 FerriteCore](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#ferritecore)"
+        "Full memory benchmark and methodology: [wiki → Compatibility → FerriteCore](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#ferritecore)"
       ],
       "pr": 445,
       "date": "2026-06-18",
@@ -867,7 +867,7 @@
       "version": "0.318.0",
       "type": "feat",
       "title": "Cause of death on the fall screen",
-      "summary": "The death screen's first page now tells you what actually ended the run. Its title shows your cause of death in the second person \u2014 \"You fell from a high place\", \"You were slain by a zombie\", \"You blew up\" \u2014 instead of the generic \"the fall\".",
+      "summary": "The death screen's first page now tells you what actually ended the run. Its title shows your cause of death in the second person — \"You fell from a high place\", \"You were slain by a zombie\", \"You blew up\" — instead of the generic \"the fall\".",
       "highlights": [
         "Fall-page title now names how you died",
         "Reads in second person (\"You fell from a high place\", \"You were blown up by a creeper\")"
@@ -883,10 +883,10 @@
       "version": "0.318.0",
       "type": "feat",
       "title": "Biome-diversity achievements",
-      "summary": "Ride the Dungeon Train through a variety of biomes in a single life to earn four new achievements \u2014 from your first handful of biomes all the way to seeing every kind of terrain the world has to offer.",
+      "summary": "Ride the Dungeon Train through a variety of biomes in a single life to earn four new achievements — from your first handful of biomes all the way to seeing every kind of terrain the world has to offer.",
       "highlights": [
-        "Far Afield, Many Lands & World Without End \u2014 ride through 10, 17 and 25 different biomes in a single life",
-        "Terra Omnia \u2014 visit all 8 biome families (forest, frozen, jungle, desert, savanna, mountain, wetland and ocean) in one life",
+        "Far Afield, Many Lands & World Without End — ride through 10, 17 and 25 different biomes in a single life",
+        "Terra Omnia — visit all 8 biome families (forest, frozen, jungle, desert, savanna, mountain, wetland and ocean) in one life",
         "A 'Biome family discovered (N/8)' message keeps track as you roll into each new kind of terrain"
       ],
       "pr": 446,
@@ -916,7 +916,7 @@
       "version": "0.319.0",
       "type": "perf",
       "title": "Modpack: ModernFix bundled by default (faster launch, less memory)",
-      "summary": "The Dungeon Train CurseForge modpack now ships ModernFix as an on-by-default add-on, alongside AppleSkin and FerriteCore. It speeds up launch and world-load times and trims memory use \u2014 a welcome win on a heavy pack like Dungeon Train. It's optional: untick it at install if you'd rather not. (Modpack only \u2014 the mod jar is unchanged; ModernFix is also now listed as an optional companion on the mod page.)",
+      "summary": "The Dungeon Train CurseForge modpack now ships ModernFix as an on-by-default add-on, alongside AppleSkin and FerriteCore. It speeds up launch and world-load times and trims memory use — a welcome win on a heavy pack like Dungeon Train. It's optional: untick it at install if you'd rather not. (Modpack only — the mod jar is unchanged; ModernFix is also now listed as an optional companion on the mod page.)",
       "highlights": [
         "ModernFix added to the modpack, on by default (deselectable at install)",
         "Faster launch + world-load and lower memory; verified safe alongside Sable",
@@ -947,7 +947,7 @@
       "title": "Ride photos wait for a smooth moment",
       "summary": "Ride snapshots now only fire when your game has the headroom to spare, so the camera no longer hitches a frame while you're already lagging. If performance stays rough for a while, the next time you open a menu it quietly grabs one so your death screen still gets its backdrops.",
       "highlights": [
-        "Capture pauses when FPS \u2014 or single-player TPS \u2014 drops below a threshold, and resumes on its own once it recovers.",
+        "Capture pauses when FPS — or single-player TPS — drops below a threshold, and resumes on its own once it recovers.",
         "After a long rough patch, opening your inventory, chat, or a chest takes a catch-up photo.",
         "Thresholds live in the client config (rideSnapshots.minFps / minTps); set either to 0 to turn that check off."
       ],
@@ -962,7 +962,7 @@
       "version": "0.319.0",
       "type": "fix",
       "title": "Death-screen photos never repeat two pages in a row",
-      "summary": "On a short run that didn't capture enough ride photos to give every death-screen page its own, the screen could show the same photo on two pages back-to-back. Now the photos are spread out so consecutive pages always differ \u2014 you'll only see a photo twice in a row if the whole run produced a single photo.",
+      "summary": "On a short run that didn't capture enough ride photos to give every death-screen page its own, the screen could show the same photo on two pages back-to-back. Now the photos are spread out so consecutive pages always differ — you'll only see a photo twice in a row if the whole run produced a single photo.",
       "highlights": [
         "Scarce photos are alternated across the death pages instead of doubling up side by side",
         "Each page still favours its fitting photo where that doesn't cause a back-to-back repeat"
@@ -978,9 +978,9 @@
       "version": "0.319.0",
       "type": "feat",
       "title": "Portrait of the traveller you befriended or killed, on the death screen",
-      "summary": "The death screen's deeds page now shows an animated, full-body portrait of a fellow traveller from your run \u2014 the player-mob you befriended (on the left), or, if you made no friends, the one you killed (on the right). It's shown with their name and the gear they were carrying. Friendly travellers glance around and crouch-bob when they catch your eye; ones you killed stare you down, swing their weapon, and raise their shield. \"Friends\" now means anyone who grew to like you, and the friends tally counts them all.",
+      "summary": "The death screen's deeds page now shows an animated, full-body portrait of a fellow traveller from your run — the player-mob you befriended (on the left), or, if you made no friends, the one you killed (on the right). It's shown with their name and the gear they were carrying. Friendly travellers glance around and crouch-bob when they catch your eye; ones you killed stare you down, swing their weapon, and raise their shield. \"Friends\" now means anyone who grew to like you, and the friends tally counts them all.",
       "highlights": [
-        "Animated player-mob portrait on the deeds page \u2014 befriended (left) or killed (right)",
+        "Animated player-mob portrait on the deeds page — befriended (left) or killed (right)",
         "Rendered full-body with the traveller's name and the gear they last carried",
         "Friends look around and crouch-bob at you; foes stare, swing, and block",
         "The friends tally now counts every traveller who grew to like you"
@@ -1013,7 +1013,7 @@
       "version": "0.321.0",
       "type": "refactor",
       "title": "Quieter biome exploration",
-      "summary": "Riding into a new biome family no longer pops a \"Biome family discovered\" message on screen. The exploration advancements still track and award exactly as before \u2014 only the on-screen notification is gone.",
+      "summary": "Riding into a new biome family no longer pops a \"Biome family discovered\" message on screen. The exploration advancements still track and award exactly as before — only the on-screen notification is gone.",
       "highlights": [],
       "date": "2026-06-18",
       "released": true,
@@ -1025,7 +1025,7 @@
       "version": "0.321.1",
       "type": "feat",
       "title": "Over the Top advancement",
-      "summary": "New advancement fires when a player runs across the roof of one carriage group without dropping inside \u2014 sits before Skip the Grind in the tree.",
+      "summary": "New advancement fires when a player runs across the roof of one carriage group without dropping inside — sits before Skip the Grind in the tree.",
       "highlights": [],
       "date": "2026-06-18",
       "released": true,
@@ -1037,11 +1037,11 @@
       "version": "0.322.0",
       "type": "feat",
       "title": "Free Play for creative & cheat runs",
-      "summary": "Playing in creative or spectator, or using cheat commands, no longer blocks advancements \u2014 you keep earning them live. The run simply becomes Free Play: you're asked to confirm first (with a don't-show-again option), a spyglass effect marks the run, and anything you earn while it's on won't be saved to your profile or count toward your global stats. Start a new world for a fresh, ranked run.",
+      "summary": "Playing in creative or spectator, or using cheat commands, no longer blocks advancements — you keep earning them live. The run simply becomes Free Play: you're asked to confirm first (with a don't-show-again option), a spyglass effect marks the run, and anything you earn while it's on won't be saved to your profile or count toward your global stats. Start a new world for a fresh, ranked run.",
       "highlights": [
         "Creative, spectator, cinematographer and cheat commands start Free Play instead of silently disabling advancements.",
         "A confirmation lets you back out before Free Play takes effect, with a Don't-show-again option.",
-        "Free Play is marked by a permanent spyglass status effect \u2014 hover it in your inventory to see what it means.",
+        "Free Play is marked by a permanent spyglass status effect — hover it in your inventory to see what it means.",
         "Fixed a blank final page on the death screen after dying in Creative."
       ],
       "pr": 460,
@@ -1055,7 +1055,7 @@
       "version": "0.323.0",
       "type": "fix",
       "title": "Death screen Space/Enter hotkeys removed",
-      "summary": "Space and Enter no longer advance the death screen \u2014 click Continue to proceed",
+      "summary": "Space and Enter no longer advance the death screen — click Continue to proceed",
       "highlights": [],
       "pr": 461,
       "date": "2026-06-19",
@@ -1068,7 +1068,7 @@
       "version": "0.323.0",
       "type": "feat",
       "title": "Advancement hints replace the ??? tooltip",
-      "summary": "Haven't earned an advancement yet? Its tooltip now shows a hint or riddle nudging you toward how to unlock it, instead of a blank \"???\". Covers 48 Dungeon Train advancements across riding, reading, exploring and befriending \u2014 a handful of the most spoiler-heavy ones stay a mystery on purpose.",
+      "summary": "Haven't earned an advancement yet? Its tooltip now shows a hint or riddle nudging you toward how to unlock it, instead of a blank \"???\". Covers 48 Dungeon Train advancements across riding, reading, exploring and befriending — a handful of the most spoiler-heavy ones stay a mystery on purpose.",
       "highlights": [
         "Unearned advancements now show a hint instead of \"???\"",
         "48 advancements hinted across the Dungeon Train tab",
@@ -1085,9 +1085,9 @@
       "version": "0.323.0",
       "type": "fix",
       "title": "Pause-menu buttons usable during the intro cinematic",
-      "summary": "Opening the pause menu during the spawn intro cinematic and clicking Options, Advancements, Statistics, Feedback, or Report Bugs now works. Previously those buttons did nothing until the cinematic ended \u2014 only Return to Game and Save & Quit responded.",
+      "summary": "Opening the pause menu during the spawn intro cinematic and clicking Options, Advancements, Statistics, Feedback, or Report Bugs now works. Previously those buttons did nothing until the cinematic ended — only Return to Game and Save & Quit responded.",
       "highlights": [
-        "Pause-menu buttons (Options, Advancements, Statistics, \u2026) now work while the intro cinematic plays"
+        "Pause-menu buttons (Options, Advancements, Statistics, …) now work while the intro cinematic plays"
       ],
       "pr": 463,
       "date": "2026-06-19",
@@ -1117,7 +1117,7 @@
       "version": "0.324.0",
       "type": "fix",
       "title": "Death-screen feedback survey is now skippable",
-      "summary": "The feedback survey on the death screen is optional again \u2014 the Continue button now advances past survey questions whether or not you answer them. Answering still submits your feedback as before.",
+      "summary": "The feedback survey on the death screen is optional again — the Continue button now advances past survey questions whether or not you answer them. Answering still submits your feedback as before.",
       "highlights": [],
       "pr": 467,
       "date": "2026-06-19",
@@ -1130,7 +1130,7 @@
       "version": "0.324.0",
       "type": "feat",
       "title": "Uncraftable arrows now pack an escalating punch",
-      "summary": "The effectless \"Uncraftable\" tipped arrows you scavenge from vases and chests now carry a real offensive potion \u2014 and it grows nastier the deeper you ride. Every arrow you find within a 50-carriage stretch shares the same effect, then it steps up at the next stretch: Weakness early on, ramping through Slowness, Poison, and Harming as you travel further from the start. Loot containers you place yourself scale to how far you've travelled, too.",
+      "summary": "The effectless \"Uncraftable\" tipped arrows you scavenge from vases and chests now carry a real offensive potion — and it grows nastier the deeper you ride. Every arrow you find within a 50-carriage stretch shares the same effect, then it steps up at the next stretch: Weakness early on, ramping through Slowness, Poison, and Harming as you travel further from the start. Loot containers you place yourself scale to how far you've travelled, too.",
       "highlights": [
         "Uncraftable tipped arrows now apply an offensive effect when fired",
         "The effect stays the same across each 50-carriage stretch, then escalates at the next one",
@@ -1180,7 +1180,7 @@
       "version": "0.325.0",
       "type": "feat",
       "title": "Advancements on the death-screen cargo page",
-      "summary": "The death screen's cargo page now shows the Dungeon Train advancements you earned this life \u2014 each in its real advancement frame \u2014 and moves the loot-container and book tallies onto the gear row as chest and book icons. A button opens the full advancements screen.",
+      "summary": "The death screen's cargo page now shows the Dungeon Train advancements you earned this life — each in its real advancement frame — and moves the loot-container and book tallies onto the gear row as chest and book icons. A button opens the full advancements screen.",
       "highlights": [
         "Advancements earned this life, shown on the cargo page in their real per-tier advancement frames",
         "Loot containers and books read now appear as chest and book icons on the gear row (hover for labels)",
@@ -1199,7 +1199,7 @@
       "title": "Modpack: Advancement Plaques on by default, plus more one-click add-ons",
       "summary": "The Dungeon Train modpack now ships Advancement Plaques enabled by default, so your hard-won advancements pop up as a fancy animated plaque instead of the plain vanilla toast. AppleSkin, FerriteCore and ModernFix are now correctly switched on out of the box too, and Mouse Tweaks, Jade, Distant Horizons and Tectonic come bundled and ready to toggle on whenever you want them.",
       "highlights": [
-        "Advancement Plaques enabled by default \u2014 fancier advancement popups",
+        "Advancement Plaques enabled by default — fancier advancement popups",
         "AppleSkin, FerriteCore & ModernFix now correctly on by default",
         "Mouse Tweaks, Jade, Distant Horizons (2.x) & Tectonic bundled as one-click opt-ins"
       ],
@@ -1214,9 +1214,9 @@
       "version": "0.325.0",
       "type": "chore",
       "title": "Sable physics updated to 2.0.2",
-      "summary": "Updated the Sable physics dependency from 1.2.1 to 2.0.2. Server tick-time is equal-or-better \u2014 worst-case lag spikes are roughly halved \u2014 and the long-standing save-and-quit hang (Sable #679) no longer occurs. Verified API-compatible, so no gameplay changes. Full compatibility & benchmark notes: [Compatibility wiki](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#sable-202mc1211).",
+      "summary": "Updated the Sable physics dependency from 1.2.1 to 2.0.2. Server tick-time is equal-or-better — worst-case lag spikes are roughly halved — and the long-standing save-and-quit hang (Sable #679) no longer occurs. Verified API-compatible, so no gameplay changes. Full compatibility & benchmark notes: [Compatibility wiki](https://github.com/bh679/dungeon-train-mc/wiki/Compatibility#sable-202mc1211).",
       "highlights": [
-        "Smoother performance \u2014 roughly 50% fewer worst-case server lag spikes",
+        "Smoother performance — roughly 50% fewer worst-case server lag spikes",
         "Fixed the save-and-quit hang affecting some worlds (Sable #679)",
         "Sable physics updated to 2.0.2"
       ],
@@ -1246,7 +1246,7 @@
       "version": "0.325.0",
       "type": "feat",
       "title": "Modpack: AmbientSounds on by default",
-      "summary": "The Dungeon Train modpack now bundles AmbientSounds \u2014 an immersive ambient/environmental sound engine \u2014 enabled by default, along with its CreativeCore library. Client-side audio only; no effect on the train or Sable physics.",
+      "summary": "The Dungeon Train modpack now bundles AmbientSounds — an immersive ambient/environmental sound engine — enabled by default, along with its CreativeCore library. Client-side audio only; no effect on the train or Sable physics.",
       "highlights": [
         "Richer ambient & environmental audio out of the box",
         "Bundled with its required CreativeCore library"
@@ -1274,7 +1274,7 @@
       "version": "0.327.0",
       "type": "fix",
       "title": "Breaking a narrative lectern drops a lectern and its book",
-      "summary": "Mining a narrative lectern now gives you a normal lectern instead of a non-craftable special block, and the story book that was on it pops out too \u2014 so you can pick it back up and keep reading.",
+      "summary": "Mining a narrative lectern now gives you a normal lectern instead of a non-craftable special block, and the story book that was on it pops out too — so you can pick it back up and keep reading.",
       "highlights": [
         "Narrative lecterns drop a plain lectern when broken",
         "The story book on the lectern now drops as well"
@@ -1327,7 +1327,7 @@
       "id": "field-notes-passenger-obs",
       "version": "0.328.0",
       "type": "content",
-      "title": "Adventurer's Field Notes \u2014 passenger observation",
+      "title": "Adventurer's Field Notes — passenger observation",
       "summary": "New field notes entry: an anonymous adventurer wonders whether the passengers are truly alive, and shares that food, armour, or tools are the fastest way to make allies.",
       "highlights": [],
       "date": "2026-06-19",
@@ -1340,7 +1340,7 @@
       "version": "0.328.0",
       "type": "feat",
       "title": "Five new quality-of-life companion mods in the modpack",
-      "summary": "The Dungeon Train modpack now bundles a set of client-side quality-of-life and cosmetic companions: a searchable controls menu (Controlling), side-by-side gear comparison tooltips (Equipment Compare), a highlight on freshly picked-up inventory items (Item Highlighter), and an on-screen item pickup notifier (Pick Up Notifier) \u2014 all enabled out of the box. Smooth Swapping (animated inventory item movement) is bundled as an opt-in extra.",
+      "summary": "The Dungeon Train modpack now bundles a set of client-side quality-of-life and cosmetic companions: a searchable controls menu (Controlling), side-by-side gear comparison tooltips (Equipment Compare), a highlight on freshly picked-up inventory items (Item Highlighter), and an on-screen item pickup notifier (Pick Up Notifier) — all enabled out of the box. Smooth Swapping (animated inventory item movement) is bundled as an opt-in extra.",
       "highlights": [
         "Searchable controls/key-binds screen (Controlling)",
         "Hold-Shift gear comparison tooltips (Equipment Compare)",
@@ -1359,10 +1359,10 @@
       "version": "0.328.0",
       "type": "feat",
       "title": "Useless loot potions now brew up a real, escalating effect",
-      "summary": "The blank, effectless potions you used to scavenge \u2014 the 'Uncraftable' bottles and plain water that did nothing \u2014 now come brewed with a real effect, and they grow more potent the deeper you ride. How strong an effect you find is tied to how far you've travelled: gentle brews early on, ramping up to powerful concoctions later. But each bottle is its own surprise \u2014 it might be a drink, a splash, or a lingering cloud, carrying any effect from the current tier, so two potions found in the same stretch can be completely different. Loot containers you place yourself scale to how far you've travelled, too.",
+      "summary": "The blank, effectless potions you used to scavenge — the 'Uncraftable' bottles and plain water that did nothing — now come brewed with a real effect, and they grow more potent the deeper you ride. How strong an effect you find is tied to how far you've travelled: gentle brews early on, ramping up to powerful concoctions later. But each bottle is its own surprise — it might be a drink, a splash, or a lingering cloud, carrying any effect from the current tier, so two potions found in the same stretch can be completely different. Loot containers you place yourself scale to how far you've travelled, too.",
       "highlights": [
         "Effectless 'Uncraftable' potions in loot now carry a real effect",
-        "Effects grow stronger the further you travel \u2014 gentle early, powerful later",
+        "Effects grow stronger the further you travel — gentle early, powerful later",
         "Every bottle is its own roll: a mix of effects, and drinkable / splash / lingering forms",
         "Water, awkward and other no-effect potions get upgraded too; real potions are left untouched",
         "Loot containers you place by hand scale to your own travelled distance"
@@ -1377,7 +1377,7 @@
       "id": "far-start-advancement",
       "version": "0.329.0",
       "type": "feat",
-      "title": "\"The Far Start\" advancement \u2014 carry your first book past 150 carriages",
+      "title": "\"The Far Start\" advancement — carry your first book past 150 carriages",
       "summary": "A new challenge advancement, \"The Far Start\": keep the unread starting book that drops at spawn and carry it past 150 carriages in a single life to earn it. Reading the book burns it, so this rewards hauling it the long way without ever opening it.",
       "highlights": [
         "New \"The Far Start\" challenge advancement (child of \"Dungeon Train Explorer\")",
@@ -1394,7 +1394,7 @@
       "version": "0.329.0",
       "type": "feat",
       "title": "Free Play protects your real Ender Chest",
-      "summary": "When a run switches to Free Play \u2014 by going creative or spectator, or using cheat commands \u2014 your Ender Chest now swaps to a separate Creative one for the rest of that run. Cheated items can never end up in the Ender Chest you use on your legit survival runs, and a Free Play run can't peek into or change your real chest. Your saved items stay exactly as you left them.",
+      "summary": "When a run switches to Free Play — by going creative or spectator, or using cheat commands — your Ender Chest now swaps to a separate Creative one for the rest of that run. Cheated items can never end up in the Ender Chest you use on your legit survival runs, and a Free Play run can't peek into or change your real chest. Your saved items stay exactly as you left them.",
       "highlights": [
         "Free Play runs get their own separate Creative Ender Chest",
         "Your real Ender Chest is never read or written during a cheated run",
@@ -1411,10 +1411,10 @@
       "version": "0.330.0",
       "type": "chore",
       "title": "Dev/test builds send Discord to a dev channel, not the live feed",
-      "summary": "Development and test builds of the mod now route their Discord activity (joins, deaths, chat, advancements) to a separate dev channel instead of the live community feed, so testing no longer adds noise for players. Released builds are unchanged \u2014 they post to the community feed exactly as before.",
+      "summary": "Development and test builds of the mod now route their Discord activity (joins, deaths, chat, advancements) to a separate dev channel instead of the live community feed, so testing no longer adds noise for players. Released builds are unchanged — they post to the community feed exactly as before.",
       "highlights": [
         "Dev/test builds post Discord to a separate dev channel",
-        "Released builds unchanged \u2014 still post to the live community feed"
+        "Released builds unchanged — still post to the live community feed"
       ],
       "date": "2026-06-20",
       "released": true,
@@ -1426,7 +1426,7 @@
       "version": "0.330.0",
       "type": "feat",
       "title": "Free Play activity now shows in Discord",
-      "summary": "When a player's run enters Free Play (creative, spectator, or cheat commands), Discord now gets a heads-up. Free Play runs also keep posting their death and \"left the game\" run summaries to Discord, so the community feed stays complete \u2014 cross-world stats still stay frozen in Free Play.",
+      "summary": "When a player's run enters Free Play (creative, spectator, or cheat commands), Discord now gets a heads-up. Free Play runs also keep posting their death and \"left the game\" run summaries to Discord, so the community feed stays complete — cross-world stats still stay frozen in Free Play.",
       "highlights": [
         "Discord notice the moment a run enters Free Play",
         "Death and \"left the game\" summaries now post for Free Play runs too",
@@ -1445,9 +1445,9 @@
       "title": "Custom network-access card + Discord Presence 0.31.0",
       "summary": "The title-screen \"use the internet?\" prompt is now Dungeon Train's own card spelling out exactly what the connection is used for, and the bundled Discord integration was updated to 0.31.0 with a bot-token security fix.",
       "highlights": [
-        "The title-screen network-access prompt is now Dungeon Train's own card \u2014 leaderboard scoring (coming soon), dev support chat, and a heads-up that a future update will let you return as a mob \"echo\" in other players' worlds.",
+        "The title-screen network-access prompt is now Dungeon Train's own card — leaderboard scoring (coming soon), dev support chat, and a heads-up that a future update will let you return as a mob \"echo\" in other players' worlds.",
         "Toggle network features anytime with /chatconnect on|off (works even with cheats off).",
-        "Bundled Discord Presence 0.31.0 \u2014 the Discord bot token now stays server-side only (security fix)."
+        "Bundled Discord Presence 0.31.0 — the Discord bot token now stays server-side only (security fix)."
       ],
       "pr": 489,
       "date": "2026-06-20",
@@ -1474,7 +1474,7 @@
       "version": "0.332.0",
       "type": "feat",
       "title": "Abandon This Run replaces Save and Quit on the pause menu",
-      "summary": "The pause menu now leads with a red \"Abandon This Run\" button: one click ends your run and takes you straight to the death recap \u2014 no quiet save-and-quit. The usual exits are still there, tucked behind Shift: hold Shift and the red button splits into \"Exit to Title\" and \"Quit Game\". Singleplayer only; on servers the normal Disconnect button is unchanged.",
+      "summary": "The pause menu now leads with a red \"Abandon This Run\" button: one click ends your run and takes you straight to the death recap — no quiet save-and-quit. The usual exits are still there, tucked behind Shift: hold Shift and the red button splits into \"Exit to Title\" and \"Quit Game\". Singleplayer only; on servers the normal Disconnect button is unchanged.",
       "highlights": [
         "Red \"Abandon This Run\" button ends the run and opens the death screen",
         "Hold Shift to reveal \"Exit to Title\" and \"Quit Game\"",
@@ -1491,7 +1491,7 @@
       "version": "0.333.0",
       "type": "feat",
       "title": "Arrival death-photo",
-      "summary": "The death screen now always opens on a shot of where your run began: a photo of you on the train is captured as soon as you arrive \u2014 once the carriages around you have rendered in \u2014 so even a quick death has a memento of the start of the journey.",
+      "summary": "The death screen now always opens on a shot of where your run began: a photo of you on the train is captured as soon as you arrive — once the carriages around you have rendered in — so even a quick death has a memento of the start of the journey.",
       "highlights": [
         "A photo of your arrival on the train is now guaranteed for the death screen",
         "Waits for the surrounding carriages to load so the shot frames the train, not empty space"
@@ -1507,7 +1507,7 @@
       "version": "0.333.0",
       "type": "feat",
       "title": "Themed cause of death when you abandon a run",
-      "summary": "Abandoning a run from the pause menu now ends it with a themed Dungeon Train cause of death instead of a plain \"You died\". One of four lines is picked at random each time \u2014 \"You abandoned the train\", \"You stepped off the train\", \"You left the line\", or \"You walked away from the line\" \u2014 and it shows on your death screen (and in the Discord run report).",
+      "summary": "Abandoning a run from the pause menu now ends it with a themed Dungeon Train cause of death instead of a plain \"You died\". One of four lines is picked at random each time — \"You abandoned the train\", \"You stepped off the train\", \"You left the line\", or \"You walked away from the line\" — and it shows on your death screen (and in the Discord run report).",
       "highlights": [
         "Abandoning a run now reads as a themed cause of death, not \"You died\"",
         "Four flavor lines, picked at random each time"
@@ -1523,7 +1523,7 @@
       "version": "0.336.0",
       "type": "feat",
       "title": "The internet prompt now says what it won't do",
-      "summary": "The first-launch \"Connect to the internet?\" prompt now lists a reassurance alongside the features \u2014 marked with a red \u2717 \u2014 clarifying one thing the connection will never do. Rest easy: it will not harvest your soul.",
+      "summary": "The first-launch \"Connect to the internet?\" prompt now lists a reassurance alongside the features — marked with a red ✗ — clarifying one thing the connection will never do. Rest easy: it will not harvest your soul.",
       "highlights": [],
       "date": "2026-06-20",
       "released": true,
@@ -1535,7 +1535,7 @@
       "version": "0.335.0",
       "type": "content",
       "title": "More to read at the end of the line",
-      "summary": "The death screen's narration has more variety. New lines across all five pages \u2014 the fall, the deeds, the cargo, all your lives, and the platform \u2014 so back-to-back deaths read differently, including lines that react to a friendless run, a heavy kill count, an empty or overflowing pack, and how many times you've ridden.",
+      "summary": "The death screen's narration has more variety. New lines across all five pages — the fall, the deeds, the cargo, all your lives, and the platform — so back-to-back deaths read differently, including lines that react to a friendless run, a heavy kill count, an empty or overflowing pack, and how many times you've ridden.",
       "highlights": [
         "Many new narration variants on every death-screen page",
         "Some lines react to your run: no friends made, 5+ slain, an empty or 250+-loot pack, books read, and your total deaths"
@@ -1549,8 +1549,8 @@
       "id": "cross-world-reincarnation",
       "version": "0.336.0",
       "type": "feat",
-      "title": "Cross-world reincarnation \u2014 passengers return as echoes from other worlds",
-      "summary": "Player-mob passengers on the train can now return as \"echoes\" of people who died in other worlds \u2014 not just your own past lives. Every death is shared to a community-wide pool, and a passenger riding near your depth may come back carrying someone else's final loadout and story.",
+      "title": "Cross-world reincarnation — passengers return as echoes from other worlds",
+      "summary": "Player-mob passengers on the train can now return as \"echoes\" of people who died in other worlds — not just your own past lives. Every death is shared to a community-wide pool, and a passenger riding near your depth may come back carrying someone else's final loadout and story.",
       "highlights": [
         "Passengers can spawn as remote echoes of players from other worlds, not only your own past lives",
         "Each death you suffer joins a shared cross-world pool that feeds everyone's trains",
@@ -1569,7 +1569,7 @@
       "title": "Death-screen button now reads \"Next Screen\"",
       "summary": "The button that pages through your end-of-run recap on the death screen now reads \"Next Screen\" instead of \"Continue\", making it clearer that it steps through the recap rather than dismissing it.",
       "highlights": [
-        "Death-screen page button relabeled \"Continue\" \u2192 \"Next Screen\""
+        "Death-screen page button relabeled \"Continue\" → \"Next Screen\""
       ],
       "pr": 501,
       "date": "2026-06-20",
@@ -1582,7 +1582,7 @@
       "version": "0.338.0",
       "type": "feat",
       "title": "Deaths now share to a public Discord channel",
-      "summary": "Death reports now post to a dedicated public Discord deaths channel \u2014 the redesigned 'manifest' report, with your run's ride photo and the train's account of how it ended. Free Play (creative / cheats) runs are kept out of the public feed.",
+      "summary": "Death reports now post to a dedicated public Discord deaths channel — the redesigned 'manifest' report, with your run's ride photo and the train's account of how it ended. Free Play (creative / cheats) runs are kept out of the public feed.",
       "highlights": [
         "Legit deaths post the full manifest report (ride photo + narrated run) to the public deaths channel",
         "Free Play / creative runs are excluded from the public feed"
@@ -1597,7 +1597,7 @@
       "version": "0.339.0",
       "type": "fix",
       "title": "Public death reports show your ride photo",
-      "summary": "Death reports in the public Discord channel now use a scenic photo from your run as the image, as intended \u2014 released builds were falling back to your gear composite.",
+      "summary": "Death reports in the public Discord channel now use a scenic photo from your run as the image, as intended — released builds were falling back to your gear composite.",
       "highlights": [],
       "date": "2026-06-21",
       "released": true,
@@ -1609,7 +1609,7 @@
       "version": "0.339.0",
       "type": "feat",
       "title": "Hold Shift on the death screen to quit straight to desktop",
-      "summary": "On the death screen, hold Shift to turn the \"leave the line\" controls into a \"Quit Game\" button that exits Minecraft straight to desktop \u2014 no need to stop at the title screen first. Mirrors the pause menu's Shift-to-quit shortcut, and restyles darker with lighter text so it's clearly a different action.",
+      "summary": "On the death screen, hold Shift to turn the \"leave the line\" controls into a \"Quit Game\" button that exits Minecraft straight to desktop — no need to stop at the title screen first. Mirrors the pause menu's Shift-to-quit shortcut, and restyles darker with lighter text so it's clearly a different action.",
       "highlights": [
         "Hold Shift on the death screen to swap \"Leave the line\" for \"Quit Game\" (quits to desktop)",
         "Works on both the always-visible top-bar chip and the final platform-page button"
@@ -1625,7 +1625,7 @@
       "version": "0.340.0",
       "type": "feat",
       "title": "Dungeon Train modpack now on Modrinth",
-      "summary": "The curated Dungeon Train modpack \u2014 the mod plus Sable and its recommended companions \u2014 now publishes to Modrinth alongside CurseForge, so you can install it straight from the Modrinth App. It ships the same mods at the same versions as the CurseForge pack.",
+      "summary": "The curated Dungeon Train modpack — the mod plus Sable and its recommended companions — now publishes to Modrinth alongside CurseForge, so you can install it straight from the Modrinth App. It ships the same mods at the same versions as the CurseForge pack.",
       "highlights": [
         "Install the full Dungeon Train pack from the Modrinth App",
         "Same mods and versions as the CurseForge pack"
@@ -1641,7 +1641,7 @@
       "version": "0.340.0",
       "type": "feat",
       "title": "Echo encounter stories on Discord",
-      "summary": "When you cross paths with a remote echo \u2014 a traveller who died in another world, now walking your train \u2014 the game quietly chronicles the meeting and shares the tale to Discord when it ends.",
+      "summary": "When you cross paths with a remote echo — a traveller who died in another world, now walking your train — the game quietly chronicles the meeting and shares the tale to Discord when it ends.",
       "highlights": [
         "Tracks the whole encounter: meeting, eye contact, a crouched greeting, blows traded, gifts exchanged, a shove off the train, and the final parting.",
         "Each story names who the echo was and how your paths crossed; only remote (cross-world) echoes are chronicled."
@@ -1660,9 +1660,9 @@
       "summary": "The public death report in #passenger-log has a cleaner, wider layout. Your run's story stays at the top, the key stats move into tidy side-by-side columns, and any advancements you earned get their own row above the ride photo.",
       "highlights": [
         "Run stats now sit in side-by-side columns: The fall, This run, and The souls",
-        "New 'The souls' column \u2014 other souls met, befriended, and slain this run",
+        "New 'The souls' column — other souls met, befriended, and slain this run",
         "Advancements earned this run show on their own row beneath the columns",
-        "The story now shows what mattered most that run \u2014 your fights and friendships, or your haul",
+        "The story now shows what mattered most that run — your fights and friendships, or your haul",
         "Shorter and easier to read at a glance"
       ],
       "pr": 513,
@@ -1676,7 +1676,7 @@
       "version": "0.340.0",
       "type": "feat",
       "title": "Echo encounter stories now include a photo of the echo",
-      "summary": "When the game shares the tale of your meeting with a remote echo on Discord, it now adds a snapshot of that traveller \u2014 framed against the train and captured the moment you first lay eyes on one another.",
+      "summary": "When the game shares the tale of your meeting with a remote echo on Discord, it now adds a snapshot of that traveller — framed against the train and captured the moment you first lay eyes on one another.",
       "highlights": [
         "Each echo encounter story now carries a photo of the echo, taken at first eye contact.",
         "Quietly falls back to the text-only story when a clear shot can't be grabbed in time."
@@ -1692,7 +1692,7 @@
       "version": "0.342.0",
       "type": "fix",
       "title": "Backward train generation no longer stalls",
-      "summary": "Walking toward the back of a moving train used to hit a dead end where new carriages stopped appearing \u2014 most noticeably when travelling slowly. The trailing carriages are now kept loaded long enough to lock into place, so the train keeps building behind you for as far as you care to walk.",
+      "summary": "Walking toward the back of a moving train used to hit a dead end where new carriages stopped appearing — most noticeably when travelling slowly. The trailing carriages are now kept loaded long enough to lock into place, so the train keeps building behind you for as far as you care to walk.",
       "highlights": [
         "The train now keeps generating carriages as you travel toward the rear",
         "Fixes the missing 'end of train' when moving slowly backward"
@@ -1708,7 +1708,7 @@
       "version": "0.344.0",
       "type": "feat",
       "title": "Short abandoned runs stay off the public death feed",
-      "summary": "Bailing out of a run early no longer broadcasts it. If you hit \"Abandon This Run\" before reaching 20 carriages, your run is kept out of the public death feed \u2014 only runs that actually went somewhere get posted. Your own run summary and death recap are unchanged.",
+      "summary": "Bailing out of a run early no longer broadcasts it. If you hit \"Abandon This Run\" before reaching 20 carriages, your run is kept out of the public death feed — only runs that actually went somewhere get posted. Your own run summary and death recap are unchanged.",
       "highlights": [
         "Abandoned runs under 20 carriages are no longer posted to the public feed",
         "Longer abandoned runs and all normal deaths still post as before"
@@ -1724,7 +1724,7 @@
       "version": "0.344.0",
       "type": "fix",
       "title": "Echo encounter stories now post to the public death feed",
-      "summary": "The remote-echo encounter story now appears in the public death-report channel alongside the death manifests, instead of the live community feed \u2014 keeping its distinct greyish-blue colour so it still reads apart from a death.",
+      "summary": "The remote-echo encounter story now appears in the public death-report channel alongside the death manifests, instead of the live community feed — keeping its distinct greyish-blue colour so it still reads apart from a death.",
       "highlights": [
         "Encounter stories moved to the public death-report channel, next to the death manifests.",
         "Keeps the greyish-blue embed bar so they stay visually distinct from deaths."
@@ -1754,7 +1754,7 @@
       "summary": "A new findable story rides the train: Tomas Aaro, \"The Walking Father.\" A farmer leaves his dying village chasing a rumor that the train holds \"what you need,\" and the endless carriages take their toll. The third of the Aaro stories, completing the family begun by Pip and Della.",
       "highlights": [
         "New findable story: \"The Walking Father\" (6 letters, branching variants)",
-        "Completes the Aaro family stories \u2014 Pip, Della, and now Tomas"
+        "Completes the Aaro family stories — Pip, Della, and now Tomas"
       ],
       "pr": 527,
       "date": "2026-06-22",
@@ -1767,10 +1767,10 @@
       "version": "0.345.0",
       "type": "feat",
       "title": "A creator's plea on the second feedback question",
-      "summary": "When the death-screen feedback survey reaches its second question, the calm 'ledger' welcome gives way to an urgent, heartfelt plea from the line's creator to keep the railway alive \u2014 drawn at random from seven variations so it lands a little differently each run.",
+      "summary": "When the death-screen feedback survey reaches its second question, the calm 'ledger' welcome gives way to an urgent, heartfelt plea from the line's creator to keep the railway alive — drawn at random from seven variations so it lands a little differently each run.",
       "highlights": [
         "The second feedback question now has its own message, distinct from the first",
-        "Seven randomized creator pleas \u2014 one chosen per death"
+        "Seven randomized creator pleas — one chosen per death"
       ],
       "pr": 528,
       "date": "2026-06-22",
@@ -1796,7 +1796,7 @@
       "version": "0.346.0",
       "type": "fix",
       "title": "CurseForge changelogs now show real release notes",
-      "summary": "CurseForge pages for the mod and modpack now display each update's real release notes instead of a bare GitHub link or a generic placeholder. CurseForge only shows the newest file's changelog, and the steady stream of automated bundle updates kept pushing the real notes out of view \u2014 they're now carried forward so they stay visible.",
+      "summary": "CurseForge pages for the mod and modpack now display each update's real release notes instead of a bare GitHub link or a generic placeholder. CurseForge only shows the newest file's changelog, and the steady stream of automated bundle updates kept pushing the real notes out of view — they're now carried forward so they stay visible.",
       "highlights": [
         "Curated release notes now appear on the CurseForge mod and modpack Changelog tab"
       ],
@@ -1824,10 +1824,10 @@
       "version": "0.346.0",
       "type": "fix",
       "title": "Seamless train when you travel toward the back",
-      "summary": "Walking toward the rear of a moving train no longer opens permanent gaps between carriages or hits a dead-end where the train just stops \u2014 carriages now keep generating smoothly behind you, the same way they do ahead. Also fixes a rare crash (and save corruption) that could happen as far-back carriages were unloaded and reloaded.",
+      "summary": "Walking toward the rear of a moving train no longer opens permanent gaps between carriages or hits a dead-end where the train just stops — carriages now keep generating smoothly behind you, the same way they do ahead. Also fixes a rare crash (and save corruption) that could happen as far-back carriages were unloaded and reloaded.",
       "highlights": [
         "No more permanent voids between carriages when riding toward the tail.",
-        "The train no longer dead-ends behind you \u2014 backward carriages keep coming.",
+        "The train no longer dead-ends behind you — backward carriages keep coming.",
         "Fixed a rare crash / save corruption from carriage unload-and-reload."
       ],
       "pr": 532,
@@ -1840,12 +1840,12 @@
       "id": "world-disintegration-band",
       "version": "0.346.0",
       "type": "feat",
-      "title": "The world breaks apart \u2014 repeating Void and End-island bands",
-      "summary": "As your train rolls on, the world starts coming apart. Solid ground crumbles into empty void, then reforms as floating End islands \u2014 chorus plants and all \u2014 before dissolving back to void and rebuilding into normal terrain. The whole cycle repeats forever down the line. Over the broken stretches the sky fades to the End's starfield and the fog goes dark, only endermen roam, and the train rides straight through on its tracks.",
+      "title": "The world breaks apart — repeating Void and End-island bands",
+      "summary": "As your train rolls on, the world starts coming apart. Solid ground crumbles into empty void, then reforms as floating End islands — chorus plants and all — before dissolving back to void and rebuilding into normal terrain. The whole cycle repeats forever down the line. Over the broken stretches the sky fades to the End's starfield and the fog goes dark, only endermen roam, and the train rides straight through on its tracks.",
       "highlights": [
-        "The world now breaks apart into repeating Void \u2192 End-island \u2192 Void bands as you travel",
+        "The world now breaks apart into repeating Void → End-island → Void bands as you travel",
         "Real floating End islands with chorus plants drift in the void; the sky, fog and clouds turn to the End",
-        "Only endermen spawn in the broken bands \u2014 the train keeps rolling on its rails the whole way"
+        "Only endermen spawn in the broken bands — the train keeps rolling on its rails the whole way"
       ],
       "pr": 533,
       "date": "2026-06-22",
@@ -1858,10 +1858,10 @@
       "version": "0.348.0",
       "type": "content",
       "title": "Complete Della and Soren Aaro stories",
-      "summary": "Ships 'The Searching Mother' (Pip's Mum) and 'The Keeper of the Door' (Soren) in full. All three Aaro family stories \u2014 Pip, Della, and Tomas \u2014 are now complete.",
+      "summary": "Ships 'The Searching Mother' (Pip's Mum) and 'The Keeper of the Door' (Soren) in full. All three Aaro family stories — Pip, Della, and Tomas — are now complete.",
       "highlights": [
-        "Della Aaro's 'The Searching Mother' \u2014 all 7 letters",
-        "Soren's 'The Keeper of the Door' \u2014 all 7 letters",
+        "Della Aaro's 'The Searching Mother' — all 7 letters",
+        "Soren's 'The Keeper of the Door' — all 7 letters",
         "Tomas Aaro's 'The Walking Father' was already shipped in v0.347.0"
       ],
       "date": "2026-06-22",
@@ -1874,7 +1874,7 @@
       "version": "0.348.0",
       "type": "feat",
       "title": "Smoother void sky transitions",
-      "summary": "As the world breaks apart into the void, the sky now holds onto its overworld look a little longer before fading to the End \u2014 and on the way out, the sky clears back to normal before solid ground returns beneath you.",
+      "summary": "As the world breaks apart into the void, the sky now holds onto its overworld look a little longer before fading to the End — and on the way out, the sky clears back to normal before solid ground returns beneath you.",
       "highlights": [
         "Sky fade lags the crumbling terrain on both edges for a less abrupt transition",
         "Tunable via the disintegrationSkyFadeOffsetBlocks config (0 = old synced behaviour)"
@@ -1908,7 +1908,7 @@
       "version": "0.348.0",
       "type": "feat",
       "title": "The End's soundtrack across the disintegration void",
-      "summary": "When the world breaks apart into the void and End islands, the music now crossfades to the End's theme to match the End sky overhead \u2014 the normal soundtrack fades out as you approach the void, the End theme plays across the void and floating islands, and it fades back as the world reforms on the far side.",
+      "summary": "When the world breaks apart into the void and End islands, the music now crossfades to the End's theme to match the End sky overhead — the normal soundtrack fades out as you approach the void, the End theme plays across the void and floating islands, and it fades back as the world reforms on the far side.",
       "highlights": [
         "End music now plays across the void/End disintegration band",
         "Smooth crossfade in and out, tied to your position so it matches the End-sky fade"
@@ -1924,7 +1924,7 @@
       "version": "0.348.0",
       "type": "perf",
       "title": "Smoother world-disintegration band",
-      "summary": "Crossing the band where the world breaks into the void and reforms as the End now generates much more smoothly. The empty void stretches are no longer built as full terrain and then immediately erased, and the floating End islands generate far faster \u2014 so there's noticeably less chunk-loading hitch as you travel through the band.",
+      "summary": "Crossing the band where the world breaks into the void and reforms as the End now generates much more smoothly. The empty void stretches are no longer built as full terrain and then immediately erased, and the floating End islands generate far faster — so there's noticeably less chunk-loading hitch as you travel through the band.",
       "highlights": [
         "Void stretches no longer build terrain just to delete it",
         "Floating End islands generate much faster",
@@ -1957,7 +1957,7 @@
       "version": "0.351.0",
       "type": "feat",
       "title": "The train carves through the End islands",
-      "summary": "In the disintegration band \u2014 where the world dissolves into floating End islands \u2014 the train no longer skirts a cleared lane around the islands. It now bores tunnels straight through the islands in its path and rides out across the gaps on pillars, the same way it tunnels through hills and bridges ravines back in the overworld.",
+      "summary": "In the disintegration band — where the world dissolves into floating End islands — the train no longer skirts a cleared lane around the islands. It now bores tunnels straight through the islands in its path and rides out across the gaps on pillars, the same way it tunnels through hills and bridges ravines back in the overworld.",
       "highlights": [
         "Tunnels are carved through End islands that block the track",
         "Pillars rise from island tops; the track bridges the open void between islands"
@@ -1988,11 +1988,11 @@
       "version": "0.352.0",
       "type": "content",
       "title": "New advancements: the void journey and echoes of other players",
-      "summary": "Eight new advancements. Ride the train far enough and the world itself disintegrates \u2014 earn your way out to the void, across the floating End islands, and back to the overworld again. Plus a full set for echoes: meet, befriend, kill, or shove another player's echo (and your own) off the train into the void.",
+      "summary": "Eight new advancements. Ride the train far enough and the world itself disintegrates — earn your way out to the void, across the floating End islands, and back to the overworld again. Plus a full set for echoes: meet, befriend, kill, or shove another player's echo (and your own) off the train into the void.",
       "highlights": [
-        "Voided Warranty, Tastes like Cheese?, Re-Over-World \u2014 reach the void, the End islands, then the overworld again",
-        "Repressed Memory \u2014 shove your own echo into the void",
-        "A Stranger's Ghost / Befriending the Dead / Not Your Ghost to Keep / Erased \u2014 encounter, befriend, kill, or void-shove another player's echo"
+        "Voided Warranty, Tastes like Cheese?, Re-Over-World — reach the void, the End islands, then the overworld again",
+        "Repressed Memory — shove your own echo into the void",
+        "A Stranger's Ghost / Befriending the Dead / Not Your Ghost to Keep / Erased — encounter, befriend, kill, or void-shove another player's echo"
       ],
       "pr": 542,
       "date": "2026-06-23",
@@ -2004,8 +2004,8 @@
       "id": "zombie-cure-narrative",
       "version": "0.353.0",
       "type": "content",
-      "title": "\"Weakness, Then Gold\" \u2014 a zombie's-cure story",
-      "summary": "A new book rides the train: seven letters by a zombie hunting its own cure \u2014 a Potion of Weakness from a witch, then a Golden Apple. The writing climbs from groans to human speech as the cure takes, and the last letter leaves the recipe for the next lost soul.",
+      "title": "\"Weakness, Then Gold\" — a zombie's-cure story",
+      "summary": "A new book rides the train: seven letters by a zombie hunting its own cure — a Potion of Weakness from a witch, then a Golden Apple. The writing climbs from groans to human speech as the cure takes, and the last letter leaves the recipe for the next lost soul.",
       "highlights": [
         "New 7-letter narrative book written from a zombie's point of view",
         "Built on the real cure: a Potion of Weakness, then a Golden Apple"
@@ -2021,7 +2021,7 @@
       "version": "0.353.0",
       "type": "fix",
       "title": "End islands no longer missing whole chunks",
-      "summary": "Fixed the floating End-stone islands in the world-disintegration band sometimes dropping whole chunks \u2014 clean square gaps with full islands all around them. Islands now generate complete across the whole band.",
+      "summary": "Fixed the floating End-stone islands in the world-disintegration band sometimes dropping whole chunks — clean square gaps with full islands all around them. Islands now generate complete across the whole band.",
       "highlights": [
         "Floating End islands in the disintegration band no longer have chunk-shaped holes punched out of them"
       ],
@@ -2050,7 +2050,7 @@
       "title": "Trains stay put when you pause and resume",
       "summary": "Pausing mid-ride (the singleplayer Esc menu) no longer strands you far behind with the train gone when you unpause. On resume you're set back on the train deck and it keeps rolling on.",
       "highlights": [
-        "Esc-pausing while riding \u2014 even for several minutes \u2014 keeps you aboard the train.",
+        "Esc-pausing while riding — even for several minutes — keeps you aboard the train.",
         "The train no longer drifts off and vanishes after a long pause."
       ],
       "pr": 548,
@@ -2064,11 +2064,11 @@
       "version": "0.354.0",
       "type": "feat",
       "title": "The train climbs real mountains into the Nether",
-      "summary": "A new world-gen band sends the train climbing through towering overworld mountains, tunnelling through the peaks, then crossing a real Nether core before easing back to the overworld. The mountains are full living terrain \u2014 grass, forests, flowers and snow-capped peaks grow on them, villages and other structures appear on their slopes, and the climb passes through highland biomes (groves, meadows, snowy slopes and jagged peaks). Bands that begin over ocean get a natural sand shore, and the Nether core glows with a warm, dim light.",
+      "summary": "A new world-gen band sends the train climbing through towering overworld mountains, tunnelling through the peaks, then crossing a real Nether core before easing back to the overworld. The mountains are full living terrain — grass, forests, flowers and snow-capped peaks grow on them, villages and other structures appear on their slopes, and the climb passes through highland biomes (groves, meadows, snowy slopes and jagged peaks). Bands that begin over ocean get a natural sand shore, and the Nether core glows with a warm, dim light.",
       "highlights": [
         "Towering mountain ranges the train tunnels through on the way to the Nether",
         "Mountains are real terrain: grass, trees, flowers, snow caps and structures generate on them",
-        "Altitude-graded highland biomes \u2014 forested base, spruce groves, snowy peaks",
+        "Altitude-graded highland biomes — forested base, spruce groves, snowy peaks",
         "A real Nether core with warm dim lighting; ocean entrances get a sand shore"
       ],
       "date": "2026-06-23",
@@ -2084,7 +2084,7 @@
       "summary": "The real-Nether stretch the train crosses is now dressed with the game's own Nether world-gen instead of bare red rock: fire, glowstone, lava springs, mushrooms and mineable Nether ores (quartz, gold and ancient debris) generate through it, and it carries the Nether's red fog, ambient cave sounds and music.",
       "highlights": [
         "Fire, glowstone, lava springs and mushrooms generate across the Nether core",
-        "Mine real Nether ores in the core \u2014 quartz, gold and ancient debris",
+        "Mine real Nether ores in the core — quartz, gold and ancient debris",
         "The core now has the Nether's red fog, ambient sounds and music"
       ],
       "pr": 551,
@@ -2100,7 +2100,7 @@
       "title": "Nether-transition mountains ease into the world",
       "summary": "The giant mountains that mark the Nether transition now grow out of the surrounding landscape gradually instead of rising as a sharp vertical wall, and their front weaves naturally across the terrain rather than running in a dead-straight line. Where the band meets the sea you now get real sandy beaches with soft dunes leading up into the slopes.",
       "highlights": [
-        "Mountains rise and fall smoothly from the natural terrain at both edges of the band \u2014 no more sudden cliff",
+        "Mountains rise and fall smoothly from the natural terrain at both edges of the band — no more sudden cliff",
         "The mountain front undulates across the landscape for a natural, non-straight edge",
         "Ocean entrances form natural sand beaches that blend up into the hills"
       ],
@@ -2115,11 +2115,11 @@
       "version": "0.354.0",
       "type": "feat",
       "title": "Piglins keep their cool in the Nether band",
-      "summary": "Piglins, piglin brutes, and hoglins no longer shiver and convert when they're standing in the overworld's Nether biome. Inside the red-fog netherrack core of the Nether transition band they now behave exactly like they would in the real Nether \u2014 no zombification, no trembling. Step back out into the normal overworld and they go back to converting as usual.",
+      "summary": "Piglins, piglin brutes, and hoglins no longer shiver and convert when they're standing in the overworld's Nether biome. Inside the red-fog netherrack core of the Nether transition band they now behave exactly like they would in the real Nether — no zombification, no trembling. Step back out into the normal overworld and they go back to converting as usual.",
       "highlights": [
         "Piglins & brutes no longer zombify in the Nether band's core",
         "Hoglins no longer turn into zoglins there",
-        "No more trembling \u2014 behaviour reverts once they leave the Nether core"
+        "No more trembling — behaviour reverts once they leave the Nether core"
       ],
       "pr": 553,
       "date": "2026-06-23",
@@ -2149,10 +2149,10 @@
       "version": "0.354.0",
       "type": "feat",
       "title": "Nether music across the transition band",
-      "summary": "The soundtrack now follows the world as your train crosses the Nether transition band: the overworld music fades away, and vanilla Nether music rises with the red glow of the netherrack core \u2014 then fades back to normal as you ride out the far side. It mirrors the End band, which already swaps to End music across the void.",
+      "summary": "The soundtrack now follows the world as your train crosses the Nether transition band: the overworld music fades away, and vanilla Nether music rises with the red glow of the netherrack core — then fades back to normal as you ride out the far side. It mirrors the End band, which already swaps to End music across the void.",
       "highlights": [
         "Vanilla nether_wastes music now plays as you cross the netherrack core of the Nether transition band.",
-        "The track crossfades smoothly with your position \u2014 overworld music out on the way in, back in on the way out."
+        "The track crossfades smoothly with your position — overworld music out on the way in, back in on the way out."
       ],
       "pr": 555,
       "date": "2026-06-23",
@@ -2196,7 +2196,7 @@
       "version": "0.354.0",
       "type": "feat",
       "title": "The Nether band's core now plays by Nether rules",
-      "summary": "The red-fog netherrack core of the Nether transition band now behaves like the real Nether, not just looks like it. Water you pour boils away in a hiss of steam, beds explode if you try to sleep in them, and wet sponges dry out the instant you place them. The sky over the core stays clear too \u2014 no rain, no clouds and no lightning, even in a thunderstorm. Step back out into the normal overworld and water, beds and weather all work exactly as usual again.",
+      "summary": "The red-fog netherrack core of the Nether transition band now behaves like the real Nether, not just looks like it. Water you pour boils away in a hiss of steam, beds explode if you try to sleep in them, and wet sponges dry out the instant you place them. The sky over the core stays clear too — no rain, no clouds and no lightning, even in a thunderstorm. Step back out into the normal overworld and water, beds and weather all work exactly as usual again.",
       "highlights": [],
       "pr": 558,
       "date": "2026-06-23",
@@ -2209,10 +2209,10 @@
       "version": "0.354.0",
       "type": "feat",
       "title": "The sky turns to the Nether's in the transition band",
-      "summary": "Crossing into the Nether band, the overworld sky now fades away \u2014 sun, moon, stars and blue gradient give way to the skyless red glow of the real Nether overhead, then fade back to a normal sky on the way out. The sky takes on whichever Nether biome you're passing through (crimson red, warped teal, soul-sand blue, basalt grey or wastes red), so the sky and the fog are one.",
+      "summary": "Crossing into the Nether band, the overworld sky now fades away — sun, moon, stars and blue gradient give way to the skyless red glow of the real Nether overhead, then fade back to a normal sky on the way out. The sky takes on whichever Nether biome you're passing through (crimson red, warped teal, soul-sand blue, basalt grey or wastes red), so the sky and the fog are one.",
       "highlights": [
         "Sun, moon, stars and blue sky fade out as you enter the Nether core",
-        "The sky's colour matches the Nether biome you're in \u2014 and the fog",
+        "The sky's colour matches the Nether biome you're in — and the fog",
         "Smoothly crossfades in and out, with no pop at the band edges"
       ],
       "pr": 559,
@@ -2225,7 +2225,7 @@
       "id": "train-external-fluid-barrier",
       "version": "0.354.0",
       "type": "feat",
-      "title": "Train stays dry \u2014 external water & lava kept out",
+      "title": "Train stays dry — external water & lava kept out",
       "summary": "Water and lava from the outside world no longer flow into or through the train. External fluid is stopped at the carriage edge and cleared from inside the train's footprint each tick, so decks and interiors stay dry even as the train crosses rivers, lakes and oceans.",
       "highlights": [
         "External water & lava no longer flood the train's deck or interior",
@@ -2245,7 +2245,7 @@
       "summary": "The train tunnel through the Nether no longer fills with stray basalt, the Nether stretch is now dry like the real Nether, and gravel can no longer tumble onto the rails as you ride through it.",
       "highlights": [
         "Basalt and other Nether decoration no longer intrude into the train tunnel",
-        "The Nether stretch is dry \u2014 worldgen water in the netherrack mountains is cleared",
+        "The Nether stretch is dry — worldgen water in the netherrack mountains is cleared",
         "Gravel no longer falls onto the tracks in the Nether"
       ],
       "pr": 562,
@@ -2259,7 +2259,7 @@
       "version": "0.354.0",
       "type": "content",
       "title": "New Quiet Rule: mend worn gear by combining it",
-      "summary": "The Quiet Rules of the Train book can now turn up a new rule hinting that worn-down weapons and armour can be mended by combining two of the same item \u2014 and that the result keeps the stats of whichever piece you place on the left.",
+      "summary": "The Quiet Rules of the Train book can now turn up a new rule hinting that worn-down weapons and armour can be mended by combining two of the same item — and that the result keeps the stats of whichever piece you place on the left.",
       "highlights": [],
       "date": "2026-06-24",
       "released": true,
@@ -2287,7 +2287,7 @@
       "version": "0.356.0",
       "type": "fix",
       "title": "Beds only explode in the Nether (and a clearer respawn message)",
-      "summary": "Beds no longer blow up when you sleep in the normal overworld \u2014 that only happens in the real Nether now, like vanilla. And sleeping in a bed gives a clearer message that your respawn point rides along with the train.",
+      "summary": "Beds no longer blow up when you sleep in the normal overworld — that only happens in the real Nether now, like vanilla. And sleeping in a bed gives a clearer message that your respawn point rides along with the train.",
       "highlights": [
         "Beds are safe to use everywhere except the actual Nether core",
         "Sleeping shows a message making clear your respawn moves with the train"
@@ -2302,7 +2302,7 @@
       "version": "0.356.0",
       "type": "feat",
       "title": "New advancement: Hell on Rails",
-      "summary": "Ride the train deep into the Nether stretch and earn a new advancement, Hell on Rails. It unlocks once you're well inside the netherrack \u2014 not the moment you cross the edge \u2014 and now sits just before Voided Warranty on the advancement tree.",
+      "summary": "Ride the train deep into the Nether stretch and earn a new advancement, Hell on Rails. It unlocks once you're well inside the netherrack — not the moment you cross the edge — and now sits just before Voided Warranty on the advancement tree.",
       "highlights": [
         "New \"Hell on Rails\" advancement for reaching the Nether band aboard the train",
         "Placed before Voided Warranty in the advancement tree, matching the journey order"
@@ -2318,11 +2318,11 @@
       "version": "0.356.0",
       "type": "fix",
       "title": "Train villagers no longer share the same name and trades",
-      "summary": "Villagers riding the train sometimes spawned as identical twins \u2014 the same name and the same trades in every carriage of a given type. Each train villager now gets its own randomly generated name and a freshly rolled set of trades, while still keeping the carriage's profession (an armorer carriage still has an armorer).",
+      "summary": "Villagers riding the train sometimes spawned as identical twins — the same name and the same trades in every carriage of a given type. Each train villager now gets its own randomly generated name and a freshly rolled set of trades, while still keeping the carriage's profession (an armorer carriage still has an armorer).",
       "highlights": [
         "Each train villager gets a unique name",
         "Trades are rolled fresh per villager instead of repeating",
-        "Shop professions (armorer, toolsmith, leatherworker, \u2026) are preserved"
+        "Shop professions (armorer, toolsmith, leatherworker, …) are preserved"
       ],
       "pr": 568,
       "date": "2026-06-24",
@@ -2334,8 +2334,8 @@
       "id": "nether-core-5000",
       "version": "0.357.0",
       "type": "content",
-      "title": "Longer Nether crossing \u2014 real-Nether core now spans 5,000 blocks",
-      "summary": "The real-Nether leg of the journey now runs 5,000 blocks \u2014 the same length as the End-island stretch \u2014 so the train spends a substantial stretch crossing genuine Nether terrain (red sky, netherrack, nether mobs) instead of a brief flicker before the world reassembles into the overworld.",
+      "title": "Longer Nether crossing — real-Nether core now spans 5,000 blocks",
+      "summary": "The real-Nether leg of the journey now runs 5,000 blocks — the same length as the End-island stretch — so the train spends a substantial stretch crossing genuine Nether terrain (red sky, netherrack, nether mobs) instead of a brief flicker before the world reassembles into the overworld.",
       "highlights": [
         "Real-Nether core span increased from 400 to 5,000 blocks",
         "Now as long as the End-island stretch of the loop"
@@ -2351,7 +2351,7 @@
       "version": "0.358.0",
       "type": "content",
       "title": "New carriages: shops, library rooms, maze rooms, and shrines",
-      "summary": "A fresh batch of carriages now rides the train. Two new villager shops (an archer stall and a cleric), three new maze rooms, two new library cars, and four landmark feature carriages \u2014 a statue, a grave, a worship shrine, and a wither room \u2014 all appear as variants of their existing carriage types.",
+      "summary": "A fresh batch of carriages now rides the train. Two new villager shops (an archer stall and a cleric), three new maze rooms, two new library cars, and four landmark feature carriages — a statue, a grave, a worship shrine, and a wither room — all appear as variants of their existing carriage types.",
       "highlights": [
         "New shop carriages: archer and cleric",
         "New maze rooms: two layouts plus a doors room",
@@ -2369,7 +2369,7 @@
       "version": "0.358.0",
       "type": "feat",
       "title": "Item stats grow with difficulty",
-      "summary": "Weapons and armour found deeper into the run now hit harder and hold up better. Each difficulty level adds a flat bonus to an item's main stat \u2014 attack damage for weapons, armour for armour \u2014 with axes gaining a little extra. Applies to chest, container and vase loot, and to the gear carried by player-like mobs.",
+      "summary": "Weapons and armour found deeper into the run now hit harder and hold up better. Each difficulty level adds a flat bonus to an item's main stat — attack damage for weapons, armour for armour — with axes gaining a little extra. Applies to chest, container and vase loot, and to the gear carried by player-like mobs.",
       "highlights": [
         "+0.1 attack damage / armour per difficulty level (+0.15 for axes)",
         "Scales chest, container and vase loot, plus PlayerMob equipment",
@@ -2385,7 +2385,7 @@
       "version": "0.358.0",
       "type": "fix",
       "title": "No more waterlogged stairs in the Nether tunnel",
-      "summary": "The train tunnel and its pillar staircases no longer come out waterlogged when the track crosses the Nether band. The Nether stays bone-dry \u2014 no stray water seeping into the stone-brick stairs, slabs, or walls of the corridor.",
+      "summary": "The train tunnel and its pillar staircases no longer come out waterlogged when the track crosses the Nether band. The Nether stays bone-dry — no stray water seeping into the stone-brick stairs, slabs, or walls of the corridor.",
       "highlights": [
         "Tunnel & pillar stairs stay dry through the Nether band"
       ],
@@ -2412,7 +2412,7 @@
       "version": "0.360.0",
       "type": "fix",
       "title": "No more basalt on the Nether train tracks",
-      "summary": "Crossing the Nether band, basalt from the basalt-delta stretches could still end up on the train tracks \u2014 sitting on the rails, the bed, or the centre line \u2014 and it was most stubborn right at the leading edge, appearing on track that had just generated ahead of you. The corridor cleanup now catches that late-arriving basalt and re-lays the real track over anything it buried, so the tunnel stays clear the whole way through.",
+      "summary": "Crossing the Nether band, basalt from the basalt-delta stretches could still end up on the train tracks — sitting on the rails, the bed, or the centre line — and it was most stubborn right at the leading edge, appearing on track that had just generated ahead of you. The corridor cleanup now catches that late-arriving basalt and re-lays the real track over anything it buried, so the tunnel stays clear the whole way through.",
       "highlights": [
         "Stray basalt no longer ends up on the rails or bed as you ride through the Nether band"
       ],
@@ -2442,7 +2442,7 @@
       "version": "0.360.1",
       "type": "fix",
       "title": "Remote echo encounter stories now always post to Discord",
-      "summary": "A passenger's Discord story was silently skipped when a remote echo (a traveller from another world's past life) spawned on a distant carriage and the player walked up later. The encounter journal now opens retroactively on first close approach, so every remote echo meeting \u2014 however it starts \u2014 gets its story.",
+      "summary": "A passenger's Discord story was silently skipped when a remote echo (a traveller from another world's past life) spawned on a distant carriage and the player walked up later. The encounter journal now opens retroactively on first close approach, so every remote echo meeting — however it starts — gets its story.",
       "highlights": [],
       "date": "2026-06-25",
       "released": true,
@@ -2454,10 +2454,10 @@
       "version": "0.361.0",
       "type": "feat",
       "title": "Live mirroring in the template editor (X / Y / Z, all templates)",
-      "summary": "The in-game template editor now mirrors your edits live as you build: place or break a block and its reflections update instantly across the enabled axes \u2014 no save needed. A new vertical Y axis joins the existing left/right (X) and front/back (Z) mirrors, flipping slabs, stairs, doors and trapdoors the right way up. Mirroring is now available on every editor template (carriages, parts, tracks, pillars, tunnels), off by default; tunnels keep their existing horizontal mirroring. Toggle Mirror X / Y / Z from the editor's X-menu. Generated structures are unchanged.",
+      "summary": "The in-game template editor now mirrors your edits live as you build: place or break a block and its reflections update instantly across the enabled axes — no save needed. A new vertical Y axis joins the existing left/right (X) and front/back (Z) mirrors, flipping slabs, stairs, doors and trapdoors the right way up. Mirroring is now available on every editor template (carriages, parts, tracks, pillars, tunnels), off by default; tunnels keep their existing horizontal mirroring. Toggle Mirror X / Y / Z from the editor's X-menu. Generated structures are unchanged.",
       "highlights": [
         "Edits mirror live across the enabled axes while you build",
-        "New Y (vertical) axis \u2014 slabs/stairs/doors flip top-to-bottom",
+        "New Y (vertical) axis — slabs/stairs/doors flip top-to-bottom",
         "Mirror toggles on every editor template, off by default (tunnels keep X+Z on)",
         "Single Mirror X / Y / Z row in the editor X-menu"
       ],
@@ -2472,11 +2472,11 @@
       "version": "0.362.0",
       "type": "feat",
       "title": "Nether track & tunnel set + level/phase spawn rules for train templates",
-      "summary": "The Nether stretch of the train now has its own look: blackstone track tiles, tunnel sections, and tunnel portals take over from the overworld stone-brick set as you ride through it. Under the hood, any weighted train template \u2014 carriages, interiors, track, and tunnels \u2014 can now be limited to a difficulty-level range and to specific world phases (Overworld, Nether, Void, End), and authors set those limits right in the in-game editor.",
+      "summary": "The Nether stretch of the train now has its own look: blackstone track tiles, tunnel sections, and tunnel portals take over from the overworld stone-brick set as you ride through it. Under the hood, any weighted train template — carriages, interiors, track, and tunnels — can now be limited to a difficulty-level range and to specific world phases (Overworld, Nether, Void, End), and authors set those limits right in the in-game editor.",
       "highlights": [
         "New blackstone-themed Nether track tiles, tunnel sections, and tunnel portals that appear only in the Nether band",
         "Train templates can be gated to a min/max difficulty level and to chosen world phases (Overworld / Nether / Void / End)",
-        "In-editor min/max-level steppers and a phase selector on every weighted template \u2014 on both the menu and the floating world-space panels"
+        "In-editor min/max-level steppers and a phase selector on every weighted template — on both the menu and the floating world-space panels"
       ],
       "pr": 582,
       "date": "2026-06-25",
@@ -2503,12 +2503,12 @@
       "id": "carriage-parts-dimension-gate",
       "version": "0.364.0",
       "type": "feat",
-      "title": "Carriages reskin by dimension \u2014 Nether-themed dark carriages",
+      "title": "Carriages reskin by dimension — Nether-themed dark carriages",
       "summary": "Carriage parts (floors, walls, roofs, doors) can now be restricted to a Diff-Level range and to specific dimensions, so the train's carriages visibly change as it crosses the world. A new Nether-themed dark carriage set (blackstone & nether brick) rides through the Nether band, and the change carries the same in-world editor controls used for the rest of the train: per-part minimum/maximum Diff-Level and Overworld/Nether/Void/End toggles (shift-click a dimension to solo it). Nether carriage theming now begins at the same point the Nether track does.",
       "highlights": [
         "Carriage parts can be gated by Diff-Level range and by dimension (Overworld/Nether/Void/End)",
         "New Nether-themed dark carriage set appears in the Nether band",
-        "Editor: \u2265min / \u2264max / O N V E columns per part; shift-click a dimension toggles all-but-that-one (shared across every dimension menu)",
+        "Editor: ≥min / ≤max / O N V E columns per part; shift-click a dimension toggles all-but-that-one (shared across every dimension menu)",
         "Fix: Nether carriage parts now begin where the Nether track does (previously lagged ~1000 blocks)"
       ],
       "pr": 585,
@@ -2521,7 +2521,7 @@
       "id": "nether-corridor-cleanup-perf",
       "version": "0.366.0",
       "type": "perf",
-      "title": "Smoother Nether-band travel \u2014 no more lag spikes",
+      "title": "Smoother Nether-band travel — no more lag spikes",
       "summary": "Riding through the Nether section of the world no longer causes multi-second freezes. The system that keeps stray Nether blocks (basalt and friends) off the train tracks was rewritten to run far more efficiently, so the rails stay clear without the game hitching as new terrain generates ahead of you.",
       "highlights": [
         "Fixed the multi-second server freezes when traveling into freshly-generated Nether-band terrain.",
@@ -2537,7 +2537,7 @@
       "version": "0.366.0",
       "type": "feat",
       "title": "Tunnels & tracks fade into the Nether block by block",
-      "summary": "Crossing into the Nether transition, the train's stone-brick tunnels and tracks now dissolve into their dark Nether forms one block at a time \u2014 a grainy crossfade that thickens toward the core, in step with the ground turning to netherrack \u2014 instead of every section switching over all at once. The whole transition is also stretched out much longer for a more gradual descent into the Nether.",
+      "summary": "Crossing into the Nether transition, the train's stone-brick tunnels and tracks now dissolve into their dark Nether forms one block at a time — a grainy crossfade that thickens toward the core, in step with the ground turning to netherrack — instead of every section switching over all at once. The whole transition is also stretched out much longer for a more gradual descent into the Nether.",
       "highlights": [
         "Tunnels and tracks crossfade block-by-block between their Overworld and Nether-dark looks",
         "Dark blocks creep in as a grainy dither that thickens toward the Nether core",
@@ -2554,9 +2554,9 @@
       "version": "0.366.0",
       "type": "perf",
       "title": "Leaner world generation",
-      "summary": "World generation now reuses a single cached band-layout calculation instead of rebuilding it for every terrain column \u2014 previously it was recomputed millions of times per session. This cuts redundant work and memory churn while terrain generates (including around the Nether and End transition bands), with no change to the world that's produced.",
+      "summary": "World generation now reuses a single cached band-layout calculation instead of rebuilding it for every terrain column — previously it was recomputed millions of times per session. This cuts redundant work and memory churn while terrain generates (including around the Nether and End transition bands), with no change to the world that's produced.",
       "highlights": [
-        "Same world, generated more efficiently \u2014 no change to terrain, structures, or the train."
+        "Same world, generated more efficiently — no change to terrain, structures, or the train."
       ],
       "pr": 590,
       "date": "2026-06-26",
@@ -2569,7 +2569,7 @@
       "version": "0.367.0",
       "type": "feat",
       "title": "Editor Menus toggle hides all world-space editor panels",
-      "summary": "The in-game editor's X-menu now has a single 'Editor Menus' toggle that hides every floating world-space panel at once \u2014 the help board, the carriage/contents/track lists, the part and block-variant menus, and plot labels \u2014 for an unobstructed view while building. The X menu stays available so you can flip everything back on anytime.",
+      "summary": "The in-game editor's X-menu now has a single 'Editor Menus' toggle that hides every floating world-space panel at once — the help board, the carriage/contents/track lists, the part and block-variant menus, and plot labels — for an unobstructed view while building. The X menu stays available so you can flip everything back on anytime.",
       "highlights": [
         "One toggle hides or shows all editor world-space menus",
         "Any open part, block-variant, and container menus close when toggled off"
@@ -2585,11 +2585,11 @@
       "version": "0.367.0",
       "type": "feat",
       "title": "Echo encounter stories describe the echo's gear and your words",
-      "summary": "When you meet a remote echo aboard the train, its Discord story now paints a fuller picture: it names the echo's two finest items \u2014 enchantments, armour trim and all \u2014 notes any better gear it claims along the way, and remembers if you spoke to it. Your words are sometimes quoted in the tale, sometimes just hinted at, and are always kept private if you'd recently been in touch with the dev.",
+      "summary": "When you meet a remote echo aboard the train, its Discord story now paints a fuller picture: it names the echo's two finest items — enchantments, armour trim and all — notes any better gear it claims along the way, and remembers if you spoke to it. Your words are sometimes quoted in the tale, sometimes just hinted at, and are always kept private if you'd recently been in touch with the dev.",
       "highlights": [
         "The echo's two best items (with enchantments & armour trim) now appear in its story",
         "Better gear the echo picks up mid-encounter is added as it happens",
-        "Chatting near an echo can become part of the story \u2014 your words quoted or kept private"
+        "Chatting near an echo can become part of the story — your words quoted or kept private"
       ],
       "pr": 595,
       "date": "2026-06-26",
@@ -2602,10 +2602,10 @@
       "version": "0.367.0",
       "type": "feat",
       "title": "Editor mirror now reflects block variants",
-      "summary": "The template editor's XYZ mirror gains an opt-in \"V\" toggle that also mirrors per-cell block-variant pools across the enabled axes \u2014 so you can author one half of a carriage or part and get the symmetric variants for free. Off by default, so existing templates are unchanged.",
+      "summary": "The template editor's XYZ mirror gains an opt-in \"V\" toggle that also mirrors per-cell block-variant pools across the enabled axes — so you can author one half of a carriage or part and get the symmetric variants for free. Off by default, so existing templates are unchanged.",
       "highlights": [
         "New V checkbox beside the X / Y / Z mirror toggles in the editor menu",
-        "Variant pools mirror live as you add, paste, or break \u2014 with a save-time backstop",
+        "Variant pools mirror live as you add, paste, or break — with a save-time backstop",
         "Block facing, slab/stair half, and lock-group ids all reflect correctly"
       ],
       "pr": 596,
@@ -2618,11 +2618,11 @@
       "id": "editor-stages",
       "version": "0.368.0",
       "type": "feat",
-      "title": "Editor Stages \u2014 reusable difficulty/dimension presets",
-      "summary": "Content creators using the in-game editor can now define named Stages \u2014 reusable presets of the difficulty-level and dimension gating that decides where a template is allowed to spawn \u2014 and apply them to carriages, contents, parts, and tracks. Edit a Stage once and every template linked to it retunes together. This release also fixes Nether-gated content so it appears across the whole Nether stretch instead of only deep in its core.",
+      "title": "Editor Stages — reusable difficulty/dimension presets",
+      "summary": "Content creators using the in-game editor can now define named Stages — reusable presets of the difficulty-level and dimension gating that decides where a template is allowed to spawn — and apply them to carriages, contents, parts, and tracks. Edit a Stage once and every template linked to it retunes together. This release also fixes Nether-gated content so it appears across the whole Nether stretch instead of only deep in its core.",
       "highlights": [
         "A global Stages list sits beside the editor's template menu, with inline add / remove / edit of each preset's level band and dimensions.",
-        "Pick a Stage (or 'Custom') from any gate-editing spot \u2014 including per carriage-part entry \u2014 and linked templates update live when you edit the Stage.",
+        "Pick a Stage (or 'Custom') from any gate-editing spot — including per carriage-part entry — and linked templates update live when you edit the Stage.",
         "Fix: Nether-gated templates and Stages now trigger as the Nether terrain begins, not hundreds of blocks into the Nether core."
       ],
       "date": "2026-06-26",
@@ -2632,10 +2632,10 @@
     },
     {
       "id": "resume-train-hold",
-      "version": "0.368.0",
+      "version": "0.369.0",
       "type": "fix",
       "title": "Train carriages no longer lost when you pause and resume",
-      "summary": "Pausing a singleplayer game on a moving train \u2014 via the Esc menu, reading a book, or an advancement popup \u2014 could make the carriages around you disappear and stay gone until you reloaded the world. The train is now held in place across the pause so its carriages survive it.",
+      "summary": "Pausing a singleplayer game on a moving train — via the Esc menu, reading a book, or an advancement popup — could make the carriages around you disappear and stay gone until you reloaded the world. The train is now held in place across the pause so its carriages survive it.",
       "highlights": [
         "The whole train is kept loaded through the pause, then eases back to normal once you've settled back on board."
       ],
