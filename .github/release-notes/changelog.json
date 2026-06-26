@@ -2688,9 +2688,9 @@
         "Editing a wall/door side while facing its open air now targets the side you're looking at"
       ],
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.371.0",
+      "released_at": "2026-06-26T14:30:22Z"
     },
     {
       "id": "sandstone-carriage-variants",
@@ -2704,9 +2704,9 @@
       ],
       "pr": 604,
       "date": "2026-06-26",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.371.0",
+      "released_at": "2026-06-26T14:30:22Z"
     }
   ]
 }
