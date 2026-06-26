@@ -57,6 +57,9 @@ public final class EditorVariantMirror {
 
         BlockPos origin = plot.origin();
         Vec3i f = plot.footprint();
+        // Mirror the source cell's lock-id too so the reflected cells join the
+        // same lock group (a pasted lock-group cell stays grouped on both sides).
+        int srcLockId = plot.lockIdAt(localEdited);
         boolean changed = false;
         for (EditorMirror.Image img : EditorMirror.imagesOf(localEdited, f, mx, my, mz)) {
             BlockPos tgtWorld = origin.offset(img.local().getX(), img.local().getY(), img.local().getZ());
@@ -67,6 +70,7 @@ public final class EditorVariantMirror {
                 List<VariantState> reflected =
                     EditorMirror.reflectStates(updatedOrNull, img.flipX(), img.flipY(), img.flipZ());
                 plot.put(img.local(), reflected);
+                plot.setLockId(img.local(), srcLockId); // 0 clears — mirrors the source's lock state
                 SilentBlockOps.setBlockSilent(level, tgtWorld, reflected.get(0).state());
             }
             changed = true;
@@ -98,6 +102,7 @@ public final class EditorVariantMirror {
                     if (EditorMirror.source(dz, f.getZ(), mz) != dz) continue;
                     BlockPos masterLocal = new BlockPos(dx, dy, dz);
                     List<VariantState> masterPool = plot.statesAt(masterLocal);
+                    int masterLockId = plot.lockIdAt(masterLocal);
                     for (EditorMirror.Image img : EditorMirror.imagesOf(masterLocal, f, mx, my, mz)) {
                         if (masterPool == null || masterPool.isEmpty()) {
                             // No master pool — drop any stale far entry; the
@@ -107,6 +112,7 @@ public final class EditorVariantMirror {
                             List<VariantState> reflected =
                                 EditorMirror.reflectStates(masterPool, img.flipX(), img.flipY(), img.flipZ());
                             plot.put(img.local(), reflected);
+                            plot.setLockId(img.local(), masterLockId); // join the master's lock group
                             BlockPos tgtWorld = origin.offset(
                                 img.local().getX(), img.local().getY(), img.local().getZ());
                             SilentBlockOps.setBlockSilent(level, tgtWorld, reflected.get(0).state());

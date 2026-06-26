@@ -1,7 +1,10 @@
 {
   "schemaVersion": 8,
-  "mirror": { "x": true, "y": true, "z": true, "v": false },
+  "mirror": { "x": true, "y": true, "z": true, "v": true },
   "variants": {
-    "6,0,0": { "lockId": 1, "states": ["minecraft:copper_block", "minecraft:chiseled_copper", "minecraft:copper_grate[waterlogged=false]", "minecraft:cut_copper"] }
+    "6,0,0": { "lockId": 1, "states": ["minecraft:copper_block", "minecraft:chiseled_copper", "minecraft:copper_grate[waterlogged=false]", "minecraft:cut_copper"] },
+    "6,0,4": ["minecraft:copper_block", "minecraft:chiseled_copper", "minecraft:copper_grate[waterlogged=false]", "minecraft:cut_copper"],
+    "0,0,0": ["minecraft:copper_block", "minecraft:chiseled_copper", "minecraft:copper_grate[waterlogged=false]", "minecraft:cut_copper"],
+    "0,0,4": ["minecraft:copper_block", "minecraft:chiseled_copper", "minecraft:copper_grate[waterlogged=false]", "minecraft:cut_copper"]
   }
 }
