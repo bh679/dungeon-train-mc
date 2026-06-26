@@ -82,18 +82,21 @@ public final class CarriageContentsVariantBlocks {
     private boolean mirrorX;
     private boolean mirrorY;
     private boolean mirrorZ;
+    /** Opt-in flag (the "V" toggle): mirror the variant pools, not just structural blocks. */
+    private boolean mirrorVariants;
 
     private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds) {
-        this(entries, lockIds, false, false, false);
+        this(entries, lockIds, false, false, false, false);
     }
 
     private CarriageContentsVariantBlocks(Map<BlockPos, List<VariantState>> entries, Map<BlockPos, Integer> lockIds,
-                                          boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
+                                          boolean mirrorX, boolean mirrorY, boolean mirrorZ, boolean mirrorVariants) {
         this.entries = entries;
         this.lockIds = lockIds;
         this.mirrorX = mirrorX;
         this.mirrorY = mirrorY;
         this.mirrorZ = mirrorZ;
+        this.mirrorVariants = mirrorVariants;
     }
 
     public static CarriageContentsVariantBlocks empty() {
@@ -109,9 +112,12 @@ public final class CarriageContentsVariantBlocks {
     /** Editor mirror Z (width) axis. False unless the sidecar sets {@code mirror.z=true}. */
     public boolean mirrorZ() { return mirrorZ; }
 
-    /** True when no axis is enabled — the absent-{@code mirror}-field state (contents default). */
+    /** Editor mirror-variants ("V") opt-in. False unless the sidecar sets {@code mirror.v=true}. */
+    public boolean mirrorVariants() { return mirrorVariants; }
+
+    /** True when no axis/flag is enabled — the absent-{@code mirror}-field state (contents default). */
     private boolean isDefaultMirror() {
-        return !mirrorX && !mirrorY && !mirrorZ;
+        return !mirrorX && !mirrorY && !mirrorZ && !mirrorVariants;
     }
 
     /** Set all three editor mirror axes — used by the {@code editor mirror} command before {@link #save}. */
@@ -119,6 +125,11 @@ public final class CarriageContentsVariantBlocks {
         this.mirrorX = x;
         this.mirrorY = y;
         this.mirrorZ = z;
+    }
+
+    /** Set the mirror-variants ("V") opt-in — used by {@code editor mirror v on|off} before {@link #save}. */
+    public synchronized void setMirrorVariants(boolean v) {
+        this.mirrorVariants = v;
     }
 
     public static Path configPathFor(CarriageContents contents) {
@@ -189,14 +200,16 @@ public final class CarriageContentsVariantBlocks {
         boolean mirrorX = false;
         boolean mirrorY = false;
         boolean mirrorZ = false;
+        boolean mirrorVariants = false;
         if (obj.has("mirror") && obj.get("mirror").isJsonObject()) {
             JsonObject m = obj.getAsJsonObject("mirror");
             if (m.has("x")) mirrorX = m.get("x").getAsBoolean();
             if (m.has("y")) mirrorY = m.get("y").getAsBoolean();
             if (m.has("z")) mirrorZ = m.get("z").getAsBoolean();
+            if (m.has("v")) mirrorVariants = m.get("v").getAsBoolean();
         }
         if (!obj.has("variants") || !obj.get("variants").isJsonObject()) {
-            return new CarriageContentsVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorY, mirrorZ);
+            return new CarriageContentsVariantBlocks(new LinkedHashMap<>(), new LinkedHashMap<>(), mirrorX, mirrorY, mirrorZ, mirrorVariants);
         }
 
         HolderLookup.RegistryLookup<Block> blocks = BuiltInRegistries.BLOCK.asLookup();
@@ -230,7 +243,7 @@ public final class CarriageContentsVariantBlocks {
         }
         LOGGER.info("[DungeonTrain] Loaded {} contents variant entries for {} from {}",
             out.size(), contextId, origin);
-        return new CarriageContentsVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ);
+        return new CarriageContentsVariantBlocks(out, outLocks, mirrorX, mirrorY, mirrorZ, mirrorVariants);
     }
 
     static BlockPos parsePos(String key) {
@@ -433,7 +446,8 @@ public final class CarriageContentsVariantBlocks {
         if (!isDefaultMirror()) {
             sb.append("  \"mirror\": { \"x\": ").append(mirrorX)
               .append(", \"y\": ").append(mirrorY)
-              .append(", \"z\": ").append(mirrorZ).append(" },\n");
+              .append(", \"z\": ").append(mirrorZ)
+              .append(", \"v\": ").append(mirrorVariants).append(" },\n");
         }
         sb.append("  \"variants\": {");
         boolean first = true;

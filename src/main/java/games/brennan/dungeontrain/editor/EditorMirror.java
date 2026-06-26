@@ -161,6 +161,74 @@ public final class EditorMirror {
         return s;
     }
 
+    // ─── Variant-pool reflection (the "V" toggle) ─────────────────────────
+
+    /**
+     * Reflect a single {@link Direction} across the moved axes — the per-bit
+     * version of {@link #reflect}: flipping an axis sends a face on that axis to
+     * its opposite (X: WEST↔EAST, Z: NORTH↔SOUTH, Y: UP↔DOWN); faces on other
+     * axes are unchanged.
+     */
+    public static Direction mirrorDirection(Direction d, boolean flipX, boolean flipY, boolean flipZ) {
+        if (flipX && d.getAxis() == Direction.Axis.X) d = d.getOpposite();
+        if (flipZ && d.getAxis() == Direction.Axis.Z) d = d.getOpposite();
+        if (flipY && d.getAxis() == Direction.Axis.Y) d = d.getOpposite();
+        return d;
+    }
+
+    /**
+     * Reflect a {@link VariantRotation}'s direction set across the moved axes.
+     * {@code RANDOM} / default ({@code dirMask == 0}) carries no facing and is
+     * returned unchanged; {@code LOCK} / {@code OPTIONS} have each set direction
+     * remapped via {@link #mirrorDirection}, preserving {@link VariantRotation.Mode}.
+     */
+    public static VariantRotation reflectRotation(VariantRotation r, boolean flipX, boolean flipY, boolean flipZ) {
+        if (r.dirMask() == 0) return r;
+        int mask = 0;
+        for (Direction d : r.directions()) {
+            mask |= VariantRotation.maskOf(mirrorDirection(d, flipX, flipY, flipZ));
+        }
+        return new VariantRotation(r.mode(), mask);
+    }
+
+    /**
+     * Reflect a {@link VariantHalf} across the vertical axis: {@code TOP}↔{@code
+     * BOTTOM} on a Y flip, {@code RANDOM} (and any non-Y flip) unchanged.
+     */
+    public static VariantHalf reflectHalf(VariantHalf h, boolean flipY) {
+        if (!flipY) return h;
+        return switch (h.mode()) {
+            case TOP -> new VariantHalf(VariantHalf.Mode.BOTTOM);
+            case BOTTOM -> new VariantHalf(VariantHalf.Mode.TOP);
+            case RANDOM -> h;
+        };
+    }
+
+    /**
+     * Reflect one variant candidate across the moved axes. Block entries get a
+     * mirrored block state ({@link #reflect}), rotation ({@link #reflectRotation})
+     * and half ({@link #reflectHalf}); BE-NBT, weight, loot link and difficulty
+     * pass through. Mob entries (state is the AIR sentinel; rotation is a spawn
+     * Y-rot, not a block facing) are returned unchanged — their cell still moves,
+     * but the spawn orientation isn't reflected (documented editor limitation).
+     */
+    public static VariantState reflectVariant(VariantState v, boolean flipX, boolean flipY, boolean flipZ) {
+        if (v.isMob()) return v;
+        return new VariantState(
+            reflect(v.state(), flipX, flipY, flipZ),
+            v.blockEntityNbt(), v.weight(),
+            reflectRotation(v.rotation(), flipX, flipY, flipZ),
+            v.linkedLootPrefabId(), v.entityId(),
+            reflectHalf(v.half(), flipY), v.difficulty());
+    }
+
+    /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */
+    public static List<VariantState> reflectStates(List<VariantState> states, boolean flipX, boolean flipY, boolean flipZ) {
+        List<VariantState> out = new ArrayList<>(states.size());
+        for (VariantState v : states) out.add(reflectVariant(v, flipX, flipY, flipZ));
+        return out;
+    }
+
     /**
      * Local marker cells for a rebuild / live pass = the sidecar's flagged
      * positions (variant entries such as the tunnel section chest). All four

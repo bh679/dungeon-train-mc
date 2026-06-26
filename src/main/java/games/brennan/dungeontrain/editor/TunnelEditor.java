@@ -254,8 +254,12 @@ public final class TunnelEditor {
         // across the axes enabled in the template's mirror config, before capture —
         // so the stored template (and every generated tunnel) is unchanged. Live
         // mirroring keeps this in sync while editing; this is the save-time
-        // backstop. The chest stays single (marker cells).
+        // backstop. The chest stays single (marker cells) UNLESS the "V" toggle
+        // is on, in which case variant pools mirror too (run first so the
+        // structural pass below preserves the reflected far cells via markersOf).
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(kind, name, size);
+        EditorVariantMirror.rebuildFromMaster(overworld,
+            new BlockVariantPlot.TrackPlot(kind, name, origin, size));
         EditorMirror.rebuildFromMaster(overworld, origin, size,
             sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
             EditorMirror.markersOf(sidecar.entries()));

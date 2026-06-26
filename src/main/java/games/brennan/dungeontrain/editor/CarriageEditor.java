@@ -288,6 +288,10 @@ public final class CarriageEditor {
         // capture so the stored template is symmetric per the sidecar's enabled
         // axes. No-op when all axes are off (the carriage default).
         CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, dims);
+        // "V" toggle: mirror the variant pools first so the structural pass below
+        // sees (and preserves) the freshly-reflected far cells via markersOf.
+        EditorVariantMirror.rebuildFromMaster(overworld, new BlockVariantPlot.CarriagePlot(
+            variant, origin, new Vec3i(dims.length(), dims.height(), dims.width()), dims));
         EditorMirror.rebuildFromMaster(overworld, origin,
             new Vec3i(dims.length(), dims.height(), dims.width()),
             sidecar.mirrorX(), sidecar.mirrorY(), sidecar.mirrorZ(),
